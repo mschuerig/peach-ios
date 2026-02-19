@@ -60,7 +60,7 @@ xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 1
 This project has three purposes
 
 - The obvious: Provide an app for ear training
-- The ambitious: For me to gain experience with agentic software development. I'm using [Claude Code]([https://docs.bmad-method.org/](https://code.claude.com/docs)) and the [BMad method](https://docs.bmad-method.org/) for development.
+- The ambitious: For me to gain experience with agentic software development. I'm using [Claude Code](https://code.claude.com/docs/) and the [BMad method](https://docs.bmad-method.org/) for development.
 - The failing: I set out to improve my understanding and skills regarding iOS development and Swift. Not much has come of it, so far.
 
 ## License
