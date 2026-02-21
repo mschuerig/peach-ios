@@ -12,6 +12,7 @@ import SwiftUI
 /// **Future Improvement:** Consider adding XCTest UI tests for complete interaction coverage
 /// when more complex navigation scenarios are implemented in Epic 3 Story 2+.
 @Suite("Start Screen Tests")
+@MainActor
 struct StartScreenTests {
 
     // MARK: - View Instantiation Tests

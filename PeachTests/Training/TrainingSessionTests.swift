@@ -53,7 +53,7 @@ struct TrainingSessionTests {
             try await Task.sleep(for: .milliseconds(5))  // Reduced from 10ms to 5ms
             await Task.yield()  // Yield to allow state machine to progress
         }
-        fatalError("Timeout waiting for state \(expectedState), current state: \(session.state)")
+        Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
     }
 
     /// Waits for mock player to reach a minimum play call count
@@ -67,7 +67,7 @@ struct TrainingSessionTests {
             try await Task.sleep(for: .milliseconds(10))
             await Task.yield()
         }
-        fatalError("Timeout waiting for playCallCount >= \(minCount), current: \(mockPlayer.playCallCount)")
+        Issue.record("Timeout waiting for playCallCount >= \(minCount), current: \(mockPlayer.playCallCount)")
     }
 
     // MARK: - State Transition Tests
@@ -680,6 +680,7 @@ struct TrainingSessionUserDefaultsTests {
     @Test("Changing UserDefaults values changes TrainingSettings built by TrainingSession")
     func userDefaultsChangesAffectSettings() async {
         cleanUpSettingsDefaults()
+        defer { cleanUpSettingsDefaults() }
 
         let mockPlayer = MockNotePlayer()
         let mockDataStore = MockTrainingDataStore()
@@ -710,13 +711,13 @@ struct TrainingSessionUserDefaultsTests {
         #expect(mockStrategy.lastReceivedSettings?.referencePitch == 432.0)
 
         session.stop()
-        cleanUpSettingsDefaults()
     }
 
     @MainActor
     @Test("Note duration from UserDefaults is passed to NotePlayer")
     func noteDurationFromUserDefaultsPassedToPlayer() async {
         cleanUpSettingsDefaults()
+        defer { cleanUpSettingsDefaults() }
 
         let mockPlayer = MockNotePlayer()
         let mockDataStore = MockTrainingDataStore()
@@ -741,13 +742,13 @@ struct TrainingSessionUserDefaultsTests {
         #expect(mockPlayer.lastDuration == 2.5)
 
         session.stop()
-        cleanUpSettingsDefaults()
     }
 
     @MainActor
     @Test("Reference pitch from UserDefaults is passed to frequency calculation")
     func referencePitchFromUserDefaultsAffectsFrequency() async {
         cleanUpSettingsDefaults()
+        defer { cleanUpSettingsDefaults() }
 
         let mockPlayer = MockNotePlayer()
         let mockDataStore = MockTrainingDataStore()
@@ -777,13 +778,13 @@ struct TrainingSessionUserDefaultsTests {
         #expect(abs(note1Freq - 432.0) < 0.01)
 
         session.stop()
-        cleanUpSettingsDefaults()
     }
 
     @MainActor
     @Test("Settings persist across simulated app restart")
     func settingsPersistAcrossRestart() async {
         cleanUpSettingsDefaults()
+        defer { cleanUpSettingsDefaults() }
 
         // Simulate user changing settings
         UserDefaults.standard.set(0.9, forKey: SettingsKeys.naturalVsMechanical)
@@ -816,13 +817,13 @@ struct TrainingSessionUserDefaultsTests {
         #expect(mockPlayer.lastDuration == 1.5)
 
         session.stop()
-        cleanUpSettingsDefaults()
     }
 
     @MainActor
     @Test("Settings changed mid-training take effect on next comparison")
     func settingsChangedMidTrainingTakeEffect() async throws {
         cleanUpSettingsDefaults()
+        defer { cleanUpSettingsDefaults() }
 
         let mockPlayer = MockNotePlayer()
         let mockDataStore = MockTrainingDataStore()
@@ -865,6 +866,5 @@ struct TrainingSessionUserDefaultsTests {
         #expect(mockPlayer.lastDuration == 2.0)
 
         session.stop()
-        cleanUpSettingsDefaults()
     }
 }
