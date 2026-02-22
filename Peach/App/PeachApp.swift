@@ -51,6 +51,7 @@ struct PeachApp: App {
                 notePlayer: notePlayer,
                 strategy: strategy,
                 profile: profile,
+                trendAnalyzer: trendAnalyzer,
                 observers: observers
             ))
         } catch {

@@ -159,6 +159,99 @@ struct SettingsTests {
         #expect(countAfter == 0)
     }
 
+    // MARK: - Convergence Chain Reset (fix-reset-all-data-should-reset-difficulty)
+
+    @Test("after reset, PerceptualProfile statsForNote returns currentDifficulty 100.0 for all notes")
+    @MainActor
+    func resetTrainingDataResetsAllCurrentDifficultyToDefault() {
+        let profile = PerceptualProfile()
+        let session = TrainingSession(
+            notePlayer: MockNotePlayer(),
+            strategy: MockNextNoteStrategy(),
+            profile: profile,
+            settingsOverride: TrainingSettings(),
+            noteDurationOverride: 1.0
+        )
+
+        // Simulate converged state: lower difficulty on several notes
+        profile.setDifficulty(note: 60, difficulty: 30.0)
+        profile.setDifficulty(note: 62, difficulty: 50.0)
+        profile.update(note: 60, centOffset: 30.0, isCorrect: true)
+        profile.update(note: 62, centOffset: 50.0, isCorrect: true)
+        #expect(profile.statsForNote(60).currentDifficulty == 30.0)
+        #expect(profile.statsForNote(62).currentDifficulty == 50.0)
+
+        // Reset via TrainingSession's centralized method
+        session.resetTrainingData()
+
+        // Verify cold start for all notes
+        for note in 0..<128 {
+            #expect(profile.statsForNote(note).currentDifficulty == 100.0)
+        }
+        #expect(profile.statsForNote(60).sampleCount == 0)
+        #expect(profile.statsForNote(62).sampleCount == 0)
+    }
+
+    @Test("after reset, first comparison from AdaptiveNoteStrategy uses 100 cents")
+    @MainActor
+    func afterResetFirstComparisonUses100Cents() {
+        let profile = PerceptualProfile()
+        let strategy = AdaptiveNoteStrategy()
+        let session = TrainingSession(
+            notePlayer: MockNotePlayer(),
+            strategy: strategy,
+            profile: profile,
+            settingsOverride: TrainingSettings(),
+            noteDurationOverride: 1.0
+        )
+
+        // Simulate converged state
+        profile.setDifficulty(note: 60, difficulty: 30.0)
+        profile.update(note: 60, centOffset: 30.0, isCorrect: true)
+
+        // Reset via TrainingSession
+        session.resetTrainingData()
+
+        // Cold start: nil lastComparison with reset profile → should return 100.0
+        let comparison = strategy.nextComparison(
+            profile: profile,
+            settings: TrainingSettings(),
+            lastComparison: nil
+        )
+        #expect(comparison.centDifference == 100.0)
+    }
+
+    @Test("after reset, weightedEffectiveDifficulty returns default with no trained neighbors")
+    @MainActor
+    func afterResetWeightedEffectiveDifficultyReturnsDefault() {
+        let profile = PerceptualProfile()
+        let strategy = AdaptiveNoteStrategy()
+        let session = TrainingSession(
+            notePlayer: MockNotePlayer(),
+            strategy: strategy,
+            profile: profile,
+            settingsOverride: TrainingSettings(),
+            noteDurationOverride: 1.0
+        )
+
+        // Set up trained neighbors across a range
+        for note in 55...65 {
+            profile.setDifficulty(note: note, difficulty: 30.0)
+            profile.update(note: note, centOffset: 30.0, isCorrect: true)
+        }
+
+        // Reset via TrainingSession
+        session.resetTrainingData()
+
+        // With all stats cleared, bootstrap should find no trained neighbors → 100.0
+        let comparison = strategy.nextComparison(
+            profile: profile,
+            settings: TrainingSettings(),
+            lastComparison: nil
+        )
+        #expect(comparison.centDifference == 100.0)
+    }
+
     // MARK: - Task 5: Range Functions
 
     @Test("Range functions produce valid ranges with default values")

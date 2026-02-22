@@ -1,6 +1,6 @@
 # Story: Fix Reset All Data Should Reset Difficulty
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -38,21 +38,21 @@ so that training after a reset starts fresh at cold-start difficulty (100 cents)
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Write failing tests for reset-then-train cold-start behavior (AC: #2, #4)
-  - [ ] Test: after reset, first comparison from `AdaptiveNoteStrategy` uses 100 cents
-  - [ ] Test: after reset, `weightedEffectiveDifficulty()` returns default (no trained neighbors)
-  - [ ] Test: after reset, `PerceptualProfile.statsForNote()` returns `currentDifficulty == 100.0` for all notes
-- [ ] Task 2: Add `resetTrainingData()` method to `TrainingSession` (AC: #3, #5)
-  - [ ] Clear `lastCompletedComparison` and `sessionBestCentDifference`
-  - [ ] Call `profile.reset()` and `trendAnalyzer.reset()` from TrainingSession (single responsibility)
-  - [ ] Ensure the method is safe to call regardless of training state
-- [ ] Task 3: Update `SettingsScreen.resetAllTrainingData()` to use TrainingSession's reset (AC: #1, #5)
-  - [ ] Inject `TrainingSession` via `@Environment` in SettingsScreen
-  - [ ] Replace direct `profile.reset()` / `trendAnalyzer.reset()` calls with `trainingSession.resetTrainingData()`
-  - [ ] Keep `dataStore.deleteAll()` as the first step with atomic error handling
-- [ ] Task 4: Verify cold-start behavior end-to-end (AC: #2, #4, #6)
-  - [ ] Run full test suite
-  - [ ] Verify no regressions in existing reset, convergence, or training tests
+- [x] Task 1: Write failing tests for reset-then-train cold-start behavior (AC: #2, #4)
+  - [x] Test: after reset, first comparison from `AdaptiveNoteStrategy` uses 100 cents
+  - [x] Test: after reset, `weightedEffectiveDifficulty()` returns default (no trained neighbors)
+  - [x] Test: after reset, `PerceptualProfile.statsForNote()` returns `currentDifficulty == 100.0` for all notes
+- [x] Task 2: Add `resetTrainingData()` method to `TrainingSession` (AC: #3, #5)
+  - [x] Clear `lastCompletedComparison` and `sessionBestCentDifference`
+  - [x] Call `profile.reset()` and `trendAnalyzer.reset()` from TrainingSession (single responsibility)
+  - [x] Ensure the method is safe to call regardless of training state
+- [x] Task 3: Update `SettingsScreen.resetAllTrainingData()` to use TrainingSession's reset (AC: #1, #5)
+  - [x] Inject `TrainingSession` via `@Environment` in SettingsScreen
+  - [x] Replace direct `profile.reset()` / `trendAnalyzer.reset()` calls with `trainingSession.resetTrainingData()`
+  - [x] Keep `dataStore.deleteAll()` as the first step with atomic error handling
+- [x] Task 4: Verify cold-start behavior end-to-end (AC: #2, #4, #6)
+  - [x] Run full test suite
+  - [x] Verify no regressions in existing reset, convergence, or training tests
 
 ## Dev Notes
 
@@ -144,12 +144,34 @@ Use the existing mock/factory pattern from `TrainingSessionTests`. Key patterns:
 - [Source: docs/implementation-artifacts/hotfix-tune-kazez-convergence.md] — Kazez coefficient tuning context
 - [Source: docs/project-context.md] — project rules and patterns
 
+## Change Log
+
+- 2026-02-22: Centralized training data reset in TrainingSession.resetTrainingData() — clears convergence chain state (lastCompletedComparison, sessionBestCentDifference), profile, and trend analyzer atomically. SettingsScreen now delegates to this single method instead of calling profile.reset()/trendAnalyzer.reset() directly.
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+- Red phase: 3 new tests failed as expected (empty stub)
+- Green phase: All 3 tests passed after implementing resetTrainingData()
+- Full suite: All tests pass, zero regressions
 
 ### Completion Notes List
 
+- Added `resetTrainingData()` to `TrainingSession` — stops training if active, clears `lastCompletedComparison`, `sessionBestCentDifference`, calls `profile.reset()` and `trendAnalyzer?.reset()`
+- Added `trendAnalyzer: TrendAnalyzer?` optional dependency to `TrainingSession` init (default nil for backward compatibility in tests)
+- Updated `PeachApp.swift` to pass `trendAnalyzer` when constructing `TrainingSession`
+- Updated `SettingsScreen` to inject `TrainingSession` via `@Environment` instead of separate profile/trendAnalyzer; reset now calls `trainingSession.resetTrainingData()`
+- Removed unused `@Environment(\.perceptualProfile)` and `@Environment(\.trendAnalyzer)` from SettingsScreen
+- Added 3 new tests in `SettingsTests.swift` verifying cold-start behavior after reset
+
 ### File List
+
+- Peach/Training/TrainingSession.swift (modified — added `resetTrainingData()`, `trendAnalyzer` dependency)
+- Peach/Settings/SettingsScreen.swift (modified — replaced direct profile/trend reset with `trainingSession.resetTrainingData()`)
+- Peach/App/PeachApp.swift (modified — passes `trendAnalyzer` to TrainingSession init)
+- PeachTests/Settings/SettingsTests.swift (modified — added 3 convergence chain reset tests)

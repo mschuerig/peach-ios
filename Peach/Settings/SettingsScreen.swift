@@ -21,8 +21,7 @@ struct SettingsScreen: View {
     private var soundSource: String = SettingsKeys.defaultSoundSource
 
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.perceptualProfile) private var profile
-    @Environment(\.trendAnalyzer) private var trendAnalyzer
+    @Environment(\.trainingSession) private var trainingSession
 
     @State private var showResetConfirmation = false
     @State private var showResetError = false
@@ -121,7 +120,7 @@ struct SettingsScreen: View {
     // MARK: - Actions
 
     private func resetAllTrainingData() {
-        // Atomic reset: only clear profile/trend if data deletion succeeds
+        // Atomic reset: only clear convergence/profile/trend if data deletion succeeds
         let dataStore = TrainingDataStore(modelContext: modelContext)
         do {
             try dataStore.deleteAll()
@@ -130,8 +129,7 @@ struct SettingsScreen: View {
             return
         }
 
-        profile.reset()
-        trendAnalyzer.reset()
+        trainingSession.resetTrainingData()
     }
 }
 

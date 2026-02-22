@@ -98,6 +98,9 @@ final class TrainingSession {
     /// User's perceptual profile (Story 4.1)
     private let profile: PerceptualProfile
 
+    /// Trend analyzer for reset coordination (optional — nil in tests that don't need it)
+    private let trendAnalyzer: TrendAnalyzer?
+
     /// Observers notified when comparisons are completed (Story 4.1)
     /// Decouples TrainingSession from specific persistence and analytics implementations
     private let observers: [ComparisonObserver]
@@ -168,6 +171,7 @@ final class TrainingSession {
     ///   - profile: User's perceptual profile (Story 4.3)
     ///   - settingsOverride: Optional settings for test injection (nil = read from @AppStorage)
     ///   - noteDurationOverride: Optional duration for test injection (nil = read from @AppStorage)
+    ///   - trendAnalyzer: Trend analyzer for reset coordination (nil in tests that don't need it)
     ///   - observers: Observers notified when comparisons complete (e.g., dataStore, profile, hapticManager)
     ///   - notificationCenter: Notification center for audio interruption observers (defaults to .default)
     init(
@@ -176,6 +180,7 @@ final class TrainingSession {
         profile: PerceptualProfile,
         settingsOverride: TrainingSettings? = nil,
         noteDurationOverride: TimeInterval? = nil,
+        trendAnalyzer: TrendAnalyzer? = nil,
         observers: [ComparisonObserver] = [],
         notificationCenter: NotificationCenter = .default
     ) {
@@ -184,6 +189,7 @@ final class TrainingSession {
         self.profile = profile
         self.settingsOverride = settingsOverride
         self.noteDurationOverride = noteDurationOverride
+        self.trendAnalyzer = trendAnalyzer
         self.observers = observers
         self.notificationCenter = notificationCenter
 
@@ -287,6 +293,23 @@ final class TrainingSession {
                 await playNextComparison()
             }
         }
+    }
+
+    /// Resets all training data and convergence state to cold start
+    ///
+    /// Clears profile, trend analyzer, and convergence chain state.
+    /// Safe to call regardless of training state — stops training first if active.
+    func resetTrainingData() {
+        if state != .idle {
+            stop()
+        }
+
+        lastCompletedComparison = nil
+        sessionBestCentDifference = nil
+        profile.reset()
+        trendAnalyzer?.reset()
+
+        logger.info("Training data reset to cold start")
     }
 
     /// Stops the training loop gracefully
