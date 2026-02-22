@@ -28,29 +28,17 @@ struct StartScreenTests {
 
     @Test("Training Screen can be instantiated")
     func trainingScreenCanBeInstantiated() {
-        let view = TrainingScreen()
-        let mirror = Mirror(reflecting: view)
-
-        // Verify view exists and has structure
-        #expect(mirror.children.count >= 0)
+        _ = TrainingScreen()
     }
 
     @Test("Settings Screen can be instantiated")
     func settingsScreenCanBeInstantiated() {
-        let view = SettingsScreen()
-        let mirror = Mirror(reflecting: view)
-
-        // Verify view exists
-        #expect(mirror.children.count >= 0)
+        _ = SettingsScreen()
     }
 
     @Test("Profile Screen can be instantiated")
     func profileScreenCanBeInstantiated() {
-        let view = ProfileScreen()
-        let mirror = Mirror(reflecting: view)
-
-        // Verify view exists
-        #expect(mirror.children.count >= 0)
+        _ = ProfileScreen()
     }
 
     @Test("Info Screen can be instantiated")
@@ -64,11 +52,7 @@ struct StartScreenTests {
 
     @Test("ContentView can be instantiated")
     func contentViewCanBeInstantiated() {
-        let view = ContentView()
-        let mirror = Mirror(reflecting: view)
-
-        // Verify ContentView exists
-        #expect(mirror.children.count >= 0)
+        _ = ContentView()
     }
 
     // MARK: - Navigation Destination Tests
@@ -159,15 +143,7 @@ struct StartScreenTests {
         let profile = ProfileScreen()
         let info = InfoScreen()
 
-        // If we can create all screens, navigation paths are valid
-        let trainingMirror = Mirror(reflecting: training)
-        let settingsMirror = Mirror(reflecting: settings)
-        let profileMirror = Mirror(reflecting: profile)
-        let infoMirror = Mirror(reflecting: info)
-
-        #expect(trainingMirror.children.count >= 0)
-        #expect(settingsMirror.children.count >= 0)
-        #expect(profileMirror.children.count >= 0)
-        #expect(infoMirror.children.count > 0)
+        // If we can create all screens without crashing, navigation paths are valid
+        _ = (training, settings, profile, info)
     }
 }

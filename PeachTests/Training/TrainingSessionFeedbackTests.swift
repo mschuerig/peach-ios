@@ -24,45 +24,6 @@ struct TrainingSessionFeedbackTests {
         return (session, mockPlayer, mockDataStore, mockHaptic)
     }
 
-    // MARK: - Test Helpers
-
-    /// Waits for the session to reach a specific state (or timeout after 1 second)
-    @MainActor
-    func waitForState(_ session: TrainingSession, _ expectedState: TrainingState, timeout: Duration = .seconds(2)) async throws {
-        // First, yield to allow any pending async tasks to progress
-        await Task.yield()
-
-        // Check immediately after yield - with instant playback, state should be ready
-        if session.state == expectedState {
-            return
-        }
-
-        // If not ready yet, poll with short intervals
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if session.state == expectedState {
-                return
-            }
-            try await Task.sleep(for: .milliseconds(5))  // Reduced from 10ms to 5ms
-            await Task.yield()  // Yield to allow state machine to progress
-        }
-        Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
-    }
-
-    /// Waits for feedback to clear (showFeedback becomes false)
-    @MainActor
-    func waitForFeedbackToClear(_ session: TrainingSession, timeout: Duration = .seconds(2)) async throws {
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if !session.showFeedback {
-                return
-            }
-            try await Task.sleep(for: .milliseconds(10))
-            await Task.yield()
-        }
-        Issue.record("Timeout waiting for feedback to clear")
-    }
-
     // MARK: - Feedback State Tests
 
     @MainActor

@@ -36,32 +36,6 @@ struct TrainingSessionAudioInterruptionTests {
         return (session, mockPlayer, nc)
     }
 
-    // MARK: - Test Helpers
-
-    @MainActor
-    func waitForState(_ session: TrainingSession, _ expectedState: TrainingState, timeout: Duration = .seconds(2)) async throws {
-        await Task.yield()
-        if session.state == expectedState { return }
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if session.state == expectedState { return }
-            try await Task.sleep(for: .milliseconds(5))
-            await Task.yield()
-        }
-        Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
-    }
-
-    @MainActor
-    func waitForPlayCallCount(_ mockPlayer: MockNotePlayer, _ minCount: Int, timeout: Duration = .seconds(2)) async throws {
-        let deadline = ContinuousClock.now + timeout
-        while ContinuousClock.now < deadline {
-            if mockPlayer.playCallCount >= minCount { return }
-            try await Task.sleep(for: .milliseconds(5))
-            await Task.yield()
-        }
-        Issue.record("Timeout waiting for playCallCount >= \(minCount), current: \(mockPlayer.playCallCount)")
-    }
-
     // MARK: - Audio Interruption Tests
 
     @Test("Audio interruption began stops training from awaitingAnswer state")
