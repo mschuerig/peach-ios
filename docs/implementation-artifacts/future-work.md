@@ -52,52 +52,15 @@ Peach plays the two comparison tones seamlessly (back-to-back without a gap), wh
 
 ## Technical Debt
 
-### Audio Clicks When Navigating Away During Playback
+### ~~Audio Clicks When Navigating Away During Playback~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** Bug / Audio
-**Date Added:** 2026-02-18
+**Status:** Resolved — 2026-02-22
+**Resolution:** `SineWaveNotePlayer.stop()` now sets `playerNode.volume = 0`, waits 25ms (covering 2+ render cycles at 44.1kHz) for the audio render thread to propagate the silence, then calls `playerNode.stop()` and restores volume. This eliminates the waveform discontinuity that caused audible clicks.
 
-**Issue:**
-When the user navigates to another screen (e.g., Settings, Profile) while a note is still playing, audible clicks/pops occur. This happens because `TrainingSession.stop()` calls `playerNode.stop()` which abruptly truncates the audio buffer without a fade-out, causing a discontinuity in the waveform.
+### ~~Reset All Data Should Also Reset Difficulty~~ (RESOLVED)
 
-**Root Cause:**
-`TrainingScreen.onDisappear` calls `trainingSession.stop()`, which calls `notePlayer.stop()` → `playerNode.stop()`. The `AVAudioPlayerNode.stop()` method immediately stops playback at the current sample position. If the waveform is not at a zero crossing, this creates an audible click/pop.
-
-**Potential Solutions:**
-- Implement a rapid fade-out (e.g., 5-10ms ramp to zero) before stopping the player node
-- Schedule a very short silence buffer after stop to allow the waveform to reach zero
-- Use `playerNode.pause()` + volume ramp instead of immediate `stop()`
-- Apply a real-time volume ramp on the mixer node before stopping
-
-**Related Code:**
-- `Peach/Core/Audio/SineWaveNotePlayer.swift:117-122` — `stop()` method
-- `Peach/Training/TrainingSession.swift:280-283` — stop triggers `notePlayer.stop()`
-- `Peach/Training/TrainingScreen.swift:67-69` — `onDisappear` triggers `stop()`
-
-### Reset All Data Should Also Reset Difficulty
-
-**Priority:** Medium
-**Category:** Bug / Consistency
-**Date Added:** 2026-02-18
-
-**Issue:**
-When the user taps "Reset All Training Data" in Settings, the `ComparisonRecord`s are deleted and the `PerceptualProfile` and `TrendAnalyzer` are reset. However, the `TrainingSession.lastCompletedComparison` (which drives the Kazez convergence chain) is not reset. If training is started again after a reset, the algorithm may continue from the previous difficulty level instead of starting fresh from 100 cents.
-
-**Impact:**
-- After resetting, the user expects a completely fresh start
-- The convergence chain continuing from the previous difficulty level contradicts this expectation
-- This is related to the broader "convergence chain not persisted" issue, but in the opposite direction — here the chain *should* be cleared but isn't
-
-**Potential Solutions:**
-- Expose a `reset()` method on `TrainingSession` or `AdaptiveNoteStrategy` that clears `lastCompletedComparison`
-- Have the Settings reset action notify the training session (via observer pattern or environment)
-- Clear the chain state whenever the profile is reset
-
-**Related Code:**
-- `Peach/Settings/SettingsScreen.swift:123-134` — `resetAllTrainingData()` function
-- `Peach/Training/TrainingSession.swift:139` — `lastCompletedComparison` property
-- `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift` — uses `lastComparison` parameter
+**Status:** Resolved — 2026-02-22
+**Resolution:** Implemented via `reset-all-data.md`. `SettingsScreen.resetAllTrainingData()` now calls `trainingSession.resetTrainingData()`, which clears `lastCompletedComparison` (Kazez convergence chain), `sessionBestCentDifference`, and resets both the `PerceptualProfile` (including per-note `currentDifficulty`) and `TrendAnalyzer`.
 
 ### Extract Environment Keys to Shared Locations
 
@@ -292,32 +255,10 @@ The training loop runs indefinitely with no session boundaries, progress milesto
 **Status:** Resolved — 2026-02-22
 **Resolution:** Implemented via `display-current-difficulty-on-training-screen.md`. Added `DifficultyDisplayView` showing current cent difference and session best at top of Training Screen body, with `.footnote`/`.caption2` secondary styling, full accessibility labels, and German translations.
 
-### Feedback Icon Flicker on Correctness Change
+### ~~Feedback Icon Flicker on Correctness Change~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** Bug
-**Date Added:** 2026-02-18
-
-**Issue:**
-When the correctness of consecutive answers differs (e.g., previous answer was correct, current answer is wrong), the feedback indicator briefly flickers showing the *previous* icon before switching to the *current* one. Specifically: if the last answer showed thumbs-up (correct) and the new answer is wrong, the thumbs-up briefly appears before the thumbs-down replaces it.
-
-**Root Cause Analysis:**
-In `TrainingSession.handleAnswer()`, the sequence is:
-1. `isLastAnswerCorrect = completed.isCorrect` (updates the icon)
-2. `showFeedback = true` (makes the icon visible)
-
-But in the training loop, `showFeedback` is set to `false` at the end of the feedback duration (line 261), and then `playNextComparison()` runs. After the user answers the *next* comparison, `isLastAnswerCorrect` is updated first (line 249), but at this point `showFeedback` is still `false` from the previous cycle, so when `showFeedback` becomes `true` (line 250), the icon has already been set — however, the `.animation()` modifier on the opacity transition causes the *old* icon content to flash briefly during the opacity fade-in because SwiftUI animates both the opacity and the content change.
-
-**Potential Solutions:**
-- Set `isLastAnswerCorrect = nil` when hiding feedback (clear the icon content, not just opacity)
-- Use a `.transition()` instead of `.opacity()` animation to avoid showing stale content
-- Disable animation on the icon content change, only animate the opacity
-- Use `.id(isLastAnswerCorrect)` to force SwiftUI to replace the view rather than animate it
-
-**Related Code:**
-- `Peach/Training/TrainingSession.swift:249-261` — feedback state management
-- `Peach/Training/TrainingScreen.swift:37-43` — feedback overlay with `.opacity()` and `.animation()`
-- `Peach/Training/FeedbackIndicator.swift` — icon rendering
+**Status:** Resolved — 2026-02-22
+**Resolution:** Implemented via `fix-feedback-icon-flicker-on-correctness-change.md`. Fixed by ensuring `isLastAnswerCorrect` is always set before `showFeedback` becomes `true`, and `showFeedback` is cleared before the next comparison begins. The animation is now driven solely by `showFeedback` value changes, preventing stale icon content from flashing during transitions.
 
 ### Haptic Feedback Unavailable on iPad
 
@@ -537,20 +478,10 @@ The identical 8-line pattern (`nonisolated(unsafe) static var defaultValue = { .
 **Proposed Fix:**
 Extract to a generic helper or macro. See also existing item "Extract Environment Keys to Shared Locations."
 
-#### D3: Kazez Formula Coefficients Differ Without Documentation
+#### ~~D3: Kazez Formula Coefficients Differ Without Documentation~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** Algorithm Correctness
-
-**Issue:**
-`KazezNoteStrategy.swift:82` uses `0.05` for narrowing; `AdaptiveNoteStrategy.swift:216` uses `0.08`. Both cite Kazez et al. (2001). The resolved item "Weighted Effective Difficulty: Convergence Still Too Slow" explains the `0.08` change was intentional tuning, but `KazezNoteStrategy` was not updated and no comment documents the divergence. Someone reading both files will assume one is wrong.
-
-**Proposed Fix:**
-Add a comment in both files explaining the coefficient difference, or extract coefficients to named constants with rationale.
-
-**Related Code:**
-- `Peach/Core/Algorithm/KazezNoteStrategy.swift:82` — `0.05`
-- `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift:216` — `0.08`
+**Status:** Resolved — 2026-02-22
+**Resolution:** The difference is intentional by design. `KazezNoteStrategy` (0.05) implements the original Kazez algorithm which tracks a single global difficulty. `AdaptiveNoteStrategy` (0.08) tracks difficulty across a range of notes, which changes convergence behavior and requires a more aggressive narrowing coefficient to avoid stalling. The divergence is a deliberate tuning decision, not an inconsistency.
 
 #### D4: `hasTrainingData` Check Duplicated Across Views
 
