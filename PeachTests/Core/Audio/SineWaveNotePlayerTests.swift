@@ -198,4 +198,19 @@ struct SineWaveNotePlayerTests {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 500.0)
         #expect(abs(frequency - 500.0) < 0.001)
     }
+
+    // MARK: - Stop Behavior Tests (Audio Click Fix)
+
+    @Test("Stop when nothing is playing should not throw")
+    @MainActor func stop_whenIdle_doesNotThrow() async throws {
+        let player = try SineWaveNotePlayer()
+        try await player.stop()
+    }
+
+    @Test("Stop called twice rapidly should be idempotent")
+    @MainActor func stop_calledTwice_isIdempotent() async throws {
+        let player = try SineWaveNotePlayer()
+        try await player.stop()
+        try await player.stop()
+    }
 }

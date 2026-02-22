@@ -96,6 +96,6 @@ development_status:
   # Sprint 2026-02-22: Bug Fixes & Algorithm Investigation
   # Work order: top to bottom
   hotfix-investigate-signed-mean: done # Investigate Signed Mean in Perceptual Profile
-  fix-audio-clicks-when-navigating-away: ready-for-dev # Audio clicks/pops when navigating away during playback
+  fix-audio-clicks-when-navigating-away: review # Audio clicks/pops when navigating away during playback
   fix-reset-all-data-should-reset-difficulty: backlog # Reset All Data should also reset Kazez convergence chain
   fix-feedback-icon-flicker-on-correctness-change: backlog # Feedback icon briefly shows previous icon before current
