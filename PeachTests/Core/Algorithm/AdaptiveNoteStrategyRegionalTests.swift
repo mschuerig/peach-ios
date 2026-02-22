@@ -44,13 +44,13 @@ struct AdaptiveNoteStrategyRegionalTests {
         #expect(abs(comp2.centDifference - expected) < 0.01)
     }
 
-    @Test("Weak spots use absolute value ranking")
-    func weakSpotsUseAbsoluteValue() async throws {
+    @Test("Weak spots use unsigned mean ranking")
+    func weakSpotsUseUnsignedMean() async throws {
         let profile = PerceptualProfile()
 
-        profile.update(note: 48, centOffset: +10.0, isCorrect: true)
-        profile.update(note: 60, centOffset: -80.0, isCorrect: true)
-        profile.update(note: 72, centOffset: +90.0, isCorrect: true)
+        profile.update(note: 48, centOffset: 10.0, isCorrect: true)
+        profile.update(note: 60, centOffset: 80.0, isCorrect: true)
+        profile.update(note: 72, centOffset: 90.0, isCorrect: true)
 
         let weakSpots = profile.weakSpots(count: 128)
 
@@ -61,8 +61,8 @@ struct AdaptiveNoteStrategyRegionalTests {
             return
         }
 
-        #expect(pos72 < pos60, "Note 72 (abs=90) should rank worse than note 60 (abs=80)")
-        #expect(pos60 < pos48, "Note 60 (abs=80) should rank worse than note 48 (abs=10)")
+        #expect(pos72 < pos60, "Note 72 (mean=90) should rank worse than note 60 (mean=80)")
+        #expect(pos60 < pos48, "Note 60 (mean=80) should rank worse than note 48 (mean=10)")
     }
 
     @Test("Difficulty narrows even when jumping between notes")

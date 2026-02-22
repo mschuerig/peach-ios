@@ -150,16 +150,16 @@ struct TrainingSessionIntegrationTests {
     }
 
     @MainActor
-    @Test("Profile updates preserve directional bias (signed centOffset)")
-    func profilePreservesDirectionalBias() async {
+    @Test("Profile updates use unsigned centOffset for threshold measurement")
+    func profileUsesUnsignedCentOffset() async {
         let (_, _, _, profile, _) = makeTrainingSession()
 
         profile.update(note: 60, centOffset: 50.0, isCorrect: true)
-        profile.update(note: 60, centOffset: -30.0, isCorrect: true)
+        profile.update(note: 60, centOffset: 30.0, isCorrect: true)
 
         let stats = profile.statsForNote(60)
         #expect(stats.sampleCount == 2)
-        #expect(stats.mean == 10.0)
+        #expect(stats.mean == 40.0)
     }
 
     @MainActor
@@ -185,7 +185,7 @@ struct TrainingSessionIntegrationTests {
 
         let stats62 = profile.statsForNote(62)
         #expect(stats62.sampleCount == 1)
-        #expect(stats62.mean == -95.0)
+        #expect(stats62.mean == 95.0)
     }
 
     @MainActor
@@ -218,8 +218,9 @@ struct TrainingSessionIntegrationTests {
             ComparisonRecord(note1: 62, note2: 62, note2CentOffset: -40.0, isCorrect: false, timestamp: Date())
         ]
 
+        // Loading uses abs() on stored signed note2CentOffset for unsigned threshold
         for record in records {
-            profile.update(note: record.note1, centOffset: record.note2CentOffset, isCorrect: record.isCorrect)
+            profile.update(note: record.note1, centOffset: abs(record.note2CentOffset), isCorrect: record.isCorrect)
         }
 
         let stats60 = profile.statsForNote(60)
@@ -228,7 +229,7 @@ struct TrainingSessionIntegrationTests {
 
         let stats62 = profile.statsForNote(62)
         #expect(stats62.sampleCount == 1)
-        #expect(stats62.mean == -40.0)
+        #expect(stats62.mean == 40.0)
     }
 
     // MARK: - Cold Start (Story 4.3)

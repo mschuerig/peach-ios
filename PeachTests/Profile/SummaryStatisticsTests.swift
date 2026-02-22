@@ -9,17 +9,15 @@ struct SummaryStatisticsTests {
 
     // MARK: - Task 1: Mean and StdDev computation
 
-    @Test("Mean uses absolute per-note means to avoid signed cancellation")
-    func meanUsesAbsoluteValues() async throws {
+    @Test("Mean uses unsigned per-note means")
+    func meanUsesUnsignedValues() async throws {
         let profile = PerceptualProfile()
-        // Note with positive mean
         profile.update(note: 60, centOffset: 40, isCorrect: true)
-        // Note with negative mean (would cancel out if signed)
-        profile.update(note: 62, centOffset: -30, isCorrect: true)
+        profile.update(note: 62, centOffset: 30, isCorrect: true)
 
         let stats = SummaryStatisticsView.computeStats(from: profile, midiRange: 36...84)
 
-        // Should be (abs(40) + abs(-30)) / 2 = 35, NOT (40 + -30) / 2 = 5
+        // Mean of unsigned per-note means: (40 + 30) / 2 = 35
         #expect(stats != nil)
         #expect(stats!.mean == 35.0)
     }

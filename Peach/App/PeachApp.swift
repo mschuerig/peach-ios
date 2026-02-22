@@ -29,7 +29,7 @@ struct PeachApp: App {
             for record in existingRecords {
                 profile.update(
                     note: record.note1,
-                    centOffset: record.note2CentOffset,
+                    centOffset: abs(record.note2CentOffset),
                     isCorrect: record.isCorrect
                 )
             }

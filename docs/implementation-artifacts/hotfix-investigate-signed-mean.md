@@ -1,6 +1,6 @@
 # Hotfix: Replace Signed Mean with Absolute Mean in PerceptualProfile
 
-Status: ready-for-dev
+Status: review
 
 ## Motivation
 
@@ -37,28 +37,32 @@ So that weak spot identification and training targeting are based on my actual a
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Change `comparisonCompleted()` to pass unsigned centOffset
-  - [ ] In `PerceptualProfile.comparisonCompleted()` (line 196), change `let centOffset = comparison.isSecondNoteHigher ? comparison.centDifference : -comparison.centDifference` to `let centOffset = comparison.centDifference`
-  - [ ] Update comment on line 195 to reflect unsigned approach
+- [x] Task 1: Change `comparisonCompleted()` to pass unsigned centOffset
+  - [x] In `PerceptualProfile.comparisonCompleted()`, change `let centOffset = comparison.isSecondNoteHigher ? comparison.centDifference : -comparison.centDifference` to `let centOffset = comparison.centDifference`
+  - [x] Update comment to reflect unsigned approach
 
-- [ ] Task 2: Simplify `weakSpots()` to remove `abs()` wrapper
-  - [ ] In `weakSpots()` (line 80), change `score = abs(stats.mean)` to `score = stats.mean`
-  - [ ] Update doc comment (line 67) to remove "Uses absolute value of mean to ignore directional bias"
+- [x] Task 2: Simplify `weakSpots()` to remove `abs()` wrapper
+  - [x] In `weakSpots()`, change `score = abs(stats.mean)` to `score = stats.mean`
+  - [x] Update doc comment to remove "Uses absolute value of mean to ignore directional bias"
 
-- [ ] Task 3: Update `PerceptualNote.mean` documentation
-  - [ ] Change doc comment (line 155) from "signed average tracking directional bias" to reflect unsigned threshold meaning
-  - [ ] Remove "Positive = more higher / Negative = more lower" comment (line 156)
+- [x] Task 3: Update `PerceptualNote.mean` documentation
+  - [x] Change doc comment from "signed average tracking directional bias" to "unsigned average of absolute cent offsets"
+  - [x] Remove "Positive = more higher / Negative = more lower" comment
 
-- [ ] Task 4: Update `update()` method documentation
-  - [ ] Update parameter doc for `centOffset` (line 36) to reflect that it is now unsigned
+- [x] Task 4: Update `update()` method documentation
+  - [x] Update parameter doc for `centOffset` to reflect that it is now unsigned
 
-- [ ] Task 5: Update tests for unsigned mean behavior
-  - [ ] Update `PerceptualProfileTests` — tests that assert signed mean values need updating
-  - [ ] Update `TrainingSessionTests` — tests at lines 468, 575 assert negative means (e.g., `-95.0`, `-40.0`); these should become positive
-  - [ ] Update `AdaptiveNoteStrategyTests.weakSpotsUseAbsoluteValue` — negative centOffset test case should produce positive mean
-  - [ ] Verify all weak spot tests still correctly identify high-threshold notes
+- [x] Task 5: Update tests for unsigned mean behavior
+  - [x] `PerceptualProfileTests` — no changes needed (all assertions already used positive values)
+  - [x] `TrainingSessionIntegrationTests` — `mean == -95.0` → `mean == 95.0`, `mean == -40.0` → `mean == 40.0`
+  - [x] `TrainingSessionIntegrationTests.profilePreservesDirectionalBias` → renamed to `profileUsesUnsignedCentOffset` with unsigned test values
+  - [x] `TrainingSessionIntegrationTests.profileLoadedFromDataStore` → updated to use `abs()` on stored signed values (mirrors PeachApp loading)
+  - [x] `AdaptiveNoteStrategyRegionalTests.weakSpotsUseAbsoluteValue` → renamed to `weakSpotsUseUnsignedMean` with positive centOffset values
+  - [x] `ProfileScreenTests` — updated `confidenceBandAbsoluteMean` and `accessibilitySummaryFormat` to use unsigned values
+  - [x] `SummaryStatisticsTests.meanUsesAbsoluteValues` → renamed to `meanUsesUnsignedValues` with positive centOffset
+  - [x] Verified all weak spot tests still correctly identify high-threshold notes
 
-- [ ] Task 6: Run full test suite and verify no regressions
+- [x] Task 6: Run full test suite and verify no regressions
 
 ## Dev Notes
 
@@ -141,16 +145,35 @@ Tests asserting on `mean` values:
 
 ### Implementation Plan
 
-*(To be filled during implementation)*
+1. Change `comparisonCompleted()` to pass `comparison.centDifference` (unsigned) instead of signed value
+2. Also update `PeachApp.swift` profile loading to use `abs(record.note2CentOffset)` for consistency with stored signed records
+3. Remove `abs()` wrapper from `weakSpots()` since mean is now always non-negative
+4. Update documentation on `PerceptualNote.mean` and `update()` parameter
+5. Update all tests that asserted negative mean values or used negative centOffset inputs
+6. Run full test suite
 
 ### Completion Notes
 
-*(To be filled during implementation)*
+- Changed `comparisonCompleted()` to pass `comparison.centDifference` directly (always positive) instead of applying sign based on `isSecondNoteHigher`
+- Updated `PeachApp.swift` profile loading to use `abs(record.note2CentOffset)` since stored `ComparisonRecord` values are signed
+- Removed `abs()` from `weakSpots()` scoring — mean is now always non-negative, so `abs()` is unnecessary
+- Updated `PerceptualNote.mean` doc: "unsigned average of absolute cent offsets" (was "signed average tracking directional bias")
+- Updated `update()` centOffset parameter doc: "Unsigned cent value" (was "Signed cent value")
+- Updated 7 test assertions across 4 test files; renamed 3 tests to reflect unsigned semantics
+- Full test suite passes with zero regressions
 
 ## File List
 
-*(To be filled during implementation)*
+- Peach/Core/Profile/PerceptualProfile.swift (modified — comparisonCompleted, weakSpots, docs)
+- Peach/App/PeachApp.swift (modified — profile loading uses abs on stored values)
+- PeachTests/Training/TrainingSessionIntegrationTests.swift (modified — 3 tests updated)
+- PeachTests/Core/Algorithm/AdaptiveNoteStrategyRegionalTests.swift (modified — 1 test renamed/updated)
+- PeachTests/Profile/ProfileScreenTests.swift (modified — 3 tests updated)
+- PeachTests/Profile/SummaryStatisticsTests.swift (modified — 1 test renamed/updated)
+- docs/implementation-artifacts/sprint-status.yaml (modified — status tracking)
+- docs/implementation-artifacts/hotfix-investigate-signed-mean.md (modified — story tracking)
 
 ## Change Log
 
 - 2026-02-17: Story created from future-work.md item "Investigate Signed Mean in Perceptual Profile"
+- 2026-02-22: Implemented — replaced signed mean with unsigned mean in PerceptualProfile

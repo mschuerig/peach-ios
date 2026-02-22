@@ -33,7 +33,7 @@ final class PerceptualProfile {
     /// Uses Welford's online algorithm to avoid re-aggregating all records
     /// - Parameters:
     ///   - note: MIDI note (0-127)
-    ///   - centOffset: Signed cent value (+/- based on direction, from Comparison.centDifference)
+    ///   - centOffset: Unsigned cent value (absolute threshold, from Comparison.centDifference)
     ///   - isCorrect: Whether user answered correctly
     func update(note: Int, centOffset: Double, isCorrect: Bool) {
         guard note >= 0 && note < 128 else {
@@ -64,7 +64,6 @@ final class PerceptualProfile {
 
     /// Identifies weak spots (notes with poorest discrimination)
     /// Prioritizes: 1) Untrained notes, 2) High threshold notes
-    /// Uses absolute value of mean to ignore directional bias
     /// - Parameter count: Number of weak spots to return (default: 10)
     /// - Returns: Array of MIDI notes (0-127) representing weak spots
     func weakSpots(count: Int = 10) -> [Int] {
@@ -76,8 +75,8 @@ final class PerceptualProfile {
                 // Untrained notes get highest priority (infinite threshold)
                 score = Double.infinity
             } else {
-                // Trained notes: higher absolute threshold = worse discrimination = higher score
-                score = abs(stats.mean)
+                // Trained notes: higher threshold = worse discrimination = higher score
+                score = stats.mean
             }
             scoredNotes.append((note: midiNote, score: score))
         }
@@ -172,8 +171,7 @@ final class PerceptualProfile {
 
 /// Per-note statistics for pitch discrimination
 struct PerceptualNote {
-    /// Mean detection threshold (cents) - signed average tracking directional bias
-    /// Positive = more "higher" comparisons, Negative = more "lower" comparisons
+    /// Mean detection threshold (cents) - unsigned average of absolute cent offsets
     var mean: Double
 
     /// Standard deviation (cents) - consistency measure
@@ -212,8 +210,8 @@ extension PerceptualProfile: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
         let comparison = completed.comparison
 
-        // Calculate signed centOffset (preserves directional bias)
-        let centOffset = comparison.isSecondNoteHigher ? comparison.centDifference : -comparison.centDifference
+        // Use unsigned centDifference — direction is irrelevant for threshold measurement
+        let centOffset = comparison.centDifference
 
         // Update profile incrementally using Welford's algorithm
         update(
