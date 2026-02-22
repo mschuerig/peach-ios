@@ -68,7 +68,7 @@ development_status:
   epic-4-retrospective: optional
 
   # Hotfixes: Algorithm Convergence & Profile Accuracy
-  hotfix-tune-kazez-convergence: review
+  hotfix-tune-kazez-convergence: done
   hotfix-profile-band-segmentation: backlog # Confidence band draws across untrained gaps despite segment logic
 
   # Epic 5: See Your Progress - Profile & Statistics

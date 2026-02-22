@@ -1,6 +1,6 @@
 # Hotfix: Tune Kazez Convergence Coefficient and Filter Unrefined Neighbors
 
-Status: review
+Status: done
 
 ## Motivation
 

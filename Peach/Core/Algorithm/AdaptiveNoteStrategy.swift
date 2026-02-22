@@ -43,6 +43,15 @@ final class AdaptiveNoteStrategy: NextNoteStrategy {
 
         /// Maximum number of trained neighbors to consider in each direction
         static let maxNeighbors: Int = 5
+
+        /// Kazez narrowing coefficient for correct answers
+        /// N = P × [1 - (coefficient × √P)]
+        /// Tuned from original 0.05 to 0.08 for faster multi-note convergence
+        static let correctNarrowingCoefficient: Double = 0.08
+
+        /// Kazez widening coefficient for incorrect answers
+        /// N = P × [1 + (coefficient × √P)]
+        static let incorrectWideningCoefficient: Double = 0.09
     }
 
     // MARK: - Properties
@@ -178,8 +187,8 @@ final class AdaptiveNoteStrategy: NextNoteStrategy {
     /// Determines cent difference for a note using chain-based convergence
     ///
     /// Uses Kazez sqrt(P)-scaled formulas for difficulty convergence:
-    /// - Correct answer: `N = P × [1 - (0.08 × √P)]`
-    /// - Incorrect answer: `N = P × [1 + (0.09 × √P)]`
+    /// - Correct answer: `N = P × [1 - (correctNarrowingCoefficient × √P)]`
+    /// - Incorrect answer: `N = P × [1 + (incorrectWideningCoefficient × √P)]`
     ///
     /// Where P = previous comparison's cent difference, N = new difficulty.
     ///
@@ -213,9 +222,9 @@ final class AdaptiveNoteStrategy: NextNoteStrategy {
         // difficulty instead of jumps when switching notes.
         let p = last.comparison.centDifference
         let adjustedDiff = last.isCorrect
-            ? max(p * (1.0 - 0.08 * p.squareRoot()),
+            ? max(p * (1.0 - DifficultyParameters.correctNarrowingCoefficient * p.squareRoot()),
                   settings.minCentDifference)
-            : min(p * (1.0 + 0.09 * p.squareRoot()),
+            : min(p * (1.0 + DifficultyParameters.incorrectWideningCoefficient * p.squareRoot()),
                   settings.maxCentDifference)
 
         profile.setDifficulty(note: note, difficulty: adjustedDiff)
