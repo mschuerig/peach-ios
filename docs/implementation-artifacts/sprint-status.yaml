@@ -97,5 +97,5 @@ development_status:
   # Work order: top to bottom
   hotfix-investigate-signed-mean: done # Investigate Signed Mean in Perceptual Profile
   fix-audio-clicks-when-navigating-away: done # Audio clicks/pops when navigating away during playback
-  fix-reset-all-data-should-reset-difficulty: backlog # Reset All Data should also reset Kazez convergence chain
+  fix-reset-all-data-should-reset-difficulty: ready-for-dev # Reset All Data should also reset Kazez convergence chain
   fix-feedback-icon-flicker-on-correctness-change: backlog # Feedback icon briefly shows previous icon before current
