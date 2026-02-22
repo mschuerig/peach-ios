@@ -116,14 +116,16 @@ public final class SineWaveNotePlayer: NotePlayer {
 
     public func stop() async throws {
         logger.info("SineWaveNotePlayer.stop() called - stopping audio")
-        // Silence mixer output, then wait one release cycle for the change to propagate
-        // to the audio render thread before stopping the player node. This prevents the
-        // click/pop caused by abruptly truncating the waveform at a non-zero sample.
-        engine.mainMixerNode.outputVolume = 0
-        try? await Task.sleep(for: .milliseconds(Int(Self.releaseDuration * 1000)))
+        // Mute the player node, then wait for the volume change to propagate through
+        // the audio render thread before stopping. This prevents the click/pop caused
+        // by abruptly truncating the waveform at a non-zero sample.
+        // Uses playerNode.volume (AVAudioMixing) rather than mainMixerNode.outputVolume
+        // because it targets the mixer input for this specific node.
+        // Delay covers 2+ render cycles (512 frames @ 44.1kHz ≈ 11.6ms each).
+        playerNode.volume = 0
+        try? await Task.sleep(for: .milliseconds(25))
         playerNode.stop()
-        // Restore volume for next playback
-        engine.mainMixerNode.outputVolume = 1.0
+        playerNode.volume = 1.0
         logger.info("AVAudioPlayerNode stopped")
     }
 
