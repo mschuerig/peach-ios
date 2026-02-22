@@ -120,7 +120,7 @@ struct SettingsScreen: View {
     // MARK: - Actions
 
     private func resetAllTrainingData() {
-        // Atomic reset: only clear convergence/profile/trend if data deletion succeeds
+        // Guard: only clear convergence/profile/trend if data deletion succeeds
         let dataStore = TrainingDataStore(modelContext: modelContext)
         do {
             try dataStore.deleteAll()

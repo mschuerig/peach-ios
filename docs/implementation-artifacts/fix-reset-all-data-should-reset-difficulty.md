@@ -1,6 +1,6 @@
 # Story: Fix Reset All Data Should Reset Difficulty
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -144,9 +144,34 @@ Use the existing mock/factory pattern from `TrainingSessionTests`. Key patterns:
 - [Source: docs/implementation-artifacts/hotfix-tune-kazez-convergence.md] — Kazez coefficient tuning context
 - [Source: docs/project-context.md] — project rules and patterns
 
+## Senior Developer Review (AI)
+
+### Review Date: 2026-02-22
+
+### Outcome: Changes Requested
+
+### Summary
+
+All 6 Acceptance Criteria are fully implemented and verified. All tasks marked [x] are genuinely complete. The implementation is correct and well-structured. However, the review identified test organization and coverage gaps that needed addressing.
+
+### Action Items
+
+- [x] [Med] TrendAnalyzer reset path untested — `trendAnalyzer?.reset()` never exercised (all tests used nil trendAnalyzer). Added `resetTrainingDataClearsTrendAnalyzer` test.
+- [x] [Med] Tests mislocated — 3 convergence chain reset tests were in `SettingsTests.swift` but test `TrainingSession.resetTrainingData()`. Moved to `TrainingSessionResetTests.swift`.
+- [x] [Low] No test for stop-before-reset during active training. Added `resetTrainingDataStopsActiveTraining` test.
+- [ ] [Low] TrendAnalyzer dual relationship — both observer and direct dependency in TrainingSession. Accepted as pragmatic trade-off; no code change needed.
+- [x] [Low] Misleading "Atomic reset" comment in SettingsScreen. Changed to "Guard: only clear...".
+
+### Severity Breakdown
+
+- High: 0
+- Medium: 2 (both fixed)
+- Low: 3 (2 fixed, 1 accepted)
+
 ## Change Log
 
 - 2026-02-22: Centralized training data reset in TrainingSession.resetTrainingData() — clears convergence chain state (lastCompletedComparison, sessionBestCentDifference), profile, and trend analyzer atomically. SettingsScreen now delegates to this single method instead of calling profile.reset()/trendAnalyzer.reset() directly.
+- 2026-02-22: Code review fixes — moved reset tests to TrainingSessionResetTests.swift, added TrendAnalyzer reset coverage and stop-before-reset test, fixed misleading comment.
 
 ## Dev Agent Record
 
@@ -159,6 +184,7 @@ Claude Opus 4.6
 - Red phase: 3 new tests failed as expected (empty stub)
 - Green phase: All 3 tests passed after implementing resetTrainingData()
 - Full suite: All tests pass, zero regressions
+- Code review: Moved 3 tests to TrainingSessionResetTests.swift, added 2 new tests (trendAnalyzer reset, stop-before-reset). All 302 tests pass.
 
 ### Completion Notes List
 
@@ -167,11 +193,15 @@ Claude Opus 4.6
 - Updated `PeachApp.swift` to pass `trendAnalyzer` when constructing `TrainingSession`
 - Updated `SettingsScreen` to inject `TrainingSession` via `@Environment` instead of separate profile/trendAnalyzer; reset now calls `trainingSession.resetTrainingData()`
 - Removed unused `@Environment(\.perceptualProfile)` and `@Environment(\.trendAnalyzer)` from SettingsScreen
-- Added 3 new tests in `SettingsTests.swift` verifying cold-start behavior after reset
+- Code review: Moved 3 reset tests from SettingsTests to TrainingSessionResetTests (correct file location per convention)
+- Code review: Added `resetTrainingDataClearsTrendAnalyzer` test (exercises trendAnalyzer?.reset() path)
+- Code review: Added `resetTrainingDataStopsActiveTraining` test (verifies stop-before-reset when training active)
+- Code review: Fixed misleading "Atomic reset" comment to "Guard" in SettingsScreen
 
 ### File List
 
 - Peach/Training/TrainingSession.swift (modified — added `resetTrainingData()`, `trendAnalyzer` dependency)
-- Peach/Settings/SettingsScreen.swift (modified — replaced direct profile/trend reset with `trainingSession.resetTrainingData()`)
+- Peach/Settings/SettingsScreen.swift (modified — replaced direct profile/trend reset with `trainingSession.resetTrainingData()`, fixed comment)
 - Peach/App/PeachApp.swift (modified — passes `trendAnalyzer` to TrainingSession init)
-- PeachTests/Settings/SettingsTests.swift (modified — added 3 convergence chain reset tests)
+- PeachTests/Settings/SettingsTests.swift (modified — removed mislocated convergence chain reset tests)
+- PeachTests/Training/TrainingSessionResetTests.swift (new — 5 tests for resetTrainingData: 3 moved + 2 new)
