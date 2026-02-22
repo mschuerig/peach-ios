@@ -4,11 +4,11 @@ import Foundation
 
 /// Tests for difficulty display support in TrainingSession (session best tracking, current difficulty)
 @Suite("TrainingSession Difficulty Tests")
+@MainActor
 struct TrainingSessionDifficultyTests {
 
     // MARK: - Test Fixtures
 
-    @MainActor
     func makeTrainingSession(
         comparisons: [Comparison] = [
             Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true),
@@ -34,14 +34,12 @@ struct TrainingSessionDifficultyTests {
 
     // MARK: - currentDifficulty Tests
 
-    @MainActor
     @Test("currentDifficulty is nil before training starts")
     func currentDifficultyNilBeforeTraining() {
         let (session, _, _) = makeTrainingSession()
         #expect(session.currentDifficulty == nil)
     }
 
-    @MainActor
     @Test("currentDifficulty returns cent difference of current comparison during training")
     func currentDifficultyReturnsCentDifference() async throws {
         let (session, _, _) = makeTrainingSession()
@@ -52,7 +50,6 @@ struct TrainingSessionDifficultyTests {
         #expect(session.currentDifficulty == 100.0)
     }
 
-    @MainActor
     @Test("currentDifficulty is nil after stopping training")
     func currentDifficultyNilAfterStop() async throws {
         let (session, _, _) = makeTrainingSession()
@@ -66,14 +63,12 @@ struct TrainingSessionDifficultyTests {
 
     // MARK: - sessionBestCentDifference Tests
 
-    @MainActor
     @Test("sessionBestCentDifference is nil before any correct answer")
     func sessionBestNilBeforeCorrectAnswer() {
         let (session, _, _) = makeTrainingSession()
         #expect(session.sessionBestCentDifference == nil)
     }
 
-    @MainActor
     @Test("sessionBestCentDifference updates on first correct answer")
     func sessionBestUpdatesOnFirstCorrectAnswer() async throws {
         let comparisons = [
@@ -90,7 +85,6 @@ struct TrainingSessionDifficultyTests {
         #expect(session.sessionBestCentDifference == 100.0)
     }
 
-    @MainActor
     @Test("sessionBestCentDifference does not update on incorrect answer")
     func sessionBestDoesNotUpdateOnIncorrectAnswer() async throws {
         let comparisons = [
@@ -107,7 +101,6 @@ struct TrainingSessionDifficultyTests {
         #expect(session.sessionBestCentDifference == nil)
     }
 
-    @MainActor
     @Test("sessionBestCentDifference tracks smallest cent difference across correct answers")
     func sessionBestTracksSmallestDifference() async throws {
         let comparisons = [
@@ -131,7 +124,6 @@ struct TrainingSessionDifficultyTests {
         #expect(session.sessionBestCentDifference == 50.0)
     }
 
-    @MainActor
     @Test("sessionBestCentDifference does not increase when larger difference answered correctly")
     func sessionBestDoesNotIncrease() async throws {
         let comparisons = [
@@ -155,7 +147,6 @@ struct TrainingSessionDifficultyTests {
         #expect(session.sessionBestCentDifference == 50.0)
     }
 
-    @MainActor
     @Test("sessionBestCentDifference resets when training stops")
     func sessionBestResetsOnStop() async throws {
         let comparisons = [

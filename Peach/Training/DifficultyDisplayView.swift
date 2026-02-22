@@ -13,13 +13,13 @@ struct DifficultyDisplayView: View {
             Text("Current: \(Self.formattedDifficulty(currentDifficulty)) ¢")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-                .accessibilityLabel(Self.currentDifficultyAccessibilityLabel(currentDifficulty))
+                .accessibilityLabel(Text("Current difficulty: \(Self.formattedDifficulty(currentDifficulty)) cents"))
 
             if let best = sessionBest {
                 Text("Session best: \(Self.formattedDifficulty(best)) ¢")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
-                    .accessibilityLabel(Self.sessionBestAccessibilityLabel(best))
+                    .accessibilityLabel(Text("Session best: \(Self.formattedDifficulty(best)) cents"))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)

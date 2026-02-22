@@ -1,6 +1,6 @@
 # Story: Display Current Difficulty on Training Screen
 
-Status: review
+Status: done
 
 ## Story
 
@@ -142,7 +142,9 @@ All 5 tasks implemented and tested. 14 new unit tests added (8 for session best 
 - `Peach/Training/TrainingScreen.swift` — modified (integrated DifficultyDisplayView, refactored duplicate button code into `answerButton(direction:)`)
 - `PeachTests/Training/TrainingSessionDifficultyTests.swift` — new (8 tests for currentDifficulty and sessionBestCentDifference)
 - `PeachTests/Training/DifficultyDisplayViewTests.swift` — new (6 tests for formatting and accessibility labels)
+- `Peach/Resources/Localizable.xcstrings` — modified (added "Current: %@ ¢" and "Session best: %@ ¢" string catalog entries with German translations)
 
 ## Change Log
 
 - 2026-02-22: Implemented "Display Current Difficulty on Training Screen" story — added difficulty display with session best tracking, accessibility labels, and refactored button duplication
+- 2026-02-22: Code review fixes — replaced force unwrap with optional binding (H1), added German translations for display and accessibility strings (M2/M3), localized VoiceOver labels via Text() (M3), moved @MainActor to struct level in tests (M4), added Localizable.xcstrings to File List (M1)

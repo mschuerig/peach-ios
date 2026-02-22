@@ -259,7 +259,9 @@ final class TrainingSession {
         // Track session best on correct answers
         if completed.isCorrect {
             let diff = comparison.centDifference
-            if sessionBestCentDifference == nil || diff < sessionBestCentDifference! {
+            if let best = sessionBestCentDifference {
+                if diff < best { sessionBestCentDifference = diff }
+            } else {
                 sessionBestCentDifference = diff
             }
         }
