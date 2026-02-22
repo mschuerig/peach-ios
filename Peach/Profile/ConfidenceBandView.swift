@@ -25,7 +25,6 @@ enum ConfidenceBandData {
     static let logFloor: Double = 0.5
 
     /// Extracts per-note data points for the confidence band chart
-    /// Uses absolute mean for threshold (handles signed centOffset)
     /// Band width = mean ± stdDev, clamped to >= logFloor
     @MainActor
     static func prepare(from profile: PerceptualProfile, midiRange: ClosedRange<Int>) -> [ConfidenceBandDataPoint] {
@@ -33,13 +32,13 @@ enum ConfidenceBandData {
             let stats = profile.statsForNote(note)
 
             if stats.isTrained {
-                let absMean = abs(stats.mean)
-                let upper = absMean + stats.stdDev
-                let lower = max(logFloor, absMean - stats.stdDev)
+                let mean = stats.mean
+                let upper = mean + stats.stdDev
+                let lower = max(logFloor, mean - stats.stdDev)
 
                 return ConfidenceBandDataPoint(
                     midiNote: note,
-                    threshold: max(logFloor, absMean),
+                    threshold: max(logFloor, mean),
                     upperBound: max(logFloor, upper),
                     lowerBound: lower,
                     isTrained: true

@@ -1,6 +1,6 @@
 # Hotfix: Replace Signed Mean with Absolute Mean in PerceptualProfile
 
-Status: review
+Status: done
 
 ## Motivation
 
@@ -164,16 +164,21 @@ Tests asserting on `mean` values:
 
 ## File List
 
-- Peach/Core/Profile/PerceptualProfile.swift (modified — comparisonCompleted, weakSpots, docs)
+- Peach/Core/Profile/PerceptualProfile.swift (modified — comparisonCompleted, weakSpots, averageThreshold, docs)
 - Peach/App/PeachApp.swift (modified — profile loading uses abs on stored values)
+- Peach/Profile/SummaryStatisticsView.swift (modified — removed redundant abs() from computeStats)
+- Peach/Profile/ConfidenceBandView.swift (modified — removed redundant abs() from prepare)
 - PeachTests/Training/TrainingSessionIntegrationTests.swift (modified — 3 tests updated)
 - PeachTests/Core/Algorithm/AdaptiveNoteStrategyRegionalTests.swift (modified — 1 test renamed/updated)
 - PeachTests/Profile/ProfileScreenTests.swift (modified — 3 tests updated)
 - PeachTests/Profile/SummaryStatisticsTests.swift (modified — 1 test renamed/updated)
+- docs/implementation-artifacts/future-work.md (modified — marked signed mean item as resolved)
 - docs/implementation-artifacts/sprint-status.yaml (modified — status tracking)
 - docs/implementation-artifacts/hotfix-investigate-signed-mean.md (modified — story tracking)
+- tools/validate-sprint-status.py (added — sprint status validation tool)
 
 ## Change Log
 
 - 2026-02-17: Story created from future-work.md item "Investigate Signed Mean in Perceptual Profile"
 - 2026-02-22: Implemented — replaced signed mean with unsigned mean in PerceptualProfile
+- 2026-02-22: Code review — removed 3 residual abs() wrappers (averageThreshold, computeStats, ConfidenceBandData.prepare), marked future-work.md item as resolved, updated stale doc comments, fixed File List

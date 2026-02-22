@@ -116,14 +116,13 @@ final class PerceptualProfile {
         return sqrt(variance)
     }
 
-    /// Average absolute detection threshold for trained notes in a specific range
-    /// Uses absolute values to avoid directional cancellation of signed centOffset
+    /// Average detection threshold for trained notes in a specific range
     /// - Parameter midiRange: The MIDI note range to compute over
     /// - Returns: Rounded average threshold in cents, or nil if no trained notes in range
     func averageThreshold(midiRange: ClosedRange<Int>) -> Int? {
         let trainedNotes = midiRange.filter { statsForNote($0).isTrained }
         guard !trainedNotes.isEmpty else { return nil }
-        let avg = trainedNotes.map { abs(statsForNote($0).mean) }.reduce(0.0, +) / Double(trainedNotes.count)
+        let avg = trainedNotes.map { statsForNote($0).mean }.reduce(0.0, +) / Double(trainedNotes.count)
         return Int(avg)
     }
 

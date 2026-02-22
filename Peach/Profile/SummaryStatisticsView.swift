@@ -81,19 +81,19 @@ struct SummaryStatisticsView: View {
         let stdDev: Double?
     }
 
-    /// Computes display statistics from the profile using absolute per-note means
+    /// Computes display statistics from the profile using per-note means
     /// Returns nil if no trained notes exist (cold start)
     @MainActor
     static func computeStats(from profile: PerceptualProfile, midiRange: ClosedRange<Int>) -> Stats? {
         let trainedNotes = midiRange.filter { profile.statsForNote($0).isTrained }
         guard !trainedNotes.isEmpty else { return nil }
 
-        let absMeans = trainedNotes.map { abs(profile.statsForNote($0).mean) }
-        let mean = absMeans.reduce(0.0, +) / Double(absMeans.count)
+        let means = trainedNotes.map { profile.statsForNote($0).mean }
+        let mean = means.reduce(0.0, +) / Double(means.count)
 
         let stdDev: Double?
-        if absMeans.count >= 2 {
-            let variance = absMeans.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(absMeans.count - 1)
+        if means.count >= 2 {
+            let variance = means.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(means.count - 1)
             stdDev = sqrt(variance)
         } else {
             stdDev = nil

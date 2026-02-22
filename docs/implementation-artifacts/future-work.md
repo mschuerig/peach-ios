@@ -4,38 +4,10 @@ This document tracks design decisions to revisit, architectural improvements, an
 
 ## Algorithm & Design
 
-### Investigate Signed Mean in Perceptual Profile
+### ~~Investigate Signed Mean in Perceptual Profile~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** Algorithm Design
-**Date Added:** 2026-02-14
-
-**Issue:**
-The current implementation uses a signed mean for detection thresholds in `PerceptualProfile`. The mean tracks directional bias (positive = more "higher" comparisons, negative = more "lower" comparisons).
-
-**Concern:**
-Signed values make sense in other contexts (e.g., `centOffset` for frequency calculations), but using a signed mean for detection threshold may be conceptually incorrect. The detection threshold should represent the *magnitude* of discriminable pitch difference, not directional bias.
-
-**Impact:**
-- Affects weak spot identification (currently uses `abs(mean)`)
-- May confuse the semantic meaning of "detection threshold"
-- Could affect difficulty calculations in `AdaptiveNoteStrategy`
-
-**Potential Solutions to Explore:**
-- Separate directional bias tracking from threshold magnitude
-- Use unsigned mean for threshold, track bias separately
-- Re-evaluate whether directional bias is actually useful data
-
-**Related Code:**
-- `Peach/Core/Profile/PerceptualProfile.swift` - mean calculation and storage
-- `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift` - uses mean for difficulty
-- Documentation uses "signed value" language in multiple places
-
-**Next Steps:**
-- Review mathematical foundation of pitch discrimination measurement
-- Analyze historical comparison data to see if directional bias provides value
-- Prototype alternative approaches
-- Assess impact on existing training data migration
+**Status:** Resolved — 2026-02-22
+**Resolution:** Implemented via `hotfix-investigate-signed-mean.md`. Replaced signed centOffset with unsigned `centDifference` in `comparisonCompleted()` and profile loading (`abs()` on stored records). Removed `abs()` wrappers from `weakSpots()`, `averageThreshold()`, `computeStats()`, and `ConfidenceBandData.prepare()`. Mean now always represents the unsigned detection threshold. Directional bias tracking deferred as a separate future enhancement if needed.
 
 ### Investigate Whether Seamless Playback Makes Pitch Comparison Easier
 
