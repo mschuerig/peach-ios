@@ -1,6 +1,6 @@
 # Fix: Feedback Icon Flicker on Correctness Change
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -156,15 +156,17 @@ Claude Opus 4.6
 
 ### Completion Notes List
 
-- ✅ Task 1: Created `TrainingScreenFeedbackTests.swift` with 6 tests verifying feedback state contract — correctness transitions (incorrect→correct, correct→incorrect), no stale state between cycles, clean first-answer behavior, and Reduce Motion animation behavior. Tests confirm the state layer in `TrainingSession` is correct; the flicker was purely a view-rendering artifact.
+- ✅ Task 1: Created `TrainingScreenFeedbackTests.swift` with 7 tests verifying feedback state contract — correctness transitions (incorrect→correct, correct→incorrect, same→same), no stale state between cycles, clean first-answer behavior, and Reduce Motion animation behavior. Tests confirm the state layer in `TrainingSession` is correct; the flicker was purely a view-rendering artifact. **TDD note:** These tests verify the state contract but would also pass without the view-layer fix, since the flicker was a SwiftUI rendering artifact (permanent view + opacity toggle) not a state bug. A true "failing test" for the visual flicker is not achievable with unit tests — manual verification or snapshot tests would be needed to guard the view-layer fix directly.
 - ✅ Task 2: Replaced permanent-view + `.opacity()` toggle with conditional `if` + `.transition(.opacity)` pattern in `TrainingScreen.swift`. Moved `.animation()` modifier from `FeedbackIndicator` to the overlay container. When `showFeedback` is false, the `FeedbackIndicator` is now completely removed from the view tree (not just hidden), eliminating any possibility of a stale icon flash. Reduce Motion behavior preserved — `feedbackAnimation(reduceMotion:)` returns `nil` for instant transitions.
 - ✅ Task 3: Full test suite passes with zero regressions.
 
 ### File List
 
 - `Peach/Training/TrainingScreen.swift` — Modified: replaced overlay opacity pattern with conditional rendering + transition
-- `PeachTests/Training/TrainingScreenFeedbackTests.swift` — New: 6 tests for feedback state contract and Reduce Motion
+- `Peach/Training/FeedbackIndicator.swift` — Modified: updated doc comment usage example to reflect new conditional rendering pattern
+- `PeachTests/Training/TrainingScreenFeedbackTests.swift` — New: 7 tests for feedback state contract and Reduce Motion
 
 ### Change Log
 
 - 2026-02-22: Fixed feedback icon flicker by replacing permanent-view opacity toggle with conditional `if` + `.transition(.opacity)` pattern in TrainingScreen overlay
+- 2026-02-22: Code review fixes — added AC3 test (consecutive same-correctness), fixed `@MainActor async` on Reduce Motion tests, updated stale FeedbackIndicator doc comment, added TDD limitation note

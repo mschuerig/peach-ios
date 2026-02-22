@@ -129,15 +129,44 @@ struct TrainingScreenFeedbackTests {
         #expect(session.isLastAnswerCorrect == true)
     }
 
+    // MARK: - Subtask 1.3: Same correctness between consecutive answers (AC #3)
+
+    @MainActor
+    @Test("feedback displays correctly on consecutive same-correctness answers")
+    func feedbackDisplaysCorrectlyOnConsecutiveSameCorrectness() async throws {
+        let (session, _) = makeTrainingSession()
+
+        session.startTraining()
+        try await waitForState(session, .awaitingAnswer)
+
+        // First answer: correct (answer "higher" when second note is higher)
+        session.handleAnswer(isHigher: true)
+        #expect(session.state == .showingFeedback)
+        #expect(session.showFeedback == true)
+        #expect(session.isLastAnswerCorrect == true)
+
+        // Wait for feedback cycle to complete and next comparison
+        try await waitForFeedbackToClear(session)
+        try await waitForState(session, .awaitingAnswer)
+
+        // Second answer: also correct (answer "lower" when second note is lower)
+        session.handleAnswer(isHigher: false)
+        #expect(session.state == .showingFeedback)
+        #expect(session.showFeedback == true)
+        #expect(session.isLastAnswerCorrect == true)
+    }
+
     // MARK: - Reduce Motion
 
+    @MainActor
     @Test("feedbackAnimation returns nil when Reduce Motion is enabled")
-    func feedbackAnimationReturnsNilForReduceMotion() {
+    func feedbackAnimationReturnsNilForReduceMotion() async {
         #expect(TrainingScreen.feedbackAnimation(reduceMotion: true) == nil)
     }
 
+    @MainActor
     @Test("feedbackAnimation returns animation when Reduce Motion is disabled")
-    func feedbackAnimationReturnsAnimationNormally() {
+    func feedbackAnimationReturnsAnimationNormally() async {
         #expect(TrainingScreen.feedbackAnimation(reduceMotion: false) != nil)
     }
 }

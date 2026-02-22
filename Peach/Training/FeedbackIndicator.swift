@@ -12,8 +12,12 @@ import SwiftUI
 ///
 /// # Usage
 /// ```swift
-/// FeedbackIndicator(isCorrect: trainingSession.isLastAnswerCorrect)
-///     .opacity(trainingSession.showFeedback ? 1 : 0)
+/// .overlay {
+///     if trainingSession.showFeedback {
+///         FeedbackIndicator(isCorrect: trainingSession.isLastAnswerCorrect)
+///             .transition(.opacity)
+///     }
+/// }
 /// ```
 struct FeedbackIndicator: View {
     /// Whether the answer was correct (nil = no feedback to show)
