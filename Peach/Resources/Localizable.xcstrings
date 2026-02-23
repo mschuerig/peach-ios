@@ -571,17 +571,6 @@
         }
       }
     },
-    "Sine Wave" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sinuswelle"
-          }
-        }
-      }
-    },
     "Sound Source" : {
       "localizations" : {
         "de" : {

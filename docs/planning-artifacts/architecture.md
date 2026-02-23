@@ -148,7 +148,7 @@ States: `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `s
 
 | Component | Responsibility | MVP Implementation |
 |---|---|---|
-| `NotePlayer` (protocol) | Plays a single note at a given frequency with envelope. No sequencing, no concept of comparisons. | `SineWaveNotePlayer` |
+| `NotePlayer` (protocol) | Plays a single note at a given frequency with envelope. No sequencing, no concept of comparisons. | `SoundFontNotePlayer` |
 | `NextNoteStrategy` (protocol) | Given the perceptual profile and settings, returns the next comparison (two notes + cent difference). Decides what to play next. | `AdaptiveNoteStrategy` |
 | `TrainingDataStore` | Pure persistence — stores and retrieves comparison records. No computation, no domain logic. | SwiftData implementation |
 | `PerceptualProfile` | In-memory aggregate of the user's pitch discrimination ability, indexed by MIDI note (0–127). Each slot holds aggregate statistics (arithmetic mean, standard deviation of detection thresholds). Serves as the basis for identifying weak spots. | Loaded from all comparisons on app startup; updated incrementally on each new answer. |
@@ -168,7 +168,7 @@ States: `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `s
 **Implementation Sequence:**
 1. Data model + `TrainingDataStore` (foundation — everything depends on it)
 2. `PerceptualProfile` (aggregation logic, startup loading)
-3. `NotePlayer` protocol + `SineWaveNotePlayer` (independent of data layer)
+3. `NotePlayer` protocol + `SoundFontNotePlayer` (independent of data layer)
 4. `NextNoteStrategy` protocol + `AdaptiveNoteStrategy` (depends on `PerceptualProfile`)
 5. `TrainingSession` (integrates all services)
 6. UI layer (observes `TrainingSession` and `PerceptualProfile`)
@@ -187,7 +187,7 @@ States: `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `s
 - Types & protocols: `PascalCase` — `TrainingSession`, `ComparisonRecord`, `NotePlayer`
 - Properties, methods, parameters: `camelCase` — `isCorrect`, `playNote(frequency:)`, `detectionThreshold`
 - Protocols: noun describing capability — `NotePlayer`, `NextNoteStrategy` (not `NotePlayable`, `NoteStrategyProtocol`)
-- Protocol implementations: descriptive prefix — `SineWaveNotePlayer`, `AdaptiveNoteStrategy`
+- Protocol implementations: descriptive prefix — `SoundFontNotePlayer`, `AdaptiveNoteStrategy`
 - SwiftData models: singular noun — `ComparisonRecord`, not `ComparisonRecords`
 - Files: match the primary type they contain — `TrainingSession.swift`, `NotePlayer.swift`
 
@@ -201,7 +201,7 @@ Peach/
 ├── Core/                         # Shared services and models (cross-feature)
 │   ├── Audio/
 │   │   ├── NotePlayer.swift          # Protocol
-│   │   └── SineWaveNotePlayer.swift  # MVP implementation
+│   │   └── SoundFontNotePlayer.swift  # AVAudioUnitSampler SF2 implementation
 │   ├── Algorithm/
 │   │   ├── NextNoteStrategy.swift    # Protocol
 │   │   └── AdaptiveNoteStrategy.swift
@@ -233,7 +233,7 @@ Standard separate test target mirroring source structure:
 PeachTests/
 ├── Core/
 │   ├── Audio/
-│   │   └── SineWaveNotePlayerTests.swift
+│   │   └── SoundFontNotePlayerTests.swift
 │   ├── Algorithm/
 │   │   └── AdaptiveNoteStrategyTests.swift
 │   ├── Data/
@@ -287,7 +287,7 @@ Peach/
 ├── Core/
 │   ├── Audio/
 │   │   ├── NotePlayer.swift              # Protocol: play(frequency:, duration:, envelope:)
-│   │   └── SineWaveNotePlayer.swift      # AVAudioEngine + AVAudioSourceNode implementation
+│   │   └── SoundFontNotePlayer.swift      # AVAudioEngine + AVAudioUnitSampler SF2 implementation
 │   ├── Algorithm/
 │   │   ├── NextNoteStrategy.swift        # Protocol: nextComparison(profile:, settings:) -> Comparison
 │   │   └── AdaptiveNoteStrategy.swift    # Weak-spot targeting, difficulty adjustment
@@ -314,7 +314,7 @@ Peach/
 PeachTests/
 ├── Core/
 │   ├── Audio/
-│   │   └── SineWaveNotePlayerTests.swift
+│   │   └── SoundFontNotePlayerTests.swift
 │   ├── Algorithm/
 │   │   └── AdaptiveNoteStrategyTests.swift
 │   ├── Data/
@@ -351,7 +351,7 @@ PeachTests/
 |---|---|---|
 | Training Loop (FR1–FR8) | `TrainingSession`, `TrainingScreen` | `Training/` |
 | Adaptive Algorithm (FR9–FR15) | `NextNoteStrategy`, `AdaptiveNoteStrategy`, `PerceptualProfile` | `Core/Algorithm/`, `Core/Profile/` |
-| Audio Engine (FR16–FR20) | `NotePlayer`, `SineWaveNotePlayer` | `Core/Audio/` |
+| Audio Engine (FR16–FR20) | `NotePlayer`, `SoundFontNotePlayer` | `Core/Audio/` |
 | Profile & Statistics (FR21–FR26) | `PerceptualProfile`, `ProfileScreen` | `Core/Profile/`, `Profile/` |
 | Data Persistence (FR27–FR29) | `ComparisonRecord`, `TrainingDataStore` | `Core/Data/` |
 | Settings (FR30–FR36) | `SettingsScreen`, `@AppStorage` | `Settings/` |
@@ -363,7 +363,7 @@ PeachTests/
 
 | Concern | Affected Components | Resolution |
 |---|---|---|
-| Audio interruption | `SineWaveNotePlayer`, `TrainingSession` | `NotePlayer` reports interruption → `TrainingSession` discards current comparison |
+| Audio interruption | `SoundFontNotePlayer`, `TrainingSession` | `NotePlayer` reports interruption → `TrainingSession` discards current comparison |
 | Settings propagation | `SettingsScreen`, `TrainingSession`, `NextNoteStrategy`, `NotePlayer` | `TrainingSession` reads `@AppStorage` when requesting next comparison; passes duration to `NotePlayer` |
 | Data integrity | `TrainingDataStore` | SwiftData atomic writes; `TrainingSession` writes only complete comparison results |
 | App lifecycle | `PeachApp`, `TrainingSession` | Backgrounding → `TrainingSession` stops; foregrounding → returns to Start Screen |

@@ -1,6 +1,6 @@
 # Story 8.3: Remove SineWaveNotePlayer and RoutingNotePlayer
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -240,6 +240,7 @@ All 8 tasks completed. All 10 acceptance criteria satisfied. Full test suite pas
 - Peach/Settings/SettingsScreen.swift
 - Peach/Settings/SettingsKeys.swift
 - Peach/App/PeachApp.swift
+- Peach/Resources/Localizable.xcstrings
 - PeachTests/Core/Audio/SoundFontNotePlayerTests.swift
 - PeachTests/Core/Audio/FrequencyCalculationTests.swift
 - PeachTests/Settings/SettingsTests.swift
@@ -251,3 +252,4 @@ All 8 tasks completed. All 10 acceptance criteria satisfied. Full test suite pas
 ## Change Log
 
 - 2026-02-23: Implemented story 8.3 — Removed SineWaveNotePlayer and RoutingNotePlayer; SoundFontNotePlayer is now the sole NotePlayer implementation with absorbed preset routing logic
+- 2026-02-23: Code review — Fixed 6 issues: (H1) added @MainActor async to 22 relocated FrequencyCalculation tests, (H2) updated 8 stale SineWaveNotePlayer references in architecture.md, (M1) added Localizable.xcstrings to File List, (M2) removed redundant import AVFAudio, (M3) removed legacy "cello" tag handling from parseSF2Tag, (M4) removed stale "Sine Wave" localization entry. Updated cello tag test expectations. All tests pass.

@@ -195,11 +195,10 @@ struct SoundFontNotePlayerTests {
         #expect(result == nil)
     }
 
-    @Test("parseSF2Tag handles legacy 'cello' tag as bank 0, program 42")
+    @Test("parseSF2Tag returns nil for legacy 'cello' tag")
     @MainActor func parseSF2Tag_celloTag() async {
         let result = SoundFontNotePlayer.parseSF2Tag(from: "cello")
-        #expect(result?.bank == 0)
-        #expect(result?.program == 42)
+        #expect(result == nil)
     }
 
     @Test("parseSF2Tag returns nil for malformed tags")
@@ -236,8 +235,8 @@ struct SoundFontNotePlayerTests {
         try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
     }
 
-    @Test("play handles legacy 'cello' tag from UserDefaults")
-    @MainActor func playHandlesLegacyCelloTag() async throws {
+    @Test("play falls back to default preset for legacy 'cello' tag")
+    @MainActor func playFallsBackForLegacyCelloTag() async throws {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("cello", forKey: SettingsKeys.soundSource)

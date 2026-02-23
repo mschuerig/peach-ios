@@ -8,25 +8,25 @@ struct FrequencyCalculationTests {
     // MARK: - Forward Conversion
 
     @Test("Middle C (MIDI 60) at 0 cents is ~261.626 Hz")
-    func frequencyCalculation_MiddleC() throws {
+    @MainActor func frequencyCalculation_MiddleC() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 60, cents: 0.0)
         #expect(abs(frequency - 261.626) < 0.01)
     }
 
     @Test("A4 (MIDI 69) at 0 cents is 440.0 Hz")
-    func frequencyCalculation_A4() throws {
+    @MainActor func frequencyCalculation_A4() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0)
         #expect(abs(frequency - 440.0) < 0.001)
     }
 
     @Test("MIDI 60 at +50 cents is ~268.9 Hz")
-    func frequencyCalculation_HalfStep() throws {
+    @MainActor func frequencyCalculation_HalfStep() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 60, cents: 50.0)
         #expect(abs(frequency - 268.9) < 0.5)
     }
 
     @Test("0.1 cent precision verification")
-    func frequencyCalculation_SubCentPrecision() throws {
+    @MainActor func frequencyCalculation_SubCentPrecision() async throws {
         let freq1 = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0)
         let freq2 = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.1)
         #expect(freq1 != freq2)
@@ -34,32 +34,32 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Custom reference pitch (442 Hz)")
-    func frequencyCalculation_CustomReferencePitch() throws {
+    @MainActor func frequencyCalculation_CustomReferencePitch() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 442.0)
         #expect(abs(frequency - 442.0) < 0.001)
     }
 
     @Test("MIDI note 0 (C-1, ~8.18 Hz)")
-    func frequencyCalculation_MIDI0() throws {
+    @MainActor func frequencyCalculation_MIDI0() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 0, cents: 0.0)
         #expect(abs(frequency - 8.18) < 0.1)
     }
 
     @Test("MIDI note 127 (G9, ~12543 Hz)")
-    func frequencyCalculation_MIDI127() throws {
+    @MainActor func frequencyCalculation_MIDI127() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 127, cents: 0.0)
         #expect(abs(frequency - 12543.0) < 1.0)
     }
 
     @Test("Negative cent offset (-50 cents)")
-    func frequencyCalculation_NegativeCents() throws {
+    @MainActor func frequencyCalculation_NegativeCents() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 60, cents: -50.0)
         #expect(frequency < 261.626)
         #expect(abs(frequency - 254.2) < 1.0)
     }
 
     @Test("Extreme positive cent offset (+100 cents) equals next semitone")
-    func frequencyCalculation_ExtremeCents() throws {
+    @MainActor func frequencyCalculation_ExtremeCents() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 60, cents: 100.0)
         let cSharp = try FrequencyCalculation.frequency(midiNote: 61, cents: 0.0)
         #expect(abs(frequency - cSharp) < 0.01)
@@ -68,7 +68,7 @@ struct FrequencyCalculationTests {
     // MARK: - AudioError
 
     @Test("AudioError cases are properly defined")
-    func audioError_CasesExist() {
+    @MainActor func audioError_CasesExist() async {
         let error1: AudioError = .engineStartFailed("test")
         let error2: AudioError = .invalidFrequency("test")
         let error3: AudioError = .invalidDuration("test")
@@ -86,31 +86,31 @@ struct FrequencyCalculationTests {
     // MARK: - Reference Pitch Configuration
 
     @Test("Default (no parameter) uses A4=440Hz")
-    func referencePitch_Default_440Hz() throws {
+    @MainActor func referencePitch_Default_440Hz() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0)
         #expect(abs(frequency - 440.0) < 0.001)
     }
 
     @Test("Baroque tuning (A4=442Hz)")
-    func referencePitch_Baroque_442Hz() throws {
+    @MainActor func referencePitch_Baroque_442Hz() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 442.0)
         #expect(abs(frequency - 442.0) < 0.001)
     }
 
     @Test("Alternative tuning (A4=432Hz)")
-    func referencePitch_Alternative_432Hz() throws {
+    @MainActor func referencePitch_Alternative_432Hz() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 432.0)
         #expect(abs(frequency - 432.0) < 0.001)
     }
 
     @Test("Historical tuning (A4=415Hz)")
-    func referencePitch_Historical_415Hz() throws {
+    @MainActor func referencePitch_Historical_415Hz() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 415.0)
         #expect(abs(frequency - 415.0) < 0.001)
     }
 
     @Test("Middle C at different reference pitches")
-    func referencePitch_MiddleC_VariousTunings() throws {
+    @MainActor func referencePitch_MiddleC_VariousTunings() async throws {
         let c4_at_440 = try FrequencyCalculation.frequency(midiNote: 60, cents: 0.0, referencePitch: 440.0)
         #expect(abs(c4_at_440 - 261.626) < 0.01)
 
@@ -124,14 +124,14 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Cent offset with custom reference pitch")
-    func referencePitch_WithCentOffset() throws {
+    @MainActor func referencePitch_WithCentOffset() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 50.0, referencePitch: 442.0)
         let expected = 442.0 * pow(2.0, 50.0 / 1200.0)
         #expect(abs(frequency - expected) < 0.01)
     }
 
     @Test("Fractional cent precision with custom reference pitch")
-    func referencePitch_FractionalCent() throws {
+    @MainActor func referencePitch_FractionalCent() async throws {
         let freq1 = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 442.0)
         let freq2 = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.1, referencePitch: 442.0)
         #expect(freq1 != freq2)
@@ -139,7 +139,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Negative cent offset with custom reference pitch")
-    func referencePitch_NegativeCentOffset() throws {
+    @MainActor func referencePitch_NegativeCentOffset() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: -25.0, referencePitch: 432.0)
         let expected = 432.0 * pow(2.0, -25.0 / 1200.0)
         #expect(abs(frequency - expected) < 0.01)
@@ -148,27 +148,27 @@ struct FrequencyCalculationTests {
     // MARK: - Reference Pitch Validation
 
     @Test("Reference pitch too low (< 380 Hz) throws error")
-    func referencePitch_TooLow_ThrowsError() async throws {
+    @MainActor func referencePitch_TooLow_ThrowsError() async throws {
         #expect(throws: AudioError.self) {
             _ = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 350.0)
         }
     }
 
     @Test("Reference pitch too high (> 500 Hz) throws error")
-    func referencePitch_TooHigh_ThrowsError() async throws {
+    @MainActor func referencePitch_TooHigh_ThrowsError() async throws {
         #expect(throws: AudioError.self) {
             _ = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 550.0)
         }
     }
 
     @Test("Reference pitch edge case - exactly 380 Hz is valid")
-    func referencePitch_EdgeLow_Valid() throws {
+    @MainActor func referencePitch_EdgeLow_Valid() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 380.0)
         #expect(abs(frequency - 380.0) < 0.001)
     }
 
     @Test("Reference pitch edge case - exactly 500 Hz is valid")
-    func referencePitch_EdgeHigh_Valid() throws {
+    @MainActor func referencePitch_EdgeHigh_Valid() async throws {
         let frequency = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0, referencePitch: 500.0)
         #expect(abs(frequency - 500.0) < 0.001)
     }

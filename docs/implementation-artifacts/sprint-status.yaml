@@ -107,4 +107,4 @@ development_status:
   epic-8: in-progress
   8-1-implement-soundfont-noteplayer: done # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
   8-2-sf2-preset-discovery-and-instrument-selection: done # SF2 PHDR parsing, SoundFontLibrary, dynamic instrument picker in Settings
-  8-3-remove-sinewavenoteplayer-and-routingnoteplayer: review # Remove SineWaveNotePlayer + RoutingNotePlayer, SoundFontNotePlayer becomes sole NotePlayer
+  8-3-remove-sinewavenoteplayer-and-routingnoteplayer: done # Remove SineWaveNotePlayer + RoutingNotePlayer, SoundFontNotePlayer becomes sole NotePlayer

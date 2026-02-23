@@ -1,5 +1,4 @@
 import AVFoundation
-import AVFAudio
 import Foundation
 import os
 
@@ -190,8 +189,6 @@ final class SoundFontNotePlayer: NotePlayer {
     // MARK: - Static Helpers
 
     nonisolated static func parseSF2Tag(from source: String) -> (bank: Int, program: Int)? {
-        // Migrate legacy "cello" tag from story 8-1
-        if source == "cello" { return (bank: 0, program: 42) }
         guard source.hasPrefix("sf2:") else { return nil }
         let parts = source.dropFirst(4).split(separator: ":")
         guard parts.count == 2,
