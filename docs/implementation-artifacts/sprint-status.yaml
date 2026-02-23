@@ -102,3 +102,8 @@ development_status:
 
   # Infrastructure: Sampled Instrument Build Support
   infra-sf2-build-download-cache: done # Download SF2 samples to cache at build time, keep out of git
+
+  # Epic 8: Real Instruments — Sampled Sound Sources
+  epic-8: backlog
+  8-1-implement-soundfont-noteplayer: backlog # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
+  8-2-sf2-preset-discovery-and-instrument-selection: backlog # SF2 PHDR parsing, SoundFontLibrary, dynamic instrument picker in Settings

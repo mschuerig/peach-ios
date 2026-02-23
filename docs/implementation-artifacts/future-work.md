@@ -288,32 +288,61 @@ Wrong-answer feedback uses `UIImpactFeedbackGenerator` for haptic response. iPad
 
 ## Future Enhancements
 
-### Swappable Sound Sources (Instrument Timbres)
+### ~~Swappable Sound Sources (Instrument Timbres)~~ (IN PROGRESS)
 
-**Priority:** Medium
-**Category:** Audio / Training Effectiveness
-**Date Added:** 2026-02-18
+**Status:** Being addressed by Epic 8 — 2026-02-23
+**Stories:** `8-1-implement-soundfont-noteplayer.md` (SoundFontNotePlayer with fixed Cello preset), `8-2-sf2-preset-discovery-and-instrument-selection.md` (dynamic preset discovery and Settings UI for all ~261 GeneralUser GS instruments)
 
-**Issue:**
-The app currently uses only sine wave tones for pitch comparisons. While precise and deterministic, sine waves lack the harmonic content of real instruments. Musicians train their ears on timbres — a violinist needs to hear pitch differences in violin-like tones, not pure sine waves.
+### SF2 Pruning Pipeline (Idea)
 
-**Impact:**
-- Training with sine waves may not transfer fully to real instrument contexts
-- The app feels clinical rather than musical to the target audience
-- Limits the app's credibility and usefulness for serious musicians
+**Priority:** None — idea only, may never be implemented
+**Category:** Audio / Build Tooling
+**Date Added:** 2026-02-23
 
-**Potential Solutions:**
-- The `NotePlayer` protocol already supports swappable implementations
-- Add sampled instrument sound sources (piano, strings, woodwinds, brass)
-- Start with a single high-quality piano sample as an alternative to sine waves
-- Allow users to select their preferred sound source in Settings (the UI slot already exists)
+**Idea:**
+The bundled GeneralUser GS SF2 contains 261 melodic presets + 13 drum kits (~30 MB). For an ear training app, most of these presets are unnecessary (e.g., "SFX", "Telephone Ring", "Helicopter"). A pruning pipeline would trim the SF2 to ~15-20 key instruments relevant to pitch training (piano, strings, woodwinds, brass, guitar), reducing bundle size and decluttering the instrument picker.
 
-**Related Code:**
-- `Peach/Core/Audio/NotePlayer.swift` — protocol definition
-- `Peach/Core/Audio/SineWaveNotePlayer.swift` — current implementation
-- `Peach/Settings/SettingsScreen.swift` — sound source setting (currently sine-only)
+**Why this may not be needed:**
+- 30 MB is small enough that pruning isn't urgent for bundle size
+- Story 8-2 already filters drum kits; the full melodic list is browsable in Settings
+- Users may enjoy access to unusual timbres for variety
+- Pruning requires Polyphone (GUI tool) and a documented runbook — one-time manual effort with no automation path via standard macOS tools
 
-*(Additional deferred features and nice-to-haves will be tracked here)*
+**If pursued:**
+- Use [Polyphone](https://www.polyphone.io/) to delete unwanted presets, rename remaining ones for clarity, "Remove unused elements" to strip orphaned samples
+- Document steps in `tools/build-sf2.md` runbook
+- Output: lean `peach-instruments.sf2` replacing the full GeneralUser GS
+- Consider a Phase 2 custom SF2 assembled from lossless sources (Salamander Piano, Iowa MIS, SSO) for higher quality
+
+**Related Research:**
+- [Source: docs/planning-artifacts/research/technical-sampled-instrument-noteplayer-research-2026-02-23.md#sf2-pruning-pipeline]
+- [Source: docs/planning-artifacts/research/technical-sampled-instrument-noteplayer-research-2026-02-23.md#recommended-sample-strategy]
+
+### User-Provided SF2 Import (Idea)
+
+**Priority:** None — idea only, may never be implemented
+**Category:** Audio / User Content
+**Date Added:** 2026-02-23
+
+**Idea:**
+Allow users to import their own SF2 SoundFont files into the app, enabling training with custom instrument samples (e.g., a recording of their own instrument, a specialty SoundFont from the community). Imported SF2 presets would appear alongside bundled instruments in the Settings picker.
+
+**Why this may not be needed:**
+- The bundled GeneralUser GS already covers 261 instruments — most users won't need more
+- SF2 import adds significant complexity: file handling, crash recovery, storage management
+- `AVAudioUnitSampler` can crash on malformed SF2 files with no way to catch the exception — this is a real stability risk for user-provided content
+- The feature serves a niche audience (users who own or create custom SoundFonts)
+
+**If pursued:**
+- Import via iOS share sheet or Files app integration
+- Copy imported SF2 to app's documents directory
+- Parse PHDR metadata to enumerate presets (reuse `SF2PresetParser` from story 8-2)
+- **Crash recovery via sentinel pattern**: Before loading a user SF2, write `"loading_sf2": "filename.sf2"` to UserDefaults. On success, clear sentinel. On next app launch, if sentinel exists, the previous load crashed — offer to remove the offending file
+- `SoundFontLibrary` would scan both app bundle and documents directory for SF2 files
+
+**Related Research:**
+- [Source: docs/planning-artifacts/research/technical-sampled-instrument-noteplayer-research-2026-02-23.md#crash-recovery-for-user-provided-sf2]
+- [Source: docs/planning-artifacts/research/technical-sampled-instrument-noteplayer-research-2026-02-23.md#instrument-auto-discovery]
 
 ---
 
