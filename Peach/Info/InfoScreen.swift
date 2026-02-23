@@ -13,6 +13,13 @@ struct InfoScreen: View {
         }
         return url
     }()
+    static let soundFontCredit = "GeneralUser GS by S. Christian Collins"
+    static let soundFontURL: URL = {
+        guard let url = URL(string: "https://schristiancollins.com/generaluser.php") else {
+            preconditionFailure("Invalid SoundFont URL constant")
+        }
+        return url
+    }()
 
     var body: some View {
         NavigationStack {
@@ -47,6 +54,13 @@ struct InfoScreen: View {
                 }
 
                 Spacer()
+
+                VStack(spacing: 6) {
+                    Text("Acknowledgments")
+                        .font(.headline)
+                    Link(Self.soundFontCredit, destination: Self.soundFontURL)
+                        .font(.caption)
+                }
             }
             .padding()
             .navigationTitle("Info")

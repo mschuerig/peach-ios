@@ -114,6 +114,11 @@ struct StartScreenTests {
         #expect(InfoScreen.licenseName == "MIT")
     }
 
+    @Test("Info Screen has SoundFont credit")
+    func infoScreenHasSoundFontCredit() {
+        #expect(InfoScreen.soundFontCredit == "GeneralUser GS by S. Christian Collins")
+    }
+
     @Test("Info Screen has non-empty version string")
     func infoScreenHasNonEmptyVersion() {
         let view = InfoScreen()

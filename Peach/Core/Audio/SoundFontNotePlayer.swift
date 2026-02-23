@@ -4,7 +4,7 @@ import Foundation
 import os
 
 @MainActor
-public final class SoundFontNotePlayer: NotePlayer {
+final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - Logger
 
@@ -67,6 +67,12 @@ public final class SoundFontNotePlayer: NotePlayer {
     // MARK: - Preset Switching
 
     func loadPreset(program: Int, bank: Int = 0) async throws {
+        guard (0...127).contains(program) else {
+            throw AudioError.invalidPreset("Program \(program) outside valid MIDI range 0-127")
+        }
+        guard (0...127).contains(bank) else {
+            throw AudioError.invalidPreset("Bank \(bank) outside valid range 0-127")
+        }
         guard program != loadedProgram || bank != loadedBank else { return }
 
         if let note = currentNote {
@@ -95,7 +101,7 @@ public final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - NotePlayer Protocol
 
-    public func play(frequency: Double, duration: TimeInterval, amplitude: Double) async throws {
+    func play(frequency: Double, duration: TimeInterval, amplitude: Double) async throws {
         // Validate inputs
         guard Self.validFrequencyRange.contains(frequency) else {
             throw AudioError.invalidFrequency(
@@ -103,12 +109,12 @@ public final class SoundFontNotePlayer: NotePlayer {
             )
         }
         guard duration > 0 else {
-            throw AudioError.invalidFrequency(
+            throw AudioError.invalidDuration(
                 "Duration \(duration) seconds must be positive"
             )
         }
         guard (0.0...1.0).contains(amplitude) else {
-            throw AudioError.invalidFrequency(
+            throw AudioError.invalidAmplitude(
                 "Amplitude \(amplitude) is outside valid range 0.0-1.0"
             )
         }
@@ -145,7 +151,7 @@ public final class SoundFontNotePlayer: NotePlayer {
         try await Task.sleep(for: .seconds(duration))
     }
 
-    public func stop() async throws {
+    func stop() async throws {
         // Note: stop() halts audio output immediately but does not interrupt an in-progress
         // play() call's Task.sleep. The primary stop mechanism is task cancellation, which
         // causes Task.sleep to throw CancellationError and triggers the defer cleanup block.

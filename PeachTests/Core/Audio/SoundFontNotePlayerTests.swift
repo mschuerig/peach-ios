@@ -148,4 +148,28 @@ struct SoundFontNotePlayerTests {
         try await player.loadPreset(program: 0) // switch to piano
         try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
     }
+
+    @Test("loadPreset throws for out-of-range program")
+    @MainActor func loadPresetInvalidProgram() async throws {
+        let player = try SoundFontNotePlayer()
+        await #expect(throws: AudioError.self) {
+            try await player.loadPreset(program: 999)
+        }
+    }
+
+    @Test("loadPreset throws for negative program")
+    @MainActor func loadPresetNegativeProgram() async throws {
+        let player = try SoundFontNotePlayer()
+        await #expect(throws: AudioError.self) {
+            try await player.loadPreset(program: -1)
+        }
+    }
+
+    @Test("loadPreset throws for out-of-range bank")
+    @MainActor func loadPresetInvalidBank() async throws {
+        let player = try SoundFontNotePlayer()
+        await #expect(throws: AudioError.self) {
+            try await player.loadPreset(program: 0, bank: 200)
+        }
+    }
 }

@@ -1,7 +1,7 @@
 import Foundation
 
 @MainActor
-public final class RoutingNotePlayer: NotePlayer {
+final class RoutingNotePlayer: NotePlayer {
 
     private let sinePlayer: any NotePlayer
     private let soundFontPlayer: SoundFontNotePlayer?
@@ -13,14 +13,18 @@ public final class RoutingNotePlayer: NotePlayer {
         self.soundFontPlayer = soundFontPlayer
     }
 
-    public func play(frequency: Double, duration: TimeInterval, amplitude: Double) async throws {
+    func play(frequency: Double, duration: TimeInterval, amplitude: Double) async throws {
         let source = UserDefaults.standard.string(forKey: SettingsKeys.soundSource)
             ?? SettingsKeys.defaultSoundSource
 
         let player: any NotePlayer
         if let (bank, program) = Self.parseSF2Tag(from: source), let sfPlayer = soundFontPlayer {
-            try await sfPlayer.loadPreset(program: program, bank: bank)
-            player = sfPlayer
+            do {
+                try await sfPlayer.loadPreset(program: program, bank: bank)
+                player = sfPlayer
+            } catch {
+                player = sinePlayer
+            }
         } else {
             player = sinePlayer
         }
@@ -35,7 +39,7 @@ public final class RoutingNotePlayer: NotePlayer {
         try await player.play(frequency: frequency, duration: duration, amplitude: amplitude)
     }
 
-    public func stop() async throws {
+    func stop() async throws {
         if let player = activePlayer {
             try await player.stop()
             activePlayer = nil

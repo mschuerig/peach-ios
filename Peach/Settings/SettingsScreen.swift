@@ -37,6 +37,15 @@ struct SettingsScreen: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .onAppear {
+            // Persist migration/fallback so stale tags don't linger in @AppStorage
+            if soundSource == "cello" {
+                soundSource = "sf2:0:42"
+            } else if soundSource.hasPrefix("sf2:"),
+                      soundFontLibrary.preset(forTag: soundSource) == nil {
+                soundSource = "sine"
+            }
+        }
         .alert("Reset Failed", isPresented: $showResetError) {
             Button("OK") { }
         } message: {

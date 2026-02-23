@@ -183,7 +183,7 @@ Recent commits show the project is in a post-MVP polish phase — bug fixes, hot
 
 ## Follow-ups
 
-- [ ] Add attribution for GeneralUser GS (S. Christian Collins) to the app's Info screen or NOTICE file — required by the SoundFont's license. Should be addressed when the SoundFontNotePlayer story ships and the SF2 is actually bundled with the app.
+- [x] Add attribution for GeneralUser GS (S. Christian Collins) to the app's Info screen or NOTICE file — required by the SoundFont's license. Should be addressed when the SoundFontNotePlayer story ships and the SF2 is actually bundled with the app.
 
 ## Change Log
 

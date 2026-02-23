@@ -18,6 +18,18 @@ public enum AudioError: Error {
     /// - Parameter message: Detailed error context including the invalid value
     case invalidFrequency(String)
 
+    /// The specified duration is invalid (zero or negative).
+    /// - Parameter message: Detailed error context including the invalid value
+    case invalidDuration(String)
+
+    /// The specified amplitude is invalid (outside 0.0-1.0 range).
+    /// - Parameter message: Detailed error context including the invalid value
+    case invalidAmplitude(String)
+
+    /// The specified preset is invalid (program or bank outside valid MIDI range).
+    /// - Parameter message: Detailed error context including the invalid value
+    case invalidPreset(String)
+
     /// The audio context or format could not be created.
     case contextUnavailable
 }

@@ -1,6 +1,6 @@
 # Story 8.2: SF2 Preset Discovery and Instrument Selection
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -21,7 +21,7 @@ So that I can train pitch discrimination with the timbre that matches my instrum
    **When** parsed
    **Then** each preset's name, program number, and bank number are extracted correctly
    **And** the terminal "EOP" sentinel record is excluded
-   **And** drum kit presets (bank MSB 128 / percussion bank) are excluded
+   **And** unpitched presets are excluded (bank >= 120 for percussion/drums, program >= 120 for sound effects)
    **And** preset names are cleaned for display (null-padded bytes trimmed, leading/trailing whitespace removed)
 
 3. **Given** the Settings Screen Sound Source picker
@@ -29,14 +29,14 @@ So that I can train pitch discrimination with the timbre that matches my instrum
    **Then** it shows "Sine Wave" as the first option
    **And** it shows all discovered SF2 melodic presets as selectable options
    **And** each preset shows its cleaned display name (e.g., "Acoustic Grand Piano", "Cello", "Flute")
-   **And** presets are ordered by General MIDI program number
+   **And** presets are sorted alphabetically by name for discoverability
    **And** the currently selected preset is visually indicated
 
 4. **Given** the user selects an instrument preset in Settings
    **When** the selection is persisted
-   **Then** the `soundSource` `@AppStorage` stores a value encoding the preset (e.g., `"sf2:0"` for Acoustic Grand Piano, `"sf2:42"` for Cello)
+   **Then** the `soundSource` `@AppStorage` stores a value encoding the preset (e.g., `"sf2:0:0"` for Grand Piano, `"sf2:0:42"` for Cello)
    **And** the next training note uses the selected instrument timbre
-   **And** the previous hardcoded `"cello"` tag from story 8-1 is replaced by the general `"sf2:{program}"` scheme
+   **And** the previous hardcoded `"cello"` tag from story 8-1 is replaced by the general `"sf2:{bank}:{program}"` scheme
 
 5. **Given** the `SoundFontNotePlayer` from story 8-1
    **When** a different preset is selected via Settings
@@ -260,6 +260,7 @@ This story builds directly on story 8-1. The SF2 file is already bundled; the PH
 
 - 2026-02-23: Implemented story 8.2 — SF2 preset discovery and dynamic instrument selection
 - 2026-02-23: Code review fixes — (1) fixed first-note-silent bug after preset switch by adding 20ms settle delay in async `loadPreset`; (2) changed tag format to `"sf2:{bank}:{program}"` for unique preset identification across banks; (3) filtered unpitched presets (bank >= 120, program >= 120); (4) sorted presets alphabetically by name
+- 2026-02-23: Code review #2 fixes — (1) stale/invalid sf2: preset tags now cleared persistently via `.onAppear` in SettingsScreen and resilient fallback in RoutingNotePlayer; (2) AC #2, #3, #4 text updated to match implementation; (3) removed `public` access from SoundFontNotePlayer and RoutingNotePlayer; (4) `AudioError.invalidDuration`/`.invalidAmplitude`/`.invalidPreset` cases replace misused `.invalidFrequency`; (5) `loadPreset` validates program/bank 0-127 range; (6) RoutingNotePlayerTests clean up UserDefaults state; (7) added tests for out-of-range preset validation and stale-tag fallback
 
 ## Dev Agent Record
 
