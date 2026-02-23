@@ -27,6 +27,7 @@ public final class SoundFontNotePlayer: NotePlayer {
     private static let bankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
     private static let bankLSB: UInt8 = 0
     private static let pitchBendCenter: UInt16 = 8192
+    private static let validFrequencyRange = 20.0...20000.0
 
     // MARK: - Initialization
 
@@ -61,6 +62,23 @@ public final class SoundFontNotePlayer: NotePlayer {
     // MARK: - NotePlayer Protocol
 
     public func play(frequency: Double, duration: TimeInterval, amplitude: Double) async throws {
+        // Validate inputs
+        guard Self.validFrequencyRange.contains(frequency) else {
+            throw AudioError.invalidFrequency(
+                "Frequency \(frequency) Hz is outside valid range \(Self.validFrequencyRange)"
+            )
+        }
+        guard duration > 0 else {
+            throw AudioError.invalidFrequency(
+                "Duration \(duration) seconds must be positive"
+            )
+        }
+        guard (0.0...1.0).contains(amplitude) else {
+            throw AudioError.invalidFrequency(
+                "Amplitude \(amplitude) is outside valid range 0.0-1.0"
+            )
+        }
+
         // Configure audio session once
         if !isSessionConfigured {
             let session = AVAudioSession.sharedInstance()
@@ -74,7 +92,8 @@ public final class SoundFontNotePlayer: NotePlayer {
         }
 
         let conversion = FrequencyCalculation.midiNoteAndCents(frequency: frequency)
-        let midiNote = UInt8(clamping: conversion.midiNote)
+        let clampedNote = min(127, max(0, conversion.midiNote))
+        let midiNote = UInt8(clampedNote)
         let bendValue = Self.pitchBendValue(forCents: conversion.cents)
         let velocity = Self.midiVelocity(forAmplitude: amplitude)
 
@@ -93,6 +112,9 @@ public final class SoundFontNotePlayer: NotePlayer {
     }
 
     public func stop() async throws {
+        // Note: stop() halts audio output immediately but does not interrupt an in-progress
+        // play() call's Task.sleep. The primary stop mechanism is task cancellation, which
+        // causes Task.sleep to throw CancellationError and triggers the defer cleanup block.
         if let note = currentNote {
             sampler.stopNote(note, onChannel: Self.channel)
             sampler.sendPitchBend(Self.pitchBendCenter, onChannel: Self.channel)

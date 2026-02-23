@@ -67,6 +67,22 @@ struct RoutingNotePlayerTests {
         #expect(cello.playCallCount == 1)
     }
 
+    @Test("Stops previous player when source changes between calls")
+    @MainActor func stopsOldPlayerOnSourceChange() async throws {
+        let sine = MockNotePlayer()
+        let cello = MockNotePlayer()
+        let router = RoutingNotePlayer(sinePlayer: sine, soundFontPlayer: cello)
+
+        UserDefaults.standard.set("sine", forKey: SettingsKeys.soundSource)
+        try await router.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        #expect(sine.stopCallCount == 0)
+
+        UserDefaults.standard.set("cello", forKey: SettingsKeys.soundSource)
+        try await router.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        #expect(sine.stopCallCount == 1)
+        #expect(cello.stopCallCount == 0)
+    }
+
     // MARK: - Stop
 
     @Test("Stop stops the currently active player")

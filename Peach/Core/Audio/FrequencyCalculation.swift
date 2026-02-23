@@ -83,6 +83,7 @@ public enum FrequencyCalculation {
     ///   - referencePitch: Reference pitch for A4 in Hz (default: 440.0)
     /// - Returns: A tuple of `(midiNote: Int, cents: Double)` where cents is in the range -50...+50
     public static func midiNoteAndCents(frequency: Double, referencePitch: Double = 440.0) -> (midiNote: Int, cents: Double) {
+        precondition(frequency > 0, "Frequency must be positive, got \(frequency)")
         let exactMidi = 69.0 + 12.0 * log2(frequency / referencePitch)
         let nearestMidi = Int((exactMidi).rounded())
         let cents = (exactMidi - Double(nearestMidi)) * 100.0

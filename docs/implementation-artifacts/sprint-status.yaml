@@ -105,5 +105,5 @@ development_status:
 
   # Epic 8: Real Instruments — Sampled Sound Sources
   epic-8: in-progress
-  8-1-implement-soundfont-noteplayer: review # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
+  8-1-implement-soundfont-noteplayer: done # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
   8-2-sf2-preset-discovery-and-instrument-selection: backlog # SF2 PHDR parsing, SoundFontLibrary, dynamic instrument picker in Settings

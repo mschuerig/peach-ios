@@ -1,6 +1,6 @@
 # Story 8.1: Implement SoundFontNotePlayer with Fixed Cello Preset
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -95,6 +95,11 @@ So that my pitch discrimination practice uses a timbre closer to real musical in
   - [x] 6.1 Update AVAudioEngine rule to reflect that each NotePlayer implementation owns its own engine instance
   - [x] 6.2 Add `SoundFontNotePlayer` and `RoutingNotePlayer` to project structure section
   - [x] 6.3 Document `SettingsKeys.soundSource` values (`"sine"`, `"cello"`)
+
+### Review Follow-ups (AI)
+
+- [ ] [AI-Review][HIGH] Re-evaluate the use of `UserDefaults.standard` singleton in `RoutingNotePlayer` and across the codebase. Consider injecting a `UserDefaults` instance or a settings provider protocol to improve testability and avoid shared state pollution in parallel tests. This applies to singletons in general — audit for other singleton usage that hinders testability [RoutingNotePlayer.swift:17, RoutingNotePlayerTests.swift]
+- [ ] [AI-Review][LOW] `SoundFontNotePlayer.stop()` does not interrupt an in-progress `play()` call's `Task.sleep` — audio stops immediately but `play()` continues sleeping until full duration expires. The primary stop mechanism (task cancellation) works correctly. Consider architectural change only if this behavioral difference with `SineWaveNotePlayer` causes issues [SoundFontNotePlayer.swift:108]
 
 ## Dev Notes
 
@@ -265,3 +270,4 @@ Modified files:
 ## Change Log
 
 - 2026-02-23: Implemented story 8.1 — SoundFontNotePlayer with Cello preset, RoutingNotePlayer for sound source selection, frequency→MIDI reverse conversion, Settings UI update, PeachApp wiring with graceful fallback
+- 2026-02-23: Code review fixes — Added input validation to `midiNoteAndCents()` (precondition frequency > 0) and `SoundFontNotePlayer.play()` (frequency/duration/amplitude guards matching SineWaveNotePlayer). Clamped MIDI note to 0-127 range. Added stop-previous-player logic to RoutingNotePlayer on source change. Fixed all test functions to comply with `@MainActor async` project rule. Added test for source-change stop behavior.

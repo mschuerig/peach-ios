@@ -8,7 +8,7 @@ struct FrequencyCalculationTests {
     // MARK: - Round-Trip Accuracy (Subtask 1.2)
 
     @Test("Round-trip: A4 (440 Hz) converts to MIDI 69, 0 cents and back within 0.01 cent")
-    func roundTrip_A4() throws {
+    @MainActor func roundTrip_A4() async throws {
         let originalFreq = try FrequencyCalculation.frequency(midiNote: 69, cents: 0.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: originalFreq)
         #expect(result.midiNote == 69)
@@ -16,7 +16,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Round-trip: Middle C (MIDI 60) converts back within 0.01 cent")
-    func roundTrip_MiddleC() throws {
+    @MainActor func roundTrip_MiddleC() async throws {
         let originalFreq = try FrequencyCalculation.frequency(midiNote: 60, cents: 0.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: originalFreq)
         #expect(result.midiNote == 60)
@@ -24,7 +24,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Round-trip: MIDI 60 + 25 cents converts back within 0.01 cent")
-    func roundTrip_withCentOffset() throws {
+    @MainActor func roundTrip_withCentOffset() async throws {
         let originalFreq = try FrequencyCalculation.frequency(midiNote: 60, cents: 25.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: originalFreq)
         #expect(result.midiNote == 60)
@@ -32,7 +32,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Round-trip: MIDI 60 - 25 cents converts back within 0.01 cent")
-    func roundTrip_withNegativeCentOffset() throws {
+    @MainActor func roundTrip_withNegativeCentOffset() async throws {
         let originalFreq = try FrequencyCalculation.frequency(midiNote: 60, cents: -25.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: originalFreq)
         #expect(result.midiNote == 60)
@@ -40,7 +40,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Round-trip: MIDI 45 + 73.5 cents converts back within 0.01 cent")
-    func roundTrip_arbitraryNoteAndCents() throws {
+    @MainActor func roundTrip_arbitraryNoteAndCents() async throws {
         let originalFreq = try FrequencyCalculation.frequency(midiNote: 45, cents: 73.5)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: originalFreq)
         // Could round to MIDI 46 with negative cents if 73.5 > 50, so check the round-trip via frequency
@@ -54,7 +54,7 @@ struct FrequencyCalculationTests {
     // MARK: - Exact MIDI Notes (Subtask 1.3)
 
     @Test("Exact MIDI note returns 0 cents remainder")
-    func exactMidiNote_zeroCents() throws {
+    @MainActor func exactMidiNote_zeroCents() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 69)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         #expect(result.midiNote == 69)
@@ -62,7 +62,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Exact MIDI notes across range return 0 cents")
-    func exactMidiNotes_acrossRange() throws {
+    @MainActor func exactMidiNotes_acrossRange() async throws {
         for midiNote in [0, 21, 36, 48, 60, 69, 84, 96, 108, 127] {
             let freq = try FrequencyCalculation.frequency(midiNote: midiNote)
             let result = FrequencyCalculation.midiNoteAndCents(frequency: freq)
@@ -74,7 +74,7 @@ struct FrequencyCalculationTests {
     // MARK: - Half-Semitone Offsets (Subtask 1.3)
 
     @Test("Half-semitone offset (+50 cents) returns ~50 cents remainder")
-    func halfSemitoneOffset_positive() throws {
+    @MainActor func halfSemitoneOffset_positive() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 60, cents: 50.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         // At exactly +50 cents, the nearest MIDI note is still 60 (rounds to 60, not 61)
@@ -88,7 +88,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Half-semitone offset (-50 cents) returns ~-50 cents remainder")
-    func halfSemitoneOffset_negative() throws {
+    @MainActor func halfSemitoneOffset_negative() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 60, cents: -50.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         let reconstructedFreq = try FrequencyCalculation.frequency(
@@ -102,7 +102,7 @@ struct FrequencyCalculationTests {
     // MARK: - Boundary Frequencies (Subtask 1.3)
 
     @Test("Lowest MIDI note (0) frequency converts back correctly")
-    func boundaryFrequency_lowestMidi() throws {
+    @MainActor func boundaryFrequency_lowestMidi() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         #expect(result.midiNote == 0)
@@ -110,7 +110,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Highest MIDI note (127) frequency converts back correctly")
-    func boundaryFrequency_highestMidi() throws {
+    @MainActor func boundaryFrequency_highestMidi() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 127)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         #expect(result.midiNote == 127)
@@ -120,7 +120,7 @@ struct FrequencyCalculationTests {
     // MARK: - Non-440 Reference Pitches (Subtask 1.3)
 
     @Test("Round-trip with A442 reference pitch within 0.01 cent")
-    func roundTrip_referencePitch442() throws {
+    @MainActor func roundTrip_referencePitch442() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 60, cents: 30.0, referencePitch: 442.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq, referencePitch: 442.0)
         #expect(result.midiNote == 60)
@@ -128,7 +128,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("Round-trip with A415 reference pitch within 0.01 cent")
-    func roundTrip_referencePitch415() throws {
+    @MainActor func roundTrip_referencePitch415() async throws {
         let freq = try FrequencyCalculation.frequency(midiNote: 69, cents: -15.0, referencePitch: 415.0)
         let result = FrequencyCalculation.midiNoteAndCents(frequency: freq, referencePitch: 415.0)
         #expect(result.midiNote == 69)
@@ -136,7 +136,7 @@ struct FrequencyCalculationTests {
     }
 
     @Test("A4 at 442 Hz reference returns MIDI 69, 0 cents")
-    func referencePitch442_A4() {
+    @MainActor func referencePitch442_A4() async {
         let result = FrequencyCalculation.midiNoteAndCents(frequency: 442.0, referencePitch: 442.0)
         #expect(result.midiNote == 69)
         #expect(abs(result.cents) < 0.01)
@@ -145,7 +145,7 @@ struct FrequencyCalculationTests {
     // MARK: - Cents Range Validation
 
     @Test("Cents remainder is always in range -50 to +50")
-    func centsRemainderRange() throws {
+    @MainActor func centsRemainderRange() async throws {
         // Test a variety of frequencies to ensure cents is always within [-50, 50]
         for midiNote in stride(from: 0, through: 127, by: 10) {
             for cents in stride(from: -49.0, through: 49.0, by: 7.0) {
