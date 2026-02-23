@@ -94,6 +94,7 @@ struct SettingsScreen: View {
             )
             Picker("Sound Source", selection: $soundSource) {
                 Text("Sine Wave").tag("sine")
+                Text("Cello").tag("cello")
             }
         }
     }

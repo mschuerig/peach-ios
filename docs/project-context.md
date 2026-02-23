@@ -20,7 +20,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **iOS 26.0** deployment target — use latest APIs freely, no backward compatibility
 - **SwiftUI** — declarative UI with SwiftUI lifecycle; **no UIKit in views** (UIKit only through protocol abstractions like `HapticFeedback`)
 - **SwiftData** — `@Model` for persistence; **only `TrainingDataStore` accesses SwiftData** — no direct `ModelContext` usage elsewhere
-- **AVAudioEngine** — single engine instance in `SineWaveNotePlayer`, created at app startup; never instantiate a second engine
+- **AVAudioEngine** — each `NotePlayer` implementation owns its own engine instance; `SineWaveNotePlayer` (sine waves), `SoundFontNotePlayer` (SF2 sampler). `RoutingNotePlayer` selects the active one
 - **Swift Testing** — `@Test`, `@Suite`, `#expect()` for all tests; **never use XCTest** (`XCTAssertEqual`, `XCTestCase`, `setUp/tearDown` are all wrong)
 - **@Observable** — modern observation macro; **never use `ObservableObject`/`@Published`**
 - **@AppStorage** — user preferences; keys centralized in `SettingsKeys.swift`
@@ -73,16 +73,17 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`ModelContainer` initialized once in `PeachApp.swift`** — passed via SwiftUI environment; new models must be registered in the schema there
 
 **AVAudioEngine:**
-- **Single `SineWaveNotePlayer` instance** — created at app startup, injected everywhere
+- **Each `NotePlayer` implementation owns its own `AVAudioEngine` instance** — `SineWaveNotePlayer` uses `AVAudioPlayerNode`, `SoundFontNotePlayer` uses `AVAudioUnitSampler`. `RoutingNotePlayer` ensures only one is active at a time
+- **`RoutingNotePlayer`** — wraps `SineWaveNotePlayer` and optional `SoundFontNotePlayer`; reads `SettingsKeys.soundSource` (`"sine"` or `"cello"`) on each `play()` call to select the active player
 - **Protocol boundary: `NotePlayer`** — knows only frequencies (Hz), durations, envelopes; no concept of MIDI notes, comparisons, or training
-- **MIDI-to-Hz conversion** — use existing `FrequencyCalculation.swift`, never reimplement
+- **MIDI-to-Hz conversion** — use existing `FrequencyCalculation.swift`, never reimplement. Includes `midiNoteAndCents(frequency:referencePitch:)` for Hz→MIDI reverse conversion
 - **Audio interruption handling** — `SineWaveNotePlayer` reports interruptions; `TrainingSession` discards current comparison
 
 **State Management:**
 - **`TrainingSession` is the central state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
 - **State transitions are guarded** — preconditions enforced; never skip states
 - **Observer pattern** — `ComparisonObserver` protocol; observers injected as array into `TrainingSession`
-- **Settings read live** — `TrainingSession` reads `@AppStorage` on each comparison, not cached
+- **Settings read live** — `TrainingSession` reads `@AppStorage` on each comparison, not cached; `RoutingNotePlayer` reads `soundSource` on each `play()` call
 
 **Composition Root (`PeachApp.swift`):**
 - **All service instantiation happens in `PeachApp.swift`** — this is the single dependency graph source of truth
@@ -211,7 +212,7 @@ Never run only specific test files — always the complete suite.
 - `@EnvironmentObject` → use `@Environment` with custom `EnvironmentKey`
 - `import XCTest` → use `import Testing`
 - Combine (`PassthroughSubject`, `sink`) → use `async/await`
-- Second `AVAudioEngine` instance → use the single injected `SineWaveNotePlayer`
+- Third `AVAudioEngine` instance → each `NotePlayer` implementation owns one engine; `RoutingNotePlayer` ensures only one is active
 - Direct `ModelContext` queries → go through `TrainingDataStore`
 - Sleep/fixed delays in tests → use `instantPlayback` mocks and `waitForState`
 - `@testable import` to test private methods → test through protocol interfaces

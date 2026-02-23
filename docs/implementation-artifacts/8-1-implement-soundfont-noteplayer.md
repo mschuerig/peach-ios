@@ -1,6 +1,6 @@
 # Story 8.1: Implement SoundFontNotePlayer with Fixed Cello Preset
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -58,43 +58,43 @@ So that my pitch discrimination practice uses a timbre closer to real musical in
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add frequency-to-MIDI reverse conversion to FrequencyCalculation (AC: #2, #7)
-  - [ ] 1.1 Add `static func midiNoteAndCents(frequency:referencePitch:) -> (midiNote: Int, cents: Double)` to `FrequencyCalculation`
-  - [ ] 1.2 Write tests verifying round-trip accuracy: frequency -> midiNote+cents -> frequency matches within 0.01 cent
-  - [ ] 1.3 Test edge cases: exact MIDI notes (0 cents), half-semitone offsets, boundary frequencies, non-440 reference pitches
+- [x] Task 1: Add frequency-to-MIDI reverse conversion to FrequencyCalculation (AC: #2, #7)
+  - [x] 1.1 Add `static func midiNoteAndCents(frequency:referencePitch:) -> (midiNote: Int, cents: Double)` to `FrequencyCalculation`
+  - [x] 1.2 Write tests verifying round-trip accuracy: frequency -> midiNote+cents -> frequency matches within 0.01 cent
+  - [x] 1.3 Test edge cases: exact MIDI notes (0 cents), half-semitone offsets, boundary frequencies, non-440 reference pitches
 
-- [ ] Task 2: Implement SoundFontNotePlayer (AC: #1, #2, #3, #7)
-  - [ ] 2.1 Create `Peach/Core/Audio/SoundFontNotePlayer.swift` conforming to `NotePlayer`
-  - [ ] 2.2 Initialize own `AVAudioEngine` + `AVAudioUnitSampler`; load GeneralUser GS SF2 with Cello preset (program 42, bankMSB 0x79, bankLSB 0)
-  - [ ] 2.3 Set pitch bend range to +/-2 semitones via RPN controller messages on init
-  - [ ] 2.4 Implement `play()`: convert frequency -> MIDI note + cent remainder via `FrequencyCalculation`, apply pitch bend, `startNote()`, sleep for duration, `stopNote()`
-  - [ ] 2.5 Implement `stop()`: stop currently playing note, handle cleanup without audible artifacts
-  - [ ] 2.6 Implement pitch bend calculation: `8192 + Int(cents * 8192.0 / 200.0)` clamped to `0...16383`
-  - [ ] 2.7 Configure `AVAudioSession` (`.playback` category) matching `SineWaveNotePlayer` pattern
-  - [ ] 2.8 Handle `CancellationError` during `Task.sleep` — always call `stopNote()` in defer/cleanup
-  - [ ] 2.9 Create `PeachTests/Core/Audio/SoundFontNotePlayerTests.swift`
+- [x] Task 2: Implement SoundFontNotePlayer (AC: #1, #2, #3, #7)
+  - [x] 2.1 Create `Peach/Core/Audio/SoundFontNotePlayer.swift` conforming to `NotePlayer`
+  - [x] 2.2 Initialize own `AVAudioEngine` + `AVAudioUnitSampler`; load GeneralUser GS SF2 with Cello preset (program 42, bankMSB 0x79, bankLSB 0)
+  - [x] 2.3 Set pitch bend range to +/-2 semitones via RPN controller messages on init
+  - [x] 2.4 Implement `play()`: convert frequency -> MIDI note + cent remainder via `FrequencyCalculation`, apply pitch bend, `startNote()`, sleep for duration, `stopNote()`
+  - [x] 2.5 Implement `stop()`: stop currently playing note, handle cleanup without audible artifacts
+  - [x] 2.6 Implement pitch bend calculation: `8192 + Int(cents * 8192.0 / 200.0)` clamped to `0...16383`
+  - [x] 2.7 Configure `AVAudioSession` (`.playback` category) matching `SineWaveNotePlayer` pattern
+  - [x] 2.8 Handle `CancellationError` during `Task.sleep` — always call `stopNote()` in defer/cleanup
+  - [x] 2.9 Create `PeachTests/Core/Audio/SoundFontNotePlayerTests.swift`
 
-- [ ] Task 3: Implement RoutingNotePlayer (AC: #4, #7)
-  - [ ] 3.1 Create `Peach/Core/Audio/RoutingNotePlayer.swift` conforming to `NotePlayer`
-  - [ ] 3.2 Hold references to both `SineWaveNotePlayer` and optional `SoundFontNotePlayer`
-  - [ ] 3.3 Read `SettingsKeys.soundSource` from `UserDefaults` on each `play()` call
-  - [ ] 3.4 Delegate `play()`/`stop()` to the active player; stop the previously active player if source changed between calls
-  - [ ] 3.5 Create `PeachTests/Core/Audio/RoutingNotePlayerTests.swift` testing routing logic with mock players
+- [x] Task 3: Implement RoutingNotePlayer (AC: #4, #7)
+  - [x] 3.1 Create `Peach/Core/Audio/RoutingNotePlayer.swift` conforming to `NotePlayer`
+  - [x] 3.2 Hold references to both `SineWaveNotePlayer` and optional `SoundFontNotePlayer`
+  - [x] 3.3 Read `SettingsKeys.soundSource` from `UserDefaults` on each `play()` call
+  - [x] 3.4 Delegate `play()`/`stop()` to the active player; stop the previously active player if source changed between calls
+  - [x] 3.5 Create `PeachTests/Core/Audio/RoutingNotePlayerTests.swift` testing routing logic with mock players
 
-- [ ] Task 4: Update Settings UI (AC: #5)
-  - [ ] 4.1 Add `"Cello"` option with tag `"cello"` to Sound Source picker in `SettingsScreen`
-  - [ ] 4.2 Add localized strings for "Cello" (English + German)
+- [x] Task 4: Update Settings UI (AC: #5)
+  - [x] 4.1 Add `"Cello"` option with tag `"cello"` to Sound Source picker in `SettingsScreen`
+  - [x] 4.2 Add localized strings for "Cello" (English + German)
 
-- [ ] Task 5: Wire up in PeachApp.swift (AC: #6)
-  - [ ] 5.1 Create `SoundFontNotePlayer` alongside existing `SineWaveNotePlayer`
-  - [ ] 5.2 Create `RoutingNotePlayer` wrapping both
-  - [ ] 5.3 Inject `RoutingNotePlayer` as the `NotePlayer` into `TrainingSession`
-  - [ ] 5.4 Handle `SoundFontNotePlayer` init failure gracefully — log error, continue with sine-only (pass `nil` to `RoutingNotePlayer`)
+- [x] Task 5: Wire up in PeachApp.swift (AC: #6)
+  - [x] 5.1 Create `SoundFontNotePlayer` alongside existing `SineWaveNotePlayer`
+  - [x] 5.2 Create `RoutingNotePlayer` wrapping both
+  - [x] 5.3 Inject `RoutingNotePlayer` as the `NotePlayer` into `TrainingSession`
+  - [x] 5.4 Handle `SoundFontNotePlayer` init failure gracefully — log error, continue with sine-only (pass `nil` to `RoutingNotePlayer`)
 
-- [ ] Task 6: Update project-context.md (housekeeping)
-  - [ ] 6.1 Update AVAudioEngine rule to reflect that each NotePlayer implementation owns its own engine instance
-  - [ ] 6.2 Add `SoundFontNotePlayer` and `RoutingNotePlayer` to project structure section
-  - [ ] 6.3 Document `SettingsKeys.soundSource` values (`"sine"`, `"cello"`)
+- [x] Task 6: Update project-context.md (housekeeping)
+  - [x] 6.1 Update AVAudioEngine rule to reflect that each NotePlayer implementation owns its own engine instance
+  - [x] 6.2 Add `SoundFontNotePlayer` and `RoutingNotePlayer` to project structure section
+  - [x] 6.3 Document `SettingsKeys.soundSource` values (`"sine"`, `"cello"`)
 
 ## Dev Notes
 
@@ -227,10 +227,41 @@ The project is in a post-MVP phase — recent work is sampled instrument infrast
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Fixed Swift 6 `@MainActor` isolation on static helper methods (`pitchBendValue`, `midiVelocity`) — required `nonisolated` keyword
+- Created shared Xcode scheme (`Peach.xcscheme`) since project had no shared scheme for CLI test runs
+
 ### Completion Notes List
 
+- Task 1: Added `FrequencyCalculation.midiNoteAndCents(frequency:referencePitch:)` reverse conversion with 15 comprehensive tests covering round-trip accuracy, edge cases, boundary frequencies, and multiple reference pitches
+- Task 2: Implemented `SoundFontNotePlayer` with AVAudioUnitSampler, Cello preset (program 42), RPN pitch bend setup, frequency→MIDI conversion, and defer-based cleanup. 14 tests for protocol conformance, SF2 loading, pitch bend math, and velocity mapping
+- Task 3: Implemented `RoutingNotePlayer` that reads `SettingsKeys.soundSource` on each `play()` call and delegates to sine or SF2 player. Falls back to sine if SF2 player is nil. 7 tests with MockNotePlayer
+- Task 4: Added "Cello" option to Sound Source picker in SettingsScreen with English and German localization
+- Task 5: Wired `RoutingNotePlayer` as the `NotePlayer` injected into `TrainingSession` via `PeachApp.swift`. SoundFontNotePlayer init failure is caught and logged, app continues with sine-only
+- Task 6: Updated project-context.md to reflect separate AVAudioEngine per NotePlayer, documented RoutingNotePlayer, soundSource settings values, and midiNoteAndCents reverse conversion
+
 ### File List
+
+New files:
+- Peach/Core/Audio/SoundFontNotePlayer.swift
+- Peach/Core/Audio/RoutingNotePlayer.swift
+- PeachTests/Core/Audio/FrequencyCalculationTests.swift
+- PeachTests/Core/Audio/SoundFontNotePlayerTests.swift
+- PeachTests/Core/Audio/RoutingNotePlayerTests.swift
+- Peach.xcodeproj/xcshareddata/xcschemes/Peach.xcscheme
+
+Modified files:
+- Peach/Core/Audio/FrequencyCalculation.swift
+- Peach/Settings/SettingsScreen.swift
+- Peach/App/PeachApp.swift
+- Peach/Resources/Localizable.xcstrings
+- docs/project-context.md
+- docs/implementation-artifacts/8-1-implement-soundfont-noteplayer.md
+- docs/implementation-artifacts/sprint-status.yaml
+
+## Change Log
+
+- 2026-02-23: Implemented story 8.1 — SoundFontNotePlayer with Cello preset, RoutingNotePlayer for sound source selection, frequency→MIDI reverse conversion, Settings UI update, PeachApp wiring with graceful fallback
