@@ -101,4 +101,4 @@ development_status:
   fix-feedback-icon-flicker-on-correctness-change: done # Feedback icon briefly shows previous icon before current
 
   # Infrastructure: Sampled Instrument Build Support
-  infra-sf2-build-download-cache: ready-for-dev # Download SF2 samples to cache at build time, keep out of git
+  infra-sf2-build-download-cache: review # Download SF2 samples to cache at build time, keep out of git
