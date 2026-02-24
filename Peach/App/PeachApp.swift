@@ -8,6 +8,7 @@ struct PeachApp: App {
     @State private var trainingSession: TrainingSession
     @State private var profile: PerceptualProfile
     @State private var trendAnalyzer: TrendAnalyzer
+    @State private var thresholdTimeline: ThresholdTimeline
     @State private var soundFontLibrary: SoundFontLibrary
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
@@ -47,18 +48,23 @@ struct PeachApp: App {
             let trendAnalyzer = TrendAnalyzer(records: existingRecords)
             _trendAnalyzer = State(wrappedValue: trendAnalyzer)
 
+            // Create threshold timeline from existing records (Story 9.2)
+            let thresholdTimeline = ThresholdTimeline(records: existingRecords)
+            _thresholdTimeline = State(wrappedValue: thresholdTimeline)
+
             // KazezNoteStrategy: continuous difficulty chain with random note selection (Story 9.1)
             let strategy = KazezNoteStrategy()
 
             // Create training session with observer pattern (Story 4.1) and adaptive strategy (Story 4.3)
-            // Observers: dataStore (persistence), profile (analytics), hapticManager (feedback)
+            // Observers: dataStore (persistence), profile (analytics), hapticManager (feedback), thresholdTimeline (visualization)
             let hapticManager = HapticFeedbackManager()
-            let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer]
+            let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer, thresholdTimeline]
             _trainingSession = State(wrappedValue: TrainingSession(
                 notePlayer: notePlayer,
                 strategy: strategy,
                 profile: profile,
                 trendAnalyzer: trendAnalyzer,
+                thresholdTimeline: thresholdTimeline,
                 observers: observers
             ))
         } catch {
@@ -72,6 +78,7 @@ struct PeachApp: App {
                 .environment(\.trainingSession, trainingSession)
                 .environment(\.perceptualProfile, profile)
                 .environment(\.trendAnalyzer, trendAnalyzer)
+                .environment(\.thresholdTimeline, thresholdTimeline)
                 .environment(\.soundFontLibrary, soundFontLibrary)
                 .modelContainer(modelContainer)
         }

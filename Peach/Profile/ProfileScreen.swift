@@ -1,125 +1,80 @@
 import SwiftUI
-import Charts
 
 struct ProfileScreen: View {
     @Environment(\.perceptualProfile) private var profile
-    @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.thresholdTimeline) private var timeline
 
-    private let layout = PianoKeyboardLayout(midiRange: 36...84)
-
-    private var isCompactHeight: Bool {
-        verticalSizeClass == .compact
-    }
-
-    // MARK: - Layout Parameters (extracted for testability)
-
-    static func confidenceBandMinHeight(isCompact: Bool) -> CGFloat {
-        isCompact ? 120 : 200
-    }
-
-    static func keyboardHeight(isCompact: Bool) -> CGFloat {
-        isCompact ? 40 : 60
-    }
+    private let midiRange: ClosedRange<Int> = 36...84
 
     var body: some View {
         VStack(spacing: 0) {
-            if hasTrainingData {
-                // Trained state: confidence band + keyboard
-                profileVisualization
-            } else {
-                // Cold start: keyboard + empty state message
-                coldStartView
-            }
+            Spacer()
+
+            ThresholdTimelineView()
+                .padding(.horizontal)
+
+            SummaryStatisticsView(midiRange: midiRange)
+
+            Spacer()
         }
         .navigationTitle("Profile")
         .navigationBarTitleDisplayMode(.inline)
-    }
-
-    // MARK: - Trained State
-
-    private var profileVisualization: some View {
-        let dataPoints = ConfidenceBandData.prepare(from: profile, midiRange: layout.midiRange)
-
-        return VStack(spacing: 0) {
-            Spacer()
-
-            ConfidenceBandView(dataPoints: dataPoints, layout: layout)
-                .frame(minHeight: Self.confidenceBandMinHeight(isCompact: isCompactHeight))
-                .padding(.horizontal)
-
-            PianoKeyboardView(midiRange: layout.midiRange, height: Self.keyboardHeight(isCompact: isCompactHeight))
-                .padding(.horizontal)
-
-            SummaryStatisticsView(midiRange: layout.midiRange)
-
-            Spacer()
-        }
-        .accessibilityElement(children: .ignore)
+        .accessibilityElement(children: timeline.dataPoints.isEmpty ? .combine : .ignore)
         .accessibilityLabel(accessibilitySummary)
     }
 
-    // MARK: - Cold Start State
-
-    private var coldStartView: some View {
-        VStack(spacing: 0) {
-            Spacer()
-
-            Text("Start training to build your profile")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.bottom, 24)
-
-            PianoKeyboardView(midiRange: layout.midiRange, height: Self.keyboardHeight(isCompact: isCompactHeight))
-                .padding(.horizontal)
-
-            SummaryStatisticsView(midiRange: layout.midiRange)
-
-            Spacer()
-        }
-        .accessibilityElement(children: .combine)
-    }
-
-    // MARK: - Helpers
-
-    private var hasTrainingData: Bool {
-        profile.overallMean != nil
-    }
+    // MARK: - Accessibility
 
     private var accessibilitySummary: String {
-        Self.accessibilitySummary(profile: profile, midiRange: layout.midiRange)
+        Self.accessibilitySummary(timeline: timeline)
     }
 
-    /// Computes VoiceOver summary using absolute per-note means
-    /// to avoid directional cancellation of signed centOffset values
     @MainActor
-    static func accessibilitySummary(profile: PerceptualProfile, midiRange: ClosedRange<Int>) -> String {
-        let trainedNotes = midiRange.filter { profile.statsForNote($0).isTrained }
-
-        guard let lowestTrained = trainedNotes.first,
-              let highestTrained = trainedNotes.last,
-              !trainedNotes.isEmpty else {
-            return String(localized: "Perceptual profile. No training data available.")
+    static func accessibilitySummary(timeline: ThresholdTimeline) -> String {
+        let aggregated = timeline.aggregatedPoints
+        guard !aggregated.isEmpty else {
+            return String(localized: "Threshold timeline. No training data available.")
         }
 
-        let lowestName = PianoKeyboardLayout.noteName(midiNote: lowestTrained)
-        let highestName = PianoKeyboardLayout.noteName(midiNote: highestTrained)
-        let roundedThreshold = profile.averageThreshold(midiRange: midiRange) ?? 0
+        let totalComparisons = timeline.dataPoints.count
+        let firstDate = aggregated.first!.periodStart
+        let lastDate = aggregated.last!.periodStart
 
-        return String(localized: "Perceptual profile showing detection thresholds from \(lowestName) to \(highestName). Average threshold: \(roundedThreshold) cents.")
+        let dateRange: String
+        if Calendar.current.isDate(firstDate, inSameDayAs: lastDate) {
+            dateRange = lastDate.formatted(.dateTime.month().day())
+        } else {
+            dateRange = "\(firstDate.formatted(.dateTime.month().day())) – \(lastDate.formatted(.dateTime.month().day()))"
+        }
+
+        let means = timeline.rollingMean()
+        let currentAvg = means.last.map { Int($0.value.rounded()) } ?? 0
+
+        return String(localized: "Threshold timeline showing \(totalComparisons) comparisons over \(dateRange). Current average: \(currentAvg) cents.")
     }
 }
 
 #Preview("With Data") {
     NavigationStack {
         ProfileScreen()
+            .environment(\.thresholdTimeline, {
+                let records = (0..<50).map { i in
+                    let baseOffset = 50.0 - Double(i) * 0.5
+                    let noise = Double.random(in: -10...10)
+                    return ComparisonRecord(
+                        note1: 60,
+                        note2: 60,
+                        note2CentOffset: baseOffset + noise,
+                        isCorrect: Bool.random(),
+                        timestamp: Date().addingTimeInterval(Double(i - 50) * 86400)
+                    )
+                }
+                return ThresholdTimeline(records: records)
+            }())
             .environment(\.perceptualProfile, {
                 let p = PerceptualProfile()
                 for note in stride(from: 36, through: 84, by: 3) {
-                    let threshold = Double.random(in: 10...80)
-                    p.update(note: note, centOffset: threshold, isCorrect: true)
-                    p.update(note: note, centOffset: threshold + 5, isCorrect: true)
-                    p.update(note: note, centOffset: threshold - 5, isCorrect: false)
+                    p.update(note: note, centOffset: Double.random(in: 10...80), isCorrect: true)
                 }
                 return p
             }())

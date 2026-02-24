@@ -2,45 +2,37 @@ import Testing
 import SwiftUI
 @testable import Peach
 
-/// Tests for ProfileScreen layout adaptation based on vertical size class (Story 7.3)
 @Suite("ProfileScreen Layout Tests")
 @MainActor
 struct ProfileScreenLayoutTests {
 
-    // MARK: - Confidence Band Min Height
+    // MARK: - Accessibility Summary
 
-    @Test("Confidence band min height is 120pt in compact mode")
-    func confidenceBandMinHeightCompact() {
-        #expect(ProfileScreen.confidenceBandMinHeight(isCompact: true) == 120)
+    @Test("Accessibility summary shows comparison count and current average")
+    func accessibilitySummaryWithData() async throws {
+        // 30 records across 30 different days so aggregation produces 30 points
+        let records = (0..<30).map { i in
+            ComparisonRecord(
+                note1: 60,
+                note2: 60,
+                note2CentOffset: Double(30 + i),
+                isCorrect: true,
+                timestamp: Date().addingTimeInterval(Double(i - 30) * 86400)
+            )
+        }
+        let timeline = ThresholdTimeline(records: records)
+
+        let summary = ProfileScreen.accessibilitySummary(timeline: timeline)
+
+        #expect(summary.contains("30"), "Expected comparison count 30 in: \(summary)")
+        #expect(summary.contains("50"), "Expected current average ~50 in: \(summary)")
     }
 
-    @Test("Confidence band min height is 200pt in regular mode")
-    func confidenceBandMinHeightRegular() {
-        #expect(ProfileScreen.confidenceBandMinHeight(isCompact: false) == 200)
-    }
+    @Test("Accessibility summary empty state is non-empty")
+    func accessibilitySummaryEmpty() async throws {
+        let timeline = ThresholdTimeline()
+        let summary = ProfileScreen.accessibilitySummary(timeline: timeline)
 
-    // MARK: - Keyboard Height
-
-    @Test("Keyboard height is 40pt in compact mode")
-    func keyboardHeightCompact() {
-        #expect(ProfileScreen.keyboardHeight(isCompact: true) == 40)
-    }
-
-    @Test("Keyboard height is 60pt in regular mode")
-    func keyboardHeightRegular() {
-        #expect(ProfileScreen.keyboardHeight(isCompact: false) == 60)
-    }
-
-    // MARK: - Compact vs Regular Consistency
-
-    @Test("All compact dimensions are smaller than regular dimensions")
-    func compactDimensionsSmallerThanRegular() {
-        #expect(ProfileScreen.confidenceBandMinHeight(isCompact: true) < ProfileScreen.confidenceBandMinHeight(isCompact: false))
-        #expect(ProfileScreen.keyboardHeight(isCompact: true) < ProfileScreen.keyboardHeight(isCompact: false))
-    }
-
-    @Test("Compact confidence band min height exceeds 44pt minimum tap target")
-    func compactConfidenceBandExceedsTapTarget() {
-        #expect(ProfileScreen.confidenceBandMinHeight(isCompact: true) >= 44)
+        #expect(!summary.isEmpty)
     }
 }

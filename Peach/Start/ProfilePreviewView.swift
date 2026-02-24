@@ -1,41 +1,50 @@
 import SwiftUI
 import Charts
 
-/// Compact profile preview for the Start Screen
-/// Reuses the same data pipeline and rendering as the full ProfileScreen
 struct ProfilePreviewView: View {
-    @Environment(\.perceptualProfile) private var profile
-
-    private let layout = PianoKeyboardLayout(midiRange: 36...84)
+    @Environment(\.thresholdTimeline) private var timeline
 
     var body: some View {
-        VStack(spacing: 0) {
-            if hasTrainingData {
-                let dataPoints = ConfidenceBandData.prepare(from: profile, midiRange: layout.midiRange)
-                ConfidenceBandView(dataPoints: dataPoints, layout: layout)
-                    .frame(height: 45)
-            }
-
-            PianoKeyboardView(midiRange: layout.midiRange, height: 25, showLabels: false)
+        if timeline.dataPoints.isEmpty {
+            EmptyView()
+        } else {
+            sparklineChart
         }
+    }
+
+    private var sparklineChart: some View {
+        let means = timeline.rollingMean()
+
+        return Chart {
+            ForEach(Array(means.enumerated()), id: \.offset) { _, mean in
+                LineMark(
+                    x: .value("Time", mean.date),
+                    y: .value("Mean", mean.value)
+                )
+                .foregroundStyle(.tint)
+                .lineStyle(StrokeStyle(lineWidth: 1.5))
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartLegend(.hidden)
+        .frame(height: 45)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isButton)
     }
 
-    private var hasTrainingData: Bool {
-        profile.overallMean != nil
-    }
-
     var accessibilityLabel: String {
-        Self.accessibilityLabel(profile: profile, midiRange: layout.midiRange)
+        Self.accessibilityLabel(timeline: timeline)
     }
 
-    static func accessibilityLabel(profile: PerceptualProfile, midiRange: ClosedRange<Int>) -> String {
-        if let threshold = profile.averageThreshold(midiRange: midiRange) {
-            return String(localized: "Your pitch profile. Tap to view details. Average threshold: \(threshold) cents.")
+    static func accessibilityLabel(timeline: ThresholdTimeline) -> String {
+        let means = timeline.rollingMean()
+        if let lastMean = means.last {
+            let rounded = Int(lastMean.value.rounded())
+            return String(localized: "Your training progress. Tap to view details. Current threshold: \(rounded) cents.")
         } else {
-            return String(localized: "Your pitch profile. Tap to view details.")
+            return String(localized: "Your training progress. Tap to view details.")
         }
     }
 }
@@ -43,15 +52,19 @@ struct ProfilePreviewView: View {
 #Preview("With Data") {
     ProfilePreviewView()
         .padding(.horizontal)
-        .environment(\.perceptualProfile, {
-            let p = PerceptualProfile()
-            for note in stride(from: 36, through: 84, by: 3) {
-                let threshold = Double.random(in: 10...80)
-                p.update(note: note, centOffset: threshold, isCorrect: true)
-                p.update(note: note, centOffset: threshold + 5, isCorrect: true)
-                p.update(note: note, centOffset: threshold - 5, isCorrect: false)
+        .environment(\.thresholdTimeline, {
+            let records = (0..<50).map { i in
+                let baseOffset = 50.0 - Double(i) * 0.5
+                let noise = Double.random(in: -10...10)
+                return ComparisonRecord(
+                    note1: 60,
+                    note2: 60,
+                    note2CentOffset: baseOffset + noise,
+                    isCorrect: Bool.random(),
+                    timestamp: Date().addingTimeInterval(Double(i - 50) * 86400)
+                )
             }
-            return p
+            return ThresholdTimeline(records: records)
         }())
 }
 

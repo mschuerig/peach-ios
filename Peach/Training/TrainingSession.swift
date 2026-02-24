@@ -101,6 +101,9 @@ final class TrainingSession {
     /// Trend analyzer for reset coordination (optional — nil in tests that don't need it)
     private let trendAnalyzer: TrendAnalyzer?
 
+    /// Threshold timeline for reset coordination (optional — nil in tests that don't need it)
+    private let thresholdTimeline: ThresholdTimeline?
+
     /// Observers notified when comparisons are completed (Story 4.1)
     /// Decouples TrainingSession from specific persistence and analytics implementations
     private let observers: [ComparisonObserver]
@@ -172,6 +175,7 @@ final class TrainingSession {
     ///   - settingsOverride: Optional settings for test injection (nil = read from @AppStorage)
     ///   - noteDurationOverride: Optional duration for test injection (nil = read from @AppStorage)
     ///   - trendAnalyzer: Trend analyzer for reset coordination (nil in tests that don't need it)
+    ///   - thresholdTimeline: Threshold timeline for reset coordination (nil in tests that don't need it)
     ///   - observers: Observers notified when comparisons complete (e.g., dataStore, profile, hapticManager)
     ///   - notificationCenter: Notification center for audio interruption observers (defaults to .default)
     init(
@@ -181,6 +185,7 @@ final class TrainingSession {
         settingsOverride: TrainingSettings? = nil,
         noteDurationOverride: TimeInterval? = nil,
         trendAnalyzer: TrendAnalyzer? = nil,
+        thresholdTimeline: ThresholdTimeline? = nil,
         observers: [ComparisonObserver] = [],
         notificationCenter: NotificationCenter = .default
     ) {
@@ -190,6 +195,7 @@ final class TrainingSession {
         self.settingsOverride = settingsOverride
         self.noteDurationOverride = noteDurationOverride
         self.trendAnalyzer = trendAnalyzer
+        self.thresholdTimeline = thresholdTimeline
         self.observers = observers
         self.notificationCenter = notificationCenter
 
@@ -308,6 +314,7 @@ final class TrainingSession {
         sessionBestCentDifference = nil
         profile.reset()
         trendAnalyzer?.reset()
+        thresholdTimeline?.reset()
 
         logger.info("Training data reset to cold start")
     }
