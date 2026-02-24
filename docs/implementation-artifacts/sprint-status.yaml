@@ -117,7 +117,7 @@ development_status:
   # Epic 10: Vary Loudness Training Complication
   epic-10: in-progress
   10-1-research-volume-control-in-avaudiounitsampler: done # Research AVAudioEngine volume control independent of MIDI velocity
-  10-2-rename-amplitude-to-velocity: ready-for-dev # Rename amplitude→velocity, retype Double→UInt8 throughout codebase
+  10-2-rename-amplitude-to-velocity: review # Rename amplitude→velocity, retype Double→UInt8 throughout codebase
   10-3-add-amplitude-parameter-to-noteplayer: backlog # Add true amplitude (volume) parameter to NotePlayer protocol
   10-4-add-vary-loudness-slider-to-settings: backlog # "Vary Loudness" slider in Settings with @AppStorage
   10-5-apply-loudness-variation-in-training: backlog # TrainingSession applies random loudness offset to note2

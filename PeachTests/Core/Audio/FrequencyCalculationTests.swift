@@ -72,7 +72,7 @@ struct FrequencyCalculationTests {
         let error1: AudioError = .engineStartFailed("test")
         let error2: AudioError = .invalidFrequency("test")
         let error3: AudioError = .invalidDuration("test")
-        let error4: AudioError = .invalidAmplitude("test")
+        let error4: AudioError = .invalidVelocity("test")
         let error5: AudioError = .invalidPreset("test")
         let error6: AudioError = .contextUnavailable
         #expect(error1 as Error is AudioError)

@@ -1,6 +1,6 @@
 # Story 10.2: Rename Amplitude to Velocity
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,55 +26,55 @@ So that the audio API correctly reflects what it actually controls and makes roo
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update `NotePlayer` protocol and `AudioError` enum (AC: #1, #3)
-  - [ ] Rename `AudioError.invalidAmplitude` to `AudioError.invalidVelocity` in `Peach/Core/Audio/NotePlayer.swift`
-  - [ ] Change protocol signature from `play(frequency: Double, duration: TimeInterval, amplitude: Double)` to `play(frequency: Double, duration: TimeInterval, velocity: UInt8)`
-  - [ ] Update doc comments to reflect MIDI velocity semantics (0-127)
+- [x] Task 1: Update `NotePlayer` protocol and `AudioError` enum (AC: #1, #3)
+  - [x] Rename `AudioError.invalidAmplitude` to `AudioError.invalidVelocity` in `Peach/Core/Audio/NotePlayer.swift`
+  - [x] Change protocol signature from `play(frequency: Double, duration: TimeInterval, amplitude: Double)` to `play(frequency: Double, duration: TimeInterval, velocity: UInt8)`
+  - [x] Update doc comments to reflect MIDI velocity semantics (0-127)
 
-- [ ] Task 2: Update `SoundFontNotePlayer` implementation (AC: #1, #2, #3)
-  - [ ] Change `play` signature to accept `velocity: UInt8`
-  - [ ] Remove the `static func midiVelocity(forAmplitude:) -> UInt8` helper entirely
-  - [ ] Replace amplitude validation `(0.0...1.0).contains(amplitude)` with velocity validation `(0...127).contains(velocity)` (note: velocity is UInt8 so lower bound 0 is always satisfied; validate upper bound and consider whether 0 should be rejected — MIDI velocity 0 = note-off)
-  - [ ] Replace `AudioError.invalidAmplitude` throw with `AudioError.invalidVelocity`
-  - [ ] Pass `velocity` directly to `sampler.startNote(midiNote, withVelocity: velocity, onChannel:)` (remove the `let velocity = Self.midiVelocity(forAmplitude: amplitude)` line)
+- [x] Task 2: Update `SoundFontNotePlayer` implementation (AC: #1, #2, #3)
+  - [x] Change `play` signature to accept `velocity: UInt8`
+  - [x] Remove the `static func midiVelocity(forAmplitude:) -> UInt8` helper entirely
+  - [x] Replace amplitude validation `(0.0...1.0).contains(amplitude)` with velocity validation `(0...127).contains(velocity)` (note: velocity is UInt8 so lower bound 0 is always satisfied; validate upper bound and consider whether 0 should be rejected — MIDI velocity 0 = note-off)
+  - [x] Replace `AudioError.invalidAmplitude` throw with `AudioError.invalidVelocity`
+  - [x] Pass `velocity` directly to `sampler.startNote(midiNote, withVelocity: velocity, onChannel:)` (remove the `let velocity = Self.midiVelocity(forAmplitude: amplitude)` line)
 
-- [ ] Task 3: Update `TrainingSession` (AC: #4)
-  - [ ] Rename `private let amplitude: Double = 0.5` to `private let velocity: UInt8 = 63` (line 139)
-  - [ ] Update both `notePlayer.play(...)` calls (lines 401 and 412) to pass `velocity: velocity` instead of `amplitude: amplitude`
-  - [ ] Update the comment on line 138 from "Amplitude for note playback (0.0-1.0)" to "MIDI velocity for note playback (0-127)"
+- [x] Task 3: Update `TrainingSession` (AC: #4)
+  - [x] Rename `private let amplitude: Double = 0.5` to `private let velocity: UInt8 = 63` (line 139)
+  - [x] Update both `notePlayer.play(...)` calls (lines 401 and 412) to pass `velocity: velocity` instead of `amplitude: amplitude`
+  - [x] Update the comment on line 138 from "Amplitude for note playback (0.0-1.0)" to "MIDI velocity for note playback (0-127)"
 
-- [ ] Task 4: Update preview mock in `TrainingScreen.swift` (AC: #1)
-  - [ ] Change `MockNotePlayerForPreview.play(frequency:duration:amplitude:)` signature to `play(frequency:duration:velocity:)` with `velocity: UInt8` (line 181)
+- [x] Task 4: Update preview mock in `TrainingScreen.swift` (AC: #1)
+  - [x] Change `MockNotePlayerForPreview.play(frequency:duration:amplitude:)` signature to `play(frequency:duration:velocity:)` with `velocity: UInt8` (line 181)
 
-- [ ] Task 5: Update `MockNotePlayer` (AC: #5)
-  - [ ] Rename `lastAmplitude: Double?` to `lastVelocity: UInt8?` (line 12)
-  - [ ] Change `playHistory` tuple from `(frequency: Double, duration: TimeInterval, amplitude: Double)` to `(frequency: Double, duration: TimeInterval, velocity: UInt8)` (line 13)
-  - [ ] Update `play` method signature and body: `amplitude` param → `velocity: UInt8`, capture to `lastVelocity`, append to `playHistory` with `velocity:` (lines 34-39)
-  - [ ] Update `reset()`: `lastAmplitude = nil` → `lastVelocity = nil` (line 67)
+- [x] Task 5: Update `MockNotePlayer` (AC: #5)
+  - [x] Rename `lastAmplitude: Double?` to `lastVelocity: UInt8?` (line 12)
+  - [x] Change `playHistory` tuple from `(frequency: Double, duration: TimeInterval, amplitude: Double)` to `(frequency: Double, duration: TimeInterval, velocity: UInt8)` (line 13)
+  - [x] Update `play` method signature and body: `amplitude` param → `velocity: UInt8`, capture to `lastVelocity`, append to `playHistory` with `velocity:` (lines 34-39)
+  - [x] Update `reset()`: `lastAmplitude = nil` → `lastVelocity = nil` (line 67)
 
-- [ ] Task 6: Update `SoundFontNotePlayerTests` (AC: #2, #3, #6)
-  - [ ] Remove the 3 `midiVelocity(forAmplitude:)` tests entirely (the helper no longer exists):
+- [x] Task 6: Update `SoundFontNotePlayerTests` (AC: #2, #3, #6)
+  - [x] Remove the 3 `midiVelocity(forAmplitude:)` tests entirely (the helper no longer exists):
     - `amplitude_half` (line 98-101)
     - `amplitude_full` (line 104-107)
     - `amplitude_zero_floorsAt1` (line 110-113)
-  - [ ] Replace all `amplitude: 0.5` arguments in `play()` calls with `velocity: 63` (lines 37, 149, 219, 227, 235, 243)
-  - [ ] Add new tests for velocity validation:
+  - [x] Replace all `amplitude: 0.5` arguments in `play()` calls with `velocity: 63` (lines 37, 149, 219, 227, 235, 243)
+  - [x] Add new tests for velocity validation:
     - Velocity 0 behavior (note-off in MIDI — decide: reject with error or allow)
     - Velocity 127 is accepted
     - Velocity within range plays successfully
 
-- [ ] Task 7: Update `TrainingSessionIntegrationTests` (AC: #6)
-  - [ ] Rename test `passesCorrectAmplitude` to `passesCorrectVelocity` (line 43)
-  - [ ] Change assertion from `f.mockPlayer.lastAmplitude == 0.5` to `f.mockPlayer.lastVelocity == 63` (line 50)
-  - [ ] Update test description string to mention velocity
+- [x] Task 7: Update `TrainingSessionIntegrationTests` (AC: #6)
+  - [x] Rename test `passesCorrectAmplitude` to `passesCorrectVelocity` (line 43)
+  - [x] Change assertion from `f.mockPlayer.lastAmplitude == 0.5` to `f.mockPlayer.lastVelocity == 63` (line 50)
+  - [x] Update test description string to mention velocity
 
-- [ ] Task 8: Update `FrequencyCalculationTests` (AC: #3, #6)
-  - [ ] Change `AudioError.invalidAmplitude("test")` to `AudioError.invalidVelocity("test")` in `audioError_CasesExist` test (line 75)
+- [x] Task 8: Update `FrequencyCalculationTests` (AC: #3, #6)
+  - [x] Change `AudioError.invalidAmplitude("test")` to `AudioError.invalidVelocity("test")` in `audioError_CasesExist` test (line 75)
 
-- [ ] Task 9: Run full test suite and verify (AC: #6)
-  - [ ] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All tests must pass with zero failures
-  - [ ] Verify no remaining references to "amplitude" in Swift files (grep check)
+- [x] Task 9: Run full test suite and verify (AC: #6)
+  - [x] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All tests must pass with zero failures
+  - [x] Verify no remaining references to "amplitude" in Swift files (grep check)
 
 ## Dev Notes
 
@@ -142,10 +142,41 @@ After this refactoring:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no errors or retries.
+
 ### Completion Notes List
 
+- Renamed `AudioError.invalidAmplitude` → `AudioError.invalidVelocity` and updated doc comments
+- Changed `NotePlayer.play()` signature from `amplitude: Double` to `velocity: UInt8`
+- Removed `SoundFontNotePlayer.midiVelocity(forAmplitude:)` static helper entirely
+- Updated `SoundFontNotePlayer.play()` to validate velocity 1-127 and pass directly to sampler
+- Renamed `TrainingSession.amplitude: Double = 0.5` → `velocity: UInt8 = 63` with both play() calls updated
+- Updated `MockNotePlayerForPreview` in `TrainingScreen.swift`
+- Updated `MockNotePlayer`: `lastAmplitude` → `lastVelocity`, `playHistory` tuple retyped, `reset()` updated
+- Removed 3 obsolete `midiVelocity(forAmplitude:)` tests from `SoundFontNotePlayerTests`
+- Added 3 new velocity validation tests: velocity 0 rejected, velocity 127 accepted, velocity in range plays
+- Replaced all `amplitude: 0.5` test arguments with `velocity: 63`
+- Renamed `passesCorrectAmplitude` test → `passesCorrectVelocity` in integration tests
+- Updated `AudioError.invalidAmplitude` → `.invalidVelocity` in `FrequencyCalculationTests`
+- Full test suite passes, zero "amplitude" references remain in any Swift file
+
+### Change Log
+
+- 2026-02-24: Renamed amplitude→velocity throughout codebase (8 files), retyped Double→UInt8, removed midiVelocity helper, added velocity validation tests
+
 ### File List
+
+- Peach/Core/Audio/NotePlayer.swift (modified)
+- Peach/Core/Audio/SoundFontNotePlayer.swift (modified)
+- Peach/Training/TrainingSession.swift (modified)
+- Peach/Training/TrainingScreen.swift (modified)
+- PeachTests/Training/MockNotePlayer.swift (modified)
+- PeachTests/Core/Audio/SoundFontNotePlayerTests.swift (modified)
+- PeachTests/Training/TrainingSessionIntegrationTests.swift (modified)
+- PeachTests/Core/Audio/FrequencyCalculationTests.swift (modified)
+- docs/implementation-artifacts/sprint-status.yaml (modified)
+- docs/implementation-artifacts/10-2-rename-amplitude-to-velocity.md (modified)

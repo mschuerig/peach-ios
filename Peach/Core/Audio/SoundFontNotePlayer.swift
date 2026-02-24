@@ -101,7 +101,7 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - NotePlayer Protocol
 
-    func play(frequency: Double, duration: TimeInterval, amplitude: Double) async throws {
+    func play(frequency: Double, duration: TimeInterval, velocity: UInt8) async throws {
         // Select preset from UserDefaults sound source setting
         let source = UserDefaults.standard.string(forKey: SettingsKeys.soundSource)
             ?? SettingsKeys.defaultSoundSource
@@ -127,9 +127,9 @@ final class SoundFontNotePlayer: NotePlayer {
                 "Duration \(duration) seconds must be positive"
             )
         }
-        guard (0.0...1.0).contains(amplitude) else {
-            throw AudioError.invalidAmplitude(
-                "Amplitude \(amplitude) is outside valid range 0.0-1.0"
+        guard velocity >= 1, velocity <= 127 else {
+            throw AudioError.invalidVelocity(
+                "Velocity \(velocity) is outside valid MIDI range 1-127"
             )
         }
 
@@ -149,7 +149,6 @@ final class SoundFontNotePlayer: NotePlayer {
         let clampedNote = min(127, max(0, conversion.midiNote))
         let midiNote = UInt8(clampedNote)
         let bendValue = Self.pitchBendValue(forCents: conversion.cents)
-        let velocity = Self.midiVelocity(forAmplitude: amplitude)
 
         // Apply pitch bend before starting note
         sampler.sendPitchBend(bendValue, onChannel: Self.channel)
@@ -202,7 +201,4 @@ final class SoundFontNotePlayer: NotePlayer {
         return UInt16(clamped)
     }
 
-    nonisolated static func midiVelocity(forAmplitude amplitude: Double) -> UInt8 {
-        UInt8(Swift.min(127, Swift.max(1, Int(amplitude * 127.0))))
-    }
 }

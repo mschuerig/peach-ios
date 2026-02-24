@@ -34,7 +34,7 @@ struct SoundFontNotePlayerTests {
     @Test("Play and stop lifecycle works without crash")
     func playStopLifecycle() async throws {
         let player = try SoundFontNotePlayer()
-        try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
         try await player.stop()
     }
 
@@ -93,24 +93,26 @@ struct SoundFontNotePlayerTests {
         #expect(lowBend <= 16383)
     }
 
-    // MARK: - Amplitude to Velocity
+    // MARK: - Velocity Validation
 
-    @Test("Amplitude 0.5 maps to velocity 63")
-    func amplitude_half() async {
-        let velocity = SoundFontNotePlayer.midiVelocity(forAmplitude: 0.5)
-        #expect(velocity == 63)
+    @Test("Velocity 0 is rejected with invalidVelocity error")
+    func velocity0_rejected() async throws {
+        let player = try SoundFontNotePlayer()
+        await #expect(throws: AudioError.self) {
+            try await player.play(frequency: 440.0, duration: 0.1, velocity: 0)
+        }
     }
 
-    @Test("Amplitude 1.0 maps to velocity 127")
-    func amplitude_full() async {
-        let velocity = SoundFontNotePlayer.midiVelocity(forAmplitude: 1.0)
-        #expect(velocity == 127)
+    @Test("Velocity 127 is accepted")
+    func velocity127_accepted() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 127)
     }
 
-    @Test("Amplitude 0.0 maps to velocity 1 (floor at 1, not 0)")
-    func amplitude_zero_floorsAt1() async {
-        let velocity = SoundFontNotePlayer.midiVelocity(forAmplitude: 0.0)
-        #expect(velocity == 1)
+    @Test("Velocity within range plays successfully")
+    func velocityWithinRange_plays() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
     }
 
     // MARK: - Preset Switching
@@ -146,7 +148,7 @@ struct SoundFontNotePlayerTests {
     func playAfterPresetSwitch() async throws {
         let player = try SoundFontNotePlayer()
         try await player.loadPreset(program: 0) // switch to piano
-        try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
     }
 
     @Test("loadPreset throws for out-of-range program")
@@ -216,7 +218,7 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("sf2:0:0", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
     }
 
     @Test("play falls back to default preset for unparseable soundSource")
@@ -224,7 +226,7 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("garbage", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
     }
 
     @Test("play falls back to default preset when loadPreset fails for invalid program")
@@ -232,7 +234,7 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("sf2:0:999", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
     }
 
     @Test("play falls back to default preset for legacy 'cello' tag")
@@ -240,6 +242,6 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("cello", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, amplitude: 0.5)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
     }
 }

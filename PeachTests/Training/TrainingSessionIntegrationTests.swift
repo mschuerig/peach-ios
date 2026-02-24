@@ -40,14 +40,14 @@ struct TrainingSessionIntegrationTests {
         #expect(f.mockPlayer.lastDuration == 1.0)
     }
 
-    @Test("TrainingSession passes correct amplitude to NotePlayer")
-    func passesCorrectAmplitude() async throws {
+    @Test("TrainingSession passes correct velocity to NotePlayer")
+    func passesCorrectVelocity() async throws {
         let f = makeTrainingSession()
 
         f.session.startTraining()
         try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(f.mockPlayer.lastAmplitude == 0.5)
+        #expect(f.mockPlayer.lastVelocity == 63)
     }
 
     // MARK: - TrainingDataStore Integration Tests
