@@ -856,3 +856,64 @@ So that I can easily identify it on my home screen and it communicates the app's
 - Add to `Peach/Resources/Assets.xcassets/AppIcon.appiconset/`
 - Verify in Xcode that all sizes are properly assigned
 - Test on device at various home screen densities
+
+## Epic 9: Evidence-Based Training — Note Selection Strategy
+
+Replace the default training strategy with a simpler, research-backed approach. Perceptual learning research shows that pitch discrimination is essentially one unified skill with a roughly uniform threshold across the frequency range. The complex per-note weak spot targeting and natural-vs-mechanical balance in AdaptiveNoteStrategy adds no value and produces annoying difficulty jumps when changing notes. The simpler KazezNoteStrategy — continuous difficulty chain with frequency roving — is both more scientifically sound and more pleasant to use.
+
+See brainstorming session: `docs/brainstorming/brainstorming-session-2026-02-24.md`
+
+### Story 9.1: Promote KazezNoteStrategy to Default Training Strategy
+
+As a **musician using Peach**,
+I want the training algorithm to maintain a smooth, continuous difficulty progression regardless of which note is playing,
+So that I experience steady convergence to my threshold without jarring difficulty jumps when the note changes.
+
+**Acceptance Criteria:**
+
+**Given** KazezNoteStrategy is the active training strategy
+**When** a note is selected for a comparison
+**Then** the note is selected randomly within `settings.noteRangeMin...settings.noteRangeMax`
+
+**Given** KazezNoteStrategy with a `lastComparison` available
+**When** the next comparison's difficulty is determined
+**Then** it uses the Kazez chain from `lastComparison.centDifference` (narrowing on correct, widening on incorrect)
+**And** the difficulty never jumps due to a note change
+
+**Given** KazezNoteStrategy with no `lastComparison` (cold start)
+**When** the first comparison's difficulty is determined
+**Then** it uses `profile.overallMean` if sufficient data exists (sampleCount > 0 for at least one note)
+**And** falls back to `settings.maxCentDifference` if no profile data exists
+
+**Given** the app is launched
+**When** `PeachApp` creates the training session
+**Then** it uses `KazezNoteStrategy` as the default `NextNoteStrategy`
+**And** `AdaptiveNoteStrategy` remains in the codebase for potential future use
+
+**Given** the Settings Screen
+**When** displayed
+**Then** the "Natural vs. Mechanical" slider is removed (it only applies to AdaptiveNoteStrategy)
+
+**Given** the `naturalVsMechanical` property on `TrainingSettings`
+**When** this story is complete
+**Then** the property remains in `TrainingSettings` (it's still used by `AdaptiveNoteStrategy`)
+**But** it is no longer read from `@AppStorage` or displayed in Settings UI
+
+**Given** the full test suite
+**When** all tests are run
+**Then** all existing tests pass (KazezNoteStrategy tests updated for new behavior, AdaptiveNoteStrategy tests unchanged)
+**And** new tests verify the cold-start-from-profile behavior
+
+### Story 9.2: Rethink Profile Display and Progress Tracking
+
+_Placeholder — to be detailed after story 9.1 is implemented._
+
+As a **musician using Peach**,
+I want the profile visualization and statistics to reflect that pitch discrimination is one skill, not many separate per-note skills,
+So that my progress display is meaningful and accurate.
+
+**Notes for future design:**
+- Current per-note profile visualization may be misleading if thresholds are uniform
+- Session-level threshold convergence may be more meaningful than per-note maps
+- Consider showing session history, trend over time, best/average thresholds
+- The PerceptualProfile data model still collects per-note data (for future analysis), but display should focus on overall ability

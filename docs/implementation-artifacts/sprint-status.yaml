@@ -108,3 +108,8 @@ development_status:
   8-1-implement-soundfont-noteplayer: done # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
   8-2-sf2-preset-discovery-and-instrument-selection: done # SF2 PHDR parsing, SoundFontLibrary, dynamic instrument picker in Settings
   8-3-remove-sinewavenoteplayer-and-routingnoteplayer: done # Remove SineWaveNotePlayer + RoutingNotePlayer, SoundFontNotePlayer becomes sole NotePlayer
+
+  # Epic 9: Evidence-Based Training — Note Selection Strategy
+  epic-9: in-progress
+  9-1-promote-kazeznotestrategy-to-default: ready-for-dev # Respect settings range, smarter cold start, swap default in PeachApp, remove NvM slider
+  9-2-rethink-profile-display-and-progress-tracking: backlog # Adapt visualization to single-skill model
