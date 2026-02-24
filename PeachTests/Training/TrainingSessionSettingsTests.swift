@@ -1,35 +1,9 @@
 import Testing
-import Foundation
 @testable import Peach
 
 /// Tests for TrainingSession settings propagation and overrides (Stories 4.3, 6.2)
 @Suite("TrainingSession Settings Tests")
 struct TrainingSessionSettingsTests {
-
-    // MARK: - Test Fixtures
-
-    @MainActor
-    func makeTrainingSession(
-        comparisons: [Comparison] = [
-            Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true),
-            Comparison(note1: 62, note2: 62, centDifference: 95.0, isSecondNoteHigher: false)
-        ]
-    ) -> (TrainingSession, MockNotePlayer, MockTrainingDataStore, PerceptualProfile, MockNextNoteStrategy) {
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextNoteStrategy(comparisons: comparisons)
-        let observers: [ComparisonObserver] = [mockDataStore, profile]
-        let session = TrainingSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            settingsOverride: TrainingSettings(),
-            noteDurationOverride: 1.0,
-            observers: observers
-        )
-        return (session, mockPlayer, mockDataStore, profile, mockStrategy)
-    }
 
     // MARK: - Settings Propagation Tests (Story 4.3)
 
@@ -64,20 +38,20 @@ struct TrainingSessionSettingsTests {
     @MainActor
     @Test("Strategy receives updated profile after answer")
     func strategyReceivesUpdatedProfileAfterAnswer() async throws {
-        let (session, mockPlayer, _, profile, mockStrategy) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(mockStrategy.callCount == 1)
+        #expect(f.mockStrategy.callCount == 1)
 
-        session.handleAnswer(isHigher: true)
-        try await waitForPlayCallCount(mockPlayer, 3)
+        f.session.handleAnswer(isHigher: true)
+        try await waitForPlayCallCount(f.mockPlayer, 3)
 
-        #expect(mockStrategy.callCount == 2)
-        #expect(mockStrategy.lastReceivedProfile === profile)
+        #expect(f.mockStrategy.callCount == 2)
+        #expect(f.mockStrategy.lastReceivedProfile === f.profile)
 
-        let stats = profile.statsForNote(60)
+        let stats = f.profile.statsForNote(60)
         #expect(stats.sampleCount == 1)
     }
 

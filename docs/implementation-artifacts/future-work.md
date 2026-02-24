@@ -114,26 +114,18 @@ The `PerceptualProfile` currently accumulates all historical `ComparisonRecord`s
 
 ### Convergence Chain State Not Persisted Across App Restarts
 
-**Priority:** Medium
+**Priority:** Low
 **Category:** State Management
 **Date Added:** 2026-02-18
 
 **Issue:**
 The Kazez convergence chain (the current difficulty level / last cent offset) is not persisted. When the app restarts, `TrainingSession` has no `lastComparison`, so the difficulty resets. The `PerceptualProfile` rebuilds from stored `ComparisonRecord`s and bootstraps via neighbor-weighted difficulty, but the actual position in the convergence chain is lost.
 
-**Impact:**
-- Returning users experience an abrupt jump back to wider intervals on every app launch
-- Serious users who train daily will find this jarring and disruptive to their flow
-- The adaptive algorithm effectively restarts its convergence each session, wasting early comparisons re-converging to the user's actual level
-
-**Potential Solutions:**
-- Persist `lastComparison` (or just the last cent offset) to UserDefaults or SwiftData
-- On launch, seed the chain from the persisted value instead of bootstrapping from scratch
-- Consider whether the profile's bootstrapped difficulty is "close enough" or whether exact chain continuity matters
+**Assessment (2026-02-24):** The Kazez algorithm converges quickly (a few comparisons), so the practical impact is minimal. The bootstrapped difficulty from the profile is close enough that users won't notice a significant disruption. Deprioritized from Medium to Low.
 
 **Related Code:**
 - `Peach/Training/TrainingSession.swift` — `lastComparison` property
-- `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift` — `nextComparison()` cold start path
+- `Peach/Core/Algorithm/KazezNoteStrategy.swift` — `nextComparison()` cold start path
 - `Peach/Core/Profile/PerceptualProfile.swift` — neighbor-weighted bootstrapping
 
 ---
@@ -161,33 +153,10 @@ There is no guided onboarding for new users. A musician downloading Peach sees t
 - Musician-friendly language throughout ("pitch accuracy" instead of "cent threshold")
 - An introductory training round with wider intervals and explanatory overlays
 
-### Redesign Profile Graph for Interpretability
+### ~~Redesign Profile Graph for Interpretability~~ (RESOLVED)
 
-**Priority:** High
-**Category:** User Experience
-**Date Added:** 2026-02-18
-
-**Issue:**
-The Profile Screen's confidence band chart (piano keyboard + AreaMark with log-scale Y-axis showing cent thresholds and standard deviations) is not helpful even for the developer. The visualization is technically accurate but practically uninterpretable — users cannot derive meaningful insight about their pitch discrimination ability from looking at it.
-
-**Impact:**
-- The profile is the primary way users understand their progress, and it currently fails at this job
-- Musicians will not understand what the confidence band represents
-- Log-scale Y-axis is unintuitive for non-technical users
-- No translation of data into actionable musical feedback
-- The summary statistics (mean, stdDev, trend) use technical terminology
-
-**Potential Solutions:**
-- Rethink the visualization from scratch — what do users actually want to know?
-- Consider bar chart per note (simpler), heat map, or qualitative ratings
-- Use musical note names prominently
-- Provide plain-language interpretive text ("You can hear differences of X cents around these notes")
-- Consider a simplified default view with an optional detailed/advanced view
-
-**Related Code:**
-- `Peach/Profile/ProfileScreen.swift` — current visualization
-- `Peach/Profile/ConfidenceBandView.swift` — Swift Charts AreaMark implementation
-- `Peach/Profile/PianoKeyboardView.swift` — Canvas-rendered keyboard
+**Status:** Resolved — 2026-02-24
+**Resolution:** Implemented via story 9.2 (`9-2-rethink-profile-display-and-progress-tracking.md`). The old confidence band chart (piano keyboard + AreaMark with log-scale Y-axis) was replaced with `ThresholdTimelineView` — a scrollable line chart showing rolling mean threshold over time with standard deviation band — and `SummaryStatisticsView` with plain-language statistics. Includes tap-to-inspect per time period (date, mean threshold, correct/total count).
 
 ### Tap-to-Inspect Note Detail on Profile Graph
 
@@ -195,60 +164,25 @@ The Profile Screen's confidence band chart (piano keyboard + AreaMark with log-s
 **Category:** User Experience
 **Date Added:** 2026-02-18
 
-**Issue:**
-There is no way to get detailed information about a specific note's training data. When looking at the profile graph, the user should be able to tap on a point/note to see detailed statistics for that particular note.
+**Partial Resolution (2026-02-24):** Story 9.2 added tap-to-inspect per time period in `ThresholdTimelineView` (shows date, mean threshold, correct/total count). However, the original request for per-individual-note statistics remains unaddressed — there is no way to tap a specific note and see its mean, stdDev, count, and trend.
 
-**Desired Behavior:**
-- Tap on a note in the profile visualization to see a detail view or popover
-- Show per-note statistics: number of comparisons, mean threshold, standard deviation, trend, recent history
-- Translate into musician-friendly language where possible
+**Remaining Work:**
+- Per-note detail view or popover showing individual note statistics
+- Per-note `NoteProfile` data (mean, stdDev, count) from `PerceptualProfile` is available but not surfaced in the UI
 
 **Related Code:**
-- `Peach/Profile/ProfileScreen.swift` — profile UI
-- `Peach/Core/Profile/PerceptualProfile.swift` — per-note `NoteProfile` data (mean, stdDev, count)
+- `Peach/Profile/ThresholdTimelineView.swift` — current tap-to-inspect (per period)
+- `Peach/Core/Profile/PerceptualProfile.swift` — per-note `NoteProfile` data
 
-### Show Progress Over Time
+### ~~Show Progress Over Time~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** User Experience
-**Date Added:** 2026-02-18
+**Status:** Resolved — 2026-02-24
+**Resolution:** Implemented via story 9.2 (`9-2-rethink-profile-display-and-progress-tracking.md`). `ThresholdTimelineView` shows a scrollable line chart of rolling mean threshold over time with standard deviation band, directly answering "Am I getting better?" The Profile Screen now centers on temporal progression rather than static per-note statistics.
 
-**Issue:**
-There is no way to see how pitch discrimination ability has improved (or declined) over time. The `TrendAnalyzer` computes a simple improving/stable/declining trend from bisecting historical records, but there is no temporal visualization — no chart showing threshold convergence across days/weeks, no profile snapshots, no historical comparison.
+### ~~No Sense of Session or Progress Acknowledgment~~ (RESOLVED)
 
-This was identified as a Phase 2 feature in the original PRD brainstorming but has not been designed or implemented.
-
-**Desired Behavior:**
-- A view (accessible from the Profile screen or Start screen) that shows improvement over time
-- Could be a line chart of average threshold per day/week
-- Could show per-note improvement trajectories
-- Should answer the user's question: "Am I getting better?"
-
-**Related Code:**
-- `Peach/Core/Data/ComparisonRecord.swift` — has `timestamp` field for temporal queries
-- `Peach/Core/Profile/TrendAnalyzer.swift` — existing trend computation (bisection approach)
-- `Peach/Profile/ProfileScreen.swift` — likely home for temporal visualization
-
-### No Sense of Session or Progress Acknowledgment
-
-**Priority:** Medium
-**Category:** User Experience
-**Date Added:** 2026-02-18
-
-**Issue:**
-The training loop runs indefinitely with no session boundaries, progress milestones, or acknowledgment of effort. While the "training, not testing" philosophy deliberately avoids gamification, there is currently no feedback at all about training duration, improvement over time, or encouragement to return.
-
-**Impact:**
-- Users have no sense of how long they've trained or whether it's "enough"
-- No motivation loop to encourage daily practice habits
-- The TrendAnalyzer computes improving/stable/declining trends but this data is only visible if the user navigates to the Profile screen
-- Missed opportunity to reinforce the value of consistent practice
-
-**Potential Solutions:**
-- Subtle session summary when the user stops training ("You trained for 5 minutes, completed 47 comparisons")
-- Periodic gentle progress nudges surfaced on the Start Screen ("Your accuracy improved 12% this week")
-- Optional daily practice reminders (notifications)
-- Keep it minimal and informational — acknowledge effort without gamifying it
+**Status:** Resolved — 2026-02-24
+**Resolution:** Implemented via `DifficultyDisplayView` (story `display-current-difficulty-on-training-screen.md`) showing current cent difference and session best during training, plus story 9.2's `ThresholdTimelineView` and `SummaryStatisticsView` on the Profile Screen providing progress context. Users now see live difficulty feedback during training and temporal improvement trends on the Profile Screen.
 
 ### ~~Display Current Difficulty on Training Screen~~ (RESOLVED)
 
@@ -417,51 +351,33 @@ Store task references for cancellation in `deinit`/`stop()`, or use structured c
 - `Peach/Training/TrainingSession.swift:239, 286`
 - `Peach/Training/HapticFeedbackManager.swift:41-44`
 
-#### U5: Polling Loop in Training Session
+#### ~~U5: Polling Loop in Training Session~~ (RESOLVED)
 
-**Priority:** Low
-**Category:** Safety / Efficiency
-
-**Issue:**
-`TrainingSession.runTrainingLoop()` at lines 318-321 spin-waits with `Task.sleep(for: .milliseconds(100))` to detect state changes. The entire training flow is otherwise event-driven (play note -> await answer -> show feedback -> next comparison). This is architecturally inconsistent and wastes CPU.
-
-**Proposed Fix:**
-The `Task` could simply `await` on the event-driven chain and exit when cancelled, eliminating the polling loop.
-
-**Related Code:**
-- `Peach/Training/TrainingSession.swift:310-324`
+**Status:** Resolved — 2026-02-24
+**Resolution:** The polling loop was removed. `TrainingSession` now uses a purely event-driven chain (`playNextComparison()` → `startPlayingNote1()` → `startPlayingNote2()` → `handleAnswer()` → feedback → loop) with no spin-waiting.
 
 ### Separation of Concerns
 
 #### S1: Mock Classes Ship in Production Binary
 
-**Priority:** High
+**Priority:** Medium (downgraded from High — partial fix applied)
 **Category:** Code Organization / Binary Size
 
 **Issue:**
-`MockHapticFeedbackManager` (`HapticFeedbackManager.swift:65-86`) lives in the main Peach target, not `PeachTests`. It's a full `@MainActor final class` with test tracking (`incorrectFeedbackCount`, `reset()`). Additionally, `MockNotePlayerForPreview` and `MockDataStoreForPreview` are defined in `TrainingScreen.swift:182-199`. All three compile into the shipping app.
+`MockHapticFeedbackManager` (`HapticFeedbackManager.swift`) lives in the main Peach target, not `PeachTests`. It's a full `@MainActor final class` with test tracking (`incorrectFeedbackCount`, `reset()`). `MockNotePlayerForPreview` remains in `TrainingScreen.swift` but is scoped to preview.
 
-**Proposed Fix:**
-Move `MockHapticFeedbackManager` to `PeachTests`. Wrap preview mocks in `#if DEBUG` guards or move them to a dedicated preview target.
+**Partial Resolution (2026-02-24):** `MockDataStoreForPreview` was removed. `MockNotePlayerForPreview` is now scoped to `#Preview` blocks (compile-time dead code in release). Only `MockHapticFeedbackManager` remains as a full production-compiled mock.
 
-**Related Code:**
-- `Peach/Training/HapticFeedbackManager.swift:61-86`
-- `Peach/Training/TrainingScreen.swift:180-199`
-
-#### S2: `SettingsScreen` Creates Services and Orchestrates Business Logic
-
-**Priority:** Medium
-**Category:** Architecture / View Responsibility
-
-**Issue:**
-`SettingsScreen.resetAllTrainingData()` at line 125 directly instantiates `TrainingDataStore(modelContext:)`, then calls `dataStore.deleteAll()`, `profile.reset()`, and `trendAnalyzer.reset()` in sequence. This violates two of the project's own hard rules: *"All service instantiation happens in PeachApp.swift"* and *"Views contain zero business logic."* This is an orchestration operation disguised as a button action.
-
-**Proposed Fix:**
-Create a reset method on `TrainingSession` or a dedicated reset coordinator injected via environment. The view should call a single method, not orchestrate a multi-service operation.
+**Remaining Fix:**
+Move `MockHapticFeedbackManager` to `PeachTests`.
 
 **Related Code:**
-- `Peach/Settings/SettingsScreen.swift:123-135`
-- See also existing item "Reset All Data Should Also Reset Difficulty"
+- `Peach/Training/HapticFeedbackManager.swift` — `MockHapticFeedbackManager` still in production target
+
+#### ~~S2: `SettingsScreen` Creates Services and Orchestrates Business Logic~~ (RESOLVED)
+
+**Status:** Resolved — 2026-02-24
+**Resolution:** `SettingsScreen.resetAllTrainingData()` now delegates to `trainingSession.resetTrainingData()`, which centrally orchestrates clearing the convergence chain, session best, profile, trend analyzer, and threshold timeline. The view calls a single method instead of orchestrating multi-service operations.
 
 #### S3: `ComparisonRecordStoring` Protocol Is Incomplete
 
@@ -481,20 +397,10 @@ Add `delete(_:)` and `deleteAll()` to the protocol, or acknowledge the protocol 
 
 ### Duplication
 
-#### D1: `makeTrainingSession()` Fixture Duplicated Across 6 Test Files
+#### ~~D1: `makeTrainingSession()` Fixture Duplicated Across Test Files~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** Test Maintenance
-
-**Issue:**
-Near-identical `makeTrainingSession()` factory methods appear in `TrainingSessionTests`, `TrainingSessionIntegrationTests`, `TrainingSessionLifecycleTests`, `TrainingSessionSettingsTests`, `TrainingSessionAudioInterruptionTests`, and `TrainingSessionUserDefaultsTests`. `TrainingTestHelpers.swift` exists but doesn't include this factory. Six copies means six places to update when `TrainingSession`'s initializer changes.
-
-**Proposed Fix:**
-Extract to `TrainingTestHelpers.swift` as a shared factory.
-
-**Related Code:**
-- `PeachTests/Training/TrainingTestHelpers.swift`
-- All six `TrainingSession*Tests.swift` files
+**Status:** Resolved — 2026-02-24
+**Resolution:** Extracted shared `TrainingSessionFixture` struct and `makeTrainingSession()` factory into `TrainingTestHelpers.swift`. All 8 test files (TrainingSessionTests, IntegrationTests, LifecycleTests, DifficultyTests, SettingsTests, AudioInterruptionTests, FeedbackTests, TrainingScreenFeedbackTests) now use the shared factory. The factory supports optional `comparisons`, `settingsOverride`, `noteDurationOverride`, `includeHaptic`, and `notificationCenter` parameters to cover all test scenarios.
 
 #### D2: `nonisolated(unsafe)` Environment Key Boilerplate Repeated 3 Times
 
@@ -544,31 +450,7 @@ Remove the property and the assignment.
 **Related Code:**
 - `Peach/App/ContentView.swift:15, 37`
 
-#### O2: `KazezNoteStrategy` Ignores User-Configured Note Range
+#### ~~O2: `KazezNoteStrategy` Ignores User-Configured Note Range~~ (RESOLVED)
 
-**Priority:** Medium
-**Category:** Bug / Settings
-
-**Issue:**
-`KazezNoteStrategy` hardcodes C3-C5 (MIDI 48-72) at lines 35-36, ignoring the `settings.noteRangeMin/Max` values passed to `nextComparison()`. If a user changes their range in Settings, this strategy will still select notes outside it. Currently only `AdaptiveNoteStrategy` is wired in production, but this is a latent bug if `KazezNoteStrategy` is ever used with user-configured ranges.
-
-**Proposed Fix:**
-Use `settings.noteRangeMin/Max` instead of hardcoded constants, or document that this strategy is evaluation-only and intentionally ignores settings.
-
-**Related Code:**
-- `Peach/Core/Algorithm/KazezNoteStrategy.swift:35-36, 66`
-
-#### O3: `ComparisonRecord` Stores Redundant `note1` and `note2`
-
-**Priority:** Low
-**Category:** Data Model / Waste
-
-**Issue:**
-Per the domain rules (`note2 = same MIDI note as note1`), both notes are always identical. The model stores two `Int` fields for one value. Every record written to SwiftData carries this redundancy, and nothing validates or catches a divergence.
-
-**Proposed Fix:**
-Consider reducing to a single `note` field if the domain rule holds permanently, or add a validation assertion. Assess SwiftData migration impact before changing.
-
-**Related Code:**
-- `Peach/Core/Data/ComparisonRecord.swift`
-- `Peach/Training/Comparison.swift` — always sets `note1 == note2`
+**Status:** Resolved — 2026-02-24
+**Resolution:** Fixed during story 9.1 (`9-1-promote-kazeznotestrategy-to-default.md`). `KazezNoteStrategy.nextComparison()` now uses `settings.noteRangeMin...settings.noteRangeMax` instead of hardcoded MIDI 48-72.

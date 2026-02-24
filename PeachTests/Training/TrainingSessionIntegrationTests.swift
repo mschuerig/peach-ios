@@ -6,77 +6,52 @@ import Foundation
 @Suite("TrainingSession Integration Tests")
 struct TrainingSessionIntegrationTests {
 
-    // MARK: - Test Fixtures
-
-    @MainActor
-    func makeTrainingSession(
-        comparisons: [Comparison] = [
-            Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true),
-            Comparison(note1: 62, note2: 62, centDifference: 95.0, isSecondNoteHigher: false)
-        ]
-    ) -> (TrainingSession, MockNotePlayer, MockTrainingDataStore, PerceptualProfile, MockNextNoteStrategy) {
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextNoteStrategy(comparisons: comparisons)
-        let observers: [ComparisonObserver] = [mockDataStore, profile]
-        let session = TrainingSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            settingsOverride: TrainingSettings(),
-            noteDurationOverride: 1.0,
-            observers: observers
-        )
-        return (session, mockPlayer, mockDataStore, profile, mockStrategy)
-    }
-
     // MARK: - NotePlayer Integration Tests
 
     @MainActor
     @Test("TrainingSession calls play twice per comparison")
     func callsPlayTwicePerComparison() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(mockPlayer.playCallCount == 2)
+        #expect(f.mockPlayer.playCallCount == 2)
     }
 
     @MainActor
     @Test("TrainingSession uses correct frequency calculation")
     func usesCorrectFrequencyCalculation() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(mockPlayer.lastFrequency != nil)
-        #expect(mockPlayer.lastFrequency! > 0)
-        #expect(mockPlayer.lastFrequency! >= 100 && mockPlayer.lastFrequency! <= 1200)
+        #expect(f.mockPlayer.lastFrequency != nil)
+        #expect(f.mockPlayer.lastFrequency! > 0)
+        #expect(f.mockPlayer.lastFrequency! >= 100 && f.mockPlayer.lastFrequency! <= 1200)
     }
 
     @MainActor
     @Test("TrainingSession passes correct duration to NotePlayer")
     func passesCorrectDuration() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(mockPlayer.lastDuration == 1.0)
+        #expect(f.mockPlayer.lastDuration == 1.0)
     }
 
     @MainActor
     @Test("TrainingSession passes correct amplitude to NotePlayer")
     func passesCorrectAmplitude() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(mockPlayer.lastAmplitude == 0.5)
+        #expect(f.mockPlayer.lastAmplitude == 0.5)
     }
 
     // MARK: - TrainingDataStore Integration Tests
@@ -84,28 +59,28 @@ struct TrainingSessionIntegrationTests {
     @MainActor
     @Test("TrainingSession records comparison on answer")
     func recordsComparisonOnAnswer() async throws {
-        let (session, _, mockDataStore, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
+        f.session.handleAnswer(isHigher: true)
 
-        #expect(mockDataStore.saveCallCount == 1)
-        #expect(mockDataStore.lastSavedRecord != nil)
+        #expect(f.mockDataStore.saveCallCount == 1)
+        #expect(f.mockDataStore.lastSavedRecord != nil)
     }
 
     @MainActor
     @Test("ComparisonRecord contains correct note data")
     func comparisonRecordContainsCorrectData() async throws {
-        let (session, _, mockDataStore, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: false)
+        f.session.handleAnswer(isHigher: false)
 
-        let record = mockDataStore.lastSavedRecord!
+        let record = f.mockDataStore.lastSavedRecord!
         #expect(record.note1 == 60)
         #expect(record.note2 == 60)
         #expect(record.note2CentOffset == 100.0)
@@ -114,19 +89,19 @@ struct TrainingSessionIntegrationTests {
     @MainActor
     @Test("Data error does not stop training")
     func dataErrorDoesNotStopTraining() async throws {
-        let (session, mockPlayer, mockDataStore, _, _) = makeTrainingSession()
-        mockDataStore.shouldThrowError = true
+        let f = makeTrainingSession()
+        f.mockDataStore.shouldThrowError = true
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
+        f.session.handleAnswer(isHigher: true)
 
-        #expect(session.state == .showingFeedback)
+        #expect(f.session.state == .showingFeedback)
 
-        try await waitForPlayCallCount(mockPlayer, 3)
+        try await waitForPlayCallCount(f.mockPlayer, 3)
 
-        #expect(mockPlayer.playCallCount >= 3)
+        #expect(f.mockPlayer.playCallCount >= 3)
     }
 
     // MARK: - PerceptualProfile Integration Tests (Story 4.1)
@@ -134,17 +109,17 @@ struct TrainingSessionIntegrationTests {
     @MainActor
     @Test("Profile is updated incrementally when comparison is recorded")
     func profileUpdatesIncrementallyAfterComparison() async throws {
-        let (session, _, mockDataStore, profile, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
-        #expect(session.state == .showingFeedback)
+        f.session.handleAnswer(isHigher: true)
+        #expect(f.session.state == .showingFeedback)
 
-        try #require(mockDataStore.lastSavedRecord != nil, "No comparison was recorded")
+        try #require(f.mockDataStore.lastSavedRecord != nil, "No comparison was recorded")
 
-        let stats = profile.statsForNote(60)
+        let stats = f.profile.statsForNote(60)
         #expect(stats.sampleCount == 1)
         #expect(stats.mean == 100.0)
     }
@@ -152,12 +127,12 @@ struct TrainingSessionIntegrationTests {
     @MainActor
     @Test("Profile updates use unsigned centOffset for threshold measurement")
     func profileUsesUnsignedCentOffset() async {
-        let (_, _, _, profile, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        profile.update(note: 60, centOffset: 50.0, isCorrect: true)
-        profile.update(note: 60, centOffset: 30.0, isCorrect: true)
+        f.profile.update(note: 60, centOffset: 50.0, isCorrect: true)
+        f.profile.update(note: 60, centOffset: 30.0, isCorrect: true)
 
-        let stats = profile.statsForNote(60)
+        let stats = f.profile.statsForNote(60)
         #expect(stats.sampleCount == 2)
         #expect(stats.mean == 40.0)
     }
@@ -165,25 +140,25 @@ struct TrainingSessionIntegrationTests {
     @MainActor
     @Test("Profile statistics accumulate correctly over multiple comparisons")
     func profileAccumulatesMultipleComparisons() async throws {
-        let (session, mockPlayer, mockDataStore, profile, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
-        try await waitForPlayCallCount(mockPlayer, 3)
-        try await waitForState(session, .awaitingAnswer)
+        f.session.handleAnswer(isHigher: true)
+        try await waitForPlayCallCount(f.mockPlayer, 3)
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: false)
-        #expect(session.state == .showingFeedback)
+        f.session.handleAnswer(isHigher: false)
+        #expect(f.session.state == .showingFeedback)
 
-        #expect(mockDataStore.savedRecords.count == 2)
+        #expect(f.mockDataStore.savedRecords.count == 2)
 
-        let stats60 = profile.statsForNote(60)
+        let stats60 = f.profile.statsForNote(60)
         #expect(stats60.sampleCount == 1)
         #expect(stats60.mean == 100.0)
 
-        let stats62 = profile.statsForNote(62)
+        let stats62 = f.profile.statsForNote(62)
         #expect(stats62.sampleCount == 1)
         #expect(stats62.mean == 95.0)
     }
@@ -191,17 +166,17 @@ struct TrainingSessionIntegrationTests {
     @MainActor
     @Test("Profile updates for all answers (both correct and incorrect)")
     func profileUpdatesForAllAnswers() async throws {
-        let (session, _, mockDataStore, profile, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: false)
-        #expect(session.state == .showingFeedback)
+        f.session.handleAnswer(isHigher: false)
+        #expect(f.session.state == .showingFeedback)
 
-        try #require(mockDataStore.lastSavedRecord != nil, "No comparison was recorded")
+        try #require(f.mockDataStore.lastSavedRecord != nil, "No comparison was recorded")
 
-        let stats = profile.statsForNote(60)
+        let stats = f.profile.statsForNote(60)
         #expect(stats.sampleCount == 1, "Profile should update for all answers, not just correct ones")
         #expect(stats.mean == 100.0)
     }

@@ -1,5 +1,4 @@
 import Testing
-import Foundation
 import AVFoundation
 @testable import Peach
 
@@ -7,41 +6,14 @@ import AVFoundation
 @Suite("TrainingSession Audio Interruption Tests", .serialized)
 struct TrainingSessionAudioInterruptionTests {
 
-    // MARK: - Test Fixtures
-
-    @MainActor
-    func makeTrainingSession(
-        comparisons: [Comparison] = [
-            Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true),
-            Comparison(note1: 62, note2: 62, centDifference: 95.0, isSecondNoteHigher: false),
-            Comparison(note1: 64, note2: 64, centDifference: 90.0, isSecondNoteHigher: true),
-            Comparison(note1: 66, note2: 66, centDifference: 85.0, isSecondNoteHigher: false)
-        ]
-    ) -> (TrainingSession, MockNotePlayer, NotificationCenter) {
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextNoteStrategy(comparisons: comparisons)
-        let observers: [ComparisonObserver] = [mockDataStore, profile]
-        let nc = NotificationCenter()
-        let session = TrainingSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            settingsOverride: TrainingSettings(),
-            noteDurationOverride: 0.01,
-            observers: observers,
-            notificationCenter: nc
-        )
-        return (session, mockPlayer, nc)
-    }
-
     // MARK: - Audio Interruption Tests
 
     @Test("Audio interruption began stops training from awaitingAnswer state")
     @MainActor
     func audioInterruption_Began_StopsFromAwaitingAnswer() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 
@@ -58,7 +30,10 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Audio interruption began stops training from playingNote1 state")
     @MainActor
     func audioInterruption_Began_StopsFromPlayingNote1() async throws {
-        let (session, mockPlayer, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
+        let mockPlayer = f.mockPlayer
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = 5.0
 
@@ -78,7 +53,10 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Audio interruption began stops training from playingNote2 state")
     @MainActor
     func audioInterruption_Began_StopsFromPlayingNote2() async throws {
-        let (session, mockPlayer, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
+        let mockPlayer = f.mockPlayer
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = 0.01
 
@@ -101,7 +79,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Audio interruption ended does NOT auto-restart training")
     @MainActor
     func audioInterruption_Ended_DoesNotAutoRestart() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 
@@ -126,7 +106,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Audio interruption with nil type is handled gracefully")
     @MainActor
     func audioInterruption_NilType_HandledGracefully() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 
@@ -144,7 +126,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Audio interruption on idle session is safe (no crash)")
     @MainActor
     func audioInterruption_Began_WhileIdle_IsSafe() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         #expect(session.state == .idle)
 
         nc.post(
@@ -163,7 +147,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Route change oldDeviceUnavailable stops training")
     @MainActor
     func routeChange_OldDeviceUnavailable_StopsTraining() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 
@@ -187,7 +173,9 @@ struct TrainingSessionAudioInterruptionTests {
         ]
 
         for reason in nonStopReasons {
-            let (session, _, nc) = makeTrainingSession()
+            let nc = NotificationCenter()
+            let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+            let session = f.session
             session.startTraining()
             try await waitForState(session, .awaitingAnswer)
 
@@ -208,7 +196,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Route change oldDeviceUnavailable on idle session is safe")
     @MainActor
     func routeChange_OldDeviceUnavailable_WhileIdle_IsSafe() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         #expect(session.state == .idle)
 
         nc.post(
@@ -227,7 +217,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Training can restart after audio interruption stops it")
     @MainActor
     func canRestartAfterInterruption() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 
@@ -246,7 +238,9 @@ struct TrainingSessionAudioInterruptionTests {
     @Test("Training can restart after route change stops it")
     @MainActor
     func canRestartAfterRouteChange() async throws {
-        let (session, _, nc) = makeTrainingSession()
+        let nc = NotificationCenter()
+        let f = makeTrainingSession(noteDurationOverride: 0.01, notificationCenter: nc)
+        let session = f.session
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 

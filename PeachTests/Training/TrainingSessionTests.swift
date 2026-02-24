@@ -1,140 +1,114 @@
 import Testing
-import Foundation
 @testable import Peach
 
 /// Tests for TrainingSession state machine transitions and core training loop
 @Suite("TrainingSession Tests")
 struct TrainingSessionTests {
 
-    // MARK: - Test Fixtures
-
-    @MainActor
-    func makeTrainingSession(
-        comparisons: [Comparison] = [
-            Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true),
-            Comparison(note1: 62, note2: 62, centDifference: 95.0, isSecondNoteHigher: false)
-        ]
-    ) -> (TrainingSession, MockNotePlayer, MockTrainingDataStore, PerceptualProfile, MockNextNoteStrategy) {
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextNoteStrategy(comparisons: comparisons)
-        let observers: [ComparisonObserver] = [mockDataStore, profile]
-        let session = TrainingSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            settingsOverride: TrainingSettings(),
-            noteDurationOverride: 1.0,
-            observers: observers
-        )
-        return (session, mockPlayer, mockDataStore, profile, mockStrategy)
-    }
-
     // MARK: - State Transition Tests
 
     @MainActor
     @Test("TrainingSession starts in idle state")
     func startsInIdleState() {
-        let (session, _, _, _, _) = makeTrainingSession()
-        #expect(session.state == .idle)
+        let f = makeTrainingSession()
+        #expect(f.session.state == .idle)
     }
 
     @MainActor
     @Test("startTraining transitions from idle to playingNote1")
     func startTrainingTransitionsToPlayingNote1() async {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
         var capturedState: TrainingState?
-        mockPlayer.onPlayCalled = {
+        f.mockPlayer.onPlayCalled = {
             if capturedState == nil {
-                capturedState = session.state
+                capturedState = f.session.state
             }
         }
 
-        session.startTraining()
+        f.session.startTraining()
         await Task.yield()
 
         #expect(capturedState == .playingNote1)
-        #expect(mockPlayer.playCallCount >= 1)
+        #expect(f.mockPlayer.playCallCount >= 1)
     }
 
     @MainActor
     @Test("TrainingSession transitions from playingNote1 to playingNote2")
     func transitionsFromNote1ToNote2() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForPlayCallCount(mockPlayer, 2)
+        f.session.startTraining()
+        try await waitForPlayCallCount(f.mockPlayer, 2)
 
-        #expect(mockPlayer.playCallCount >= 2)
-        #expect(session.state == .playingNote2 || session.state == .awaitingAnswer)
+        #expect(f.mockPlayer.playCallCount >= 2)
+        #expect(f.session.state == .playingNote2 || f.session.state == .awaitingAnswer)
     }
 
     @MainActor
     @Test("TrainingSession transitions from playingNote2 to awaitingAnswer")
     func transitionsFromNote2ToAwaitingAnswer() async throws {
-        let (session, _, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(session.state == .awaitingAnswer)
+        #expect(f.session.state == .awaitingAnswer)
     }
 
     @MainActor
     @Test("handleAnswer transitions to showingFeedback")
     func handleAnswerTransitionsToShowingFeedback() async throws {
-        let (session, _, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
+        f.session.handleAnswer(isHigher: true)
 
-        #expect(session.state == .showingFeedback)
+        #expect(f.session.state == .showingFeedback)
     }
 
     @MainActor
     @Test("TrainingSession loops back to playingNote1 after feedback")
     func loopsBackAfterFeedback() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
-        #expect(session.state == .showingFeedback)
+        f.session.handleAnswer(isHigher: true)
+        #expect(f.session.state == .showingFeedback)
 
-        try await waitForPlayCallCount(mockPlayer, 3)
+        try await waitForPlayCallCount(f.mockPlayer, 3)
 
-        #expect(mockPlayer.playCallCount >= 3)
+        #expect(f.mockPlayer.playCallCount >= 3)
     }
 
     @MainActor
     @Test("stop() transitions to idle from any state")
     func stopTransitionsToIdle() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForPlayCallCount(mockPlayer, 1)
+        f.session.startTraining()
+        try await waitForPlayCallCount(f.mockPlayer, 1)
 
-        session.stop()
+        f.session.stop()
 
-        #expect(session.state == .idle)
+        #expect(f.session.state == .idle)
     }
 
     @MainActor
     @Test("Audio error transitions to idle")
     func audioErrorTransitionsToIdle() async throws {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
-        mockPlayer.shouldThrowError = true
-        mockPlayer.errorToThrow = .engineStartFailed("Test error")
+        let f = makeTrainingSession()
+        f.mockPlayer.shouldThrowError = true
+        f.mockPlayer.errorToThrow = .engineStartFailed("Test error")
 
-        session.startTraining()
-        try await waitForState(session, .idle)
+        f.session.startTraining()
+        try await waitForState(f.session, .idle)
 
-        #expect(session.state == .idle)
+        #expect(f.session.state == .idle)
     }
 
     // MARK: - Timing and Coordination Tests
@@ -142,16 +116,16 @@ struct TrainingSessionTests {
     @MainActor
     @Test("Buttons disabled during playingNote1")
     func buttonsDisabledDuringNote1() async {
-        let (session, mockPlayer, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
         var capturedState: TrainingState?
-        mockPlayer.onPlayCalled = {
+        f.mockPlayer.onPlayCalled = {
             if capturedState == nil {
-                capturedState = session.state
+                capturedState = f.session.state
             }
         }
 
-        session.startTraining()
+        f.session.startTraining()
         await Task.yield()
 
         #expect(capturedState == .playingNote1)
@@ -160,27 +134,27 @@ struct TrainingSessionTests {
     @MainActor
     @Test("Buttons enabled during awaitingAnswer")
     func buttonsEnabledDuringAwaitingAnswer() async throws {
-        let (session, _, _, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(session.state == .awaitingAnswer)
+        #expect(f.session.state == .awaitingAnswer)
     }
 
     @MainActor
     @Test("TrainingSession completes full comparison loop")
     func completesFullLoop() async throws {
-        let (session, mockPlayer, mockDataStore, _, _) = makeTrainingSession()
+        let f = makeTrainingSession()
 
-        session.startTraining()
-        try await waitForState(session, .awaitingAnswer)
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.handleAnswer(isHigher: true)
-        try await waitForPlayCallCount(mockPlayer, 3)
+        f.session.handleAnswer(isHigher: true)
+        try await waitForPlayCallCount(f.mockPlayer, 3)
 
-        #expect(mockPlayer.playCallCount >= 3)
-        #expect(mockDataStore.saveCallCount == 1)
+        #expect(f.mockPlayer.playCallCount >= 3)
+        #expect(f.mockDataStore.saveCallCount == 1)
     }
 
     // MARK: - Comparison Value Type Tests
