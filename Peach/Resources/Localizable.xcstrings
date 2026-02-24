@@ -351,6 +351,7 @@
       }
     },
     "Max" : {
+      "comment" : "Slider maximum label indicating full loudness variation in Settings.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -436,6 +437,7 @@
       }
     },
     "Off" : {
+      "comment" : "Slider minimum label indicating no loudness variation in Settings.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -819,6 +821,7 @@
       }
     },
     "Vary Loudness" : {
+      "comment" : "Slider label for controlling loudness variation between training notes in Settings.",
       "localizations" : {
         "de" : {
           "stringUnit" : {

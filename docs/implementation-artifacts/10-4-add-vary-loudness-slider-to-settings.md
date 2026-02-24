@@ -1,6 +1,6 @@
 # Story 10.4: Add "Vary Loudness" Slider to Settings
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -120,7 +120,7 @@ Note: "Off" and "Max" may already exist in the catalog if used elsewhere — che
 |---|---|---|
 | `Peach/Settings/SettingsKeys.swift` | Constants | Add `varyLoudness` key + `defaultVaryLoudness` default |
 | `Peach/Settings/SettingsScreen.swift` | View | Add `@AppStorage` property, add `Slider` to `audioSection` |
-| `Peach/Localizable.xcstrings` | Localization | Add/verify "Vary Loudness", "Off", "Max" with German translations |
+| `Peach/Resources/Localizable.xcstrings` | Localization | Add/verify "Vary Loudness", "Off", "Max" with German translations |
 
 ### Previous Story (10.3) Intelligence
 
@@ -182,6 +182,7 @@ None — clean implementation with no issues.
 ### Change Log
 
 - 2026-02-25: Implemented story 10.4 — Added "Vary Loudness" slider to Settings screen with @AppStorage persistence, "Off"/"Max" range labels, and German localization
+- 2026-02-25: Code review fixes — Corrected Localizable.xcstrings path in Dev Notes file change map; added translator context comments to "Off", "Max", "Vary Loudness" localization entries
 
 ### File List
 
