@@ -10,7 +10,8 @@ final class MockNotePlayer: NotePlayer {
     var lastFrequency: Double?
     var lastDuration: TimeInterval?
     var lastVelocity: UInt8?
-    var playHistory: [(frequency: Double, duration: TimeInterval, velocity: UInt8)] = []
+    var lastAmplitudeDB: Float?
+    var playHistory: [(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float)] = []
     var shouldThrowError = false
     var errorToThrow: AudioError = .engineStartFailed("Mock error")
 
@@ -31,12 +32,13 @@ final class MockNotePlayer: NotePlayer {
 
     // MARK: - NotePlayer Protocol
 
-    func play(frequency: Double, duration: TimeInterval, velocity: UInt8) async throws {
+    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
         playCallCount += 1
         lastFrequency = frequency
         lastDuration = duration
         lastVelocity = velocity
-        playHistory.append((frequency: frequency, duration: duration, velocity: velocity))
+        lastAmplitudeDB = amplitudeDB
+        playHistory.append((frequency: frequency, duration: duration, velocity: velocity, amplitudeDB: amplitudeDB))
 
         // Invoke callback synchronously before any delays
         onPlayCalled?()
@@ -65,6 +67,7 @@ final class MockNotePlayer: NotePlayer {
         lastFrequency = nil
         lastDuration = nil
         lastVelocity = nil
+        lastAmplitudeDB = nil
         playHistory = []
         shouldThrowError = false
         onPlayCalled = nil

@@ -34,7 +34,7 @@ struct SoundFontNotePlayerTests {
     @Test("Play and stop lifecycle works without crash")
     func playStopLifecycle() async throws {
         let player = try SoundFontNotePlayer()
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
         try await player.stop()
     }
 
@@ -99,7 +99,7 @@ struct SoundFontNotePlayerTests {
     func velocity0_rejected() async throws {
         let player = try SoundFontNotePlayer()
         let error = await #expect(throws: AudioError.self) {
-            try await player.play(frequency: 440.0, duration: 0.1, velocity: 0)
+            try await player.play(frequency: 440.0, duration: 0.1, velocity: 0, amplitudeDB: 0.0)
         }
         guard case .invalidVelocity = error else {
             Issue.record("Expected invalidVelocity but got \(String(describing: error))")
@@ -111,7 +111,7 @@ struct SoundFontNotePlayerTests {
     func velocity128_rejected() async throws {
         let player = try SoundFontNotePlayer()
         let error = await #expect(throws: AudioError.self) {
-            try await player.play(frequency: 440.0, duration: 0.1, velocity: 128)
+            try await player.play(frequency: 440.0, duration: 0.1, velocity: 128, amplitudeDB: 0.0)
         }
         guard case .invalidVelocity = error else {
             Issue.record("Expected invalidVelocity but got \(String(describing: error))")
@@ -122,13 +122,69 @@ struct SoundFontNotePlayerTests {
     @Test("Velocity 127 is accepted")
     func velocity127_accepted() async throws {
         let player = try SoundFontNotePlayer()
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 127)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 127, amplitudeDB: 0.0)
     }
 
     @Test("Velocity within range plays successfully")
     func velocityWithinRange_plays() async throws {
         let player = try SoundFontNotePlayer()
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
+    }
+
+    // MARK: - Amplitude Validation
+
+    @Test("amplitudeDB 0.0 (default) plays successfully")
+    func amplitudeDB_default_playsSuccessfully() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
+    }
+
+    @Test("amplitudeDB positive offset accepted")
+    func amplitudeDB_positiveOffset_accepted() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 2.0)
+    }
+
+    @Test("amplitudeDB negative offset accepted")
+    func amplitudeDB_negativeOffset_accepted() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: -2.0)
+    }
+
+    @Test("amplitudeDB at minimum boundary (-90.0) accepted")
+    func amplitudeDB_atMinimumBoundary_accepted() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: -90.0)
+    }
+
+    @Test("amplitudeDB at maximum boundary (12.0) accepted")
+    func amplitudeDB_atMaximumBoundary_accepted() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 12.0)
+    }
+
+    @Test("amplitudeDB below minimum (-91.0) rejected with invalidAmplitude")
+    func amplitudeDB_belowMinimum_rejected() async throws {
+        let player = try SoundFontNotePlayer()
+        let error = await #expect(throws: AudioError.self) {
+            try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: -91.0)
+        }
+        guard case .invalidAmplitude = error else {
+            Issue.record("Expected invalidAmplitude but got \(String(describing: error))")
+            return
+        }
+    }
+
+    @Test("amplitudeDB above maximum (13.0) rejected with invalidAmplitude")
+    func amplitudeDB_aboveMaximum_rejected() async throws {
+        let player = try SoundFontNotePlayer()
+        let error = await #expect(throws: AudioError.self) {
+            try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 13.0)
+        }
+        guard case .invalidAmplitude = error else {
+            Issue.record("Expected invalidAmplitude but got \(String(describing: error))")
+            return
+        }
     }
 
     // MARK: - Preset Switching
@@ -164,7 +220,7 @@ struct SoundFontNotePlayerTests {
     func playAfterPresetSwitch() async throws {
         let player = try SoundFontNotePlayer()
         try await player.loadPreset(program: 0) // switch to piano
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
     }
 
     @Test("loadPreset throws for out-of-range program")
@@ -234,7 +290,7 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("sf2:0:0", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
     }
 
     @Test("play falls back to default preset for unparseable soundSource")
@@ -242,7 +298,7 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("garbage", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
     }
 
     @Test("play falls back to default preset when loadPreset fails for invalid program")
@@ -250,7 +306,7 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("sf2:0:999", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
     }
 
     @Test("play falls back to default preset for legacy 'cello' tag")
@@ -258,6 +314,6 @@ struct SoundFontNotePlayerTests {
         defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.soundSource) }
         let player = try SoundFontNotePlayer()
         UserDefaults.standard.set("cello", forKey: SettingsKeys.soundSource)
-        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63)
+        try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
     }
 }

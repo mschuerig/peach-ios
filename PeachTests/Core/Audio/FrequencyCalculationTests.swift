@@ -74,13 +74,15 @@ struct FrequencyCalculationTests {
         let error3: AudioError = .invalidDuration("test")
         let error4: AudioError = .invalidVelocity("test")
         let error5: AudioError = .invalidPreset("test")
-        let error6: AudioError = .contextUnavailable
+        let error6: AudioError = .invalidAmplitude("test")
+        let error7: AudioError = .contextUnavailable
         #expect(error1 as Error is AudioError)
         #expect(error2 as Error is AudioError)
         #expect(error3 as Error is AudioError)
         #expect(error4 as Error is AudioError)
         #expect(error5 as Error is AudioError)
         #expect(error6 as Error is AudioError)
+        #expect(error7 as Error is AudioError)
     }
 
     // MARK: - Reference Pitch Configuration

@@ -50,6 +50,16 @@ struct TrainingSessionIntegrationTests {
         #expect(f.mockPlayer.lastVelocity == 63)
     }
 
+    @Test("TrainingSession passes default amplitudeDB 0.0 to NotePlayer")
+    func passesDefaultAmplitude() async throws {
+        let f = makeTrainingSession()
+
+        f.session.startTraining()
+        try await waitForState(f.session, .awaitingAnswer)
+
+        #expect(f.mockPlayer.lastAmplitudeDB == 0.0)
+    }
+
     // MARK: - TrainingDataStore Integration Tests
 
     @Test("TrainingSession records comparison on answer")

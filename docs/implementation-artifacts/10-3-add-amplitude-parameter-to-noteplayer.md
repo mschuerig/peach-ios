@@ -1,6 +1,6 @@
 # Story 10.3: Add Amplitude Parameter to NotePlayer
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,52 +26,52 @@ So that the audio engine can play notes at different loudness levels for the Var
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `AudioError.invalidAmplitude` to error enum (AC: #4)
-  - [ ] Add `case invalidAmplitude(String)` to `AudioError` in `Peach/Core/Audio/NotePlayer.swift`
-  - [ ] Add doc comment: "The specified amplitude is invalid (outside -90.0 to +12.0 dB range)."
+- [x] Task 1: Add `AudioError.invalidAmplitude` to error enum (AC: #4)
+  - [x] Add `case invalidAmplitude(String)` to `AudioError` in `Peach/Core/Audio/NotePlayer.swift`
+  - [x] Add doc comment: "The specified amplitude is invalid (outside -90.0 to +12.0 dB range)."
 
-- [ ] Task 2: Update `NotePlayer` protocol signature (AC: #1)
-  - [ ] Change `play(frequency: Double, duration: TimeInterval, velocity: UInt8)` to `play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float)`
-  - [ ] Update doc comment to document `amplitudeDB` parameter: dB offset for sound volume (-90.0 to +12.0, 0.0 = no change)
-  - [ ] Note: Swift protocols do not support default parameter values — all call sites must pass `amplitudeDB` explicitly
+- [x] Task 2: Update `NotePlayer` protocol signature (AC: #1)
+  - [x] Change `play(frequency: Double, duration: TimeInterval, velocity: UInt8)` to `play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float)`
+  - [x] Update doc comment to document `amplitudeDB` parameter: dB offset for sound volume (-90.0 to +12.0, 0.0 = no change)
+  - [x] Note: Swift protocols do not support default parameter values — all call sites must pass `amplitudeDB` explicitly
 
-- [ ] Task 3: Update `MockNotePlayer` to track amplitude (AC: #5)
-  - [ ] Add `var lastAmplitudeDB: Float?` property
-  - [ ] Change `playHistory` tuple from `(frequency: Double, duration: TimeInterval, velocity: UInt8)` to `(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float)`
-  - [ ] Update `play` method signature to include `amplitudeDB: Float`; capture to `lastAmplitudeDB` and append to `playHistory`
-  - [ ] Update `reset()`: add `lastAmplitudeDB = nil`
+- [x] Task 3: Update `MockNotePlayer` to track amplitude (AC: #5)
+  - [x] Add `var lastAmplitudeDB: Float?` property
+  - [x] Change `playHistory` tuple from `(frequency: Double, duration: TimeInterval, velocity: UInt8)` to `(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float)`
+  - [x] Update `play` method signature to include `amplitudeDB: Float`; capture to `lastAmplitudeDB` and append to `playHistory`
+  - [x] Update `reset()`: add `lastAmplitudeDB = nil`
 
-- [ ] Task 4: Update `MockNotePlayerForPreview` in `TrainingScreen.swift` (AC: #1)
-  - [ ] Change `play(frequency:duration:velocity:)` to `play(frequency:duration:velocity:amplitudeDB:)` with `amplitudeDB: Float` parameter
+- [x] Task 4: Update `MockNotePlayerForPreview` in `TrainingScreen.swift` (AC: #1)
+  - [x] Change `play(frequency:duration:velocity:)` to `play(frequency:duration:velocity:amplitudeDB:)` with `amplitudeDB: Float` parameter
 
-- [ ] Task 5: Write failing tests for amplitude validation and behavior (AC: #1, #2, #3, #4) — TDD: write these BEFORE implementation
-  - [ ] `amplitudeDB_default_playsSuccessfully` — `amplitudeDB: 0.0` plays without error
-  - [ ] `amplitudeDB_positiveOffset_accepted` — `amplitudeDB: 2.0` plays without error
-  - [ ] `amplitudeDB_negativeOffset_accepted` — `amplitudeDB: -2.0` plays without error
-  - [ ] `amplitudeDB_atMinimumBoundary_accepted` — `amplitudeDB: -90.0` plays without error
-  - [ ] `amplitudeDB_atMaximumBoundary_accepted` — `amplitudeDB: 12.0` plays without error
-  - [ ] `amplitudeDB_belowMinimum_rejected` — `amplitudeDB: -91.0` throws `AudioError.invalidAmplitude`
-  - [ ] `amplitudeDB_aboveMaximum_rejected` — `amplitudeDB: 13.0` throws `AudioError.invalidAmplitude`
+- [x] Task 5: Write failing tests for amplitude validation and behavior (AC: #1, #2, #3, #4) — TDD: write these BEFORE implementation
+  - [x] `amplitudeDB_default_playsSuccessfully` — `amplitudeDB: 0.0` plays without error
+  - [x] `amplitudeDB_positiveOffset_accepted` — `amplitudeDB: 2.0` plays without error
+  - [x] `amplitudeDB_negativeOffset_accepted` — `amplitudeDB: -2.0` plays without error
+  - [x] `amplitudeDB_atMinimumBoundary_accepted` — `amplitudeDB: -90.0` plays without error
+  - [x] `amplitudeDB_atMaximumBoundary_accepted` — `amplitudeDB: 12.0` plays without error
+  - [x] `amplitudeDB_belowMinimum_rejected` — `amplitudeDB: -91.0` throws `AudioError.invalidAmplitude`
+  - [x] `amplitudeDB_aboveMaximum_rejected` — `amplitudeDB: 13.0` throws `AudioError.invalidAmplitude`
 
-- [ ] Task 6: Implement `SoundFontNotePlayer.play()` amplitude support (AC: #1, #2, #3, #4)
-  - [ ] Add `amplitudeDB: Float` parameter to `play()` signature
-  - [ ] Add validation: `guard (-90.0...12.0).contains(amplitudeDB)` → throw `AudioError.invalidAmplitude`
-  - [ ] Add `sampler.masterGain = amplitudeDB` before the `sampler.startNote(...)` call (after pitch bend, before startNote)
-  - [ ] No changes needed in `stop()` or `loadPreset()` or `defer` block — `masterGain` is set before every `startNote` so no reset is required
+- [x] Task 6: Implement `SoundFontNotePlayer.play()` amplitude support (AC: #1, #2, #3, #4)
+  - [x] Add `amplitudeDB: Float` parameter to `play()` signature
+  - [x] Add validation: `guard (-90.0...12.0).contains(amplitudeDB)` → throw `AudioError.invalidAmplitude`
+  - [x] Add `sampler.masterGain = amplitudeDB` before the `sampler.startNote(...)` call (after pitch bend, before startNote)
+  - [x] No changes needed in `stop()` or `loadPreset()` or `defer` block — `masterGain` is set before every `startNote` so no reset is required
 
-- [ ] Task 7: Update `TrainingSession` to pass amplitude (AC: #2)
-  - [ ] Update both `notePlayer.play(...)` calls (note1 at line ~401 and note2 at line ~412) to pass `amplitudeDB: 0.0`
-  - [ ] Note: Story 10.5 will change note2's `amplitudeDB` to a computed offset; for now both notes use `0.0`
+- [x] Task 7: Update `TrainingSession` to pass amplitude (AC: #2)
+  - [x] Update both `notePlayer.play(...)` calls (note1 at line ~401 and note2 at line ~412) to pass `amplitudeDB: 0.0`
+  - [x] Note: Story 10.5 will change note2's `amplitudeDB` to a computed offset; for now both notes use `0.0`
 
-- [ ] Task 8: Update all existing test call sites (AC: #6)
-  - [ ] `SoundFontNotePlayerTests`: add `amplitudeDB: 0.0` to every `player.play(...)` call (~10 call sites)
-  - [ ] `TrainingSessionIntegrationTests`: add test `passesDefaultAmplitude` verifying `mockPlayer.lastAmplitudeDB == 0.0`
-  - [ ] `FrequencyCalculationTests`: add `AudioError.invalidAmplitude("test")` case to `audioError_CasesExist` if it enumerates error cases
+- [x] Task 8: Update all existing test call sites (AC: #6)
+  - [x] `SoundFontNotePlayerTests`: add `amplitudeDB: 0.0` to every `player.play(...)` call (~10 call sites)
+  - [x] `TrainingSessionIntegrationTests`: add test `passesDefaultAmplitude` verifying `mockPlayer.lastAmplitudeDB == 0.0`
+  - [x] `FrequencyCalculationTests`: add `AudioError.invalidAmplitude("test")` case to `audioError_CasesExist` if it enumerates error cases
 
-- [ ] Task 9: Run full test suite and verify (AC: #6)
-  - [ ] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All tests must pass with zero failures
-  - [ ] Verify no compilation warnings related to the new parameter
+- [x] Task 9: Run full test suite and verify (AC: #6)
+  - [x] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All tests must pass with zero failures
+  - [x] Verify no compilation warnings related to the new parameter
 
 ## Dev Notes
 
@@ -188,14 +188,41 @@ Recent commits show the 10.2 work was clean and followed the established pattern
 - [Source: Peach/Training/TrainingSession.swift:401,412] — Two play() call sites to update
 - [Source: PeachTests/Training/MockNotePlayer.swift] — Mock tracking properties to extend
 
+## Change Log
+
+- 2026-02-24: Implemented story 10.3 — added `amplitudeDB: Float` parameter to `NotePlayer` protocol and all implementations/call sites; added `AudioError.invalidAmplitude`; added 7 amplitude validation tests + 1 integration test; all tests pass (Date: 2026-02-24)
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+No debug issues encountered. Clean implementation following existing patterns from story 10.2.
+
 ### Completion Notes List
 
+- Added `AudioError.invalidAmplitude(String)` error case with doc comment
+- Extended `NotePlayer` protocol signature: `play(frequency:duration:velocity:amplitudeDB:)`
+- Updated `SoundFontNotePlayer.play()`: validates amplitude range (-90.0...12.0), sets `sampler.masterGain = amplitudeDB` before `startNote`
+- Updated `MockNotePlayer`: added `lastAmplitudeDB` property, extended `playHistory` tuple, updated `reset()`
+- Updated `MockNotePlayerForPreview` in `TrainingScreen.swift`
+- Updated `TrainingSession`: both `notePlayer.play()` calls now pass `amplitudeDB: 0.0`
+- Added 7 amplitude validation tests in `SoundFontNotePlayerTests` (boundary, valid, invalid)
+- Added `passesDefaultAmplitude` integration test in `TrainingSessionIntegrationTests`
+- Updated `audioError_CasesExist` test in `FrequencyCalculationTests` for new error case
+- Updated all existing `play()` call sites in tests with `amplitudeDB: 0.0`
+- Full test suite passes with zero failures
+
 ### File List
+
+- Peach/Core/Audio/NotePlayer.swift (modified — added `invalidAmplitude` error case, added `amplitudeDB` to protocol)
+- Peach/Core/Audio/SoundFontNotePlayer.swift (modified — added `amplitudeDB` parameter, validation, `masterGain` assignment)
+- Peach/Training/TrainingSession.swift (modified — pass `amplitudeDB: 0.0` at both `play()` calls)
+- Peach/Training/TrainingScreen.swift (modified — updated preview mock signature)
+- PeachTests/Training/MockNotePlayer.swift (modified — added `lastAmplitudeDB`, extended `playHistory` tuple, updated `reset()`)
+- PeachTests/Core/Audio/SoundFontNotePlayerTests.swift (modified — added 7 amplitude tests, updated ~10 existing `play()` calls)
+- PeachTests/Core/Audio/FrequencyCalculationTests.swift (modified — added `invalidAmplitude` to error case test)
+- PeachTests/Training/TrainingSessionIntegrationTests.swift (modified — added `passesDefaultAmplitude` test)

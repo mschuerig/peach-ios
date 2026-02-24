@@ -17,6 +17,9 @@ enum AudioError: Error {
     /// The specified preset is invalid (program or bank outside valid MIDI range).
     case invalidPreset(String)
 
+    /// The specified amplitude is invalid (outside -90.0 to +12.0 dB range).
+    case invalidAmplitude(String)
+
     /// The audio context or format could not be created.
     case contextUnavailable
 }
@@ -34,8 +37,9 @@ protocol NotePlayer {
     ///   - frequency: The frequency in Hz (must be positive and within audible range 20-20000 Hz)
     ///   - duration: The total duration of the note in seconds (must be positive)
     ///   - velocity: MIDI velocity (1-127); controls timbre/dynamics of the sampled instrument
+    ///   - amplitudeDB: dB offset for sound volume (-90.0 to +12.0, 0.0 = no change)
     /// - Throws: `AudioError` if parameters are outside valid ranges
-    func play(frequency: Double, duration: TimeInterval, velocity: UInt8) async throws
+    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws
 
     /// Stops playback immediately.
     ///
