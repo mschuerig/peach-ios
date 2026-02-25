@@ -1,8 +1,10 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
-lastStep: 14
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete']
+lastStep: 'v0.2-complete'
 status: 'complete'
 completedAt: '2026-02-12'
+v02AmendmentStarted: '2026-02-25'
+v02AmendmentCompleted: '2026-02-25'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/glossary.md', 'docs/planning-artifacts/architecture.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 documentCounts:
   briefs: 0
@@ -973,3 +975,468 @@ Peach requires audio output to function. This is an inherent constraint — the 
 4. **Respect system settings.** Use `@Environment(\.dynamicTypeSize)`, `@Environment(\.colorScheme)`, and `@Environment(\.accessibilityReduceMotion)` where relevant in custom components.
 
 5. **Don't add accessibility theater.** Don't add accessibility features that don't serve a real user need (e.g., sonification of the profile chart, haptic feedback for navigation). Focus on making the real workflows work with assistive technology.
+
+## Pitch Matching — UX Design Amendment (v0.2)
+
+### Project Understanding
+
+Pitch Matching is a second training paradigm where the user tunes a note to match a reference pitch. It trains **active pitch production** rather than passive discrimination — a complementary skill that uses the same "training, not testing" philosophy.
+
+### Key Design Decisions
+
+**No real-time feedback during tuning.** The user receives no visual indication of proximity while the slider is active. This forces the user to tune by ear alone — the exercise trains auditory judgment, not visual meter-reading. This upholds the sensory hierarchy: ears > fingers > eyes.
+
+**No binary correct/incorrect.** Pitch matching results are continuous (signed cent offset), not binary. There is no concept of "right" or "wrong" — only proximity. This is consistent with Peach's anti-scoring philosophy.
+
+**Separate profile tracking.** Comparison training and pitch matching results are stored and tracked independently — both in the data store and in the perceptual profile. The two modes measure different skills (passive discrimination vs. active production) with potentially different thresholds.
+
+### Post-Release Feedback Design
+
+After the user releases the slider, feedback is displayed for the same duration as comparison training (~400ms):
+
+**Directional arrow + signed cent offset:**
+
+| User's Error | Arrow Direction | Arrow Length | Arrow Color | Example |
+|---|---|---|---|---|
+| Dead center (≈0 cents) | — | Green dot (no arrow) | Green | "0 cents" |
+| Slightly sharp | Up | Short | Green | "+4 cents" |
+| Slightly flat | Down | Short | Green | "-3 cents" |
+| Moderately sharp | Up | Medium | Yellow | "+18 cents" |
+| Moderately flat | Down | Medium | Yellow | "-22 cents" |
+| Far too sharp | Up | Long | Red | "+55 cents" |
+| Far too flat | Down | Long | Red | "-48 cents" |
+
+**Band thresholds:** Initial arbitrary values (e.g., green <10 cents, yellow 10-30 cents, red >30 cents). Expected to require tuning based on real usage.
+
+**Arrow length is categorical, not proportional** — short/medium/long maps to the three bands. The signed cent offset provides exact detail for users who want precision.
+
+### Design Challenges Identified
+
+1. **Different rhythm, same philosophy** — Pitch matching is slow and deliberate vs. comparison's fast reflexive loop. The UX must feel like the same app at a different tempo.
+
+2. **Slider precision vs. ease** — Must span a meaningful pitch range while allowing fine-tuning to within a few cents. Tension between gross and fine motor control.
+
+3. **"When am I done?"** — The user must decide when to commit (release the slider). The release gesture is the commit action.
+
+4. **Start Screen hierarchy** — Adding a second training mode button changes the visual balance. Must preserve zero-friction feel.
+
+### PRD Amendment Required
+
+**FR49** currently reads: "System provides visual feedback indicating proximity of the tunable note to the reference pitch." Amend to: "System provides visual feedback showing the signed cent offset and directional proximity after the user releases the slider (post-release only). No visual feedback is provided during active tuning."
+
+### Pitch Matching — Core Experience
+
+**Defining Interaction: "Listen. Search. Release."**
+
+The pitch matching loop: a reference note plays and stops. A tunable note begins playing. The user drags a vertical slider, listening for the moment the tunable note matches their memory of the reference. They release. The result appears briefly. The next reference note plays.
+
+The critical skill being trained is **pitch memory and reproduction** — the user must hold the reference pitch in their mind while actively searching for it. This is closer to tuning an instrument than answering a question.
+
+**User Mental Model**
+
+The user's mental model is **tuning by ear** — the same process a string player uses when matching a note to a tuning fork. The slider is the tuning peg. The ear is the only guide. The user is not looking for a visual target — they are listening for a sonic convergence.
+
+Key mental model shift from comparison training: in comparisons, the answer exists in the moment (the two notes are both audible). In pitch matching, the answer exists partly in memory (the reference note has stopped). This makes it cognitively harder and trains a different faculty.
+
+**The Pitch Matching Loop — Step by Step:**
+
+1. **Reference note plays** — the configured duration (same as comparison note duration). Slider is visible at its fixed starting position but the tunable note is not yet playing. The user listens and memorizes.
+2. **Reference note stops, tunable note auto-starts** — the tunable note begins playing immediately at a random offset from the reference (±100 cents). The slider becomes active. The user hears the offset and begins orienting — "am I sharp or flat, and by how much?" This passive listening moment before the user touches the slider is training-valuable: the pitch memory is freshest here.
+3. **User tunes** — dragging the slider changes the pitch in real time. No visual feedback on proximity — the ear is the only guide. The user can take as long as needed. The slider always starts at the same physical position regardless of the pitch offset, supporting consistent eyes-closed operation.
+4. **User releases slider** — the tunable note stops immediately. The result is recorded: reference note, user's final pitch, signed cent error, timestamp.
+5. **Feedback** — directional arrow (or green dot) + signed cent offset displayed for ~400ms. Same duration as comparison feedback.
+6. **Next reference note plays** — return to step 1. The loop continues until the user navigates away.
+
+**Effortless Interactions:**
+
+1. **Start pitch matching** — one tap from Start Screen ("Pitch Matching" button). Same zero-friction philosophy as comparison training.
+2. **Tune** — the slider is the only control during active tuning. No buttons, no confirmations. Drag and listen.
+3. **Commit** — releasing the slider is the commit gesture. No separate "submit" action. The physical act of letting go is the answer.
+4. **Stop** — same as comparison training. Navigate to Settings/Profile, or background the app. Incomplete attempts (slider still held) silently discarded.
+
+**Critical Success Moments:**
+
+1. **First tuning attempt** — the user drags the slider, hears the pitch change, and immediately understands the interaction. No explanation needed — the mapping from gesture to sound is intuitive.
+2. **First close match** — the user sees "+3 cents" with a short green arrow. The realization: "I can hear this." The same quiet satisfaction as comparison training, but earned through active effort.
+3. **The memory challenge** — the user notices that holding the reference pitch in memory while tuning is hard. This difficulty is the training. The challenge is the point.
+4. **Improvement over time** — average cent error decreasing in the matching profile. The data confirms that pitch memory and reproduction are sharpening.
+
+**Experience Principles (Pitch Matching Specific):**
+
+1. **The ear is the only instrument** — no visual tuning aids during active matching. The slider controls pitch; the eyes see nothing useful until after release. This is non-negotiable for training value.
+2. **Release is commitment** — the physical gesture of releasing the slider is the answer. This creates a natural, embodied "I'm done" moment without any UI friction.
+3. **Same app, different tempo** — pitch matching shares comparison training's visual language, navigation patterns, feedback duration, and interruption handling. The difference is purely in the interaction rhythm.
+4. **Memory is the challenge** — the gap between reference note stopping and the user finding the match is where training happens. This gap should not be shortened or assisted.
+
+### Pitch Matching — Emotional Response
+
+**Primary Emotional Goals:**
+
+1. **Focused concentration** — During tuning, the user is deeply engaged with sound. This is more absorbing than comparison training — closer to playing an instrument than answering flash cards. The UX must support this concentration without interrupting it.
+
+2. **Honest curiosity after release** — "How close was I?" The moment of release carries genuine suspense that comparison training lacks. The user had to work for this answer. The feedback satisfies curiosity without judging.
+
+3. **Acceptance of the spectrum** — There's no binary correct/incorrect. The user sees they were 18 cents sharp, yellow arrow. That's information, not failure. Over time, the numbers get smaller. The emotional relationship is with the trend, not any single attempt.
+
+**Emotional Journey — Pitch Matching Specific:**
+
+| Moment | Desired Feeling | Anti-Pattern to Avoid |
+|---|---|---|
+| **Reference note plays** | Alert attention — "let me memorize this" | Boredom, distraction, rushing |
+| **Tunable note starts** | Purposeful searching — "I know what I'm looking for" | Panic, overwhelm, visual dependence |
+| **During tuning** | Absorbed concentration — ears fully engaged | Frustration from imprecise slider, fatigue from too-long attempts |
+| **Release** | Mild suspense — "how close was I?" | Anxiety, dread of judgment |
+| **Seeing feedback** | Honest assessment — the data is just data | Shame from red arrow, overexcitement from green |
+| **Green dot (dead center)** | Quiet satisfaction — earned through genuine effort | Gamified celebration, confetti, streaks |
+| **Red arrow (far off)** | Neutral acceptance — "my pitch memory drifted, next one" | Discouragement, self-criticism |
+| **Over weeks** | Growing precision — watching average error shrink | Pressure to perform, comparison to benchmarks |
+
+**Micro-Emotions to Cultivate:**
+
+- **Patience** — pitch matching rewards patience. Rushing the slider produces worse results. The UX must not create time pressure.
+- **Embodied awareness** — the user is listening to their own judgment in real time. This builds a proprioceptive relationship with pitch that comparison training doesn't reach.
+- **Equanimity toward results** — the color spectrum (green/yellow/red) must feel informational, not judgmental. A red arrow means "far off," not "you failed."
+
+**Micro-Emotions to Prevent:**
+
+- **Slider frustration** — if the slider is too sensitive or too coarse, the user blames the tool instead of training the skill. The slider must feel like an extension of intent.
+- **Memory anxiety** — "I already forgot the reference note" is a real experience, especially early on. This should feel like part of the training challenge, not a design failure.
+- **Comparison-mode impatience** — users coming from the fast comparison loop may initially find pitch matching slow. The different tempo is a feature, not a bug.
+
+**Design Implications:**
+
+| Emotional Goal | UX Approach |
+|---|---|
+| Focused concentration | No UI elements change during tuning. The screen is static — slider and nothing else. No timers, no counters, no animations. |
+| Honest curiosity | Feedback appears instantly on release — no delay that builds anxiety. Arrow + number, brief display, next exercise. |
+| Acceptance of the spectrum | Green/yellow/red are informational categories, not grades. The cent offset is factual. No "try again" language, no disappointment framing. |
+| Patience | No time limit on tuning. The note plays indefinitely. The user decides when to commit. |
+| Equanimity | Same visual weight for all feedback colors. Red arrow is the same size/style as green arrow, just longer and different color. No additional emphasis on "bad" results. |
+
+### Pitch Matching — Tunable Note Behavior
+
+**Decision: Auto-start after reference note stops.**
+
+The tunable note begins playing immediately when the reference note ends. The user can listen passively before touching the slider — this preserves pitch memory at its freshest and provides immediate auditory orientation ("am I sharp or flat?"). Auto-start is strictly more flexible than touch-to-start: users who want to listen first can listen; users who want to grab the slider immediately can grab.
+
+**Rationale (from team discussion):**
+
+- **Training value:** The moment after the reference note stops is the highest-value training window. Auto-start fills it with auditory comparison material rather than silence.
+- **Implementation simplicity:** Linear state machine (reference → tunable → interact → release → feedback). No conditional "waiting for touch" state, no touch-triggered playback latency.
+- **Flexibility:** Auto-start is a superset of touch-to-start behavior. It doesn't force a listening phase — it enables one.
+
+**If auto-start proves problematic in practice**, touch-to-start can be revisited. The state machine would need a "waiting for touch" state, and the audio engine would need low-latency start-on-gesture. Not complex, but adds a branching state.
+
+### Pitch Matching — Initial Offset and Note Selection (v0.2)
+
+**Decision: Random note, random offset, no adaptation.**
+
+For v0.2, pitch matching uses the simplest possible selection:
+
+- **Note selection:** Random note within the configured training range
+- **Initial offset:** Random within ±100 cents (one semitone in either direction)
+- **Slider starting position:** Always the same physical position regardless of offset. The sound is different each time; the gesture starting point is consistent. This supports eyes-closed operation.
+
+**No adaptive algorithm involvement for v0.2.** The adaptive algorithm (KazezNoteStrategy) is not used for pitch matching. Both note and offset are random.
+
+**Rationale:**
+
+- The comparison training experience showed that pitch discrimination is largely one unified skill across frequencies. The same likely applies to pitch matching — per-note adaptation may not add value.
+- Random selection is stateless and simple. It provides variety (preventing habituation) and profile coverage (collecting data across the range).
+- The ±100 cent offset range is a tunable parameter, expected to need adjustment based on real usage.
+
+**Future considerations (not for v0.2):**
+
+- The offset range could be informed by the user's comparison profile — if their detection threshold is ~15 cents, starting offsets of ±30-50 cents would put them in a range where orientation is achievable but not trivial.
+- Adaptive note selection could target notes where matching accuracy is weakest, if the matching profile reveals meaningful per-note variation.
+- Adaptive offset selection could scale difficulty based on the user's matching history — smaller offsets for advanced users.
+- These enhancements require real usage data to validate whether they're needed. Build simple, observe, adapt.
+
+### Pitch Matching — User Journey Flow
+
+#### Journey 6: Pitch Matching
+
+```mermaid
+flowchart TD
+    A[App opens] --> B[Start Screen]
+    B -->|Tap Pitch Matching| C[Pitch Matching Screen]
+    C --> D[Reference note plays - slider visible but inactive]
+    D --> E[Reference note stops]
+    E --> F[Tunable note auto-starts at random offset - slider active]
+    F --> G{User action}
+    G -->|Drags slider| H[Pitch changes in real time - no visual feedback]
+    H --> G
+    G -->|Releases slider| I[Note stops - result recorded]
+    I --> J[Feedback: arrow + cent offset ~400ms]
+    J --> K[Feedback clears]
+    K --> D
+
+    G -->|Settings button| L[Training stops - Settings Screen]
+    G -->|Profile button| M[Training stops - Profile Screen]
+    L --> B
+    M --> B
+
+    C -->|App backgrounded| N[Training stops - incomplete attempt discarded]
+    D -->|App backgrounded| N
+    F -->|App backgrounded| N
+    H -->|App backgrounded| N
+    N --> B
+    I -->|App backgrounded| O[Training stops - answered attempt already saved]
+    O --> B
+```
+
+**Key UX decisions:**
+
+- The slider is **visible but inactive** during the reference note — the user can see the control and anticipate the interaction, but cannot begin tuning until the tunable note starts.
+- Tunable note **auto-starts** after the reference note stops — no user action needed to begin the tuning phase.
+- **No visual feedback during tuning** — the user tunes purely by ear.
+- **Release = commit** — the note stops and the result is recorded in one gesture.
+- Same interruption pattern as comparison training: any interruption discards incomplete attempts, backgrounding returns to Start Screen.
+
+#### Updated Navigation Model
+
+```
+Start Screen ──► Training Screen (via Start Training)
+Start Screen ──► Pitch Matching Screen (via Pitch Matching)
+Start Screen ──► Profile Screen ──► Start Screen
+Start Screen ──► Settings Screen ──► Start Screen
+Start Screen ──► Info Screen ──► Start Screen
+Training Screen ──► Profile Screen ──► Start Screen
+Training Screen ──► Settings Screen ──► Start Screen
+Pitch Matching Screen ──► Profile Screen ──► Start Screen
+Pitch Matching Screen ──► Settings Screen ──► Start Screen
+App backgrounded during training ──► Start Screen
+App backgrounded during pitch matching ──► Start Screen
+```
+
+#### Updated Navigation Diagram
+
+```
+                    ┌──────────────────┐
+                    │   Start Screen   │
+                    │                  │
+                    │ [Start Training] │
+                    │ [Pitch Matching] │
+                    │ [Settings]       │
+                    │ [Profile]        │
+                    │ [Info]           │
+                    └┬───┬───┬───┬───┬┘
+       Start Training│   │   │   │   │Pitch Matching
+                 ┌───▼┐  │   │   │  ┌▼────────────┐
+                 │Train│  │   │   │  │Pitch Match   │
+                 │Scrn │  │   │   │  │Screen        │
+                 │     │  │   │   │  │              │
+                 │[H/L]│  │   │   │  │[Slider]      │
+                 │[Set] │  │   │   │  │[Set] [Prof]  │
+                 │[Prof]│  │   │   │  └──┬──┬───────┘
+                 └─┬──┬┘  │   │   │     │  │
+                   │  │   │   │   │     │  │
+           ┌───────▼──▼───▼───▼───▼─────▼──▼┐
+           │        Settings Screen          │──► Start Screen
+           └────────────────────────────────┘
+           ┌────────────────────────────────┐
+           │        Profile Screen          │──► Start Screen
+           └────────────────────────────────┘
+           ┌────────────────────────────────┐
+           │        Info Screen             │──► Start Screen
+           └────────────────────────────────┘
+
+  App backgrounded during any training ──► Start Screen
+```
+
+#### Pitch Matching Timing Diagram
+
+```
+[Reference ~~~] [Tunable ~~~~~~~~~~~~~~~~~~~~...release] [Feedback ··] [Reference ~~~] ...
+ slider visible   auto-starts, slider active              arrow+cents   slider visible
+ but inactive     user tunes by ear, no visual aid        ~400ms        but inactive
+```
+
+#### Journey Pattern Consistency
+
+| Pattern | Comparison Training | Pitch Matching |
+|---|---|---|
+| Entry point | "Start Training" on Start Screen | "Pitch Matching" on Start Screen |
+| Core loop | Sound → react → feedback → repeat | Sound → search → release → feedback → repeat |
+| Exit | Navigate away or background | Navigate away or background |
+| Interruption | Discard incomplete, stop training | Discard incomplete, stop training |
+| Feedback duration | ~400ms | ~400ms |
+| Nav buttons | Settings + Profile on Training Screen | Settings + Profile on Pitch Matching Screen |
+| Return from nav | Start Screen | Start Screen |
+
+### Pitch Matching — Component Strategy
+
+#### New Stock Components
+
+| Component | SwiftUI Implementation | Used On |
+|---|---|---|
+| Pitch Matching button | `Button` with secondary prominence (below Start Training) | Start Screen |
+| Settings button | `Button` with `Image(systemName:)` (reuse existing pattern) | Pitch Matching Screen |
+| Profile button | `Button` with `Image(systemName:)` (reuse existing pattern) | Pitch Matching Screen |
+
+The Pitch Matching button sits below Start Training on the Start Screen. It should be clearly visible but visually subordinate to Start Training — this is the secondary training mode. Stock `Button` with less prominence than `.borderedProminent`.
+
+#### Custom Components
+
+##### Vertical Pitch Slider
+
+**Purpose:** Allow the user to adjust the pitch of the tunable note by dragging vertically. Up = sharper, Down = flatter. This maps to the musical intuition of "higher pitch = higher position."
+
+**Visual Design:**
+- A large vertical slider occupying most of the screen height in the slider area
+- Thumb/handle large enough for imprecise one-handed grip (exceeding 44x44pt significantly)
+- Track shows the full adjustment range but carries no markings — no tick marks, no labels, no center indicator. The slider is a blank instrument.
+- The slider always starts at the same physical position (center of track) regardless of the pitch offset
+
+**States:**
+- **Inactive** (during reference note) — slider is visible but does not respond to touch. Visually dimmed per stock SwiftUI disabled appearance.
+- **Active** (tunable note playing, not touching) — slider is enabled, note is playing at current position. User can grab at any time.
+- **Dragging** (user touching slider) — thumb follows finger, pitch changes in real time. No visual feedback on proximity.
+- **Released** — slider returns to inactive appearance, note stops, feedback appears.
+
+**Implementation:** SwiftUI's stock `Slider` is horizontal and doesn't easily rotate to vertical with full gesture support. This will likely require a custom `DragGesture`-based implementation — a vertical track with a draggable thumb that maps position to a cent offset range. The component produces a continuous value (cents) that the audio engine translates to frequency.
+
+**Accessibility:**
+- VoiceOver label: "Pitch adjustment slider"
+- VoiceOver value: not meaningful during tuning (no visual feedback principle), but after release could announce the result
+- The slider must be operable via VoiceOver's increment/decrement gestures as a fallback, even though the primary interaction is direct manipulation
+
+##### Pitch Matching Feedback Indicator
+
+**Purpose:** Show the result of a pitch matching attempt — direction, magnitude category, and exact cent offset.
+
+**Visual Design:**
+- **Arrow:** SF Symbol arrow pointing up (`arrow.up`) or down (`arrow.down`), with size varying by category:
+  - Short arrow (green) — close match (<10 cents)
+  - Medium arrow (yellow) — middling match (10-30 cents)
+  - Long arrow (red) — far off (>30 cents)
+- **Green dot:** SF Symbol (`circle.fill`) in green when the match is dead center (≈0 cents)
+- **Cent offset text:** Signed number displayed alongside or below the arrow (e.g., "+4 cents", "-27 cents", "0 cents")
+- Centered on screen, same general position as the comparison Feedback Indicator
+- Brief appearance (~400ms), then clears
+
+**Implementation:** SF Symbols for arrow/dot, system green/yellow/red colors, `Text` for cent offset. Shown/hidden via SwiftUI state. Same transition pattern as the comparison Feedback Indicator (`.transition(.opacity)`).
+
+**States:**
+- Hidden (default during reference note and tuning)
+- Green dot + "0 cents" (dead center)
+- Short green arrow up/down + cent offset (close)
+- Medium yellow arrow up/down + cent offset (middling)
+- Long red arrow up/down + cent offset (far)
+
+**Accessibility:**
+- VoiceOver announcement: "4 cents sharp" or "27 cents flat" or "Dead center" — the arrow direction and magnitude are communicated verbally
+
+**Haptic feedback:** None for pitch matching. The comparison training's haptic contract (haptic on incorrect only) remains unique to comparison mode. Pitch matching feedback is purely visual. This may be revisited based on usage experience.
+
+#### Component Implementation Strategy
+
+**Principle: stock first, custom only when forced** — same as MVP. Custom components use first-party frameworks only and follow stock patterns (system colors, Dynamic Type, standard accessibility APIs).
+
+**Shared patterns:** Settings and Profile navigation buttons on the Pitch Matching Screen reuse the exact same components and placement as the Training Screen. The Pitch Matching Feedback Indicator shares the same screen position, timing, and transition pattern as the comparison Feedback Indicator, differing only in content (arrow+cents vs. thumbs up/down).
+
+#### Implementation Roadmap
+
+**v0.2 — Pitch Matching:**
+- Vertical Pitch Slider (custom `DragGesture` implementation)
+- Pitch Matching Feedback Indicator (SF Symbols + state management)
+- Pitch Matching button on Start Screen (stock `Button`)
+- Settings/Profile navigation buttons on Pitch Matching Screen (reuse existing pattern)
+
+### Pitch Matching — UX Consistency Patterns
+
+#### Button Hierarchy Update
+
+**Start Screen now has two primary actions:**
+
+| Button | Style | Prominence | Position |
+|---|---|---|---|
+| Start Training | `.borderedProminent` | Primary (hero action) | Top/most prominent |
+| Pitch Matching | `.bordered` or similar | Secondary | Below Start Training |
+| Settings, Profile, Info | Icon-only SF Symbols | Tertiary | Same positions as current |
+
+The Start Training button retains its hero status. Pitch Matching is clearly a second mode — visible and accessible, but not competing for the primary position. The visual hierarchy communicates: "this is the main thing; here's another thing you can do."
+
+#### Feedback Pattern Comparison
+
+Peach now has **two feedback patterns** instead of one. They share timing and screen position but differ in content:
+
+| Aspect | Comparison Training | Pitch Matching |
+|---|---|---|
+| Visual | Thumbs up/down (SF Symbol) | Directional arrow or green dot + cent offset |
+| Color | Green (correct) / Red (incorrect) | Green (<10¢) / Yellow (10-30¢) / Red (>30¢) |
+| Haptic | Single tick on incorrect only | None |
+| Duration | ~400ms | ~400ms |
+| Timing | Appears instantly on answer | Appears instantly on slider release |
+| Dismissal | Clears automatically before next comparison | Clears automatically before next reference note |
+| Information density | Binary (correct/incorrect) | Continuous (direction + magnitude + exact cents) |
+
+**Consistency rules:**
+- Same screen position for both feedback indicators
+- Same display duration (~400ms)
+- Same transition animation (`.transition(.opacity)`)
+- Same "appears instantly, clears automatically" behavior
+- The two feedback patterns never appear on the same screen — each is unique to its training mode
+
+#### Navigation Pattern — No Change
+
+Pitch Matching Screen follows the identical hub-and-spoke pattern. Settings and Profile buttons are in the same relative positions as on the Training Screen. All roads lead back to Start Screen. No new navigation depth.
+
+#### Interruption Pattern — No Change
+
+| Interruption | Comparison Training | Pitch Matching |
+|---|---|---|
+| Navigate to Settings/Profile | Stop training, discard incomplete | Stop training, discard incomplete |
+| App backgrounded | Stop, discard, return to Start Screen | Stop, discard, return to Start Screen |
+| Phone call / headphone disconnect | Stop, discard | Stop, discard |
+
+Identical behavior. The interruption contract is universal across all training modes.
+
+#### Empty States — Pitch Matching Addition
+
+**Pitch matching profile — cold start (no matching data):**
+- If the Profile Screen evolves to show matching data separately, it needs an empty state for matching accuracy when the user has only done comparison training (and vice versa)
+- Same treatment as the existing comparison profile empty state: honest absence of data, "Start pitch matching to build your matching profile" or similar
+- No call-to-action button in the empty state
+
+#### Loading & Error States — No Change
+
+Same as comparison training: no loading states (everything local), no user-visible error states (PitchMatchingSession as error boundary, same pattern as TrainingSession).
+
+### Pitch Matching — Responsive & Accessibility
+
+#### Orientation Adaptation
+
+**Portrait (primary):** The vertical pitch slider occupies most of the screen height, with Settings/Profile buttons above and the feedback area centered. This is the natural orientation — vertical slider in a vertical screen.
+
+**Landscape:** The slider remains vertical but uses the reduced screen height. The vertical-to-pitch metaphor (up=higher) is core to the mental model and must not change to horizontal in landscape. The reduced travel is acceptable — the slider maps a ±100 cent range regardless of physical size.
+
+#### Device Adaptation
+
+- **iPhone:** Primary device. Slider fills available height between nav buttons and feedback area.
+- **iPad:** More height = more slider travel = finer physical control. The experience is naturally better on a larger screen, which is fine.
+- **iPad windowed/compact:** Same as small iPhone — shorter slider, still functional.
+
+#### Accessibility — Pitch Matching Specific
+
+| Area | Stock SwiftUI (Free) | Custom Implementation Required |
+|---|---|---|
+| VoiceOver for pitch slider | — | Custom `.accessibilityAdjustableAction` for increment/decrement tuning |
+| VoiceOver for feedback arrow | — | Custom `.accessibilityLabel()`: "4 cents sharp" / "27 cents flat" / "Dead center" |
+| VoiceOver for slider state | — | Announce "Slider active, tunable note playing" / "Slider inactive, reference note playing" |
+| Dynamic Type | N/A (slider has no text) | Feedback cent offset text scales with Dynamic Type |
+| Color contrast | Automatic (system colors) | Arrow colors (green/yellow/red) use system semantic colors |
+| Tap target | — | Slider thumb exceeds 44x44pt significantly by design |
+
+**VoiceOver pitch matching workflow:**
+The biggest accessibility challenge is that pitch matching is fundamentally a continuous-adjustment interaction. VoiceOver users cannot drag a custom slider the same way sighted users can. The `accessibilityAdjustableAction` provides increment/decrement as an alternative, stepping the pitch in small increments. This is functional but changes the experience — from continuous tuning to stepped tuning. This is an acceptable trade-off; the core training value (listening and judging pitch) is preserved.
+
+**Eyes-closed operation for pitch matching:**
+Unlike comparison training (where eyes-closed is fully supported via haptic), pitch matching relies on visual feedback (arrow + cents) for results. Without haptic feedback, a fully eyes-closed pitch matching session provides no result feedback. This is acceptable for v0.2 — the tuning exercise itself (listening and adjusting) works eyes-closed; only the result display requires sight. If haptic feedback is added later, it could enable fully eyes-closed pitch matching.
+
+#### Testing — Pitch Matching Additions
+
+- VoiceOver walkthrough of the Pitch Matching Screen — verify slider is adjustable and feedback is announced
+- Test vertical slider in both orientations on iPhone and iPad
+- Test with Dynamic Type at accessibility sizes — verify cent offset text scales
+- Complete a pitch matching session with eyes closed — verify the tuning interaction works without visual feedback (accepting that results require sight)

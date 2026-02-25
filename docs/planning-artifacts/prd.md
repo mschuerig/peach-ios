@@ -297,7 +297,7 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 - **FR46:** User can adjust the pitch of the tunable note in real time via a large vertical slider control
 - **FR47:** System stops the tunable note and records the result when the user releases the slider
 - **FR48:** System records pitch matching results: reference note, user's final pitch, error in cents, timestamp
-- **FR49:** System provides visual feedback indicating proximity of the tunable note to the reference pitch
+- **FR49:** System provides visual feedback showing the signed cent offset and directional proximity after the user releases the slider (post-release only). No visual feedback is provided during active tuning
 - **FR50:** System discards incomplete pitch matching attempts on interruption (navigation away, app backgrounding, phone call, headphone disconnect)
 - **FR50a:** System returns to the Start Screen when the app is foregrounded after being backgrounded during pitch matching
 

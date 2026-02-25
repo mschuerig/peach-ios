@@ -1,9 +1,10 @@
 ---
 stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
-status: 'complete'
+status: 'amended'
 completedAt: '2026-02-12'
-inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/glossary.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
+amendedAt: '2026-02-25'
+inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 workflowType: 'architecture'
 project_name: 'Peach'
 user_name: 'Michael'
@@ -452,3 +453,458 @@ PeachTests/
 
 **First Implementation Priority:**
 Create Xcode 26.3 project → iOS → App → SwiftUI lifecycle, Swift language, SwiftData storage. Establish folder structure as defined. Then begin with `ComparisonRecord` + `TrainingDataStore` (the data foundation everything depends on).
+
+## v0.2 Architecture Amendment — Pitch Matching
+
+*Amended: 2026-02-25*
+
+This amendment extends the MVP architecture to support Pitch Matching (v0.2), a second training paradigm where the user tunes a note to match a reference pitch. It also documents prerequisite renames needed to disambiguate existing components before adding the new feature.
+
+**Input documents for this amendment:**
+- PRD v0.2 additions (FR44–FR52)
+- UX Design Specification v0.2 amendment
+- Existing codebase analysis
+
+### Prerequisite Renames
+
+With two training modes, several MVP names are now ambiguous. These renames must be completed before implementing Pitch Matching:
+
+| Current Name | New Name | Reason |
+|---|---|---|
+| `TrainingSession` | `ComparisonSession` | Only handles comparison training; "Training" is now ambiguous |
+| `TrainingState` | `ComparisonSessionState` | States are comparison-specific |
+| `TrainingScreen` | `ComparisonScreen` | The comparison training UI, not all training |
+| `Training/` directory | `Comparison/` | Feature directory for comparison training |
+| `FeedbackIndicator` | `ComparisonFeedbackIndicator` | Distinguishes from pitch matching feedback |
+| `NextNoteStrategy` | `NextComparisonStrategy` | Returns a `Comparison`, not a generic note; method is `nextComparison()` |
+
+**Names that remain unchanged:**
+- `TrainingDataStore` — stores all training data (both modes); "training" means "ear training"
+- `TrainingSettings` — shared settings (note range, reference pitch, note duration) apply to both modes
+- `ComparisonObserver`, `Comparison`, `CompletedComparison` — already specific
+- `PerceptualProfile` — the concrete class conforms to both discrimination and matching protocols
+- `NotePlayer` — generic by design, serves both training modes
+- `HapticFeedbackManager` — comparison-only behavior, but name doesn't claim "training"
+
+**Rename scope:** Code files, class/struct/enum names, all references in `docs/project-context.md`, `docs/planning-artifacts/architecture.md`, and `docs/planning-artifacts/glossary.md`. Implementation artifact stories referencing old names should be updated if they are not yet completed.
+
+### NotePlayer Protocol Redesign — PlaybackHandle Pattern
+
+The MVP `NotePlayer` protocol assumes fixed-duration playback with an ambient `stop()`. Pitch Matching requires indefinite playback with real-time frequency adjustment. The protocol is redesigned around a `PlaybackHandle` that represents ownership of a playing note.
+
+**New protocol design:**
+
+```swift
+protocol PlaybackHandle {
+    /// Stops playback. First call sends noteOff; subsequent calls are no-ops.
+    func stop() async throws
+
+    /// Adjusts the frequency of the currently playing note in real time.
+    /// Caller passes absolute frequency in Hz; implementation computes
+    /// the relative pitch bend from the base note.
+    func adjustFrequency(_ frequency: Double) async throws
+}
+
+protocol NotePlayer {
+    /// Starts playing a note at the given frequency.
+    /// Returns immediately after onset (does not await duration).
+    /// The caller owns the returned handle and is responsible for stopping playback.
+    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle
+
+    /// Convenience: plays a note for a fixed duration, then stops automatically.
+    /// Default implementation uses PlaybackHandle internally.
+    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws
+}
+```
+
+**Default implementation for fixed-duration playback:**
+
+```swift
+extension NotePlayer {
+    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
+        let handle = try await play(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
+        try await Task.sleep(for: .seconds(duration))
+        try await handle.stop()
+    }
+}
+```
+
+**Design rationale:**
+
+- **PlaybackHandle makes note ownership explicit.** The caller that starts a note controls that specific note's lifecycle. No ambient "stop whatever is playing" on the player.
+- **`stop()` removed from NotePlayer.** Stopping is always done through the handle. Sessions hold a `currentHandle: PlaybackHandle?` for interruption cleanup.
+- **Fixed-duration convenience method preserved.** Existing comparison training call sites continue to work via the default protocol extension. The handle-returning method is the primitive; the duration method is syntactic sugar.
+- **`adjustFrequency()` takes absolute Hz.** The caller doesn't need to know about MIDI pitch bend internals. The `SoundFontPlaybackHandle` tracks the base MIDI note and computes the relative pitch bend to reach the target frequency. The ±100 cent offset fits within the standard ±2-semitone (±200 cent) pitch bend range.
+- **`play()` is `async throws` for setup, not duration.** It returns as soon as the note is audibly playing. The `async` covers engine start and preset loading.
+- **No deinit safety on PlaybackHandle for v0.2.** All code paths explicitly stop notes (session stop, interruption handling). Auto-stop on deallocation can be added later if orphaned notes become an issue.
+
+**`PlaybackHandle` is a protocol** for testability. `SoundFontNotePlayer` returns `SoundFontPlaybackHandle`; `MockNotePlayer` returns `MockPlaybackHandle`.
+
+**Impact on ComparisonSession (formerly TrainingSession):**
+
+The comparison training loop continues to use the fixed-duration convenience method — no call-site changes required. The session holds `currentHandle: PlaybackHandle?` for interruption cleanup only when using the handle-returning method directly (e.g., for early termination on navigate-away). The `stop()` method calls `currentHandle?.stop()`.
+
+### PitchMatchingSession State Machine
+
+`PitchMatchingSession` is a new `@Observable final class` that orchestrates the pitch matching training loop. It follows the same patterns as `ComparisonSession` (error boundary, observer injection, environment injection) but with different state semantics.
+
+**States:**
+
+```swift
+enum PitchMatchingSessionState {
+    case idle               // Not started or stopped
+    case playingReference   // Reference note playing; slider visible but disabled
+    case playingTunable     // Tunable note playing indefinitely; slider active
+    case showingFeedback    // Note stopped, result recorded, feedback displayed (~400ms)
+}
+```
+
+**State transition flow:**
+
+```
+idle
+  ↓ startPitchMatching()
+playingReference (configured duration)
+  ↓ reference note handle stops after duration
+playingTunable (indefinite — auto-starts immediately)
+  ↓ user releases slider → tunableHandle.stop(), result recorded
+showingFeedback (~400ms)
+  ↓ feedback timer expires
+playingReference (next challenge, loop)
+
+Any state → idle (via stop(), triggered by: navigate away, background, interruption)
+```
+
+**Interruption handling (stop()):**
+
+When `stop()` is called from any state:
+- `playingReference` → stop reference handle, transition to idle
+- `playingTunable` → stop tunable handle, discard incomplete attempt, transition to idle
+- `showingFeedback` → cancel feedback timer, transition to idle
+- `idle` → no-op
+
+The session holds `currentHandle: PlaybackHandle?` and `stop()` always calls `currentHandle?.stop()`.
+
+**Dependencies:**
+
+```swift
+init(
+    notePlayer: NotePlayer,
+    profile: PitchMatchingProfile,
+    observers: [PitchMatchingObserver] = [],
+    settingsOverride: TrainingSettings? = nil,
+    noteDurationOverride: TimeInterval? = nil,
+    notificationCenter: NotificationCenter = .default
+)
+```
+
+No `NextComparisonStrategy` dependency — note selection is random for v0.2 (see Note Selection below).
+
+**Service table (addition):**
+
+| Component | Responsibility | MVP Implementation |
+|---|---|---|
+| `PitchMatchingSession` | State machine orchestrating the pitch matching loop. Coordinates `NotePlayer`, `PitchMatchingProfile`, and observers. Generates random challenges, manages indefinite playback, handles slider-driven frequency adjustment. The only component that knows a "pitch matching challenge" is a reference note followed by a tunable note. | Observable object observed by Pitch Matching Screen |
+
+**Data flow:**
+
+1. `PitchMatchingSession` generates a random challenge (note + offset)
+2. Plays reference note via `NotePlayer` (fixed duration) using handle
+3. Plays tunable note via `NotePlayer` (indefinite) using handle
+4. Receives frequency updates from slider → `handle.adjustFrequency(newFreq)`
+5. On slider release → `handle.stop()`, records result, notifies observers
+6. Observers persist (`TrainingDataStore`) and update profile (`PerceptualProfile`)
+
+### PitchMatchingRecord Data Model
+
+New SwiftData `@Model` for recording pitch matching attempts:
+
+```swift
+@Model
+final class PitchMatchingRecord {
+    /// Reference note as MIDI number (0-127) — exact, no cent offset
+    var referenceNote: Int
+
+    /// Starting cent offset of the tunable note (±100 cents for v0.2)
+    var initialCentOffset: Double
+
+    /// Signed cent error: user's final pitch minus reference pitch.
+    /// Positive = user was sharp, negative = user was flat.
+    var userCentError: Double
+
+    /// When the attempt was completed (slider released)
+    var timestamp: Date
+}
+```
+
+**Design notes:**
+- `initialCentOffset` stored for future analysis (sharp vs. flat starting bias)
+- `userCentError` is signed — enables directional analysis
+- User's final absolute pitch is derivable: reference note frequency + `userCentError` cents
+- Registered in `ModelContainer` schema in `PeachApp.swift`
+- File location: `Core/Data/PitchMatchingRecord.swift`
+
+### PitchMatchingObserver Pattern
+
+Follows the same decoupled observer pattern as comparison training:
+
+```swift
+protocol PitchMatchingObserver {
+    func pitchMatchingCompleted(_ result: CompletedPitchMatching)
+}
+```
+
+**Value type:**
+
+```swift
+struct CompletedPitchMatching {
+    let referenceNote: Int
+    let initialCentOffset: Double
+    let userCentError: Double
+    let timestamp: Date
+}
+```
+
+**Conforming types for v0.2:**
+- `TrainingDataStore` — persists `PitchMatchingRecord` to SwiftData
+- `PerceptualProfile` — updates matching statistics via `PitchMatchingProfile` protocol
+
+**Not conforming (by design):**
+- `HapticFeedbackManager` — no haptics for pitch matching (UX spec decision)
+
+**File locations:** `PitchMatching/PitchMatchingObserver.swift`, `PitchMatching/CompletedPitchMatching.swift`
+
+### Profile Protocol Split — PitchDiscriminationProfile & PitchMatchingProfile
+
+The existing `PerceptualProfile` class is split into two protocols representing the two distinct skills being trained:
+
+**PitchDiscriminationProfile** (existing behavior, extracted to protocol):
+
+```swift
+protocol PitchDiscriminationProfile {
+    func update(note: Int, centOffset: Double, isCorrect: Bool)
+    func weakSpots(count: Int) -> [Int]
+    var overallMean: Double? { get }
+    var overallStdDev: Double? { get }
+    func statsForNote(_ note: Int) -> PerceptualNote
+    func averageThreshold(midiRange: ClosedRange<Int>) -> Int?
+    func setDifficulty(note: Int, difficulty: Double)
+    func reset()
+}
+```
+
+**PitchMatchingProfile** (new):
+
+```swift
+protocol PitchMatchingProfile {
+    /// Updates with a pitch matching result
+    func updateMatching(note: Int, centError: Double)
+    /// Overall mean absolute matching error (cents)
+    var matchingMean: Double? { get }
+    /// Overall standard deviation of matching error (cents)
+    var matchingStdDev: Double? { get }
+    /// Total pitch matching attempts
+    var matchingSampleCount: Int { get }
+    func resetMatching()
+}
+```
+
+**`PerceptualProfile` conforms to both:**
+
+```swift
+@Observable
+final class PerceptualProfile: PitchDiscriminationProfile, PitchMatchingProfile {
+    // Existing: 128-slot noteStats array for discrimination
+    // New: aggregate matching statistics (overall, not per-note for v0.2)
+}
+```
+
+**v0.2 matching statistics:** Overall aggregates only (mean absolute error, standard deviation, sample count). Per-note matching breakdown deferred until data shows meaningful per-note variation. The protocol allows expansion.
+
+**Dependency boundaries:**
+- `ComparisonSession` depends on `PitchDiscriminationProfile`
+- `PitchMatchingSession` depends on `PitchMatchingProfile`
+- `NextComparisonStrategy` depends on `PitchDiscriminationProfile`
+- Profile Screen depends on both (shows discrimination visualization + matching stats)
+
+**Loading on startup:** `PerceptualProfile` rebuilt from both `ComparisonRecord` (discrimination) and `PitchMatchingRecord` (matching) data on app startup.
+
+**Observer conformance:** `PerceptualProfile` conforms to both `ComparisonObserver` and `PitchMatchingObserver`.
+
+### TrainingDataStore Extension
+
+Extend the existing `TrainingDataStore` with pitch matching CRUD. It remains the sole SwiftData accessor.
+
+**New methods:**
+- `save(_ record: PitchMatchingRecord) throws`
+- `fetchAllPitchMatching() throws -> [PitchMatchingRecord]`
+- `deleteAllPitchMatching() throws`
+
+**Observer conformance:** `TrainingDataStore` conforms to `PitchMatchingObserver`, automatically persisting completed pitch matching attempts.
+
+**Schema update:** Register `PitchMatchingRecord.self` in the `ModelContainer` schema in `PeachApp.swift`:
+
+```swift
+let container = try ModelContainer(for: ComparisonRecord.self, PitchMatchingRecord.self)
+```
+
+### Note Selection (v0.2)
+
+No adaptive algorithm for pitch matching in v0.2. Selection is random:
+- **Note:** Random MIDI note within the configured training range (from `TrainingSettings`)
+- **Initial offset:** Random within ±100 cents (one semitone in either direction)
+- **Slider starting position:** Always the same physical position regardless of offset
+
+**Implementation:** Private method inside `PitchMatchingSession`. No protocol, no separate file, no abstraction. When adaptive matching is needed in the future, extract to a protocol then.
+
+**Value type for a challenge:**
+
+```swift
+struct PitchMatchingChallenge {
+    let referenceNote: Int        // MIDI note (0-127)
+    let initialCentOffset: Double // Random ±100 cents
+}
+```
+
+**File location:** `PitchMatching/PitchMatchingChallenge.swift`
+
+### Updated Project Structure (v0.2)
+
+```
+Peach/
+├── App/
+│   ├── PeachApp.swift                    # Updated: wire PitchMatchingSession, register PitchMatchingRecord
+│   ├── ContentView.swift                 # Updated: add pitch matching navigation
+│   └── NavigationDestination.swift       # Updated: add .pitchMatching case
+├── Core/
+│   ├── Audio/
+│   │   ├── NotePlayer.swift              # Updated: PlaybackHandle pattern
+│   │   ├── PlaybackHandle.swift          # New: PlaybackHandle protocol
+│   │   ├── SoundFontNotePlayer.swift     # Updated: returns SoundFontPlaybackHandle
+│   │   ├── SoundFontPlaybackHandle.swift # New: PlaybackHandle implementation
+│   │   ├── SoundFontLibrary.swift
+│   │   ├── SF2PresetParser.swift
+│   │   └── FrequencyCalculation.swift
+│   ├── Algorithm/
+│   │   ├── NextComparisonStrategy.swift  # Renamed from NextNoteStrategy
+│   │   ├── KazezNoteStrategy.swift
+│   │   └── AdaptiveNoteStrategy.swift
+│   ├── Data/
+│   │   ├── ComparisonRecord.swift
+│   │   ├── PitchMatchingRecord.swift     # New
+│   │   ├── TrainingDataStore.swift       # Updated: pitch matching CRUD + PitchMatchingObserver
+│   │   ├── ComparisonRecordStoring.swift
+│   │   └── DataStoreError.swift
+│   └── Profile/
+│       ├── PerceptualProfile.swift           # Updated: conforms to both profile protocols
+│       ├── PitchDiscriminationProfile.swift  # New: protocol extracted from PerceptualProfile
+│       ├── PitchMatchingProfile.swift        # New: protocol for matching statistics
+│       ├── TrendAnalyzer.swift
+│       └── ThresholdTimeline.swift
+├── Comparison/                           # Renamed from Training/
+│   ├── ComparisonSession.swift           # Renamed from TrainingSession
+│   ├── ComparisonScreen.swift            # Renamed from TrainingScreen
+│   ├── Comparison.swift
+│   ├── ComparisonObserver.swift
+│   ├── HapticFeedbackManager.swift
+│   ├── ComparisonFeedbackIndicator.swift # Renamed from FeedbackIndicator
+│   └── DifficultyDisplayView.swift
+├── PitchMatching/                        # New feature directory
+│   ├── PitchMatchingSession.swift
+│   ├── PitchMatchingScreen.swift
+│   ├── PitchMatchingChallenge.swift
+│   ├── CompletedPitchMatching.swift
+│   ├── PitchMatchingObserver.swift
+│   ├── PitchMatchingFeedbackIndicator.swift
+│   └── VerticalPitchSlider.swift
+├── Profile/
+│   ├── ProfileScreen.swift               # Updated: shows both profile types
+│   ├── PianoKeyboardView.swift
+│   ├── SummaryStatisticsView.swift
+│   └── ThresholdTimelineView.swift
+├── Start/
+│   ├── StartScreen.swift                 # Updated: add Pitch Matching button
+│   └── ProfilePreviewView.swift
+├── Settings/
+│   ├── SettingsScreen.swift
+│   └── SettingsKeys.swift
+├── Info/
+│   └── InfoScreen.swift
+└── Resources/
+    ├── Assets.xcassets
+    └── Localizable.xcstrings
+```
+
+**Test structure mirrors source:**
+
+```
+PeachTests/
+├── Core/
+│   ├── Audio/
+│   │   ├── SoundFontNotePlayerTests.swift    # Updated for PlaybackHandle
+│   │   └── SoundFontPlaybackHandleTests.swift # New
+│   ├── Algorithm/
+│   │   └── ...
+│   ├── Data/
+│   │   └── TrainingDataStoreTests.swift      # Updated for pitch matching CRUD
+│   └── Profile/
+│       ├── PerceptualProfileTests.swift      # Updated for matching stats
+│       └── ...
+├── Comparison/                               # Renamed from Training/
+│   └── ComparisonSessionTests.swift          # Renamed from TrainingSessionTests
+├── PitchMatching/                            # New
+│   └── PitchMatchingSessionTests.swift
+└── Mocks/
+    ├── MockNotePlayer.swift                  # Updated for PlaybackHandle
+    ├── MockPlaybackHandle.swift              # New
+    └── ...
+```
+
+### Updated Requirements to Structure Mapping (v0.2)
+
+| FR Category | Component(s) | Directory |
+|---|---|---|
+| Training Loop (FR1–FR8) | `ComparisonSession`, `ComparisonScreen` | `Comparison/` |
+| Pitch Matching (FR44–FR50a) | `PitchMatchingSession`, `PitchMatchingScreen` | `PitchMatching/` |
+| Adaptive Algorithm (FR9–FR15) | `NextComparisonStrategy`, `KazezNoteStrategy`, `PerceptualProfile` | `Core/Algorithm/`, `Core/Profile/` |
+| Audio Engine (FR16–FR20, FR51–FR52) | `NotePlayer`, `PlaybackHandle`, `SoundFontNotePlayer`, `SoundFontPlaybackHandle` | `Core/Audio/` |
+| Profile & Statistics (FR21–FR26) | `PerceptualProfile`, `ProfileScreen` | `Core/Profile/`, `Profile/` |
+| Data Persistence (FR27–FR29, FR48) | `ComparisonRecord`, `PitchMatchingRecord`, `TrainingDataStore` | `Core/Data/` |
+| Settings (FR30–FR36) | `SettingsScreen`, `@AppStorage` | `Settings/` |
+| Localization (FR37–FR38) | `Localizable.xcstrings` | `Resources/` |
+| Device & Platform (FR39–FR42) | All screens (responsive layouts) | All feature directories |
+| Info Screen (FR43) | `InfoScreen` | `Info/` |
+
+### Updated Cross-Cutting Concerns (v0.2)
+
+| Concern | Affected Components | Resolution |
+|---|---|---|
+| Audio interruption (comparison) | `SoundFontNotePlayer`, `ComparisonSession` | `PlaybackHandle` reports interruption → `ComparisonSession` discards current comparison |
+| Audio interruption (pitch matching) | `SoundFontNotePlayer`, `PitchMatchingSession` | `PlaybackHandle` reports interruption → `PitchMatchingSession` discards current attempt |
+| Settings propagation | `SettingsScreen`, `ComparisonSession`, `PitchMatchingSession`, `NextComparisonStrategy`, `NotePlayer` | Both sessions read `@AppStorage` when starting next challenge; `NotePlayer` reads `soundSource` on each `play()` call |
+| Data integrity | `TrainingDataStore` | SwiftData atomic writes; sessions write only complete results |
+| App lifecycle | `PeachApp`, `ComparisonSession`, `PitchMatchingSession` | Backgrounding → active session stops; foregrounding → returns to Start Screen |
+| Note ownership | `ComparisonSession`, `PitchMatchingSession` | PlaybackHandle pattern ensures every started note has an explicit owner responsible for stopping it |
+
+### v0.2 Implementation Sequence
+
+1. **Prerequisite renames** (no functional changes — pure refactoring)
+2. **PlaybackHandle protocol + NotePlayer redesign** (refactors audio layer and ComparisonSession)
+3. **PitchMatchingRecord + TrainingDataStore extension** (data layer)
+4. **Profile protocol split** (PitchDiscriminationProfile + PitchMatchingProfile)
+5. **PitchMatchingSession** (state machine, integrates NotePlayer + observers + profile)
+6. **PitchMatchingScreen + custom components** (VerticalPitchSlider, PitchMatchingFeedbackIndicator)
+7. **Start Screen integration + navigation** (Pitch Matching button, routing)
+8. **Profile Screen integration** (display matching statistics alongside discrimination profile)
+
+### v0.2 Architecture Validation
+
+**Decision Compatibility:** All v0.2 additions use the same first-party Apple frameworks. PlaybackHandle is a protocol-level change with no new dependencies. PitchMatchingRecord integrates into the existing SwiftData container.
+
+**Pattern Consistency:** PitchMatchingSession follows the same patterns as ComparisonSession (observable, error boundary, observer injection, environment injection). Profile protocols follow protocol-first design. PlaybackHandle follows the existing protocol-based testability pattern.
+
+**Backward Compatibility:** The fixed-duration `play()` convenience method in the NotePlayer protocol extension preserves existing call semantics. Comparison training is functionally unchanged after renames.
+
+**Requirements Coverage:** All new FRs (FR44–FR52) mapped to specific components and directories.
+
+**Gap Analysis:** No critical gaps. Profile Screen UX design for matching statistics is noted as pending — the architecture supports it, but the visual design needs a separate UX workflow.
