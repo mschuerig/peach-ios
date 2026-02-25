@@ -72,14 +72,14 @@ development_status:
   hotfix-profile-band-segmentation: backlog # Confidence band draws across untrained gaps despite segment logic
 
   # Epic 5: See Your Progress - Profile & Statistics
-  epic-5: in-progress
+  epic-5: done
   5-1-profile-screen-with-perceptual-profile-visualization: done
   5-2-summary-statistics-with-trend-indicator: done
   5-3-profile-preview-on-start-screen-and-navigation: done
   epic-5-retrospective: optional
 
   # Epic 6: Make It Yours - Settings & Configuration
-  epic-6: in-progress
+  epic-6: done
   6-1-settings-screen-with-all-configuration-options: done # Include "Reset all training data" action
   6-2-apply-settings-to-training-in-real-time: done
   epic-6-retrospective: optional
@@ -104,18 +104,18 @@ development_status:
   infra-sf2-build-download-cache: done # Download SF2 samples to cache at build time, keep out of git
 
   # Epic 8: Real Instruments — Sampled Sound Sources
-  epic-8: in-progress
+  epic-8: done
   8-1-implement-soundfont-noteplayer: done # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
   8-2-sf2-preset-discovery-and-instrument-selection: done # SF2 PHDR parsing, SoundFontLibrary, dynamic instrument picker in Settings
   8-3-remove-sinewavenoteplayer-and-routingnoteplayer: done # Remove SineWaveNotePlayer + RoutingNotePlayer, SoundFontNotePlayer becomes sole NotePlayer
 
   # Epic 9: Evidence-Based Training — Note Selection Strategy
-  epic-9: in-progress
+  epic-9: done
   9-1-promote-kazeznotestrategy-to-default: done # Respect settings range, smarter cold start, swap default in PeachApp, remove NvM slider
   9-2-rethink-profile-display-and-progress-tracking: done # Adapt visualization to single-skill model
 
   # Epic 10: Vary Loudness Training Complication
-  epic-10: in-progress
+  epic-10: done
   10-1-research-volume-control-in-avaudiounitsampler: done # Research AVAudioEngine volume control independent of MIDI velocity
   10-2-rename-amplitude-to-velocity: done # Rename amplitude→velocity, retype Double→UInt8 throughout codebase
   10-3-add-amplitude-parameter-to-noteplayer: done # Add true amplitude (volume) parameter to NotePlayer protocol
