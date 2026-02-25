@@ -95,7 +95,7 @@ final class ComparisonSession {
     private let strategy: NextComparisonStrategy
 
     /// User's perceptual profile (Story 4.1)
-    private let profile: PerceptualProfile
+    private let profile: PitchDiscriminationProfile
 
     /// Trend analyzer for reset coordination (optional — nil in tests that don't need it)
     private let trendAnalyzer: TrendAnalyzer?
@@ -192,7 +192,7 @@ final class ComparisonSession {
     init(
         notePlayer: NotePlayer,
         strategy: NextComparisonStrategy,
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settingsOverride: TrainingSettings? = nil,
         noteDurationOverride: TimeInterval? = nil,
         varyLoudnessOverride: Double? = nil,

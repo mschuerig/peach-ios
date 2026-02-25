@@ -137,5 +137,5 @@ development_status:
 
   # Epic 14: Know Both Skills — Profile Protocol Split
   epic-14: in-progress
-  14-1-extract-pitchdiscriminationprofile-protocol: ready-for-dev
+  14-1-extract-pitchdiscriminationprofile-protocol: review
   14-2-pitchmatchingprofile-protocol-and-matching-statistics: backlog

@@ -45,7 +45,7 @@ final class KazezNoteStrategy: NextComparisonStrategy {
     // MARK: - NextComparisonStrategy Protocol
 
     func nextComparison(
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Comparison {

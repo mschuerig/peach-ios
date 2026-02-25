@@ -33,7 +33,7 @@ protocol NextComparisonStrategy {
     ///   - lastComparison: The most recently completed comparison (nil on first comparison)
     /// - Returns: A Comparison ready to be played by NotePlayer
     func nextComparison(
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Comparison

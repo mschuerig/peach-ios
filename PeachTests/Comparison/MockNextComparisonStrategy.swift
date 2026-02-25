@@ -18,7 +18,7 @@ final class MockNextComparisonStrategy: NextComparisonStrategy {
     var callCount = 0
 
     /// Last profile received by nextComparison()
-    var lastReceivedProfile: PerceptualProfile?
+    var lastReceivedProfile: PitchDiscriminationProfile?
 
     /// Last settings received by nextComparison()
     var lastReceivedSettings: TrainingSettings?
@@ -40,7 +40,7 @@ final class MockNextComparisonStrategy: NextComparisonStrategy {
     // MARK: - NextComparisonStrategy Protocol
 
     func nextComparison(
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Comparison {

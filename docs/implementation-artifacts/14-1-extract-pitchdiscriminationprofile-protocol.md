@@ -1,6 +1,6 @@
 # Story 14.1: Extract PitchDiscriminationProfile Protocol
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,34 +24,34 @@ So that ComparisonSession and NextComparisonStrategy depend on an abstract inter
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create PitchDiscriminationProfile protocol (AC: #1)
-  - [ ] 1.1 Create `Peach/Core/Profile/PitchDiscriminationProfile.swift` with all 8 method/property declarations matching existing `PerceptualProfile` signatures exactly
-  - [ ] 1.2 Write tests: `PeachTests/Core/Profile/PitchDiscriminationProfileTests.swift` — verify `PerceptualProfile` conforms to `PitchDiscriminationProfile` (compile-time check via type assignment)
+- [x] Task 1: Create PitchDiscriminationProfile protocol (AC: #1)
+  - [x] 1.1 Create `Peach/Core/Profile/PitchDiscriminationProfile.swift` with all 8 method/property declarations matching existing `PerceptualProfile` signatures exactly
+  - [x] 1.2 Write tests: `PeachTests/Core/Profile/PitchDiscriminationProfileTests.swift` — verify `PerceptualProfile` conforms to `PitchDiscriminationProfile` (compile-time check via type assignment)
 
-- [ ] Task 2: Declare PerceptualProfile conformance (AC: #2)
-  - [ ] 2.1 Add `: PitchDiscriminationProfile` to `PerceptualProfile` class declaration
-  - [ ] 2.2 Verify conformance compiles — no new method implementations needed
+- [x] Task 2: Declare PerceptualProfile conformance (AC: #2)
+  - [x] 2.1 Add `: PitchDiscriminationProfile` to `PerceptualProfile` class declaration
+  - [x] 2.2 Verify conformance compiles — no new method implementations needed
 
-- [ ] Task 3: Update ComparisonSession to depend on protocol (AC: #3)
-  - [ ] 3.1 Change `ComparisonSession.init` parameter type from `PerceptualProfile` to `PitchDiscriminationProfile`
-  - [ ] 3.2 Change stored property type from `PerceptualProfile` to `PitchDiscriminationProfile`
-  - [ ] 3.3 Update `ComparisonTestHelpers.swift` factory method — the `profile` parameter and tuple field keep type `PerceptualProfile` (concrete) since tests need to call `update()` directly for setup, but verify it passes into `ComparisonSession` through the protocol type
+- [x] Task 3: Update ComparisonSession to depend on protocol (AC: #3)
+  - [x] 3.1 Change `ComparisonSession.init` parameter type from `PerceptualProfile` to `PitchDiscriminationProfile`
+  - [x] 3.2 Change stored property type from `PerceptualProfile` to `PitchDiscriminationProfile`
+  - [x] 3.3 Update `ComparisonTestHelpers.swift` factory method — the `profile` parameter and tuple field keep type `PerceptualProfile` (concrete) since tests need to call `update()` directly for setup, but verify it passes into `ComparisonSession` through the protocol type
 
-- [ ] Task 4: Update NextComparisonStrategy and implementations (AC: #4)
-  - [ ] 4.1 Change `NextComparisonStrategy.nextComparison(profile:settings:lastComparison:)` parameter type from `PerceptualProfile` to `PitchDiscriminationProfile`
-  - [ ] 4.2 Update `KazezNoteStrategy.nextComparison` — change `profile` parameter type to `PitchDiscriminationProfile`
-  - [ ] 4.3 Update `AdaptiveNoteStrategy.nextComparison` — change `profile` parameter type to `PitchDiscriminationProfile`
-  - [ ] 4.4 Update `MockNextComparisonStrategy` — change `lastReceivedProfile` type from `PerceptualProfile?` to `PitchDiscriminationProfile?`
+- [x] Task 4: Update NextComparisonStrategy and implementations (AC: #4)
+  - [x] 4.1 Change `NextComparisonStrategy.nextComparison(profile:settings:lastComparison:)` parameter type from `PerceptualProfile` to `PitchDiscriminationProfile`
+  - [x] 4.2 Update `KazezNoteStrategy.nextComparison` — change `profile` parameter type to `PitchDiscriminationProfile`
+  - [x] 4.3 Update `AdaptiveNoteStrategy.nextComparison` — change `profile` parameter type to `PitchDiscriminationProfile`
+  - [x] 4.4 Update `MockNextComparisonStrategy` — change `lastReceivedProfile` type from `PerceptualProfile?` to `PitchDiscriminationProfile?`
 
-- [ ] Task 5: Update remaining consumers (AC: #3, #5)
-  - [ ] 5.1 Check `SummaryStatisticsView.computeStats(from:midiRange:)` — this uses `PerceptualProfile` directly. Leave as concrete type for now (Profile Screen will depend on both protocols in a later story per architecture doc)
-  - [ ] 5.2 Check `PeachApp.swift` — keeps concrete `PerceptualProfile` for instantiation and environment injection; no change needed (it creates the concrete instance)
-  - [ ] 5.3 Check preview mocks (`ComparisonScreen.swift` `MockNotePlayerForPreview`) — no profile dependency, no change needed
+- [x] Task 5: Update remaining consumers (AC: #3, #5)
+  - [x] 5.1 Check `SummaryStatisticsView.computeStats(from:midiRange:)` — this uses `PerceptualProfile` directly. Leave as concrete type for now (Profile Screen will depend on both protocols in a later story per architecture doc)
+  - [x] 5.2 Check `PeachApp.swift` — keeps concrete `PerceptualProfile` for instantiation and environment injection; no change needed (it creates the concrete instance)
+  - [x] 5.3 Check preview mocks (`ComparisonScreen.swift` `MockNotePlayerForPreview`) — no profile dependency, no change needed
 
-- [ ] Task 6: Run full test suite and verify (AC: #5)
-  - [ ] 6.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 6.2 Verify all existing tests pass with zero regressions
-  - [ ] 6.3 Verify new conformance test passes
+- [x] Task 6: Run full test suite and verify (AC: #5)
+  - [x] 6.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 6.2 Verify all existing tests pass with zero regressions
+  - [x] 6.3 Verify new conformance test passes
 
 ## Dev Notes
 
@@ -255,12 +255,40 @@ b34e86d Fix code review findings for 12-1-playbackhandle-protocol-and-noteplayer
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Build failure: `(any PitchDiscriminationProfile)?` not usable with `===` identity operator in tests. Fixed by adding `AnyObject` constraint to protocol — all profile implementations are `@Observable` classes, so class constraint is semantically correct.
+
 ### Completion Notes List
+
+- Created `PitchDiscriminationProfile` protocol with all 8 method/property declarations matching architecture doc verbatim
+- Added `AnyObject` constraint to protocol (deviation from architecture doc) — required because test code uses `===` identity comparison on protocol-typed variables, and `PerceptualProfile` is a class (`@Observable`)
+- Declared `PerceptualProfile: PitchDiscriminationProfile` conformance — purely declarative, zero implementation changes
+- Updated `ComparisonSession` stored property and init parameter to protocol type
+- Updated `NextComparisonStrategy` protocol and both implementations (`KazezNoteStrategy`, `AdaptiveNoteStrategy`) to use protocol type
+- Updated `MockNextComparisonStrategy.lastReceivedProfile` to protocol type
+- Verified `ComparisonTestHelpers.swift` needs no changes — concrete `PerceptualProfile` passes through protocol type via implicit upcasting
+- Verified `PeachApp.swift`, `SummaryStatisticsView`, preview mocks need no changes
+- All tests pass (419 test cases including 1 new conformance test)
 
 ### Change Log
 
+- 2026-02-25: Implemented story 14.1 — extracted PitchDiscriminationProfile protocol from PerceptualProfile
+
 ### File List
+
+**New files:**
+- `Peach/Core/Profile/PitchDiscriminationProfile.swift`
+- `PeachTests/Core/Profile/PitchDiscriminationProfileTests.swift`
+
+**Modified files:**
+- `Peach/Core/Profile/PerceptualProfile.swift`
+- `Peach/Comparison/ComparisonSession.swift`
+- `Peach/Core/Algorithm/NextComparisonStrategy.swift`
+- `Peach/Core/Algorithm/KazezNoteStrategy.swift`
+- `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift`
+- `PeachTests/Comparison/MockNextComparisonStrategy.swift`
+- `docs/implementation-artifacts/sprint-status.yaml`
+- `docs/implementation-artifacts/14-1-extract-pitchdiscriminationprofile-protocol.md`

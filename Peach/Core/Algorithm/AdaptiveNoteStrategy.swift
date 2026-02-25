@@ -83,7 +83,7 @@ final class AdaptiveNoteStrategy: NextComparisonStrategy {
     ///   - lastComparison: Most recently completed comparison (nil on first)
     /// - Returns: Comparison ready for NotePlayer
     func nextComparison(
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Comparison {
@@ -122,7 +122,7 @@ final class AdaptiveNoteStrategy: NextComparisonStrategy {
     ///   - lastComparison: Last completed comparison (for nearby selection)
     /// - Returns: Selected MIDI note
     private func selectNote(
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Int {
@@ -149,7 +149,7 @@ final class AdaptiveNoteStrategy: NextComparisonStrategy {
     ///   - profile: User's perceptual profile
     ///   - settings: Training configuration
     /// - Returns: MIDI note from weak spots, or random note if no weak spots in range
-    private func selectWeakSpot(profile: PerceptualProfile, settings: TrainingSettings) -> Int {
+    private func selectWeakSpot(profile: PitchDiscriminationProfile, settings: TrainingSettings) -> Int {
         let weakSpots = profile.weakSpots(count: 10)
         let filtered = weakSpots.filter { settings.isInRange($0) }
 
@@ -204,7 +204,7 @@ final class AdaptiveNoteStrategy: NextComparisonStrategy {
     /// - Returns: Cent difference (clamped to min/max)
     private func determineCentDifference(
         for note: Int,
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Double {
@@ -243,7 +243,7 @@ final class AdaptiveNoteStrategy: NextComparisonStrategy {
     /// - Returns: Weighted effective difficulty in cents
     private func weightedEffectiveDifficulty(
         for note: Int,
-        profile: PerceptualProfile,
+        profile: PitchDiscriminationProfile,
         settings: TrainingSettings
     ) -> Double {
         let range = settings.noteRangeMin...settings.noteRangeMax
