@@ -178,11 +178,14 @@ extension EnvironmentValues {
 // MARK: - Preview Mocks
 
 private final class MockNotePlayerForPreview: NotePlayer {
-    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
-        try await Task.sleep(for: .milliseconds(100))
+    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
+        MockPlaybackHandleForPreview()
     }
+}
 
+private final class MockPlaybackHandleForPreview: PlaybackHandle {
     func stop() async throws {}
+    func adjustFrequency(_ frequency: Double) async throws {}
 }
 
 private final class MockDataStoreForPreview: ComparisonRecordStoring, ComparisonObserver {

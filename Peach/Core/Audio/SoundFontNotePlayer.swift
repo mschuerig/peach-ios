@@ -15,17 +15,16 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - State
 
-    private var currentNote: UInt8?
     private var isSessionConfigured = false
     private var loadedProgram: Int
     private var loadedBank: Int
 
     // MARK: - Constants
 
-    private static let channel: UInt8 = 0
+    static let channel: UInt8 = 0
     private static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
-    private static let pitchBendCenter: UInt16 = 8192
-    private static let validFrequencyRange = 20.0...20000.0
+    static let pitchBendCenter: UInt16 = 8192
+    static let validFrequencyRange = 20.0...20000.0
 
     // Default SF2 preset: Sine Wave (bank 8, program 80, tag "sf2:8:80")
     private static let defaultPresetProgram: Int = 80
@@ -75,11 +74,6 @@ final class SoundFontNotePlayer: NotePlayer {
         }
         guard program != loadedProgram || bank != loadedBank else { return }
 
-        if let note = currentNote {
-            sampler.stopNote(note, onChannel: Self.channel)
-            currentNote = nil
-        }
-
         try sampler.loadSoundBankInstrument(
             at: sf2URL,
             program: UInt8(clamping: program),
@@ -101,7 +95,7 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - NotePlayer Protocol
 
-    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
+    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
         // Select preset from UserDefaults sound source setting
         let source = UserDefaults.standard.string(forKey: SettingsKeys.soundSource)
             ?? SettingsKeys.defaultSoundSource
@@ -120,11 +114,6 @@ final class SoundFontNotePlayer: NotePlayer {
         guard Self.validFrequencyRange.contains(frequency) else {
             throw AudioError.invalidFrequency(
                 "Frequency \(frequency) Hz is outside valid range \(Self.validFrequencyRange)"
-            )
-        }
-        guard duration > 0 else {
-            throw AudioError.invalidDuration(
-                "Duration \(duration) seconds must be positive"
             )
         }
         guard velocity >= 1, velocity <= 127 else {
@@ -161,26 +150,8 @@ final class SoundFontNotePlayer: NotePlayer {
         // Apply pitch bend before starting note
         sampler.sendPitchBend(bendValue, onChannel: Self.channel)
         sampler.startNote(midiNote, withVelocity: velocity, onChannel: Self.channel)
-        currentNote = midiNote
 
-        defer {
-            sampler.stopNote(midiNote, onChannel: Self.channel)
-            sampler.sendPitchBend(Self.pitchBendCenter, onChannel: Self.channel)
-            currentNote = nil
-        }
-
-        try await Task.sleep(for: .seconds(duration))
-    }
-
-    func stop() async throws {
-        // Note: stop() halts audio output immediately but does not interrupt an in-progress
-        // play() call's Task.sleep. The primary stop mechanism is task cancellation, which
-        // causes Task.sleep to throw CancellationError and triggers the defer cleanup block.
-        if let note = currentNote {
-            sampler.stopNote(note, onChannel: Self.channel)
-            sampler.sendPitchBend(Self.pitchBendCenter, onChannel: Self.channel)
-            currentNote = nil
-        }
+        return SoundFontPlaybackHandle(sampler: sampler, midiNote: midiNote, channel: Self.channel)
     }
 
     // MARK: - MIDI Helpers

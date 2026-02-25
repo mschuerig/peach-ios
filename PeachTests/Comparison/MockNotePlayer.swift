@@ -15,6 +15,11 @@ final class MockNotePlayer: NotePlayer {
     var shouldThrowError = false
     var errorToThrow: AudioError = .engineStartFailed("Mock error")
 
+    // MARK: - Handle Tracking
+
+    var lastHandle: MockPlaybackHandle?
+    var handleHistory: [MockPlaybackHandle] = []
+
     // MARK: - Test Control (Fully Synchronous)
 
     /// If true, play() completes instantly without any delays (default: true for deterministic tests)
@@ -30,28 +35,43 @@ final class MockNotePlayer: NotePlayer {
     /// Callback invoked when stop() is called
     var onStopCalled: (() -> Void)?
 
-    // MARK: - NotePlayer Protocol
+    // MARK: - NotePlayer Protocol (Primary — returns handle)
 
-    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
+    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
         playCallCount += 1
         lastFrequency = frequency
-        lastDuration = duration
         lastVelocity = velocity
         lastAmplitudeDB = amplitudeDB
-        playHistory.append((frequency: frequency, duration: duration, velocity: velocity, amplitudeDB: amplitudeDB))
 
-        // Invoke callback synchronously before any delays
         onPlayCalled?()
 
         if shouldThrowError {
             throw errorToThrow
         }
 
-        // Only add delay if not using instant playback
-        if !instantPlayback {
-            try await Task.sleep(for: .milliseconds(Int(simulatedPlaybackDuration * 1000)))
+        let handle = MockPlaybackHandle()
+        lastHandle = handle
+        handleHistory.append(handle)
+        return handle
+    }
+
+    // MARK: - NotePlayer Protocol (Convenience — fixed-duration with instantPlayback)
+
+    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
+        lastDuration = duration
+        playHistory.append((frequency: frequency, duration: duration, velocity: velocity, amplitudeDB: amplitudeDB))
+
+        let handle = try await play(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
+
+        do {
+            if !instantPlayback {
+                try await Task.sleep(for: .milliseconds(Int(simulatedPlaybackDuration * 1000)))
+            }
+            try await handle.stop()
+        } catch {
+            try? await handle.stop()
+            throw error
         }
-        // Otherwise complete immediately - no artificial timing
     }
 
     func stop() async throws {
@@ -72,5 +92,7 @@ final class MockNotePlayer: NotePlayer {
         shouldThrowError = false
         onPlayCalled = nil
         onStopCalled = nil
+        lastHandle = nil
+        handleHistory = []
     }
 }

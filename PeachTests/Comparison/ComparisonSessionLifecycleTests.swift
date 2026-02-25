@@ -126,19 +126,16 @@ struct ComparisonSessionLifecycleTests {
         // Should not crash or cause issues
     }
 
-    @Test("stop() calls notePlayer.stop()")
-    func stopCallsNotePlayerStop() async throws {
+    @Test("stop() transitions to idle and cancels training")
+    func stopTransitionsToIdleAndCancelsTraining() async throws {
         let f = makeComparisonSession()
 
         f.session.startTraining()
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
-        f.mockPlayer.stopCallCount = 0
-
         f.session.stop()
-        await Task.yield()
 
-        #expect(f.mockPlayer.stopCallCount >= 1)
+        #expect(f.session.state == .idle)
     }
 
     // MARK: - Navigation-Based Stop Tests

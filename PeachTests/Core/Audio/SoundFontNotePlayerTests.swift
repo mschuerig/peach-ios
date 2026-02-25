@@ -31,24 +31,26 @@ struct SoundFontNotePlayerTests {
 
     // MARK: - Play/Stop Lifecycle
 
-    @Test("Play and stop lifecycle works without crash")
-    func playStopLifecycle() async throws {
+    @Test("Play returns a PlaybackHandle and convenience method completes without crash")
+    func playReturnsHandle() async throws {
+        let player = try SoundFontNotePlayer()
+        let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        try await handle.stop()
+    }
+
+    @Test("Fixed-duration convenience method works without crash")
+    func fixedDurationConvenienceMethod() async throws {
         let player = try SoundFontNotePlayer()
         try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 0.0)
-        try await player.stop()
     }
 
-    @Test("Stop when nothing is playing does not throw")
-    func stopWhenIdle() async throws {
+    @Test("PlaybackHandle stop is idempotent")
+    func handleStopIdempotent() async throws {
         let player = try SoundFontNotePlayer()
-        try await player.stop()
-    }
-
-    @Test("Stop called twice rapidly is idempotent")
-    func stopTwice() async throws {
-        let player = try SoundFontNotePlayer()
-        try await player.stop()
-        try await player.stop()
+        let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        try await handle.stop()
+        try await handle.stop()
+        try await handle.stop()
     }
 
     // MARK: - Pitch Bend Calculation

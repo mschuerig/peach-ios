@@ -1,6 +1,6 @@
 # Story 12.1: PlaybackHandle Protocol and NotePlayer Redesign
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,39 +26,39 @@ So that the audio engine supports both fixed-duration and indefinite playback wi
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create PlaybackHandle protocol (AC: #1)
-  - [ ] 1.1 Create `Peach/Core/Audio/PlaybackHandle.swift` with `stop()` and `adjustFrequency(_:)` methods
-  - [ ] 1.2 Write tests for PlaybackHandle stop idempotency contract (via MockPlaybackHandle)
+- [x] Task 1: Create PlaybackHandle protocol (AC: #1)
+  - [x] 1.1 Create `Peach/Core/Audio/PlaybackHandle.swift` with `stop()` and `adjustFrequency(_:)` methods
+  - [x] 1.2 Write tests for PlaybackHandle stop idempotency contract (via MockPlaybackHandle)
 
-- [ ] Task 2: Redesign NotePlayer protocol (AC: #2)
-  - [ ] 2.1 Change primary `play()` to return `PlaybackHandle` (remove `duration` param)
-  - [ ] 2.2 Remove `stop()` from NotePlayer protocol
-  - [ ] 2.3 Add default extension with fixed-duration convenience method (play → sleep → stop)
+- [x] Task 2: Redesign NotePlayer protocol (AC: #2)
+  - [x] 2.1 Change primary `play()` to return `PlaybackHandle` (remove `duration` param)
+  - [x] 2.2 Remove `stop()` from NotePlayer protocol
+  - [x] 2.3 Add default extension with fixed-duration convenience method (play → sleep → stop)
 
-- [ ] Task 3: Create SoundFontPlaybackHandle (AC: #3)
-  - [ ] 3.1 Create `Peach/Core/Audio/SoundFontPlaybackHandle.swift` wrapping MIDI note + sampler
-  - [ ] 3.2 Implement idempotent `stop()` — first call sends noteOff, subsequent calls are no-ops
-  - [ ] 3.3 Implement `adjustFrequency(_:)` — compute pitch bend from base MIDI note to target Hz
-  - [ ] 3.4 Write tests for SoundFontPlaybackHandle stop/adjustFrequency behavior
+- [x] Task 3: Create SoundFontPlaybackHandle (AC: #3)
+  - [x] 3.1 Create `Peach/Core/Audio/SoundFontPlaybackHandle.swift` wrapping MIDI note + sampler
+  - [x] 3.2 Implement idempotent `stop()` — first call sends noteOff, subsequent calls are no-ops
+  - [x] 3.3 Implement `adjustFrequency(_:)` — compute pitch bend from base MIDI note to target Hz
+  - [x] 3.4 Write tests for SoundFontPlaybackHandle stop/adjustFrequency behavior
 
-- [ ] Task 4: Update SoundFontNotePlayer (AC: #3)
-  - [ ] 4.1 Refactor `play()` to return `SoundFontPlaybackHandle` immediately after note onset
-  - [ ] 4.2 Move note-off logic out of `play()` defer block into handle's `stop()`
-  - [ ] 4.3 Remove `stop()` method from SoundFontNotePlayer
-  - [ ] 4.4 Preserve preset-switching-on-every-play behavior (read UserDefaults.soundSource)
-  - [ ] 4.5 Preserve audio session setup and engine restart logic
-  - [ ] 4.6 Update all existing SoundFontNotePlayer tests
+- [x] Task 4: Update SoundFontNotePlayer (AC: #3)
+  - [x] 4.1 Refactor `play()` to return `SoundFontPlaybackHandle` immediately after note onset
+  - [x] 4.2 Move note-off logic out of `play()` defer block into handle's `stop()`
+  - [x] 4.3 Remove `stop()` method from SoundFontNotePlayer
+  - [x] 4.4 Preserve preset-switching-on-every-play behavior (read UserDefaults.soundSource)
+  - [x] 4.5 Preserve audio session setup and engine restart logic
+  - [x] 4.6 Update all existing SoundFontNotePlayer tests
 
-- [ ] Task 5: Create MockPlaybackHandle and update MockNotePlayer (AC: #4)
-  - [ ] 5.1 Create `PeachTests/Mocks/MockPlaybackHandle.swift` with call tracking
-  - [ ] 5.2 Update MockNotePlayer to return MockPlaybackHandle from `play()`
-  - [ ] 5.3 Preserve `instantPlayback` mode and `onPlayCalled` callback semantics
-  - [ ] 5.4 Ensure `playHistory` still tracks all calls with parameters
+- [x] Task 5: Create MockPlaybackHandle and update MockNotePlayer (AC: #4)
+  - [x] 5.1 Create `PeachTests/Mocks/MockPlaybackHandle.swift` with call tracking
+  - [x] 5.2 Update MockNotePlayer to return MockPlaybackHandle from `play()`
+  - [x] 5.3 Preserve `instantPlayback` mode and `onPlayCalled` callback semantics
+  - [x] 5.4 Ensure `playHistory` still tracks all calls with parameters
 
-- [ ] Task 6: Verify backward compatibility (AC: #5, #6)
-  - [ ] 6.1 Confirm ComparisonSession uses the convenience method — no call-site changes needed
-  - [ ] 6.2 Run full test suite — all existing tests must pass
-  - [ ] 6.3 Write new tests for: handle stop idempotency, adjustFrequency tracking, convenience method delegates to handle
+- [x] Task 6: Verify backward compatibility (AC: #5, #6)
+  - [x] 6.1 Confirm ComparisonSession uses the convenience method — no call-site changes needed
+  - [x] 6.2 Run full test suite — all existing tests must pass
+  - [x] 6.3 Write new tests for: handle stop idempotency, adjustFrequency tracking, convenience method delegates to handle
 
 ## Dev Notes
 
@@ -180,10 +180,47 @@ protocol NotePlayer {
 
 ### Agent Model Used
 
-(to be filled during implementation)
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Build error: `MockNotePlayerForPreview` in `ComparisonScreen.swift` didn't conform to redesigned protocol — fixed by adding primary `play()` method returning `MockPlaybackHandleForPreview`
+- Design decision: Declared `play(frequency:duration:...)` in protocol (not just extension) to enable dynamic dispatch for MockNotePlayer's `instantPlayback` override in tests
+- Design decision: `stop()` kept as extension-only no-op (per AC: removed from protocol) — `ComparisonSessionLifecycleTests.stopCallsNotePlayerStop` updated accordingly
+- Removed `currentNote` tracking from SoundFontNotePlayer — handle now owns note lifecycle
+
 ### Completion Notes List
 
+- PlaybackHandle protocol created with `stop()` and `adjustFrequency(_:)` methods
+- NotePlayer protocol redesigned: primary method returns PlaybackHandle, convenience method declared in protocol with default extension for dynamic dispatch
+- SoundFontPlaybackHandle wraps MIDI note + sampler, implements idempotent stop (noteOff + pitch bend reset) and adjustFrequency (Hz→cents→pitch bend)
+- SoundFontNotePlayer refactored: play() returns SoundFontPlaybackHandle immediately after note onset, no more defer block or currentNote tracking
+- MockPlaybackHandle tracks stopCallCount, adjustFrequencyCallCount, lastAdjustedFrequency with error injection and callbacks
+- MockNotePlayer updated: primary play() returns MockPlaybackHandle, convenience method preserves instantPlayback and playHistory tracking
+- Backward-compatible no-op `stop()` extension preserves ComparisonSession compilation (stop migrates to handle in story 12.2)
+- Exposed SoundFontNotePlayer constants (channel, pitchBendCenter, validFrequencyRange) for SoundFontPlaybackHandle access
+- All 400 tests pass (18 new + 382 existing), 0 failures
+
+### Change Log
+
+- 2026-02-25: Implemented PlaybackHandle protocol and NotePlayer redesign (all 6 tasks complete)
+
 ### File List
+
+New files:
+- Peach/Core/Audio/PlaybackHandle.swift
+- Peach/Core/Audio/SoundFontPlaybackHandle.swift
+- PeachTests/Mocks/MockPlaybackHandle.swift
+- PeachTests/Core/Audio/PlaybackHandleTests.swift
+- PeachTests/Core/Audio/SoundFontPlaybackHandleTests.swift
+- PeachTests/Core/Audio/NotePlayerConvenienceTests.swift
+
+Modified files:
+- Peach/Core/Audio/NotePlayer.swift
+- Peach/Core/Audio/SoundFontNotePlayer.swift
+- Peach/Comparison/ComparisonScreen.swift
+- PeachTests/Comparison/MockNotePlayer.swift
+- PeachTests/Core/Audio/SoundFontNotePlayerTests.swift
+- PeachTests/Comparison/ComparisonSessionLifecycleTests.swift
+- docs/implementation-artifacts/sprint-status.yaml
+- docs/implementation-artifacts/12-1-playbackhandle-protocol-and-noteplayer-redesign.md
