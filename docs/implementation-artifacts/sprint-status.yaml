@@ -121,3 +121,7 @@ development_status:
   10-3-add-amplitude-parameter-to-noteplayer: done # Add true amplitude (volume) parameter to NotePlayer protocol
   10-4-add-vary-loudness-slider-to-settings: done # "Vary Loudness" slider in Settings with @AppStorage
   10-5-apply-loudness-variation-in-training: done # TrainingSession applies random loudness offset to note2
+
+  # Epic 11: Clear the Decks — Prerequisite Renames
+  epic-11: in-progress
+  11-1-rename-training-types-and-files-to-comparison: ready-for-dev # Rename ambiguous Training names to Comparison-specific names
