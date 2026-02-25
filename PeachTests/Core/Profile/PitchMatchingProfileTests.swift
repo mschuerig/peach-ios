@@ -29,12 +29,12 @@ struct PitchMatchingProfileTests {
     }
 
     @Test("matching stdDev computed from absolute errors")
-    func matchingStdDev() async {
+    func matchingStdDev() async throws {
         let profile = PerceptualProfile()
         profile.updateMatching(note: 60, centError: 10.0)
         profile.updateMatching(note: 60, centError: -20.0) // abs = 20
         // stdDev of [10, 20] = sqrt(50) ≈ 7.071
-        let stdDev = try! #require(profile.matchingStdDev)
+        let stdDev = try #require(profile.matchingStdDev)
         #expect(abs(stdDev - 7.0710678) < 0.001)
     }
 

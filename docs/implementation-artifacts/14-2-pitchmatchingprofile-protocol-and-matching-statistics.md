@@ -1,6 +1,6 @@
 # Story 14.2: PitchMatchingProfile Protocol and Matching Statistics
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -400,6 +400,7 @@ None — clean implementation with no issues encountered.
 ### Change Log
 
 - 2026-02-26: Implemented story 14.2 — PitchMatchingProfile protocol, PerceptualProfile conformance with Welford's matching statistics, PitchMatchingObserver extension, startup profile rebuild from PitchMatchingRecord, Settings reset integration. 8 new tests, 430 total passing.
+- 2026-02-26: Code review fixes — (1) `matchingStdDev` test: `try!` → `try`, function `async` → `async throws` (project pattern compliance), (2) `updateMatching`: added MIDI note range guard matching `update()` pattern, (3) removed extra blank line before MARK section.
 
 ### File List
 

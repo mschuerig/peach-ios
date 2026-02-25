@@ -136,6 +136,6 @@ development_status:
   13-1-pitchmatchingrecord-data-model-and-trainingdatastore-extension: done
 
   # Epic 14: Know Both Skills — Profile Protocol Split
-  epic-14: in-progress
+  epic-14: done
   14-1-extract-pitchdiscriminationprofile-protocol: done
-  14-2-pitchmatchingprofile-protocol-and-matching-statistics: review
+  14-2-pitchmatchingprofile-protocol-and-matching-statistics: done

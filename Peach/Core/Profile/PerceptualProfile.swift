@@ -169,10 +169,13 @@ final class PerceptualProfile: PitchDiscriminationProfile, PitchMatchingProfile 
         logger.debug("Set difficulty for note \(note): \(difficulty) cents")
     }
 
-
     // MARK: - Matching Statistics (PitchMatchingProfile)
 
     func updateMatching(note: Int, centError: Double) {
+        guard note >= 0 && note < 128 else {
+            logger.error("Invalid MIDI note: \(note)")
+            return
+        }
         let absError = abs(centError)
         matchingCount += 1
         let delta = absError - matchingMeanAbs
