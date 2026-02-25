@@ -25,8 +25,8 @@ struct StartScreenTests {
         #expect(mirror.children.count > 0)
     }
 
-    @Test("Training Screen can be instantiated")
-    func trainingScreenCanBeInstantiated() {
+    @Test("Comparison Screen can be instantiated")
+    func comparisonScreenCanBeInstantiated() {
         _ = ComparisonScreen()
     }
 
@@ -142,12 +142,12 @@ struct StartScreenTests {
         // Verify that all destination screens can be instantiated
         // This ensures the hub-and-spoke pattern has all spokes available
 
-        let training = ComparisonScreen()
+        let comparison = ComparisonScreen()
         let settings = SettingsScreen()
         let profile = ProfileScreen()
         let info = InfoScreen()
 
         // If we can create all screens without crashing, navigation paths are valid
-        _ = (training, settings, profile, info)
+        _ = (comparison, settings, profile, info)
     }
 }

@@ -124,4 +124,4 @@ development_status:
 
   # Epic 11: Clear the Decks — Prerequisite Renames
   epic-11: in-progress
-  11-1-rename-training-types-and-files-to-comparison: review # Rename ambiguous Training names to Comparison-specific names
+  11-1-rename-training-types-and-files-to-comparison: done # Rename ambiguous Training names to Comparison-specific names

@@ -1,6 +1,6 @@
 # Story 11.1: Rename Training Types and Files to Comparison
 
-Status: review
+Status: done
 
 ## Story
 
@@ -44,7 +44,7 @@ so that the codebase clearly distinguishes comparison training from future train
   - [x] Update all `@Environment(\.trainingSession)` -> `@Environment(\.comparisonSession)` usages
   - [x] Update `@State private var trainingSession` -> `@State private var comparisonSession` in PeachApp.swift
 - [x] Task 6: Update Xcode project file (AC: #4)
-  - [x] No-op: `Training/.gitkeep` was not in `project.pbxproj` exception list; Xcode auto-discovers files
+  - [x] Removed `Training/.gitkeep` from `PBXFileSystemSynchronizedBuildFileExceptionSet` in `project.pbxproj`
 - [x] Task 7: Update documentation (AC: #8)
   - [x] Update all old name references in `docs/project-context.md`
 - [x] Task 8: Verify (AC: #9)
@@ -183,7 +183,7 @@ Claude Opus 4.6
 
 ### Debug Log References
 
-- Task 6 (Xcode project): `Training/.gitkeep` was not in `project.pbxproj` exception list contrary to story dev notes; no-op required. Xcode auto-discovers via `PBXFileSystemSynchronizedRootGroup`.
+- Task 6 (Xcode project): Removed `Training/.gitkeep` from `PBXFileSystemSynchronizedBuildFileExceptionSet` in `project.pbxproj`.
 - Task 8 (Verify): First test run had one flaky failure (`audioInterruption_Began_StopsFromPlayingNote2`) — pre-existing timing sensitivity, not related to rename. Subsequent runs pass cleanly.
 
 ### Completion Notes List
@@ -198,6 +198,7 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-25: Renamed all ambiguous Training types/files to Comparison-specific names for v0.2 namespace clarity
+- 2026-02-25: Code review fixes — corrected Task 6 narrative (pbxproj was modified, not a no-op), fixed File List (removed false AdaptiveNoteStrategyRegionalTests entry, added 6 missing files), updated test descriptions from "Training Screen" to "Comparison Screen" in StartScreenTests
 
 ### File List
 
@@ -228,7 +229,15 @@ Claude Opus 4.6
 - `PeachTests/Comparison/ComparisonTestHelpers.swift` (was TrainingTestHelpers.swift)
 - `PeachTests/Comparison/MockNextComparisonStrategy.swift` (was MockNextNoteStrategy.swift)
 
+**Moved with directory (no content changes):**
+- `Peach/Comparison/.gitkeep`
+- `Peach/Comparison/DifficultyDisplayView.swift`
+- `Peach/Comparison/HapticFeedbackManager.swift`
+- `PeachTests/Comparison/.gitkeep`
+- `PeachTests/Comparison/DifficultyDisplayViewTests.swift`
+
 **Modified (contents only — source):**
+- `Peach.xcodeproj/project.pbxproj`
 - `Peach/App/PeachApp.swift`
 - `Peach/App/ContentView.swift`
 - `Peach/Start/StartScreen.swift`
@@ -238,6 +247,7 @@ Claude Opus 4.6
 - `Peach/Core/Data/ComparisonRecordStoring.swift`
 - `Peach/Core/Algorithm/KazezNoteStrategy.swift`
 - `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift`
+- `Peach/Core/Audio/FrequencyCalculation.swift`
 
 **Modified (contents only — test):**
 - `PeachTests/Comparison/MockTrainingDataStore.swift`
@@ -245,7 +255,6 @@ Claude Opus 4.6
 - `PeachTests/Start/StartScreenTests.swift`
 - `PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift`
 - `PeachTests/Core/Algorithm/AdaptiveNoteStrategyTests.swift`
-- `PeachTests/Core/Algorithm/AdaptiveNoteStrategyRegionalTests.swift`
 
 **Modified (documentation):**
 - `docs/project-context.md`
