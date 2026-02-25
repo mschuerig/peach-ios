@@ -134,3 +134,8 @@ development_status:
   # Epic 13: Remember Every Match — Pitch Matching Data Layer
   epic-13: done
   13-1-pitchmatchingrecord-data-model-and-trainingdatastore-extension: done
+
+  # Epic 14: Know Both Skills — Profile Protocol Split
+  epic-14: in-progress
+  14-1-extract-pitchdiscriminationprofile-protocol: ready-for-dev
+  14-2-pitchmatchingprofile-protocol-and-matching-statistics: backlog
