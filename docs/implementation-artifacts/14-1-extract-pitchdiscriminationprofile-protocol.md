@@ -1,6 +1,6 @@
 # Story 14.1: Extract PitchDiscriminationProfile Protocol
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -271,11 +271,25 @@ Claude Opus 4.6
 - Updated `MockNextComparisonStrategy.lastReceivedProfile` to protocol type
 - Verified `ComparisonTestHelpers.swift` needs no changes — concrete `PerceptualProfile` passes through protocol type via implicit upcasting
 - Verified `PeachApp.swift`, `SummaryStatisticsView`, preview mocks need no changes
-- All tests pass (419 test cases including 1 new conformance test)
+- All tests pass (422 test cases including 1 new conformance test)
 
 ### Change Log
 
 - 2026-02-25: Implemented story 14.1 — extracted PitchDiscriminationProfile protocol from PerceptualProfile
+- 2026-02-25: Code review fixes — updated stale docstrings in NextComparisonStrategy.swift and AdaptiveNoteStrategy.swift (PerceptualProfile→PitchDiscriminationProfile), corrected test count (419→422), updated architecture doc AnyObject constraint
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Michael (via Claude Opus 4.6)
+**Date:** 2026-02-25
+**Outcome:** Approved with minor fixes (applied)
+
+**Findings (all fixed):**
+- [M1] Stale docstrings in NextComparisonStrategy.swift:10,14 and AdaptiveNoteStrategy.swift:7 referencing `PerceptualProfile` instead of `PitchDiscriminationProfile` → Fixed
+- [M2] Test count reported as 419 in completion notes, actual count is 422 (421 existing + 1 new) → Fixed
+- [L1] Architecture doc not updated for `AnyObject` constraint on protocol → Fixed
+
+**Verification:** 422 tests pass (full suite, zero regressions)
 
 ### File List
 
@@ -290,5 +304,6 @@ Claude Opus 4.6
 - `Peach/Core/Algorithm/KazezNoteStrategy.swift`
 - `Peach/Core/Algorithm/AdaptiveNoteStrategy.swift`
 - `PeachTests/Comparison/MockNextComparisonStrategy.swift`
+- `docs/planning-artifacts/architecture.md`
 - `docs/implementation-artifacts/sprint-status.yaml`
 - `docs/implementation-artifacts/14-1-extract-pitchdiscriminationprofile-protocol.md`

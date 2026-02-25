@@ -681,7 +681,7 @@ The existing `PerceptualProfile` class is split into two protocols representing 
 **PitchDiscriminationProfile** (existing behavior, extracted to protocol):
 
 ```swift
-protocol PitchDiscriminationProfile {
+protocol PitchDiscriminationProfile: AnyObject {
     func update(note: Int, centOffset: Double, isCorrect: Bool)
     func weakSpots(count: Int) -> [Int]
     var overallMean: Double? { get }

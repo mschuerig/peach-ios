@@ -7,11 +7,11 @@ import Foundation
 ///
 /// # Architecture Boundary
 ///
-/// NextComparisonStrategy reads from PerceptualProfile and TrainingSettings,
+/// NextComparisonStrategy reads from PitchDiscriminationProfile and TrainingSettings,
 /// and returns a Comparison value type. It has no concept of:
 /// - Audio playback (NotePlayer's responsibility)
 /// - Data persistence (TrainingDataStore's responsibility)
-/// - Profile updates (PerceptualProfile's responsibility)
+/// - Profile updates (PitchDiscriminationProfile's responsibility)
 /// - UI rendering (SwiftUI's responsibility)
 ///
 /// # Usage

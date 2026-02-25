@@ -4,7 +4,7 @@ import OSLog
 /// Adaptive comparison selection strategy for intelligent training
 ///
 /// Implements NextComparisonStrategy with stateless comparison selection:
-/// - Reads user's PerceptualProfile for difficulty and weak spots
+/// - Reads user's PitchDiscriminationProfile for difficulty and weak spots
 /// - Uses TrainingSettings for configuration
 /// - Uses last completed comparison for nearby note selection
 /// - Updates profile difficulty state externally (no internal state)
