@@ -6,7 +6,7 @@ final class MockNotePlayer: NotePlayer {
     // MARK: - Test State Tracking
 
     var playCallCount = 0
-    var stopCallCount = 0
+    var stopAllCallCount = 0
     var lastFrequency: Double?
     var lastDuration: TimeInterval?
     var lastVelocity: UInt8?
@@ -33,7 +33,7 @@ final class MockNotePlayer: NotePlayer {
     var onPlayCalled: (() -> Void)?
 
     /// Callback invoked when stop() is called
-    var onStopCalled: (() -> Void)?
+    var onStopAllCalled: (() -> Void)?
 
     // MARK: - NotePlayer Protocol (Primary — returns handle)
 
@@ -74,16 +74,16 @@ final class MockNotePlayer: NotePlayer {
         }
     }
 
-    func stop() async throws {
-        stopCallCount += 1
-        onStopCalled?()
+    func stopAll() async throws {
+        stopAllCallCount += 1
+        onStopAllCalled?()
     }
 
     // MARK: - Test Helpers
 
     func reset() {
         playCallCount = 0
-        stopCallCount = 0
+        stopAllCallCount = 0
         lastFrequency = nil
         lastDuration = nil
         lastVelocity = nil
@@ -91,7 +91,7 @@ final class MockNotePlayer: NotePlayer {
         playHistory = []
         shouldThrowError = false
         onPlayCalled = nil
-        onStopCalled = nil
+        onStopAllCalled = nil
         lastHandle = nil
         handleHistory = []
     }

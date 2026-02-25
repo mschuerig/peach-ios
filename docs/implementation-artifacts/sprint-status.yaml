@@ -128,5 +128,5 @@ development_status:
 
   # Epic 12: Own Every Note — PlaybackHandle Redesign
   epic-12: in-progress
-  12-1-playbackhandle-protocol-and-noteplayer-redesign: review # PlaybackHandle protocol, NotePlayer redesign, SoundFontPlaybackHandle
+  12-1-playbackhandle-protocol-and-noteplayer-redesign: done # PlaybackHandle protocol, NotePlayer redesign, SoundFontPlaybackHandle
   12-2-comparisonsession-playbackhandle-integration: backlog # ComparisonSession uses PlaybackHandle for note lifecycle

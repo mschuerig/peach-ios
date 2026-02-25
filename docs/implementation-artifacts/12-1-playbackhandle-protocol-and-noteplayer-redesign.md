@@ -1,6 +1,6 @@
 # Story 12.1: PlaybackHandle Protocol and NotePlayer Redesign
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -189,21 +189,31 @@ Claude Opus 4.6
 - Design decision: `stop()` kept as extension-only no-op (per AC: removed from protocol) — `ComparisonSessionLifecycleTests.stopCallsNotePlayerStop` updated accordingly
 - Removed `currentNote` tracking from SoundFontNotePlayer — handle now owns note lifecycle
 
+### Code Review Fixes (2026-02-25)
+
+- **H1 — Added `NotePlayer.stopAll()`**: Replaced no-op `stop()` extension with `stopAll()` protocol method. `SoundFontNotePlayer.stopAll()` sends MIDI CC 123 (All Notes Off) + pitch bend reset. `ComparisonSession` now calls `stopAll()` for interruption/answer-during-note2 cleanup. No handle tracking or bidirectional references needed.
+- **H2 — Added `adjustFrequency()` input validation**: `SoundFontPlaybackHandle.adjustFrequency()` now validates frequency within 20-20000 Hz range.
+- **H3 — Restored duration validation**: NotePlayer convenience method extension now validates `duration > 0`, throwing `AudioError.invalidDuration`. `AudioError.invalidDuration` is no longer dead code.
+- **M2 — Added pitch bend range validation**: `SoundFontPlaybackHandle.adjustFrequency()` throws if target frequency exceeds ±200 cent pitch bend range from base MIDI note.
+- **M4 — Documented MockPlaybackHandle tracking behavior**: Added comment explaining intentional difference from production `SoundFontPlaybackHandle` (mock tracks all stop() calls including subsequent ones for test verification).
+
 ### Completion Notes List
 
 - PlaybackHandle protocol created with `stop()` and `adjustFrequency(_:)` methods
 - NotePlayer protocol redesigned: primary method returns PlaybackHandle, convenience method declared in protocol with default extension for dynamic dispatch
-- SoundFontPlaybackHandle wraps MIDI note + sampler, implements idempotent stop (noteOff + pitch bend reset) and adjustFrequency (Hz→cents→pitch bend)
+- SoundFontPlaybackHandle wraps MIDI note + sampler, implements idempotent stop (noteOff + pitch bend reset) and adjustFrequency (Hz→cents→pitch bend with validation)
 - SoundFontNotePlayer refactored: play() returns SoundFontPlaybackHandle immediately after note onset, no more defer block or currentNote tracking
+- NotePlayer.stopAll() added: MIDI CC 123 All Notes Off for interruption cleanup; replaces no-op stop() extension
 - MockPlaybackHandle tracks stopCallCount, adjustFrequencyCallCount, lastAdjustedFrequency with error injection and callbacks
-- MockNotePlayer updated: primary play() returns MockPlaybackHandle, convenience method preserves instantPlayback and playHistory tracking
-- Backward-compatible no-op `stop()` extension preserves ComparisonSession compilation (stop migrates to handle in story 12.2)
+- MockNotePlayer updated: primary play() returns MockPlaybackHandle, convenience method preserves instantPlayback and playHistory tracking, stopAll() replaces stop()
 - Exposed SoundFontNotePlayer constants (channel, pitchBendCenter, validFrequencyRange) for SoundFontPlaybackHandle access
-- All 400 tests pass (18 new + 382 existing), 0 failures
+- Duration validation in convenience method extension (throws AudioError.invalidDuration for duration <= 0)
+- All 409 tests pass (27 new + 382 existing), 0 failures
 
 ### Change Log
 
 - 2026-02-25: Implemented PlaybackHandle protocol and NotePlayer redesign (all 6 tasks complete)
+- 2026-02-25: Code review fixes — added stopAll(), adjustFrequency validation, duration validation (9 new tests)
 
 ### File List
 
@@ -218,6 +228,7 @@ New files:
 Modified files:
 - Peach/Core/Audio/NotePlayer.swift
 - Peach/Core/Audio/SoundFontNotePlayer.swift
+- Peach/Comparison/ComparisonSession.swift
 - Peach/Comparison/ComparisonScreen.swift
 - PeachTests/Comparison/MockNotePlayer.swift
 - PeachTests/Core/Audio/SoundFontNotePlayerTests.swift

@@ -22,6 +22,10 @@ final class MockPlaybackHandle: PlaybackHandle {
 
     // MARK: - PlaybackHandle Protocol
 
+    // Note: Unlike production SoundFontPlaybackHandle (which returns early on subsequent
+    // stop() calls via `guard !hasStopped`), the mock intentionally tracks ALL calls —
+    // including subsequent stops — so tests can verify call counts. The `hasStopped` flag
+    // gates error injection only, not the tracking behavior.
     private var hasStopped = false
 
     func stop() async throws {
@@ -32,7 +36,6 @@ final class MockPlaybackHandle: PlaybackHandle {
             throw errorToThrow
         }
 
-        // Idempotent: first call does the work, subsequent calls are no-ops
         hasStopped = true
     }
 

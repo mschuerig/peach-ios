@@ -270,7 +270,7 @@ final class ComparisonSession {
         if wasPlayingNote2 {
             logger.info("Stopping note 2 immediately")
             Task {
-                try? await notePlayer.stop()
+                try? await notePlayer.stopAll()
             }
         }
 
@@ -345,7 +345,7 @@ final class ComparisonSession {
 
         // Stop audio playback immediately
         Task {
-            try? await notePlayer.stop()
+            try? await notePlayer.stopAll()
             logger.info("NotePlayer stopped")
         }
 

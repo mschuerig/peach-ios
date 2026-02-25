@@ -154,6 +154,11 @@ final class SoundFontNotePlayer: NotePlayer {
         return SoundFontPlaybackHandle(sampler: sampler, midiNote: midiNote, channel: Self.channel)
     }
 
+    func stopAll() async throws {
+        sampler.sendController(123, withValue: 0, onChannel: Self.channel)
+        sampler.sendPitchBend(Self.pitchBendCenter, onChannel: Self.channel)
+    }
+
     // MARK: - MIDI Helpers
 
     private func sendPitchBendRange() {

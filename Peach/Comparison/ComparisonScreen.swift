@@ -181,6 +181,8 @@ private final class MockNotePlayerForPreview: NotePlayer {
     func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
         MockPlaybackHandleForPreview()
     }
+
+    func stopAll() async throws {}
 }
 
 private final class MockPlaybackHandleForPreview: PlaybackHandle {

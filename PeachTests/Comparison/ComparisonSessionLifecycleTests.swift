@@ -186,4 +186,45 @@ struct ComparisonSessionLifecycleTests {
         #expect(f.session.state == .idle)
         #expect(f.mockDataStore.saveCallCount == 0)
     }
+
+    // MARK: - stopAll() Verification
+
+    @Test("stop() calls notePlayer.stopAll() for audio cleanup")
+    func stopCallsStopAll() async throws {
+        let f = makeComparisonSession()
+
+        f.session.startTraining()
+        try await waitForPlayCallCount(f.mockPlayer, 1)
+
+        f.session.stop()
+
+        // Allow the fire-and-forget Task to execute
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(f.mockPlayer.stopAllCallCount >= 1)
+    }
+
+    @Test("handleAnswer during note2 calls notePlayer.stopAll()")
+    func handleAnswerDuringNote2CallsStopAll() async throws {
+        let f = makeComparisonSession()
+        f.mockPlayer.instantPlayback = false
+        f.mockPlayer.simulatedPlaybackDuration = 0.5
+
+        var noteCount = 0
+        f.mockPlayer.onPlayCalled = {
+            noteCount += 1
+            if noteCount == 2 {
+                // Answer during note 2
+                f.session.handleAnswer(isHigher: true)
+            }
+        }
+
+        f.session.startTraining()
+
+        // Wait for feedback state (answer was given during note2)
+        try await waitForState(f.session, .showingFeedback)
+
+        // Allow the fire-and-forget Task to execute
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(f.mockPlayer.stopAllCallCount >= 1)
+    }
 }

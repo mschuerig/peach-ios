@@ -34,10 +34,22 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     func adjustFrequency(_ frequency: Double) async throws {
         guard !hasStopped else { return }
 
+        guard SoundFontNotePlayer.validFrequencyRange.contains(frequency) else {
+            throw AudioError.invalidFrequency(
+                "Frequency \(frequency) Hz is outside valid range \(SoundFontNotePlayer.validFrequencyRange)"
+            )
+        }
+
         let conversion = FrequencyCalculation.midiNoteAndCents(frequency: frequency)
         let targetMidi = Double(conversion.midiNote) + conversion.cents / 100.0
         let baseMidi = Double(midiNote)
         let centDifference = (targetMidi - baseMidi) * 100.0
+
+        guard abs(centDifference) <= 200.0 else {
+            throw AudioError.invalidFrequency(
+                "Target frequency \(frequency) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote), exceeding ±200 cent pitch bend range"
+            )
+        }
 
         let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: centDifference)
         sampler.sendPitchBend(bendValue, onChannel: channel)

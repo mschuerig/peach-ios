@@ -285,6 +285,29 @@ struct SoundFontNotePlayerTests {
         #expect(SoundFontNotePlayer.parseSF2Tag(from: "unknown") == nil)
     }
 
+    // MARK: - stopAll
+
+    @Test("stopAll does not crash when no notes are playing")
+    func stopAllNoNotes() async throws {
+        let player = try SoundFontNotePlayer()
+        try await player.stopAll()
+    }
+
+    @Test("stopAll silences a playing note")
+    func stopAllSilencesNote() async throws {
+        let player = try SoundFontNotePlayer()
+        _ = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        try await player.stopAll()
+    }
+
+    @Test("stopAll silences multiple playing notes")
+    func stopAllSilencesMultipleNotes() async throws {
+        let player = try SoundFontNotePlayer()
+        _ = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        _ = try await player.play(frequency: 880.0, velocity: 63, amplitudeDB: 0.0)
+        try await player.stopAll()
+    }
+
     // MARK: - Preset Selection from UserDefaults
 
     @Test("play reads UserDefaults soundSource and uses the selected preset")

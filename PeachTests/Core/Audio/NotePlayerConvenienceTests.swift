@@ -58,12 +58,38 @@ struct NotePlayerConvenienceTests {
         #expect(mock.lastHandle?.stopCallCount == 1)
     }
 
-    @Test("Extension stop() is a backward-compatible no-op")
-    func extensionStopIsNoOp() async throws {
-        let mock = MockNotePlayer()
-        let player: NotePlayer = mock
+    // MARK: - Duration Validation (uses ExtensionOnlyNotePlayer to test the default extension)
 
-        // Extension stop should not throw
-        try await player.stop()
+    @Test("Duration zero throws invalidDuration error")
+    func durationZeroThrows() async throws {
+        let stub = ExtensionOnlyNotePlayer()
+
+        await #expect(throws: AudioError.self) {
+            try await stub.play(frequency: 440.0, duration: 0.0, velocity: 63, amplitudeDB: 0.0)
+        }
+        #expect(stub.playCallCount == 0)
     }
+
+    @Test("Negative duration throws invalidDuration error")
+    func negativeDurationThrows() async throws {
+        let stub = ExtensionOnlyNotePlayer()
+
+        await #expect(throws: AudioError.self) {
+            try await stub.play(frequency: 440.0, duration: -1.0, velocity: 63, amplitudeDB: 0.0)
+        }
+        #expect(stub.playCallCount == 0)
+    }
+}
+
+/// Minimal NotePlayer that does NOT override the convenience method,
+/// so the default extension (with duration validation) is exercised.
+private final class ExtensionOnlyNotePlayer: NotePlayer {
+    var playCallCount = 0
+
+    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
+        playCallCount += 1
+        return MockPlaybackHandle()
+    }
+
+    func stopAll() async throws {}
 }

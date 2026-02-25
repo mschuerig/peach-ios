@@ -59,6 +59,13 @@ protocol NotePlayer {
     ///   - amplitudeDB: dB offset for sound volume (-90.0 to +12.0, 0.0 = no change)
     /// - Throws: `AudioError` if parameters are outside valid ranges
     func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws
+
+    /// Stops all currently playing notes immediately.
+    ///
+    /// Used for interruption cleanup (e.g., training stopped, user navigated away).
+    /// Individual note lifecycle is managed through `PlaybackHandle.stop()`;
+    /// this method is the "panic button" that silences everything at once.
+    func stopAll() async throws
 }
 
 extension NotePlayer {
@@ -74,6 +81,9 @@ extension NotePlayer {
     ///   - amplitudeDB: dB offset for sound volume (-90.0 to +12.0, 0.0 = no change)
     /// - Throws: `AudioError` if parameters are outside valid ranges
     func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
+        guard duration > 0 else {
+            throw AudioError.invalidDuration("Duration \(duration) must be positive")
+        }
         let handle = try await play(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
         do {
             try await Task.sleep(for: .seconds(duration))
@@ -82,14 +92,5 @@ extension NotePlayer {
             try? await handle.stop()
             throw error
         }
-    }
-
-    /// Stops playback immediately (backward-compatible no-op).
-    ///
-    /// Retained during transition to PlaybackHandle-based lifecycle.
-    /// Stopping is done through the handle; this method exists only so that
-    /// existing call sites compile without changes until they are migrated.
-    func stop() async throws {
-        // No-op — stopping is managed through PlaybackHandle
     }
 }
