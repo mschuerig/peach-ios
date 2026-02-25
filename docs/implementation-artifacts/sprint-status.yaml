@@ -139,3 +139,9 @@ development_status:
   epic-14: done
   14-1-extract-pitchdiscriminationprofile-protocol: done
   14-2-pitchmatchingprofile-protocol-and-matching-statistics: done
+
+  # Epic 15: Tune Your Ear — PitchMatchingSession
+  epic-15: in-progress
+  15-1-pitchmatchingsession-core-state-machine: ready-for-dev
+  15-2-pitchmatchingsession-interruption-and-lifecycle-handling: backlog
+  epic-15-retrospective: optional
