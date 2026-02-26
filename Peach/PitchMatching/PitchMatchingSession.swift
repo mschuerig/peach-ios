@@ -25,15 +25,16 @@ final class PitchMatchingSession {
     // MARK: - Dependencies
 
     private let notePlayer: NotePlayer
-    private let profile: PitchMatchingProfile
+    private let profile: PitchMatchingProfile // Used in future adaptive challenge generation
     private let observers: [PitchMatchingObserver]
     private let settingsOverride: TrainingSettings?
     private let noteDurationOverride: TimeInterval?
-    private let notificationCenter: NotificationCenter
+    private let notificationCenter: NotificationCenter // Used in story 15.2 for interruption handling
 
     // MARK: - Internal State
 
     private var currentHandle: PlaybackHandle?
+    private var referenceFrequency: Double?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
 
@@ -81,17 +82,13 @@ final class PitchMatchingSession {
         guard state == .playingTunable else { return }
         guard let challenge = currentChallenge else { return }
 
+        let handleToStop = currentHandle
+        currentHandle = nil
         Task {
-            try? await currentHandle?.stop()
-            currentHandle = nil
+            try? await handleToStop?.stop()
         }
 
-        let settings = currentSettings
-        let referenceFrequency = (try? FrequencyCalculation.frequency(
-            midiNote: challenge.referenceNote,
-            referencePitch: settings.referencePitch
-        )) ?? 440.0
-
+        guard let referenceFrequency else { return }
         let userCentError = 1200.0 * log2(userFrequency / referenceFrequency)
 
         let result = CompletedPitchMatching(
@@ -118,9 +115,11 @@ final class PitchMatchingSession {
         trainingTask = nil
         feedbackTask?.cancel()
         feedbackTask = nil
+        let handleToStop = currentHandle
+        currentHandle = nil
+        referenceFrequency = nil
         Task {
-            try? await currentHandle?.stop()
-            currentHandle = nil
+            try? await handleToStop?.stop()
         }
         state = .idle
     }
@@ -143,8 +142,7 @@ final class PitchMatchingSession {
 
     // MARK: - Challenge Generation
 
-    private func generateChallenge() -> PitchMatchingChallenge {
-        let settings = currentSettings
+    private func generateChallenge(settings: TrainingSettings) -> PitchMatchingChallenge {
         let note = Int.random(in: settings.noteRangeMin...settings.noteRangeMax)
         let offset = Double.random(in: -100.0...100.0)
         return PitchMatchingChallenge(referenceNote: note, initialCentOffset: offset)
@@ -155,18 +153,19 @@ final class PitchMatchingSession {
     private func playNextChallenge() async {
         let settings = currentSettings
         let noteDuration = currentNoteDuration
-        let challenge = generateChallenge()
+        let challenge = generateChallenge(settings: settings)
         currentChallenge = challenge
 
         do {
-            let referenceFrequency = try FrequencyCalculation.frequency(
+            let refFreq = try FrequencyCalculation.frequency(
                 midiNote: challenge.referenceNote,
                 referencePitch: settings.referencePitch
             )
+            self.referenceFrequency = refFreq
 
             state = .playingReference
             try await notePlayer.play(
-                frequency: referenceFrequency,
+                frequency: refFreq,
                 duration: noteDuration,
                 velocity: velocity,
                 amplitudeDB: 0.0

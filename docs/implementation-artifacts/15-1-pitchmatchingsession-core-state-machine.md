@@ -1,6 +1,6 @@
 # Story 15.1: PitchMatchingSession Core State Machine
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -429,6 +429,19 @@ None — clean implementation with no debugging issues.
 - Test suite with `waitForState` helper and factory method for consistent test fixtures
 - 17 new tests covering all acceptance criteria; 447 total tests pass (zero regressions)
 
+### Code Review Fixes (AI)
+
+- **M1: Handle race condition** — `commitResult` and `stop()` now capture handle locally and nil `currentHandle` synchronously before spawning the async stop Task. Prevents potential race where next challenge's handle reference gets wiped by a late-completing stop.
+- **M2: Store referenceFrequency** — Added `referenceFrequency: Double?` property, stored when challenge is generated in `playNextChallenge()`, used directly in `commitResult`. Eliminates redundant recomputation and silent `?? 440.0` fallback that could corrupt cent error data.
+- **M3: waitForState aligned with codebase pattern** — Replaced `WaitError`/throw pattern with `Issue.record()`, added `Task.yield()` for scheduler cooperation, added fast-path check, matched 5ms poll interval from `ComparisonTestHelpers`.
+- **M4: Added stop() test** — New `stopTransitionsToIdle` test verifies stop() from `playingTunable` state correctly transitions to `idle`.
+- **Test count: 448 total** (430 existing + 18 new, zero regressions)
+- **L1: Pass settings to generateChallenge** — `generateChallenge()` now takes `settings` parameter instead of reading `currentSettings` internally, eliminating redundant UserDefaults access.
+- **L2: Guard condition tests** — Added 3 tests: `startPitchMatching` no-op from non-idle, `adjustFrequency` no-op from non-playingTunable, `commitResult` no-op from non-playingTunable.
+- **L3: Negative cent error test** — Added `commitResultFlatCentError` test verifying negative cent error when user plays 50 cents flat.
+- **L4: Unused dependency comments** — Added inline comments on `profile` and `notificationCenter` explaining their future use.
+- **Test count: 452 total** (430 existing + 22 new, zero regressions)
+
 ### File List
 
 New files:
@@ -444,3 +457,5 @@ Modified files:
 ## Change Log
 
 - **2026-02-26:** Implemented PitchMatchingSession core state machine with full training loop, challenge generation, adjustFrequency/commitResult, and 17 new tests (447 total, zero regressions). Story complete and ready for review.
+- **2026-02-26:** Code review fixes (MEDIUM): handle race condition in commitResult/stop(), stored referenceFrequency to eliminate recomputation, aligned waitForState with codebase pattern, added stop() test. 448 total tests, zero regressions.
+- **2026-02-26:** Code review fixes (LOW): pass settings to generateChallenge(), added guard condition tests and flat cent error test, added comments on unused dependencies. 452 total tests, zero regressions.

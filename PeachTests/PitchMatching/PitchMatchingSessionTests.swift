@@ -4,22 +4,20 @@ import Testing
 
 // MARK: - Test Helpers
 
-enum WaitError: Error {
-    case timeout(expected: String, actual: String)
-}
-
 func waitForState(
     _ session: PitchMatchingSession,
     _ expectedState: PitchMatchingSessionState,
     timeout: Duration = .seconds(2)
 ) async throws {
+    await Task.yield()
+    if session.state == expectedState { return }
     let deadline = ContinuousClock.now + timeout
-    while session.state != expectedState {
-        guard ContinuousClock.now < deadline else {
-            throw WaitError.timeout(expected: "\(expectedState)", actual: "\(session.state)")
-        }
-        try await Task.sleep(for: .milliseconds(10))
+    while ContinuousClock.now < deadline {
+        if session.state == expectedState { return }
+        try await Task.sleep(for: .milliseconds(5))
+        await Task.yield()
     }
+    Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
 }
 
 // MARK: - Factory
@@ -245,6 +243,81 @@ struct PitchMatchingSessionTests {
         // It went through playingReference and is now back to playingTunable (next challenge)
         #expect(session.state == .playingTunable)
     }
+
+    // MARK: - Guard Condition Tests
+
+    @Test("startPitchMatching is no-op when not idle")
+    func startPitchMatchingNoOpWhenNotIdle() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        session.startPitchMatching()
+        try await waitForState(session, .playingTunable)
+
+        let playCountBefore = notePlayer.playCallCount
+        session.startPitchMatching()
+        try await Task.sleep(for: .milliseconds(50))
+
+        #expect(notePlayer.playCallCount == playCountBefore)
+        #expect(session.state == .playingTunable)
+    }
+
+    @Test("adjustFrequency is no-op when not playingTunable")
+    func adjustFrequencyNoOpWhenNotPlayingTunable() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        notePlayer.instantPlayback = false
+        notePlayer.simulatedPlaybackDuration = 5.0
+        session.startPitchMatching()
+        try await waitForState(session, .playingReference)
+
+        session.adjustFrequency(450.0)
+        try await Task.sleep(for: .milliseconds(50))
+
+        // Guard prevents adjustFrequency during playingReference
+        let adjustCount = notePlayer.handleHistory.reduce(0) { $0 + $1.adjustFrequencyCallCount }
+        #expect(adjustCount == 0)
+    }
+
+    @Test("commitResult is no-op when not playingTunable")
+    func commitResultNoOpWhenNotPlayingTunable() async throws {
+        let (session, _, _, observer) = makePitchMatchingSession()
+        // Session is idle — commitResult should do nothing
+        session.commitResult(userFrequency: 440.0)
+
+        #expect(session.state == .idle)
+        #expect(observer.pitchMatchingCompletedCallCount == 0)
+    }
+
+    // MARK: - Cent Error Tests
+
+    @Test("commitResult computes negative cent error when flat")
+    func commitResultFlatCentError() async throws {
+        let settings = TrainingSettings(noteRangeMin: 69, noteRangeMax: 69, referencePitch: 440.0)
+        let (session, _, _, observer) = makePitchMatchingSession(settingsOverride: settings)
+        session.startPitchMatching()
+        try await waitForState(session, .playingTunable)
+
+        // User plays flat (lower frequency) — 50 cents flat
+        let flatFreq = 440.0 * pow(2.0, -50.0 / 1200.0)
+        session.commitResult(userFrequency: flatFreq)
+        try await waitForState(session, .showingFeedback)
+
+        let result = try #require(observer.lastResult)
+        #expect(result.userCentError < 0)
+        #expect(abs(result.userCentError + 50.0) < 0.1)
+    }
+
+    // MARK: - stop() Tests
+
+    @Test("stop transitions to idle from playingTunable")
+    func stopTransitionsToIdle() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
+        session.startPitchMatching()
+        try await waitForState(session, .playingTunable)
+
+        session.stop()
+        #expect(session.state == .idle)
+    }
+
+    // MARK: - Full Cycle Tests
 
     @Test("full cycle: idle → playingReference → playingTunable → showingFeedback → loop")
     func fullStateCycle() async throws {
