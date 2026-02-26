@@ -147,8 +147,12 @@ development_status:
   epic-15-retrospective: optional
 
   # Epic 16: See and Slide — Pitch Matching Screen
-  epic-16: in-progress
+  epic-16: done
   16-1-vertical-pitch-slider-component: done
   16-2-pitch-matching-feedback-indicator: done
   16-3-pitch-matching-screen-assembly: done
   epic-16-retrospective: optional
+
+  # Epic 17: Two Modes, One App — Start Screen Integration
+  epic-17: done # All ACs fulfilled by story 16.3 implementation
+  17-1-pitch-matching-button-and-navigation-routing: done # Implemented as part of 16-3-pitch-matching-screen-assembly
