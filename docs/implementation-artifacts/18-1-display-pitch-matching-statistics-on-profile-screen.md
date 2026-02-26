@@ -1,6 +1,6 @@
 # Story 18.1: Display Pitch Matching Statistics on Profile Screen
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,42 +26,42 @@ So that I can track improvement in both training modes from one place.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `MatchingStatisticsView` subview (AC: #1, #2, #3, #5)
-  - [ ] Create `Peach/Profile/MatchingStatisticsView.swift` following `SummaryStatisticsView` pattern
-  - [ ] Read `@Environment(\.perceptualProfile)` for matching data
-  - [ ] Display three stat items: Mean Error, Std Dev, Sample Count
-  - [ ] Format mean and stdDev as cents with 1 decimal place (e.g., "12.3 cents", "±5.1 cents")
-  - [ ] Format sample count as plain integer
-  - [ ] Handle cold start: show localized empty state message when `matchingSampleCount == 0`
-  - [ ] Extract `computeMatchingStats` and formatting as `static` methods for testability
-  - [ ] Add accessibility labels for all stat items and empty state
+- [x] Task 1: Create `MatchingStatisticsView` subview (AC: #1, #2, #3, #5)
+  - [x] Create `Peach/Profile/MatchingStatisticsView.swift` following `SummaryStatisticsView` pattern
+  - [x] Read `@Environment(\.perceptualProfile)` for matching data
+  - [x] Display three stat items: Mean Error, Std Dev, Sample Count
+  - [x] Format mean and stdDev as cents with 1 decimal place (e.g., "12.3 cents", "±5.1 cents")
+  - [x] Format sample count as plain integer
+  - [x] Handle cold start: show localized empty state message when `matchingSampleCount == 0`
+  - [x] Extract `computeMatchingStats` and formatting as `static` methods for testability
+  - [x] Add accessibility labels for all stat items and empty state
 
-- [ ] Task 2: Integrate `MatchingStatisticsView` into `ProfileScreen` (AC: #1, #5)
-  - [ ] Add `MatchingStatisticsView()` below `SummaryStatisticsView` in `ProfileScreen.body`
-  - [ ] Add a section header or visual separator to distinguish the two stat sections
-  - [ ] Verify layout in portrait and landscape
+- [x] Task 2: Integrate `MatchingStatisticsView` into `ProfileScreen` (AC: #1, #5)
+  - [x] Add `MatchingStatisticsView()` below `SummaryStatisticsView` in `ProfileScreen.body`
+  - [x] Add a section header or visual separator to distinguish the two stat sections
+  - [x] Verify layout in portrait and landscape
 
-- [ ] Task 3: Add localization strings (AC: #4)
-  - [ ] Add English + German entries in `Localizable.xcstrings`:
+- [x] Task 3: Add localization strings (AC: #4)
+  - [x] Add English + German entries in `Localizable.xcstrings`:
     - "Mean Error" / "Mittlerer Fehler"
     - "Samples" / "Übungen"
     - Matching-specific cents formatting
     - Empty state: "Start pitch matching to see your accuracy" / "Starte Tonhöhenübungen, um deine Genauigkeit zu sehen"
 
-- [ ] Task 4: Add unit tests for static methods (AC: #2, #3)
-  - [ ] Create `PeachTests/Profile/MatchingStatisticsViewTests.swift`
-  - [ ] Test `computeMatchingStats` with data present
-  - [ ] Test `computeMatchingStats` returns nil when no matching data
-  - [ ] Test formatting methods (mean, stdDev, sample count)
-  - [ ] Test accessibility label generation
+- [x] Task 4: Add unit tests for static methods (AC: #2, #3)
+  - [x] Create `PeachTests/Profile/MatchingStatisticsViewTests.swift`
+  - [x] Test `computeMatchingStats` with data present
+  - [x] Test `computeMatchingStats` returns nil when no matching data
+  - [x] Test formatting methods (mean, stdDev, sample count)
+  - [x] Test accessibility label generation
 
-- [ ] Task 5: Update ProfileScreen previews (AC: #1, #3)
-  - [ ] Update "With Data" preview to include pitch matching data on the profile
-  - [ ] Verify "Cold Start" preview shows matching empty state
+- [x] Task 5: Update ProfileScreen previews (AC: #1, #3)
+  - [x] Update "With Data" preview to include pitch matching data on the profile
+  - [x] Verify "Cold Start" preview shows matching empty state
 
-- [ ] Task 6: Run full test suite and verify (AC: #6)
-  - [ ] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All existing tests pass plus new MatchingStatisticsView tests
+- [x] Task 6: Run full test suite and verify (AC: #6)
+  - [x] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All existing tests pass plus new MatchingStatisticsView tests
 
 ## Dev Notes
 
@@ -221,14 +221,37 @@ Files modified in recent epics that are relevant:
 - [Source: Peach/Core/Profile/PitchMatchingProfile.swift -- Protocol definition]
 - [Source: docs/implementation-artifacts/16-3-pitch-matching-screen-assembly.md -- Previous story learnings]
 
+## Change Log
+
+- 2026-02-26: Implemented story 18.1 — Added MatchingStatisticsView to Profile Screen displaying mean error, std dev, and sample count from PitchMatchingProfile. Added localization (EN/DE), accessibility labels, cold start empty state, and 13 unit tests. Full test suite passes (548 tests).
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Fixed locale-dependent decimal separator issue in tests: used `.formatted(.number.precision(.fractionLength(1)))` instead of hardcoded "12.3" to handle German locale decimal comma.
+
 ### Completion Notes List
 
+- Created `MatchingStatisticsView` as a separate subview following `SummaryStatisticsView` pattern
+- Three stat items displayed: Mean Error (1 decimal place), Std Dev (±, 1 decimal place), Samples (integer)
+- Cold start shows localized empty state message instead of placeholder numbers
+- Integrated into `ProfileScreen` with `Divider()` separator between discrimination and matching sections
+- Added `dynamicTypeSize(...DynamicTypeSize.accessibility3)` for responsive type support
+- All 10 localization keys added with German translations in `Localizable.xcstrings`
+- 13 unit tests covering: stats computation (4), formatting (4), accessibility (3), cold start (2)
+- Updated ProfileScreen "With Data" preview to include pitch matching data
+- Full test suite: all tests pass, zero regressions
+
 ### File List
+
+- `Peach/Profile/MatchingStatisticsView.swift` (new)
+- `PeachTests/Profile/MatchingStatisticsViewTests.swift` (new)
+- `Peach/Profile/ProfileScreen.swift` (modified — added MatchingStatisticsView + Divider, updated preview)
+- `Peach/Resources/Localizable.xcstrings` (modified — added 10 localization entries with German translations)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified — status: in-progress → review)
+- `docs/implementation-artifacts/18-1-display-pitch-matching-statistics-on-profile-screen.md` (modified — tasks marked complete, Dev Agent Record updated)
