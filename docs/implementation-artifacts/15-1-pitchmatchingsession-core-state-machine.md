@@ -1,6 +1,6 @@
 # Story 15.1: PitchMatchingSession Core State Machine
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,43 +32,43 @@ So that I train my ability to actively reproduce a target pitch.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create PitchMatchingSessionState enum and PitchMatchingSession skeleton (AC: #1, #2)
-  - [ ] 1.1 Create `Peach/PitchMatching/PitchMatchingSession.swift` with `PitchMatchingSessionState` enum and `@Observable final class PitchMatchingSession`
-  - [ ] 1.2 Add constructor with all dependencies: `notePlayer: NotePlayer`, `profile: PitchMatchingProfile`, `observers: [PitchMatchingObserver]`, `settingsOverride: TrainingSettings?`, `noteDurationOverride: TimeInterval?`, `notificationCenter: NotificationCenter`
-  - [ ] 1.3 Add observable `state: PitchMatchingSessionState = .idle` property
-  - [ ] 1.4 Add `currentChallenge: PitchMatchingChallenge?` read-only property for UI consumption
-  - [ ] 1.5 Add `lastResult: CompletedPitchMatching?` read-only property for feedback display
-  - [ ] 1.6 Write initial tests: session starts in idle state, state is observable
+- [x] Task 1: Create PitchMatchingSessionState enum and PitchMatchingSession skeleton (AC: #1, #2)
+  - [x] 1.1 Create `Peach/PitchMatching/PitchMatchingSession.swift` with `PitchMatchingSessionState` enum and `@Observable final class PitchMatchingSession`
+  - [x] 1.2 Add constructor with all dependencies: `notePlayer: NotePlayer`, `profile: PitchMatchingProfile`, `observers: [PitchMatchingObserver]`, `settingsOverride: TrainingSettings?`, `noteDurationOverride: TimeInterval?`, `notificationCenter: NotificationCenter`
+  - [x] 1.3 Add observable `state: PitchMatchingSessionState = .idle` property
+  - [x] 1.4 Add `currentChallenge: PitchMatchingChallenge?` read-only property for UI consumption
+  - [x] 1.5 Add `lastResult: CompletedPitchMatching?` read-only property for feedback display
+  - [x] 1.6 Write initial tests: session starts in idle state, state is observable
 
-- [ ] Task 2: Implement challenge generation (AC: #8)
-  - [ ] 2.1 Add private `currentSettings: TrainingSettings` computed property (read live from `UserDefaults`, same pattern as `ComparisonSession`)
-  - [ ] 2.2 Add private `currentNoteDuration: TimeInterval` computed property (read from `UserDefaults` with `noteDurationOverride` support)
-  - [ ] 2.3 Add private `generateChallenge() -> PitchMatchingChallenge` that picks random MIDI note in `noteRangeMin...noteRangeMax` and random offset in `-100...100` cents
-  - [ ] 2.4 Write tests: generated challenges have note within configured range, offset within ±100 cents
+- [x] Task 2: Implement challenge generation (AC: #8)
+  - [x] 2.1 Add private `currentSettings: TrainingSettings` computed property (read live from `UserDefaults`, same pattern as `ComparisonSession`)
+  - [x] 2.2 Add private `currentNoteDuration: TimeInterval` computed property (read from `UserDefaults` with `noteDurationOverride` support)
+  - [x] 2.3 Add private `generateChallenge() -> PitchMatchingChallenge` that picks random MIDI note in `noteRangeMin...noteRangeMax` and random offset in `-100...100` cents
+  - [x] 2.4 Write tests: generated challenges have note within configured range, offset within ±100 cents
 
-- [ ] Task 3: Implement startPitchMatching() and main loop (AC: #3, #4, #7)
-  - [ ] 3.1 Add `startPitchMatching()` method that generates a challenge and begins the training loop via a spawned `Task`
-  - [ ] 3.2 Implement reference note playback: compute reference frequency via `FrequencyCalculation.frequency(midiNote:referencePitch:)`, play fixed-duration note, transition to `playingReference`
-  - [ ] 3.3 Implement tunable note auto-start: after reference completes, compute tunable frequency at offset, play indefinite note via handle-returning `play(frequency:velocity:amplitudeDB:)`, store `PlaybackHandle`, transition to `playingTunable`
-  - [ ] 3.4 Implement feedback timer: after result committed, wait ~400ms then auto-start next challenge
-  - [ ] 3.5 Add `trainingTask: Task<Void, Never>?` and `feedbackTask: Task<Void, Never>?` for cancellation support
-  - [ ] 3.6 Write tests: state transitions through full cycle (idle → playingReference → playingTunable → showingFeedback → playingReference), reference note played at correct frequency, tunable note played at offset frequency
+- [x] Task 3: Implement startPitchMatching() and main loop (AC: #3, #4, #7)
+  - [x] 3.1 Add `startPitchMatching()` method that generates a challenge and begins the training loop via a spawned `Task`
+  - [x] 3.2 Implement reference note playback: compute reference frequency via `FrequencyCalculation.frequency(midiNote:referencePitch:)`, play fixed-duration note, transition to `playingReference`
+  - [x] 3.3 Implement tunable note auto-start: after reference completes, compute tunable frequency at offset, play indefinite note via handle-returning `play(frequency:velocity:amplitudeDB:)`, store `PlaybackHandle`, transition to `playingTunable`
+  - [x] 3.4 Implement feedback timer: after result committed, wait ~400ms then auto-start next challenge
+  - [x] 3.5 Add `trainingTask: Task<Void, Never>?` and `feedbackTask: Task<Void, Never>?` for cancellation support
+  - [x] 3.6 Write tests: state transitions through full cycle (idle → playingReference → playingTunable → showingFeedback → playingReference), reference note played at correct frequency, tunable note played at offset frequency
 
-- [ ] Task 4: Implement adjustFrequency and commitResult (AC: #5, #6)
-  - [ ] 4.1 Add `adjustFrequency(_ frequency: Double)` — guard state is `playingTunable`, call `currentHandle?.adjustFrequency(frequency)`
-  - [ ] 4.2 Add `commitResult(userFrequency: Double)` — guard state is `playingTunable`, stop handle, compute signed cent error via `FrequencyCalculation.midiNoteAndCents()` approach, create `CompletedPitchMatching`, notify observers, transition to `showingFeedback`
-  - [ ] 4.3 Implement cent error computation: `userCentError = 1200 * log2(userFrequency / referenceFrequency)` (signed — positive means user was sharp, negative means flat)
-  - [ ] 4.4 Write tests: adjustFrequency delegates to handle, commitResult stops handle and computes correct cent error, observers notified with correct CompletedPitchMatching
+- [x] Task 4: Implement adjustFrequency and commitResult (AC: #5, #6)
+  - [x] 4.1 Add `adjustFrequency(_ frequency: Double)` — guard state is `playingTunable`, call `currentHandle?.adjustFrequency(frequency)`
+  - [x] 4.2 Add `commitResult(userFrequency: Double)` — guard state is `playingTunable`, stop handle, compute signed cent error via `FrequencyCalculation.midiNoteAndCents()` approach, create `CompletedPitchMatching`, notify observers, transition to `showingFeedback`
+  - [x] 4.3 Implement cent error computation: `userCentError = 1200 * log2(userFrequency / referenceFrequency)` (signed — positive means user was sharp, negative means flat)
+  - [x] 4.4 Write tests: adjustFrequency delegates to handle, commitResult stops handle and computes correct cent error, observers notified with correct CompletedPitchMatching
 
-- [ ] Task 5: Create MockPitchMatchingProfile and MockPitchMatchingObserver (AC: #9)
-  - [ ] 5.1 Create `PeachTests/PitchMatching/MockPitchMatchingProfile.swift` conforming to `PitchMatchingProfile` with call tracking
-  - [ ] 5.2 Create `PeachTests/PitchMatching/MockPitchMatchingObserver.swift` conforming to `PitchMatchingObserver` with call tracking
-  - [ ] 5.3 Create `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` test suite with factory method returning `(session:, notePlayer:, profile:, observer:)` tuple
+- [x] Task 5: Create MockPitchMatchingProfile and MockPitchMatchingObserver (AC: #9)
+  - [x] 5.1 Create `PeachTests/PitchMatching/MockPitchMatchingProfile.swift` conforming to `PitchMatchingProfile` with call tracking
+  - [x] 5.2 Create `PeachTests/PitchMatching/MockPitchMatchingObserver.swift` conforming to `PitchMatchingObserver` with call tracking
+  - [x] 5.3 Create `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` test suite with factory method returning `(session:, notePlayer:, profile:, observer:)` tuple
 
-- [ ] Task 6: Run full test suite and verify (AC: #9)
-  - [ ] 6.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 6.2 Verify all existing tests pass (430 from story 14.2) with zero regressions
-  - [ ] 6.3 Verify all new PitchMatchingSession tests pass
+- [x] Task 6: Run full test suite and verify (AC: #9)
+  - [x] 6.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 6.2 Verify all existing tests pass (430 from story 14.2) with zero regressions — 447 total (430 existing + 17 new)
+  - [x] 6.3 Verify all new PitchMatchingSession tests pass — 17 tests all green
 
 ## Dev Notes
 
@@ -406,10 +406,41 @@ feedbackTask = Task {
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+None — clean implementation with no debugging issues.
+
 ### Completion Notes List
 
+- Implemented `PitchMatchingSession` as `@Observable final class` with full state machine: `idle → playingReference → playingTunable → showingFeedback → loop`
+- `PitchMatchingSessionState` enum with four cases defined in same file
+- Constructor mirrors `ComparisonSession` pattern with protocol-typed dependencies
+- `startPitchMatching()` spawns async Task, plays reference note (fixed duration), then auto-starts tunable note (indefinite, handle-returning)
+- `adjustFrequency(_:)` delegates to `PlaybackHandle.adjustFrequency()` when in `playingTunable` state
+- `commitResult(userFrequency:)` stops handle, computes signed cent error directly via `1200 * log2(userFreq / refFreq)`, creates `CompletedPitchMatching`, notifies observers, transitions to `showingFeedback`
+- Feedback auto-advances after 400ms via `feedbackTask`
+- `generateChallenge()` picks random MIDI note within settings range and random offset ±100 cents
+- Settings read live from `UserDefaults` on each challenge (with `settingsOverride` for tests)
+- Basic `stop()` method for task cancellation (full lifecycle handling deferred to story 15.2)
+- Error boundary catches `AudioError` and `CancellationError` gracefully
+- Created `MockPitchMatchingProfile` and `MockPitchMatchingObserver` with call tracking
+- Test suite with `waitForState` helper and factory method for consistent test fixtures
+- 17 new tests covering all acceptance criteria; 447 total tests pass (zero regressions)
+
 ### File List
+
+New files:
+- `Peach/PitchMatching/PitchMatchingSession.swift`
+- `PeachTests/PitchMatching/PitchMatchingSessionTests.swift`
+- `PeachTests/PitchMatching/MockPitchMatchingProfile.swift`
+- `PeachTests/PitchMatching/MockPitchMatchingObserver.swift`
+
+Modified files:
+- `docs/implementation-artifacts/sprint-status.yaml` (status: ready-for-dev → in-progress → review)
+- `docs/implementation-artifacts/15-1-pitchmatchingsession-core-state-machine.md` (task completion, dev record)
+
+## Change Log
+
+- **2026-02-26:** Implemented PitchMatchingSession core state machine with full training loop, challenge generation, adjustFrequency/commitResult, and 17 new tests (447 total, zero regressions). Story complete and ready for review.
