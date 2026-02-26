@@ -1,6 +1,6 @@
 # Story 15.2: PitchMatchingSession Interruption and Lifecycle Handling
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -391,13 +391,30 @@ Claude Opus 4.6
 - Added `isolated deinit` for cleanup of all three notification observers
 - Updated test factory with `notificationCenter` parameter for test isolation
 - All patterns mirror ComparisonSession exactly: synchronous userInfo extraction before actor boundary crossing, `[weak self]` captures, `Task { @MainActor in }` dispatch
-- 470 tests pass (452 existing + 18 new), zero regressions
+- 473 tests pass (452 existing + 21 new), zero regressions
 
 ### Change Log
 
 - 2026-02-26: Implemented story 15.2 — PitchMatchingSession interruption and lifecycle handling
+- 2026-02-26: Code review fixes — added missing state guard after tunable note play(), added logging to stop(), added interruption tests from playingReference and showingFeedback states
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Michael on 2026-02-26
+**Outcome:** Approved with fixes applied
+
+**Findings (3 fixed, 3 noted):**
+
+| # | Severity | Description | Status |
+|---|----------|-------------|--------|
+| H1 | HIGH | Missing state guard after tunable note `play()` in `playNextChallenge()` — orphaned handle possible if `stop()` called during await | Fixed |
+| M1 | MEDIUM | Missing test coverage for audio interruption from `playingReference` and `showingFeedback` states | Fixed |
+| M2 | MEDIUM | `stop()` method lacked logging (ComparisonSession logs state transitions) | Fixed |
+| L1 | LOW | `setupAudioInterruptionObservers()` name misleading (sets up 3 observers, not just audio) | Noted |
+| L2 | LOW | Test function naming inconsistent with ComparisonSession reference (camelCase vs underscores) | Noted |
+| L3 | LOW | Completion Notes reported 18 new tests but actual count was 19 | Noted (corrected to 21 after fixes) |
 
 ### File List
 
-- Peach/PitchMatching/PitchMatchingSession.swift (modified: added imports, notification observers, enhanced stop(), isolated deinit)
-- PeachTests/PitchMatching/PitchMatchingSessionTests.swift (modified: added stop() tests, audio interruption suite, background tests, restart tests, updated factory)
+- Peach/PitchMatching/PitchMatchingSession.swift (modified: added imports, notification observers, enhanced stop(), isolated deinit, state guard after tunable play, logging)
+- PeachTests/PitchMatching/PitchMatchingSessionTests.swift (modified: added stop() tests, audio interruption suite, background tests, restart tests, updated factory, playingReference/showingFeedback interruption tests)

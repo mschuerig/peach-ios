@@ -518,6 +518,45 @@ struct PitchMatchingSessionAudioInterruptionTests {
         #expect(session.state == .idle)
     }
 
+    @Test("Audio interruption began stops from playingReference")
+    func audioInterruptionBeganStopsFromPlayingReference() async throws {
+        let nc = NotificationCenter()
+        let (session, notePlayer, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        notePlayer.instantPlayback = false
+        notePlayer.simulatedPlaybackDuration = 5.0
+        session.startPitchMatching()
+        try await waitForState(session, .playingReference)
+
+        nc.post(
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
+        )
+
+        try await waitForState(session, .idle)
+        #expect(session.state == .idle)
+    }
+
+    @Test("Audio interruption began stops from showingFeedback")
+    func audioInterruptionBeganStopsFromShowingFeedback() async throws {
+        let nc = NotificationCenter()
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        session.startPitchMatching()
+        try await waitForState(session, .playingTunable)
+
+        session.commitResult(userFrequency: 440.0)
+        try await waitForState(session, .showingFeedback)
+
+        nc.post(
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
+        )
+
+        try await waitForState(session, .idle)
+        #expect(session.state == .idle)
+    }
+
     // MARK: - Route Change Tests
 
     @Test("Route change oldDeviceUnavailable stops session")

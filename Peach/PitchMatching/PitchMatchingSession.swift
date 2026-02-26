@@ -132,7 +132,11 @@ final class PitchMatchingSession {
     }
 
     func stop() {
-        guard state != .idle else { return }
+        guard state != .idle else {
+            logger.debug("stop() called but already idle")
+            return
+        }
+        logger.info("Session stopped (state was: \(String(describing: self.state)))")
         Task {
             try? await notePlayer.stopAll()
         }
@@ -283,6 +287,12 @@ final class PitchMatchingSession {
                 velocity: velocity,
                 amplitudeDB: 0.0
             )
+
+            guard state != .idle && !Task.isCancelled else {
+                Task { try? await handle.stop() }
+                return
+            }
+
             currentHandle = handle
         } catch is CancellationError {
             logger.info("Training cancelled")
