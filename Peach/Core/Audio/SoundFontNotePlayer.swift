@@ -95,7 +95,7 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - NotePlayer Protocol
 
-    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
+    func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         // Select preset from UserDefaults sound source setting
         let source = UserDefaults.standard.string(forKey: SettingsKeys.soundSource)
             ?? SettingsKeys.defaultSoundSource
@@ -110,20 +110,12 @@ final class SoundFontNotePlayer: NotePlayer {
             try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
         }
 
-        // Validate inputs
-        guard Self.validFrequencyRange.contains(frequency) else {
+        let freq = frequency.rawValue
+
+        // Validate frequency range
+        guard Self.validFrequencyRange.contains(freq) else {
             throw AudioError.invalidFrequency(
-                "Frequency \(frequency) Hz is outside valid range \(Self.validFrequencyRange)"
-            )
-        }
-        guard velocity >= 1, velocity <= 127 else {
-            throw AudioError.invalidVelocity(
-                "Velocity \(velocity) is outside valid MIDI range 1-127"
-            )
-        }
-        guard (-90.0...12.0).contains(amplitudeDB) else {
-            throw AudioError.invalidAmplitude(
-                "Amplitude \(amplitudeDB) dB is outside valid range -90.0...12.0"
+                "Frequency \(freq) Hz is outside valid range \(Self.validFrequencyRange)"
             )
         }
 
@@ -139,17 +131,17 @@ final class SoundFontNotePlayer: NotePlayer {
             try engine.start()
         }
 
-        let conversion = FrequencyCalculation.midiNoteAndCents(frequency: frequency)
+        let conversion = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         let clampedNote = min(127, max(0, conversion.midiNote))
         let midiNote = UInt8(clampedNote)
         let bendValue = Self.pitchBendValue(forCents: conversion.cents)
 
         // Set volume offset (independent of MIDI velocity)
-        sampler.overallGain = amplitudeDB
+        sampler.overallGain = amplitudeDB.rawValue
 
         // Apply pitch bend before starting note
         sampler.sendPitchBend(bendValue, onChannel: Self.channel)
-        sampler.startNote(midiNote, withVelocity: velocity, onChannel: Self.channel)
+        sampler.startNote(midiNote, withVelocity: velocity.rawValue, onChannel: Self.channel)
 
         return SoundFontPlaybackHandle(sampler: sampler, midiNote: midiNote, channel: Self.channel)
     }

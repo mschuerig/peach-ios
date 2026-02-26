@@ -15,12 +15,12 @@ struct AdaptiveNoteStrategyRegionalTests {
         let settings = TrainingSettings(noteRangeMin: 60, noteRangeMax: 60)
 
         let comp1 = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
-        #expect(comp1.centDifference == 100.0)
+        #expect(comp1.centDifference.magnitude == 100.0)
 
         let completed1 = CompletedComparison(comparison: comp1, userAnsweredHigher: comp1.isSecondNoteHigher)
         let comp2 = strategy.nextComparison(profile: profile, settings: settings, lastComparison: completed1)
 
-        #expect(abs(comp2.centDifference - 20.0) < 0.01)
+        #expect(abs(comp2.centDifference.magnitude - 20.0) < 0.01)
     }
 
     @Test("Regional difficulty widens on incorrect answer using Kazez formula")
@@ -34,13 +34,13 @@ struct AdaptiveNoteStrategyRegionalTests {
         let settings = TrainingSettings(noteRangeMin: 60, noteRangeMax: 60)
 
         let comp1 = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
-        #expect(comp1.centDifference == 50.0)
+        #expect(comp1.centDifference.magnitude == 50.0)
 
         let completed1 = CompletedComparison(comparison: comp1, userAnsweredHigher: !comp1.isSecondNoteHigher)
         let comp2 = strategy.nextComparison(profile: profile, settings: settings, lastComparison: completed1)
 
         let expected = 50.0 * (1.0 + 0.09 * 50.0.squareRoot())
-        #expect(abs(comp2.centDifference - expected) < 0.01)
+        #expect(abs(comp2.centDifference.magnitude - expected) < 0.01)
     }
 
     @Test("Weak spots use unsigned mean ranking")
@@ -72,7 +72,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         let fixedSettings36 = TrainingSettings(noteRangeMin: 36, noteRangeMax: 36)
         let comp1 = strategy.nextComparison(profile: profile, settings: fixedSettings36, lastComparison: nil)
         #expect(comp1.note1 == 36)
-        #expect(comp1.centDifference == 100.0)
+        #expect(comp1.centDifference.magnitude == 100.0)
 
         let completed1 = CompletedComparison(comparison: comp1, userAnsweredHigher: comp1.isSecondNoteHigher)
 
@@ -80,7 +80,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         let comp2 = strategy.nextComparison(profile: profile, settings: fixedSettings84, lastComparison: completed1)
 
         #expect(comp2.note1 == 84)
-        #expect(abs(comp2.centDifference - 20.0) < 0.01,
+        #expect(abs(comp2.centDifference.magnitude - 20.0) < 0.01,
             "Difficulty should narrow via Kazez formula after correct answer, even across a region jump. Got: \(comp2.centDifference)")
     }
 
@@ -104,8 +104,8 @@ struct AdaptiveNoteStrategyRegionalTests {
 
         let finalComp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: lastComp)
 
-        #expect(finalComp.centDifference < 10.0, "After 10 correct answers, difficulty should be below 10 cents. Got: \(finalComp.centDifference)")
-        #expect(finalComp.centDifference >= 1.0, "Difficulty should not go below minimum. Got: \(finalComp.centDifference)")
+        #expect(finalComp.centDifference.magnitude < 10.0, "After 10 correct answers, difficulty should be below 10 cents. Got: \(finalComp.centDifference.magnitude)")
+        #expect(finalComp.centDifference.magnitude >= 1.0, "Difficulty should not go below minimum. Got: \(finalComp.centDifference.magnitude)")
     }
 
     @Test("Per-note tracking: different notes have independent difficulties in isolated ranges")
@@ -125,8 +125,8 @@ struct AdaptiveNoteStrategyRegionalTests {
         let settings72 = TrainingSettings(noteRangeMin: 72, noteRangeMax: 72)
         let comp72 = strategy.nextComparison(profile: profile, settings: settings72, lastComparison: nil)
 
-        #expect(comp60.centDifference < 100.0, "Note 60 should have narrowed difficulty")
-        #expect(comp72.centDifference == 100.0, "Note 72 in isolated range should still be at default 100 cents")
+        #expect(comp60.centDifference.magnitude < 100.0, "Note 60 should have narrowed difficulty")
+        #expect(comp72.centDifference.magnitude == 100.0, "Note 72 in isolated range should still be at default 100 cents")
     }
 
     // MARK: - Weighted Effective Difficulty Tests
@@ -139,7 +139,7 @@ struct AdaptiveNoteStrategyRegionalTests {
 
         let comp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
 
-        #expect(comp.centDifference == 100.0, "No trained data -> default 100 cents")
+        #expect(comp.centDifference.magnitude == 100.0, "No trained data -> default 100 cents")
     }
 
     @Test("Weighted difficulty: current note only returns own difficulty")
@@ -153,7 +153,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         let settings = TrainingSettings(noteRangeMin: 60, noteRangeMax: 60)
         let comp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
 
-        #expect(comp.centDifference == 30.0, "Single trained note should return its own difficulty")
+        #expect(comp.centDifference.magnitude == 30.0, "Single trained note should return its own difficulty")
     }
 
     @Test("Weighted difficulty: untrained note uses neighbor data")
@@ -170,7 +170,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         for _ in 0..<200 {
             let comp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
             if comp.note1 == 60 {
-                note60Difficulty = comp.centDifference
+                note60Difficulty = comp.centDifference.magnitude
                 break
             }
         }
@@ -200,7 +200,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         for _ in 0..<200 {
             let comp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
             if comp.note1 == 60 {
-                note60Difficulty = comp.centDifference
+                note60Difficulty = comp.centDifference.magnitude
                 break
             }
         }
@@ -218,16 +218,16 @@ struct AdaptiveNoteStrategyRegionalTests {
         let strategy = AdaptiveNoteStrategy()
 
         for i in 52...59 {
-            profile.update(note: i, centOffset: 50.0, isCorrect: true)
-            profile.setDifficulty(note: i, difficulty: 50.0)
+            profile.update(note: MIDINote(i), centOffset: 50.0, isCorrect: true)
+            profile.setDifficulty(note: MIDINote(i), difficulty: 50.0)
         }
         profile.setDifficulty(note: 52, difficulty: 10.0)
 
         for i in 0...51 {
-            profile.update(note: i, centOffset: 1.0, isCorrect: true)
+            profile.update(note: MIDINote(i), centOffset: 1.0, isCorrect: true)
         }
         for i in 61...127 {
-            profile.update(note: i, centOffset: 1.0, isCorrect: true)
+            profile.update(note: MIDINote(i), centOffset: 1.0, isCorrect: true)
         }
 
         let settings = TrainingSettings(noteRangeMin: 52, noteRangeMax: 60)
@@ -236,7 +236,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         for _ in 0..<1000 {
             let comp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
             if comp.note1 == 60 {
-                note60Difficulty = comp.centDifference
+                note60Difficulty = comp.centDifference.magnitude
                 break
             }
         }
@@ -263,7 +263,7 @@ struct AdaptiveNoteStrategyRegionalTests {
         for _ in 0..<200 {
             let comp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
             if comp.note1 == 36 {
-                note36Difficulty = comp.centDifference
+                note36Difficulty = comp.centDifference.magnitude
                 break
             }
         }
@@ -300,6 +300,6 @@ struct AdaptiveNoteStrategyRegionalTests {
         }
 
         let finalComp = strategy.nextComparison(profile: profile, settings: settings, lastComparison: lastComparison)
-        #expect(finalComp.centDifference == 1.0, "After many correct answers, difficulty should hit minimum bound of 1.0")
+        #expect(finalComp.centDifference.magnitude == 1.0, "After many correct answers, difficulty should hit minimum bound of 1.0")
     }
 }

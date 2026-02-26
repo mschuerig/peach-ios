@@ -84,10 +84,10 @@ struct SummaryStatisticsView: View {
     /// Computes display statistics from the profile using per-note means
     /// Returns nil if no trained notes exist (cold start)
     static func computeStats(from profile: PerceptualProfile, midiRange: ClosedRange<Int>) -> Stats? {
-        let trainedNotes = midiRange.filter { profile.statsForNote($0).isTrained }
+        let trainedNotes = midiRange.filter { profile.statsForNote(MIDINote($0)).isTrained }
         guard !trainedNotes.isEmpty else { return nil }
 
-        let means = trainedNotes.map { profile.statsForNote($0).mean }
+        let means = trainedNotes.map { profile.statsForNote(MIDINote($0)).mean }
         let mean = means.reduce(0.0, +) / Double(means.count)
 
         let stdDev: Double?
@@ -144,7 +144,7 @@ struct SummaryStatisticsView: View {
             let p = PerceptualProfile()
             for note in stride(from: 36, through: 84, by: 3) {
                 let threshold = Double.random(in: 10...80)
-                p.update(note: note, centOffset: threshold, isCorrect: true)
+                p.update(note: MIDINote(note), centOffset: threshold, isCorrect: true)
             }
             return p
         }())

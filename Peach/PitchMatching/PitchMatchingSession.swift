@@ -40,7 +40,7 @@ final class PitchMatchingSession {
 
     private static let initialCentOffsetRange: ClosedRange<Double> = -100.0...100.0
 
-    private let velocity: UInt8 = 63
+    private let velocity: MIDIVelocity = 63
     private let feedbackDuration: TimeInterval = 0.4
 
     // MARK: - Initialization
@@ -82,7 +82,7 @@ final class PitchMatchingSession {
     func adjustFrequency(_ frequency: Double) {
         guard state == .playingTunable else { return }
         Task {
-            try? await currentHandle?.adjustFrequency(frequency)
+            try? await currentHandle?.adjustFrequency(Frequency(frequency))
         }
     }
 
@@ -146,8 +146,8 @@ final class PitchMatchingSession {
         if let override = settingsOverride { return override }
         let defaults = UserDefaults.standard
         return TrainingSettings(
-            noteRangeMin: defaults.object(forKey: SettingsKeys.noteRangeMin) as? Int ?? SettingsKeys.defaultNoteRangeMin,
-            noteRangeMax: defaults.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax,
+            noteRangeMin: MIDINote(defaults.object(forKey: SettingsKeys.noteRangeMin) as? Int ?? SettingsKeys.defaultNoteRangeMin),
+            noteRangeMax: MIDINote(defaults.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax),
             referencePitch: defaults.object(forKey: SettingsKeys.referencePitch) as? Double ?? SettingsKeys.defaultReferencePitch
         )
     }
@@ -159,9 +159,9 @@ final class PitchMatchingSession {
     // MARK: - Challenge Generation
 
     private func generateChallenge(settings: TrainingSettings) -> PitchMatchingChallenge {
-        let note = Int.random(in: settings.noteRangeMin...settings.noteRangeMax)
+        let note = MIDINote.random(in: settings.noteRangeMin...settings.noteRangeMax)
         let offset = Double.random(in: Self.initialCentOffsetRange)
-        return PitchMatchingChallenge(referenceNote: note, initialCentOffset: offset)
+        return PitchMatchingChallenge(referenceNote: note.rawValue, initialCentOffset: offset)
     }
 
     // MARK: - Training Loop
@@ -181,10 +181,10 @@ final class PitchMatchingSession {
 
             state = .playingReference
             try await notePlayer.play(
-                frequency: refFreq,
+                frequency: Frequency(refFreq),
                 duration: noteDuration,
                 velocity: velocity,
-                amplitudeDB: 0.0
+                amplitudeDB: AmplitudeDB(0.0)
             )
 
             guard state != .idle && !Task.isCancelled else { return }
@@ -197,9 +197,9 @@ final class PitchMatchingSession {
 
             state = .playingTunable
             let handle = try await notePlayer.play(
-                frequency: tunableFrequency,
+                frequency: Frequency(tunableFrequency),
                 velocity: velocity,
-                amplitudeDB: 0.0
+                amplitudeDB: AmplitudeDB(0.0)
             )
 
             guard state != .idle && !Task.isCancelled else {

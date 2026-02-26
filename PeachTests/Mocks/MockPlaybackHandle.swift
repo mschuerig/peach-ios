@@ -1,7 +1,6 @@
 import Foundation
 @testable import Peach
 
-/// Mock PlaybackHandle for testing note lifecycle management.
 final class MockPlaybackHandle: PlaybackHandle {
     // MARK: - Test State Tracking
 
@@ -22,10 +21,6 @@ final class MockPlaybackHandle: PlaybackHandle {
 
     // MARK: - PlaybackHandle Protocol
 
-    // Note: Unlike production SoundFontPlaybackHandle (which returns early on subsequent
-    // stop() calls via `guard !hasStopped`), the mock intentionally tracks ALL calls —
-    // including subsequent stops — so tests can verify call counts. The `hasStopped` flag
-    // gates error injection only, not the tracking behavior.
     private var hasStopped = false
 
     func stop() async throws {
@@ -39,10 +34,10 @@ final class MockPlaybackHandle: PlaybackHandle {
         hasStopped = true
     }
 
-    func adjustFrequency(_ frequency: Double) async throws {
+    func adjustFrequency(_ frequency: Frequency) async throws {
         adjustFrequencyCallCount += 1
-        lastAdjustedFrequency = frequency
-        adjustFrequencyHistory.append(frequency)
+        lastAdjustedFrequency = frequency.rawValue
+        adjustFrequencyHistory.append(frequency.rawValue)
         onAdjustFrequencyCalled?()
 
         if shouldThrowError {

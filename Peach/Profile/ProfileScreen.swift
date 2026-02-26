@@ -78,10 +78,10 @@ struct ProfileScreen: View {
             .environment(\.perceptualProfile, {
                 let p = PerceptualProfile()
                 for note in stride(from: 36, through: 84, by: 3) {
-                    p.update(note: note, centOffset: Double.random(in: 10...80), isCorrect: true)
+                    p.update(note: MIDINote(note), centOffset: Double.random(in: 10...80), isCorrect: true)
                 }
                 for note in [60, 62, 64, 67, 69] {
-                    p.updateMatching(note: note, centError: Double.random(in: 2...25))
+                    p.updateMatching(note: MIDINote(note), centError: Double.random(in: 2...25))
                 }
                 return p
             }())

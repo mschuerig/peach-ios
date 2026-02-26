@@ -1,7 +1,6 @@
 import Foundation
 @testable import Peach
 
-/// Mock ComparisonRecordStoring, ComparisonObserver, and PitchMatchingObserver for testing
 final class MockTrainingDataStore: ComparisonRecordStoring, ComparisonObserver, PitchMatchingObserver {
     // MARK: - Comparison Test State Tracking
 
@@ -74,9 +73,9 @@ final class MockTrainingDataStore: ComparisonRecordStoring, ComparisonObserver, 
     func comparisonCompleted(_ completed: CompletedComparison) {
         let comparison = completed.comparison
         let record = ComparisonRecord(
-            note1: comparison.note1,
-            note2: comparison.note2,
-            note2CentOffset: comparison.isSecondNoteHigher ? comparison.centDifference : -comparison.centDifference,
+            note1: comparison.note1.rawValue,
+            note2: comparison.note2.rawValue,
+            note2CentOffset: comparison.centDifference.rawValue,
             isCorrect: completed.isCorrect,
             timestamp: completed.timestamp
         )

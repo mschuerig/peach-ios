@@ -150,7 +150,7 @@ struct ComparisonSessionTests {
 
     @Test("Comparison.note1Frequency calculates valid frequency")
     func note1FrequencyCalculatesCorrectly() throws {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true)
+        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
 
         let freq = try comparison.note1Frequency()
 
@@ -159,7 +159,7 @@ struct ComparisonSessionTests {
 
     @Test("Comparison.note2Frequency applies cent offset higher")
     func note2FrequencyAppliesCentOffsetHigher() throws {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true)
+        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
 
         let freq1 = try comparison.note1Frequency()
         let freq2 = try comparison.note2Frequency()
@@ -172,7 +172,7 @@ struct ComparisonSessionTests {
 
     @Test("Comparison.note2Frequency applies cent offset lower")
     func note2FrequencyAppliesCentOffsetLower() throws {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: false)
+        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(-100.0))
 
         let freq1 = try comparison.note1Frequency()
         let freq2 = try comparison.note2Frequency()
@@ -182,8 +182,8 @@ struct ComparisonSessionTests {
 
     @Test("Comparison.isCorrect validates user answer correctly")
     func isCorrectValidatesAnswer() {
-        let comparisonHigher = Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true)
-        let comparisonLower = Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: false)
+        let comparisonHigher = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+        let comparisonLower = Comparison(note1: 60, note2: 60, centDifference: Cents(-100.0))
 
         #expect(comparisonHigher.isCorrect(userAnswerHigher: true) == true)
         #expect(comparisonHigher.isCorrect(userAnswerHigher: false) == false)

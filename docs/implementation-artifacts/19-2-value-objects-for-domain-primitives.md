@@ -1,6 +1,6 @@
 # Story 19.2: Value Objects for Domain Primitives
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -36,103 +36,103 @@ So that MIDI note ranges, cent values, frequencies, velocities, and amplitudes a
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create value type files (AC: #1, #2, #3, #4, #5)
-  - [ ] Create `Peach/Core/Audio/MIDINote.swift` — validated 0–127, `.name`, `.frequency()`, `.random(in:)`, Comparable, Hashable, Codable, ExpressibleByIntegerLiteral
-  - [ ] Create `Peach/Core/Audio/MIDIVelocity.swift` — validated 1–127, ExpressibleByIntegerLiteral
-  - [ ] Create `Peach/Core/Audio/Cents.swift` — signed Double wrapper, `.magnitude`, Comparable, ExpressibleByFloatLiteral + IntegerLiteral
-  - [ ] Create `Peach/Core/Audio/Frequency.swift` — positive Double, ExpressibleByFloatLiteral + IntegerLiteral
-  - [ ] Create `Peach/Core/Audio/AmplitudeDB.swift` — Float clamped to dB range, ExpressibleByFloatLiteral + IntegerLiteral
-  - [ ] All `init` methods marked `nonisolated` (required for ExpressibleByLiteral under default MainActor isolation)
-  - [ ] All `static let` range properties marked `nonisolated(unsafe)` (required despite SourceKit warning for Sendable types)
+- [x] Task 1: Create value type files (AC: #1, #2, #3, #4, #5)
+  - [x] Create `Peach/Core/Audio/MIDINote.swift` — validated 0–127, `.name`, `.frequency()`, `.random(in:)`, Comparable, Hashable, Codable, ExpressibleByIntegerLiteral
+  - [x] Create `Peach/Core/Audio/MIDIVelocity.swift` — validated 1–127, ExpressibleByIntegerLiteral
+  - [x] Create `Peach/Core/Audio/Cents.swift` — signed Double wrapper, `.magnitude`, Comparable, ExpressibleByFloatLiteral + IntegerLiteral
+  - [x] Create `Peach/Core/Audio/Frequency.swift` — positive Double, ExpressibleByFloatLiteral + IntegerLiteral
+  - [x] Create `Peach/Core/Audio/AmplitudeDB.swift` — Float clamped to dB range, ExpressibleByFloatLiteral + IntegerLiteral
+  - [x] All `init` methods marked `nonisolated` (required for ExpressibleByLiteral under default MainActor isolation)
+  - [x] All `static let` range properties marked `nonisolated(unsafe)` (required despite SourceKit warning for Sendable types)
 
-- [ ] Task 2: Update `Comparison` struct (AC: #7)
-  - [ ] Change `note1: Int` → `note1: MIDINote`
-  - [ ] Change `note2: Int` → `note2: MIDINote`
-  - [ ] Change `centDifference: Double` → `centDifference: Cents` (signed)
-  - [ ] Remove stored `isSecondNoteHigher: Bool`, replace with computed property: `var isSecondNoteHigher: Bool { centDifference.rawValue > 0 }`
-  - [ ] Update `note1Frequency` / `note2Frequency` to use `.rawValue` when calling FrequencyCalculation
+- [x] Task 2: Update `Comparison` struct (AC: #7)
+  - [x] Change `note1: Int` → `note1: MIDINote`
+  - [x] Change `note2: Int` → `note2: MIDINote`
+  - [x] Change `centDifference: Double` → `centDifference: Cents` (signed)
+  - [x] Remove stored `isSecondNoteHigher: Bool`, replace with computed property: `var isSecondNoteHigher: Bool { centDifference.rawValue > 0 }`
+  - [x] Update `note1Frequency` / `note2Frequency` to use `.rawValue` when calling FrequencyCalculation
 
-- [ ] Task 3: Update `NotePlayer` protocol and implementations (AC: #6)
-  - [ ] `NotePlayer.play(frequency:velocity:amplitudeDB:)` → takes `Frequency`, `MIDIVelocity`, `AmplitudeDB`
-  - [ ] `NotePlayer.play(frequency:duration:velocity:amplitudeDB:)` → same type changes
-  - [ ] `PlaybackHandle.adjustFrequency(_:)` → takes `Frequency`
-  - [ ] `SoundFontNotePlayer` — extract `.rawValue` before passing to AVAudioUnitSampler
-  - [ ] `SoundFontPlaybackHandle` — extract `.rawValue` before passing to FrequencyCalculation
+- [x] Task 3: Update `NotePlayer` protocol and implementations (AC: #6)
+  - [x] `NotePlayer.play(frequency:velocity:amplitudeDB:)` → takes `Frequency`, `MIDIVelocity`, `AmplitudeDB`
+  - [x] `NotePlayer.play(frequency:duration:velocity:amplitudeDB:)` → same type changes
+  - [x] `PlaybackHandle.adjustFrequency(_:)` → takes `Frequency`
+  - [x] `SoundFontNotePlayer` — extract `.rawValue` before passing to AVAudioUnitSampler
+  - [x] `SoundFontPlaybackHandle` — extract `.rawValue` before passing to FrequencyCalculation
 
-- [ ] Task 4: Update `FrequencyCalculation` (AC: #6)
-  - [ ] Keep internal math using raw `Double`/`Int` — callers wrap/unwrap at boundaries
-  - [ ] OR update signatures to accept/return Value Objects (design decision — see Dev Notes)
+- [x] Task 4: Update `FrequencyCalculation` (AC: #6)
+  - [x] Keep internal math using raw `Double`/`Int` — callers wrap/unwrap at boundaries
+  - [x] OR update signatures to accept/return Value Objects (design decision — see Dev Notes)
 
-- [ ] Task 5: Update profile protocols and `PerceptualProfile` (AC: #6)
-  - [ ] `PitchDiscriminationProfile.update(note:centOffset:isCorrect:)` — `note: MIDINote`
-  - [ ] `PitchDiscriminationProfile.setDifficulty(note:difficulty:)` — `note: MIDINote`
-  - [ ] `PitchDiscriminationProfile.weakSpots()` → returns `[MIDINote]`
-  - [ ] `PitchDiscriminationProfile.statsForNote(_:)` — takes `MIDINote`
-  - [ ] `PitchMatchingProfile.updateMatching(note:centError:)` — `note: MIDINote`
-  - [ ] `PerceptualProfile` implementation — use `.rawValue` for internal array indexing
+- [x] Task 5: Update profile protocols and `PerceptualProfile` (AC: #6)
+  - [x] `PitchDiscriminationProfile.update(note:centOffset:isCorrect:)` — `note: MIDINote`
+  - [x] `PitchDiscriminationProfile.setDifficulty(note:difficulty:)` — `note: MIDINote`
+  - [x] `PitchDiscriminationProfile.weakSpots()` → returns `[MIDINote]`
+  - [x] `PitchDiscriminationProfile.statsForNote(_:)` — takes `MIDINote`
+  - [x] `PitchMatchingProfile.updateMatching(note:centError:)` — `note: MIDINote`
+  - [x] `PerceptualProfile` implementation — use `.rawValue` for internal array indexing
 
-- [ ] Task 6: Update `TrainingSettings` and strategies (AC: #8)
-  - [ ] `TrainingSettings.noteRangeMin/Max` → `MIDINote`
-  - [ ] `TrainingSettings.minCentDifference/maxCentDifference` → `Cents`
-  - [ ] `KazezNoteStrategy` — produce signed `Cents` with random direction
-  - [ ] `AdaptiveNoteStrategy` — produce signed `Cents` with random direction
-  - [ ] Ensure `CompletedComparison` uses the new types
+- [x] Task 6: Update `TrainingSettings` and strategies (AC: #8)
+  - [x] `TrainingSettings.noteRangeMin/Max` → `MIDINote`
+  - [x] `TrainingSettings.minCentDifference/maxCentDifference` → `Cents`
+  - [x] `KazezNoteStrategy` — produce signed `Cents` with random direction
+  - [x] `AdaptiveNoteStrategy` — produce signed `Cents` with random direction
+  - [x] Ensure `CompletedComparison` uses the new types
 
-- [ ] Task 7: Update `ComparisonSession` (AC: #6, #8)
-  - [ ] Wrap `Frequency(...)` when calling `comparison.note1Frequency()`
-  - [ ] Use `MIDIVelocity` for velocity constant
-  - [ ] Use `AmplitudeDB` for amplitude calculations
-  - [ ] Update `currentSettings` to construct `MIDINote` from UserDefaults Int values
+- [x] Task 7: Update `ComparisonSession` (AC: #6, #8)
+  - [x] Wrap `Frequency(...)` when calling `comparison.note1Frequency()`
+  - [x] Use `MIDIVelocity` for velocity constant
+  - [x] Use `AmplitudeDB` for amplitude calculations
+  - [x] Update `currentSettings` to construct `MIDINote` from UserDefaults Int values
 
-- [ ] Task 8: Update `PitchMatchingSession` (AC: #6)
-  - [ ] Use `MIDINote.random(in:)` for challenge generation
-  - [ ] Wrap `Frequency(...)` when calling FrequencyCalculation
-  - [ ] Use `MIDIVelocity` and `AmplitudeDB` for playback calls
+- [x] Task 8: Update `PitchMatchingSession` (AC: #6)
+  - [x] Use `MIDINote.random(in:)` for challenge generation
+  - [x] Wrap `Frequency(...)` when calling FrequencyCalculation
+  - [x] Use `MIDIVelocity` and `AmplitudeDB` for playback calls
 
-- [ ] Task 9: Update data store boundary (AC: #9)
-  - [ ] `TrainingDataStore.comparisonCompleted()` — extract `.rawValue` from Value Objects before writing to `ComparisonRecord`
-  - [ ] `TrainingDataStore.pitchMatchingCompleted()` — extract `.rawValue` before writing to `PitchMatchingRecord`
-  - [ ] `PeachApp.swift` profile loading — wrap `MIDINote(record.note1)` when reading from records
-  - [ ] `ComparisonRecord` and `PitchMatchingRecord` — NO changes to @Model stored properties
+- [x] Task 9: Update data store boundary (AC: #9)
+  - [x] `TrainingDataStore.comparisonCompleted()` — extract `.rawValue` from Value Objects before writing to `ComparisonRecord`
+  - [x] `TrainingDataStore.pitchMatchingCompleted()` — extract `.rawValue` before writing to `PitchMatchingRecord`
+  - [x] `PeachApp.swift` profile loading — wrap `MIDINote(record.note1)` when reading from records
+  - [x] `ComparisonRecord` and `PitchMatchingRecord` — NO changes to @Model stored properties
 
-- [ ] Task 10: Update observers (AC: #6)
-  - [ ] `TrendAnalyzer.comparisonCompleted()` — use `.centDifference.magnitude` for unsigned threshold
-  - [ ] `ThresholdTimeline.comparisonCompleted()` — use `.centDifference.magnitude` and `.note1.rawValue`
-  - [ ] `HapticFeedbackManager` — if it references comparison types
+- [x] Task 10: Update observers (AC: #6)
+  - [x] `TrendAnalyzer.comparisonCompleted()` — use `.centDifference.magnitude` for unsigned threshold
+  - [x] `ThresholdTimeline.comparisonCompleted()` — use `.centDifference.magnitude` and `.note1.rawValue`
+  - [x] `HapticFeedbackManager` — if it references comparison types
 
-- [ ] Task 11: Update view files (AC: #6)
-  - [ ] `ComparisonScreen.swift` — update preview mock NotePlayer signatures
-  - [ ] `PitchMatchingScreen.swift` — update preview mock NotePlayer signatures
-  - [ ] `ProfileScreen.swift` — use `MIDINote(note)` in preview data population
-  - [ ] `SummaryStatisticsView.swift` — use `MIDINote($0)` in `computeStats`
-  - [ ] `PianoKeyboardView.swift` — wrap MIDI range values if needed
+- [x] Task 11: Update view files (AC: #6)
+  - [x] `ComparisonScreen.swift` — update preview mock NotePlayer signatures
+  - [x] `PitchMatchingScreen.swift` — update preview mock NotePlayer signatures
+  - [x] `ProfileScreen.swift` — use `MIDINote(note)` in preview data population
+  - [x] `SummaryStatisticsView.swift` — use `MIDINote($0)` in `computeStats`
+  - [x] `PianoKeyboardView.swift` — wrap MIDI range values if needed
 
-- [ ] Task 12: Update all test mocks (AC: #11)
-  - [ ] `MockNotePlayer` — update `play()` signature to accept Value Objects, store `.rawValue` internally
-  - [ ] `MockNextComparisonStrategy` — default Comparison uses `MIDINote` and `Cents`
-  - [ ] `MockTrainingDataStore` — extract `.rawValue` for stored records
-  - [ ] `MockPitchMatchingProfile` — `updateMatching(note: MIDINote, ...)`
-  - [ ] `ComparisonTestHelpers` — default comparisons use signed `Cents`
+- [x] Task 12: Update all test mocks (AC: #11)
+  - [x] `MockNotePlayer` — update `play()` signature to accept Value Objects, store `.rawValue` internally
+  - [x] `MockNextComparisonStrategy` — default Comparison uses `MIDINote` and `Cents`
+  - [x] `MockTrainingDataStore` — extract `.rawValue` for stored records
+  - [x] `MockPitchMatchingProfile` — `updateMatching(note: MIDINote, ...)`
+  - [x] `ComparisonTestHelpers` — default comparisons use signed `Cents`
 
-- [ ] Task 13: Update all test files (AC: #11)
-  - [ ] Replace `isSecondNoteHigher: true/false` with signed `Cents(100.0)` / `Cents(-100.0)`
-  - [ ] Replace `.centDifference` comparisons with `.centDifference.magnitude` where unsigned value expected
-  - [ ] Replace `.note1 >= X` with `.note1.rawValue >= X` for range checks
-  - [ ] Wrap loop variables: `for note in 0..<128 { profile.update(note: MIDINote(note), ...) }`
-  - [ ] Integer literals in `Comparison(note1: 60, ...)` work via `ExpressibleByIntegerLiteral` — no wrapping needed
-  - [ ] Test `UserDefaults` comparisons: `.noteRangeMin.rawValue == SettingsKeys.defaultNoteRangeMin`
+- [x] Task 13: Update all test files (AC: #11)
+  - [x] Replace `isSecondNoteHigher: true/false` with signed `Cents(100.0)` / `Cents(-100.0)`
+  - [x] Replace `.centDifference` comparisons with `.centDifference.magnitude` where unsigned value expected
+  - [x] Replace `.note1 >= X` with `.note1.rawValue >= X` for range checks
+  - [x] Wrap loop variables: `for note in 0..<128 { profile.update(note: MIDINote(note), ...) }`
+  - [x] Integer literals in `Comparison(note1: 60, ...)` work via `ExpressibleByIntegerLiteral` — no wrapping needed
+  - [x] Test `UserDefaults` comparisons: `.noteRangeMin.rawValue == SettingsKeys.defaultNoteRangeMin`
 
-- [ ] Task 14: Write Value Object unit tests (AC: #10)
-  - [ ] Create `PeachTests/Core/Audio/MIDINoteTests.swift`
-  - [ ] Create `PeachTests/Core/Audio/CentsTests.swift`
-  - [ ] Create `PeachTests/Core/Audio/FrequencyTests.swift`
-  - [ ] Create `PeachTests/Core/Audio/MIDIVelocityTests.swift`
-  - [ ] Create `PeachTests/Core/Audio/AmplitudeDBTests.swift`
+- [x] Task 14: Write Value Object unit tests (AC: #10)
+  - [x] Create `PeachTests/Core/Audio/MIDINoteTests.swift`
+  - [x] Create `PeachTests/Core/Audio/CentsTests.swift`
+  - [x] Create `PeachTests/Core/Audio/FrequencyTests.swift`
+  - [x] Create `PeachTests/Core/Audio/MIDIVelocityTests.swift`
+  - [x] Create `PeachTests/Core/Audio/AmplitudeDBTests.swift`
 
-- [ ] Task 15: Run full test suite and verify (AC: #11)
-  - [ ] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All existing tests pass plus new Value Object tests
-  - [ ] Zero regressions
+- [x] Task 15: Run full test suite and verify (AC: #11)
+  - [x] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All existing tests pass plus new Value Object tests
+  - [x] Zero regressions
 
 ## Dev Notes
 
@@ -284,13 +284,98 @@ Commit message: `Implement story 19.2: Value Objects for domain primitives`
 ## Change Log
 
 - 2026-02-26: Story created by BMAD create-story workflow from Epic 19 code review plan.
+- 2026-02-26: Implementation complete — 5 value objects created, 40+ files updated, all tests pass. Removed dead `AudioError.invalidVelocity`/`invalidAmplitude` enum cases and 4 obsolete runtime validation tests now handled by value object constructors.
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+- Session 1: Tasks 1-12 (value types, protocol updates, session/strategy updates, view updates, mock updates)
+- Session 2 (continuation): Tasks 13-15 (test file updates, value object unit tests, full test suite verification)
+- Key debug issues resolved:
+  - iPhone 16 simulator not found — switched to iPhone 17
+  - `ExtensionOnlyNotePlayer` in NotePlayerConvenienceTests had old raw-type signature — updated to value objects
+  - Missing `import Foundation` in MIDINoteTests for JSONEncoder/JSONDecoder
+  - `for note in 0..<128` loop variable (Int) cannot implicitly convert to MIDINote — wrapped with `MIDINote(note)`
+  - `MIDIVelocity(0)` precondition crash in SoundFontNotePlayerTests — removed tests for invalid velocity/amplitude values now enforced by value object constructors
+  - Removed dead `AudioError.invalidVelocity` and `AudioError.invalidAmplitude` enum cases
 
 ### Completion Notes List
 
+- Created 5 domain-specific value objects: MIDINote, MIDIVelocity, Cents, Frequency, AmplitudeDB
+- All value types use `nonisolated init` for ExpressibleByLiteral conformance under Swift 6.2 MainActor isolation
+- All `static let` range properties use `nonisolated(unsafe)` as required by the compiler
+- `Comparison.centDifference` is now signed Cents (positive = second note higher), `isSecondNoteHigher` is computed
+- Strategies produce random sign direction (50/50 chance), test assertions use `.centDifference.magnitude`
+- SwiftData @Model types (ComparisonRecord, PitchMatchingRecord) unchanged — conversion at boundaries via `.rawValue`/`MIDINote()`
+- FrequencyCalculation keeps raw signatures — callers wrap/unwrap at boundaries
+- Removed `AudioError.invalidVelocity` and `AudioError.invalidAmplitude` (validation now in value object constructors)
+- Removed 4 SoundFontNotePlayerTests that tested runtime validation now handled by type-level validation
+- Full test suite passes with zero regressions
+
 ### File List
+
+**New value object files (5):**
+- Peach/Core/Audio/MIDINote.swift
+- Peach/Core/Audio/MIDIVelocity.swift
+- Peach/Core/Audio/Cents.swift
+- Peach/Core/Audio/Frequency.swift
+- Peach/Core/Audio/AmplitudeDB.swift
+
+**New test files (5):**
+- PeachTests/Core/Audio/MIDINoteTests.swift
+- PeachTests/Core/Audio/CentsTests.swift
+- PeachTests/Core/Audio/FrequencyTests.swift
+- PeachTests/Core/Audio/MIDIVelocityTests.swift
+- PeachTests/Core/Audio/AmplitudeDBTests.swift
+
+**Modified production files (19):**
+- Peach/Core/Audio/NotePlayer.swift
+- Peach/Core/Audio/PlaybackHandle.swift
+- Peach/Core/Audio/SoundFontNotePlayer.swift
+- Peach/Core/Audio/SoundFontPlaybackHandle.swift
+- Peach/Comparison/Comparison.swift
+- Peach/Comparison/ComparisonSession.swift
+- Peach/Core/Algorithm/NextComparisonStrategy.swift
+- Peach/Core/Algorithm/KazezNoteStrategy.swift
+- Peach/Core/Algorithm/AdaptiveNoteStrategy.swift
+- Peach/Core/Profile/PerceptualProfile.swift
+- Peach/Core/Profile/PitchDiscriminationProfile.swift
+- Peach/Core/Profile/PitchMatchingProfile.swift
+- Peach/Core/Profile/TrendAnalyzer.swift
+- Peach/Core/Profile/ThresholdTimeline.swift
+- Peach/PitchMatching/PitchMatchingSession.swift
+- Peach/Core/Data/TrainingDataStore.swift
+- Peach/App/PeachApp.swift
+- Peach/Comparison/ComparisonScreen.swift
+- Peach/PitchMatching/PitchMatchingScreen.swift
+- Peach/Profile/ProfileScreen.swift
+- Peach/Profile/SummaryStatisticsView.swift
+
+**Modified test/mock files (20):**
+- PeachTests/Comparison/ComparisonSessionTests.swift
+- PeachTests/Comparison/ComparisonSessionDifficultyTests.swift
+- PeachTests/Comparison/ComparisonSessionLoudnessTests.swift
+- PeachTests/Comparison/ComparisonSessionResetTests.swift
+- PeachTests/Comparison/ComparisonSessionIntegrationTests.swift
+- PeachTests/Comparison/ComparisonSessionUserDefaultsTests.swift
+- PeachTests/Comparison/MockNextComparisonStrategy.swift
+- PeachTests/Comparison/MockNotePlayer.swift
+- PeachTests/Comparison/MockTrainingDataStore.swift
+- PeachTests/Comparison/ComparisonTestHelpers.swift
+- PeachTests/Mocks/MockPlaybackHandle.swift
+- PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift
+- PeachTests/Core/Algorithm/AdaptiveNoteStrategyTests.swift
+- PeachTests/Core/Algorithm/AdaptiveNoteStrategyRegionalTests.swift
+- PeachTests/Core/Profile/PerceptualProfileTests.swift
+- PeachTests/Core/Profile/ThresholdTimelineTests.swift
+- PeachTests/Profile/TrendAnalyzerTests.swift
+- PeachTests/Core/Audio/FrequencyCalculationTests.swift
+- PeachTests/Core/Audio/NotePlayerConvenienceTests.swift
+- PeachTests/Core/Audio/SoundFontNotePlayerTests.swift
+- PeachTests/Settings/SettingsTests.swift
+- PeachTests/PitchMatching/MockPitchMatchingProfile.swift

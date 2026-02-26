@@ -324,8 +324,7 @@ struct ThresholdTimelineTests {
         let comparison = Comparison(
             note1: 60,
             note2: 60,
-            centDifference: 25.0,
-            isSecondNoteHigher: true
+            centDifference: Cents(25.0)
         )
         let completed = CompletedComparison(
             comparison: comparison,
@@ -350,8 +349,7 @@ struct ThresholdTimelineTests {
         let comparison = Comparison(
             note1: 64,
             note2: 64,
-            centDifference: 20.0,
-            isSecondNoteHigher: false
+            centDifference: Cents(-20.0)
         )
         let completed = CompletedComparison(
             comparison: comparison,

@@ -13,8 +13,8 @@ struct SettingsTests {
         let trainingDefaults = TrainingSettings()
 
         #expect(SettingsKeys.defaultNaturalVsMechanical == trainingDefaults.naturalVsMechanical)
-        #expect(SettingsKeys.defaultNoteRangeMin == trainingDefaults.noteRangeMin)
-        #expect(SettingsKeys.defaultNoteRangeMax == trainingDefaults.noteRangeMax)
+        #expect(SettingsKeys.defaultNoteRangeMin == trainingDefaults.noteRangeMin.rawValue)
+        #expect(SettingsKeys.defaultNoteRangeMax == trainingDefaults.noteRangeMax.rawValue)
         #expect(SettingsKeys.defaultReferencePitch == trainingDefaults.referencePitch)
     }
 

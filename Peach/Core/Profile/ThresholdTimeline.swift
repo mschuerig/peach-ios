@@ -113,9 +113,9 @@ extension ThresholdTimeline: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
         dataPoints.append(TimelineDataPoint(
             timestamp: completed.timestamp,
-            centDifference: completed.comparison.centDifference,
+            centDifference: completed.comparison.centDifference.magnitude,
             isCorrect: completed.isCorrect,
-            note1: completed.comparison.note1
+            note1: completed.comparison.note1.rawValue
         ))
         recomputeAggregatedPoints()
     }

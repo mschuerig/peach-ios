@@ -37,14 +37,14 @@ struct PeachApp: App {
             let existingRecords = try dataStore.fetchAllComparisons()
             for record in existingRecords {
                 profile.update(
-                    note: record.note1,
+                    note: MIDINote(record.note1),
                     centOffset: abs(record.note2CentOffset),
                     isCorrect: record.isCorrect
                 )
             }
             let pitchMatchingRecords = try dataStore.fetchAllPitchMatchings()
             for record in pitchMatchingRecords {
-                profile.updateMatching(note: record.referenceNote, centError: record.userCentError)
+                profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
             }
             let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
             Self.logger.info("Profile loaded from \(existingRecords.count) comparison + \(pitchMatchingRecords.count) matching records in \(elapsed, format: .fixed(precision: 1))ms")

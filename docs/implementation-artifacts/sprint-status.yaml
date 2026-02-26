@@ -164,7 +164,7 @@ development_status:
   # Epic 19: Code Review Refactoring
   epic-19: in-progress
   19-1-clamping-utility-and-magic-value-constants: done
-  19-2-value-objects-for-domain-primitives: ready-for-dev
+  19-2-value-objects-for-domain-primitives: review
   19-3-usersettings-wrapper-for-userdefaults: ready-for-dev
   19-4-extract-long-methods: ready-for-dev
   19-5-trainingsession-protocol-and-dependency-cleanup: ready-for-dev

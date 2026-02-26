@@ -22,7 +22,7 @@ struct AdaptiveNoteStrategyTests {
 
         #expect(comparison.note1 >= 0 && comparison.note1 <= 127)
         #expect(comparison.note2 >= 0 && comparison.note2 <= 127)
-        #expect(comparison.centDifference > 0)
+        #expect(comparison.centDifference.magnitude > 0)
     }
 
     // MARK: - Difficulty Determination Tests
@@ -40,7 +40,7 @@ struct AdaptiveNoteStrategyTests {
         )
 
         #expect(comparison.note1 == 60)
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     @Test("Difficulty respects floor from settings")
@@ -63,7 +63,7 @@ struct AdaptiveNoteStrategyTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference == 1.0)
+        #expect(comparison.centDifference.magnitude == 1.0)
     }
 
     @Test("Difficulty respects ceiling from settings")
@@ -86,7 +86,7 @@ struct AdaptiveNoteStrategyTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     // MARK: - Weak Spot Targeting Tests
@@ -114,7 +114,7 @@ struct AdaptiveNoteStrategyTests {
                 settings: settings,
                 lastComparison: nil
             )
-            selectedNotes.insert(comparison.note1)
+            selectedNotes.insert(comparison.note1.rawValue)
         }
 
         let weakSpotSelections = selectedNotes.intersection([60, 62, 64])
@@ -126,7 +126,7 @@ struct AdaptiveNoteStrategyTests {
         let profile = PerceptualProfile()
 
         for note in 0..<128 {
-            profile.update(note: note, centOffset: 50, isCorrect: true)
+            profile.update(note: MIDINote(note), centOffset: 50, isCorrect: true)
         }
 
         let strategy = AdaptiveNoteStrategy()
@@ -137,7 +137,7 @@ struct AdaptiveNoteStrategyTests {
         )
 
         let lastComparison = CompletedComparison(
-            comparison: Comparison(note1: 48, note2: 48, centDifference: 50, isSecondNoteHigher: true),
+            comparison: Comparison(note1: 48, note2: 48, centDifference: Cents(50.0)),
             userAnsweredHigher: true
         )
 
@@ -148,7 +148,7 @@ struct AdaptiveNoteStrategyTests {
                 settings: settings,
                 lastComparison: lastComparison
             )
-            selectedNotes.insert(comparison.note1)
+            selectedNotes.insert(comparison.note1.rawValue)
         }
 
         let nearbyRange = 36...60
@@ -177,7 +177,7 @@ struct AdaptiveNoteStrategyTests {
                 settings: settings,
                 lastComparison: nil
             )
-            selectedNotes.insert(comparison.note1)
+            selectedNotes.insert(comparison.note1.rawValue)
         }
 
         let weakSpotRange = 59...65
@@ -192,7 +192,7 @@ struct AdaptiveNoteStrategyTests {
         let profile = PerceptualProfile()
 
         for note in [30, 60, 90] {
-            profile.update(note: note, centOffset: 80, isCorrect: true)
+            profile.update(note: MIDINote(note), centOffset: 80, isCorrect: true)
         }
 
         let strategy = AdaptiveNoteStrategy()
@@ -245,8 +245,8 @@ struct AdaptiveNoteStrategyTests {
 
         #expect(comparison.note1 >= 0 && comparison.note1 <= 127)
         #expect(comparison.note2 == comparison.note1)
-        #expect(comparison.centDifference > 0)
-        #expect(comparison.centDifference <= 100.0)
+        #expect(comparison.centDifference.magnitude > 0)
+        #expect(comparison.centDifference.magnitude <= 100.0)
     }
 
     @Test("Stateless strategy produces consistent results with same inputs")
@@ -265,7 +265,7 @@ struct AdaptiveNoteStrategyTests {
         #expect(comparison1.note1 == 60)
         #expect(comparison2.note1 == 60)
 
-        #expect(comparison1.centDifference == 42.0)
-        #expect(comparison2.centDifference == 42.0)
+        #expect(comparison1.centDifference.magnitude == 42.0)
+        #expect(comparison2.centDifference.magnitude == 42.0)
     }
 }

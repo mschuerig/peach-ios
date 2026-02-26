@@ -131,8 +131,7 @@ struct TrendAnalyzerTests {
         let comparison = Comparison(
             note1: 60,
             note2: 60,
-            centDifference: 30.0,
-            isSecondNoteHigher: true
+            centDifference: Cents(30.0)
         )
         let completed = CompletedComparison(
             comparison: comparison,

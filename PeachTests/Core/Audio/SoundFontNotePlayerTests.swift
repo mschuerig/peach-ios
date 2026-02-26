@@ -96,30 +96,8 @@ struct SoundFontNotePlayerTests {
     }
 
     // MARK: - Velocity Validation
-
-    @Test("Velocity 0 is rejected with invalidVelocity error")
-    func velocity0_rejected() async throws {
-        let player = try SoundFontNotePlayer()
-        let error = await #expect(throws: AudioError.self) {
-            try await player.play(frequency: 440.0, duration: 0.1, velocity: 0, amplitudeDB: 0.0)
-        }
-        guard case .invalidVelocity = error else {
-            Issue.record("Expected invalidVelocity but got \(String(describing: error))")
-            return
-        }
-    }
-
-    @Test("Velocity 128 is rejected with invalidVelocity error")
-    func velocity128_rejected() async throws {
-        let player = try SoundFontNotePlayer()
-        let error = await #expect(throws: AudioError.self) {
-            try await player.play(frequency: 440.0, duration: 0.1, velocity: 128, amplitudeDB: 0.0)
-        }
-        guard case .invalidVelocity = error else {
-            Issue.record("Expected invalidVelocity but got \(String(describing: error))")
-            return
-        }
-    }
+    // Note: Invalid velocity values (0, 128) are now caught at compile/construction time
+    // by the MIDIVelocity value object. See MIDIVelocityTests for coverage.
 
     @Test("Velocity 127 is accepted")
     func velocity127_accepted() async throws {
@@ -165,29 +143,8 @@ struct SoundFontNotePlayerTests {
         try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 12.0)
     }
 
-    @Test("amplitudeDB below minimum (-91.0) rejected with invalidAmplitude")
-    func amplitudeDB_belowMinimum_rejected() async throws {
-        let player = try SoundFontNotePlayer()
-        let error = await #expect(throws: AudioError.self) {
-            try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: -91.0)
-        }
-        guard case .invalidAmplitude = error else {
-            Issue.record("Expected invalidAmplitude but got \(String(describing: error))")
-            return
-        }
-    }
-
-    @Test("amplitudeDB above maximum (13.0) rejected with invalidAmplitude")
-    func amplitudeDB_aboveMaximum_rejected() async throws {
-        let player = try SoundFontNotePlayer()
-        let error = await #expect(throws: AudioError.self) {
-            try await player.play(frequency: 440.0, duration: 0.1, velocity: 63, amplitudeDB: 13.0)
-        }
-        guard case .invalidAmplitude = error else {
-            Issue.record("Expected invalidAmplitude but got \(String(describing: error))")
-            return
-        }
-    }
+    // Note: Out-of-range amplitude values (-91.0, 13.0) are now silently clamped
+    // by the AmplitudeDB value object. See AmplitudeDBTests for coverage.
 
     // MARK: - Preset Switching
 

@@ -1,7 +1,6 @@
 import Foundation
 @testable import Peach
 
-/// Mock NotePlayer for testing ComparisonSession
 final class MockNotePlayer: NotePlayer {
     // MARK: - Test State Tracking
 
@@ -22,26 +21,18 @@ final class MockNotePlayer: NotePlayer {
 
     // MARK: - Test Control (Fully Synchronous)
 
-    /// If true, play() completes instantly without any delays (default: true for deterministic tests)
     var instantPlayback: Bool = true
-
-    /// Simulated playback duration in seconds (only used if instantPlayback = false)
     var simulatedPlaybackDuration: TimeInterval = 0.01
-
-    /// Callback invoked when play() is called (before any delays)
-    /// Allows tests to synchronously respond to play events
     var onPlayCalled: (() -> Void)?
-
-    /// Callback invoked when stop() is called
     var onStopAllCalled: (() -> Void)?
 
     // MARK: - NotePlayer Protocol (Primary — returns handle)
 
-    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
+    func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         playCallCount += 1
-        lastFrequency = frequency
-        lastVelocity = velocity
-        lastAmplitudeDB = amplitudeDB
+        lastFrequency = frequency.rawValue
+        lastVelocity = velocity.rawValue
+        lastAmplitudeDB = amplitudeDB.rawValue
 
         onPlayCalled?()
 
@@ -57,9 +48,9 @@ final class MockNotePlayer: NotePlayer {
 
     // MARK: - NotePlayer Protocol (Convenience — fixed-duration with instantPlayback)
 
-    func play(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float) async throws {
+    func play(frequency: Frequency, duration: TimeInterval, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws {
         lastDuration = duration
-        playHistory.append((frequency: frequency, duration: duration, velocity: velocity, amplitudeDB: amplitudeDB))
+        playHistory.append((frequency: frequency.rawValue, duration: duration, velocity: velocity.rawValue, amplitudeDB: amplitudeDB.rawValue))
 
         let handle = try await play(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
 

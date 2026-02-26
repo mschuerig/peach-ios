@@ -20,7 +20,7 @@ struct KazezNoteStrategyTests {
 
         #expect(comparison.note1 >= settings.noteRangeMin && comparison.note1 <= settings.noteRangeMax)
         #expect(comparison.note2 == comparison.note1)
-        #expect(comparison.centDifference > 0)
+        #expect(comparison.centDifference.magnitude > 0)
     }
 
     // MARK: - First Comparison
@@ -36,7 +36,7 @@ struct KazezNoteStrategyTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     @Test("First comparison respects custom maxCentDifference")
@@ -50,7 +50,7 @@ struct KazezNoteStrategyTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference == 50.0)
+        #expect(comparison.centDifference.magnitude == 50.0)
     }
 
     // MARK: - Kazez Correct Formula: N = P × [1 - (0.05 × √P)]
@@ -120,7 +120,7 @@ struct KazezNoteStrategyTests {
             lastComparison: last
         )
 
-        #expect(comparison.centDifference == 5.0)
+        #expect(comparison.centDifference.magnitude == 5.0)
     }
 
     @Test("Ceiling clamping: result never above maxCentDifference")
@@ -137,7 +137,7 @@ struct KazezNoteStrategyTests {
             lastComparison: last
         )
 
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     // MARK: - Note Range
@@ -186,7 +186,7 @@ struct KazezNoteStrategyTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     @Test("Cold start with trained profile uses overallMean")
@@ -208,8 +208,8 @@ struct KazezNoteStrategyTests {
 
         // overallMean should be used, not maxCentDifference
         let expectedMean = try #require(profile.overallMean)
-        #expect(comparison.centDifference == expectedMean)
-        #expect(comparison.centDifference != 100.0)
+        #expect(comparison.centDifference.magnitude == expectedMean)
+        #expect(comparison.centDifference.magnitude != 100.0)
     }
 
     @Test("Cold start with profile clamps to minCentDifference")
@@ -228,7 +228,7 @@ struct KazezNoteStrategyTests {
         )
 
         // overallMean (0.05) should be clamped to minCentDifference (1.0)
-        #expect(comparison.centDifference >= settings.minCentDifference)
+        #expect(comparison.centDifference.magnitude >= settings.minCentDifference.rawValue)
     }
 
     @Test("Cold start with profile clamps to maxCentDifference")
@@ -247,7 +247,7 @@ struct KazezNoteStrategyTests {
         )
 
         // overallMean (200.0) should be clamped to maxCentDifference (100.0)
-        #expect(comparison.centDifference <= settings.maxCentDifference)
+        #expect(comparison.centDifference.magnitude <= settings.maxCentDifference.rawValue)
     }
 
     // MARK: - Convergence
@@ -263,7 +263,7 @@ struct KazezNoteStrategyTests {
             settings: settings,
             lastComparison: nil
         )
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
 
         // Simulate 10 consecutive correct answers
         for _ in 0..<10 {
@@ -279,8 +279,8 @@ struct KazezNoteStrategyTests {
         }
 
         // After 10 correct answers, should be in the ~4-6 cent range
-        #expect(comparison.centDifference < 7.0)
-        #expect(comparison.centDifference > 2.0)
+        #expect(comparison.centDifference.magnitude < 7.0)
+        #expect(comparison.centDifference.magnitude > 2.0)
     }
 
     @Test("Recovery after incorrect answer at low difficulty")
@@ -297,8 +297,8 @@ struct KazezNoteStrategyTests {
         )
 
         // N = 5 × [1 + 0.09×√5] ≈ 5 × 1.201 ≈ 6.0
-        #expect(comparison.centDifference > 5.0)
-        #expect(comparison.centDifference < 7.0)
+        #expect(comparison.centDifference.magnitude > 5.0)
+        #expect(comparison.centDifference.magnitude < 7.0)
     }
 
     // MARK: - Helpers
@@ -311,7 +311,7 @@ struct KazezNoteStrategyTests {
             profile: PerceptualProfile(),
             settings: settings,
             lastComparison: last
-        ).centDifference
+        ).centDifference.magnitude
     }
 
     private func nextAfterIncorrect(p: Double) -> Double {
@@ -322,19 +322,18 @@ struct KazezNoteStrategyTests {
             profile: PerceptualProfile(),
             settings: settings,
             lastComparison: last
-        ).centDifference
+        ).centDifference.magnitude
     }
 
     private func makeCompleted(centDifference: Double, correct: Bool) -> CompletedComparison {
         let comp = Comparison(
             note1: 60,
             note2: 60,
-            centDifference: centDifference,
-            isSecondNoteHigher: true
+            centDifference: Cents(centDifference)
         )
         return CompletedComparison(
             comparison: comp,
-            userAnsweredHigher: correct // isSecondNoteHigher is true, so correct = higher
+            userAnsweredHigher: correct // isSecondNoteHigher is true (positive cents), so correct = higher
         )
     }
 }

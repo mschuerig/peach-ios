@@ -164,7 +164,7 @@ struct PerceptualProfileTests {
         // Train ALL notes to avoid untrained notes being in weak spots
         for note in 0..<128 {
             let threshold: Double = (note == 60) ? 80.0 : (note == 62) ? 10.0 : 30.0
-            profile.update(note: note, centOffset: threshold, isCorrect: true)
+            profile.update(note: MIDINote(note), centOffset: threshold, isCorrect: true)
         }
 
         let weakSpots = profile.weakSpots(count: 5)

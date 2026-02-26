@@ -90,7 +90,7 @@ struct ComparisonSessionUserDefaultsTests {
         let mockDataStore = MockTrainingDataStore()
         let profile = PerceptualProfile()
         let mockStrategy = MockNextComparisonStrategy(comparisons: [
-            Comparison(note1: 69, note2: 69, centDifference: 100.0, isSecondNoteHigher: true)
+            Comparison(note1: 69, note2: 69, centDifference: Cents(100.0))
         ])
 
         UserDefaults.standard.set(432.0, forKey: SettingsKeys.referencePitch)
@@ -156,8 +156,8 @@ struct ComparisonSessionUserDefaultsTests {
         let mockDataStore = MockTrainingDataStore()
         let profile = PerceptualProfile()
         let mockStrategy = MockNextComparisonStrategy(comparisons: [
-            Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: true),
-            Comparison(note1: 62, note2: 62, centDifference: 95.0, isSecondNoteHigher: false)
+            Comparison(note1: 60, note2: 60, centDifference: Cents(100.0)),
+            Comparison(note1: 62, note2: 62, centDifference: Cents(-95.0))
         ])
 
         let session = ComparisonSession(
@@ -170,7 +170,7 @@ struct ComparisonSessionUserDefaultsTests {
         session.startTraining()
         try await waitForState(session, .awaitingAnswer)
 
-        #expect(mockStrategy.lastReceivedSettings?.noteRangeMin == SettingsKeys.defaultNoteRangeMin)
+        #expect(mockStrategy.lastReceivedSettings?.noteRangeMin.rawValue == SettingsKeys.defaultNoteRangeMin)
         #expect(mockStrategy.lastReceivedSettings?.naturalVsMechanical == SettingsKeys.defaultNaturalVsMechanical)
 
         UserDefaults.standard.set(50, forKey: SettingsKeys.noteRangeMin)

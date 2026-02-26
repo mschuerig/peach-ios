@@ -9,9 +9,9 @@ final class MockPitchMatchingProfile: PitchMatchingProfile {
     var matchingSampleCount: Int = 0
     var resetMatchingCallCount = 0
 
-    func updateMatching(note: Int, centError: Double) {
+    func updateMatching(note: MIDINote, centError: Double) {
         updateMatchingCallCount += 1
-        lastNote = note
+        lastNote = note.rawValue
         lastCentError = centError
     }
 

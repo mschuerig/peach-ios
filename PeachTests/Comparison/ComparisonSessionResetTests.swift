@@ -32,7 +32,7 @@ struct ComparisonSessionResetTests {
 
         // Verify cold start for all notes
         for note in 0..<128 {
-            #expect(profile.statsForNote(note).currentDifficulty == 100.0)
+            #expect(profile.statsForNote(MIDINote(note)).currentDifficulty == 100.0)
         }
         #expect(profile.statsForNote(60).sampleCount == 0)
         #expect(profile.statsForNote(62).sampleCount == 0)
@@ -63,7 +63,7 @@ struct ComparisonSessionResetTests {
             settings: TrainingSettings(),
             lastComparison: nil
         )
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     @Test("after reset, weightedEffectiveDifficulty returns default with no trained neighbors")
@@ -80,8 +80,8 @@ struct ComparisonSessionResetTests {
 
         // Set up trained neighbors across a range
         for note in 55...65 {
-            profile.setDifficulty(note: note, difficulty: 30.0)
-            profile.update(note: note, centOffset: 30.0, isCorrect: true)
+            profile.setDifficulty(note: MIDINote(note), difficulty: 30.0)
+            profile.update(note: MIDINote(note), centOffset: 30.0, isCorrect: true)
         }
 
         // Reset via ComparisonSession
@@ -93,7 +93,7 @@ struct ComparisonSessionResetTests {
             settings: TrainingSettings(),
             lastComparison: nil
         )
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
     }
 
     // MARK: - TrendAnalyzer Reset

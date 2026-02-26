@@ -86,7 +86,7 @@ struct NotePlayerConvenienceTests {
 private final class ExtensionOnlyNotePlayer: NotePlayer {
     var playCallCount = 0
 
-    func play(frequency: Double, velocity: UInt8, amplitudeDB: Float) async throws -> PlaybackHandle {
+    func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         playCallCount += 1
         return MockPlaybackHandle()
     }

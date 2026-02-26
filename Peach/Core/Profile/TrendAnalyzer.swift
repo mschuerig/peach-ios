@@ -81,7 +81,7 @@ final class TrendAnalyzer {
 
 extension TrendAnalyzer: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
-        absOffsets.append(completed.comparison.centDifference)
+        absOffsets.append(completed.comparison.centDifference.magnitude)
         recompute()
     }
 }

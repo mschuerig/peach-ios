@@ -1,10 +1,6 @@
 import AVFoundation
 import Foundation
 
-/// A `PlaybackHandle` implementation that wraps a MIDI note playing on an `AVAudioUnitSampler`.
-///
-/// Created by `SoundFontNotePlayer` when a note is started. The handle owns the note's
-/// lifecycle: calling `stop()` sends MIDI noteOff, and `adjustFrequency()` applies pitch bend.
 final class SoundFontPlaybackHandle: PlaybackHandle {
 
     // MARK: - State
@@ -31,23 +27,25 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         sampler.sendPitchBend(SoundFontNotePlayer.pitchBendCenter, onChannel: channel)
     }
 
-    func adjustFrequency(_ frequency: Double) async throws {
+    func adjustFrequency(_ frequency: Frequency) async throws {
         guard !hasStopped else { return }
 
-        guard SoundFontNotePlayer.validFrequencyRange.contains(frequency) else {
+        let freq = frequency.rawValue
+
+        guard SoundFontNotePlayer.validFrequencyRange.contains(freq) else {
             throw AudioError.invalidFrequency(
-                "Frequency \(frequency) Hz is outside valid range \(SoundFontNotePlayer.validFrequencyRange)"
+                "Frequency \(freq) Hz is outside valid range \(SoundFontNotePlayer.validFrequencyRange)"
             )
         }
 
-        let conversion = FrequencyCalculation.midiNoteAndCents(frequency: frequency)
+        let conversion = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         let targetMidi = Double(conversion.midiNote) + conversion.cents / 100.0
         let baseMidi = Double(midiNote)
         let centDifference = (targetMidi - baseMidi) * 100.0
 
         guard abs(centDifference) <= 200.0 else {
             throw AudioError.invalidFrequency(
-                "Target frequency \(frequency) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote), exceeding ±200 cent pitch bend range"
+                "Target frequency \(freq) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote), exceeding ±200 cent pitch bend range"
             )
         }
 

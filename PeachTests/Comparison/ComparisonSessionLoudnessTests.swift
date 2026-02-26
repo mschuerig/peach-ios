@@ -39,7 +39,7 @@ struct ComparisonSessionLoudnessTests {
     @Test("Note2 amplitude varies across multiple comparisons at full slider")
     func fullVariationProducesVariation() async throws {
         let comparisons = (0..<10).map { i in
-            Comparison(note1: 60, note2: 60, centDifference: 100.0, isSecondNoteHigher: i % 2 == 0)
+            Comparison(note1: 60, note2: 60, centDifference: Cents(i % 2 == 0 ? 100.0 : -100.0))
         }
         let f = makeComparisonSession(comparisons: comparisons, varyLoudnessOverride: 1.0)
 

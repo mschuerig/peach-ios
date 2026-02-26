@@ -195,7 +195,7 @@ struct ComparisonSessionIntegrationTests {
 
         // Loading uses abs() on stored signed note2CentOffset for unsigned threshold
         for record in records {
-            profile.update(note: record.note1, centOffset: abs(record.note2CentOffset), isCorrect: record.isCorrect)
+            profile.update(note: MIDINote(record.note1), centOffset: abs(record.note2CentOffset), isCorrect: record.isCorrect)
         }
 
         let stats60 = profile.statsForNote(60)
@@ -220,7 +220,7 @@ struct ComparisonSessionIntegrationTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference == 100.0)
+        #expect(comparison.centDifference.magnitude == 100.0)
         #expect(comparison.note1 >= 36 && comparison.note1 <= 84)
     }
 }
