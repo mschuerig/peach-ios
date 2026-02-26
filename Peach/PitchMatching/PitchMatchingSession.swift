@@ -161,7 +161,7 @@ final class PitchMatchingSession {
     private func generateChallenge(settings: TrainingSettings) -> PitchMatchingChallenge {
         let note = MIDINote.random(in: settings.noteRangeMin...settings.noteRangeMax)
         let offset = Double.random(in: Self.initialCentOffsetRange)
-        return PitchMatchingChallenge(referenceNote: note.rawValue, initialCentOffset: offset)
+        return PitchMatchingChallenge(referenceNote: note, initialCentOffset: offset)
     }
 
     // MARK: - Training Loop
@@ -174,7 +174,7 @@ final class PitchMatchingSession {
 
         do {
             let refFreq = try FrequencyCalculation.frequency(
-                midiNote: challenge.referenceNote,
+                midiNote: challenge.referenceNote.rawValue,
                 referencePitch: settings.referencePitch
             )
             self.referenceFrequency = refFreq
@@ -190,7 +190,7 @@ final class PitchMatchingSession {
             guard state != .idle && !Task.isCancelled else { return }
 
             let tunableFrequency = try FrequencyCalculation.frequency(
-                midiNote: challenge.referenceNote,
+                midiNote: challenge.referenceNote.rawValue,
                 cents: challenge.initialCentOffset,
                 referencePitch: settings.referencePitch
             )

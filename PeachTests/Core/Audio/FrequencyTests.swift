@@ -7,13 +7,13 @@ struct FrequencyTests {
     // MARK: - Valid Construction
 
     @Test("Stores positive value")
-    func positiveValue() {
+    func positiveValue() async {
         let freq = Frequency(440.0)
         #expect(freq.rawValue == 440.0)
     }
 
     @Test("Stores small positive value")
-    func smallPositiveValue() {
+    func smallPositiveValue() async {
         let freq = Frequency(0.001)
         #expect(freq.rawValue == 0.001)
     }
@@ -21,7 +21,7 @@ struct FrequencyTests {
     // MARK: - ExpressibleByFloatLiteral
 
     @Test("Float literal creates Frequency")
-    func floatLiteral() {
+    func floatLiteral() async {
         let freq: Frequency = 440.0
         #expect(freq.rawValue == 440.0)
     }
@@ -29,7 +29,7 @@ struct FrequencyTests {
     // MARK: - ExpressibleByIntegerLiteral
 
     @Test("Integer literal creates Frequency")
-    func integerLiteral() {
+    func integerLiteral() async {
         let freq: Frequency = 440
         #expect(freq.rawValue == 440.0)
     }
@@ -37,7 +37,7 @@ struct FrequencyTests {
     // MARK: - Comparable
 
     @Test("Lower frequency is less than higher")
-    func comparable() {
+    func comparable() async {
         #expect(Frequency(220.0) < Frequency(440.0))
         #expect(Frequency(440.0) == Frequency(440.0))
         #expect(Frequency(880.0) > Frequency(440.0))
@@ -46,7 +46,7 @@ struct FrequencyTests {
     // MARK: - Hashable
 
     @Test("Equal frequencies have same hash")
-    func hashable() {
+    func hashable() async {
         let set: Set<Frequency> = [Frequency(440.0), Frequency(440.0), Frequency(880.0)]
         #expect(set.count == 2)
     }

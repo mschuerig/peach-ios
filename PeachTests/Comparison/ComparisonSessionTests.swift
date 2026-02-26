@@ -154,7 +154,7 @@ struct ComparisonSessionTests {
 
         let freq = try comparison.note1Frequency()
 
-        #expect(freq >= 260 && freq <= 263)
+        #expect(freq.rawValue >= 260 && freq.rawValue <= 263)
     }
 
     @Test("Comparison.note2Frequency applies cent offset higher")
@@ -166,7 +166,7 @@ struct ComparisonSessionTests {
 
         #expect(freq2 > freq1)
 
-        let ratio = freq2 / freq1
+        let ratio = freq2.rawValue / freq1.rawValue
         #expect(ratio >= 1.05 && ratio <= 1.07)
     }
 

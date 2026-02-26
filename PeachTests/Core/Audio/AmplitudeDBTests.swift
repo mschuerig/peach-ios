@@ -7,13 +7,13 @@ struct AmplitudeDBTests {
     // MARK: - Valid Construction
 
     @Test("Stores value within range")
-    func withinRange() {
+    func withinRange() async {
         let amp = AmplitudeDB(0.0)
         #expect(amp.rawValue == 0.0)
     }
 
     @Test("Stores boundary values")
-    func boundaryValues() {
+    func boundaryValues() async {
         let low = AmplitudeDB(-90.0)
         let high = AmplitudeDB(12.0)
 
@@ -24,13 +24,13 @@ struct AmplitudeDBTests {
     // MARK: - Clamping
 
     @Test("Clamps value above maximum to 12.0")
-    func clampsAboveMax() {
+    func clampsAboveMax() async {
         let amp = AmplitudeDB(20.0)
         #expect(amp.rawValue == 12.0)
     }
 
     @Test("Clamps value below minimum to -90.0")
-    func clampsBelowMin() {
+    func clampsBelowMin() async {
         let amp = AmplitudeDB(-100.0)
         #expect(amp.rawValue == -90.0)
     }
@@ -38,7 +38,7 @@ struct AmplitudeDBTests {
     // MARK: - ExpressibleByFloatLiteral
 
     @Test("Float literal creates AmplitudeDB")
-    func floatLiteral() {
+    func floatLiteral() async {
         let amp: AmplitudeDB = -3.0
         #expect(amp.rawValue == -3.0)
     }
@@ -46,7 +46,7 @@ struct AmplitudeDBTests {
     // MARK: - ExpressibleByIntegerLiteral
 
     @Test("Integer literal creates AmplitudeDB")
-    func integerLiteral() {
+    func integerLiteral() async {
         let amp: AmplitudeDB = 0
         #expect(amp.rawValue == 0.0)
     }
@@ -54,7 +54,7 @@ struct AmplitudeDBTests {
     // MARK: - Hashable
 
     @Test("Equal amplitudes have same hash")
-    func hashable() {
+    func hashable() async {
         let set: Set<AmplitudeDB> = [AmplitudeDB(0.0), AmplitudeDB(0.0), AmplitudeDB(-3.0)]
         #expect(set.count == 2)
     }

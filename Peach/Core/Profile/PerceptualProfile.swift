@@ -187,6 +187,6 @@ extension PerceptualProfile: ComparisonObserver {
 
 extension PerceptualProfile: PitchMatchingObserver {
     func pitchMatchingCompleted(_ result: CompletedPitchMatching) {
-        updateMatching(note: MIDINote(result.referenceNote), centError: result.userCentError)
+        updateMatching(note: result.referenceNote, centError: result.userCentError)
     }
 }

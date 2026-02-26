@@ -1,11 +1,11 @@
 import Foundation
 
 struct MIDINote: Hashable, Comparable, Codable, Sendable {
-    nonisolated(unsafe) static let validRange = 0...127
+    static let validRange = 0...127
 
     let rawValue: Int
 
-    nonisolated init(_ rawValue: Int) {
+    init(_ rawValue: Int) {
         precondition(Self.validRange.contains(rawValue), "MIDI note must be 0-127, got \(rawValue)")
         self.rawValue = rawValue
     }
@@ -32,7 +32,7 @@ struct MIDINote: Hashable, Comparable, Codable, Sendable {
 
     // MARK: - Comparable
 
-    nonisolated static func < (lhs: MIDINote, rhs: MIDINote) -> Bool {
+    static func < (lhs: MIDINote, rhs: MIDINote) -> Bool {
         lhs.rawValue < rhs.rawValue
     }
 }
@@ -40,7 +40,7 @@ struct MIDINote: Hashable, Comparable, Codable, Sendable {
 // MARK: - ExpressibleByIntegerLiteral
 
 extension MIDINote: ExpressibleByIntegerLiteral {
-    nonisolated init(integerLiteral value: Int) {
+    init(integerLiteral value: Int) {
         self.init(value)
     }
 }

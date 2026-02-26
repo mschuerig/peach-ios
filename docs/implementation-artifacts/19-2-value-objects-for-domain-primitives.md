@@ -1,6 +1,6 @@
 # Story 19.2: Value Objects for Domain Primitives
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -285,6 +285,7 @@ Commit message: `Implement story 19.2: Value Objects for domain primitives`
 
 - 2026-02-26: Story created by BMAD create-story workflow from Epic 19 code review plan.
 - 2026-02-26: Implementation complete — 5 value objects created, 40+ files updated, all tests pass. Removed dead `AudioError.invalidVelocity`/`invalidAmplitude` enum cases and 4 obsolete runtime validation tests now handled by value object constructors.
+- 2026-02-27: Code review fixes — removed all unnecessary `nonisolated`/`nonisolated(unsafe)` from value types (Sendable structs don't need them), deduplicated note naming (PianoKeyboardLayout delegates to MIDINote.name), changed Comparison frequency methods to return `Frequency`, upgraded `PitchMatchingChallenge`/`CompletedPitchMatching` to use `MIDINote`, added `Comparable` to `MIDIVelocity` and `AmplitudeDB`, added `async` to all value object test functions, fixed File List count (19→21). Removed `amplitudeDBRange` constant from 19.1 (subsumed by `AmplitudeDB.validRange`).
 
 ## Dev Agent Record
 
@@ -333,7 +334,7 @@ Claude Opus 4.6
 - PeachTests/Core/Audio/MIDIVelocityTests.swift
 - PeachTests/Core/Audio/AmplitudeDBTests.swift
 
-**Modified production files (19):**
+**Modified production files (21):**
 - Peach/Core/Audio/NotePlayer.swift
 - Peach/Core/Audio/PlaybackHandle.swift
 - Peach/Core/Audio/SoundFontNotePlayer.swift
@@ -379,3 +380,9 @@ Claude Opus 4.6
 - PeachTests/Core/Audio/SoundFontNotePlayerTests.swift
 - PeachTests/Settings/SettingsTests.swift
 - PeachTests/PitchMatching/MockPitchMatchingProfile.swift
+- PeachTests/PitchMatching/PitchMatchingSessionTests.swift
+
+**Additional files modified in code review:**
+- Peach/PitchMatching/PitchMatchingChallenge.swift (referenceNote: Int → MIDINote)
+- Peach/PitchMatching/CompletedPitchMatching.swift (referenceNote: Int → MIDINote)
+- Peach/Profile/PianoKeyboardView.swift (noteName delegates to MIDINote.name)

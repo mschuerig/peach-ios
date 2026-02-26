@@ -7,7 +7,7 @@ struct MIDIVelocityTests {
     // MARK: - Valid Construction
 
     @Test("Creates valid velocity at boundaries")
-    func validBoundaries() {
+    func validBoundaries() async {
         let low = MIDIVelocity(1)
         let high = MIDIVelocity(127)
         let mid = MIDIVelocity(63)
@@ -20,7 +20,7 @@ struct MIDIVelocityTests {
     // MARK: - ExpressibleByIntegerLiteral
 
     @Test("Integer literal creates MIDIVelocity")
-    func integerLiteral() {
+    func integerLiteral() async {
         let velocity: MIDIVelocity = 63
         #expect(velocity.rawValue == 63)
     }
@@ -28,7 +28,7 @@ struct MIDIVelocityTests {
     // MARK: - Hashable
 
     @Test("Equal velocities have same hash")
-    func hashable() {
+    func hashable() async {
         let set: Set<MIDIVelocity> = [MIDIVelocity(63), MIDIVelocity(63), MIDIVelocity(100)]
         #expect(set.count == 2)
     }

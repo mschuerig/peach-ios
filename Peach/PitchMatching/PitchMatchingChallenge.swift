@@ -1,4 +1,4 @@
 struct PitchMatchingChallenge {
-    let referenceNote: Int
+    let referenceNote: MIDINote
     let initialCentOffset: Double
 }

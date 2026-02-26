@@ -101,7 +101,7 @@ final class TrainingDataStore {
 extension TrainingDataStore: PitchMatchingObserver {
     func pitchMatchingCompleted(_ result: CompletedPitchMatching) {
         let record = PitchMatchingRecord(
-            referenceNote: result.referenceNote,
+            referenceNote: result.referenceNote.rawValue,
             initialCentOffset: result.initialCentOffset,
             userCentError: result.userCentError,
             timestamp: result.timestamp

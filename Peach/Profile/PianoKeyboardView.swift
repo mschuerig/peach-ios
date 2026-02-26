@@ -17,10 +17,7 @@ struct PianoKeyboardLayout {
 
     /// Note name for a MIDI note (only meaningful at octave boundaries for display)
     static func noteName(midiNote: Int) -> String {
-        let noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-        let pitchClass = midiNote % 12
-        let octave = (midiNote / 12) - 1
-        return "\(noteNames[pitchClass])\(octave)"
+        MIDINote(midiNote).name
     }
 
     /// Whether a MIDI note is an octave boundary (C note)

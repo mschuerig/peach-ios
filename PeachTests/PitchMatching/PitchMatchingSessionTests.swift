@@ -135,7 +135,7 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         let expectedTunableFreq = try FrequencyCalculation.frequency(
-            midiNote: challenge.referenceNote,
+            midiNote: challenge.referenceNote.rawValue,
             cents: challenge.initialCentOffset,
             referencePitch: 440.0
         )

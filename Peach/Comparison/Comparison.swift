@@ -9,12 +9,12 @@ struct Comparison {
         centDifference.rawValue > 0
     }
 
-    func note1Frequency(referencePitch: Double = 440.0) throws -> Double {
-        return try FrequencyCalculation.frequency(midiNote: note1.rawValue, referencePitch: referencePitch)
+    func note1Frequency(referencePitch: Double = 440.0) throws -> Frequency {
+        Frequency(try FrequencyCalculation.frequency(midiNote: note1.rawValue, referencePitch: referencePitch))
     }
 
-    func note2Frequency(referencePitch: Double = 440.0) throws -> Double {
-        return try FrequencyCalculation.frequency(midiNote: note2.rawValue, cents: centDifference.rawValue, referencePitch: referencePitch)
+    func note2Frequency(referencePitch: Double = 440.0) throws -> Frequency {
+        Frequency(try FrequencyCalculation.frequency(midiNote: note2.rawValue, cents: centDifference.rawValue, referencePitch: referencePitch))
     }
 
     func isCorrect(userAnswerHigher: Bool) -> Bool {

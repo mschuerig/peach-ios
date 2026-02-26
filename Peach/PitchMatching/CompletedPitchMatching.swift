@@ -1,12 +1,12 @@
 import Foundation
 
 struct CompletedPitchMatching {
-    let referenceNote: Int
+    let referenceNote: MIDINote
     let initialCentOffset: Double
     let userCentError: Double
     let timestamp: Date
 
-    init(referenceNote: Int, initialCentOffset: Double, userCentError: Double, timestamp: Date = Date()) {
+    init(referenceNote: MIDINote, initialCentOffset: Double, userCentError: Double, timestamp: Date = Date()) {
         self.referenceNote = referenceNote
         self.initialCentOffset = initialCentOffset
         self.userCentError = userCentError

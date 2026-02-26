@@ -248,10 +248,10 @@ final class ComparisonSession {
         do {
             let freq1 = try comparison.note1Frequency(referencePitch: settings.referencePitch)
             let freq2 = try comparison.note2Frequency(referencePitch: settings.referencePitch)
-            logger.info("Comparison: note1=\(comparison.note1.rawValue) \(freq1)Hz @0.0dB, note2 \(freq2)Hz @\(note2AmplitudeDB.rawValue)dB, centDiff=\(comparison.centDifference.rawValue), higher=\(comparison.isSecondNoteHigher)")
+            logger.info("Comparison: note1=\(comparison.note1.rawValue) \(freq1.rawValue)Hz @0.0dB, note2 \(freq2.rawValue)Hz @\(note2AmplitudeDB.rawValue)dB, centDiff=\(comparison.centDifference.rawValue), higher=\(comparison.isSecondNoteHigher)")
 
             state = .playingNote1
-            try await notePlayer.play(frequency: Frequency(freq1), duration: noteDuration, velocity: velocity, amplitudeDB: AmplitudeDB(0.0))
+            try await notePlayer.play(frequency: freq1, duration: noteDuration, velocity: velocity, amplitudeDB: AmplitudeDB(0.0))
 
             guard state != .idle && !Task.isCancelled else {
                 logger.info("Training stopped during note 1, aborting comparison")
@@ -259,7 +259,7 @@ final class ComparisonSession {
             }
 
             state = .playingNote2
-            try await notePlayer.play(frequency: Frequency(freq2), duration: noteDuration, velocity: velocity, amplitudeDB: note2AmplitudeDB)
+            try await notePlayer.play(frequency: freq2, duration: noteDuration, velocity: velocity, amplitudeDB: note2AmplitudeDB)
 
             guard state != .idle && !Task.isCancelled else {
                 logger.info("Training stopped during note 2, aborting comparison")
