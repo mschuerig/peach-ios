@@ -1,6 +1,8 @@
 import Foundation
 import Observation
 import os
+import AVFoundation
+import UIKit
 
 enum PitchMatchingSessionState {
     case idle
@@ -25,11 +27,11 @@ final class PitchMatchingSession {
     // MARK: - Dependencies
 
     private let notePlayer: NotePlayer
-    private let profile: PitchMatchingProfile // Used in future adaptive challenge generation
+    private let profile: PitchMatchingProfile
     private let observers: [PitchMatchingObserver]
     private let settingsOverride: TrainingSettings?
     private let noteDurationOverride: TimeInterval?
-    private let notificationCenter: NotificationCenter // Used in story 15.2 for interruption handling
+    private let notificationCenter: NotificationCenter
 
     // MARK: - Internal State
 
@@ -37,6 +39,12 @@ final class PitchMatchingSession {
     private var referenceFrequency: Double?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
+
+    // MARK: - Notification Observers
+
+    private var audioInterruptionObserver: NSObjectProtocol?
+    private var audioRouteChangeObserver: NSObjectProtocol?
+    private var backgroundObserver: NSObjectProtocol?
 
     private let velocity: UInt8 = 63
     private let feedbackDuration: TimeInterval = 0.4
@@ -57,6 +65,20 @@ final class PitchMatchingSession {
         self.settingsOverride = settingsOverride
         self.noteDurationOverride = noteDurationOverride
         self.notificationCenter = notificationCenter
+
+        setupAudioInterruptionObservers()
+    }
+
+    isolated deinit {
+        if let observer = audioInterruptionObserver {
+            notificationCenter.removeObserver(observer)
+        }
+        if let observer = audioRouteChangeObserver {
+            notificationCenter.removeObserver(observer)
+        }
+        if let observer = backgroundObserver {
+            notificationCenter.removeObserver(observer)
+        }
     }
 
     // MARK: - Public API
@@ -111,6 +133,9 @@ final class PitchMatchingSession {
 
     func stop() {
         guard state != .idle else { return }
+        Task {
+            try? await notePlayer.stopAll()
+        }
         trainingTask?.cancel()
         trainingTask = nil
         feedbackTask?.cancel()
@@ -118,10 +143,83 @@ final class PitchMatchingSession {
         let handleToStop = currentHandle
         currentHandle = nil
         referenceFrequency = nil
+        currentChallenge = nil
         Task {
             try? await handleToStop?.stop()
         }
         state = .idle
+    }
+
+    // MARK: - Audio Interruption Handling
+
+    private func setupAudioInterruptionObservers() {
+        audioInterruptionObserver = notificationCenter.addObserver(
+            forName: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] notification in
+            let typeValue = notification.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
+            Task { @MainActor [weak self] in
+                self?.handleAudioInterruption(typeValue: typeValue)
+            }
+        }
+
+        audioRouteChangeObserver = notificationCenter.addObserver(
+            forName: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance(),
+            queue: .main
+        ) { [weak self] notification in
+            let reasonValue = notification.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
+            Task { @MainActor [weak self] in
+                self?.handleAudioRouteChange(reasonValue: reasonValue)
+            }
+        }
+
+        backgroundObserver = notificationCenter.addObserver(
+            forName: UIApplication.didEnterBackgroundNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.stop()
+            }
+        }
+    }
+
+    private func handleAudioInterruption(typeValue: UInt?) {
+        guard let typeValue = typeValue,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
+            logger.warning("Audio interruption notification received but could not parse type")
+            return
+        }
+
+        switch type {
+        case .began:
+            logger.info("Audio interruption began - stopping session")
+            stop()
+        case .ended:
+            logger.info("Audio interruption ended - session remains stopped")
+        @unknown default:
+            logger.warning("Unknown audio interruption type: \(typeValue)")
+        }
+    }
+
+    private func handleAudioRouteChange(reasonValue: UInt?) {
+        guard let reasonValue = reasonValue,
+              let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
+            logger.warning("Audio route change notification received but could not parse reason")
+            return
+        }
+
+        switch reason {
+        case .oldDeviceUnavailable:
+            logger.info("Audio device disconnected - stopping session")
+            stop()
+        case .newDeviceAvailable, .categoryChange, .override, .wakeFromSleep, .noSuitableRouteForCategory, .routeConfigurationChange, .unknown:
+            logger.info("Audio route changed (reason: \(reason.rawValue)) - continuing")
+        @unknown default:
+            logger.warning("Unknown audio route change reason: \(reasonValue)")
+        }
     }
 
     // MARK: - Configuration

@@ -1,6 +1,6 @@
 # Story 15.2: PitchMatchingSession Interruption and Lifecycle Handling
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -32,41 +32,41 @@ So that my training data is never corrupted and the app behaves predictably when
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Enhance stop() method (AC: #1, #2, #3, #4)
-  - [ ] 1.1 Add `notePlayer.stopAll()` call to `stop()` — stops reference note audio when no handle exists (mirrors `ComparisonSession.stop()`)
-  - [ ] 1.2 Clear `currentChallenge` in `stop()` for clean state on restart
-  - [ ] 1.3 Write tests: stop from `playingReference` stops audio and transitions to idle, stop from `playingTunable` stops handle and transitions to idle, stop from `showingFeedback` cancels feedback timer and transitions to idle, stop from `idle` is no-op, stop does not notify observers
-  - [ ] 1.4 Verify existing stop test still passes
+- [x] Task 1: Enhance stop() method (AC: #1, #2, #3, #4)
+  - [x] 1.1 Add `notePlayer.stopAll()` call to `stop()` — stops reference note audio when no handle exists (mirrors `ComparisonSession.stop()`)
+  - [x] 1.2 Clear `currentChallenge` in `stop()` for clean state on restart
+  - [x] 1.3 Write tests: stop from `playingReference` stops audio and transitions to idle, stop from `playingTunable` stops handle and transitions to idle, stop from `showingFeedback` cancels feedback timer and transitions to idle, stop from `idle` is no-op, stop does not notify observers
+  - [x] 1.4 Verify existing stop test still passes
 
-- [ ] Task 2: Add audio interruption observers (AC: #6, #7)
-  - [ ] 2.1 Add `import AVFoundation` to PitchMatchingSession.swift
-  - [ ] 2.2 Add `audioInterruptionObserver: NSObjectProtocol?` and `audioRouteChangeObserver: NSObjectProtocol?` properties
-  - [ ] 2.3 Implement `setupAudioInterruptionObservers()` — register observers for `AVAudioSession.interruptionNotification` and `AVAudioSession.routeChangeNotification` (exact same pattern as `ComparisonSession`)
-  - [ ] 2.4 Implement `handleAudioInterruption(typeValue:)` — `.began` → stop(), `.ended` → no-op (log only)
-  - [ ] 2.5 Implement `handleAudioRouteChange(reasonValue:)` — `.oldDeviceUnavailable` → stop(), all others → log and continue
-  - [ ] 2.6 Call `setupAudioInterruptionObservers()` from `init`
-  - [ ] 2.7 Write tests: interruption began stops from playingTunable, interruption ended does not restart, nil type handled gracefully, interruption on idle is safe, route change oldDeviceUnavailable stops, non-stop route changes continue, route change on idle is safe
+- [x] Task 2: Add audio interruption observers (AC: #6, #7)
+  - [x] 2.1 Add `import AVFoundation` to PitchMatchingSession.swift
+  - [x] 2.2 Add `audioInterruptionObserver: NSObjectProtocol?` and `audioRouteChangeObserver: NSObjectProtocol?` properties
+  - [x] 2.3 Implement `setupAudioInterruptionObservers()` — register observers for `AVAudioSession.interruptionNotification` and `AVAudioSession.routeChangeNotification` (exact same pattern as `ComparisonSession`)
+  - [x] 2.4 Implement `handleAudioInterruption(typeValue:)` — `.began` → stop(), `.ended` → no-op (log only)
+  - [x] 2.5 Implement `handleAudioRouteChange(reasonValue:)` — `.oldDeviceUnavailable` → stop(), all others → log and continue
+  - [x] 2.6 Call `setupAudioInterruptionObservers()` from `init`
+  - [x] 2.7 Write tests: interruption began stops from playingTunable, interruption ended does not restart, nil type handled gracefully, interruption on idle is safe, route change oldDeviceUnavailable stops, non-stop route changes continue, route change on idle is safe
 
-- [ ] Task 3: Add app background notification observer (AC: #5)
-  - [ ] 3.1 Add `import UIKit` (for `UIApplication.didEnterBackgroundNotification`)
-  - [ ] 3.2 Add `backgroundObserver: NSObjectProtocol?` property
-  - [ ] 3.3 Register observer for `UIApplication.didEnterBackgroundNotification` in `setupAudioInterruptionObservers()` — calls `stop()` on receive
-  - [ ] 3.4 Write tests: background notification stops from playingTunable, background notification on idle is safe
+- [x] Task 3: Add app background notification observer (AC: #5)
+  - [x] 3.1 Add `import UIKit` (for `UIApplication.didEnterBackgroundNotification`)
+  - [x] 3.2 Add `backgroundObserver: NSObjectProtocol?` property
+  - [x] 3.3 Register observer for `UIApplication.didEnterBackgroundNotification` in `setupAudioInterruptionObservers()` — calls `stop()` on receive
+  - [x] 3.4 Write tests: background notification stops from playingTunable, background notification on idle is safe
 
-- [ ] Task 4: Add isolated deinit for cleanup (AC: #6, #7)
-  - [ ] 4.1 Add `isolated deinit` that removes all three notification observers from `notificationCenter`
-  - [ ] 4.2 Verify no memory leak or observer leak in test cleanup
+- [x] Task 4: Add isolated deinit for cleanup (AC: #6, #7)
+  - [x] 4.1 Add `isolated deinit` that removes all three notification observers from `notificationCenter`
+  - [x] 4.2 Verify no memory leak or observer leak in test cleanup
 
-- [ ] Task 5: Update test factory and add restart tests (AC: #9)
-  - [ ] 5.1 Update `makePitchMatchingSession()` factory to accept `notificationCenter: NotificationCenter` parameter (default `.default`, pass to session)
-  - [ ] 5.2 Write test: training can restart after interruption stop
-  - [ ] 5.3 Write test: training can restart after route change stop
-  - [ ] 5.4 Write test: training can restart after background stop
+- [x] Task 5: Update test factory and add restart tests (AC: #9)
+  - [x] 5.1 Update `makePitchMatchingSession()` factory to accept `notificationCenter: NotificationCenter` parameter (default `.default`, pass to session)
+  - [x] 5.2 Write test: training can restart after interruption stop
+  - [x] 5.3 Write test: training can restart after route change stop
+  - [x] 5.4 Write test: training can restart after background stop
 
-- [ ] Task 6: Run full test suite and verify (AC: #9)
-  - [ ] 6.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 6.2 Verify all existing 452 tests pass with zero regressions
-  - [ ] 6.3 Verify all new interruption/lifecycle tests pass
+- [x] Task 6: Run full test suite and verify (AC: #9)
+  - [x] 6.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 6.2 Verify all existing 452 tests pass with zero regressions
+  - [x] 6.3 Verify all new interruption/lifecycle tests pass
 
 ## Dev Notes
 
@@ -376,10 +376,28 @@ d483f4c Implement story 15.1: PitchMatchingSession Core State Machine
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Build failure: missing `import UIKit` in test file for `UIApplication.didEnterBackgroundNotification` — fixed by adding `import UIKit` to PitchMatchingSessionTests.swift
+
 ### Completion Notes List
 
+- Enhanced `stop()` to call `notePlayer.stopAll()` first (stops reference note audio during `playingReference` state) and clear `currentChallenge` for clean restart
+- Added audio interruption observer (`AVAudioSession.interruptionNotification`) — `.began` stops session, `.ended` is no-op (no auto-resume)
+- Added route change observer (`AVAudioSession.routeChangeNotification`) — `.oldDeviceUnavailable` stops session, all other reasons continue
+- Added background observer (`UIApplication.didEnterBackgroundNotification`) — stops session on app backgrounding
+- Added `isolated deinit` for cleanup of all three notification observers
+- Updated test factory with `notificationCenter` parameter for test isolation
+- All patterns mirror ComparisonSession exactly: synchronous userInfo extraction before actor boundary crossing, `[weak self]` captures, `Task { @MainActor in }` dispatch
+- 470 tests pass (452 existing + 18 new), zero regressions
+
+### Change Log
+
+- 2026-02-26: Implemented story 15.2 — PitchMatchingSession interruption and lifecycle handling
+
 ### File List
+
+- Peach/PitchMatching/PitchMatchingSession.swift (modified: added imports, notification observers, enhanced stop(), isolated deinit)
+- PeachTests/PitchMatching/PitchMatchingSessionTests.swift (modified: added stop() tests, audio interruption suite, background tests, restart tests, updated factory)
