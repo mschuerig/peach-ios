@@ -6,6 +6,7 @@ import os
 struct PeachApp: App {
     @State private var modelContainer: ModelContainer
     @State private var comparisonSession: ComparisonSession
+    @State private var pitchMatchingSession: PitchMatchingSession
     @State private var profile: PerceptualProfile
     @State private var trendAnalyzer: TrendAnalyzer
     @State private var thresholdTimeline: ThresholdTimeline
@@ -71,6 +72,15 @@ struct PeachApp: App {
                 thresholdTimeline: thresholdTimeline,
                 observers: observers
             ))
+
+            // Create pitch matching session (Story 16.3)
+            // No strategy (random note selection), no haptics, shared notePlayer
+            let pitchMatchingSession = PitchMatchingSession(
+                notePlayer: notePlayer,
+                profile: profile,
+                observers: [dataStore, profile]
+            )
+            _pitchMatchingSession = State(wrappedValue: pitchMatchingSession)
         } catch {
             fatalError("Failed to initialize app: \(error)")
         }
@@ -80,6 +90,7 @@ struct PeachApp: App {
         WindowGroup {
             ContentView()
                 .environment(\.comparisonSession, comparisonSession)
+                .environment(\.pitchMatchingSession, pitchMatchingSession)
                 .environment(\.perceptualProfile, profile)
                 .environment(\.trendAnalyzer, trendAnalyzer)
                 .environment(\.thresholdTimeline, thresholdTimeline)

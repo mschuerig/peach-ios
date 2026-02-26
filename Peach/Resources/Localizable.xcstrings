@@ -947,6 +947,16 @@
         }
       }
     },
+    "Pitch Matching" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonhöhenübung"
+          }
+        }
+      }
+    },
     "Pitch adjustment slider" : {
       "localizations" : {
         "de" : {

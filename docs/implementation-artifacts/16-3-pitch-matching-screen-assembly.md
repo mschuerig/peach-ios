@@ -1,6 +1,6 @@
 # Story 16.3: Pitch Matching Screen Assembly
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -38,55 +38,55 @@ So that I can do a full pitch matching training session with the same navigation
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define `@Entry var pitchMatchingSession` environment key (AC: #1, #9)
-  - [ ] Add `@Entry var pitchMatchingSession` in an `extension EnvironmentValues` inside `PitchMatchingScreen.swift`
-  - [ ] Default value creates a preview mock (same pattern as `ComparisonScreen`'s `@Entry var comparisonSession`)
-  - [ ] Create private `MockNotePlayerForPreview`, `MockPlaybackHandleForPreview` (minimal implementations for previews)
+- [x] Task 1: Define `@Entry var pitchMatchingSession` environment key (AC: #1, #9)
+  - [x] Add `@Entry var pitchMatchingSession` in an `extension EnvironmentValues` inside `PitchMatchingScreen.swift`
+  - [x] Default value creates a preview mock (same pattern as `ComparisonScreen`'s `@Entry var comparisonSession`)
+  - [x] Create private `MockNotePlayerForPitchMatchingPreview`, `MockPlaybackHandleForPitchMatchingPreview` (minimal implementations for previews)
 
-- [ ] Task 2: Create `PitchMatchingScreen` view (AC: #1, #2, #3, #4, #5, #6, #7, #8)
-  - [ ] Define struct with `@Environment(\.pitchMatchingSession)`, `@Environment(\.accessibilityReduceMotion)`, `@Environment(\.verticalSizeClass)`
-  - [ ] Compute `isCompactHeight` from `verticalSizeClass == .compact`
-  - [ ] Change `PitchMatchingSession.referenceFrequency` from `private` to `private(set)` (line 37 of `PitchMatchingSession.swift`)
-  - [ ] Body: `VerticalPitchSlider` with `isActive: session.state == .playingTunable`, `referenceFrequency: session.referenceFrequency ?? 440.0`, callbacks wired to session
-  - [ ] `.overlay` with `PitchMatchingFeedbackIndicator` shown when `session.state == .showingFeedback`
-  - [ ] `.transition(.opacity)` and `.animation(feedbackAnimation, value: session.state == .showingFeedback)`
-  - [ ] `.navigationTitle("Pitch Matching")` and `.navigationBarTitleDisplayMode(.inline)`
-  - [ ] `.toolbar` with Settings + Profile `NavigationLink`s (matching `ComparisonScreen` exactly)
-  - [ ] `.onAppear { pitchMatchingSession.startPitchMatching() }`
-  - [ ] `.onDisappear { pitchMatchingSession.stop() }`
-  - [ ] Extract `static func feedbackAnimation(reduceMotion: Bool) -> Animation?` for testability
+- [x] Task 2: Create `PitchMatchingScreen` view (AC: #1, #2, #3, #4, #5, #6, #7, #8)
+  - [x] Define struct with `@Environment(\.pitchMatchingSession)`, `@Environment(\.accessibilityReduceMotion)`, `@Environment(\.verticalSizeClass)`
+  - [x] Compute `isCompactHeight` from `verticalSizeClass == .compact`
+  - [x] Change `PitchMatchingSession.referenceFrequency` from `private` to `private(set)` (line 37 of `PitchMatchingSession.swift`)
+  - [x] Body: `VerticalPitchSlider` with `isActive: session.state == .playingTunable`, `referenceFrequency: session.referenceFrequency ?? 440.0`, callbacks wired to session
+  - [x] `.overlay` with `PitchMatchingFeedbackIndicator` shown when `session.state == .showingFeedback`
+  - [x] `.transition(.opacity)` and `.animation(feedbackAnimation, value: session.state == .showingFeedback)`
+  - [x] `.navigationTitle("Pitch Matching")` and `.navigationBarTitleDisplayMode(.inline)`
+  - [x] `.toolbar` with Settings + Profile `NavigationLink`s (matching `ComparisonScreen` exactly)
+  - [x] `.onAppear { pitchMatchingSession.startPitchMatching() }`
+  - [x] `.onDisappear { pitchMatchingSession.stop() }`
+  - [x] Extract `static func feedbackAnimation(reduceMotion: Bool) -> Animation?` for testability
 
-- [ ] Task 3: Wire `PitchMatchingSession` in `PeachApp.swift` (AC: #9)
-  - [ ] Add `@State private var pitchMatchingSession: PitchMatchingSession` property
-  - [ ] In `init()`, create `PitchMatchingSession(notePlayer: notePlayer, profile: profile, observers: [dataStore, profile])`
-  - [ ] Add `.environment(\.pitchMatchingSession, pitchMatchingSession)` to `ContentView()`
-  - [ ] Note: NO `HapticFeedbackManager` observer for pitch matching (no haptics -- UX spec decision)
+- [x] Task 3: Wire `PitchMatchingSession` in `PeachApp.swift` (AC: #9)
+  - [x] Add `@State private var pitchMatchingSession: PitchMatchingSession` property
+  - [x] In `init()`, create `PitchMatchingSession(notePlayer: notePlayer, profile: profile, observers: [dataStore, profile])`
+  - [x] Add `.environment(\.pitchMatchingSession, pitchMatchingSession)` to `ContentView()`
+  - [x] Note: NO `HapticFeedbackManager` observer for pitch matching (no haptics -- UX spec decision)
 
-- [ ] Task 4: Add `.pitchMatching` navigation destination (AC: #10)
-  - [ ] Add `case pitchMatching` to `NavigationDestination` enum
-  - [ ] Add routing in `StartScreen`'s `.navigationDestination(for:)`: `.pitchMatching -> PitchMatchingScreen()`
+- [x] Task 4: Add `.pitchMatching` navigation destination (AC: #10)
+  - [x] Add `case pitchMatching` to `NavigationDestination` enum
+  - [x] Add routing in `StartScreen`'s `.navigationDestination(for:)`: `.pitchMatching -> PitchMatchingScreen()`
 
-- [ ] Task 5: Add "Pitch Matching" button to `StartScreen` (AC: #10)
-  - [ ] Add `NavigationLink(value: NavigationDestination.pitchMatching)` below "Start Training"
-  - [ ] Style: `.bordered` (secondary prominence, not `.borderedProminent`)
-  - [ ] Label: "Pitch Matching" text with appropriate icon
-  - [ ] Position: below Start Training, clearly visible but visually subordinate
+- [x] Task 5: Add "Pitch Matching" button to `StartScreen` (AC: #10)
+  - [x] Add `NavigationLink(value: NavigationDestination.pitchMatching)` below "Start Training"
+  - [x] Style: `.bordered` (secondary prominence, not `.borderedProminent`)
+  - [x] Label: "Pitch Matching" text with `waveform` SF Symbol icon
+  - [x] Position: below Start Training, clearly visible but visually subordinate
 
-- [ ] Task 6: Handle `PitchMatchingSession` in app lifecycle (AC: #11)
-  - [ ] In `ContentView`, read `@Environment(\.pitchMatchingSession)`
-  - [ ] In the `.onChange(of: scenePhase)` handler, call `pitchMatchingSession.stop()` alongside `comparisonSession.stop()` on backgrounding
+- [x] Task 6: Handle `PitchMatchingSession` in app lifecycle (AC: #11)
+  - [x] In `ContentView`, read `@Environment(\.pitchMatchingSession)`
+  - [x] In the `.onChange(of: scenePhase)` handler, call `pitchMatchingSession.stop()` alongside `comparisonSession.stop()` on backgrounding
 
-- [ ] Task 7: Add SwiftUI previews for `PitchMatchingScreen` (AC: #1)
-  - [ ] Preview wrapped in `NavigationStack`
+- [x] Task 7: Add SwiftUI previews for `PitchMatchingScreen` (AC: #1)
+  - [x] Preview wrapped in `NavigationStack`
 
-- [ ] Task 8: Add localization strings (AC: #7, #10)
-  - [ ] "Pitch Matching" navigation title -- English + German in `Localizable.xcstrings`
-  - [ ] "Pitch Matching" button label on StartScreen -- English + German
+- [x] Task 8: Add localization strings (AC: #7, #10)
+  - [x] "Pitch Matching" navigation title -- English + German ("Tonhöhenübung") in `Localizable.xcstrings`
+  - [x] "Pitch Matching" button label on StartScreen -- same key, shared with navigation title
 
-- [ ] Task 9: Run full test suite and verify (AC: #12)
-  - [ ] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All 537+ tests pass
-  - [ ] Manual preview verification of PitchMatchingScreen in portrait and landscape
+- [x] Task 9: Run full test suite and verify (AC: #12)
+  - [x] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All 537 tests pass (0 failures)
+  - [x] Manual preview verification of PitchMatchingScreen in portrait and landscape
 
 ## Dev Notes
 
@@ -325,14 +325,39 @@ Files this story will modify:
 - [Source: docs/implementation-artifacts/16-1-vertical-pitch-slider-component.md -- Previous story learnings]
 - [Source: docs/implementation-artifacts/16-2-pitch-matching-feedback-indicator.md -- Previous story learnings, integration pattern]
 
+## Change Log
+
+- 2026-02-26: Implemented story 16.3 — Pitch Matching Screen Assembly. Created PitchMatchingScreen view, wired PitchMatchingSession in PeachApp, added navigation routing and Start Screen button, added app lifecycle handling, added English + German localization. All 537 tests pass.
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+No issues encountered during implementation.
+
 ### Completion Notes List
 
+- Created `PitchMatchingScreen.swift` following `ComparisonScreen` pattern exactly: environment key with `@Entry`, preview mocks, slider + feedback overlay composition, navigation toolbar, `.onAppear`/`.onDisappear` lifecycle
+- Changed `PitchMatchingSession.referenceFrequency` from `private` to `private(set)` for slider read access
+- Wired `PitchMatchingSession` in `PeachApp.swift` with `[dataStore, profile]` observers (no haptics per design)
+- Added `.pitchMatching` to `NavigationDestination` enum
+- Added "Pitch Matching" button with `.bordered` style and `waveform` SF Symbol on Start Screen
+- Added `pitchMatchingSession.stop()` to `ContentView` background handler
+- Added "Pitch Matching" / "Tonhöhenübung" localization entry
+- All 537 existing tests pass with zero regressions
+
 ### File List
+
+- `Peach/PitchMatching/PitchMatchingScreen.swift` (new)
+- `Peach/PitchMatching/PitchMatchingSession.swift` (modified — `referenceFrequency` visibility)
+- `Peach/App/PeachApp.swift` (modified — session creation and environment injection)
+- `Peach/App/NavigationDestination.swift` (modified — `.pitchMatching` case)
+- `Peach/Start/StartScreen.swift` (modified — button and routing)
+- `Peach/App/ContentView.swift` (modified — lifecycle handling)
+- `Peach/Resources/Localizable.xcstrings` (modified — "Pitch Matching" strings)
+- `docs/implementation-artifacts/16-3-pitch-matching-screen-assembly.md` (modified — task completion)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified — status update)

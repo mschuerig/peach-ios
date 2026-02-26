@@ -34,7 +34,7 @@ final class PitchMatchingSession {
     // MARK: - Internal State
 
     private var currentHandle: PlaybackHandle?
-    private var referenceFrequency: Double?
+    private(set) var referenceFrequency: Double?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
 

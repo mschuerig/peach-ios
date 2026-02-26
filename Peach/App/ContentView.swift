@@ -5,6 +5,9 @@ struct ContentView: View {
     /// Training session injected from app
     @Environment(\.comparisonSession) private var comparisonSession
 
+    /// Pitch matching session injected from app
+    @Environment(\.pitchMatchingSession) private var pitchMatchingSession
+
     /// Scene phase for app lifecycle monitoring (Story 3.4)
     @Environment(\.scenePhase) private var scenePhase
 
@@ -49,6 +52,12 @@ struct ContentView: View {
             comparisonSession.stop()
         } else {
             logger.info("Training was already idle - no action needed")
+        }
+
+        // Stop pitch matching if it's active (Story 16.3)
+        if pitchMatchingSession.state != .idle {
+            logger.info("Pitch matching was active (state: \(String(describing: pitchMatchingSession.state))) - stopping")
+            pitchMatchingSession.stop()
         }
 
         // Note: We DON'T clear navigation here - user stays on current screen while backgrounded

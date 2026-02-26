@@ -34,6 +34,14 @@ struct StartScreen: View {
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
 
+            // Pitch Matching Button (Secondary Action)
+            NavigationLink(value: NavigationDestination.pitchMatching) {
+                Label("Pitch Matching", systemImage: "waveform")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+
             Spacer()
 
             // Secondary Navigation Buttons
@@ -65,6 +73,8 @@ struct StartScreen: View {
             switch destination {
             case .training:
                 ComparisonScreen()
+            case .pitchMatching:
+                PitchMatchingScreen()
             case .settings:
                 SettingsScreen()
             case .profile:

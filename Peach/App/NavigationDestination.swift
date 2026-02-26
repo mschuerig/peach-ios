@@ -4,6 +4,7 @@ import Foundation
 /// Used by NavigationStack with value-based navigation for type-safe routing.
 enum NavigationDestination: Hashable {
     case training
+    case pitchMatching
     case settings
     case profile
 }
