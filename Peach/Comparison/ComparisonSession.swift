@@ -42,16 +42,16 @@ final class ComparisonSession {
             noteRangeMin: userSettings.noteRangeMin,
             noteRangeMax: userSettings.noteRangeMax,
             naturalVsMechanical: userSettings.naturalVsMechanical,
-            referencePitch: userSettings.referencePitch
+            referencePitch: userSettings.referencePitch.rawValue
         )
     }
 
     private var currentNoteDuration: TimeInterval {
-        userSettings.noteDuration
+        userSettings.noteDuration.rawValue
     }
 
     private var currentVaryLoudness: Double {
-        userSettings.varyLoudness
+        userSettings.varyLoudness.rawValue
     }
 
     private let maxLoudnessOffsetDB: Float = 5.0

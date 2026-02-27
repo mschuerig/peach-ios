@@ -9,20 +9,20 @@ final class AppUserSettings: UserSettings {
         MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax)
     }
 
-    var noteDuration: TimeInterval {
-        UserDefaults.standard.object(forKey: SettingsKeys.noteDuration) as? Double ?? SettingsKeys.defaultNoteDuration
+    var noteDuration: NoteDuration {
+        NoteDuration(UserDefaults.standard.object(forKey: SettingsKeys.noteDuration) as? Double ?? SettingsKeys.defaultNoteDuration)
     }
 
-    var referencePitch: Double {
-        UserDefaults.standard.object(forKey: SettingsKeys.referencePitch) as? Double ?? SettingsKeys.defaultReferencePitch
+    var referencePitch: Frequency {
+        Frequency(UserDefaults.standard.object(forKey: SettingsKeys.referencePitch) as? Double ?? SettingsKeys.defaultReferencePitch)
     }
 
-    var soundSource: String {
-        UserDefaults.standard.string(forKey: SettingsKeys.soundSource) ?? SettingsKeys.defaultSoundSource
+    var soundSource: SoundSourceID {
+        SoundSourceID(UserDefaults.standard.string(forKey: SettingsKeys.soundSource) ?? SettingsKeys.defaultSoundSource)
     }
 
-    var varyLoudness: Double {
-        UserDefaults.standard.object(forKey: SettingsKeys.varyLoudness) as? Double ?? SettingsKeys.defaultVaryLoudness
+    var varyLoudness: UnitInterval {
+        UnitInterval(UserDefaults.standard.object(forKey: SettingsKeys.varyLoudness) as? Double ?? SettingsKeys.defaultVaryLoudness)
     }
 
     var naturalVsMechanical: Double {

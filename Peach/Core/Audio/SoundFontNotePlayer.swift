@@ -102,7 +102,7 @@ final class SoundFontNotePlayer: NotePlayer {
 
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         // Select preset from user settings
-        let source = userSettings.soundSource
+        let source = userSettings.soundSource.rawValue
 
         if let (bank, program) = Self.parseSF2Tag(from: source) {
             do {

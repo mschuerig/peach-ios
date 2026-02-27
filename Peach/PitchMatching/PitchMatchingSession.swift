@@ -143,12 +143,12 @@ final class PitchMatchingSession {
         TrainingSettings(
             noteRangeMin: userSettings.noteRangeMin,
             noteRangeMax: userSettings.noteRangeMax,
-            referencePitch: userSettings.referencePitch
+            referencePitch: userSettings.referencePitch.rawValue
         )
     }
 
     private var currentNoteDuration: TimeInterval {
-        userSettings.noteDuration
+        userSettings.noteDuration.rawValue
     }
 
     // MARK: - Challenge Generation

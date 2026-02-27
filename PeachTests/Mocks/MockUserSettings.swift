@@ -4,9 +4,9 @@ import Foundation
 final class MockUserSettings: UserSettings {
     var noteRangeMin: MIDINote = MIDINote(SettingsKeys.defaultNoteRangeMin)
     var noteRangeMax: MIDINote = MIDINote(SettingsKeys.defaultNoteRangeMax)
-    var noteDuration: TimeInterval = SettingsKeys.defaultNoteDuration
-    var referencePitch: Double = SettingsKeys.defaultReferencePitch
-    var soundSource: String = SettingsKeys.defaultSoundSource
-    var varyLoudness: Double = SettingsKeys.defaultVaryLoudness
+    var noteDuration: NoteDuration = NoteDuration(SettingsKeys.defaultNoteDuration)
+    var referencePitch: Frequency = Frequency(SettingsKeys.defaultReferencePitch)
+    var soundSource: SoundSourceID = SoundSourceID(SettingsKeys.defaultSoundSource)
+    var varyLoudness: UnitInterval = UnitInterval(SettingsKeys.defaultVaryLoudness)
     var naturalVsMechanical: Double = SettingsKeys.defaultNaturalVsMechanical
 }
