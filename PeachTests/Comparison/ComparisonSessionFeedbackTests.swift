@@ -102,8 +102,9 @@ struct ComparisonSessionFeedbackTests {
         let isSecondHigher = f.mockPlayer.playHistory[1].frequency > f.mockPlayer.playHistory[0].frequency
         f.session.handleAnswer(isHigher: !isSecondHigher)
 
-        // Verify haptic was triggered
-        #expect(f.mockHaptic!.incorrectFeedbackCount == 1)
+        // Verify observer was notified with incorrect comparison
+        #expect(f.mockHaptic!.comparisonCompletedCallCount == 1)
+        #expect(f.mockHaptic!.lastComparison?.isCorrect == false)
     }
 
     @Test("Haptic does NOT fire on correct answer")
@@ -122,8 +123,9 @@ struct ComparisonSessionFeedbackTests {
         let isSecondHigher = f.mockPlayer.playHistory[1].frequency > f.mockPlayer.playHistory[0].frequency
         f.session.handleAnswer(isHigher: isSecondHigher)
 
-        // Verify haptic was NOT triggered
-        #expect(f.mockHaptic!.incorrectFeedbackCount == 0)
+        // Verify observer was notified with correct comparison
+        #expect(f.mockHaptic!.comparisonCompletedCallCount == 1)
+        #expect(f.mockHaptic!.lastComparison?.isCorrect == true)
     }
 
     @Test("Feedback state clears when training stops")

@@ -1,6 +1,6 @@
 # Story 20.9: Move MockHapticFeedbackManager to Test Target
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -72,7 +72,7 @@ So that mock types do not ship in the production binary and the project follows 
 
 ### Git Intelligence
 
-Commit message: `Implement story 20.8: Move MockHapticFeedbackManager to test target`
+Commit message: `Implement story 20.9: Move MockHapticFeedbackManager to test target`
 
 ### References
 
@@ -94,6 +94,7 @@ Commit message: `Implement story 20.8: Move MockHapticFeedbackManager to test ta
 ## File List
 
 - `PeachTests/Comparison/MockHapticFeedbackManager.swift` (new) — mock moved to test target
+- `PeachTests/Comparison/ComparisonSessionFeedbackTests.swift` (modified) — updated haptic tests to use new mock API
 - `Peach/Comparison/HapticFeedbackManager.swift` (modified) — removed mock class (lines 59-83)
 - `docs/implementation-artifacts/20-9-move-mockhapticfeedbackmanager-to-test-target.md` (modified) — story file updated
 - `docs/implementation-artifacts/sprint-status.yaml` (modified) — status updated
@@ -102,3 +103,4 @@ Commit message: `Implement story 20.8: Move MockHapticFeedbackManager to test ta
 
 - 2026-02-27: Story created from Epic 20 adversarial dependency review.
 - 2026-02-27: Implementation complete — mock moved to test target, all tests pass.
+- 2026-02-27: Code review — fixed mock to follow Mock Contract (removed business logic, added call tracking/callbacks), fixed Git Intelligence typo (20.8→20.9), updated tests to use proper mock API.

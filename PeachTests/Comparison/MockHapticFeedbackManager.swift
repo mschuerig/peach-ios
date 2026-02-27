@@ -2,24 +2,33 @@
 
 /// Mock haptic feedback manager for unit tests
 final class MockHapticFeedbackManager: HapticFeedback, ComparisonObserver {
-    /// Number of times playIncorrectFeedback() was called
+
+    // MARK: - HapticFeedback
+
     private(set) var incorrectFeedbackCount = 0
+    var onPlayIncorrectFeedbackCalled: (() -> Void)?
 
     func playIncorrectFeedback() {
         incorrectFeedbackCount += 1
+        onPlayIncorrectFeedbackCalled?()
     }
 
     // MARK: - ComparisonObserver
 
-    /// Called when a comparison is completed - tracks haptic feedback for incorrect answers
+    private(set) var comparisonCompletedCallCount = 0
+    var lastComparison: CompletedComparison?
+
     func comparisonCompleted(_ completed: CompletedComparison) {
-        if !completed.isCorrect {
-            playIncorrectFeedback()
-        }
+        comparisonCompletedCallCount += 1
+        lastComparison = completed
     }
 
-    /// Resets the mock state (for test cleanup)
+    // MARK: - Test Helpers
+
     func reset() {
         incorrectFeedbackCount = 0
+        onPlayIncorrectFeedbackCalled = nil
+        comparisonCompletedCallCount = 0
+        lastComparison = nil
     }
 }
