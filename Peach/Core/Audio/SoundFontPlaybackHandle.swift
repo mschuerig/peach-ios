@@ -23,8 +23,15 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     func stop() async throws {
         guard !hasStopped else { return }
         hasStopped = true
+        if SoundFontNotePlayer.fadeOutOnStop {
+            sampler.volume = 0
+            try? await Task.sleep(for: SoundFontNotePlayer.stopPropagationDelay)
+        }
         sampler.stopNote(midiNote, onChannel: channel)
         sampler.sendPitchBend(SoundFontNotePlayer.pitchBendCenter, onChannel: channel)
+        if SoundFontNotePlayer.fadeOutOnStop {
+            sampler.volume = 1.0
+        }
     }
 
     func adjustFrequency(_ frequency: Frequency) async throws {

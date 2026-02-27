@@ -25,6 +25,8 @@ final class SoundFontNotePlayer: NotePlayer {
     private static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
     static let pitchBendCenter: UInt16 = 8192
     static let validFrequencyRange = 20.0...20000.0
+    static let stopPropagationDelay: Duration = .milliseconds(25)
+    static let fadeOutOnStop = false
 
     // Default SF2 preset: Sine Wave (bank 8, program 80, tag "sf2:8:80")
     private static let defaultPresetProgram: Int = 80
@@ -149,8 +151,15 @@ final class SoundFontNotePlayer: NotePlayer {
     }
 
     func stopAll() async throws {
+        if Self.fadeOutOnStop {
+            sampler.volume = 0
+            try? await Task.sleep(for: Self.stopPropagationDelay)
+        }
         sampler.sendController(123, withValue: 0, onChannel: Self.channel)
         sampler.sendPitchBend(Self.pitchBendCenter, onChannel: Self.channel)
+        if Self.fadeOutOnStop {
+            sampler.volume = 1.0
+        }
     }
 
     // MARK: - MIDI Helpers

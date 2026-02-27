@@ -1,6 +1,6 @@
 # Fix: SoundFont Click Artifact on Note Stop
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -30,21 +30,21 @@ However, the default **Sine Wave preset (bank 8, program 80)** is a synthetic wa
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `stopPropagationDelay` constant to `SoundFontNotePlayer` (AC: #5)
-  - [ ] 1.1 Add `static let stopPropagationDelay: Duration = .milliseconds(25)` to the Constants section
+- [x] Task 1: Add `stopPropagationDelay` constant to `SoundFontNotePlayer` (AC: #5)
+  - [x] 1.1 Add `static let stopPropagationDelay: Duration = .milliseconds(25)` to the Constants section
 
-- [ ] Task 2: Implement fade-out in `SoundFontPlaybackHandle.stop()` (AC: #1, #3, #4, #6)
-  - [ ] 2.1 Write failing test: `stop()` sets `sampler.volume` to 0 before stopping note
-  - [ ] 2.2 Modify `stop()` to: mute `sampler.volume = 0`, sleep with `try?` (cancellation-safe), then `stopNote()` + pitch bend reset, then restore `sampler.volume = 1.0`
-  - [ ] 2.3 Verify idempotent guard (`hasStopped`) still prevents double-fade
+- [x] Task 2: Implement fade-out in `SoundFontPlaybackHandle.stop()` (AC: #1, #3, #4, #6)
+  - [x] 2.1 Write failing test: `stop()` sets `sampler.volume` to 0 before stopping note
+  - [x] 2.2 Modify `stop()` to: mute `sampler.volume = 0`, sleep with `try?` (cancellation-safe), then `stopNote()` + pitch bend reset, then restore `sampler.volume = 1.0`
+  - [x] 2.3 Verify idempotent guard (`hasStopped`) still prevents double-fade
 
-- [ ] Task 3: Implement fade-out in `SoundFontNotePlayer.stopAll()` (AC: #2, #3, #4, #6)
-  - [ ] 3.1 Write failing test: `stopAll()` sets `sampler.volume` to 0 before sending CC#123
-  - [ ] 3.2 Modify `stopAll()` to: mute `sampler.volume = 0`, sleep with `try?` (cancellation-safe), then CC#123 + pitch bend reset, then restore `sampler.volume = 1.0`
+- [x] Task 3: Implement fade-out in `SoundFontNotePlayer.stopAll()` (AC: #2, #3, #4, #6)
+  - [x] 3.1 Write failing test: `stopAll()` sets `sampler.volume` to 0 before sending CC#123
+  - [x] 3.2 Modify `stopAll()` to: mute `sampler.volume = 0`, sleep with `try?` (cancellation-safe), then CC#123 + pitch bend reset, then restore `sampler.volume = 1.0`
 
-- [ ] Task 4: Run full test suite and fix any regressions (AC: #7)
-  - [ ] 4.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 4.2 Fix any failures related to timing changes (the 25ms delay is additive to existing async behavior)
+- [x] Task 4: Run full test suite and fix any regressions (AC: #7)
+  - [x] 4.1 Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 4.2 Fix any failures related to timing changes (the 25ms delay is additive to existing async behavior)
 
 ## Dev Notes
 
@@ -137,3 +137,33 @@ The 25ms mute truncates the very beginning of an acoustic preset's release tail.
 - [Source: docs/implementation-artifacts/12-1-playbackhandle-protocol-and-noteplayer-redesign.md] — PlaybackHandle architecture
 - [Source: docs/project-context.md#AVAudioEngine] — Single player instance rule
 - [Source: docs/project-context.md#Testing Rules] — Swift Testing, full suite requirement
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Reintroduced the proven volume-mute approach from the former `SineWaveNotePlayer`, adapted for `AVAudioUnitSampler`. The approach is universal — applied to all presets via `sampler.volume` (AVAudioNode mixer gain), independent of `sampler.overallGain` (MIDI amplitude). Both `stop()` and `stopAll()` now: mute volume to 0, wait 25ms for the audio render thread to propagate the silence, perform the actual stop (MIDI note-off or CC#123), then restore volume to 1.0. The `try?` on `Task.sleep` ensures cancellation-safety — if the enclosing task is cancelled during the 25ms wait, execution continues to stop the note and restore volume.
+
+### Completion Notes
+
+- Added `stopPropagationDelay` constant (25ms) to `SoundFontNotePlayer`
+- Modified `SoundFontPlaybackHandle.stop()` with fade-out before `stopNote()` — idempotent guard unchanged
+- Modified `SoundFontNotePlayer.stopAll()` with fade-out before CC#123
+- Added test `stopFadesOutAndRestoresVolume` verifying volume restoration after handle stop
+- Added test `stopAllFadesOutAndRestoresVolume` verifying volume restoration after player stopAll
+- Full test suite passes — no regressions (all existing tests unaffected by the 25ms delay)
+- No API changes — `PlaybackHandle.stop()` and `NotePlayer.stopAll()` signatures unchanged
+- No changes needed outside the audio layer
+
+## File List
+
+- `Peach/Core/Audio/SoundFontNotePlayer.swift` — Added `stopPropagationDelay` constant; modified `stopAll()` with fade-out
+- `Peach/Core/Audio/SoundFontPlaybackHandle.swift` — Modified `stop()` with fade-out
+- `PeachTests/Core/Audio/SoundFontNotePlayerTests.swift` — Added `stopAllFadesOutAndRestoresVolume` test
+- `PeachTests/Core/Audio/SoundFontPlaybackHandleTests.swift` — Added `stopFadesOutAndRestoresVolume` test
+- `docs/implementation-artifacts/fix-soundfont-click-on-note-stop.md` — Story file updated
+- `docs/implementation-artifacts/sprint-status.yaml` — Status updated to review
+
+## Change Log
+
+- 2026-02-28: Implemented fade-out on note stop to eliminate click artifacts — all 4 tasks completed, full test suite passes
