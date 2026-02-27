@@ -4,8 +4,7 @@ struct SoundSourceID: Hashable, Sendable {
     let rawValue: String
 
     init(_ rawValue: String) {
-        precondition(!rawValue.isEmpty, "SoundSourceID must not be empty")
-        self.rawValue = rawValue
+        self.rawValue = rawValue.isEmpty ? "sf2:8:80" : rawValue
     }
 }
 

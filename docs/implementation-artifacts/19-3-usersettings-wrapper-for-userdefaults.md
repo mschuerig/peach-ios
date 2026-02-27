@@ -1,6 +1,6 @@
 # Story 19.3: UserSettings Wrapper for UserDefaults
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -12,7 +12,7 @@ So that business logic is decoupled from the persistence singleton, type casting
 
 ## Acceptance Criteria
 
-1. **`UserSettings` protocol defined** -- A protocol exposing typed read-only properties for all user-configurable settings: `noteRangeMin: MIDINote`, `noteRangeMax: MIDINote`, `noteDuration: TimeInterval`, `referencePitch: Double`, `soundSource: String`, `varyLoudness: Double`, `naturalVsMechanical: Double`. Lives in `Peach/Settings/`.
+1. **`UserSettings` protocol defined** -- A protocol exposing typed read-only properties for all user-configurable settings: `noteRangeMin: MIDINote`, `noteRangeMax: MIDINote`, `noteDuration: NoteDuration`, `referencePitch: Frequency`, `soundSource: SoundSourceID`, `varyLoudness: UnitInterval`. Lives in `Peach/Settings/`. (`naturalVsMechanical` removed — only consumer `AdaptiveNoteStrategy` was dead code, replaced by `KazezNoteStrategy` in story 9.1.)
 
 2. **`AppUserSettings` implementation** -- A concrete implementation that reads from `UserDefaults.standard` internally, providing defaults from `SettingsKeys`. Registered once in `PeachApp.swift`.
 
@@ -197,6 +197,7 @@ Commit message: `Implement story 19.3: UserSettings wrapper for UserDefaults`
 - 2026-02-26: Story created by BMAD create-story workflow from Epic 19 code review plan.
 - 2026-02-27: Implemented story 19.3 — UserSettings protocol, AppUserSettings, MockUserSettings, dependency injection into ComparisonSession/PitchMatchingSession/SoundFontNotePlayer, removed all override parameters, updated all test factories and mocks. Full test suite passes.
 - 2026-02-27: Code review fix-up — Removed dead `naturalVsMechanical` setting and `AdaptiveNoteStrategy` (replaced by `KazezNoteStrategy` in story 9.1). Fixed `NoteDuration` clamping in test factories (`0.0`/`0.01` → `NoteDuration(0.3)`).
+- 2026-02-27: Second code review — Updated AC #1 to reflect actual implementation (6 properties with value object types, naturalVsMechanical removed). Added 7 missing files to File List (NoteDuration, SoundSourceID, UnitInterval + tests, SoundFontPlaybackHandle). Updated project-context.md stale UserDefaults references. Fixed SoundSourceID precondition crash on empty string (now falls back to default). All 586 tests pass.
 
 ## Dev Agent Record
 
@@ -236,7 +237,13 @@ No issues encountered.
 **New files:**
 - Peach/Settings/UserSettings.swift
 - Peach/Settings/AppUserSettings.swift
+- Peach/Settings/NoteDuration.swift (code review fix-up: value object for note duration)
+- Peach/Settings/SoundSourceID.swift (code review fix-up: value object for sound source tag)
+- Peach/Core/UnitInterval.swift (code review fix-up: value object for 0.0–1.0 range)
 - PeachTests/Mocks/MockUserSettings.swift
+- PeachTests/Settings/NoteDurationTests.swift (code review fix-up)
+- PeachTests/Settings/SoundSourceIDTests.swift (code review fix-up)
+- PeachTests/Core/UnitIntervalTests.swift (code review fix-up)
 
 **Deleted files (code review fix-up):**
 - Peach/Core/Algorithm/AdaptiveNoteStrategy.swift
@@ -247,6 +254,7 @@ No issues encountered.
 - Peach/Comparison/ComparisonSession.swift
 - Peach/PitchMatching/PitchMatchingSession.swift
 - Peach/Core/Audio/SoundFontNotePlayer.swift
+- Peach/Core/Audio/SoundFontPlaybackHandle.swift (code review fix-up: value object params)
 - Peach/App/PeachApp.swift
 - Peach/Comparison/ComparisonScreen.swift
 - Peach/PitchMatching/PitchMatchingScreen.swift

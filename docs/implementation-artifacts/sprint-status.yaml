@@ -165,7 +165,7 @@ development_status:
   epic-19: in-progress
   19-1-clamping-utility-and-magic-value-constants: done
   19-2-value-objects-for-domain-primitives: done
-  19-3-usersettings-wrapper-for-userdefaults: review
+  19-3-usersettings-wrapper-for-userdefaults: done
   19-4-extract-long-methods: ready-for-dev
   19-5-trainingsession-protocol-and-dependency-cleanup: ready-for-dev
   epic-19-retrospective: optional

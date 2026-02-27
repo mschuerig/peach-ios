@@ -73,7 +73,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`ModelContainer` initialized once in `PeachApp.swift`** — passed via SwiftUI environment; new models must be registered in the schema there
 
 **AVAudioEngine:**
-- **`SoundFontNotePlayer`** — sole `NotePlayer` implementation; owns one `AVAudioEngine` with `AVAudioUnitSampler`; reads `SettingsKeys.soundSource` from `UserDefaults` on each `play()` call to select the correct SF2 preset via `loadPreset(program:bank:)`
+- **`SoundFontNotePlayer`** — sole `NotePlayer` implementation; owns one `AVAudioEngine` with `AVAudioUnitSampler`; reads `userSettings.soundSource` (via `UserSettings` protocol) on each `play()` call to select the correct SF2 preset via `loadPreset(program:bank:)`
 - **`SF2PresetParser`** — lightweight `enum` with static `parsePresets(from:)` that reads PHDR metadata from an SF2 RIFF file; returns `[SF2Preset]` (name, program, bank); pure function, no state
 - **`SoundFontLibrary`** — `@MainActor` service created once at startup; discovers SF2 files in bundle, parses presets via `SF2PresetParser`, filters unpitched (bank >= 120, program >= 120), sorts alphabetically; injected via `@Environment(\.soundFontLibrary)`. Read-only at runtime
 - **`soundSource` tag format** — `@AppStorage` stores `"sf2:{bank}:{program}"` (SF2 bank and MIDI program number, e.g., `"sf2:0:0"` = Grand Piano, `"sf2:0:42"` = Cello, `"sf2:8:80"` = Sine Wave). Default: `"sf2:8:80"`
@@ -84,7 +84,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`ComparisonSession` is the central state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
 - **State transitions are guarded** — preconditions enforced; never skip states
 - **Observer pattern** — `ComparisonObserver` protocol; observers injected as array into `ComparisonSession`
-- **Settings read live** — `ComparisonSession` reads `@AppStorage` on each comparison, not cached; `SoundFontNotePlayer` reads `soundSource` on each `play()` call
+- **Settings read live** — `ComparisonSession` reads from `UserSettings` protocol on each comparison, not cached; `SoundFontNotePlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
 
 **Composition Root (`PeachApp.swift`):**
 - **All service instantiation happens in `PeachApp.swift`** — this is the single dependency graph source of truth

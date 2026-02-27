@@ -28,6 +28,14 @@ struct SoundSourceIDTests {
         #expect(set.count == 2)
     }
 
+    // MARK: - Empty String Fallback
+
+    @Test("Empty string falls back to default sound source")
+    func emptyStringFallback() async {
+        let id = SoundSourceID("")
+        #expect(id.rawValue == "sf2:8:80")
+    }
+
     // MARK: - Equality
 
     @Test("Same strings are equal")
