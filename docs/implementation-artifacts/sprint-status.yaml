@@ -184,3 +184,6 @@ development_status:
   20-10-inject-trainingdatastore-into-settingsscreen: done
   20-11-update-documentation: done
   epic-20-retrospective: done
+
+  # Bug Fix: SoundFont audio click on note stop
+  fix-soundfont-click-on-note-stop: ready-for-dev
