@@ -1,4 +1,4 @@
-# Story 20.6: Remove UIKit from AudioSessionInterruptionMonitor
+# Story 20.7: Remove UIKit from AudioSessionInterruptionMonitor
 
 Status: pending
 

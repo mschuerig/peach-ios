@@ -1929,7 +1929,20 @@ So that `SoundFontNotePlayer` no longer depends on the Settings module, and audi
 **Then** no Core/ file references any type defined in Settings/
 **And** the full test suite passes with zero code changes
 
-### Story 20.3: Remove Cross-Feature Feedback Icon Size Dependency
+### Story 20.3: Move NoteDuration to Core/Audio/
+
+As a **developer maintaining Peach**,
+I want `NoteDuration` moved from `Settings/` to `Core/Audio/`,
+So that all audio domain value types are co-located in `Core/Audio/`, the `UserSettings` protocol references only `Core/` types, and no Core/ consumer depends on Settings/.
+
+**Acceptance Criteria:**
+
+**Given** `NoteDuration.swift` lives in `Settings/` but is a domain value type like `MIDINote`, `Frequency`, `Cents`, and `SoundSourceID`
+**When** it is moved to `Peach/Core/Audio/NoteDuration.swift`
+**Then** every type in the `UserSettings` protocol signature is defined in `Core/`
+**And** the full test suite passes with zero code changes
+
+### Story 20.4: Remove Cross-Feature Feedback Icon Size Dependency
 
 As a **developer maintaining Peach**,
 I want `PitchMatchingFeedbackIndicator` to define its own icon size constant instead of referencing `ComparisonFeedbackIndicator.defaultIconSize`,
@@ -1942,7 +1955,7 @@ So that PitchMatching/ has no dependency on Comparison/ and each feature module 
 **Then** `PitchMatchingFeedbackIndicator.swift` contains no reference to `ComparisonFeedbackIndicator`
 **And** the full test suite passes
 
-### Story 20.4: Use Protocols in Profile Views
+### Story 20.5: Use Protocols in Profile Views
 
 As a **developer maintaining Peach**,
 I want `SummaryStatisticsView` and `MatchingStatisticsView` to depend on protocols (`PitchDiscriminationProfile` and `PitchMatchingProfile`) instead of the concrete `PerceptualProfile` class,
@@ -1955,7 +1968,7 @@ So that the views follow the Dependency Inversion Principle and depend on abstra
 **Then** the methods accept any protocol-conforming type
 **And** the full test suite passes (existing tests pass `PerceptualProfile` which conforms to both)
 
-### Story 20.5: Extract @Entry Environment Keys from Core/
+### Story 20.6: Extract @Entry Environment Keys from Core/
 
 As a **developer maintaining Peach**,
 I want all `@Entry` environment key definitions consolidated into a single `App/EnvironmentKeys.swift` file,
@@ -1969,7 +1982,7 @@ So that Core/ files no longer import SwiftUI, the domain layer is framework-free
 **And** SwiftUI previews for all screens still render
 **And** the full test suite passes
 
-### Story 20.6: Remove UIKit from AudioSessionInterruptionMonitor
+### Story 20.7: Remove UIKit from AudioSessionInterruptionMonitor
 
 As a **developer maintaining Peach**,
 I want `AudioSessionInterruptionMonitor` to not import UIKit by accepting notification names as parameters instead of hardcoding `UIApplication` constants,
@@ -1983,7 +1996,7 @@ So that Core/ files have no UIKit dependency and the monitor is more testable.
 **And** `PeachApp` provides the UIKit notification names at the composition root
 **And** the full test suite passes
 
-### Story 20.7: Resettable Protocol for ComparisonSession Dependencies
+### Story 20.8: Resettable Protocol for ComparisonSession Dependencies
 
 As a **developer maintaining Peach**,
 I want `ComparisonSession` to depend on a `Resettable` protocol instead of storing `TrendAnalyzer` and `ThresholdTimeline` as concrete types,
@@ -1997,7 +2010,7 @@ So that the session is decoupled from specific profile/analytics implementations
 **And** `resetTrainingData()` calls `resettables.forEach { $0.reset() }`
 **And** the full test suite passes
 
-### Story 20.8: Move MockHapticFeedbackManager to Test Target
+### Story 20.9: Move MockHapticFeedbackManager to Test Target
 
 As a **developer maintaining Peach**,
 I want `MockHapticFeedbackManager` moved from the production target to the test target,
@@ -2010,7 +2023,7 @@ So that mock types do not ship in the production binary and the project follows 
 **Then** no mock class exists in the production target
 **And** all tests using `MockHapticFeedbackManager` still pass via `@testable import Peach`
 
-### Story 20.9: Inject TrainingDataStore into SettingsScreen
+### Story 20.10: Inject TrainingDataStore into SettingsScreen
 
 As a **developer maintaining Peach**,
 I want `SettingsScreen` to receive `TrainingDataStore` via `@Environment` instead of constructing it from a raw `ModelContext`,
@@ -2024,7 +2037,7 @@ So that the view no longer imports SwiftData, service instantiation stays in the
 **And** Reset All Training Data still works correctly
 **And** the full test suite passes
 
-### Story 20.10: Update Documentation
+### Story 20.11: Update Documentation
 
 As a **developer maintaining Peach**,
 I want all architecture documentation updated to reflect the dependency direction cleanup from Epic 20,

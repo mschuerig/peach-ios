@@ -1,4 +1,4 @@
-# Story 20.3: Remove Cross-Feature Feedback Icon Size Dependency
+# Story 20.4: Remove Cross-Feature Feedback Icon Size Dependency
 
 Status: pending
 

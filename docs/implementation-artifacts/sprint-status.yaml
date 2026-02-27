@@ -174,12 +174,13 @@ development_status:
   epic-20: in-progress
   20-1-move-shared-domain-types-to-core: done
   20-2-move-soundsourceid-to-core: done
-  20-3-remove-cross-feature-feedback-icon-size-dependency: ready-for-dev
-  20-4-use-protocols-in-profile-views: ready-for-dev
-  20-5-extract-entry-environment-keys-from-core: ready-for-dev
-  20-6-remove-uikit-from-audiosessioninterruptionmonitor: ready-for-dev
-  20-7-resettable-protocol-for-comparisonsession: ready-for-dev
-  20-8-move-mockhapticfeedbackmanager-to-test-target: ready-for-dev
-  20-9-inject-trainingdatastore-into-settingsscreen: ready-for-dev
-  20-10-update-documentation: ready-for-dev
+  20-3-move-noteduration-to-core-audio: ready-for-dev
+  20-4-remove-cross-feature-feedback-icon-size-dependency: ready-for-dev
+  20-5-use-protocols-in-profile-views: ready-for-dev
+  20-6-extract-entry-environment-keys-from-core: ready-for-dev
+  20-7-remove-uikit-from-audiosessioninterruptionmonitor: ready-for-dev
+  20-8-resettable-protocol-for-comparisonsession: ready-for-dev
+  20-9-move-mockhapticfeedbackmanager-to-test-target: ready-for-dev
+  20-10-inject-trainingdatastore-into-settingsscreen: ready-for-dev
+  20-11-update-documentation: ready-for-dev
   epic-20-retrospective: optional

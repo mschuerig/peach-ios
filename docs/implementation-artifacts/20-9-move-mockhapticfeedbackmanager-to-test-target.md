@@ -1,4 +1,4 @@
-# Story 20.8: Move MockHapticFeedbackManager to Test Target
+# Story 20.9: Move MockHapticFeedbackManager to Test Target
 
 Status: pending
 

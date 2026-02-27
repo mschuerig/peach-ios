@@ -1,4 +1,4 @@
-# Story 20.5: Extract @Entry Environment Keys from Core/
+# Story 20.6: Extract @Entry Environment Keys from Core/
 
 Status: pending
 

@@ -1,4 +1,4 @@
-# Story 20.4: Use Protocols in Profile Views
+# Story 20.5: Use Protocols in Profile Views
 
 Status: pending
 

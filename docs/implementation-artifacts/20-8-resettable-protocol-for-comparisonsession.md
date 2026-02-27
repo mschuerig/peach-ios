@@ -1,4 +1,4 @@
-# Story 20.7: Resettable Protocol for ComparisonSession Dependencies
+# Story 20.8: Resettable Protocol for ComparisonSession Dependencies
 
 Status: pending
 

@@ -1,4 +1,4 @@
-# Story 20.9: Inject TrainingDataStore into SettingsScreen
+# Story 20.10: Inject TrainingDataStore into SettingsScreen
 
 Status: pending
 
