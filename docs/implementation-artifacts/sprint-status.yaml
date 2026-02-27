@@ -175,7 +175,7 @@ development_status:
   20-1-move-shared-domain-types-to-core: done
   20-2-move-soundsourceid-to-core: done
   20-3-move-noteduration-to-core-audio: done
-  20-4-remove-cross-feature-feedback-icon-size-dependency: ready-for-dev
+  20-4-remove-cross-feature-feedback-icon-size-dependency: review
   20-5-use-protocols-in-profile-views: ready-for-dev
   20-6-extract-entry-environment-keys-from-core: ready-for-dev
   20-7-remove-uikit-from-audiosessioninterruptionmonitor: ready-for-dev

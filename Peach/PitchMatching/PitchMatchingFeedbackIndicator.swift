@@ -10,9 +10,10 @@ struct PitchMatchingFeedbackIndicator: View {
         case far
     }
 
+    private static let defaultIconSize: CGFloat = 100
     private static let closeIconSize: CGFloat = 40
     private static let moderateIconSize: CGFloat = 70
-    private static let farIconSize: CGFloat = ComparisonFeedbackIndicator.defaultIconSize
+    private static let farIconSize: CGFloat = defaultIconSize
 
     var body: some View {
         if let centError {
@@ -92,7 +93,7 @@ struct PitchMatchingFeedbackIndicator: View {
 
     private static func iconSizeForBand(_ band: FeedbackBand) -> CGFloat {
         switch band {
-        case .deadCenter: return ComparisonFeedbackIndicator.defaultIconSize
+        case .deadCenter: return defaultIconSize
         case .close: return closeIconSize
         case .moderate: return moderateIconSize
         case .far: return farIconSize
