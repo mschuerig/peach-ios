@@ -49,7 +49,7 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
             )
         }
 
-        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: centDifference)
+        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: Cents(centDifference))
         sampler.sendPitchBend(bendValue, onChannel: channel)
     }
 }

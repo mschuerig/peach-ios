@@ -102,11 +102,9 @@ final class SoundFontNotePlayer: NotePlayer {
 
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         // Select preset from user settings
-        let source = userSettings.soundSource.rawValue
-
-        if let (bank, program) = Self.parseSF2Tag(from: source) {
+        if let preset = Self.parseSF2Tag(from: userSettings.soundSource) {
             do {
-                try await loadPreset(program: program, bank: bank)
+                try await loadPreset(program: preset.program, bank: preset.bank)
             } catch {
                 try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
             }
@@ -138,7 +136,7 @@ final class SoundFontNotePlayer: NotePlayer {
         let conversion = FrequencyCalculation.midiNoteAndCents(frequency: freq)
         let clampedNote = min(127, max(0, conversion.midiNote))
         let midiNote = UInt8(clampedNote)
-        let bendValue = Self.pitchBendValue(forCents: conversion.cents)
+        let bendValue = Self.pitchBendValue(forCents: Cents(conversion.cents))
 
         // Set volume offset (independent of MIDI velocity)
         sampler.overallGain = amplitudeDB.rawValue
@@ -166,17 +164,18 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - Static Helpers
 
-    nonisolated static func parseSF2Tag(from source: String) -> (bank: Int, program: Int)? {
-        guard source.hasPrefix("sf2:") else { return nil }
-        let parts = source.dropFirst(4).split(separator: ":")
+    nonisolated static func parseSF2Tag(from source: SoundSourceID) -> SF2Preset? {
+        let tag = source.rawValue
+        guard tag.hasPrefix("sf2:") else { return nil }
+        let parts = tag.dropFirst(4).split(separator: ":")
         guard parts.count == 2,
               let bank = Int(parts[0]),
               let program = Int(parts[1]) else { return nil }
-        return (bank: bank, program: program)
+        return SF2Preset(name: tag, program: program, bank: bank)
     }
 
-    nonisolated static func pitchBendValue(forCents cents: Double) -> UInt16 {
-        let raw = Int(8192.0 + cents * 8192.0 / 200.0)
+    nonisolated static func pitchBendValue(forCents cents: Cents) -> UInt16 {
+        let raw = Int(8192.0 + cents.rawValue * 8192.0 / 200.0)
         let clamped = Swift.min(16383, Swift.max(0, raw))
         return UInt16(clamped)
     }
