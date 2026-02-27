@@ -15,77 +15,47 @@ struct PeachApp: App {
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
     init() {
-        // Create model container
         do {
-            let container = try ModelContainer(for: ComparisonRecord.self, PitchMatchingRecord.self)
+            let container = try Self.createModelContainer()
             _modelContainer = State(wrappedValue: container)
 
-            // Create dependencies
             let dataStore = TrainingDataStore(modelContext: container.mainContext)
 
-            // Create SoundFontLibrary — discovers SF2 presets for Settings UI (Story 8.2)
             let soundFontLibrary = SoundFontLibrary()
             _soundFontLibrary = State(wrappedValue: soundFontLibrary)
 
-            // Create UserSettings — centralized settings access (Story 19.3)
             let userSettings = AppUserSettings()
-
-            // Create SoundFontNotePlayer — sole NotePlayer implementation (Story 8.3)
             let notePlayer = try SoundFontNotePlayer(userSettings: userSettings)
 
-            // Create and populate perceptual profile from existing data (Story 4.1, 5.1)
-            let profile = PerceptualProfile()
+            let profile = try Self.loadPerceptualProfile(from: dataStore)
             _profile = State(wrappedValue: profile)
-            let startTime = CFAbsoluteTimeGetCurrent()
-            let existingRecords = try dataStore.fetchAllComparisons()
-            for record in existingRecords {
-                profile.update(
-                    note: MIDINote(record.note1),
-                    centOffset: abs(record.note2CentOffset),
-                    isCorrect: record.isCorrect
-                )
-            }
-            let pitchMatchingRecords = try dataStore.fetchAllPitchMatchings()
-            for record in pitchMatchingRecords {
-                profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
-            }
-            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            Self.logger.info("Profile loaded from \(existingRecords.count) comparison + \(pitchMatchingRecords.count) matching records in \(elapsed, format: .fixed(precision: 1))ms")
 
-            // Create trend analyzer from existing records (Story 5.2)
+            let existingRecords = try dataStore.fetchAllComparisons()
+
             let trendAnalyzer = TrendAnalyzer(records: existingRecords)
             _trendAnalyzer = State(wrappedValue: trendAnalyzer)
 
-            // Create threshold timeline from existing records (Story 9.2)
             let thresholdTimeline = ThresholdTimeline(records: existingRecords)
             _thresholdTimeline = State(wrappedValue: thresholdTimeline)
 
-            // KazezNoteStrategy: continuous difficulty chain with random note selection (Story 9.1)
             let strategy = KazezNoteStrategy()
 
-            // Create training session with observer pattern (Story 4.1) and adaptive strategy (Story 4.3)
-            // Observers: dataStore (persistence), profile (analytics), hapticManager (feedback), thresholdTimeline (visualization)
-            let hapticManager = HapticFeedbackManager()
-            let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer, thresholdTimeline]
-            _comparisonSession = State(wrappedValue: ComparisonSession(
+            _comparisonSession = State(wrappedValue: Self.createComparisonSession(
                 notePlayer: notePlayer,
                 strategy: strategy,
                 profile: profile,
                 userSettings: userSettings,
+                dataStore: dataStore,
                 trendAnalyzer: trendAnalyzer,
-                thresholdTimeline: thresholdTimeline,
-                observers: observers
+                thresholdTimeline: thresholdTimeline
             ))
 
-            // Create pitch matching session (Story 16.3)
-            // No strategy (random note selection), no haptics, shared notePlayer
-            let pitchMatchingSession = PitchMatchingSession(
+            _pitchMatchingSession = State(wrappedValue: Self.createPitchMatchingSession(
                 notePlayer: notePlayer,
                 profile: profile,
-                observers: [dataStore, profile],
+                dataStore: dataStore,
                 userSettings: userSettings
-            )
-            _pitchMatchingSession = State(wrappedValue: pitchMatchingSession)
+            ))
         } catch {
             fatalError("Failed to initialize app: \(error)")
         }
@@ -102,5 +72,67 @@ struct PeachApp: App {
                 .environment(\.soundFontLibrary, soundFontLibrary)
                 .modelContainer(modelContainer)
         }
+    }
+
+    // MARK: - Init Helpers
+
+    private static func createModelContainer() throws -> ModelContainer {
+        try ModelContainer(for: ComparisonRecord.self, PitchMatchingRecord.self)
+    }
+
+    private static func loadPerceptualProfile(from dataStore: TrainingDataStore) throws -> PerceptualProfile {
+        let profile = PerceptualProfile()
+        let startTime = CFAbsoluteTimeGetCurrent()
+        let existingRecords = try dataStore.fetchAllComparisons()
+        for record in existingRecords {
+            profile.update(
+                note: MIDINote(record.note1),
+                centOffset: abs(record.note2CentOffset),
+                isCorrect: record.isCorrect
+            )
+        }
+        let pitchMatchingRecords = try dataStore.fetchAllPitchMatchings()
+        for record in pitchMatchingRecords {
+            profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
+        }
+        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+        logger.info("Profile loaded from \(existingRecords.count) comparison + \(pitchMatchingRecords.count) matching records in \(elapsed, format: .fixed(precision: 1))ms")
+        return profile
+    }
+
+    private static func createComparisonSession(
+        notePlayer: NotePlayer,
+        strategy: NextComparisonStrategy,
+        profile: PerceptualProfile,
+        userSettings: UserSettings,
+        dataStore: TrainingDataStore,
+        trendAnalyzer: TrendAnalyzer,
+        thresholdTimeline: ThresholdTimeline
+    ) -> ComparisonSession {
+        let hapticManager = HapticFeedbackManager()
+        let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer, thresholdTimeline]
+        return ComparisonSession(
+            notePlayer: notePlayer,
+            strategy: strategy,
+            profile: profile,
+            userSettings: userSettings,
+            trendAnalyzer: trendAnalyzer,
+            thresholdTimeline: thresholdTimeline,
+            observers: observers
+        )
+    }
+
+    private static func createPitchMatchingSession(
+        notePlayer: NotePlayer,
+        profile: PerceptualProfile,
+        dataStore: TrainingDataStore,
+        userSettings: UserSettings
+    ) -> PitchMatchingSession {
+        PitchMatchingSession(
+            notePlayer: notePlayer,
+            profile: profile,
+            observers: [dataStore, profile],
+            userSettings: userSettings
+        )
     }
 }

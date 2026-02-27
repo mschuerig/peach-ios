@@ -122,44 +122,15 @@ final class ComparisonSession {
 
         logger.info("User answered: \(isHigher ? "HIGHER" : "LOWER")")
 
-        let wasPlayingNote2 = (state == .playingNote2)
-        if wasPlayingNote2 {
-            logger.info("Stopping note 2 immediately")
-            Task {
-                try? await notePlayer.stopAll()
-            }
-        }
+        stopNote2IfPlaying()
 
         let completed = CompletedComparison(comparison: comparison, userAnsweredHigher: isHigher)
         logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (second note was \(comparison.isSecondNoteHigher ? "higher" : "lower"))")
 
         lastCompletedComparison = completed
-
-        if completed.isCorrect {
-            let diff = comparison.centDifference.magnitude
-            if let best = sessionBestCentDifference {
-                if diff < best { sessionBestCentDifference = diff }
-            } else {
-                sessionBestCentDifference = diff
-            }
-        }
-
+        trackSessionBest(completed)
         recordComparison(completed)
-
-        isLastAnswerCorrect = completed.isCorrect
-        showFeedback = true
-
-        state = .showingFeedback
-        logger.info("Entering feedback state (duration: \(self.feedbackDuration)s)")
-
-        feedbackTask = Task {
-            try? await Task.sleep(for: .milliseconds(Int(feedbackDuration * 1000)))
-            if state == .showingFeedback && !Task.isCancelled {
-                showFeedback = false
-                logger.info("Feedback complete, starting next comparison")
-                await playNextComparison()
-            }
-        }
+        transitionToFeedback(completed)
     }
 
     func resetTrainingData() {
@@ -220,7 +191,6 @@ final class ComparisonSession {
     private func playNextComparison() async {
         let settings = currentSettings
         let noteDuration = currentNoteDuration
-        let varyLoudness = currentVaryLoudness
 
         let comparison = strategy.nextComparison(
             profile: profile,
@@ -229,46 +199,99 @@ final class ComparisonSession {
         )
         currentComparison = comparison
 
-        let note2AmplitudeDB: AmplitudeDB = {
-            guard varyLoudness > 0.0 else { return AmplitudeDB(0.0) }
-            let range = Float(varyLoudness) * maxLoudnessOffsetDB
-            let offset = Float.random(in: -range...range)
-            return AmplitudeDB(offset)
-        }()
+        let amplitudeDB = calculateNote2Amplitude(varyLoudness: currentVaryLoudness)
 
         do {
-            let freq1 = try comparison.note1Frequency(referencePitch: settings.referencePitch)
-            let freq2 = try comparison.note2Frequency(referencePitch: settings.referencePitch)
-            logger.info("Comparison: note1=\(comparison.note1.rawValue) \(freq1.rawValue)Hz @0.0dB, note2 \(freq2.rawValue)Hz @\(note2AmplitudeDB.rawValue)dB, centDiff=\(comparison.centDifference.rawValue), higher=\(comparison.isSecondNoteHigher)")
-
-            state = .playingNote1
-            try await notePlayer.play(frequency: freq1, duration: noteDuration, velocity: velocity, amplitudeDB: AmplitudeDB(0.0))
-
-            guard state != .idle && !Task.isCancelled else {
-                logger.info("Training stopped during note 1, aborting comparison")
-                return
-            }
-
-            state = .playingNote2
-            try await notePlayer.play(frequency: freq2, duration: noteDuration, velocity: velocity, amplitudeDB: note2AmplitudeDB)
-
-            guard state != .idle && !Task.isCancelled else {
-                logger.info("Training stopped during note 2, aborting comparison")
-                return
-            }
-
-            if state == .playingNote2 {
-                state = .awaitingAnswer
-                logger.info("Note 2 finished, awaiting answer")
-            } else {
-                logger.info("Note 2 finished, but user already answered (state: \(String(describing: self.state)))")
-            }
+            try await playComparisonNotes(
+                comparison: comparison,
+                settings: settings,
+                noteDuration: noteDuration,
+                amplitudeDB: amplitudeDB
+            )
         } catch let error as AudioError {
             logger.error("Audio error, stopping training: \(error.localizedDescription)")
             stop()
         } catch {
             logger.error("Unexpected error, stopping training: \(error.localizedDescription)")
             stop()
+        }
+    }
+
+    private func calculateNote2Amplitude(varyLoudness: Double) -> AmplitudeDB {
+        guard varyLoudness > 0.0 else { return AmplitudeDB(0.0) }
+        let range = Float(varyLoudness) * maxLoudnessOffsetDB
+        let offset = Float.random(in: -range...range)
+        return AmplitudeDB(offset)
+    }
+
+    private func playComparisonNotes(
+        comparison: Comparison,
+        settings: TrainingSettings,
+        noteDuration: TimeInterval,
+        amplitudeDB: AmplitudeDB
+    ) async throws {
+        let freq1 = try comparison.note1Frequency(referencePitch: settings.referencePitch)
+        let freq2 = try comparison.note2Frequency(referencePitch: settings.referencePitch)
+        logger.info("Comparison: note1=\(comparison.note1.rawValue) \(freq1.rawValue)Hz @0.0dB, note2 \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, centDiff=\(comparison.centDifference.rawValue), higher=\(comparison.isSecondNoteHigher)")
+
+        state = .playingNote1
+        try await notePlayer.play(frequency: freq1, duration: noteDuration, velocity: velocity, amplitudeDB: AmplitudeDB(0.0))
+
+        guard state != .idle && !Task.isCancelled else {
+            logger.info("Training stopped during note 1, aborting comparison")
+            return
+        }
+
+        state = .playingNote2
+        try await notePlayer.play(frequency: freq2, duration: noteDuration, velocity: velocity, amplitudeDB: amplitudeDB)
+
+        guard state != .idle && !Task.isCancelled else {
+            logger.info("Training stopped during note 2, aborting comparison")
+            return
+        }
+
+        if state == .playingNote2 {
+            state = .awaitingAnswer
+            logger.info("Note 2 finished, awaiting answer")
+        } else {
+            logger.info("Note 2 finished, but user already answered (state: \(String(describing: self.state)))")
+        }
+    }
+
+    private func stopNote2IfPlaying() {
+        let wasPlayingNote2 = (state == .playingNote2)
+        if wasPlayingNote2 {
+            logger.info("Stopping note 2 immediately")
+            Task {
+                try? await notePlayer.stopAll()
+            }
+        }
+    }
+
+    private func trackSessionBest(_ completed: CompletedComparison) {
+        guard completed.isCorrect else { return }
+        let diff = completed.comparison.centDifference.magnitude
+        if let best = sessionBestCentDifference {
+            if diff < best { sessionBestCentDifference = diff }
+        } else {
+            sessionBestCentDifference = diff
+        }
+    }
+
+    private func transitionToFeedback(_ completed: CompletedComparison) {
+        isLastAnswerCorrect = completed.isCorrect
+        showFeedback = true
+
+        state = .showingFeedback
+        logger.info("Entering feedback state (duration: \(self.feedbackDuration)s)")
+
+        feedbackTask = Task {
+            try? await Task.sleep(for: .milliseconds(Int(feedbackDuration * 1000)))
+            if state == .showingFeedback && !Task.isCancelled {
+                showFeedback = false
+                logger.info("Feedback complete, starting next comparison")
+                await playNextComparison()
+            }
         }
     }
 

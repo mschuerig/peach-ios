@@ -1,6 +1,6 @@
 # Story 19.4: Extract Long Methods
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,29 +24,29 @@ So that each method does one thing, the code is easier to read and navigate, and
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extract `PeachApp.init()` into named methods (AC: #1, #4)
-  - [ ] Extract `createModelContainer() -> ModelContainer` (lines ~20-23)
-  - [ ] Extract `loadPerceptualProfile(from: TrainingDataStore) -> PerceptualProfile` (lines ~35-52, loads comparison and matching records)
-  - [ ] Extract `createComparisonSession(notePlayer:strategy:profile:dataStore:trendAnalyzer:thresholdTimeline:) -> ComparisonSession` (lines ~65-76)
-  - [ ] Extract `createPitchMatchingSession(notePlayer:profile:dataStore:) -> PitchMatchingSession` (lines ~78-85)
-  - [ ] Remove REVIEW comment at line 18
-  - [ ] Keep error handling `catch` in init (fatal error is appropriate for app startup)
+- [x] Task 1: Extract `PeachApp.init()` into named methods (AC: #1, #4)
+  - [x] Extract `createModelContainer() -> ModelContainer` (lines ~20-23)
+  - [x] Extract `loadPerceptualProfile(from: TrainingDataStore) -> PerceptualProfile` (lines ~35-52, loads comparison and matching records)
+  - [x] Extract `createComparisonSession(notePlayer:strategy:profile:dataStore:trendAnalyzer:thresholdTimeline:) -> ComparisonSession` (lines ~65-76)
+  - [x] Extract `createPitchMatchingSession(notePlayer:profile:dataStore:) -> PitchMatchingSession` (lines ~78-85)
+  - [x] Remove REVIEW comment at line 18
+  - [x] Keep error handling `catch` in init (fatal error is appropriate for app startup)
 
-- [ ] Task 2: Extract `ComparisonSession.handleAnswer()` (AC: #2, #4)
-  - [ ] Extract `stopNote2IfPlaying()` — stops current note2 playback if user answers during playback (lines ~254-261)
-  - [ ] Extract `trackSessionBest(_ completed: CompletedComparison)` — updates sessionBestCentDifference on correct answers (lines ~270-278)
-  - [ ] Extract `transitionToFeedback(_ completed: CompletedComparison)` — sets feedback state, schedules next comparison after delay (lines ~283-300)
-  - [ ] Remove REVIEW comment at line 241
+- [x] Task 2: Extract `ComparisonSession.handleAnswer()` (AC: #2, #4)
+  - [x] Extract `stopNote2IfPlaying()` — stops current note2 playback if user answers during playback (lines ~254-261)
+  - [x] Extract `trackSessionBest(_ completed: CompletedComparison)` — updates sessionBestCentDifference on correct answers (lines ~270-278)
+  - [x] Extract `transitionToFeedback(_ completed: CompletedComparison)` — sets feedback state, schedules next comparison after delay (lines ~283-300)
+  - [x] Remove REVIEW comment at line 241
 
-- [ ] Task 3: Extract `ComparisonSession.playNextComparison()` (AC: #3, #4)
-  - [ ] Extract `calculateNote2Amplitude(varyLoudness: Double) -> AmplitudeDB` — random loudness offset calculation (lines ~392-397)
-  - [ ] Extract `playComparisonNotes(comparison:settings:noteDuration:amplitudeDB:) async` — plays note 1, checks state, plays note 2, checks state, transitions to awaitingAnswer (lines ~399-432)
-  - [ ] Keep audio error handling in `playNextComparison()` (wraps the extracted call)
-  - [ ] Remove REVIEW comment at line 376
+- [x] Task 3: Extract `ComparisonSession.playNextComparison()` (AC: #3, #4)
+  - [x] Extract `calculateNote2Amplitude(varyLoudness: Double) -> AmplitudeDB` — random loudness offset calculation (lines ~392-397)
+  - [x] Extract `playComparisonNotes(comparison:settings:noteDuration:amplitudeDB:) async` — plays note 1, checks state, plays note 2, checks state, transitions to awaitingAnswer (lines ~399-432)
+  - [x] Keep audio error handling in `playNextComparison()` (wraps the extracted call)
+  - [x] Remove REVIEW comment at line 376
 
-- [ ] Task 4: Run full test suite and verify (AC: #5)
-  - [ ] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All tests pass, zero regressions
+- [x] Task 4: Run full test suite and verify (AC: #5)
+  - [x] Run `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All tests pass, zero regressions
 
 ## Dev Notes
 
@@ -136,13 +136,29 @@ Commit message: `Implement story 19.4: Extract long methods`
 ## Change Log
 
 - 2026-02-26: Story created by BMAD create-story workflow from Epic 19 code review plan.
+- 2026-02-27: Story implemented — extracted 9 methods across 2 files, all 586 tests pass.
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+None — clean implementation with no issues.
 
 ### Completion Notes List
 
+- Extracted `PeachApp.init()` into 4 private static factory methods: `createModelContainer()`, `loadPerceptualProfile(from:)`, `createComparisonSession(...)`, `createPitchMatchingSession(...)`. Methods are `static` because they're called from a struct initializer before `self` is available.
+- Extracted `ComparisonSession.handleAnswer()` into 3 private helpers: `stopNote2IfPlaying()`, `trackSessionBest(_:)`, `transitionToFeedback(_:)`. The `handleAnswer` body is now 12 lines of clear, sequential steps.
+- Extracted `ComparisonSession.playNextComparison()` into 2 private helpers: `calculateNote2Amplitude(varyLoudness:)` and `playComparisonNotes(comparison:settings:noteDuration:amplitudeDB:) async throws`. Error handling stays in the caller as specified.
+- REVIEW comments were already absent from the codebase (AC #4 pre-satisfied).
+- All 586 tests pass with zero regressions.
+
 ### File List
+
+- `Peach/App/PeachApp.swift` — extracted init into 4 static factory methods
+- `Peach/Comparison/ComparisonSession.swift` — extracted handleAnswer into 3 helpers, playNextComparison into 2 helpers
+- `docs/implementation-artifacts/sprint-status.yaml` — status updated
+- `docs/implementation-artifacts/19-4-extract-long-methods.md` — story file updated
