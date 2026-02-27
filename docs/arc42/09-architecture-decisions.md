@@ -42,7 +42,7 @@
 
 **Context:** Services could be concrete classes (simpler) or protocol-backed (more testable).
 
-**Decision:** Every service defines a protocol first, then an implementation. `NotePlayer` → `SineWaveNotePlayer`. `NextNoteStrategy` → `AdaptiveNoteStrategy`.
+**Decision:** Every service defines a protocol first, then an implementation. `NotePlayer` → `SoundFontNotePlayer`. `NextComparisonStrategy` → `KazezNoteStrategy`.
 
 **Rationale:**
 - Enables test mocking without frameworks or subclassing
@@ -67,7 +67,7 @@
 
 **Context:** Persistence options include SwiftData, Core Data, SQLite directly, or file-based storage.
 
-**Decision:** SwiftData with a single `ComparisonRecord` model.
+**Decision:** SwiftData with `ComparisonRecord` and `PitchMatchingRecord` models.
 
 **Rationale:**
 - Native SwiftUI integration (`@Model`, `ModelContainer` via environment)
@@ -108,6 +108,25 @@
 
 **Rationale:**
 - Each feature is self-contained: screen + supporting views in one directory
-- `Core/` subdirectories group by domain (Audio, Algorithm, Data, Profile)
+- `Core/` subdirectories group by domain (Audio, Algorithm, Data, Profile, Training)
+- `Core/Training/` holds shared domain types (Comparison, observers, Resettable) used by multiple features
 - Test target mirrors source structure exactly
 - Clear answer to "where does this file go?" for AI agents and future contributors
+
+## AD-10: Dependency Direction Discipline
+
+**Context:** Peach is a single-module Swift app with no compiler-enforced module boundaries. Without explicit rules, dependency arrows naturally become tangled: Core/ files imported SwiftUI for `@Entry` definitions, feature modules referenced types from other feature modules, and views created service instances directly. These violations were found by adversarial code review (Epic 19) and addressed systematically in Epic 20.
+
+**Decision:**
+1. Core/ never depends on feature modules — shared types live in `Core/Training/`
+2. Core/ never imports SwiftUI or UIKit — `@Entry` definitions live in `App/EnvironmentKeys.swift`
+3. Feature modules do not depend on each other — each defines its own constants
+4. Views depend on protocols, not implementations, for all service interactions
+
+**Rationale:**
+- Dependency direction is maintained by convention, enforced by code review and adversarial audits
+- Prepares the codebase for potential future modularization without requiring it now
+- Makes violations visible and intentional rather than accidental
+- Small cost: `EnvironmentKeys.swift` consolidation, a few type moves to Core/
+
+**Trade-off:** Some files move away from their "natural" home (e.g., `SoundSourceID` from Settings/ to Core/Audio/) to satisfy the dependency rule. This is acceptable because the rule prevents a larger class of architectural erosion.

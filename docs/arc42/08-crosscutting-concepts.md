@@ -7,24 +7,32 @@ All services are created in `PeachApp.init()` (composition root) and injected in
 ```swift
 // PeachApp.swift — composition root
 ContentView()
-    .environment(\.trainingSession, trainingSession)
+    .environment(\.comparisonSession, comparisonSession)
+    .environment(\.pitchMatchingSession, pitchMatchingSession)
     .environment(\.perceptualProfile, profile)
     .environment(\.trendAnalyzer, trendAnalyzer)
+    .environment(\.thresholdTimeline, thresholdTimeline)
+    .environment(\.soundFontLibrary, soundFontLibrary)
     .modelContainer(modelContainer)
 ```
 
-Each injectable service has a custom `EnvironmentKey`:
+All `@Entry` environment key definitions are consolidated in `App/EnvironmentKeys.swift`:
 
 ```swift
-struct TrainingSessionKey: EnvironmentKey {
-    static var defaultValue: TrainingSession = ...
-}
 extension EnvironmentValues {
-    var trainingSession: TrainingSession { ... }
+    @Entry var soundFontLibrary = SoundFontLibrary()
+    @Entry var trendAnalyzer = TrendAnalyzer()
+    @Entry var thresholdTimeline = ThresholdTimeline()
+    @Entry var activeSession: (any TrainingSession)? = nil
+    @Entry var perceptualProfile = PerceptualProfile()
+    @Entry var comparisonSession: ComparisonSession = { ... }()
+    @Entry var pitchMatchingSession: PitchMatchingSession = { ... }()
 }
 ```
 
-Views consume services via `@Environment(\.trainingSession)`. Tests inject mocks directly into `TrainingSession`'s initializer — no environment needed.
+The `@Entry` macro replaces manual `EnvironmentKey` structs — no boilerplate `defaultValue` or computed property needed. This consolidation keeps Core/ free of SwiftUI imports.
+
+Views consume services via `@Environment(\.comparisonSession)`. Tests inject mocks directly into session initializers — no environment needed.
 
 ## Concurrency Model
 
@@ -36,7 +44,7 @@ Views consume services via `@Environment(\.trainingSession)`. Tests inject mocks
 
 ## Observer Pattern
 
-`ComparisonObserver` decouples `TrainingSession` from its side-effect handlers:
+`ComparisonObserver` decouples `ComparisonSession` from its side-effect handlers:
 
 ```swift
 protocol ComparisonObserver {
@@ -44,7 +52,7 @@ protocol ComparisonObserver {
 }
 ```
 
-Four observers are wired in `PeachApp.init()`:
+Five comparison observers are wired in `PeachApp.init()`:
 
 | Observer | Responsibility |
 |---|---|
@@ -52,6 +60,17 @@ Four observers are wired in `PeachApp.init()`:
 | `PerceptualProfile` | Update per-note statistics (Welford's) |
 | `HapticFeedbackManager` | Trigger haptic feedback on wrong answer |
 | `TrendAnalyzer` | Update improving/stable/declining trend |
+| `ThresholdTimeline` | Track threshold history for timeline visualization |
+
+`PitchMatchingObserver` follows the same pattern for `PitchMatchingSession`:
+
+```swift
+protocol PitchMatchingObserver {
+    func pitchMatchingCompleted(_ completed: CompletedPitchMatching)
+}
+```
+
+Pitch matching observers (e.g., `TrainingDataStore`, `PerceptualProfile`) are wired separately in `PeachApp.init()`.
 
 Each observer handles its own errors internally. A failure in one observer does not affect the others or the training loop.
 
@@ -77,10 +96,10 @@ Each observer handles its own errors internally. A failure in one observer does 
 
 ```swift
 // Production
-TrainingSession(notePlayer: SineWaveNotePlayer(), strategy: AdaptiveNoteStrategy(), ...)
+ComparisonSession(notePlayer: SoundFontNotePlayer(), strategy: KazezNoteStrategy(), ...)
 
 // Test
-TrainingSession(notePlayer: MockNotePlayer(), strategy: MockNextNoteStrategy(), ...)
+ComparisonSession(notePlayer: MockNotePlayer(), strategy: MockNextComparisonStrategy(), ...)
 ```
 
 **Mock contract (all mocks must provide):**
@@ -93,15 +112,15 @@ TrainingSession(notePlayer: MockNotePlayer(), strategy: MockNextNoteStrategy(), 
 **Async testing pattern:**
 ```swift
 @Test("plays note 1 after starting")
-@MainActor func playsNote1AfterStarting() async {
-    let (session, notePlayer, _) = makeTrainingSession()
+func playsNote1AfterStarting() async {
+    let (session, notePlayer, _) = makeComparisonSession()
     session.startTraining()
     try await waitForState(session, expected: .playingNote1)
     #expect(notePlayer.playCallCount == 1)
 }
 ```
 
-`waitForState` polls the session's state with a timeout — never use raw `#expect` immediately after an async action.
+`waitForState` polls the session's state with a timeout — never use raw `#expect` immediately after an async action. Test functions are `async` (no explicit `@MainActor` needed — default isolation applies).
 
 **SwiftData in tests:** Always `ModelConfiguration(isStoredInMemoryOnly: true)`. Never use the production container.
 

@@ -1,6 +1,6 @@
 # Story 20.11: Update Documentation
 
-Status: pending
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -48,38 +48,38 @@ So that the docs accurately describe the current codebase, new conventions are c
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update `docs/arc42/05-building-block-view.md` (AC: #1)
-  - [ ] Add `Core/Training/` to directory tree with contents (Comparison.swift, ComparisonObserver.swift, CompletedPitchMatching.swift, PitchMatchingObserver.swift, Resettable.swift)
-  - [ ] Fix outdated type names throughout
-  - [ ] Add `ThresholdTimeline` to observer list
-  - [ ] Note `App/EnvironmentKeys.swift` as environment key registry
-  - [ ] Update file counts
+- [x] Task 1: Update `docs/arc42/05-building-block-view.md` (AC: #1)
+  - [x] Add `Core/Training/` to directory tree with contents (Comparison.swift, ComparisonObserver.swift, CompletedPitchMatching.swift, PitchMatchingObserver.swift, Resettable.swift)
+  - [x] Fix outdated type names throughout
+  - [x] Add `ThresholdTimeline` to observer list
+  - [x] Note `App/EnvironmentKeys.swift` as environment key registry
+  - [x] Update file counts
 
-- [ ] Task 2: Update `docs/arc42/08-crosscutting-concepts.md` (AC: #2)
-  - [ ] Update DI section code examples to use `@Entry` macro
-  - [ ] Document `EnvironmentKeys.swift` pattern
-  - [ ] Update observer table
-  - [ ] Add PitchMatching observer pattern
+- [x] Task 2: Update `docs/arc42/08-crosscutting-concepts.md` (AC: #2)
+  - [x] Update DI section code examples to use `@Entry` macro
+  - [x] Document `EnvironmentKeys.swift` pattern
+  - [x] Update observer table
+  - [x] Add PitchMatching observer pattern
 
-- [ ] Task 3: Update `docs/arc42/09-architecture-decisions.md` (AC: #3)
-  - [ ] Add AD-10: Dependency Direction Cleanup
-  - [ ] Update AD-9 for Core/Training/
+- [x] Task 3: Update `docs/arc42/09-architecture-decisions.md` (AC: #3)
+  - [x] Add AD-10: Dependency Direction Cleanup
+  - [x] Update AD-9 for Core/Training/
 
-- [ ] Task 4: Update `docs/arc42/11-risks-and-technical-debt.md` (AC: #4)
-  - [ ] Mark resolved debt items
-  - [ ] Add any new observations from implementation
+- [x] Task 4: Update `docs/arc42/11-risks-and-technical-debt.md` (AC: #4)
+  - [x] Mark resolved debt items
+  - [x] Add any new observations from implementation
 
-- [ ] Task 5: Update `docs/project-context.md` (AC: #5)
-  - [ ] Add `Core/Training/` to file placement rules
-  - [ ] Add `App/EnvironmentKeys.swift` guidance for new @Entry keys
-  - [ ] Add no-SwiftUI and no-UIKit rules for Core/
-  - [ ] Update `SoundSourceID` location
+- [x] Task 5: Update `docs/project-context.md` (AC: #5)
+  - [x] Add `Core/Training/` to file placement rules
+  - [x] Add `App/EnvironmentKeys.swift` guidance for new @Entry keys
+  - [x] Add no-SwiftUI and no-UIKit rules for Core/
+  - [x] Update `SoundSourceID` location
 
-- [ ] Task 6: Update `docs/planning-artifacts/epics.md` (AC: #6)
-  - [ ] Add Epic 20 definition with all 10 stories in the established format (As a / I want / So that + Acceptance Criteria in Given/When/Then)
+- [x] Task 6: Update `docs/planning-artifacts/epics.md` (AC: #6)
+  - [x] Add Epic 20 definition with all 10 stories in the established format (As a / I want / So that + Acceptance Criteria in Given/When/Then) — already present with all 11 stories
 
-- [ ] Task 7: Verify all doc references are consistent
-  - [ ] Cross-check file paths mentioned in docs against actual codebase
+- [x] Task 7: Verify all doc references are consistent
+  - [x] Cross-check file paths mentioned in docs against actual codebase — fixed AD-6 outdated "single model" reference
 
 ## Dev Notes
 
@@ -120,6 +120,32 @@ Commit message: `Implement story 20.10: Update documentation for Epic 20`
 - [Source: docs/implementation-artifacts/sprint-status.yaml -- Status tracking format]
 - All Epic 20 story files
 
+## Dev Agent Record
+
+### Implementation Notes
+
+- All 7 tasks completed in a single pass — documentation-only changes, no code or test impact
+- Task 6 (epics.md) and AC #7 (sprint-status.yaml) were already satisfied — Epic 20 was added to both files during sprint planning
+- Task 7 (verification) found and fixed 1 additional inconsistency: AD-6 still referenced "single ComparisonRecord model" despite PitchMatchingRecord being added in Epic 13
+- Removed two obsolete Kazez-related debt items from the Medium Priority table (KazezNoteStrategy is now the sole strategy, no divergence issue; user range is respected)
+- Updated feedback icon flicker UX gap as resolved (fixed in sprint fix)
+- Updated R-3 risk to reference SoundFontNotePlayer instead of removed SineWaveNotePlayer
+
+### Completion Notes
+
+Story 20.11 is complete. All arc42 sections, project-context.md, and planning artifacts now accurately reflect the post-Epic 20 architecture. Key additions: AD-10 (Dependency Direction Discipline), Core/Training/ in all relevant docs, @Entry/EnvironmentKeys.swift consolidation documented, resolved tech debt items struck through.
+
+## File List
+
+- docs/arc42/05-building-block-view.md (modified)
+- docs/arc42/08-crosscutting-concepts.md (modified)
+- docs/arc42/09-architecture-decisions.md (modified)
+- docs/arc42/11-risks-and-technical-debt.md (modified)
+- docs/project-context.md (modified)
+- docs/implementation-artifacts/sprint-status.yaml (modified)
+- docs/implementation-artifacts/20-11-update-documentation.md (modified)
+
 ## Change Log
 
 - 2026-02-27: Story created from Epic 20 adversarial dependency review.
+- 2026-02-27: All documentation updated to reflect Epic 20 changes. AD-10 added. Resolved debt items marked. File counts and type names corrected throughout.

@@ -182,5 +182,5 @@ development_status:
   20-8-resettable-protocol-for-comparisonsession: done
   20-9-move-mockhapticfeedbackmanager-to-test-target: done
   20-10-inject-trainingdatastore-into-settingsscreen: done
-  20-11-update-documentation: ready-for-dev
+  20-11-update-documentation: review
   epic-20-retrospective: optional

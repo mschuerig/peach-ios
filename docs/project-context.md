@@ -91,7 +91,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Never create service instances elsewhere** — new services get wired here and injected via environment
 
 **When Adding New Components:**
-- New injectable service → add `@Entry var myService = MyService()` in an `extension EnvironmentValues`, wire in `PeachApp.swift`
+- New injectable service → add `@Entry var myService = MyService()` in `App/EnvironmentKeys.swift`, wire in `PeachApp.swift`
 - New `ComparisonObserver` → add to observer array in `PeachApp.swift`; inject only needed mocks in tests
 - New SwiftData `@Model` → register in `ModelContainer` schema in `PeachApp.swift`
 - New layout logic → extract to `static` methods for unit testability
@@ -139,7 +139,7 @@ Never run only specific test files — always the complete suite.
 ### Code Quality & Style Rules
 
 **Project-Specific Naming (non-obvious conventions):**
-- **Protocols:** nouns for roles (`NotePlayer`, `NextComparisonStrategy`), `-able`/`-ible` for capabilities (`Resettable`, `Sendable`) per [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) (not `-Protocol` suffix)
+- **Protocols:** nouns for roles (`NotePlayer`, `NextComparisonStrategy`, `TrainingSession`), `-able`/`-ible` for capabilities (`Resettable`, `Sendable`) per [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) (not `-Protocol` suffix)
 - **Protocol implementations:** descriptive prefix — `SoundFontNotePlayer`, `KazezNoteStrategy`
 - **Screens:** `{Name}Screen.swift` — not `{Name}View` or `{Name}ViewController`
 - **Subviews:** `{Name}View.swift` — `PianoKeyboardView.swift`, `ComparisonFeedbackIndicator.swift`
@@ -150,8 +150,13 @@ Never run only specific test files — always the complete suite.
 
 **File Placement (decision tree):**
 - Protocol or service used across features → `Core/{subdomain}/`
+- Shared training domain types (Comparison, observers, Resettable) → `Core/Training/`
+- Audio domain value types (SoundSourceID, NoteDuration, etc.) → `Core/Audio/`
+- New `@Entry` environment key → `App/EnvironmentKeys.swift` (not co-located with domain types)
 - Screen the user navigates to → `{Feature}/{Feature}Screen.swift`
 - Subview used by one screen → same feature directory as the screen
+- **No SwiftUI imports in Core/ files** — `@Entry` definitions go in `App/EnvironmentKeys.swift`
+- **No UIKit imports in Core/ files** — UIKit dependencies injected from the composition root
 - **Do not create `Utils/`, `Helpers/`, `Shared/`, `Common/` directories** — none exist and agents must not create them preemptively
 
 **Code Style:**
@@ -244,4 +249,4 @@ Never run only specific test files — always the complete suite.
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-02-24 (Swift 6.2 upgrade)
+Last Updated: 2026-02-27 (Epic 20 dependency direction cleanup)

@@ -4,13 +4,15 @@
 
 ```
 Peach/
-├── App/              Composition root, navigation shell
+├── App/              Composition root, navigation shell, EnvironmentKeys
 ├── Core/             Shared services (cross-feature)
-│   ├── Audio/        Tone generation
+│   ├── Audio/        Tone generation, value types, SF2 parsing
 │   ├── Algorithm/    Comparison selection
 │   ├── Data/         Persistence
-│   └── Profile/      User statistics
-├── Training/         Training loop feature
+│   ├── Profile/      User statistics, timeline
+│   └── Training/     Shared domain types (Comparison, observers, Resettable)
+├── Comparison/       Comparison training loop feature
+├── PitchMatching/    Pitch matching training feature
 ├── Profile/          Profile visualization feature
 ├── Settings/         Configuration feature
 ├── Start/            Home screen feature
@@ -23,64 +25,61 @@ Peach/
 ### Service Overview
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      TrainingSession                        │
-│              (state machine, error boundary)                │
-│                                                             │
-│    ┌──────────┐  ┌──────────────┐  ┌──────────────────┐    │
-│    │NotePlayer│  │NextNoteStrat.│  │PerceptualProfile │    │
-│    │(protocol)│  │  (protocol)  │  │   (@Observable)  │    │
-│    └────┬─────┘  └──────┬───────┘  └────────┬─────────┘    │
-│         │               │                    │              │
-│         │               │                    │              │
-│    ┌────▼─────┐  ┌──────▼───────┐           │              │
-│    │SineWave  │  │Adaptive      │           │              │
-│    │NotePlayer│  │NoteStrategy  │◀──────────┘              │
-│    └──────────┘  └──────────────┘  reads profile           │
-│                                                             │
-│    Observers: [ComparisonObserver]                          │
-│    ┌──────────────┬──────────────┬──────────┬─────────┐    │
-│    │TrainingData  │Perceptual   │Haptic    │Trend    │    │
-│    │Store         │Profile      │Feedback  │Analyzer │    │
-│    │(persistence) │(analytics)  │Manager   │(trends) │    │
-│    └──────────────┴──────────────┴──────────┴─────────┘    │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     ComparisonSession                            │
+│              (state machine, error boundary)                     │
+│                                                                  │
+│    ┌──────────┐  ┌────────────────┐  ┌──────────────────┐       │
+│    │NotePlayer│  │NextComparison  │  │PerceptualProfile │       │
+│    │(protocol)│  │Strategy (prot.)│  │   (@Observable)  │       │
+│    └────┬─────┘  └──────┬─────────┘  └────────┬─────────┘       │
+│         │               │                      │                 │
+│    ┌────▼─────┐  ┌──────▼─────────┐           │                 │
+│    │SoundFont │  │Kazez           │           │                 │
+│    │NotePlayer│  │NoteStrategy    │◀──────────┘                 │
+│    └──────────┘  └────────────────┘  reads profile              │
+│                                                                  │
+│    Observers: [ComparisonObserver]                               │
+│    ┌──────────┬──────────┬──────────┬──────────┬──────────┐     │
+│    │Training  │Perceptual│Haptic    │Trend     │Threshold │     │
+│    │DataStore │Profile   │Feedback  │Analyzer  │Timeline  │     │
+│    │(persist) │(analytic)│Manager   │(trends)  │(history) │     │
+│    └──────────┴──────────┴──────────┴──────────┴──────────┘     │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-### TrainingSession
+### ComparisonSession
 
-**File:** `Training/TrainingSession.swift`
+**File:** `Comparison/ComparisonSession.swift`
 **Role:** Central orchestrator. The only component that understands a "comparison" as two notes played in sequence with a user answer.
 
 - `@MainActor @Observable final class`
 - State machine: `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → loop
-- Coordinates `NotePlayer`, `NextNoteStrategy`, `PerceptualProfile`
+- Coordinates `NotePlayer`, `NextComparisonStrategy`, `PerceptualProfile`
 - Notifies `[ComparisonObserver]` on each completed comparison
 - Catches all service errors — training continues gracefully
-- Reads `@AppStorage` settings live on each comparison
+- Reads settings live via `UserSettings` protocol on each comparison
+- Stores `[Resettable]` for reset-capable dependencies (TrendAnalyzer, ThresholdTimeline)
 
-### NotePlayer (protocol) → SineWaveNotePlayer
+### NotePlayer (protocol) → SoundFontNotePlayer
 
-**Files:** `Core/Audio/NotePlayer.swift`, `Core/Audio/SineWaveNotePlayer.swift`
+**Files:** `Core/Audio/NotePlayer.swift`, `Core/Audio/SoundFontNotePlayer.swift`
 **Role:** Plays a tone at a given frequency for a given duration.
 
 - Knows only frequencies (Hz), durations, amplitudes
 - No concept of MIDI notes, comparisons, or training
-- `AVAudioEngine` + `AVAudioPlayerNode` with pre-generated PCM buffers
-- 5ms attack/release envelopes to prevent clicks
-- 44.1kHz sample rate, mono
+- `AVAudioEngine` + `AVAudioUnitSampler` for SF2 soundfont playback
+- Returns a `PlaybackHandle` for stop/adjust control
+- Reads `userSettings.soundSource` on each `play()` call to select the SF2 preset
 
-### NextNoteStrategy (protocol) → AdaptiveNoteStrategy
+### NextComparisonStrategy (protocol) → KazezNoteStrategy
 
-**Files:** `Core/Algorithm/NextNoteStrategy.swift`, `Core/Algorithm/AdaptiveNoteStrategy.swift`
+**Files:** `Core/Algorithm/NextComparisonStrategy.swift`, `Core/Algorithm/KazezNoteStrategy.swift`
 **Role:** Selects the next comparison based on the user's profile and settings.
 
-- Stateless: reads `PerceptualProfile` and `lastComparison`, returns a `Comparison`
-- **Note selection:** weighted random between Natural (nearby, ±12 semitones) and Mechanical (weak spots from profile), controlled by user's slider setting
+- Stateless: reads `PitchDiscriminationProfile` and `lastComparison`, returns a `Comparison`
 - **Difficulty:** Kazez convergence formulas — correct answer narrows (`N = P × [1 - 0.08 × √P]`), wrong answer widens (`N = P × [1 + 0.09 × √P]`)
 - **Bootstrap:** when no previous comparison exists, uses neighbor-weighted effective difficulty from up to 5 trained notes in each direction
-
-Also present: `KazezNoteStrategy` — a reference implementation using original Kazez (2001) coefficients, used for evaluation only.
 
 ### PerceptualProfile
 
@@ -108,11 +107,27 @@ Also present: `KazezNoteStrategy` — a reference implementation using original 
 ### ComparisonRecord
 
 **File:** `Core/Data/ComparisonRecord.swift`
-**Role:** SwiftData model — the only persisted entity.
+**Role:** SwiftData model for comparison training.
 
 - Fields: `note1` (Int), `note2` (Int), `note2CentOffset` (Double), `isCorrect` (Bool), `timestamp` (Date)
 - `note1` and `note2` are always the same MIDI note (note2 differs by cents only)
 - Signed `note2CentOffset`: positive = higher, negative = lower
+
+### PitchMatchingRecord
+
+**File:** `Core/Data/PitchMatchingRecord.swift`
+**Role:** SwiftData model for pitch matching training.
+
+- Fields: `referenceNote` (Int), `initialCentOffset` (Double), `userCentError` (Double), `timestamp` (Date)
+
+### ThresholdTimeline
+
+**File:** `Core/Profile/ThresholdTimeline.swift`
+**Role:** Tracks threshold history snapshots for timeline visualization.
+
+- Implements `ComparisonObserver` for incremental updates
+- Implements `Resettable` for data reset support
+- Injected via `@Environment(\.thresholdTimeline)`
 
 ### TrendAnalyzer
 
@@ -138,9 +153,10 @@ Also present: `KazezNoteStrategy` — a reference implementation using original 
 
 | Screen | File | Observes | User Actions |
 |---|---|---|---|
-| **StartScreen** | `Start/StartScreen.swift` | `PerceptualProfile` (preview) | Start Training, navigate to Profile/Settings/Info |
-| **TrainingScreen** | `Training/TrainingScreen.swift` | `TrainingSession` | Higher/Lower buttons, navigate to Settings/Profile |
-| **ProfileScreen** | `Profile/ProfileScreen.swift` | `PerceptualProfile`, `TrendAnalyzer` | View confidence band, summary stats |
+| **StartScreen** | `Start/StartScreen.swift` | `PerceptualProfile` (preview) | Start Comparison/PitchMatching, navigate to Profile/Settings/Info |
+| **ComparisonScreen** | `Comparison/ComparisonScreen.swift` | `ComparisonSession` | Higher/Lower buttons, navigate to Settings/Profile |
+| **PitchMatchingScreen** | `PitchMatching/PitchMatchingScreen.swift` | `PitchMatchingSession` | Vertical pitch slider, submit answer |
+| **ProfileScreen** | `Profile/ProfileScreen.swift` | `PerceptualProfile`, `TrendAnalyzer` | View threshold timeline, summary stats, matching stats |
 | **SettingsScreen** | `Settings/SettingsScreen.swift` | `@AppStorage` | Adjust slider, range, duration, pitch; reset data |
 | **InfoScreen** | `Info/InfoScreen.swift` | — | View app info |
 
@@ -149,15 +165,20 @@ Also present: `KazezNoteStrategy` — a reference implementation using original 
 | View | File | Purpose |
 |---|---|---|
 | `ProfilePreviewView` | `Start/ProfilePreviewView.swift` | Miniature profile on Start Screen |
-| `FeedbackIndicator` | `Training/FeedbackIndicator.swift` | Thumbs up/down overlay |
-| `HapticFeedbackManager` | `Training/HapticFeedbackManager.swift` | Wrong-answer haptic (ComparisonObserver) |
+| `ComparisonFeedbackIndicator` | `Comparison/ComparisonFeedbackIndicator.swift` | Thumbs up/down overlay |
+| `DifficultyDisplayView` | `Comparison/DifficultyDisplayView.swift` | Current difficulty indicator |
+| `HapticFeedbackManager` | `Comparison/HapticFeedbackManager.swift` | Wrong-answer haptic (ComparisonObserver) |
+| `VerticalPitchSlider` | `PitchMatching/VerticalPitchSlider.swift` | Draggable pitch slider for matching |
+| `PitchMatchingFeedbackIndicator` | `PitchMatching/PitchMatchingFeedbackIndicator.swift` | Pitch matching result overlay |
 | `PianoKeyboardView` | `Profile/PianoKeyboardView.swift` | Canvas-rendered keyboard axis |
-| `ConfidenceBandView` | `Profile/ConfidenceBandView.swift` | Swift Charts AreaMark visualization |
+| `ThresholdTimelineView` | `Profile/ThresholdTimelineView.swift` | Threshold history chart |
 | `SummaryStatisticsView` | `Profile/SummaryStatisticsView.swift` | Mean, stdDev, trend display |
+| `MatchingStatisticsView` | `Profile/MatchingStatisticsView.swift` | Pitch matching statistics display |
 | `ContentView` | `App/ContentView.swift` | Root navigation shell |
 | `NavigationDestination` | `App/NavigationDestination.swift` | Type-safe routing enum |
+| `EnvironmentKeys` | `App/EnvironmentKeys.swift` | Centralized `@Entry` environment key registry |
 
 ## File Counts
 
-- **Source:** 30 Swift files in `Peach/`
-- **Tests:** 29 Swift files in `PeachTests/` (mirrors source structure)
+- **Source:** 61 Swift files in `Peach/`
+- **Tests:** 65 Swift files in `PeachTests/` (mirrors source structure)
