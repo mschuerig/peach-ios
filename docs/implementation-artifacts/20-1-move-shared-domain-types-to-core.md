@@ -1,6 +1,6 @@
 # Story 20.1: Move Shared Domain Types to Core/Training/
 
-Status: pending
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -30,24 +30,24 @@ So that Core/ no longer has upward dependencies on feature modules, and the depe
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create directories (AC: #1)
-  - [ ] Create `Peach/Core/Training/`
-  - [ ] Create `PeachTests/Core/Training/`
+- [x] Task 1: Create directories (AC: #1)
+  - [x] Create `Peach/Core/Training/`
+  - [x] Create `PeachTests/Core/Training/`
 
-- [ ] Task 2: Move Comparison types (AC: #2, #3)
-  - [ ] `git mv Peach/Comparison/Comparison.swift Peach/Core/Training/Comparison.swift`
-  - [ ] `git mv Peach/Comparison/ComparisonObserver.swift Peach/Core/Training/ComparisonObserver.swift`
+- [x] Task 2: Move Comparison types (AC: #2, #3)
+  - [x] `git mv Peach/Comparison/Comparison.swift Peach/Core/Training/Comparison.swift`
+  - [x] `git mv Peach/Comparison/ComparisonObserver.swift Peach/Core/Training/ComparisonObserver.swift`
 
-- [ ] Task 3: Move PitchMatching types (AC: #4, #5)
-  - [ ] `git mv Peach/PitchMatching/CompletedPitchMatching.swift Peach/Core/Training/CompletedPitchMatching.swift`
-  - [ ] `git mv Peach/PitchMatching/PitchMatchingObserver.swift Peach/Core/Training/PitchMatchingObserver.swift`
+- [x] Task 3: Move PitchMatching types (AC: #4, #5)
+  - [x] `git mv Peach/PitchMatching/CompletedPitchMatching.swift Peach/Core/Training/CompletedPitchMatching.swift`
+  - [x] `git mv Peach/PitchMatching/PitchMatchingObserver.swift Peach/Core/Training/PitchMatchingObserver.swift`
 
-- [ ] Task 4: Verify dependency direction (AC: #6)
-  - [ ] Audit Core/ files to confirm none reference types in Comparison/ or PitchMatching/
+- [x] Task 4: Verify dependency direction (AC: #6)
+  - [x] Audit Core/ files to confirm none reference types in Comparison/ or PitchMatching/
 
-- [ ] Task 5: Run full test suite (AC: #7, #8)
-  - [ ] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] All tests pass, zero regressions, zero code changes
+- [x] Task 5: Run full test suite (AC: #7, #8)
+  - [x] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] All tests pass, zero regressions, zero code changes
 
 ## Dev Notes
 
@@ -102,6 +102,30 @@ Commit message: `Implement story 20.1: Move shared domain types to Core/Training
 - [Source: docs/planning-artifacts/epics.md -- Epic 20: Right Direction — Dependency Inversion Cleanup]
 - [Source: docs/project-context.md -- File Placement decision tree]
 
+## Dev Agent Record
+
+### Implementation Notes
+- Pure file move using `git mv` — zero code changes, zero import changes
+- Xcode objectVersion 77 file-system-synchronized groups handle the move automatically
+- Dependency audit confirmed: no Core/ file references types still in feature directories
+- Full test suite passed with zero regressions
+
+### Completion Notes
+- All 4 files moved from feature directories to `Core/Training/`
+- `PitchMatchingChallenge.swift` correctly left in PitchMatching (feature-only type)
+- Dependency direction verified: Core/ is now self-contained for training domain types
+
+## File List
+
+- `Peach/Core/Training/Comparison.swift` (moved from `Peach/Comparison/`)
+- `Peach/Core/Training/ComparisonObserver.swift` (moved from `Peach/Comparison/`)
+- `Peach/Core/Training/CompletedPitchMatching.swift` (moved from `Peach/PitchMatching/`)
+- `Peach/Core/Training/PitchMatchingObserver.swift` (moved from `Peach/PitchMatching/`)
+- `PeachTests/Core/Training/.gitkeep` (new, empty test mirror directory)
+- `docs/implementation-artifacts/sprint-status.yaml` (status update)
+- `docs/implementation-artifacts/20-1-move-shared-domain-types-to-core.md` (this file)
+
 ## Change Log
 
 - 2026-02-27: Story created from Epic 20 adversarial dependency review.
+- 2026-02-27: Implementation complete — moved 4 shared domain type files to Core/Training/, full test suite passes.

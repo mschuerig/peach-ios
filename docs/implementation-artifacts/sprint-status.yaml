@@ -172,7 +172,7 @@ development_status:
 
   # Epic 20: Right Direction — Dependency Inversion Cleanup
   epic-20: in-progress
-  20-1-move-shared-domain-types-to-core: ready-for-dev
+  20-1-move-shared-domain-types-to-core: review
   20-2-move-soundsourceid-to-core: ready-for-dev
   20-3-remove-cross-feature-feedback-icon-size-dependency: ready-for-dev
   20-4-use-protocols-in-profile-views: ready-for-dev
