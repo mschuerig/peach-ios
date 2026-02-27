@@ -1,5 +1,4 @@
 import SwiftUI
-import SwiftData
 
 struct SettingsScreen: View {
     @AppStorage(SettingsKeys.noteRangeMin)
@@ -20,7 +19,7 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.varyLoudness)
     private var varyLoudness: Double = SettingsKeys.defaultVaryLoudness
 
-    @Environment(\.modelContext) private var modelContext
+    @Environment(\.trainingDataStore) private var dataStore
     @Environment(\.comparisonSession) private var comparisonSession
     @Environment(\.soundFontLibrary) private var soundFontLibrary
     @Environment(\.perceptualProfile) private var profile
@@ -157,7 +156,7 @@ struct SettingsScreen: View {
 
     private func resetAllTrainingData() {
         // Guard: only clear convergence/profile/trend if data deletion succeeds
-        let dataStore = TrainingDataStore(modelContext: modelContext)
+        guard let dataStore else { return }
         do {
             try dataStore.deleteAll()
         } catch {
@@ -174,5 +173,4 @@ struct SettingsScreen: View {
     NavigationStack {
         SettingsScreen()
     }
-    .modelContainer(for: [ComparisonRecord.self, PitchMatchingRecord.self], inMemory: true)
 }

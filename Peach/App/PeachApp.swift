@@ -5,6 +5,7 @@ import os
 @main
 struct PeachApp: App {
     @State private var modelContainer: ModelContainer
+    @State private var dataStore: TrainingDataStore
     @State private var comparisonSession: ComparisonSession
     @State private var pitchMatchingSession: PitchMatchingSession
     @State private var profile: PerceptualProfile
@@ -21,6 +22,7 @@ struct PeachApp: App {
             _modelContainer = State(wrappedValue: container)
 
             let dataStore = TrainingDataStore(modelContext: container.mainContext)
+            _dataStore = State(wrappedValue: dataStore)
 
             let soundFontLibrary = SoundFontLibrary()
             _soundFontLibrary = State(wrappedValue: soundFontLibrary)
@@ -76,6 +78,7 @@ struct PeachApp: App {
                 .environment(\.trendAnalyzer, trendAnalyzer)
                 .environment(\.thresholdTimeline, thresholdTimeline)
                 .environment(\.soundFontLibrary, soundFontLibrary)
+                .environment(\.trainingDataStore, dataStore)
                 .modelContainer(modelContainer)
                 .onChange(of: comparisonSession.isIdle) { _, isIdle in
                     if !isIdle {
