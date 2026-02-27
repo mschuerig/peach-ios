@@ -6,4 +6,8 @@ final class MockResettable: Resettable {
     func reset() {
         resetCallCount += 1
     }
+
+    func resetMock() {
+        resetCallCount = 0
+    }
 }

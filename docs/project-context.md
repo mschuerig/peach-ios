@@ -139,7 +139,7 @@ Never run only specific test files — always the complete suite.
 ### Code Quality & Style Rules
 
 **Project-Specific Naming (non-obvious conventions):**
-- **Protocols:** capability nouns — `NotePlayer`, `NextComparisonStrategy` (not `-able`, not `-Protocol` suffix)
+- **Protocols:** nouns for roles (`NotePlayer`, `NextComparisonStrategy`), `-able`/`-ible` for capabilities (`Resettable`, `Sendable`) per [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) (not `-Protocol` suffix)
 - **Protocol implementations:** descriptive prefix — `SoundFontNotePlayer`, `KazezNoteStrategy`
 - **Screens:** `{Name}Screen.swift` — not `{Name}View` or `{Name}ViewController`
 - **Subviews:** `{Name}View.swift` — `PianoKeyboardView.swift`, `ComparisonFeedbackIndicator.swift`

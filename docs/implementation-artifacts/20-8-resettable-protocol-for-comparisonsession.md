@@ -1,6 +1,6 @@
 # Story 20.8: Resettable Protocol for ComparisonSession Dependencies
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -98,7 +98,7 @@ So that the session is decoupled from specific profile/analytics implementations
 
 ### Git Intelligence
 
-Commit message: `Implement story 20.7: Resettable protocol for ComparisonSession dependencies`
+Commit message: `Implement story 20.8: Resettable protocol for ComparisonSession dependencies`
 
 ### References
 
@@ -134,6 +134,8 @@ Commit message: `Implement story 20.7: Resettable protocol for ComparisonSession
 - `PeachTests/Core/Training/ResettableTests.swift` (new) — protocol and integration tests
 - `PeachTests/Mocks/MockResettable.swift` (new) — mock for testing
 - `PeachTests/Comparison/ComparisonSessionResetTests.swift` (modified) — use `resettables:` parameter
+- `PeachTests/Comparison/ComparisonTestHelpers.swift` (modified) — added `resettables` parameter
+- `docs/project-context.md` (modified) — updated protocol naming convention
 - `docs/implementation-artifacts/sprint-status.yaml` (modified) — status tracking
 - `docs/implementation-artifacts/20-8-resettable-protocol-for-comparisonsession.md` (modified) — story file
 
@@ -141,3 +143,4 @@ Commit message: `Implement story 20.7: Resettable protocol for ComparisonSession
 
 - 2026-02-27: Story created from Epic 20 adversarial dependency review.
 - 2026-02-27: Implementation complete — Resettable protocol introduced, ComparisonSession decoupled from TrendAnalyzer and ThresholdTimeline concrete types.
+- 2026-02-27: Code review fixes — updated project-context.md naming convention, added resettables param to ComparisonTestHelpers, added ThresholdTimeline integration test, fixed story typo, cleaned up protocol doc comment, added MockResettable cleanup method.

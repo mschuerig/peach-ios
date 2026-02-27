@@ -126,6 +126,37 @@ struct ComparisonSessionResetTests {
         #expect(trendAnalyzer.trend == nil)
     }
 
+    // MARK: - ThresholdTimeline Reset
+
+    @Test("resetTrainingData clears ThresholdTimeline data points")
+    func resetTrainingDataClearsThresholdTimeline() {
+        var records: [ComparisonRecord] = []
+        for i in 0..<10 {
+            records.append(ComparisonRecord(
+                note1: 60,
+                note2: 61,
+                note2CentOffset: Double(i) + 1.0,
+                isCorrect: true
+            ))
+        }
+        let timeline = ThresholdTimeline(records: records)
+        #expect(!timeline.dataPoints.isEmpty)
+
+        let profile = PerceptualProfile()
+        let session = ComparisonSession(
+            notePlayer: MockNotePlayer(),
+            strategy: MockNextComparisonStrategy(),
+            profile: profile,
+            userSettings: MockUserSettings(),
+            resettables: [timeline]
+        )
+
+        session.resetTrainingData()
+
+        #expect(timeline.dataPoints.isEmpty)
+        #expect(timeline.aggregatedPoints.isEmpty)
+    }
+
     // MARK: - Stop Before Reset
 
     @Test("resetTrainingData stops active training before resetting")

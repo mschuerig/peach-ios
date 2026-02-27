@@ -21,6 +21,7 @@ func makeComparisonSession(
         Comparison(note1: 62, note2: 62, centDifference: Cents(-95.0))
     ],
     userSettings: MockUserSettings = MockUserSettings(),
+    resettables: [Resettable] = [],
     includeHaptic: Bool = false,
     notificationCenter: NotificationCenter? = nil
 ) -> ComparisonSessionFixture {
@@ -44,6 +45,7 @@ func makeComparisonSession(
         strategy: mockStrategy,
         profile: profile,
         userSettings: userSettings,
+        resettables: resettables,
         observers: observers,
         notificationCenter: notificationCenter ?? .default
     )
