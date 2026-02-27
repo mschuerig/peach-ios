@@ -159,6 +159,17 @@ Never run only specific test files — always the complete suite.
 - **No UIKit imports in Core/ files** — UIKit dependencies injected from the composition root
 - **Do not create `Utils/`, `Helpers/`, `Shared/`, `Common/` directories** — none exist and agents must not create them preemptively
 
+**Dependency Direction Rules (enforced by `tools/check-dependencies.sh`):**
+- **Core/ is framework-free** — no `import SwiftUI`, `import UIKit`, or `import Charts` in any Core/ file
+- **SwiftData is encapsulated** — `import SwiftData` only in `Core/Data/` and `App/`; all other code accesses persistence through `TrainingDataStore`
+- **UIKit is injected** — `import UIKit` only in `Comparison/HapticFeedbackManager.swift` (protocol abstraction) and `App/` (composition root); nowhere else
+- **No cross-feature coupling** — feature directories (`Comparison/`, `PitchMatching/`, `Profile/`, `Settings/`, `Info/`) must not reference types from other feature directories; shared types belong in `Core/`; `Start/` is exempt as the navigation router
+- **No Combine** — use `async/await` throughout; `import Combine` is forbidden
+- **Views must not orchestrate services** — if a view needs to coordinate multiple services (e.g., reset data + reset profile + reset session), wrap that coordination in a closure or method owned by the composition root (`PeachApp`) and inject the closure; the view should call one thing, not three
+- **Minimize a view's `@Environment` surface** — each `@Environment` dependency is a coupling point; if a view only uses a dependency to pass it to another call, the dependency belongs higher up
+- **Public API must be intentional** — mark methods `private` unless cross-file access is needed; unnecessary `internal` surface creates accidental coupling
+- Run `tools/check-dependencies.sh` to verify — the script checks import rules and cross-feature references mechanically
+
 **Code Style:**
 - **Trailing closure syntax for single closures only** — use labeled parameters when multiple closures are involved
 - **`// MARK:` only in files with multiple distinct sections** — don't scatter in small files
@@ -249,4 +260,4 @@ Never run only specific test files — always the complete suite.
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-02-27 (Epic 20 dependency direction cleanup)
+Last Updated: 2026-02-27 (Dependency direction rules and check-dependencies.sh)

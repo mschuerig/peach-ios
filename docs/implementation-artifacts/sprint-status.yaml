@@ -168,7 +168,7 @@ development_status:
   19-3-usersettings-wrapper-for-userdefaults: done
   19-4-extract-long-methods: done
   19-5-trainingsession-protocol-and-dependency-cleanup: done
-  epic-19-retrospective: optional
+  epic-19-retrospective: done
 
   # Epic 20: Right Direction — Dependency Inversion Cleanup
   epic-20: done
@@ -183,4 +183,4 @@ development_status:
   20-9-move-mockhapticfeedbackmanager-to-test-target: done
   20-10-inject-trainingdatastore-into-settingsscreen: done
   20-11-update-documentation: done
-  epic-20-retrospective: optional
+  epic-20-retrospective: done
