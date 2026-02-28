@@ -1,6 +1,6 @@
 # Story 21.3: Implement Pitch Value Type and MIDINote Integration
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,31 +26,31 @@ So that interval frequency computation flows through domain types with 0.1-cent 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Write PitchTests.swift with failing tests (AC: #1, #2, #3, #4, #6)
-  - [ ] Test A4 pitch frequency returns 440.0
-  - [ ] Test middle C pitch frequency within 0.1-cent precision
-  - [ ] Test pitch at various intervals (all 13 cases for completeness)
-  - [ ] Test pitch with cents offset computes correct frequency
-  - [ ] Test Hashable: use Pitch as Set element and Dictionary key
-  - [ ] Test Sendable: Pitch is value type (automatic)
-  - [ ] Test MIDINote.pitch(at:in:) with .perfectFifth returns correct Pitch
-  - [ ] Test MIDINote.pitch() defaults to prime/equalTemperament
-  - [ ] Test MIDINote.pitch for all 13 intervals in equalTemperament (cents always 0)
-- [ ] Task 2: Write Frequency.concert440 test (AC: #5)
-  - [ ] Test in existing FrequencyTests or new section: `Frequency.concert440.rawValue == 440.0`
-- [ ] Task 3: Implement Pitch struct (AC: #1, #2, #6)
-  - [ ] Create `Peach/Core/Audio/Pitch.swift`
-  - [ ] `struct Pitch: Hashable, Sendable` with `let note: MIDINote` and `let cents: Cents`
-  - [ ] `func frequency(referencePitch: Frequency = .concert440) -> Frequency` using formula: `referencePitch.rawValue * pow(2.0, (Double(note.rawValue - 69) + cents.rawValue / 100.0) / 12.0)`
-- [ ] Task 4: Add MIDINote.pitch(at:in:) extension (AC: #3, #4)
-  - [ ] Add to `Peach/Core/Audio/MIDINote.swift` (or `Interval.swift` where `MIDINote.transposed(by:)` already lives)
-  - [ ] `func pitch(at interval: Interval = .prime, in tuningSystem: TuningSystem = .equalTemperament) -> Pitch`
-  - [ ] Implementation: transpose note by interval, compute cents from tuningSystem centOffset minus exact semitone cents
-- [ ] Task 5: Add Frequency.concert440 static constant (AC: #5)
-  - [ ] Add `static let concert440 = Frequency(440.0)` to `Peach/Core/Audio/Frequency.swift`
-- [ ] Task 6: Run full test suite (all ACs)
-  - [ ] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] Zero regressions
+- [x] Task 1: Write PitchTests.swift with failing tests (AC: #1, #2, #3, #4, #6)
+  - [x] Test A4 pitch frequency returns 440.0
+  - [x] Test middle C pitch frequency within 0.1-cent precision
+  - [x] Test pitch at various intervals (all 13 cases for completeness)
+  - [x] Test pitch with cents offset computes correct frequency
+  - [x] Test Hashable: use Pitch as Set element and Dictionary key
+  - [x] Test Sendable: Pitch is value type (automatic)
+  - [x] Test MIDINote.pitch(at:in:) with .perfectFifth returns correct Pitch
+  - [x] Test MIDINote.pitch() defaults to prime/equalTemperament
+  - [x] Test MIDINote.pitch for all 13 intervals in equalTemperament (cents always 0)
+- [x] Task 2: Write Frequency.concert440 test (AC: #5)
+  - [x] Test in existing FrequencyTests or new section: `Frequency.concert440.rawValue == 440.0`
+- [x] Task 3: Implement Pitch struct (AC: #1, #2, #6)
+  - [x] Create `Peach/Core/Audio/Pitch.swift`
+  - [x] `struct Pitch: Hashable, Sendable` with `let note: MIDINote` and `let cents: Cents`
+  - [x] `func frequency(referencePitch: Frequency = .concert440) -> Frequency` using formula: `referencePitch.rawValue * pow(2.0, (Double(note.rawValue - 69) + cents.rawValue / 100.0) / 12.0)`
+- [x] Task 4: Add MIDINote.pitch(at:in:) extension (AC: #3, #4)
+  - [x] Add to `Peach/Core/Audio/Interval.swift` where `MIDINote.transposed(by:)` already lives
+  - [x] `func pitch(at interval: Interval = .prime, in tuningSystem: TuningSystem = .equalTemperament) -> Pitch`
+  - [x] Implementation: transpose note by interval, compute cents from tuningSystem centOffset minus exact semitone cents
+- [x] Task 5: Add Frequency.concert440 static constant (AC: #5)
+  - [x] Add `static let concert440 = Frequency(440.0)` to `Peach/Core/Audio/Frequency.swift`
+- [x] Task 6: Run full test suite (all ACs)
+  - [x] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] Zero regressions
 
 ## Dev Notes
 
@@ -293,10 +293,31 @@ After this story, all interval domain foundation types exist. Epic 22.1 will del
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no debugging required.
+
 ### Completion Notes List
 
+- Implemented `Pitch` struct in `Peach/Core/Audio/Pitch.swift` with `note: MIDINote` and `cents: Cents` properties, plus `frequency(referencePitch:)` method using combined-exponent formula
+- Added `MIDINote.pitch(at:in:)` extension in `Interval.swift` alongside existing `transposed(by:)` — computes transposed note and cent deviation from tuning system
+- Added `Frequency.concert440` static constant in `Frequency.swift`
+- Created 14 tests in `PitchTests.swift` covering all 6 ACs: frequency precision (A4, middle C, C5, cents offset), MIDINote.pitch for all 13 intervals, default parameters, Hashable/Sendable conformance, and Frequency.concert440
+- All tests follow TDD (red-green-refactor): tests written first (compilation failure confirmed), then implementation, then verification
+- Full test suite passes with zero regressions
+- Dependency check passes — no forbidden imports in Core/
+
+### Change Log
+
+- 2026-02-28: Implemented story 21.3 — Pitch value type, MIDINote.pitch(at:in:), Frequency.concert440
+
 ### File List
+
+- `Peach/Core/Audio/Pitch.swift` (new) — Pitch struct with frequency computation
+- `Peach/Core/Audio/Interval.swift` (modified) — Added MIDINote.pitch(at:in:) extension
+- `Peach/Core/Audio/Frequency.swift` (modified) — Added static let concert440
+- `PeachTests/Core/Audio/PitchTests.swift` (new) — 14 tests covering all ACs
+- `docs/implementation-artifacts/sprint-status.yaml` (modified) — Status: in-progress → review
+- `docs/implementation-artifacts/21-3-implement-pitch-value-type-and-midinote-integration.md` (modified) — Task checkboxes, Dev Agent Record, File List, Change Log, Status

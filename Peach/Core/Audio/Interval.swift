@@ -38,4 +38,15 @@ extension MIDINote {
         precondition(Self.validRange.contains(newValue), "Transposed note \(newValue) out of MIDI range 0-127")
         return MIDINote(newValue)
     }
+
+    func pitch(
+        at interval: Interval = .prime,
+        in tuningSystem: TuningSystem = .equalTemperament
+    ) -> Pitch {
+        let transposedNote = transposed(by: interval)
+        let centOffset = tuningSystem.centOffset(for: interval)
+        let exactSemitones = Double(interval.semitones) * 100.0
+        let centsDeviation = centOffset - exactSemitones
+        return Pitch(note: transposedNote, cents: Cents(centsDeviation))
+    }
 }

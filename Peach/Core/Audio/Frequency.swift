@@ -8,6 +8,8 @@ struct Frequency: Hashable, Comparable, Sendable {
         self.rawValue = rawValue
     }
 
+    static let concert440 = Frequency(440.0)
+
     // MARK: - Comparable
 
     static func < (lhs: Frequency, rhs: Frequency) -> Bool {
