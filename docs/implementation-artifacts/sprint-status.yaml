@@ -194,3 +194,11 @@ development_status:
   21-2-implement-tuningsystem-enum: done
   21-3-implement-pitch-value-type-and-midinote-integration: done
   epic-21-retrospective: optional
+
+  # Epic 22: Clean Slate — Prerequisite Refactorings
+  epic-22: in-progress
+  22-1-migrate-frequencycalculation-to-domain-types: ready-for-dev
+  22-2-unified-reference-target-naming: backlog
+  22-3-noteplayer-protocol-takes-pitch: backlog
+  22-4-extract-soundsourceprovider-protocol: backlog
+  epic-22-retrospective: optional
