@@ -199,7 +199,7 @@ development_status:
   epic-22: in-progress
   22-1-migrate-frequencycalculation-to-domain-types: done
   22-2-domain-type-documentation-and-api-cleanup: done
-  22-3-introduce-detunedmidinote-and-two-world-architecture: backlog
+  22-3-introduce-detunedmidinote-and-two-world-architecture: ready-for-dev
   22-4-unified-reference-target-naming: backlog
   22-5-extract-soundsourceprovider-protocol: backlog
   epic-22-retrospective: optional
