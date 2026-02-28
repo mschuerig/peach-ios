@@ -192,5 +192,5 @@ development_status:
   epic-21: in-progress
   21-1-implement-interval-enum-and-midinote-transposition: done
   21-2-implement-tuningsystem-enum: done
-  21-3-implement-pitch-value-type-and-midinote-integration: backlog
+  21-3-implement-pitch-value-type-and-midinote-integration: ready-for-dev
   epic-21-retrospective: optional
