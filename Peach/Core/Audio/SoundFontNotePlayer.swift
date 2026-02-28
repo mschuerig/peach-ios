@@ -138,10 +138,9 @@ final class SoundFontNotePlayer: NotePlayer {
             try engine.start()
         }
 
-        let conversion = FrequencyCalculation.midiNoteAndCents(frequency: freq)
-        let clampedNote = min(127, max(0, conversion.midiNote))
-        let midiNote = UInt8(clampedNote)
-        let bendValue = Self.pitchBendValue(forCents: Cents(conversion.cents))
+        let pitch = Pitch(frequency: frequency, referencePitch: .concert440)
+        let midiNote = UInt8(pitch.note.rawValue)
+        let bendValue = Self.pitchBendValue(forCents: pitch.cents)
 
         // Set volume offset (independent of MIDI velocity)
         sampler.overallGain = amplitudeDB.rawValue

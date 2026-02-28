@@ -6,20 +6,20 @@ import Testing
 struct ComparisonTests {
 
     @Test("note1Frequency calculates valid frequency for middle C")
-    func note1FrequencyCalculatesCorrectly() throws {
+    func note1FrequencyCalculatesCorrectly() async {
         let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
 
-        let freq = try comparison.note1Frequency()
+        let freq = comparison.note1Frequency()
 
         #expect(freq.rawValue >= 260 && freq.rawValue <= 263)
     }
 
     @Test("note2Frequency applies positive cent offset (higher)")
-    func note2FrequencyAppliesCentOffsetHigher() throws {
+    func note2FrequencyAppliesCentOffsetHigher() async {
         let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
 
-        let freq1 = try comparison.note1Frequency()
-        let freq2 = try comparison.note2Frequency()
+        let freq1 = comparison.note1Frequency()
+        let freq2 = comparison.note2Frequency()
 
         #expect(freq2 > freq1)
 
@@ -28,11 +28,11 @@ struct ComparisonTests {
     }
 
     @Test("note2Frequency applies negative cent offset (lower)")
-    func note2FrequencyAppliesCentOffsetLower() throws {
+    func note2FrequencyAppliesCentOffsetLower() async {
         let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(-100.0))
 
-        let freq1 = try comparison.note1Frequency()
-        let freq2 = try comparison.note2Frequency()
+        let freq1 = comparison.note1Frequency()
+        let freq2 = comparison.note2Frequency()
 
         #expect(freq2 < freq1)
     }

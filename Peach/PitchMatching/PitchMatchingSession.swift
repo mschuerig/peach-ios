@@ -182,15 +182,13 @@ final class PitchMatchingSession: TrainingSession {
         currentChallenge = challenge
 
         do {
-            let refFreq = try FrequencyCalculation.frequency(
-                midiNote: challenge.referenceNote.rawValue,
-                referencePitch: settings.referencePitch
-            )
-            self.referenceFrequency = refFreq
+            let refFreq = Pitch(note: challenge.referenceNote, cents: Cents(0))
+                .frequency(referencePitch: Frequency(settings.referencePitch))
+            self.referenceFrequency = refFreq.rawValue
 
             state = .playingReference
             try await notePlayer.play(
-                frequency: Frequency(refFreq),
+                frequency: refFreq,
                 duration: noteDuration,
                 velocity: velocity,
                 amplitudeDB: AmplitudeDB(0.0)
@@ -198,15 +196,12 @@ final class PitchMatchingSession: TrainingSession {
 
             guard state != .idle && !Task.isCancelled else { return }
 
-            let tunableFrequency = try FrequencyCalculation.frequency(
-                midiNote: challenge.referenceNote.rawValue,
-                cents: challenge.initialCentOffset,
-                referencePitch: settings.referencePitch
-            )
+            let tunableFrequency = Pitch(note: challenge.referenceNote, cents: Cents(challenge.initialCentOffset))
+                .frequency(referencePitch: Frequency(settings.referencePitch))
 
             state = .playingTunable
             let handle = try await notePlayer.play(
-                frequency: Frequency(tunableFrequency),
+                frequency: tunableFrequency,
                 velocity: velocity,
                 amplitudeDB: AmplitudeDB(0.0)
             )

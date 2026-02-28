@@ -19,9 +19,8 @@ struct MIDINote: Hashable, Comparable, Codable, Sendable {
         return "\(noteNames[pitchClass])\(octave)"
     }
 
-    func frequency(referencePitch: Double = 440.0) throws -> Frequency {
-        let hz = try FrequencyCalculation.frequency(midiNote: rawValue, referencePitch: referencePitch)
-        return Frequency(hz)
+    func frequency(referencePitch: Double = 440.0) -> Frequency {
+        Pitch(note: self, cents: Cents(0)).frequency(referencePitch: Frequency(referencePitch))
     }
 
     // MARK: - Factory Methods

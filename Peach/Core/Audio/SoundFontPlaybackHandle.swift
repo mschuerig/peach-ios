@@ -47,8 +47,8 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
             )
         }
 
-        let conversion = FrequencyCalculation.midiNoteAndCents(frequency: freq)
-        let targetMidi = Double(conversion.midiNote) + conversion.cents / 100.0
+        let pitch = Pitch(frequency: frequency, referencePitch: .concert440)
+        let targetMidi = Double(pitch.note.rawValue) + pitch.cents.rawValue / 100.0
         let baseMidi = Double(midiNote)
         let centDifference = (targetMidi - baseMidi) * 100.0
 

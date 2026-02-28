@@ -1,6 +1,6 @@
 # Story 22.1: Migrate FrequencyCalculation to Domain Types
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,49 +24,49 @@ So that frequency computation lives on the domain types that own the data, and t
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `Pitch.init(frequency:referencePitch:)` inverse initializer with tests (AC: #2, #4)
-  - [ ] Write failing tests in `PitchTests.swift`: round-trip (frequency→Pitch→frequency), known values (440 Hz → MIDINote(69)/Cents(0)), half-semitone offsets, boundary MIDI notes, non-440 reference pitch
-  - [ ] Implement `Pitch.init(frequency:referencePitch:)` in `Pitch.swift` — inverse of `frequency()`: compute exact MIDI from `69 + 12 * log2(freq / ref)`, round to nearest integer for `note`, remainder as `cents` (clamped to -50...+50)
-  - [ ] Verify 0.1-cent precision on round-trip tests
+- [x] Task 1: Add `Pitch.init(frequency:referencePitch:)` inverse initializer with tests (AC: #2, #4)
+  - [x] Write failing tests in `PitchTests.swift`: round-trip (frequency→Pitch→frequency), known values (440 Hz → MIDINote(69)/Cents(0)), half-semitone offsets, boundary MIDI notes, non-440 reference pitch
+  - [x] Implement `Pitch.init(frequency:referencePitch:)` in `Pitch.swift` — inverse of `frequency()`: compute exact MIDI from `69 + 12 * log2(freq / ref)`, round to nearest integer for `note`, remainder as `cents` (clamped to -50...+50)
+  - [x] Verify 0.1-cent precision on round-trip tests
 
-- [ ] Task 2: Make `MIDINote.frequency()` self-contained (AC: #1, #4)
-  - [ ] Update `MIDINote.frequency(referencePitch:)` to compute frequency directly using `Pitch(note: self, cents: Cents(0)).frequency(referencePitch: Frequency(referencePitch))` instead of delegating to `FrequencyCalculation`
-  - [ ] Remove `throws` from `MIDINote.frequency()` — the `Pitch.frequency()` method is pure math, no validation needed (MIDINote already validates range 0-127 at init)
-  - [ ] Update all call sites that `try` `MIDINote.frequency()` to remove `try`
-  - [ ] Update `MIDINoteTests.swift` to verify frequency values unchanged
+- [x] Task 2: Make `MIDINote.frequency()` self-contained (AC: #1, #4)
+  - [x] Update `MIDINote.frequency(referencePitch:)` to compute frequency directly using `Pitch(note: self, cents: Cents(0)).frequency(referencePitch: Frequency(referencePitch))` instead of delegating to `FrequencyCalculation`
+  - [x] Remove `throws` from `MIDINote.frequency()` — the `Pitch.frequency()` method is pure math, no validation needed (MIDINote already validates range 0-127 at init)
+  - [x] Update all call sites that `try` `MIDINote.frequency()` to remove `try`
+  - [x] Update `MIDINoteTests.swift` to verify frequency values unchanged
 
-- [ ] Task 3: Migrate `Comparison.swift` forward conversion call sites (AC: #1)
-  - [ ] Replace `note1Frequency()` to use `Pitch(note: note1, cents: Cents(0)).frequency(referencePitch: ...)` or `note1.frequency(referencePitch:)`
-  - [ ] Replace `note2Frequency()` to use `Pitch(note: note2, cents: centDifference).frequency(referencePitch: ...)`
-  - [ ] Remove `throws` from both methods (pure math, no validation)
-  - [ ] Update all callers of `note1Frequency()`/`note2Frequency()` to remove `try`
+- [x] Task 3: Migrate `Comparison.swift` forward conversion call sites (AC: #1)
+  - [x] Replace `note1Frequency()` to use `Pitch(note: note1, cents: Cents(0)).frequency(referencePitch: ...)` or `note1.frequency(referencePitch:)`
+  - [x] Replace `note2Frequency()` to use `Pitch(note: note2, cents: centDifference).frequency(referencePitch: ...)`
+  - [x] Remove `throws` from both methods (pure math, no validation)
+  - [x] Update all callers of `note1Frequency()`/`note2Frequency()` to remove `try`
 
-- [ ] Task 4: Migrate `PitchMatchingSession.swift` forward conversion call sites (AC: #1)
-  - [ ] Replace line ~185 `FrequencyCalculation.frequency(midiNote:referencePitch:)` with `Pitch(note: challenge.referenceNote, cents: Cents(0)).frequency(referencePitch: ...)`
-  - [ ] Replace line ~201 `FrequencyCalculation.frequency(midiNote:cents:referencePitch:)` with `Pitch(note: challenge.referenceNote, cents: Cents(challenge.initialCentOffset)).frequency(referencePitch: ...)`
-  - [ ] Remove `try` if methods are now non-throwing
+- [x] Task 4: Migrate `PitchMatchingSession.swift` forward conversion call sites (AC: #1)
+  - [x] Replace line ~185 `FrequencyCalculation.frequency(midiNote:referencePitch:)` with `Pitch(note: challenge.referenceNote, cents: Cents(0)).frequency(referencePitch: ...)`
+  - [x] Replace line ~201 `FrequencyCalculation.frequency(midiNote:cents:referencePitch:)` with `Pitch(note: challenge.referenceNote, cents: Cents(challenge.initialCentOffset)).frequency(referencePitch: ...)`
+  - [x] Remove `try` if methods are now non-throwing
 
-- [ ] Task 5: Migrate `SoundFontNotePlayer.swift` inverse conversion call site (AC: #2)
-  - [ ] Replace `FrequencyCalculation.midiNoteAndCents(frequency:referencePitch:)` with `Pitch(frequency: freq, referencePitch: .concert440)` then use `.note.rawValue` and `.cents`
-  - [ ] Verify pitch bend calculation unchanged
+- [x] Task 5: Migrate `SoundFontNotePlayer.swift` inverse conversion call site (AC: #2)
+  - [x] Replace `FrequencyCalculation.midiNoteAndCents(frequency:referencePitch:)` with `Pitch(frequency: freq, referencePitch: .concert440)` then use `.note.rawValue` and `.cents`
+  - [x] Verify pitch bend calculation unchanged
 
-- [ ] Task 6: Migrate `SoundFontPlaybackHandle.swift` inverse conversion call site (AC: #2)
-  - [ ] Replace `FrequencyCalculation.midiNoteAndCents(frequency:referencePitch:)` with `Pitch(frequency: freq, referencePitch: .concert440)` then compute from `.note` and `.cents`
-  - [ ] Verify cent difference calculation unchanged
+- [x] Task 6: Migrate `SoundFontPlaybackHandle.swift` inverse conversion call site (AC: #2)
+  - [x] Replace `FrequencyCalculation.midiNoteAndCents(frequency:referencePitch:)` with `Pitch(frequency: freq, referencePitch: .concert440)` then compute from `.note` and `.cents`
+  - [x] Verify cent difference calculation unchanged
 
-- [ ] Task 7: Migrate FrequencyCalculation tests to domain type tests (AC: #4, #5)
-  - [ ] Move forward-conversion tests to `PitchTests.swift` and `MIDINoteTests.swift`
-  - [ ] Move inverse-conversion tests to `PitchTests.swift` (testing `Pitch.init(frequency:referencePitch:)`)
-  - [ ] Move round-trip tests to `PitchTests.swift`
-  - [ ] Move reference pitch validation tests — decide: keep validation in `Pitch.init(frequency:)` or drop it (architecture says `Pitch.frequency()` is pure math, no throws)
-  - [ ] Delete `FrequencyCalculationTests.swift`
+- [x] Task 7: Migrate FrequencyCalculation tests to domain type tests (AC: #4, #5)
+  - [x] Move forward-conversion tests to `PitchTests.swift` and `MIDINoteTests.swift`
+  - [x] Move inverse-conversion tests to `PitchTests.swift` (testing `Pitch.init(frequency:referencePitch:)`)
+  - [x] Move round-trip tests to `PitchTests.swift`
+  - [x] Move reference pitch validation tests — decide: keep validation in `Pitch.init(frequency:)` or drop it (architecture says `Pitch.frequency()` is pure math, no throws)
+  - [x] Delete `FrequencyCalculationTests.swift`
 
-- [ ] Task 8: Delete `FrequencyCalculation.swift` and verify (AC: #3, #5)
-  - [ ] Delete `Peach/Core/Audio/FrequencyCalculation.swift`
-  - [ ] Delete `PeachTests/Core/Audio/FrequencyCalculationTests.swift` (if not already deleted in Task 7)
-  - [ ] Grep entire project for `FrequencyCalculation` — zero results
-  - [ ] Run `tools/check-dependencies.sh`
-  - [ ] Run full test suite: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+- [x] Task 8: Delete `FrequencyCalculation.swift` and verify (AC: #3, #5)
+  - [x] Delete `Peach/Core/Audio/FrequencyCalculation.swift`
+  - [x] Delete `PeachTests/Core/Audio/FrequencyCalculationTests.swift` (if not already deleted in Task 7)
+  - [x] Grep entire project for `FrequencyCalculation` — zero results
+  - [x] Run `tools/check-dependencies.sh`
+  - [x] Run full test suite: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
 
 ## Dev Notes
 
@@ -232,10 +232,46 @@ Recent commits (most recent first):
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+No debug issues encountered.
+
 ### Completion Notes List
 
+- Task 1: Added `Pitch.init(frequency:referencePitch:)` inverse initializer in an extension to preserve the memberwise init. 17 new tests added to PitchTests covering inverse conversion, round-trips, boundary cases, clamping, and precision.
+- Task 2: Made `MIDINote.frequency()` non-throwing by delegating to `Pitch.frequency()` instead of `FrequencyCalculation`. Updated MIDINoteTests to remove `try`.
+- Task 3: Migrated `Comparison.note1Frequency()` and `note2Frequency()` to use `Pitch.frequency()`. Removed `throws`. Updated `ComparisonSession` and `ComparisonTests` to remove `try`.
+- Task 4: Migrated `PitchMatchingSession.playNextChallenge()` to use `Pitch.frequency()` instead of `FrequencyCalculation.frequency()`.
+- Task 5: Migrated `SoundFontNotePlayer` inverse conversion from `FrequencyCalculation.midiNoteAndCents()` to `Pitch(frequency:referencePitch:)`.
+- Task 6: Migrated `SoundFontPlaybackHandle.adjustFrequency()` inverse conversion from `FrequencyCalculation.midiNoteAndCents()` to `Pitch(frequency:referencePitch:)`.
+- Task 7: Migrated all FrequencyCalculation tests to PitchTests (forward conversion edge cases, sub-cent precision, cents range validation, multiple reference pitches) and MIDINoteTests (boundary frequencies). Updated PitchMatchingSessionTests and SoundFontNotePlayerTests to remove FrequencyCalculation references. Deleted FrequencyCalculationTests.swift. Reference pitch validation tests dropped per architecture (pure math, no throws).
+- Task 8: Deleted `FrequencyCalculation.swift`. Verified zero references in production code. All dependency checks pass. Full test suite passes.
+
+### Change Log
+
+- 2026-02-28: Implemented story 22.1 — migrated all FrequencyCalculation usage to Pitch and MIDINote domain types, deleted FrequencyCalculation.swift and FrequencyCalculationTests.swift
+
 ### File List
+
+**New:**
+(none)
+
+**Modified:**
+- `Peach/Core/Audio/Pitch.swift` — Added `init(frequency:referencePitch:)` inverse initializer extension
+- `Peach/Core/Audio/MIDINote.swift` — Rewrote `frequency()` to delegate to Pitch, removed `throws`
+- `Peach/Core/Training/Comparison.swift` — Migrated `note1Frequency()`/`note2Frequency()` to Pitch, removed `throws`
+- `Peach/PitchMatching/PitchMatchingSession.swift` — Migrated forward conversion to Pitch
+- `Peach/Core/Audio/SoundFontNotePlayer.swift` — Migrated inverse conversion to `Pitch(frequency:)`
+- `Peach/Core/Audio/SoundFontPlaybackHandle.swift` — Migrated inverse conversion to `Pitch(frequency:)`
+- `Peach/Comparison/ComparisonSession.swift` — Removed `try` from note frequency calls
+- `PeachTests/Core/Audio/PitchTests.swift` — Added 28 tests (inverse, round-trip, migrated forward conversion edge cases)
+- `PeachTests/Core/Audio/MIDINoteTests.swift` — Updated frequency tests (removed `try`), added boundary tests
+- `PeachTests/Core/Training/ComparisonTests.swift` — Removed `throws`/`try` from frequency tests
+- `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` — Migrated FrequencyCalculation references to Pitch
+- `PeachTests/Core/Audio/SoundFontNotePlayerTests.swift` — Migrated FrequencyCalculation reference to Pitch
+
+**Deleted:**
+- `Peach/Core/Audio/FrequencyCalculation.swift`
+- `PeachTests/Core/Audio/FrequencyCalculationTests.swift`

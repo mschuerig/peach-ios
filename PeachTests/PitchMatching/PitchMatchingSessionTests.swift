@@ -122,7 +122,7 @@ struct PitchMatchingSessionTests {
         session.startPitchMatching()
         try await waitForState(session, .playingTunable)
 
-        let expectedFrequency = try FrequencyCalculation.frequency(midiNote: 69, referencePitch: 440.0)
+        let expectedFrequency = Pitch(note: MIDINote(69), cents: Cents(0)).frequency(referencePitch: Frequency(440.0)).rawValue
         #expect(notePlayer.playHistory.first != nil)
         let firstPlay = notePlayer.playHistory.first!
         #expect(abs(firstPlay.frequency - expectedFrequency) < 0.01)
@@ -148,11 +148,8 @@ struct PitchMatchingSessionTests {
         try await waitForState(session, .playingTunable)
 
         let challenge = try #require(session.currentChallenge)
-        let expectedTunableFreq = try FrequencyCalculation.frequency(
-            midiNote: challenge.referenceNote.rawValue,
-            cents: challenge.initialCentOffset,
-            referencePitch: 440.0
-        )
+        let expectedTunableFreq = Pitch(note: challenge.referenceNote, cents: Cents(challenge.initialCentOffset))
+            .frequency(referencePitch: Frequency(440.0)).rawValue
 
         // The second play call (handle-returning) should be the tunable note
         #expect(notePlayer.playCallCount >= 2)
@@ -419,7 +416,7 @@ struct PitchMatchingSessionTests {
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(handle.adjustFrequencyCallCount == 1)
-        let refFreq = try FrequencyCalculation.frequency(midiNote: 69, referencePitch: 440.0)
+        let refFreq = Pitch(note: MIDINote(69), cents: Cents(0)).frequency(referencePitch: Frequency(440.0)).rawValue
         #expect(abs(handle.lastAdjustedFrequency! - refFreq) < 0.01)
     }
 

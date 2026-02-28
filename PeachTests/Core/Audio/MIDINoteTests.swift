@@ -44,15 +44,27 @@ struct MIDINoteTests {
     // MARK: - Frequency
 
     @Test("A4 frequency is 440 Hz at default reference pitch")
-    func a4Frequency() async throws {
-        let freq = try MIDINote(69).frequency()
+    func a4Frequency() async {
+        let freq = MIDINote(69).frequency()
         #expect(abs(freq.rawValue - 440.0) < 0.01)
     }
 
     @Test("Frequency respects custom reference pitch")
-    func customReferencePitch() async throws {
-        let freq = try MIDINote(69).frequency(referencePitch: 432.0)
+    func customReferencePitch() async {
+        let freq = MIDINote(69).frequency(referencePitch: 432.0)
         #expect(abs(freq.rawValue - 432.0) < 0.01)
+    }
+
+    @Test("MIDI 0 frequency is approximately 8.18 Hz")
+    func midi0Frequency() async {
+        let freq = MIDINote(0).frequency()
+        #expect(abs(freq.rawValue - 8.18) < 0.1)
+    }
+
+    @Test("MIDI 127 frequency is approximately 12543 Hz")
+    func midi127Frequency() async {
+        let freq = MIDINote(127).frequency()
+        #expect(abs(freq.rawValue - 12543.0) < 1.0)
     }
 
     // MARK: - Random

@@ -57,8 +57,8 @@ struct SoundFontNotePlayerTests {
 
     @Test("Pitch bend for A4=440Hz at referencePitch=440 is center (8192)")
     func pitchBend_A4_center() async {
-        let result = FrequencyCalculation.midiNoteAndCents(frequency: 440.0)
-        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: Cents(result.cents))
+        let pitch = Pitch(frequency: Frequency(440.0), referencePitch: .concert440)
+        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: pitch.cents)
         #expect(bendValue == 8192)
     }
 
