@@ -1,6 +1,6 @@
 # Story 21.2: Implement TuningSystem Enum
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,22 +24,22 @@ So that interval frequencies are derived from a pluggable tuning system with 0.1
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Write TuningSystemTests.swift with failing tests (AC: #1, #2, #3, #4)
-  - [ ] Test `centOffset(for: .perfectFifth)` returns 700.0
-  - [ ] Test `centOffset(for: .prime)` returns 0.0
-  - [ ] Test `centOffset(for: .octave)` returns 1200.0
-  - [ ] Test all 13 intervals have correct cent values (each interval.semitones * 100.0)
-  - [ ] Test `CaseIterable` gives 1 case (only equalTemperament for now)
-  - [ ] Test `Codable` round-trip preserves value
-  - [ ] Test `Hashable` (use as Set element / Dictionary key)
-- [ ] Task 2: Implement TuningSystem enum (AC: #1, #2, #3, #5)
-  - [ ] Create `Peach/Core/Audio/TuningSystem.swift`
-  - [ ] Single case `.equalTemperament`
-  - [ ] `func centOffset(for interval: Interval) -> Double` with switch
-  - [ ] Conformances: `Hashable`, `Sendable`, `CaseIterable`, `Codable`
-- [ ] Task 3: Run full test suite (all ACs)
-  - [ ] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] Zero regressions
+- [x] Task 1: Write TuningSystemTests.swift with failing tests (AC: #1, #2, #3, #4)
+  - [x] Test `centOffset(for: .perfectFifth)` returns 700.0
+  - [x] Test `centOffset(for: .prime)` returns 0.0
+  - [x] Test `centOffset(for: .octave)` returns 1200.0
+  - [x] Test all 13 intervals have correct cent values (each interval.semitones * 100.0)
+  - [x] Test `CaseIterable` gives 1 case (only equalTemperament for now)
+  - [x] Test `Codable` round-trip preserves value
+  - [x] Test `Hashable` (use as Set element / Dictionary key)
+- [x] Task 2: Implement TuningSystem enum (AC: #1, #2, #3, #5)
+  - [x] Create `Peach/Core/Audio/TuningSystem.swift`
+  - [x] Single case `.equalTemperament`
+  - [x] `func centOffset(for interval: Interval) -> Double` with switch
+  - [x] Conformances: `Hashable`, `Sendable`, `CaseIterable`, `Codable`
+- [x] Task 3: Run full test suite (all ACs)
+  - [x] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] Zero regressions
 
 ## Dev Notes
 
@@ -194,10 +194,30 @@ This story is the second building block:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+None — clean implementation, no debugging required.
+
 ### Completion Notes List
 
+- Implemented `TuningSystem` enum in `Peach/Core/Audio/TuningSystem.swift` with single case `.equalTemperament`
+- `centOffset(for:)` method computes cent offset using `Double(interval.semitones) * 100.0` (12-TET definition)
+- Conformances: `Hashable`, `Sendable`, `CaseIterable`, `Codable` — all compiler-synthesized
+- Wrote 8 tests in `PeachTests/Core/Audio/TuningSystemTests.swift`: 3 specific AC tests (perfectFifth=700.0, prime=0.0, octave=1200.0), 1 exhaustive all-13-intervals test, 1 CaseIterable count test, 1 Codable round-trip test, 2 Hashable tests (Set element + Dictionary key)
+- TDD workflow: tests written first and confirmed failing, then implementation, then full suite pass
+- Full test suite passes with zero regressions
+- Dependency check (`tools/check-dependencies.sh`) passes — no forbidden imports
+- Extensibility: adding a new tuning system requires only a new enum case and switch branch in `centOffset(for:)` — no other files affected (AC #5)
+
 ### File List
+
+- `Peach/Core/Audio/TuningSystem.swift` (new)
+- `PeachTests/Core/Audio/TuningSystemTests.swift` (new)
+- `docs/implementation-artifacts/21-2-implement-tuningsystem-enum.md` (modified — tasks, status, dev agent record)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified — status update)
+
+### Change Log
+
+- 2026-02-28: Implemented TuningSystem enum with equalTemperament case and centOffset(for:) method. Added 8 tests covering all acceptance criteria. Story complete.
