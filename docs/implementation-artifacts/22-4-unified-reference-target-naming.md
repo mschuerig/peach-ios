@@ -1,6 +1,6 @@
 # Story 22.4: Unified Reference/Target Naming
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,95 +26,95 @@ So that naming is consistent with the reference/target mental model shared by al
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Refactor `Comparison` struct (AC: #2, #3)
-  - [ ] 1.1 Change `Comparison` fields: `note1: MIDINote` → `referenceNote: MIDINote`, remove `note2: MIDINote` and `centDifference: Cents`, add `targetNote: DetunedMIDINote`
-  - [ ] 1.2 Update `isSecondNoteHigher` → `isTargetHigher`: change body to `targetNote.offset.rawValue > 0`
-  - [ ] 1.3 Rename `note1Frequency(...)` → `referenceFrequency(...)`: body uses `tuningSystem.frequency(for: referenceNote, referencePitch:)`
-  - [ ] 1.4 Rename `note2Frequency(...)` → `targetFrequency(...)`: body simplifies to `tuningSystem.frequency(for: targetNote, referencePitch:)` (no more inline DetunedMIDINote construction)
-  - [ ] 1.5 Update `isCorrect(userAnswerHigher:)` to use `isTargetHigher`
+- [x] Task 1: Refactor `Comparison` struct (AC: #2, #3)
+  - [x] 1.1 Change `Comparison` fields: `note1: MIDINote` → `referenceNote: MIDINote`, remove `note2: MIDINote` and `centDifference: Cents`, add `targetNote: DetunedMIDINote`
+  - [x] 1.2 Update `isSecondNoteHigher` → `isTargetHigher`: change body to `targetNote.offset.rawValue > 0`
+  - [x] 1.3 Rename `note1Frequency(...)` → `referenceFrequency(...)`: body uses `tuningSystem.frequency(for: referenceNote, referencePitch:)`
+  - [x] 1.4 Rename `note2Frequency(...)` → `targetFrequency(...)`: body simplifies to `tuningSystem.frequency(for: targetNote, referencePitch:)` (no more inline DetunedMIDINote construction)
+  - [x] 1.5 Update `isCorrect(userAnswerHigher:)` to use `isTargetHigher`
 
-- [ ] Task 2: Rename `ComparisonRecord` fields (AC: #1)
-  - [ ] 2.1 Rename `note1: Int` → `referenceNote: Int`
-  - [ ] 2.2 Rename `note2: Int` → `targetNote: Int`
-  - [ ] 2.3 Rename `note2CentOffset: Double` → `centOffset: Double`
-  - [ ] 2.4 Update init parameters and doc comments
-  - [ ] 2.5 No SwiftData migration needed — no production user base
+- [x] Task 2: Rename `ComparisonRecord` fields (AC: #1)
+  - [x] 2.1 Rename `note1: Int` → `referenceNote: Int`
+  - [x] 2.2 Rename `note2: Int` → `targetNote: Int`
+  - [x] 2.3 Rename `note2CentOffset: Double` → `centOffset: Double`
+  - [x] 2.4 Update init parameters and doc comments
+  - [x] 2.5 No SwiftData migration needed — no production user base
 
-- [ ] Task 3: Update `KazezNoteStrategy` (AC: #2)
-  - [ ] 3.1 Change `last.comparison.centDifference.magnitude` → `last.comparison.targetNote.offset.magnitude`
-  - [ ] 3.2 Change `Comparison(note1: note, note2: note, centDifference: Cents(signed))` → `Comparison(referenceNote: note, targetNote: DetunedMIDINote(note: note, offset: Cents(signed)))`
-  - [ ] 3.3 Update logger message: `centDiff=` → use `targetNote.offset` equivalent
+- [x] Task 3: Update `KazezNoteStrategy` (AC: #2)
+  - [x] 3.1 Change `last.comparison.centDifference.magnitude` → `last.comparison.targetNote.offset.magnitude`
+  - [x] 3.2 Change `Comparison(note1: note, note2: note, centDifference: Cents(signed))` → `Comparison(referenceNote: note, targetNote: DetunedMIDINote(note: note, offset: Cents(signed)))`
+  - [x] 3.3 Update logger message: `centDiff=` → use `targetNote.offset` equivalent
 
-- [ ] Task 4: Update `ComparisonSession` (AC: #2, #3, #4)
-  - [ ] 4.1 `currentDifficulty`: change `currentComparison?.centDifference.magnitude` → `currentComparison?.targetNote.offset.magnitude`
-  - [ ] 4.2 `playComparisonNotes()`: change `comparison.note1Frequency(...)` → `comparison.referenceFrequency(...)`, `comparison.note2Frequency(...)` → `comparison.targetFrequency(...)`
-  - [ ] 4.3 Update logger messages: `note1=\(comparison.note1.rawValue)` → `ref=\(comparison.referenceNote.rawValue)`, `centDiff=\(comparison.centDifference.rawValue)` → `offset=\(comparison.targetNote.offset.rawValue)`, `comparison.isSecondNoteHigher` → `comparison.isTargetHigher`
-  - [ ] 4.4 `trackSessionBest()`: change `completed.comparison.centDifference.magnitude` → `completed.comparison.targetNote.offset.magnitude`
+- [x] Task 4: Update `ComparisonSession` (AC: #2, #3, #4)
+  - [x] 4.1 `currentDifficulty`: change `currentComparison?.centDifference.magnitude` → `currentComparison?.targetNote.offset.magnitude`
+  - [x] 4.2 `playComparisonNotes()`: change `comparison.note1Frequency(...)` → `comparison.referenceFrequency(...)`, `comparison.note2Frequency(...)` → `comparison.targetFrequency(...)`
+  - [x] 4.3 Update logger messages: `note1=\(comparison.note1.rawValue)` → `ref=\(comparison.referenceNote.rawValue)`, `centDiff=\(comparison.centDifference.rawValue)` → `offset=\(comparison.targetNote.offset.rawValue)`, `comparison.isSecondNoteHigher` → `comparison.isTargetHigher`
+  - [x] 4.4 `trackSessionBest()`: change `completed.comparison.centDifference.magnitude` → `completed.comparison.targetNote.offset.magnitude`
 
-- [ ] Task 5: Update `TrainingDataStore` observer (AC: #1, #4)
-  - [ ] 5.1 In `comparisonCompleted(_:)`: `comparison.note1.rawValue` → `comparison.referenceNote.rawValue`, `comparison.note2.rawValue` → `comparison.targetNote.note.rawValue`, `comparison.centDifference.rawValue` → `comparison.targetNote.offset.rawValue`
-  - [ ] 5.2 Update ComparisonRecord constructor call to use new parameter names
+- [x] Task 5: Update `TrainingDataStore` observer (AC: #1, #4)
+  - [x] 5.1 In `comparisonCompleted(_:)`: `comparison.note1.rawValue` → `comparison.referenceNote.rawValue`, `comparison.note2.rawValue` → `comparison.targetNote.note.rawValue`, `comparison.centDifference.rawValue` → `comparison.targetNote.offset.rawValue`
+  - [x] 5.2 Update ComparisonRecord constructor call to use new parameter names
 
-- [ ] Task 6: Update `PerceptualProfile` observer (AC: #4)
-  - [ ] 6.1 `comparison.centDifference.magnitude` → `comparison.targetNote.offset.magnitude`
-  - [ ] 6.2 `comparison.note1` → `comparison.referenceNote`
+- [x] Task 6: Update `PerceptualProfile` observer (AC: #4)
+  - [x] 6.1 `comparison.centDifference.magnitude` → `comparison.targetNote.offset.magnitude`
+  - [x] 6.2 `comparison.note1` → `comparison.referenceNote`
 
-- [ ] Task 7: Update `ThresholdTimeline` and `TimelineDataPoint` (AC: #1, #4)
-  - [ ] 7.1 `TimelineDataPoint.centDifference` → `centOffset` (Double field)
-  - [ ] 7.2 `TimelineDataPoint.note1` → `referenceNote` (Int field)
-  - [ ] 7.3 Update `init(records:)`: `record.note2CentOffset` → `record.centOffset`, `record.note1` → `record.referenceNote`
-  - [ ] 7.4 Update `comparisonCompleted(_:)`: `comparison.centDifference` → `comparison.targetNote.offset`, `comparison.note1` → `comparison.referenceNote`
-  - [ ] 7.5 Update `recomputeAggregatedPoints()`: `\.centDifference` keypath → `\.centOffset`
+- [x] Task 7: Update `ThresholdTimeline` and `TimelineDataPoint` (AC: #1, #4)
+  - [x] 7.1 `TimelineDataPoint.centDifference` → `centOffset` (Double field)
+  - [x] 7.2 `TimelineDataPoint.note1` → `referenceNote` (Int field)
+  - [x] 7.3 Update `init(records:)`: `record.note2CentOffset` → `record.centOffset`, `record.note1` → `record.referenceNote`
+  - [x] 7.4 Update `comparisonCompleted(_:)`: `comparison.centDifference` → `comparison.targetNote.offset`, `comparison.note1` → `comparison.referenceNote`
+  - [x] 7.5 Update `recomputeAggregatedPoints()`: `\.centDifference` keypath → `\.centOffset`
 
-- [ ] Task 8: Update `TrendAnalyzer` (AC: #1, #4)
-  - [ ] 8.1 `records.map { abs($0.note2CentOffset) }` → `records.map { abs($0.centOffset) }`
-  - [ ] 8.2 `completed.comparison.centDifference.magnitude` → `completed.comparison.targetNote.offset.magnitude`
-  - [ ] 8.3 Update doc comment: `abs(note2CentOffset)` → `abs(centOffset)`
+- [x] Task 8: Update `TrendAnalyzer` (AC: #1, #4)
+  - [x] 8.1 `records.map { abs($0.note2CentOffset) }` → `records.map { abs($0.centOffset) }`
+  - [x] 8.2 `completed.comparison.centDifference.magnitude` → `completed.comparison.targetNote.offset.magnitude`
+  - [x] 8.3 Update doc comment: `abs(note2CentOffset)` → `abs(centOffset)`
 
-- [ ] Task 9: Update `PeachApp.swift` profile loading (AC: #1, #4)
-  - [ ] 9.1 `MIDINote(record.note1)` → `MIDINote(record.referenceNote)`
-  - [ ] 9.2 `abs(record.note2CentOffset)` → `abs(record.centOffset)`
+- [x] Task 9: Update `PeachApp.swift` profile loading (AC: #1, #4)
+  - [x] 9.1 `MIDINote(record.note1)` → `MIDINote(record.referenceNote)`
+  - [x] 9.2 `abs(record.note2CentOffset)` → `abs(record.centOffset)`
 
-- [ ] Task 10: Update `EnvironmentKeys.swift` preview strategy (AC: #2)
-  - [ ] 10.1 `Comparison(note1: MIDINote(60), note2: MIDINote(60), centDifference: Cents(50.0))` → `Comparison(referenceNote: MIDINote(60), targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(50.0)))`
+- [x] Task 10: Update `EnvironmentKeys.swift` preview strategy (AC: #2)
+  - [x] 10.1 `Comparison(note1: MIDINote(60), note2: MIDINote(60), centDifference: Cents(50.0))` → `Comparison(referenceNote: MIDINote(60), targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(50.0)))`
 
-- [ ] Task 11: Update all test files (AC: #1, #2, #6)
-  - [ ] 11.1 `ComparisonTests.swift` (~20 occurrences): Update all Comparison construction and property access
-  - [ ] 11.2 `KazezNoteStrategyTests.swift` (~30 occurrences): Update all Comparison construction and assertions
-  - [ ] 11.3 `TrendAnalyzerTests.swift` (~28 occurrences): Update ComparisonRecord construction and centDifference references
-  - [ ] 11.4 `TrainingDataStoreTests.swift` (~13 occurrences): Update ComparisonRecord construction
-  - [ ] 11.5 `ComparisonSessionLoudnessTests.swift` (~19 occurrences): Update Comparison construction in mocks
-  - [ ] 11.6 `ComparisonSessionIntegrationTests.swift` (~10 occurrences): Update Comparison references
-  - [ ] 11.7 `ComparisonSessionDifficultyTests.swift` (~3 occurrences): Update Comparison construction
-  - [ ] 11.8 `ComparisonSessionResetTests.swift` (~8 occurrences): Update Comparison construction
-  - [ ] 11.9 `ComparisonSessionUserDefaultsTests.swift` (~5 occurrences): Update Comparison construction
-  - [ ] 11.10 `ComparisonSessionLifecycleTests.swift` (~2 occurrences): Update Comparison references
-  - [ ] 11.11 `ThresholdTimelineTests.swift` (~7 occurrences): Update ComparisonRecord and TimelineDataPoint references
-  - [ ] 11.12 `DetunedMIDINoteTests.swift` (~9 occurrences): Check for any note1/note2 references
-  - [ ] 11.13 `SettingsTests.swift` (~9 occurrences): Update ComparisonRecord construction
-  - [ ] 11.14 `ProfilePreviewViewTests.swift` (~1 occurrence): Update Comparison construction
-  - [ ] 11.15 `ProfileScreenLayoutTests.swift` (~3 occurrences): Update references
-  - [ ] 11.16 `TrainingDataStoreEdgeCaseTests.swift` (~3 occurrences): Update ComparisonRecord construction
+- [x] Task 11: Update all test files (AC: #1, #2, #6)
+  - [x] 11.1 `ComparisonTests.swift` (~20 occurrences): Update all Comparison construction and property access
+  - [x] 11.2 `KazezNoteStrategyTests.swift` (~30 occurrences): Update all Comparison construction and assertions
+  - [x] 11.3 `TrendAnalyzerTests.swift` (~28 occurrences): Update ComparisonRecord construction and centDifference references
+  - [x] 11.4 `TrainingDataStoreTests.swift` (~13 occurrences): Update ComparisonRecord construction
+  - [x] 11.5 `ComparisonSessionLoudnessTests.swift` (~19 occurrences): Update Comparison construction in mocks
+  - [x] 11.6 `ComparisonSessionIntegrationTests.swift` (~10 occurrences): Update Comparison references
+  - [x] 11.7 `ComparisonSessionDifficultyTests.swift` (~3 occurrences): Update Comparison construction
+  - [x] 11.8 `ComparisonSessionResetTests.swift` (~8 occurrences): Update Comparison construction
+  - [x] 11.9 `ComparisonSessionUserDefaultsTests.swift` (~5 occurrences): Update Comparison construction
+  - [x] 11.10 `ComparisonSessionLifecycleTests.swift` (~2 occurrences): Update Comparison references
+  - [x] 11.11 `ThresholdTimelineTests.swift` (~7 occurrences): Update ComparisonRecord and TimelineDataPoint references
+  - [x] 11.12 `DetunedMIDINoteTests.swift` (~9 occurrences): Check for any note1/note2 references
+  - [x] 11.13 `SettingsTests.swift` (~9 occurrences): Update ComparisonRecord construction
+  - [x] 11.14 `ProfilePreviewViewTests.swift` (~1 occurrence): Update Comparison construction
+  - [x] 11.15 `ProfileScreenLayoutTests.swift` (~3 occurrences): Update references
+  - [x] 11.16 `TrainingDataStoreEdgeCaseTests.swift` (~3 occurrences): Update ComparisonRecord construction
 
-- [ ] Task 12: Update mock/helper files (AC: #2)
-  - [ ] 12.1 `MockNextComparisonStrategy.swift`: Update default `Comparison(note1:...)` → new shape
-  - [ ] 12.2 `ComparisonTestHelpers.swift`: Update comparison factory helpers
-  - [ ] 12.3 `MockTrainingDataStore.swift`: Update ComparisonRecord construction in `comparisonCompleted`
+- [x] Task 12: Update mock/helper files (AC: #2)
+  - [x] 12.1 `MockNextComparisonStrategy.swift`: Update default `Comparison(note1:...)` → new shape
+  - [x] 12.2 `ComparisonTestHelpers.swift`: Update comparison factory helpers
+  - [x] 12.3 `MockTrainingDataStore.swift`: Update ComparisonRecord construction in `comparisonCompleted`
 
-- [ ] Task 13: Update view preview code (AC: #1)
-  - [ ] 13.1 `ProfileScreen.swift` preview: Update mock Comparison/ComparisonRecord construction
-  - [ ] 13.2 `ThresholdTimelineView.swift` preview: Update mock data
-  - [ ] 13.3 `ProfilePreviewView.swift` preview: Update mock data
-  - [ ] 13.4 `SummaryStatisticsView.swift` preview: Update mock data
+- [x] Task 13: Update view preview code (AC: #1)
+  - [x] 13.1 `ProfileScreen.swift` preview: Update mock Comparison/ComparisonRecord construction
+  - [x] 13.2 `ThresholdTimelineView.swift` preview: Update mock data
+  - [x] 13.3 `ProfilePreviewView.swift` preview: Update mock data
+  - [x] 13.4 `SummaryStatisticsView.swift` preview: Update mock data
 
-- [ ] Task 14: Update `project-context.md` (AC: #1)
-  - [ ] 14.1 Update `ComparisonRecord` field documentation to reflect new names
-  - [ ] 14.2 Update any references to `note1`/`note2` in domain rules section
+- [x] Task 14: Update `project-context.md` (AC: #1)
+  - [x] 14.1 Update `ComparisonRecord` field documentation to reflect new names
+  - [x] 14.2 Update any references to `note1`/`note2` in domain rules section
 
-- [ ] Task 15: Run full test suite and verify (AC: #6)
-  - [ ] 15.1 `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 15.2 Verify zero behavioral changes
-  - [ ] 15.3 Run `tools/check-dependencies.sh` to verify no dependency violations
+- [x] Task 15: Run full test suite and verify (AC: #6)
+  - [x] 15.1 `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 15.2 Verify zero behavioral changes
+  - [x] 15.3 Run `tools/check-dependencies.sh` to verify no dependency violations
 
 ## Dev Notes
 
@@ -322,14 +322,65 @@ e5cb19a Implement story 22.1: Migrate FrequencyCalculation to Domain Types
 
 **Pattern:** Commit directly to main, one commit per story, code review as separate commit. Commit message: `Implement story 22.4: Unified Reference/Target Naming`.
 
+## Change Log
+
+- 2026-03-01: Implemented unified reference/target naming across entire codebase — renamed Comparison struct fields (note1→referenceNote, note2+centDifference→targetNote as DetunedMIDINote), ComparisonRecord fields (note1→referenceNote, note2→targetNote, note2CentOffset→centOffset), TimelineDataPoint fields, and all callers/tests/previews/docs
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no issues.
+
 ### Completion Notes List
 
+- Refactored `Comparison` struct from 3 fields to 2 fields (referenceNote + targetNote as DetunedMIDINote)
+- Renamed `ComparisonRecord` fields (referenceNote, targetNote, centOffset) — no migration needed
+- Updated 10 production source files: Comparison.swift, ComparisonRecord.swift, ComparisonSession.swift, KazezNoteStrategy.swift, TrainingDataStore.swift, PerceptualProfile.swift, ThresholdTimeline.swift, TrendAnalyzer.swift, PeachApp.swift, EnvironmentKeys.swift
+- Updated 16 test files, 3 mock/helper files, 4 view preview files
+- Updated project-context.md with new field names and domain rules
+- Full test suite passes (TEST SUCCEEDED), zero regressions
+- Dependency check passes (all rules satisfied)
+- Grep verification confirms no remaining old naming patterns in struct properties (only local variables named note1/note2 in unrelated code)
+
 ### File List
+
+Peach/Core/Training/Comparison.swift
+Peach/Core/Data/ComparisonRecord.swift
+Peach/Core/Algorithm/KazezNoteStrategy.swift
+Peach/Comparison/ComparisonSession.swift
+Peach/Core/Data/TrainingDataStore.swift
+Peach/Core/Profile/PerceptualProfile.swift
+Peach/Core/Profile/ThresholdTimeline.swift
+Peach/Core/Profile/TrendAnalyzer.swift
+Peach/App/PeachApp.swift
+Peach/App/EnvironmentKeys.swift
+Peach/Profile/ProfileScreen.swift
+Peach/Profile/ThresholdTimelineView.swift
+Peach/Start/ProfilePreviewView.swift
+Peach/Profile/SummaryStatisticsView.swift
+PeachTests/Core/Training/ComparisonTests.swift
+PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift
+PeachTests/Core/Profile/TrendAnalyzerTests.swift
+PeachTests/Core/Data/TrainingDataStoreTests.swift
+PeachTests/Comparison/ComparisonSessionLoudnessTests.swift
+PeachTests/Comparison/ComparisonSessionIntegrationTests.swift
+PeachTests/Comparison/ComparisonSessionDifficultyTests.swift
+PeachTests/Comparison/ComparisonSessionResetTests.swift
+PeachTests/Comparison/ComparisonSessionUserDefaultsTests.swift
+PeachTests/Comparison/ComparisonSessionLifecycleTests.swift
+PeachTests/Core/Profile/ThresholdTimelineTests.swift
+PeachTests/Settings/SettingsTests.swift
+PeachTests/Start/ProfilePreviewViewTests.swift
+PeachTests/Profile/ProfileScreenLayoutTests.swift
+PeachTests/Core/Data/TrainingDataStoreEdgeCaseTests.swift
+PeachTests/Comparison/MockNextComparisonStrategy.swift
+PeachTests/Comparison/ComparisonTestHelpers.swift
+PeachTests/Comparison/MockTrainingDataStore.swift
+docs/project-context.md
+docs/implementation-artifacts/22-4-unified-reference-target-naming.md
+docs/implementation-artifacts/sprint-status.yaml

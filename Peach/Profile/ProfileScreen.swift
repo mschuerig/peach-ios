@@ -66,9 +66,9 @@ struct ProfileScreen: View {
                     let baseOffset = 50.0 - Double(i) * 0.5
                     let noise = Double.random(in: -10...10)
                     return ComparisonRecord(
-                        note1: 60,
-                        note2: 60,
-                        note2CentOffset: baseOffset + noise,
+                        referenceNote: 60,
+                        targetNote: 60,
+                        centOffset: baseOffset + noise,
                         isCorrect: Bool.random(),
                         timestamp: Date().addingTimeInterval(Double(i - 50) * 86400)
                     )
@@ -88,8 +88,8 @@ struct ProfileScreen: View {
             .environment(\.trendAnalyzer, {
                 let records = (0..<20).map { i in
                     ComparisonRecord(
-                        note1: 60, note2: 60,
-                        note2CentOffset: i < 10 ? 50.0 : 30.0,
+                        referenceNote: 60, targetNote: 60,
+                        centOffset: i < 10 ? 50.0 : 30.0,
                         isCorrect: true,
                         timestamp: Date(timeIntervalSince1970: Double(i) * 60)
                     )

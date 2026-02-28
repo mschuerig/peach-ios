@@ -61,7 +61,7 @@ struct ComparisonSessionResetTests {
             settings: TrainingSettings(referencePitch: .concert440),
             lastComparison: nil
         )
-        #expect(comparison.centDifference.magnitude == 100.0)
+        #expect(comparison.targetNote.offset.magnitude == 100.0)
     }
 
     @Test("after reset, weightedEffectiveDifficulty returns default with no trained neighbors")
@@ -90,7 +90,7 @@ struct ComparisonSessionResetTests {
             settings: TrainingSettings(referencePitch: .concert440),
             lastComparison: nil
         )
-        #expect(comparison.centDifference.magnitude == 100.0)
+        #expect(comparison.targetNote.offset.magnitude == 100.0)
     }
 
     // MARK: - TrendAnalyzer Reset
@@ -101,9 +101,9 @@ struct ComparisonSessionResetTests {
         var records: [ComparisonRecord] = []
         for i in 0..<30 {
             records.append(ComparisonRecord(
-                note1: 60,
-                note2: 61,
-                note2CentOffset: Double(i) + 1.0,
+                referenceNote: 60,
+                targetNote: 61,
+                centOffset: Double(i) + 1.0,
                 isCorrect: true
             ))
         }
@@ -133,9 +133,9 @@ struct ComparisonSessionResetTests {
         var records: [ComparisonRecord] = []
         for i in 0..<10 {
             records.append(ComparisonRecord(
-                note1: 60,
-                note2: 61,
-                note2CentOffset: Double(i) + 1.0,
+                referenceNote: 60,
+                targetNote: 61,
+                centOffset: Double(i) + 1.0,
                 isCorrect: true
             ))
         }

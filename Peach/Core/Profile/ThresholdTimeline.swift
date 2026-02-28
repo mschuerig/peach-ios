@@ -2,9 +2,9 @@ import Foundation
 
 struct TimelineDataPoint {
     let timestamp: Date
-    let centDifference: Double
+    let centOffset: Double
     let isCorrect: Bool
-    let note1: Int
+    let referenceNote: Int
 }
 
 struct AggregatedDataPoint {
@@ -27,9 +27,9 @@ final class ThresholdTimeline {
         for record in records {
             dataPoints.append(TimelineDataPoint(
                 timestamp: record.timestamp,
-                centDifference: abs(record.note2CentOffset),
+                centOffset: abs(record.centOffset),
                 isCorrect: record.isCorrect,
-                note1: record.note1
+                referenceNote: record.referenceNote
             ))
         }
         recomputeAggregatedPoints()
@@ -52,7 +52,7 @@ final class ThresholdTimeline {
         }
 
         aggregatedPoints = groups.sorted(by: { $0.key < $1.key }).map { periodStart, points in
-            let mean = points.map(\.centDifference).reduce(0.0, +) / Double(points.count)
+            let mean = points.map(\.centOffset).reduce(0.0, +) / Double(points.count)
             let correctCount = points.filter(\.isCorrect).count
             return AggregatedDataPoint(
                 periodStart: periodStart,
@@ -116,9 +116,9 @@ extension ThresholdTimeline: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
         dataPoints.append(TimelineDataPoint(
             timestamp: completed.timestamp,
-            centDifference: completed.comparison.centDifference.magnitude,
+            centOffset: completed.comparison.targetNote.offset.magnitude,
             isCorrect: completed.isCorrect,
-            note1: completed.comparison.note1.rawValue
+            referenceNote: completed.comparison.referenceNote.rawValue
         ))
         recomputeAggregatedPoints()
     }

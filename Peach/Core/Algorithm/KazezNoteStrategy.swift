@@ -25,7 +25,7 @@ final class KazezNoteStrategy: NextComparisonStrategy {
         let difficultyRange = settings.minCentDifference.rawValue...settings.maxCentDifference.rawValue
 
         if let last = lastComparison {
-            let p = last.comparison.centDifference.magnitude
+            let p = last.comparison.targetNote.offset.magnitude
             magnitude = last.isCorrect
                 ? kazezNarrow(p: p).clamped(to: difficultyRange)
                 : kazezWiden(p: p).clamped(to: difficultyRange)
@@ -38,12 +38,11 @@ final class KazezNoteStrategy: NextComparisonStrategy {
         let signed = Bool.random() ? magnitude : -magnitude
         let note = MIDINote.random(in: settings.noteRangeMin...settings.noteRangeMax)
 
-        logger.info("note=\(note.rawValue), centDiff=\(magnitude, format: .fixed(precision: 1))")
+        logger.info("note=\(note.rawValue), offset=\(magnitude, format: .fixed(precision: 1))")
 
         return Comparison(
-            note1: note,
-            note2: note,
-            centDifference: Cents(signed)
+            referenceNote: note,
+            targetNote: DetunedMIDINote(note: note, offset: Cents(signed))
         )
     }
 

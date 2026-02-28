@@ -12,9 +12,9 @@ struct TrendAnalyzerTests {
     private func makeRecords(absCentOffsets: [Double]) -> [ComparisonRecord] {
         absCentOffsets.enumerated().map { index, offset in
             ComparisonRecord(
-                note1: 60,
-                note2: 60,
-                note2CentOffset: offset,
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: offset,
                 isCorrect: true,
                 timestamp: Date(timeIntervalSince1970: Double(index) * 60)
             )
@@ -129,9 +129,8 @@ struct TrendAnalyzerTests {
 
         // Add one more record via observer to reach 20
         let comparison = Comparison(
-            note1: 60,
-            note2: 60,
-            centDifference: Cents(30.0)
+            referenceNote: 60,
+            targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0))
         )
         let completed = CompletedComparison(
             comparison: comparison,

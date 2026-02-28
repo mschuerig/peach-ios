@@ -22,8 +22,8 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record1 = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 50.0, isCorrect: true)
-        let record2 = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 50.0, isCorrect: true)
+        let record1 = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true)
+        let record2 = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true)
 
         try store.save(record1)
         try store.save(record2)
@@ -38,16 +38,16 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let minRecord = ComparisonRecord(note1: 0, note2: 0, note2CentOffset: 10.0, isCorrect: true)
-        let maxRecord = ComparisonRecord(note1: 127, note2: 127, note2CentOffset: 20.0, isCorrect: false)
+        let minRecord = ComparisonRecord(referenceNote: 0, targetNote: 0, centOffset: 10.0, isCorrect: true)
+        let maxRecord = ComparisonRecord(referenceNote: 127, targetNote: 127, centOffset: 20.0, isCorrect: false)
 
         try store.save(minRecord)
         try store.save(maxRecord)
 
         let fetched = try store.fetchAllComparisons()
         #expect(fetched.count == 2)
-        #expect(fetched.contains { $0.note1 == 0 })
-        #expect(fetched.contains { $0.note1 == 127 })
+        #expect(fetched.contains { $0.referenceNote == 0 })
+        #expect(fetched.contains { $0.referenceNote == 127 })
     }
 
     @Test("Fractional cent offsets are stored with precision")
@@ -57,9 +57,9 @@ struct TrainingDataStoreEdgeCaseTests {
         let store = TrainingDataStore(modelContext: context)
 
         let record = ComparisonRecord(
-            note1: 60,
-            note2: 60,
-            note2CentOffset: 12.3,
+            referenceNote: 60,
+            targetNote: 60,
+            centOffset: 12.3,
             isCorrect: true
         )
 
@@ -67,7 +67,7 @@ struct TrainingDataStoreEdgeCaseTests {
 
         let fetched = try store.fetchAllComparisons()
         #expect(fetched.count == 1)
-        #expect(fetched[0].note2CentOffset == 12.3)
+        #expect(fetched[0].centOffset == 12.3)
     }
 
     // MARK: - Error Handling Tests
@@ -78,7 +78,7 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
+        let record = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
         try store.save(record)
 
         do {
@@ -99,7 +99,7 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
+        let record = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
 
         do {
             try store.save(record)
@@ -119,7 +119,7 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
+        let record = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
         try store.save(record)
 
         do {

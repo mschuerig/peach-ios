@@ -5,21 +5,21 @@ import Testing
 @Suite("Comparison Tests")
 struct ComparisonTests {
 
-    @Test("note1Frequency calculates valid frequency for middle C")
-    func note1FrequencyCalculatesCorrectly() async {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+    @Test("referenceFrequency calculates valid frequency for middle C")
+    func referenceFrequencyCalculatesCorrectly() async {
+        let comparison = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
 
-        let freq = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq = comparison.referenceFrequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
 
         #expect(freq.rawValue >= 260 && freq.rawValue <= 263)
     }
 
-    @Test("note2Frequency applies positive cent offset (higher)")
-    func note2FrequencyAppliesCentOffsetHigher() async {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+    @Test("targetFrequency applies positive cent offset (higher)")
+    func targetFrequencyAppliesCentOffsetHigher() async {
+        let comparison = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
 
-        let freq1 = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
-        let freq2 = comparison.note2Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq1 = comparison.referenceFrequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq2 = comparison.targetFrequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
 
         #expect(freq2 > freq1)
 
@@ -27,32 +27,32 @@ struct ComparisonTests {
         #expect(ratio >= 1.05 && ratio <= 1.07)
     }
 
-    @Test("note2Frequency applies negative cent offset (lower)")
-    func note2FrequencyAppliesCentOffsetLower() async {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(-100.0))
+    @Test("targetFrequency applies negative cent offset (lower)")
+    func targetFrequencyAppliesCentOffsetLower() async {
+        let comparison = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(-100.0)))
 
-        let freq1 = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
-        let freq2 = comparison.note2Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq1 = comparison.referenceFrequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq2 = comparison.targetFrequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
 
         #expect(freq2 < freq1)
     }
 
-    @Test("isSecondNoteHigher reflects positive cent difference")
-    func isSecondNoteHigherPositiveCents() {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(50.0))
-        #expect(comparison.isSecondNoteHigher == true)
+    @Test("isTargetHigher reflects positive cent difference")
+    func isTargetHigherPositiveCents() {
+        let comparison = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0)))
+        #expect(comparison.isTargetHigher == true)
     }
 
-    @Test("isSecondNoteHigher reflects negative cent difference")
-    func isSecondNoteHigherNegativeCents() {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(-50.0))
-        #expect(comparison.isSecondNoteHigher == false)
+    @Test("isTargetHigher reflects negative cent difference")
+    func isTargetHigherNegativeCents() {
+        let comparison = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(-50.0)))
+        #expect(comparison.isTargetHigher == false)
     }
 
     @Test("isCorrect validates user answer against cent direction")
     func isCorrectValidatesAnswer() {
-        let higher = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
-        let lower = Comparison(note1: 60, note2: 60, centDifference: Cents(-100.0))
+        let higher = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
+        let lower = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(-100.0)))
 
         #expect(higher.isCorrect(userAnswerHigher: true) == true)
         #expect(higher.isCorrect(userAnswerHigher: false) == false)
@@ -66,7 +66,7 @@ struct CompletedComparisonTests {
 
     @Test("isCorrect delegates to comparison logic")
     func isCorrectDelegatesToComparison() {
-        let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+        let comparison = Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
 
         let correct = CompletedComparison(comparison: comparison, userAnsweredHigher: true)
         let incorrect = CompletedComparison(comparison: comparison, userAnsweredHigher: false)
@@ -79,7 +79,7 @@ struct CompletedComparisonTests {
     func timestampDefaultsToNow() {
         let before = Date()
         let completed = CompletedComparison(
-            comparison: Comparison(note1: 60, note2: 60, centDifference: Cents(50.0)),
+            comparison: Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0))),
             userAnsweredHigher: true
         )
         let after = Date()

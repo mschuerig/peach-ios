@@ -117,8 +117,8 @@ struct PeachApp: App {
         let startTime = CFAbsoluteTimeGetCurrent()
         for record in comparisonRecords {
             profile.update(
-                note: MIDINote(record.note1),
-                centOffset: abs(record.note2CentOffset),
+                note: MIDINote(record.referenceNote),
+                centOffset: abs(record.centOffset),
                 isCorrect: record.isCorrect
             )
         }

@@ -14,7 +14,7 @@ final class MockNextComparisonStrategy: NextComparisonStrategy {
     // MARK: - Initialization
 
     init(comparisons: [Comparison] = [
-        Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+        Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
     ]) {
         self.comparisons = comparisons
     }

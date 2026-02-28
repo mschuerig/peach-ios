@@ -17,9 +17,9 @@ struct ThresholdTimelineTests {
         offsets.enumerated().map { index, offset in
             let daySeconds = Double(startDay + index) * 86400 + 43200
             return ComparisonRecord(
-                note1: 60,
-                note2: 60,
-                note2CentOffset: offset,
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: offset,
                 isCorrect: isCorrect,
                 timestamp: Date(timeIntervalSince1970: daySeconds)
             )
@@ -35,9 +35,9 @@ struct ThresholdTimelineTests {
         let baseSeconds = Double(day) * 86400 + 43200
         return offsets.enumerated().map { index, offset in
             ComparisonRecord(
-                note1: 60,
-                note2: 60,
-                note2CentOffset: offset,
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: offset,
                 isCorrect: correctness?[index] ?? true,
                 timestamp: Date(timeIntervalSince1970: baseSeconds + Double(index) * 60)
             )
@@ -56,15 +56,15 @@ struct ThresholdTimelineTests {
         let date = Date()
         let point = TimelineDataPoint(
             timestamp: date,
-            centDifference: 25.0,
+            centOffset: 25.0,
             isCorrect: true,
-            note1: 60
+            referenceNote: 60
         )
 
         #expect(point.timestamp == date)
-        #expect(point.centDifference == 25.0)
+        #expect(point.centOffset == 25.0)
         #expect(point.isCorrect == true)
-        #expect(point.note1 == 60)
+        #expect(point.referenceNote == 60)
     }
 
     // MARK: - AggregatedDataPoint struct
@@ -100,8 +100,8 @@ struct ThresholdTimelineTests {
         let records = makeDailyRecords(offsets: [-25.0, 30.0])
         let timeline = ThresholdTimeline(records: records)
 
-        #expect(timeline.dataPoints[0].centDifference == 25.0)
-        #expect(timeline.dataPoints[1].centDifference == 30.0)
+        #expect(timeline.dataPoints[0].centOffset == 25.0)
+        #expect(timeline.dataPoints[1].centOffset == 30.0)
     }
 
     @Test("Preserves chronological ordering from records")
@@ -109,9 +109,9 @@ struct ThresholdTimelineTests {
         let records = makeDailyRecords(offsets: [50.0, 30.0, 40.0])
         let timeline = ThresholdTimeline(records: records)
 
-        #expect(timeline.dataPoints[0].centDifference == 50.0)
-        #expect(timeline.dataPoints[1].centDifference == 30.0)
-        #expect(timeline.dataPoints[2].centDifference == 40.0)
+        #expect(timeline.dataPoints[0].centOffset == 50.0)
+        #expect(timeline.dataPoints[1].centOffset == 30.0)
+        #expect(timeline.dataPoints[2].centOffset == 40.0)
     }
 
     // MARK: - Aggregation by period
@@ -185,11 +185,11 @@ struct ThresholdTimelineTests {
         let hour1Base = 86400 * 2 + 43200.0 // day 2, noon
         let hour2Base = hour1Base + 3600     // day 2, 1pm
         let records = [
-            ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10, isCorrect: true,
+            ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10, isCorrect: true,
                            timestamp: Date(timeIntervalSince1970: hour1Base)),
-            ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 20, isCorrect: true,
+            ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 20, isCorrect: true,
                            timestamp: Date(timeIntervalSince1970: hour1Base + 60)),
-            ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 30, isCorrect: true,
+            ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 30, isCorrect: true,
                            timestamp: Date(timeIntervalSince1970: hour2Base)),
         ]
         let timeline = ThresholdTimeline(records: records, aggregationComponent: .hour)
@@ -322,9 +322,8 @@ struct ThresholdTimelineTests {
         #expect(timeline.dataPoints.isEmpty)
 
         let comparison = Comparison(
-            note1: 60,
-            note2: 60,
-            centDifference: Cents(25.0)
+            referenceNote: 60,
+            targetNote: DetunedMIDINote(note: 60, offset: Cents(25.0))
         )
         let completed = CompletedComparison(
             comparison: comparison,
@@ -334,9 +333,9 @@ struct ThresholdTimelineTests {
         timeline.comparisonCompleted(completed)
 
         #expect(timeline.dataPoints.count == 1)
-        #expect(timeline.dataPoints[0].centDifference == 25.0)
+        #expect(timeline.dataPoints[0].centOffset == 25.0)
         #expect(timeline.dataPoints[0].isCorrect == true)
-        #expect(timeline.dataPoints[0].note1 == 60)
+        #expect(timeline.dataPoints[0].referenceNote == 60)
         #expect(timeline.aggregatedPoints.count == 1)
     }
 
@@ -347,9 +346,8 @@ struct ThresholdTimelineTests {
         #expect(timeline.dataPoints.count == 2)
 
         let comparison = Comparison(
-            note1: 64,
-            note2: 64,
-            centDifference: Cents(-20.0)
+            referenceNote: 64,
+            targetNote: DetunedMIDINote(note: 64, offset: Cents(-20.0))
         )
         let completed = CompletedComparison(
             comparison: comparison,
@@ -359,8 +357,8 @@ struct ThresholdTimelineTests {
         timeline.comparisonCompleted(completed)
 
         #expect(timeline.dataPoints.count == 3)
-        #expect(timeline.dataPoints[2].centDifference == 20.0)
-        #expect(timeline.dataPoints[2].note1 == 64)
+        #expect(timeline.dataPoints[2].centOffset == 20.0)
+        #expect(timeline.dataPoints[2].referenceNote == 64)
     }
 
     // MARK: - Environment key

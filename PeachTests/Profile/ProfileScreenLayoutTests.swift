@@ -12,9 +12,9 @@ struct ProfileScreenLayoutTests {
         // 30 records across 30 different days so aggregation produces 30 points
         let records = (0..<30).map { i in
             ComparisonRecord(
-                note1: 60,
-                note2: 60,
-                note2CentOffset: Double(30 + i),
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: Double(30 + i),
                 isCorrect: true,
                 timestamp: Date().addingTimeInterval(Double(i - 30) * 86400)
             )

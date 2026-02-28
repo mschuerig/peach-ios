@@ -94,7 +94,7 @@ final class ComparisonSession: TrainingSession {
     var isIdle: Bool { state == .idle }
 
     var currentDifficulty: Double? {
-        currentComparison?.centDifference.magnitude
+        currentComparison?.targetNote.offset.magnitude
     }
 
     func startTraining() {
@@ -124,7 +124,7 @@ final class ComparisonSession: TrainingSession {
         stopNote2IfPlaying()
 
         let completed = CompletedComparison(comparison: comparison, userAnsweredHigher: isHigher)
-        logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (second note was \(comparison.isSecondNoteHigher ? "higher" : "lower"))")
+        logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (target was \(comparison.isTargetHigher ? "higher" : "lower"))")
 
         lastCompletedComparison = completed
         trackSessionBest(completed)
@@ -230,9 +230,9 @@ final class ComparisonSession: TrainingSession {
         noteDuration: TimeInterval,
         amplitudeDB: AmplitudeDB
     ) async throws {
-        let freq1 = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
-        let freq2 = comparison.note2Frequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
-        logger.info("Comparison: note1=\(comparison.note1.rawValue) \(freq1.rawValue)Hz @0.0dB, note2 \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, centDiff=\(comparison.centDifference.rawValue), higher=\(comparison.isSecondNoteHigher)")
+        let freq1 = comparison.referenceFrequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
+        let freq2 = comparison.targetFrequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
+        logger.info("Comparison: ref=\(comparison.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(comparison.targetNote.offset.rawValue), higher=\(comparison.isTargetHigher)")
 
         state = .playingNote1
         try await notePlayer.play(frequency: freq1, duration: noteDuration, velocity: velocity, amplitudeDB: AmplitudeDB(0.0))
@@ -270,7 +270,7 @@ final class ComparisonSession: TrainingSession {
 
     private func trackSessionBest(_ completed: CompletedComparison) {
         guard completed.isCorrect else { return }
-        let diff = completed.comparison.centDifference.magnitude
+        let diff = completed.comparison.targetNote.offset.magnitude
         if let best = sessionBestCentDifference {
             if diff < best { sessionBestCentDifference = diff }
         } else {

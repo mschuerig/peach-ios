@@ -99,9 +99,9 @@ struct SettingsTests {
         var records: [ComparisonRecord] = []
         for i in 0..<30 {
             let record = ComparisonRecord(
-                note1: 60,
-                note2: 61,
-                note2CentOffset: Double(i) + 1.0,
+                referenceNote: 60,
+                targetNote: 61,
+                centOffset: Double(i) + 1.0,
                 isCorrect: true
             )
             records.append(record)
@@ -124,15 +124,15 @@ struct SettingsTests {
 
         // Insert comparison records
         let comparison1 = ComparisonRecord(
-            note1: 60,
-            note2: 61,
-            note2CentOffset: 2.0,
+            referenceNote: 60,
+            targetNote: 61,
+            centOffset: 2.0,
             isCorrect: true
         )
         let comparison2 = ComparisonRecord(
-            note1: 72,
-            note2: 73,
-            note2CentOffset: 2.5,
+            referenceNote: 72,
+            targetNote: 73,
+            centOffset: 2.5,
             isCorrect: false
         )
         context.insert(comparison1)

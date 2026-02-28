@@ -73,7 +73,7 @@ struct ComparisonSessionUserDefaultsTests {
         let mockDataStore = MockTrainingDataStore()
         let profile = PerceptualProfile()
         let mockStrategy = MockNextComparisonStrategy(comparisons: [
-            Comparison(note1: 69, note2: 69, centDifference: Cents(100.0))
+            Comparison(referenceNote: 69, targetNote: DetunedMIDINote(note: 69, offset: Cents(100.0)))
         ])
 
         let session = ComparisonSession(
@@ -88,8 +88,8 @@ struct ComparisonSessionUserDefaultsTests {
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockPlayer.playHistory.count >= 1)
-        let note1Freq = mockPlayer.playHistory[0].frequency
-        #expect(abs(note1Freq - 432.0) < 0.01)
+        let referenceFreq = mockPlayer.playHistory[0].frequency
+        #expect(abs(referenceFreq - 432.0) < 0.01)
 
         session.stop()
     }
@@ -102,8 +102,8 @@ struct ComparisonSessionUserDefaultsTests {
         let mockDataStore = MockTrainingDataStore()
         let profile = PerceptualProfile()
         let mockStrategy = MockNextComparisonStrategy(comparisons: [
-            Comparison(note1: 60, note2: 60, centDifference: Cents(100.0)),
-            Comparison(note1: 62, note2: 62, centDifference: Cents(-95.0))
+            Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
+            Comparison(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)))
         ])
 
         let session = ComparisonSession(

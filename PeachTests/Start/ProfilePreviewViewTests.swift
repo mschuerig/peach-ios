@@ -10,9 +10,9 @@ struct ProfilePreviewViewTests {
     private func makeTimeline(dailyOffsets: [Double]) -> ThresholdTimeline {
         let records = dailyOffsets.enumerated().map { index, offset in
             ComparisonRecord(
-                note1: 60,
-                note2: 60,
-                note2CentOffset: offset,
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: offset,
                 isCorrect: true,
                 timestamp: Date().addingTimeInterval(Double(index - dailyOffsets.count) * 86400)
             )

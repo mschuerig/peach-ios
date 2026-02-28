@@ -29,9 +29,9 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let record = ComparisonRecord(
-            note1: 60,
-            note2: 60,
-            note2CentOffset: 50.0,
+            referenceNote: 60,
+            targetNote: 60,
+            centOffset: 50.0,
             isCorrect: true,
             timestamp: Date()
         )
@@ -41,9 +41,9 @@ struct TrainingDataStoreTests {
         let fetched = try store.fetchAllComparisons()
 
         #expect(fetched.count == 1)
-        #expect(fetched[0].note1 == 60)
-        #expect(fetched[0].note2 == 60)
-        #expect(fetched[0].note2CentOffset == 50.0)
+        #expect(fetched[0].referenceNote == 60)
+        #expect(fetched[0].targetNote == 60)
+        #expect(fetched[0].centOffset == 50.0)
         #expect(fetched[0].isCorrect == true)
     }
 
@@ -54,9 +54,9 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let now = Date()
-        let record1 = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true, timestamp: now.addingTimeInterval(-60))
-        let record2 = ComparisonRecord(note1: 62, note2: 62, note2CentOffset: 20.0, isCorrect: false, timestamp: now.addingTimeInterval(-30))
-        let record3 = ComparisonRecord(note1: 64, note2: 64, note2CentOffset: 30.0, isCorrect: true, timestamp: now)
+        let record1 = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, timestamp: now.addingTimeInterval(-60))
+        let record2 = ComparisonRecord(referenceNote: 62, targetNote: 62, centOffset: 20.0, isCorrect: false, timestamp: now.addingTimeInterval(-30))
+        let record3 = ComparisonRecord(referenceNote: 64, targetNote: 64, centOffset: 30.0, isCorrect: true, timestamp: now)
 
         try store.save(record1)
         try store.save(record2)
@@ -65,9 +65,9 @@ struct TrainingDataStoreTests {
         let fetched = try store.fetchAllComparisons()
 
         #expect(fetched.count == 3)
-        #expect(fetched[0].note1 == 60)
-        #expect(fetched[1].note1 == 62)
-        #expect(fetched[2].note1 == 64)
+        #expect(fetched[0].referenceNote == 60)
+        #expect(fetched[1].referenceNote == 62)
+        #expect(fetched[2].referenceNote == 64)
     }
 
     @Test("All fields remain intact after save and retrieval")
@@ -78,9 +78,9 @@ struct TrainingDataStoreTests {
 
         let timestamp = Date()
         let record = ComparisonRecord(
-            note1: 72,
-            note2: 72,
-            note2CentOffset: 123.45,
+            referenceNote: 72,
+            targetNote: 72,
+            centOffset: 123.45,
             isCorrect: false,
             timestamp: timestamp
         )
@@ -91,9 +91,9 @@ struct TrainingDataStoreTests {
 
         #expect(fetched.count == 1)
         let retrieved = fetched[0]
-        #expect(retrieved.note1 == 72)
-        #expect(retrieved.note2 == 72)
-        #expect(retrieved.note2CentOffset == 123.45)
+        #expect(retrieved.referenceNote == 72)
+        #expect(retrieved.targetNote == 72)
+        #expect(retrieved.centOffset == 123.45)
         #expect(retrieved.isCorrect == false)
         #expect(abs(retrieved.timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
@@ -106,7 +106,7 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
+        let record = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
         try store.save(record)
 
         var fetched = try store.fetchAllComparisons()
@@ -124,8 +124,8 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record1 = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
-        let record2 = ComparisonRecord(note1: 62, note2: 62, note2CentOffset: 20.0, isCorrect: false)
+        let record1 = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
+        let record2 = ComparisonRecord(referenceNote: 62, targetNote: 62, centOffset: 20.0, isCorrect: false)
         try store.save(record1)
         try store.save(record2)
 
@@ -133,7 +133,7 @@ struct TrainingDataStoreTests {
 
         let fetched = try store.fetchAllComparisons()
         #expect(fetched.count == 1)
-        #expect(fetched[0].note1 == 62)
+        #expect(fetched[0].referenceNote == 62)
     }
 
     // MARK: - Persistence Tests
@@ -147,9 +147,9 @@ struct TrainingDataStoreTests {
             let store1 = TrainingDataStore(modelContext: context1)
 
             let record = ComparisonRecord(
-                note1: 69,
-                note2: 69,
-                note2CentOffset: 75.0,
+                referenceNote: 69,
+                targetNote: 69,
+                centOffset: 75.0,
                 isCorrect: true
             )
             try store1.save(record)
@@ -161,8 +161,8 @@ struct TrainingDataStoreTests {
         let fetched = try store2.fetchAllComparisons()
 
         #expect(fetched.count == 1)
-        #expect(fetched[0].note1 == 69)
-        #expect(fetched[0].note2CentOffset == 75.0)
+        #expect(fetched[0].referenceNote == 69)
+        #expect(fetched[0].centOffset == 75.0)
     }
 
     // MARK: - Atomic Write Tests
@@ -173,14 +173,14 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
+        let record = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
         try store.save(record)
 
         let fetched = try store.fetchAllComparisons()
         #expect(fetched.count == 1)
-        #expect(fetched[0].note1 == 60)
-        #expect(fetched[0].note2 == 60)
-        #expect(fetched[0].note2CentOffset == 10.0)
+        #expect(fetched[0].referenceNote == 60)
+        #expect(fetched[0].targetNote == 60)
+        #expect(fetched[0].centOffset == 10.0)
         #expect(fetched[0].isCorrect == true)
     }
 
@@ -263,7 +263,7 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let comparisonRecord = ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 10.0, isCorrect: true)
+        let comparisonRecord = ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true)
         try store.save(comparisonRecord)
 
         let pitchRecord1 = PitchMatchingRecord(referenceNote: 60, initialCentOffset: 10.0, userCentError: 5.0)

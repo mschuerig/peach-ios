@@ -3,15 +3,15 @@ import Foundation
 
 @Model
 final class ComparisonRecord {
-    /// First note (reference) - always an exact MIDI note (0-127)
-    var note1: Int
+    /// Reference note - always an exact MIDI note (0-127)
+    var referenceNote: Int
 
-    /// Second note - same MIDI note as note1
-    var note2: Int
+    /// Target note - same MIDI note as referenceNote
+    var targetNote: Int
 
-    /// Signed cent offset applied to note2 (positive = higher, negative = lower)
+    /// Signed cent offset applied to target note (positive = higher, negative = lower)
     /// Fractional precision with 0.1 cent resolution
-    var note2CentOffset: Double
+    var centOffset: Double
 
     /// Did the user answer correctly?
     var isCorrect: Bool
@@ -21,15 +21,15 @@ final class ComparisonRecord {
 
     /// Creates a new comparison record
     /// - Parameters:
-    ///   - note1: First MIDI note (0-127)
-    ///   - note2: Second MIDI note (0-127)
-    ///   - note2CentOffset: Cent difference between notes (fractional precision)
+    ///   - referenceNote: Reference MIDI note (0-127)
+    ///   - targetNote: Target MIDI note (0-127)
+    ///   - centOffset: Cent offset applied to target note (fractional precision)
     ///   - isCorrect: Whether the user's answer was correct
     ///   - timestamp: When the comparison occurred (defaults to now)
-    init(note1: Int, note2: Int, note2CentOffset: Double, isCorrect: Bool, timestamp: Date = Date()) {
-        self.note1 = note1
-        self.note2 = note2
-        self.note2CentOffset = note2CentOffset
+    init(referenceNote: Int, targetNote: Int, centOffset: Double, isCorrect: Bool, timestamp: Date = Date()) {
+        self.referenceNote = referenceNote
+        self.targetNote = targetNote
+        self.centOffset = centOffset
         self.isCorrect = isCorrect
         self.timestamp = timestamp
     }

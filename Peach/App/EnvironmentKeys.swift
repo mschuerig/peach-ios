@@ -65,7 +65,7 @@ private final class PreviewComparisonStrategy: NextComparisonStrategy {
         settings: TrainingSettings,
         lastComparison: CompletedComparison?
     ) -> Comparison {
-        Comparison(note1: MIDINote(60), note2: MIDINote(60), centDifference: Cents(50.0))
+        Comparison(referenceNote: MIDINote(60), targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(50.0)))
     }
 }
 

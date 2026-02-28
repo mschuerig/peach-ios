@@ -203,8 +203,8 @@ struct ComparisonSessionLifecycleTests {
         #expect(f.mockPlayer.stopAllCallCount >= 1)
     }
 
-    @Test("handleAnswer during note2 calls notePlayer.stopAll()")
-    func handleAnswerDuringNote2CallsStopAll() async throws {
+    @Test("handleAnswer during target calls notePlayer.stopAll()")
+    func handleAnswerDuringTargetCallsStopAll() async throws {
         let f = makeComparisonSession()
         f.mockPlayer.instantPlayback = false
         f.mockPlayer.simulatedPlaybackDuration = 0.5
@@ -220,7 +220,7 @@ struct ComparisonSessionLifecycleTests {
 
         f.session.startTraining()
 
-        // Wait for feedback state (answer was given during note2)
+        // Wait for feedback state (answer was given during target)
         try await waitForState(f.session, .showingFeedback)
 
         // Allow the fire-and-forget Task to execute

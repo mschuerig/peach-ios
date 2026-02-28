@@ -17,8 +17,8 @@ struct ComparisonSessionFixture {
 
 func makeComparisonSession(
     comparisons: [Comparison] = [
-        Comparison(note1: 60, note2: 60, centDifference: Cents(100.0)),
-        Comparison(note1: 62, note2: 62, centDifference: Cents(-95.0))
+        Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
+        Comparison(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)))
     ],
     userSettings: MockUserSettings = MockUserSettings(),
     resettables: [Resettable] = [],

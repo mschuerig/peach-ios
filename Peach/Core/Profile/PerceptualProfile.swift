@@ -173,10 +173,10 @@ struct PerceptualNote {
 extension PerceptualProfile: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
         let comparison = completed.comparison
-        let centOffset = comparison.centDifference.magnitude
+        let centOffset = comparison.targetNote.offset.magnitude
 
         update(
-            note: comparison.note1,
+            note: comparison.referenceNote,
             centOffset: centOffset,
             isCorrect: completed.isCorrect
         )

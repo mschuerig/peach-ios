@@ -1,24 +1,23 @@
 import Foundation
 
 struct Comparison {
-    let note1: MIDINote
-    let note2: MIDINote
-    let centDifference: Cents
+    let referenceNote: MIDINote
+    let targetNote: DetunedMIDINote
 
-    var isSecondNoteHigher: Bool {
-        centDifference.rawValue > 0
+    var isTargetHigher: Bool {
+        targetNote.offset.rawValue > 0
     }
 
-    func note1Frequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
-        tuningSystem.frequency(for: note1, referencePitch: referencePitch)
+    func referenceFrequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
+        tuningSystem.frequency(for: referenceNote, referencePitch: referencePitch)
     }
 
-    func note2Frequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
-        tuningSystem.frequency(for: DetunedMIDINote(note: note2, offset: centDifference), referencePitch: referencePitch)
+    func targetFrequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
+        tuningSystem.frequency(for: targetNote, referencePitch: referencePitch)
     }
 
     func isCorrect(userAnswerHigher: Bool) -> Bool {
-        return userAnswerHigher == isSecondNoteHigher
+        return userAnswerHigher == isTargetHigher
     }
 }
 

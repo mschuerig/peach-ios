@@ -57,9 +57,9 @@ struct ProfilePreviewView: View {
                 let baseOffset = 50.0 - Double(i) * 0.5
                 let noise = Double.random(in: -10...10)
                 return ComparisonRecord(
-                    note1: 60,
-                    note2: 60,
-                    note2CentOffset: baseOffset + noise,
+                    referenceNote: 60,
+                    targetNote: 60,
+                    centOffset: baseOffset + noise,
                     isCorrect: Bool.random(),
                     timestamp: Date().addingTimeInterval(Double(i - 50) * 86400)
                 )

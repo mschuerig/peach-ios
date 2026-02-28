@@ -13,7 +13,7 @@ enum Trend: Equatable {
 /// Analyzes trend direction from chronological comparison records
 ///
 /// Computes trend by splitting records into earlier and later halves,
-/// comparing mean `abs(note2CentOffset)` between them.
+/// comparing mean `abs(centOffset)` between them.
 /// Conforms to `ComparisonObserver` for incremental updates during training.
 @Observable
 final class TrendAnalyzer {
@@ -33,7 +33,7 @@ final class TrendAnalyzer {
     /// Creates a TrendAnalyzer from existing comparison records
     /// - Parameter records: Historical records sorted by timestamp (oldest first)
     init(records: [ComparisonRecord] = []) {
-        self.absOffsets = records.map { abs($0.note2CentOffset) }
+        self.absOffsets = records.map { abs($0.centOffset) }
         self.trend = nil
         recompute()
     }
@@ -84,7 +84,7 @@ extension TrendAnalyzer: Resettable {}
 
 extension TrendAnalyzer: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
-        absOffsets.append(completed.comparison.centDifference.magnitude)
+        absOffsets.append(completed.comparison.targetNote.offset.magnitude)
         recompute()
     }
 }

@@ -133,9 +133,9 @@ extension TrainingDataStore: ComparisonObserver {
     func comparisonCompleted(_ completed: CompletedComparison) {
         let comparison = completed.comparison
         let record = ComparisonRecord(
-            note1: comparison.note1.rawValue,
-            note2: comparison.note2.rawValue,
-            note2CentOffset: comparison.centDifference.rawValue,
+            referenceNote: comparison.referenceNote.rawValue,
+            targetNote: comparison.targetNote.note.rawValue,
+            centOffset: comparison.targetNote.offset.rawValue,
             isCorrect: completed.isCorrect,
             timestamp: completed.timestamp
         )

@@ -45,7 +45,7 @@ struct ComparisonSessionDifficultyTests {
     @Test("sessionBestCentDifference updates on first correct answer")
     func sessionBestUpdatesOnFirstCorrectAnswer() async throws {
         let comparisons = [
-            Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+            Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
@@ -61,7 +61,7 @@ struct ComparisonSessionDifficultyTests {
     @Test("sessionBestCentDifference does not update on incorrect answer")
     func sessionBestDoesNotUpdateOnIncorrectAnswer() async throws {
         let comparisons = [
-            Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+            Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
@@ -77,8 +77,8 @@ struct ComparisonSessionDifficultyTests {
     @Test("sessionBestCentDifference tracks smallest cent difference across correct answers")
     func sessionBestTracksSmallestDifference() async throws {
         let comparisons = [
-            Comparison(note1: 60, note2: 60, centDifference: Cents(100.0)),
-            Comparison(note1: 62, note2: 62, centDifference: Cents(50.0))
+            Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
+            Comparison(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(50.0)))
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
@@ -100,8 +100,8 @@ struct ComparisonSessionDifficultyTests {
     @Test("sessionBestCentDifference does not increase when larger difference answered correctly")
     func sessionBestDoesNotIncrease() async throws {
         let comparisons = [
-            Comparison(note1: 60, note2: 60, centDifference: Cents(50.0)),
-            Comparison(note1: 62, note2: 62, centDifference: Cents(100.0))
+            Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0))),
+            Comparison(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(100.0)))
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
@@ -123,7 +123,7 @@ struct ComparisonSessionDifficultyTests {
     @Test("sessionBestCentDifference resets when training stops")
     func sessionBestResetsOnStop() async throws {
         let comparisons = [
-            Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
+            Comparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 

@@ -87,9 +87,9 @@ struct ComparisonSessionIntegrationTests {
         f.session.handleAnswer(isHigher: false)
 
         let record = f.mockDataStore.lastSavedRecord!
-        #expect(record.note1 == 60)
-        #expect(record.note2 == 60)
-        #expect(record.note2CentOffset == 100.0)
+        #expect(record.referenceNote == 60)
+        #expect(record.targetNote == 60)
+        #expect(record.centOffset == 100.0)
     }
 
     @Test("Data error does not stop training")
@@ -188,14 +188,14 @@ struct ComparisonSessionIntegrationTests {
     func profileLoadedFromDataStore() async {
         let profile = PerceptualProfile()
         let records = [
-            ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 50.0, isCorrect: true, timestamp: Date()),
-            ComparisonRecord(note1: 60, note2: 60, note2CentOffset: 30.0, isCorrect: true, timestamp: Date()),
-            ComparisonRecord(note1: 62, note2: 62, note2CentOffset: -40.0, isCorrect: false, timestamp: Date())
+            ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, timestamp: Date()),
+            ComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 30.0, isCorrect: true, timestamp: Date()),
+            ComparisonRecord(referenceNote: 62, targetNote: 62, centOffset: -40.0, isCorrect: false, timestamp: Date())
         ]
 
-        // Loading uses abs() on stored signed note2CentOffset for unsigned threshold
+        // Loading uses abs() on stored signed centOffset for unsigned threshold
         for record in records {
-            profile.update(note: MIDINote(record.note1), centOffset: abs(record.note2CentOffset), isCorrect: record.isCorrect)
+            profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
         }
 
         let stats60 = profile.statsForNote(60)
@@ -220,7 +220,7 @@ struct ComparisonSessionIntegrationTests {
             lastComparison: nil
         )
 
-        #expect(comparison.centDifference.magnitude == 100.0)
-        #expect(comparison.note1 >= 36 && comparison.note1 <= 84)
+        #expect(comparison.targetNote.offset.magnitude == 100.0)
+        #expect(comparison.referenceNote >= 36 && comparison.referenceNote <= 84)
     }
 }

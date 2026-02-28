@@ -151,8 +151,8 @@ struct SummaryStatisticsView: View {
         .environment(\.trendAnalyzer, {
             let records = (0..<20).map { i in
                 ComparisonRecord(
-                    note1: 60, note2: 60,
-                    note2CentOffset: i < 10 ? 50.0 : 30.0,
+                    referenceNote: 60, targetNote: 60,
+                    centOffset: i < 10 ? 50.0 : 30.0,
                     isCorrect: true,
                     timestamp: Date(timeIntervalSince1970: Double(i) * 60)
                 )
