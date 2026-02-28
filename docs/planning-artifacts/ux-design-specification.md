@@ -1,10 +1,12 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete']
-lastStep: 'v0.2-complete'
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete', 'v0.3-complete']
+lastStep: 'v0.3-complete'
 status: 'complete'
 completedAt: '2026-02-12'
 v02AmendmentStarted: '2026-02-25'
 v02AmendmentCompleted: '2026-02-25'
+v03AmendmentStarted: '2026-02-28'
+v03AmendmentCompleted: '2026-02-28'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/glossary.md', 'docs/planning-artifacts/architecture.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 documentCounts:
   briefs: 0
@@ -1440,3 +1442,304 @@ Unlike comparison training (where eyes-closed is fully supported via haptic), pi
 - Test vertical slider in both orientations on iPhone and iPad
 - Test with Dynamic Type at accessibility sizes — verify cent offset text scales
 - Complete a pitch matching session with eyes closed — verify the tuning interaction works without visual feedback (accepting that results require sight)
+
+## Interval Training — UX Design Amendment (v0.3)
+
+### Project Understanding
+
+Interval training generalizes both existing training modes from unison to musical intervals. Instead of comparing or matching the same pitch, the user works with intervals — detecting whether an interval is sharp or flat (comparison), or tuning a note to produce a target interval (pitch matching).
+
+**The core insight:** the interaction patterns are identical to unison training. Higher/lower buttons for comparison, vertical slider for pitch matching. What changes is the **frame of reference** — the user judges relative to a target interval, not relative to unison.
+
+**Key UX facts:**
+- The target interval is displayed at the top of the training screen because it varies per exercise — the system randomly selects from the user's configured interval set
+- For v0.3, the interval is fixed to a single value: perfect fifth up (700 cents in 12-TET). Future iterations will add user-configurable interval sets (up to octave, both directions) and random selection from the configured set
+- Existing unison modes are the prime (unison) case of the interval variants — same underlying sessions, same screens, with interval fixed to prime
+- Screens are reused, not duplicated — the Comparison Screen and Pitch Matching Screen gain an interval indicator; in unison mode, no interval indicator is shown
+
+### Key Design Decisions
+
+**Target interval display at top of screen.** Both Interval Comparison and Interval Pitch Matching show the current target interval prominently at the top of the training screen. This is essential information, not decorative context — once multiple intervals are in rotation, the user must know which interval they're judging or tuning toward before the exercise begins. For v0.3 (fixed perfect fifth), the display is static. The UX is designed for the future where it changes per exercise.
+
+**Flat vertical stack for Start Screen buttons.** Four training buttons arranged vertically with visual grouping to separate unison modes from interval modes. The zero-friction philosophy is preserved — the primary actions (Comparison, Pitch Matching) retain their current prominence and position, with interval variants appearing below a subtle visual separator.
+
+**Screen reuse with conditional interval context.** The Comparison Screen and Pitch Matching Screen are extended, not duplicated. When entered in interval mode, a target interval label appears at the top. When entered in unison mode, no interval indicator is shown — the screen looks exactly as it does today. This keeps the codebase lean and ensures consistency.
+
+**No interval settings UI for v0.3.** The PRD defers interval selection settings to a subsequent iteration. The current fixed interval (perfect fifth up) requires no configuration UI. When interval selection is added, it will appear in the Settings Screen as a new section.
+
+### Interval Training — Core Experience
+
+**Defining Interaction — Interval Comparison: "Two notes. Is that fifth in tune?"**
+
+The interval comparison loop is structurally identical to unison comparison. Two notes play in sequence. The user taps higher or lower. But the question is different: instead of "was the second note higher or lower than the first?", the user is answering "was the second note higher or lower than a perfect fifth above the first?"
+
+This is a higher-order listening task. The user must hold the concept of the target interval in their mind and evaluate the second note against that internal reference — not against the first note directly. The target interval label at the top of the screen anchors this mental model.
+
+**Defining Interaction — Interval Pitch Matching: "Tune that fifth."**
+
+The interval pitch matching loop is structurally identical to unison pitch matching. A reference note plays, then a tunable note begins. The user drags the slider to adjust pitch. But the target is different: instead of matching the reference pitch (unison), the user tunes to the correct interval above (or below) the reference.
+
+This requires the user to construct the target pitch mentally from the reference note and the target interval. The slider interaction, release-as-commit gesture, and feedback pattern are all identical to unison pitch matching.
+
+**User Mental Model**
+
+The user's mental model shifts from **pitch comparison** to **interval quality judgment**. In unison training, the user hears two isolated pitches and reacts. In interval training, the user hears a musical relationship and evaluates its accuracy. This is closer to real-world musicianship — a cellist checking if their fifth is in tune, a singer evaluating their interval leap.
+
+Key mental model elements:
+- The target interval label establishes "what am I listening for" before each exercise
+- The first note is the anchor; the second note is measured against where the interval *should* be
+- "Higher" means "sharp of the correct interval"; "Lower" means "flat of the correct interval" — not higher/lower relative to the first note's raw pitch
+- For pitch matching: the slider target is the interval pitch, not unison. The user is constructing a musical interval, not reproducing a single pitch
+
+**Experience Principles (Interval-Specific):**
+
+1. **The interval is the frame** — the target interval label at the top of the screen is not informational chrome; it's the exercise definition. The user must internalize it before listening. As intervals rotate randomly in future versions, glancing at this label becomes part of the exercise ritual.
+2. **Same muscles, different skill** — the buttons, slider, feedback, and timing are identical. What's different is inside the user's head. The UX must not add complexity to support a more complex listening task — the simplicity of the interaction is more important than ever when the cognitive load is higher.
+3. **Unison is just prime** — there is no conceptual wall between unison and interval training. The user who has been doing unison comparison has been doing interval comparison at prime all along. The interval modes are a generalization, not a separate feature.
+
+### Interval Training — Emotional Response
+
+**Primary Emotional Goals:**
+
+1. **Recognition of real-world relevance** — interval training feels directly applicable to making music. The user is training the exact skill they use when checking intonation in an ensemble or tuning their instrument to a fifth. This connection should feel immediate and obvious.
+
+2. **Comfortable challenge escalation** — interval training is harder than unison training. The user is now holding a more complex mental model (the interval relationship) while performing the same physical interaction. The UX must make this feel like a natural next step, not a difficulty spike.
+
+3. **Same calm, higher stakes** — the emotional contract is identical to unison training: no judgment, no scores, continuous training. But the user may care more about interval accuracy because it maps directly to their musical performance. The UX must maintain the same neutral, non-judgmental framing even when the user is more emotionally invested.
+
+**Emotional Journey — Interval-Specific:**
+
+| Moment | Desired Feeling | Anti-Pattern to Avoid |
+|---|---|---|
+| **Choosing interval mode** | Curiosity — "let me try this" | Intimidation, "advanced mode" framing |
+| **Seeing target interval label** | Orientation — "got it, perfect fifth" | Confusion about what the label means |
+| **First interval comparison** | Familiar interaction, new challenge — same buttons, different listening | Overwhelm from the harder task |
+| **First wrong answer** | Same neutral acceptance as unison — just a haptic tick | Frustration from failing at a "harder" mode |
+| **First interval pitch matching** | Absorbed concentration — constructing an interval by ear | Anxiety about the dual cognitive task |
+| **Improvement over time** | Deep satisfaction — "I can hear intervals better" | Comparison to unison performance |
+
+### Interval Training — User Journey Flows
+
+#### Journey 7: Interval Comparison
+
+```mermaid
+flowchart TD
+    A[App opens] --> B[Start Screen]
+    B -->|Tap Interval Comparison| C[Comparison Screen with interval indicator]
+    C --> D[Target interval shown: Perfect Fifth Up]
+    D --> E[Note 1 plays - buttons disabled]
+    E --> F[Note 2 plays at interval ± deviation - buttons enabled]
+    F --> G{User taps}
+    G -->|Higher or Lower| H[Feedback shown + haptic if wrong]
+    H --> I[Feedback clears]
+    I --> E
+    G -->|Settings button| J[Training stops - Settings Screen]
+    G -->|Profile button| K[Training stops - Profile Screen]
+    J --> B
+    K --> B
+    C -->|App backgrounded| L[Training stops - incomplete comparison discarded]
+    L --> B
+```
+
+**Key UX decisions:**
+- The Comparison Screen is the same screen used for unison comparison, with the addition of a target interval label at the top
+- The target interval label reads "Perfect Fifth Up" (for v0.3). In future versions with multiple intervals, this label updates per comparison as the system randomly selects from the configured set
+- Higher/Lower buttons have the same meaning but a different reference: "higher/lower than the correct interval pitch"
+- All feedback, haptic, interruption, and navigation patterns are identical to unison comparison
+
+#### Journey 8: Interval Pitch Matching
+
+```mermaid
+flowchart TD
+    A[App opens] --> B[Start Screen]
+    B -->|Tap Interval Pitch Matching| C[Pitch Matching Screen with interval indicator]
+    C --> D[Target interval shown: Perfect Fifth Up]
+    D --> E[Reference note plays - slider visible but inactive]
+    E --> F[Reference stops - tunable note auto-starts at offset from interval pitch]
+    F --> G{User action}
+    G -->|Drags slider| H[Pitch changes in real time - target is interval pitch]
+    H --> G
+    G -->|Releases slider| I[Note stops - result recorded with interval context]
+    I --> J[Feedback: arrow + cent offset from correct interval ~400ms]
+    J --> K[Feedback clears]
+    K --> E
+    G -->|Settings button| L[Training stops - Settings Screen]
+    G -->|Profile button| M[Training stops - Profile Screen]
+    L --> B
+    M --> B
+    C -->|App backgrounded| N[Training stops - incomplete attempt discarded]
+    N --> B
+```
+
+**Key UX decisions:**
+- The Pitch Matching Screen is the same screen used for unison pitch matching, with the addition of a target interval label at the top
+- The tunable note's initial offset is relative to the correct interval pitch, not to the reference note's pitch
+- The feedback arrow and cent offset show deviation from the correct interval pitch, not from the reference note
+- All slider interaction, release-as-commit, feedback timing, and interruption patterns are identical to unison pitch matching
+
+### Interval Training — Component Strategy
+
+#### Modified Stock Components
+
+| Component | Change | Screen |
+|---|---|---|
+| Start Screen buttons | Two additional buttons below a visual separator | Start Screen |
+
+#### Modified Custom Components
+
+##### Target Interval Label
+
+**Purpose:** Display the current target interval at the top of the training screen so the user knows what they're listening for or tuning toward.
+
+**Visual Design:**
+- Text label displaying the interval name: "Perfect Fifth Up" (v0.3)
+- Positioned at the top of the Comparison Screen or Pitch Matching Screen, below the navigation buttons and above the training interaction area
+- Uses standard SwiftUI text styling (`.headline` or `.title3`) — prominent enough to read at a glance but not competing with the training interaction
+- In future versions with random interval selection, this label updates per exercise. The label change should be immediate and non-animated — no transition effects that draw attention away from the sounds
+
+**States:**
+- **Visible** (interval mode) — shows the current target interval
+- **Hidden** (unison mode) — not displayed; the screen looks exactly as it does pre-v0.3
+
+**Implementation:** Standard `Text` view, conditionally shown based on the session's interval parameter. No custom rendering needed.
+
+**Accessibility:**
+- VoiceOver label: "Target interval: Perfect Fifth Up"
+- Announced at the start of each exercise when the interval changes (future, with random selection)
+
+#### Start Screen Button Layout
+
+**Updated button hierarchy:**
+
+| Button | Style | Position |
+|---|---|---|
+| Comparison | `.borderedProminent` | Top (hero action, unchanged) |
+| Pitch Matching | `.bordered` | Below Comparison (unchanged) |
+| *Visual separator* | Subtle divider or spacing | — |
+| Interval Comparison | `.bordered` | Below separator |
+| Interval Pitch Matching | `.bordered` | Below Interval Comparison |
+
+**Design rationale:**
+- Comparison retains `.borderedProminent` as the hero action — it's the entry point for new users and the most-used mode
+- Pitch Matching retains its current secondary position
+- A subtle visual separator (extra spacing, a thin divider, or a section label like "Intervals") groups the interval modes
+- Interval buttons use `.bordered` style — same prominence as Pitch Matching, visually subordinate to Comparison
+- The vertical stack preserves the one-handed, thumb-friendly layout
+- Four buttons is the maximum for this design. If future modes are added beyond interval training, a different organizational pattern would be needed
+
+**Naming:** The PRD specifies button labels as "Comparison", "Pitch Matching", "Interval Comparison", "Interval Pitch Matching". These are clear and descriptive. No abbreviation needed.
+
+#### Feedback Indicators — No Change
+
+Both feedback indicators (comparison thumbs up/down and pitch matching arrow+cents) work identically in interval mode. The comparison feedback still shows correct/incorrect. The pitch matching feedback still shows signed cent offset and directional arrow. The only difference is that the deviation is measured relative to the correct interval pitch rather than unison — but this is a calculation difference, not a UX difference.
+
+### Interval Training — UX Consistency Patterns
+
+#### Button Hierarchy — Updated
+
+The Start Screen now has one primary action and three secondary actions:
+
+| Tier | Buttons | Style |
+|---|---|---|
+| Primary | Comparison | `.borderedProminent` |
+| Secondary (unison) | Pitch Matching | `.bordered` |
+| Secondary (interval) | Interval Comparison, Interval Pitch Matching | `.bordered` |
+
+Settings, Profile, and Info remain tertiary icon-only buttons in their current positions.
+
+#### Feedback Patterns — No Change
+
+The same two feedback patterns (comparison: thumbs up/down with haptic; pitch matching: arrow+cents, no haptic) apply to both unison and interval variants. No new feedback patterns are introduced.
+
+#### Navigation Pattern — Extended
+
+```
+Start Screen ──► Comparison Screen (via Comparison)
+Start Screen ──► Comparison Screen with interval (via Interval Comparison)
+Start Screen ──► Pitch Matching Screen (via Pitch Matching)
+Start Screen ──► Pitch Matching Screen with interval (via Interval Pitch Matching)
+Start Screen ──► Profile Screen ──► Start Screen
+Start Screen ──► Settings Screen ──► Start Screen
+Start Screen ──► Info Screen ──► Start Screen
+Comparison Screen ──► Profile Screen ──► Start Screen
+Comparison Screen ──► Settings Screen ──► Start Screen
+Pitch Matching Screen ──► Profile Screen ──► Start Screen
+Pitch Matching Screen ──► Settings Screen ──► Start Screen
+App backgrounded during any training ──► Start Screen
+```
+
+Key point: "Interval Comparison" navigates to the same Comparison Screen as "Comparison" — with the interval parameter set. The navigation model gains two new entry paths but no new screens or depth.
+
+#### Updated Navigation Diagram
+
+```
+                    ┌──────────────────────────┐
+                    │      Start Screen        │
+                    │                          │
+                    │ [Comparison]             │
+                    │ [Pitch Matching]         │
+                    │ ── ── ── ── ── ── ──    │
+                    │ [Interval Comparison]    │
+                    │ [Interval Pitch Matching]│
+                    │                          │
+                    │ [Settings] [Profile]     │
+                    │ [Info]                   │
+                    └┬──┬──┬──┬──┬──┬──┬──┬──┘
+                     │  │  │  │  │  │  │  │
+        Comparison───┘  │  │  │  │  │  │  └───Interval PM
+        Pitch Match─────┘  │  │  │  │  └──────Interval Comp
+                           │  │  │  │
+                    ┌──────▼──▼──▼──▼──────────┐
+                    │   Comparison Screen      │
+                    │   (± interval indicator) │
+                    │   [Higher] [Lower]       │
+                    │   [Settings] [Profile]   │
+                    └──────────────────────────┘
+
+                    ┌──────────────────────────┐
+                    │  Pitch Matching Screen   │
+                    │  (± interval indicator)  │
+                    │  [Slider]               │
+                    │  [Settings] [Profile]   │
+                    └──────────────────────────┘
+
+  All training screens ──► Settings/Profile ──► Start Screen
+  App backgrounded during any training ──► Start Screen
+```
+
+#### Interruption Pattern — No Change
+
+Identical to unison modes. Any interruption during interval training follows the same rule: stop audio, discard incomplete exercise, leave training screen. No special interval-specific interruption handling.
+
+#### Empty States — No Interval-Specific Addition
+
+Interval training data feeds the same perceptual profile. No separate interval-specific empty state is needed for v0.3. If future versions track interval-specific statistics separately, the Profile Screen may need interval-specific empty states — but this is beyond v0.3 scope.
+
+### Interval Training — Responsive & Accessibility
+
+#### Orientation & Device — No Change
+
+The target interval label at the top of the screen is a standard `Text` view that adapts automatically to all orientations and device sizes via SwiftUI layout. No special responsive handling needed.
+
+#### Accessibility — Interval-Specific
+
+| Area | Stock SwiftUI (Free) | Custom Implementation Required |
+|---|---|---|
+| VoiceOver for interval label | Automatic (standard `Text`) | None |
+| VoiceOver for interval context | — | Announce target interval at start of each exercise |
+| Dynamic Type for interval label | Automatic | None |
+
+**VoiceOver interval training workflow:**
+The target interval label is a standard `Text` view and is automatically accessible. VoiceOver will read "Perfect Fifth Up" when the user navigates to it. For future versions with per-exercise interval changes, VoiceOver should announce the new interval when it changes — using `.accessibilityAddTraits(.updatesFrequently)` or a live region pattern.
+
+The rest of the accessibility story is identical to unison modes — no new accessibility challenges are introduced by interval training.
+
+#### Testing — Interval Training Additions
+
+- VoiceOver walkthrough of Comparison Screen with interval indicator — verify label is read
+- VoiceOver walkthrough of Pitch Matching Screen with interval indicator — verify label is read
+- Test target interval label with Dynamic Type at accessibility sizes
+- Verify Start Screen four-button layout in portrait and landscape on iPhone and iPad
+- Verify interval indicator is hidden in unison mode on both training screens
+- Complete an interval comparison session — verify feedback patterns match unison comparison
+- Complete an interval pitch matching session — verify feedback patterns match unison pitch matching
