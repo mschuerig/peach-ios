@@ -121,7 +121,7 @@ final class ComparisonSession: TrainingSession {
 
         logger.info("User answered: \(isHigher ? "HIGHER" : "LOWER")")
 
-        stopNote2IfPlaying()
+        stopTargetNoteIfPlaying()
 
         let completed = CompletedComparison(comparison: comparison, userAnsweredHigher: isHigher)
         logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (target was \(comparison.isTargetHigher ? "higher" : "lower"))")
@@ -199,7 +199,7 @@ final class ComparisonSession: TrainingSession {
         )
         currentComparison = comparison
 
-        let amplitudeDB = calculateNote2Amplitude(varyLoudness: currentVaryLoudness)
+        let amplitudeDB = calculateTargetAmplitude(varyLoudness: currentVaryLoudness)
 
         do {
             try await playComparisonNotes(
@@ -217,7 +217,7 @@ final class ComparisonSession: TrainingSession {
         }
     }
 
-    private func calculateNote2Amplitude(varyLoudness: Double) -> AmplitudeDB {
+    private func calculateTargetAmplitude(varyLoudness: Double) -> AmplitudeDB {
         guard varyLoudness > 0.0 else { return AmplitudeDB(0.0) }
         let range = Float(varyLoudness) * maxLoudnessOffsetDB
         let offset = Float.random(in: -range...range)
@@ -258,9 +258,9 @@ final class ComparisonSession: TrainingSession {
         }
     }
 
-    private func stopNote2IfPlaying() {
-        let wasPlayingNote2 = (state == .playingNote2)
-        if wasPlayingNote2 {
+    private func stopTargetNoteIfPlaying() {
+        let wasPlayingTargetNote = (state == .playingNote2)
+        if wasPlayingTargetNote {
             logger.info("Stopping note 2 immediately")
             Task {
                 try? await notePlayer.stopAll()

@@ -1,6 +1,6 @@
 # Story 22.4: Unified Reference/Target Naming
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -325,6 +325,7 @@ e5cb19a Implement story 22.1: Migrate FrequencyCalculation to Domain Types
 ## Change Log
 
 - 2026-03-01: Implemented unified reference/target naming across entire codebase — renamed Comparison struct fields (note1→referenceNote, note2+centDifference→targetNote as DetunedMIDINote), ComparisonRecord fields (note1→referenceNote, note2→targetNote, note2CentOffset→centOffset), TimelineDataPoint fields, and all callers/tests/previews/docs
+- 2026-03-01: Code review fixes — renamed `calculateNote2Amplitude`→`calculateTargetAmplitude`, `stopNote2IfPlaying`→`stopTargetNoteIfPlaying` in ComparisonSession.swift; renamed `centDifference` parameter→`offset` in KazezNoteStrategyTests helper; corrected TrendAnalyzerTests.swift path in File List
 
 ## Dev Agent Record
 
@@ -365,7 +366,7 @@ Peach/Start/ProfilePreviewView.swift
 Peach/Profile/SummaryStatisticsView.swift
 PeachTests/Core/Training/ComparisonTests.swift
 PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift
-PeachTests/Core/Profile/TrendAnalyzerTests.swift
+PeachTests/Profile/TrendAnalyzerTests.swift
 PeachTests/Core/Data/TrainingDataStoreTests.swift
 PeachTests/Comparison/ComparisonSessionLoudnessTests.swift
 PeachTests/Comparison/ComparisonSessionIntegrationTests.swift

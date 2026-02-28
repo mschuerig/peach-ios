@@ -112,7 +112,7 @@ struct KazezNoteStrategyTests {
         let strategy = KazezNoteStrategy()
         let settings = TrainingSettings(referencePitch: .concert440, minCentDifference: 5.0)
         // P=1: N = 1 × [1 - 0.05×1] = 0.95 → clamped to 5.0
-        let last = makeCompleted(centDifference: 1.0, correct: true)
+        let last = makeCompleted(offset: 1.0, correct: true)
 
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
@@ -129,7 +129,7 @@ struct KazezNoteStrategyTests {
         let settings = TrainingSettings(referencePitch: .concert440, maxCentDifference: 100.0)
         // P=50 incorrect: N = 50 × [1 + 0.09×7.07] ≈ 81.8 → under ceiling
         // P=100 incorrect: N = 100 × [1 + 0.09×10] = 190 → clamped to 100
-        let last = makeCompleted(centDifference: 100.0, correct: false)
+        let last = makeCompleted(offset: 100.0, correct: false)
 
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
@@ -289,7 +289,7 @@ struct KazezNoteStrategyTests {
         let settings = TrainingSettings(referencePitch: .concert440, minCentDifference: 1.0, maxCentDifference: 100.0)
 
         // Start at 5 cents, get it wrong
-        let last = makeCompleted(centDifference: 5.0, correct: false)
+        let last = makeCompleted(offset: 5.0, correct: false)
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
@@ -306,7 +306,7 @@ struct KazezNoteStrategyTests {
     private func nextAfterCorrect(p: Double) -> Double {
         let strategy = KazezNoteStrategy()
         let settings = TrainingSettings(referencePitch: .concert440, minCentDifference: 0.1)
-        let last = makeCompleted(centDifference: p, correct: true)
+        let last = makeCompleted(offset: p, correct: true)
         return strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
@@ -317,7 +317,7 @@ struct KazezNoteStrategyTests {
     private func nextAfterIncorrect(p: Double) -> Double {
         let strategy = KazezNoteStrategy()
         let settings = TrainingSettings(referencePitch: .concert440, maxCentDifference: 200.0)
-        let last = makeCompleted(centDifference: p, correct: false)
+        let last = makeCompleted(offset: p, correct: false)
         return strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
@@ -325,10 +325,10 @@ struct KazezNoteStrategyTests {
         ).targetNote.offset.magnitude
     }
 
-    private func makeCompleted(centDifference: Double, correct: Bool) -> CompletedComparison {
+    private func makeCompleted(offset: Double, correct: Bool) -> CompletedComparison {
         let comp = Comparison(
             referenceNote: 60,
-            targetNote: DetunedMIDINote(note: 60, offset: Cents(centDifference))
+            targetNote: DetunedMIDINote(note: 60, offset: Cents(offset))
         )
         return CompletedComparison(
             comparison: comp,
