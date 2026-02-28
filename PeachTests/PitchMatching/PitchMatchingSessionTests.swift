@@ -122,10 +122,10 @@ struct PitchMatchingSessionTests {
         session.startPitchMatching()
         try await waitForState(session, .playingTunable)
 
-        let expectedFrequency = Pitch(note: MIDINote(69), cents: Cents(0)).frequency(referencePitch: Frequency(440.0)).rawValue
+        // A4 at 440 Hz reference = 440.0 Hz (independently verified, not using Pitch.frequency())
         #expect(notePlayer.playHistory.first != nil)
         let firstPlay = notePlayer.playHistory.first!
-        #expect(abs(firstPlay.frequency - expectedFrequency) < 0.01)
+        #expect(abs(firstPlay.frequency - 440.0) < 0.01)
     }
 
     @Test("auto-transitions to playingTunable after reference")
@@ -148,8 +148,8 @@ struct PitchMatchingSessionTests {
         try await waitForState(session, .playingTunable)
 
         let challenge = try #require(session.currentChallenge)
-        let expectedTunableFreq = Pitch(note: challenge.referenceNote, cents: Cents(challenge.initialCentOffset))
-            .frequency(referencePitch: Frequency(440.0)).rawValue
+        // Independent formula: ref * 2^(centOffset/1200) — note pinned to 69, ref=440
+        let expectedTunableFreq = 440.0 * pow(2.0, challenge.initialCentOffset / 1200.0)
 
         // The second play call (handle-returning) should be the tunable note
         #expect(notePlayer.playCallCount >= 2)
@@ -416,8 +416,8 @@ struct PitchMatchingSessionTests {
         try await Task.sleep(for: .milliseconds(50))
 
         #expect(handle.adjustFrequencyCallCount == 1)
-        let refFreq = Pitch(note: MIDINote(69), cents: Cents(0)).frequency(referencePitch: Frequency(440.0)).rawValue
-        #expect(abs(handle.lastAdjustedFrequency! - refFreq) < 0.01)
+        // A4 at 440 Hz reference = 440.0 Hz
+        #expect(abs(handle.lastAdjustedFrequency! - 440.0) < 0.01)
     }
 
     @Test("adjustPitch with +1.0 produces frequency 100 cents above reference")

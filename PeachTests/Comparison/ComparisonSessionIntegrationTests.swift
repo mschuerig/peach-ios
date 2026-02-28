@@ -18,8 +18,8 @@ struct ComparisonSessionIntegrationTests {
         #expect(f.mockPlayer.playCallCount == 2)
     }
 
-    @Test("ComparisonSession uses correct frequency calculation")
-    func usesCorrectFrequencyCalculation() async throws {
+    @Test("ComparisonSession plays correct frequencies")
+    func playsCorrectFrequencies() async throws {
         let f = makeComparisonSession()
 
         f.session.startTraining()

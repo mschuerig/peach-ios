@@ -1,6 +1,6 @@
 # Story 22.1: Migrate FrequencyCalculation to Domain Types
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -252,6 +252,7 @@ No debug issues encountered.
 ### Change Log
 
 - 2026-02-28: Implemented story 22.1 — migrated all FrequencyCalculation usage to Pitch and MIDINote domain types, deleted FrequencyCalculation.swift and FrequencyCalculationTests.swift
+- 2026-02-28: Code review fixes — replaced production code in test expected values with hardcoded/independent values, renamed outdated function name, added cents boundary assertions, updated MARK comments, simplified pitch bend test, added missing project-context.md to File List
 
 ### File List
 
@@ -271,6 +272,8 @@ No debug issues encountered.
 - `PeachTests/Core/Training/ComparisonTests.swift` — Removed `throws`/`try` from frequency tests
 - `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` — Migrated FrequencyCalculation references to Pitch
 - `PeachTests/Core/Audio/SoundFontNotePlayerTests.swift` — Migrated FrequencyCalculation reference to Pitch
+- `PeachTests/Comparison/ComparisonSessionIntegrationTests.swift` — Renamed outdated function name
+- `docs/project-context.md` — Updated MIDI-to-Hz conversion documentation
 
 **Deleted:**
 - `Peach/Core/Audio/FrequencyCalculation.swift`

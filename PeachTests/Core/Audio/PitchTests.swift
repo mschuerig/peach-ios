@@ -130,7 +130,7 @@ struct PitchTests {
         #expect(result == pitch)
     }
 
-    // MARK: - Forward Conversion Edge Cases (migrated from FrequencyCalculationTests)
+    // MARK: - Forward Conversion Edge Cases
 
     @Test("MIDI 0 frequency is approximately 8.18 Hz")
     func midi0Frequency() async {
@@ -298,6 +298,7 @@ struct PitchTests {
         // Very low frequency that would be below MIDI 0
         let pitch = Pitch(frequency: Frequency(5.0), referencePitch: .concert440)
         #expect(pitch.note == MIDINote(0))
+        #expect(pitch.cents.rawValue >= -50.0 && pitch.cents.rawValue <= 50.0)
     }
 
     @Test("Frequency above MIDI 127 clamps to MIDI 127")
@@ -305,6 +306,7 @@ struct PitchTests {
         // Very high frequency that would be above MIDI 127
         let pitch = Pitch(frequency: Frequency(20000.0), referencePitch: .concert440)
         #expect(pitch.note == MIDINote(127))
+        #expect(pitch.cents.rawValue >= -50.0 && pitch.cents.rawValue <= 50.0)
     }
 
     // MARK: - Round-Trip Tests (frequency → Pitch → frequency)

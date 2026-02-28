@@ -55,10 +55,9 @@ struct SoundFontNotePlayerTests {
 
     // MARK: - Pitch Bend Calculation
 
-    @Test("Pitch bend for A4=440Hz at referencePitch=440 is center (8192)")
+    @Test("Pitch bend for 0 cents offset is center (8192)")
     func pitchBend_A4_center() async {
-        let pitch = Pitch(frequency: Frequency(440.0), referencePitch: .concert440)
-        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: pitch.cents)
+        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: Cents(0))
         #expect(bendValue == 8192)
     }
 
