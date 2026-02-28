@@ -187,3 +187,10 @@ development_status:
 
   # Bug Fix: SoundFont audio click on note stop
   fix-soundfont-click-on-note-stop: done
+
+  # Epic 21: Speak the Language — Interval Domain Foundation
+  epic-21: in-progress
+  21-1-implement-interval-enum-and-midinote-transposition: ready-for-dev
+  21-2-implement-tuningsystem-enum: backlog
+  21-3-implement-pitch-value-type-and-midinote-integration: backlog
+  epic-21-retrospective: optional
