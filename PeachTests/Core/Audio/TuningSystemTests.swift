@@ -26,11 +26,18 @@ struct TuningSystemTests {
 
     @Test("all 13 intervals have correct equal temperament cent values")
     func allIntervalsCentValues() async {
+        let expectedCents: [Interval: Double] = [
+            .prime: 0, .minorSecond: 100, .majorSecond: 200,
+            .minorThird: 300, .majorThird: 400, .perfectFourth: 500,
+            .tritone: 600, .perfectFifth: 700, .minorSixth: 800,
+            .majorSixth: 900, .minorSeventh: 1000, .majorSeventh: 1100,
+            .octave: 1200
+        ]
         for interval in Interval.allCases {
-            let expected = Double(interval.semitones) * 100.0
+            let expected = expectedCents[interval]
             #expect(
                 TuningSystem.equalTemperament.centOffset(for: interval) == expected,
-                "Expected \(expected) cents for \(interval), got \(TuningSystem.equalTemperament.centOffset(for: interval))"
+                "Unexpected cent offset for \(interval)"
             )
         }
     }
