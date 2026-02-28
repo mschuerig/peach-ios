@@ -1,6 +1,6 @@
 # Story 21.3: Implement Pitch Value Type and MIDINote Integration
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -304,20 +304,38 @@ None — clean implementation with no debugging required.
 - Implemented `Pitch` struct in `Peach/Core/Audio/Pitch.swift` with `note: MIDINote` and `cents: Cents` properties, plus `frequency(referencePitch:)` method using combined-exponent formula
 - Added `MIDINote.pitch(at:in:)` extension in `Interval.swift` alongside existing `transposed(by:)` — computes transposed note and cent deviation from tuning system
 - Added `Frequency.concert440` static constant in `Frequency.swift`
-- Created 14 tests in `PitchTests.swift` covering all 6 ACs: frequency precision (A4, middle C, C5, cents offset), MIDINote.pitch for all 13 intervals, default parameters, Hashable/Sendable conformance, and Frequency.concert440
+- Created 16 tests in `PitchTests.swift` covering all 6 ACs: frequency precision (A4, middle C, C5, positive/negative cents offset, non-standard reference pitch), MIDINote.pitch for all 13 intervals, default parameters, Hashable/Sendable conformance, and Frequency.concert440
 - All tests follow TDD (red-green-refactor): tests written first (compilation failure confirmed), then implementation, then verification
 - Full test suite passes with zero regressions
 - Dependency check passes — no forbidden imports in Core/
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6 | **Date:** 2026-02-28 | **Outcome:** Approved with fixes applied
+
+**Issues found:** 0 High, 3 Medium, 2 Low
+
+**Fixed (3 Medium):**
+- (M1) Replaced no-op Sendable test with real cross-isolation boundary test using `Task.detached`
+- (M2) Added missing test for negative cents offset (`Cents(-50)` → ~427.474 Hz)
+- (M3) Added missing test for non-standard reference pitch (`Frequency(442.0)`)
+
+**Noted but not fixed (2 Low):**
+- (L1) `pitchAtMinorSecond` and `pitchAtOctave` are redundant with parametric `allIntervalsEqualTemperamentCentsZero` — harmless, kept for readability
+- (L2) Precision tolerance `0.01` is a magic number in frequency tests — acceptable given clear comments with theoretical values
+
+**Verification:** All ACs implemented, all tasks complete, 16 tests pass, zero regressions, dependency check clean.
+
 ### Change Log
 
 - 2026-02-28: Implemented story 21.3 — Pitch value type, MIDINote.pitch(at:in:), Frequency.concert440
+- 2026-02-28: Code review fixes — replaced no-op Sendable test, added negative cents and non-standard reference pitch tests (14→16 tests)
 
 ### File List
 
 - `Peach/Core/Audio/Pitch.swift` (new) — Pitch struct with frequency computation
 - `Peach/Core/Audio/Interval.swift` (modified) — Added MIDINote.pitch(at:in:) extension
 - `Peach/Core/Audio/Frequency.swift` (modified) — Added static let concert440
-- `PeachTests/Core/Audio/PitchTests.swift` (new) — 14 tests covering all ACs
+- `PeachTests/Core/Audio/PitchTests.swift` (new) — 16 tests covering all ACs
 - `docs/implementation-artifacts/sprint-status.yaml` (modified) — Status: in-progress → review
 - `docs/implementation-artifacts/21-3-implement-pitch-value-type-and-midinote-integration.md` (modified) — Task checkboxes, Dev Agent Record, File List, Change Log, Status

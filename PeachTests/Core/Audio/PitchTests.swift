@@ -38,11 +38,26 @@ struct PitchTests {
         #expect(abs(freq.rawValue - 452.893) < 0.01)
     }
 
+    @Test("pitch with negative cents offset computes correct frequency")
+    func pitchWithNegativeCentsOffset() async {
+        // A4 - 50 cents = 440 * 2^(-50/1200) ≈ 427.474 Hz
+        let pitch = Pitch(note: MIDINote(69), cents: Cents(-50))
+        let freq = pitch.frequency(referencePitch: .concert440)
+        #expect(abs(freq.rawValue - 427.474) < 0.01)
+    }
+
     @Test("pitch frequency uses default referencePitch of concert440")
     func defaultReferencePitch() async {
         let pitch = Pitch(note: MIDINote(69), cents: Cents(0))
         let freq = pitch.frequency()
         #expect(freq.rawValue == 440.0)
+    }
+
+    @Test("pitch frequency with non-standard reference pitch")
+    func nonStandardReferencePitch() async {
+        let pitch = Pitch(note: MIDINote(69), cents: Cents(0))
+        let freq = pitch.frequency(referencePitch: Frequency(442.0))
+        #expect(freq.rawValue == 442.0)
     }
 
     // MARK: - MIDINote.pitch(at:in:) (AC #3, #4)
@@ -108,13 +123,11 @@ struct PitchTests {
 
     // MARK: - Sendable (AC #6)
 
-    @Test("Pitch is a value type (Sendable)")
-    func sendableValueType() async {
+    @Test("Pitch can be sent across concurrency boundaries")
+    func sendableAcrossBoundary() async {
         let pitch = Pitch(note: MIDINote(69), cents: Cents(0))
-        // Value type struct is automatically Sendable
-        let copy = pitch
-        #expect(copy.note == pitch.note)
-        #expect(copy.cents == pitch.cents)
+        let result = await Task.detached { pitch }.value
+        #expect(result == pitch)
     }
 
     // MARK: - Frequency.concert440 (AC #5)
