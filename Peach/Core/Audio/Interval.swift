@@ -1,6 +1,6 @@
 import Foundation
 
-enum Interval: Int, Hashable, Sendable, CaseIterable, Codable {
+enum Interval: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
     case prime = 0
     case minorSecond = 1
     case majorSecond = 2
@@ -17,8 +17,12 @@ enum Interval: Int, Hashable, Sendable, CaseIterable, Codable {
 
     var semitones: Int { rawValue }
 
-    static func between(_ a: MIDINote, _ b: MIDINote) throws -> Interval {
-        let distance = abs(a.rawValue - b.rawValue)
+    static func < (lhs: Interval, rhs: Interval) -> Bool {
+        lhs.rawValue < rhs.rawValue
+    }
+
+    static func between(_ reference: MIDINote, _ target: MIDINote) throws -> Interval {
+        let distance = abs(reference.rawValue - target.rawValue)
         guard let interval = Interval(rawValue: distance) else {
             throw AudioError.invalidInterval("Semitone distance \(distance) exceeds octave range (0-12)")
         }

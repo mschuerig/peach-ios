@@ -1,6 +1,6 @@
 # Story 21.1: Implement Interval Enum and MIDINote Transposition
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -235,7 +235,7 @@ No issues encountered during implementation.
 - Implemented `MIDINote.transposed(by:)` extension in `Interval.swift` using precondition for MIDI range validation, matching existing `MIDINote.init` pattern (AC #2)
 - Implemented `Interval.between(_:_:)` static factory computing absolute semitone distance, throwing `AudioError.invalidInterval` for distances > 12 (AC #3, #4)
 - Added `case invalidInterval(String)` to `AudioError` enum
-- 22 new tests: 17 IntervalTests (semitone values, CaseIterable, Codable round-trip, Hashable, between factory) + 3 MIDINote transposition tests + 2 additional Codable/Hashable tests
+- 26 new tests: 23 IntervalTests (13 semitone values, CaseIterable, 2 Codable round-trip, 2 Hashable, 5 between factory) + 3 MIDINote transposition tests
 - Full test suite passes with zero regressions
 - Dependency check passes — no forbidden imports in Core/
 
@@ -250,4 +250,5 @@ No issues encountered during implementation.
 
 ## Change Log
 
-- 2026-02-28: Implemented Interval enum with 13 cases, MIDINote.transposed(by:) extension, Interval.between(_:_:) factory, and AudioError.invalidInterval case. Added 25 new tests across IntervalTests.swift and MIDINoteTests.swift. All tests pass, zero regressions.
+- 2026-02-28: Implemented Interval enum with 13 cases, MIDINote.transposed(by:) extension, Interval.between(_:_:) factory, and AudioError.invalidInterval case. Added 26 new tests across IntervalTests.swift and MIDINoteTests.swift. All tests pass, zero regressions.
+- 2026-02-28: Code review fixes — (M1) Renamed `between()` parameter names from `a, b` to `reference, target` per architecture spec; (M2) Corrected test count from 22/25 to actual 26; (M3) Added `Comparable` conformance to Interval enum per architecture expectations.
