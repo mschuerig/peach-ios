@@ -9,7 +9,7 @@ struct ComparisonTests {
     func note1FrequencyCalculatesCorrectly() async {
         let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
 
-        let freq = comparison.note1Frequency(referencePitch: .concert440)
+        let freq = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
 
         #expect(freq.rawValue >= 260 && freq.rawValue <= 263)
     }
@@ -18,8 +18,8 @@ struct ComparisonTests {
     func note2FrequencyAppliesCentOffsetHigher() async {
         let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(100.0))
 
-        let freq1 = comparison.note1Frequency(referencePitch: .concert440)
-        let freq2 = comparison.note2Frequency(referencePitch: .concert440)
+        let freq1 = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq2 = comparison.note2Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
 
         #expect(freq2 > freq1)
 
@@ -31,8 +31,8 @@ struct ComparisonTests {
     func note2FrequencyAppliesCentOffsetLower() async {
         let comparison = Comparison(note1: 60, note2: 60, centDifference: Cents(-100.0))
 
-        let freq1 = comparison.note1Frequency(referencePitch: .concert440)
-        let freq2 = comparison.note2Frequency(referencePitch: .concert440)
+        let freq1 = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
+        let freq2 = comparison.note2Frequency(tuningSystem: .equalTemperament, referencePitch: .concert440)
 
         #expect(freq2 < freq1)
     }

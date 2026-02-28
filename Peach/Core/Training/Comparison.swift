@@ -9,12 +9,12 @@ struct Comparison {
         centDifference.rawValue > 0
     }
 
-    func note1Frequency(referencePitch: Frequency) -> Frequency {
-        Pitch(note: note1, cents: Cents(0)).frequency(referencePitch: referencePitch)
+    func note1Frequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
+        tuningSystem.frequency(for: note1, referencePitch: referencePitch)
     }
 
-    func note2Frequency(referencePitch: Frequency) -> Frequency {
-        Pitch(note: note2, cents: centDifference).frequency(referencePitch: referencePitch)
+    func note2Frequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
+        tuningSystem.frequency(for: DetunedMIDINote(note: note2, offset: centDifference), referencePitch: referencePitch)
     }
 
     func isCorrect(userAnswerHigher: Bool) -> Bool {

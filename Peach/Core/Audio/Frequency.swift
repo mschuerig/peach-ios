@@ -2,8 +2,9 @@ import Foundation
 
 /// A physical frequency in Hz — the final output of pitch-to-sound conversion.
 ///
-/// Frequency is what `NotePlayer` receives. Produced by `Pitch.frequency(referencePitch:)`
-/// and reconstructed from audio via `Pitch.init(frequency:referencePitch:)`.
+/// Frequency lives in the physical world. Produced by
+/// `TuningSystem.frequency(for:referencePitch:)` from a logical-world
+/// `MIDINote` or `DetunedMIDINote`.
 struct Frequency: Hashable, Comparable, Sendable {
     let rawValue: Double
 

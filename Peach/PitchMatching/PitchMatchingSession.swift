@@ -182,8 +182,8 @@ final class PitchMatchingSession: TrainingSession {
         currentChallenge = challenge
 
         do {
-            let refFreq = Pitch(note: challenge.referenceNote, cents: Cents(0))
-                .frequency(referencePitch: settings.referencePitch)
+            let refFreq = TuningSystem.equalTemperament.frequency(
+                for: challenge.referenceNote, referencePitch: settings.referencePitch)
             self.referenceFrequency = refFreq.rawValue
 
             state = .playingReference
@@ -196,8 +196,9 @@ final class PitchMatchingSession: TrainingSession {
 
             guard state != .idle && !Task.isCancelled else { return }
 
-            let tunableFrequency = Pitch(note: challenge.referenceNote, cents: Cents(challenge.initialCentOffset))
-                .frequency(referencePitch: settings.referencePitch)
+            let tunableFrequency = TuningSystem.equalTemperament.frequency(
+                for: DetunedMIDINote(note: challenge.referenceNote, offset: Cents(challenge.initialCentOffset)),
+                referencePitch: settings.referencePitch)
 
             state = .playingTunable
             let handle = try await notePlayer.play(

@@ -230,8 +230,8 @@ final class ComparisonSession: TrainingSession {
         noteDuration: TimeInterval,
         amplitudeDB: AmplitudeDB
     ) async throws {
-        let freq1 = comparison.note1Frequency(referencePitch: settings.referencePitch)
-        let freq2 = comparison.note2Frequency(referencePitch: settings.referencePitch)
+        let freq1 = comparison.note1Frequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
+        let freq2 = comparison.note2Frequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
         logger.info("Comparison: note1=\(comparison.note1.rawValue) \(freq1.rawValue)Hz @0.0dB, note2 \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, centDiff=\(comparison.centDifference.rawValue), higher=\(comparison.isSecondNoteHigher)")
 
         state = .playingNote1

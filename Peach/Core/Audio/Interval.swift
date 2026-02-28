@@ -2,7 +2,7 @@ import Foundation
 
 /// Semitone distance between two notes, from prime (0) through octave (12).
 ///
-/// Used by `MIDINote.pitch(at:in:)` to transpose a note and by `TuningSystem`
+/// Used by `MIDINote.transposed(by:)` to transpose a note and by `TuningSystem`
 /// to look up the cent offset for that interval. Raw value is the semitone count.
 enum Interval: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
     case prime = 0
@@ -41,16 +41,5 @@ extension MIDINote {
         let newValue = rawValue + interval.semitones
         precondition(Self.validRange.contains(newValue), "Transposed note \(newValue) out of MIDI range 0-127")
         return MIDINote(newValue)
-    }
-
-    func pitch(
-        at interval: Interval = .prime,
-        in tuningSystem: TuningSystem = .equalTemperament
-    ) -> Pitch {
-        let transposedNote = transposed(by: interval)
-        let centOffset = tuningSystem.centOffset(for: interval)
-        let exactSemitones = Double(interval.semitones) * 100.0
-        let centsDeviation = centOffset - exactSemitones
-        return Pitch(note: transposedNote, cents: Cents(centsDeviation))
     }
 }

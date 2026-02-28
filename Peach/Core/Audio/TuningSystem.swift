@@ -14,4 +14,21 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
             return Double(interval.semitones) * 100.0
         }
     }
+
+    // MARK: - Frequency Bridge (Logical → Physical)
+
+    private static let referenceMIDINote = 69
+    private static let semitonesPerOctave = 12.0
+    private static let centsPerSemitone = 100.0
+    private static let octaveRatio = 2.0
+
+    func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency {
+        let semitones = Double(note.note.rawValue - Self.referenceMIDINote)
+            + note.offset.rawValue / Self.centsPerSemitone
+        return Frequency(referencePitch.rawValue * pow(Self.octaveRatio, semitones / Self.semitonesPerOctave))
+    }
+
+    func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency {
+        frequency(for: DetunedMIDINote(note), referencePitch: referencePitch)
+    }
 }

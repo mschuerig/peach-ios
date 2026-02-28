@@ -78,7 +78,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`SoundFontLibrary`** — `@MainActor` service created once at startup; discovers SF2 files in bundle, parses presets via `SF2PresetParser`, filters unpitched (bank >= 120, program >= 120), sorts alphabetically; injected via `@Environment(\.soundFontLibrary)`. Read-only at runtime
 - **`soundSource` tag format** — `@AppStorage` stores `"sf2:{bank}:{program}"` (SF2 bank and MIDI program number, e.g., `"sf2:0:0"` = Grand Piano, `"sf2:0:42"` = Cello, `"sf2:8:80"` = Sine Wave). Default: `"sf2:8:80"`
 - **Protocol boundary: `NotePlayer`** — knows only frequencies (Hz), durations, envelopes; no concept of MIDI notes, comparisons, or training
-- **MIDI-to-Hz conversion** — use `MIDINote.pitch(at:in:)` to apply a tuning system, then `Pitch.frequency(referencePitch:)` for forward conversion (Pitch → Hz) and `Pitch(frequency:referencePitch:)` for inverse (Hz → Pitch). All parameters are explicit (no defaults). All methods are pure math, non-throwing
+- **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents`) and physical world (`Frequency`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is a private `SoundFontNotePlayer.decompose(frequency:)` helper for MIDI playback only. All bridge parameters are explicit (no defaults)
 
 **State Management:**
 - **`ComparisonSession` is the central state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
@@ -221,7 +221,7 @@ Never run only specific test files — always the complete suite.
 **Domain Rules Agents Will Get Wrong:**
 - **MIDI note range: 0–127** — `PerceptualProfile` is indexed by MIDI note (128 slots, 0-based); out-of-range = crash
 - **Cent offset applies to note 2 only** — note 1 is exact MIDI note, note 2 = note 1 + cent offset; never offset both notes
-- **Use `Pitch` for all Hz conversions** — `Pitch.frequency()` and `Pitch(frequency:)` are the canonical conversion methods; the app requires 0.1-cent precision
+- **Use `TuningSystem.frequency(for:referencePitch:)` for all Hz conversions** — accepts `MIDINote` or `DetunedMIDINote`; always requires explicit `tuningSystem` and `referencePitch` parameters; the app requires 0.1-cent precision
 - **Feedback phase is 0.4 seconds** — preserve this timing in the training loop; it's a perceptual learning design decision
 
 **Never Do This:**
@@ -237,6 +237,7 @@ Never run only specific test files — always the complete suite.
 - Sleep/fixed delays in tests → use `instantPlayback` mocks and `waitForState`
 - `@testable import` to test private methods → test through protocol interfaces
 - Premature abstractions, `Utils/` directories, speculative features → keep it simple
+- `Pitch` struct → deleted; use `DetunedMIDINote` + `TuningSystem.frequency(for:referencePitch:)` instead
 
 **Error Resilience:**
 - **`ComparisonSession` is the error boundary** — catches all service errors; training loop continues gracefully

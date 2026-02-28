@@ -1,6 +1,6 @@
 # Story 22.3: Introduce DetunedMIDINote and Two-World Architecture
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,52 +34,52 @@ So that the codebase has a clear two-world architecture: logical (MIDINote, Detu
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `DetunedMIDINote` struct (AC: #1, #2)
-  - [ ] 1.1 Create `Peach/Core/Audio/DetunedMIDINote.swift` with `note: MIDINote`, `offset: Cents`, `Hashable`, `Sendable`
-  - [ ] 1.2 Add convenience `init(_ note: MIDINote)` that sets `offset: Cents(0)`
-  - [ ] 1.3 Add `///` doc comment explaining role in the two-world architecture
-  - [ ] 1.4 Write `DetunedMIDINoteTests.swift` — construction, hashable, sendable, convenience init
+- [x] Task 1: Create `DetunedMIDINote` struct (AC: #1, #2)
+  - [x] 1.1 Create `Peach/Core/Audio/DetunedMIDINote.swift` with `note: MIDINote`, `offset: Cents`, `Hashable`, `Sendable`
+  - [x] 1.2 Add convenience `init(_ note: MIDINote)` that sets `offset: Cents(0)`
+  - [x] 1.3 Add `///` doc comment explaining role in the two-world architecture
+  - [x] 1.4 Write `DetunedMIDINoteTests.swift` — construction, hashable, sendable, convenience init
 
-- [ ] Task 2: Add `TuningSystem.frequency(for:referencePitch:)` bridge methods (AC: #3, #4, #5)
-  - [ ] 2.1 Add `func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency` to `TuningSystem`
-  - [ ] 2.2 Move forward-conversion math from `Pitch.frequency(referencePitch:)` into the new method
-  - [ ] 2.3 Add `func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency` convenience that delegates to DetunedMIDINote overload with zero offset
-  - [ ] 2.4 No default values on any parameter
-  - [ ] 2.5 Write tests for both overloads in `TuningSystemTests.swift` — mirror all forward-conversion tests from `PitchTests.swift`
+- [x] Task 2: Add `TuningSystem.frequency(for:referencePitch:)` bridge methods (AC: #3, #4, #5)
+  - [x] 2.1 Add `func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency` to `TuningSystem`
+  - [x] 2.2 Move forward-conversion math from `Pitch.frequency(referencePitch:)` into the new method
+  - [x] 2.3 Add `func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency` convenience that delegates to DetunedMIDINote overload with zero offset
+  - [x] 2.4 No default values on any parameter
+  - [x] 2.5 Write tests for both overloads in `TuningSystemTests.swift` — mirror all forward-conversion tests from `PitchTests.swift`
 
-- [ ] Task 3: Migrate 5 production call sites from `Pitch` to `DetunedMIDINote` + `TuningSystem.frequency()` (AC: #6)
-  - [ ] 3.1 Migrate `Comparison.note1Frequency(referencePitch:)` — add `tuningSystem` parameter, use `tuningSystem.frequency(for: MIDINote, referencePitch:)`
-  - [ ] 3.2 Migrate `Comparison.note2Frequency(referencePitch:)` — add `tuningSystem` parameter, use `tuningSystem.frequency(for: DetunedMIDINote(note: note2, offset: centDifference), referencePitch:)`
-  - [ ] 3.3 Migrate `PitchMatchingSession` reference frequency (line ~185) — use `tuningSystem.frequency(for: challenge.referenceNote, referencePitch:)`
-  - [ ] 3.4 Migrate `PitchMatchingSession` tunable frequency (line ~199) — use `tuningSystem.frequency(for: DetunedMIDINote(note: challenge.referenceNote, offset: Cents(challenge.initialCentOffset)), referencePitch:)`
-  - [ ] 3.5 Remove `Pitch(note:, cents:)` construction from `MIDINote.pitch(at:in:)` in `Interval.swift` (method is being removed entirely in Task 4)
-  - [ ] 3.6 Update `ComparisonSession` callers of `note1Frequency`/`note2Frequency` to pass `tuningSystem` parameter
-  - [ ] 3.7 Update all test callers to pass explicit `tuningSystem` parameter
+- [x] Task 3: Migrate 5 production call sites from `Pitch` to `DetunedMIDINote` + `TuningSystem.frequency()` (AC: #6)
+  - [x] 3.1 Migrate `Comparison.note1Frequency(referencePitch:)` — add `tuningSystem` parameter, use `tuningSystem.frequency(for: MIDINote, referencePitch:)`
+  - [x] 3.2 Migrate `Comparison.note2Frequency(referencePitch:)` — add `tuningSystem` parameter, use `tuningSystem.frequency(for: DetunedMIDINote(note: note2, offset: centDifference), referencePitch:)`
+  - [x] 3.3 Migrate `PitchMatchingSession` reference frequency (line ~185) — use `tuningSystem.frequency(for: challenge.referenceNote, referencePitch:)`
+  - [x] 3.4 Migrate `PitchMatchingSession` tunable frequency (line ~199) — use `tuningSystem.frequency(for: DetunedMIDINote(note: challenge.referenceNote, offset: Cents(challenge.initialCentOffset)), referencePitch:)`
+  - [x] 3.5 Remove `Pitch(note:, cents:)` construction from `MIDINote.pitch(at:in:)` in `Interval.swift` (method is being removed entirely in Task 4)
+  - [x] 3.6 Update `ComparisonSession` callers of `note1Frequency`/`note2Frequency` to pass `tuningSystem` parameter
+  - [x] 3.7 Update all test callers to pass explicit `tuningSystem` parameter
 
-- [ ] Task 4: Remove `MIDINote.pitch(at:in:)` (AC: #7)
-  - [ ] 4.1 Delete `pitch(at:in:)` method from the `extension MIDINote` block in `Interval.swift`
-  - [ ] 4.2 Delete test cases in `PitchTests.swift` that test `pitch(at:in:)` (5 tests: pitchAtPerfectFifth, pitchDefaults, allIntervalsEqualTemperamentCentsZero, pitchAtMinorSecond, pitchAtOctave)
-  - [ ] 4.3 Verify no file references `pitch(at:` or `pitch(in:`
+- [x] Task 4: Remove `MIDINote.pitch(at:in:)` (AC: #7)
+  - [x] 4.1 Delete `pitch(at:in:)` method from the `extension MIDINote` block in `Interval.swift`
+  - [x] 4.2 Delete test cases in `PitchTests.swift` that test `pitch(at:in:)` (5 tests: pitchAtPerfectFifth, pitchDefaults, allIntervalsEqualTemperamentCentsZero, pitchAtMinorSecond, pitchAtOctave)
+  - [x] 4.3 Verify no file references `pitch(at:` or `pitch(in:`
 
-- [ ] Task 5: Privatize inverse conversion to SoundFont layer (AC: #8)
-  - [ ] 5.1 Create a `private` struct or helper function inside `SoundFontNotePlayer.swift` that replicates `Pitch.init(frequency:referencePitch:)` logic — decompose Hz into nearest MIDI note + cent remainder
-  - [ ] 5.2 Update `SoundFontNotePlayer.play()` (line ~141) to use the private helper instead of `Pitch(frequency:referencePitch:)`
-  - [ ] 5.3 Update `SoundFontPlaybackHandle.adjustFrequency()` (line ~50) to use the same private helper
-  - [ ] 5.4 Migrate inverse-conversion tests from `PitchTests.swift` into `SoundFontNotePlayerTests.swift` (test the private helper through the public `play()` interface, or make the helper `nonisolated static` within the SoundFont layer for direct testing)
+- [x] Task 5: Privatize inverse conversion to SoundFont layer (AC: #8)
+  - [x] 5.1 Create a `private` struct or helper function inside `SoundFontNotePlayer.swift` that replicates `Pitch.init(frequency:referencePitch:)` logic — decompose Hz into nearest MIDI note + cent remainder
+  - [x] 5.2 Update `SoundFontNotePlayer.play()` (line ~141) to use the private helper instead of `Pitch(frequency:referencePitch:)`
+  - [x] 5.3 Update `SoundFontPlaybackHandle.adjustFrequency()` (line ~50) to use the same private helper
+  - [x] 5.4 Migrate inverse-conversion tests from `PitchTests.swift` into `SoundFontNotePlayerTests.swift` (test the private helper through the public `play()` interface, or make the helper `nonisolated static` within the SoundFont layer for direct testing)
 
-- [ ] Task 6: Delete `Pitch.swift` (AC: #6)
-  - [ ] 6.1 Delete `Peach/Core/Audio/Pitch.swift`
-  - [ ] 6.2 Delete or fully migrate `PeachTests/Core/Audio/PitchTests.swift`
-  - [ ] 6.3 Verify no file references `Pitch` as a type (grep for `Pitch` in Swift files)
+- [x] Task 6: Delete `Pitch.swift` (AC: #6)
+  - [x] 6.1 Delete `Peach/Core/Audio/Pitch.swift`
+  - [x] 6.2 Delete or fully migrate `PeachTests/Core/Audio/PitchTests.swift`
+  - [x] 6.3 Verify no file references `Pitch` as a type (grep for `Pitch` in Swift files)
 
-- [ ] Task 7: Update `project-context.md` (AC: #9)
-  - [ ] 7.1 Replace MIDI-to-Hz conversion guidance (line ~81) with two-world model documentation
-  - [ ] 7.2 Document: logical world (MIDINote, DetunedMIDINote, Interval, Cents) and physical world (Frequency), bridged by `TuningSystem.frequency(for:referencePitch:)`
-  - [ ] 7.3 Update "Never Do This" section to mention `Pitch` as a deleted type
+- [x] Task 7: Update `project-context.md` (AC: #9)
+  - [x] 7.1 Replace MIDI-to-Hz conversion guidance (line ~81) with two-world model documentation
+  - [x] 7.2 Document: logical world (MIDINote, DetunedMIDINote, Interval, Cents) and physical world (Frequency), bridged by `TuningSystem.frequency(for:referencePitch:)`
+  - [x] 7.3 Update "Never Do This" section to mention `Pitch` as a deleted type
 
-- [ ] Task 8: Run full test suite and verify (AC: #10)
-  - [ ] 8.1 `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 8.2 Verify zero behavioral changes — same frequency values, same precision
+- [x] Task 8: Run full test suite and verify (AC: #10)
+  - [x] 8.1 `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 8.2 Verify zero behavioral changes — same frequency values, same precision
 
 ## Dev Notes
 
@@ -264,14 +264,55 @@ Located in `Peach/Core/Audio/Interval.swift` lines 46-55 as an `extension MIDINo
 
 **Patterns:** Commit directly to main, one commit per story, code review as separate commit.
 
+## File List
+
+### New Files
+- `Peach/Core/Audio/DetunedMIDINote.swift` — DetunedMIDINote value type (note + cent offset)
+- `PeachTests/Core/Audio/DetunedMIDINoteTests.swift` — 10 tests for DetunedMIDINote
+
+### Modified Files
+- `Peach/Core/Audio/TuningSystem.swift` — Added `frequency(for:referencePitch:)` bridge methods (DetunedMIDINote and MIDINote overloads)
+- `Peach/Core/Audio/Interval.swift` — Removed `MIDINote.pitch(at:in:)` method, updated doc comment
+- `Peach/Core/Audio/MIDINote.swift` — Updated doc comment to reference TuningSystem bridge
+- `Peach/Core/Audio/Cents.swift` — Updated doc comment to reference DetunedMIDINote
+- `Peach/Core/Audio/Frequency.swift` — Updated doc comment to reference two-world architecture
+- `Peach/Core/Audio/SoundFontNotePlayer.swift` — Added `nonisolated static decompose(frequency:)` helper, replaced Pitch usage
+- `Peach/Core/Audio/SoundFontPlaybackHandle.swift` — Replaced Pitch usage with SoundFontNotePlayer.decompose()
+- `Peach/Core/Training/Comparison.swift` — Added `tuningSystem` parameter to frequency methods, replaced Pitch usage
+- `Peach/Comparison/ComparisonSession.swift` — Passes `.equalTemperament` to Comparison frequency methods
+- `Peach/PitchMatching/PitchMatchingSession.swift` — Replaced Pitch usage with TuningSystem.frequency() bridge
+- `PeachTests/Core/Audio/TuningSystemTests.swift` — Added 14 forward-conversion bridge method tests
+- `PeachTests/Core/Audio/SoundFontNotePlayerTests.swift` — Added 10 decompose() inverse-conversion tests
+- `PeachTests/Core/Audio/MIDINoteTests.swift` — Migrated frequency tests to use TuningSystem bridge
+- `PeachTests/Core/Training/ComparisonTests.swift` — Added `tuningSystem` parameter to frequency test calls
+- `docs/project-context.md` — Documented two-world architecture, updated conversion guidance, added Pitch to "Never Do This"
+- `docs/implementation-artifacts/sprint-status.yaml` — Status: in-progress → review
+
+### Deleted Files
+- `Peach/Core/Audio/Pitch.swift` — Dissolved; forward conversion moved to TuningSystem, inverse to SoundFont
+- `PeachTests/Core/Audio/PitchTests.swift` — Tests migrated to TuningSystemTests, SoundFontNotePlayerTests, DetunedMIDINoteTests
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- SoundFont `decompose()` initially used `@MainActor`-isolated types (`Frequency.concert440`, `MIDINote.validRange`, `Cents()`) in a `nonisolated` context — fixed by using raw values directly (440.0, 0...127 range, Double return)
+
 ### Completion Notes List
 
+- Task 1: Created `DetunedMIDINote` struct with note/offset properties, Hashable, Sendable, convenience init. 10 tests.
+- Task 2: Added `TuningSystem.frequency(for:referencePitch:)` with DetunedMIDINote and MIDINote overloads. Moved forward-conversion math from Pitch. 14 tests.
+- Task 3: Migrated all 5 forward-conversion call sites (Comparison x2, PitchMatchingSession x2, Interval.swift x1). Added `tuningSystem` parameter to Comparison frequency methods. Updated all callers and tests.
+- Task 4: Removed `MIDINote.pitch(at:in:)` from Interval.swift. Deleted 5 tests from PitchTests.swift.
+- Task 5: Created `SoundFontNotePlayer.decompose(frequency:)` — `nonisolated static` helper returning `(note: UInt8, cents: Double)`. Updated SoundFontNotePlayer.play() and SoundFontPlaybackHandle.adjustFrequency(). 10 tests.
+- Task 6: Deleted `Pitch.swift` and `PitchTests.swift`. Verified no remaining type references. Updated doc comments on Cents, Frequency, MIDINote.
+- Task 7: Updated project-context.md with two-world model documentation, updated domain rules and "Never Do This" section.
+- Task 8: Full test suite passes with zero regressions.
+
 ### Change Log
+
+- 2026-02-28: Implemented story 22.3 — Introduced DetunedMIDINote and two-world architecture. Created DetunedMIDINote value type, added TuningSystem frequency bridge methods, migrated all production call sites, privatized inverse conversion to SoundFont layer, dissolved Pitch struct, updated project documentation.
