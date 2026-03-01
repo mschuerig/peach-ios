@@ -1,4 +1,4 @@
-# generated: 2026-02-22
+# generated: 2026-03-01
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -33,7 +33,7 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-22
+generated: 2026-03-01
 project: peach
 project_key: NOKEY
 tracking_system: file-system
@@ -94,42 +94,41 @@ development_status:
   epic-7-retrospective: optional
 
   # Sprint 2026-02-22: Bug Fixes & Algorithm Investigation
-  # Work order: top to bottom
-  hotfix-investigate-signed-mean: done # Investigate Signed Mean in Perceptual Profile
-  fix-audio-clicks-when-navigating-away: done # Audio clicks/pops when navigating away during playback
-  fix-reset-all-data-should-reset-difficulty: done # Reset All Data should also reset Kazez convergence chain
-  fix-feedback-icon-flicker-on-correctness-change: done # Feedback icon briefly shows previous icon before current
+  hotfix-investigate-signed-mean: done
+  fix-audio-clicks-when-navigating-away: done
+  fix-reset-all-data-should-reset-difficulty: done
+  fix-feedback-icon-flicker-on-correctness-change: done
 
   # Infrastructure: Sampled Instrument Build Support
-  infra-sf2-build-download-cache: done # Download SF2 samples to cache at build time, keep out of git
+  infra-sf2-build-download-cache: done
 
   # Epic 8: Real Instruments — Sampled Sound Sources
   epic-8: done
-  8-1-implement-soundfont-noteplayer: done # SoundFontNotePlayer with fixed Cello preset, RoutingNotePlayer, freq->MIDI conversion
-  8-2-sf2-preset-discovery-and-instrument-selection: done # SF2 PHDR parsing, SoundFontLibrary, dynamic instrument picker in Settings
-  8-3-remove-sinewavenoteplayer-and-routingnoteplayer: done # Remove SineWaveNotePlayer + RoutingNotePlayer, SoundFontNotePlayer becomes sole NotePlayer
+  8-1-implement-soundfont-noteplayer: done
+  8-2-sf2-preset-discovery-and-instrument-selection: done
+  8-3-remove-sinewavenoteplayer-and-routingnoteplayer: done
 
   # Epic 9: Evidence-Based Training — Note Selection Strategy
   epic-9: done
-  9-1-promote-kazeznotestrategy-to-default: done # Respect settings range, smarter cold start, swap default in PeachApp, remove NvM slider
-  9-2-rethink-profile-display-and-progress-tracking: done # Adapt visualization to single-skill model
+  9-1-promote-kazeznotestrategy-to-default: done
+  9-2-rethink-profile-display-and-progress-tracking: done
 
   # Epic 10: Vary Loudness Training Complication
   epic-10: done
-  10-1-research-volume-control-in-avaudiounitsampler: done # Research AVAudioEngine volume control independent of MIDI velocity
-  10-2-rename-amplitude-to-velocity: done # Rename amplitude→velocity, retype Double→UInt8 throughout codebase
-  10-3-add-amplitude-parameter-to-noteplayer: done # Add true amplitude (volume) parameter to NotePlayer protocol
-  10-4-add-vary-loudness-slider-to-settings: done # "Vary Loudness" slider in Settings with @AppStorage
-  10-5-apply-loudness-variation-in-training: done # TrainingSession applies random loudness offset to note2
+  10-1-research-volume-control-in-avaudiounitsampler: done
+  10-2-rename-amplitude-to-velocity: done
+  10-3-add-amplitude-parameter-to-noteplayer: done
+  10-4-add-vary-loudness-slider-to-settings: done
+  10-5-apply-loudness-variation-in-training: done
 
   # Epic 11: Clear the Decks — Prerequisite Renames
   epic-11: done
-  11-1-rename-training-types-and-files-to-comparison: done # Rename ambiguous Training names to Comparison-specific names
+  11-1-rename-training-types-and-files-to-comparison: done
 
   # Epic 12: Own Every Note — PlaybackHandle Redesign
   epic-12: done
-  12-1-playbackhandle-protocol-and-noteplayer-redesign: done # PlaybackHandle protocol, NotePlayer redesign, SoundFontPlaybackHandle
-  12-2-comparisonsession-playbackhandle-integration: wont-do # Superseded by 12.1 — stopAll() and convenience method cover ComparisonSession's needs
+  12-1-playbackhandle-protocol-and-noteplayer-redesign: done
+  12-2-comparisonsession-playbackhandle-integration: wont-do
 
   # Epic 13: Remember Every Match — Pitch Matching Data Layer
   epic-13: done
@@ -154,14 +153,14 @@ development_status:
   epic-16-retrospective: optional
 
   # Epic 17: Two Modes, One App — Start Screen Integration
-  epic-17: done # All ACs fulfilled by story 16.3 implementation
-  17-1-pitch-matching-button-and-navigation-routing: done # Implemented as part of 16-3-pitch-matching-screen-assembly
+  epic-17: done
+  17-1-pitch-matching-button-and-navigation-routing: done
 
   # Epic 18: The Full Picture — Profile Screen Integration
   epic-18: done
   18-1-display-pitch-matching-statistics-on-profile-screen: done
 
-  # Epic 19: Code Review Refactoring
+  # Epic 19: Clean Foundations — Code Review Refactoring
   epic-19: done
   19-1-clamping-utility-and-magic-value-constants: done
   19-2-value-objects-for-domain-primitives: done
@@ -189,14 +188,14 @@ development_status:
   fix-soundfont-click-on-note-stop: done
 
   # Epic 21: Speak the Language — Interval Domain Foundation
-  epic-21: in-progress
+  epic-21: done
   21-1-implement-interval-enum-and-midinote-transposition: done
   21-2-implement-tuningsystem-enum: done
   21-3-implement-pitch-value-type-and-midinote-integration: done
   epic-21-retrospective: optional
 
   # Epic 22: Clean Slate — Prerequisite Refactorings
-  epic-22: in-progress
+  epic-22: done
   22-1-migrate-frequencycalculation-to-domain-types: done
   22-2-domain-type-documentation-and-api-cleanup: done
   22-3-introduce-detunedmidinote-and-two-world-architecture: done
@@ -205,7 +204,7 @@ development_status:
   epic-22-retrospective: optional
 
   # Epic 23: Intervals Everywhere — Generalize Training for Intervals
-  epic-23: in-progress
+  epic-23: done
   23-1-data-model-and-value-type-updates-for-interval-context: done
   23-2-comparisonsession-and-strategy-interval-parameterization: done
   23-3-pitchmatchingsession-interval-parameterization: done
@@ -213,6 +212,27 @@ development_status:
   epic-23-retrospective: optional
 
   # Epic 24: Four Modes, One App — Start Screen Integration
-  epic-24: in-progress
+  epic-24: done
   24-1-navigationdestination-parameterization-and-routing: done
   24-2-start-screen-four-training-buttons: done
+  epic-24-retrospective: optional
+
+  # Epic 25: Directed Intervals — Full Interval Training
+  # Work order: top to bottom
+  epic-25: backlog
+  25-1-direction-enum-and-directedinterval: backlog # Direction enum (.up/.down), DirectedInterval type, replace Interval with DirectedInterval throughout
+  25-2-interval-selector-on-settings-screen: backlog # Two-row grid (up/down × 13 intervals P1–P8), toggle active, localized help texts
+  epic-25-retrospective: optional
+
+  # Epic 26: Pitch Matching UX Refinements
+  epic-26: backlog
+  26-1-delay-targetnote-until-slider-touch: backlog # targetNote plays only when user first touches slider, not auto after referenceNote
+  26-2-reposition-feedback-indicator-above-slider: backlog # Move feedback indicator closer to top of screen so dragging finger doesn't obscure it
+  26-3-reduce-pitch-matching-range: backlog # Reduce cent range from ±100 to ±20
+  epic-26-retrospective: optional
+
+  # Epic 27: SoundFontNotePlayer Quality
+  epic-27: backlog
+  27-1-decompose-play-method: backlog # Extract sub-operations in play() so all are at same abstraction level
+  27-2-preset-crash-investigation-tests: backlog # Tests iterating all presets × note range × durations to find Grand Piano crash root cause
+  epic-27-retrospective: optional
