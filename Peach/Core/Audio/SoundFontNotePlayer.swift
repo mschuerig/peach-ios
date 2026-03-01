@@ -106,49 +106,11 @@ final class SoundFontNotePlayer: NotePlayer {
     // MARK: - NotePlayer Protocol
 
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
-        // Select preset from user settings
-        if let preset = Self.parseSF2Tag(from: userSettings.soundSource) {
-            do {
-                try await loadPreset(program: preset.program, bank: preset.bank)
-            } catch {
-                try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
-            }
-        } else {
-            try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
-        }
-
-        let freq = frequency.rawValue
-
-        // Validate frequency range
-        guard Self.validFrequencyRange.contains(freq) else {
-            throw AudioError.invalidFrequency(
-                "Frequency \(freq) Hz is outside valid range \(Self.validFrequencyRange)"
-            )
-        }
-
-        // Configure audio session once
-        if !isSessionConfigured {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [])
-            try session.setActive(true)
-            isSessionConfigured = true
-        }
-
-        if !engine.isRunning {
-            try engine.start()
-        }
-
-        let decomposed = Self.decompose(frequency: frequency)
-        let midiNote = decomposed.note
-        let bendValue = Self.pitchBendValue(forCents: Cents(decomposed.cents))
-
-        // Set volume offset (independent of MIDI velocity)
-        sampler.overallGain = amplitudeDB.rawValue
-
-        // Apply pitch bend before starting note
-        sampler.sendPitchBend(bendValue, onChannel: Self.channel)
-        sampler.startNote(midiNote, withVelocity: velocity.rawValue, onChannel: Self.channel)
-
+        try await ensurePresetLoaded()
+        try validateFrequency(frequency)
+        try ensureAudioSessionConfigured()
+        try ensureEngineRunning()
+        let midiNote = startNote(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
         return SoundFontPlaybackHandle(sampler: sampler, midiNote: midiNote, channel: Self.channel, stopPropagationDelay: stopPropagationDelay)
     }
 
@@ -162,6 +124,54 @@ final class SoundFontNotePlayer: NotePlayer {
         if stopPropagationDelay > .zero {
             sampler.volume = 1.0
         }
+    }
+
+    // MARK: - Play Sub-operations
+
+    private func ensurePresetLoaded() async throws {
+        if let preset = Self.parseSF2Tag(from: userSettings.soundSource) {
+            do {
+                try await loadPreset(program: preset.program, bank: preset.bank)
+            } catch {
+                try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
+            }
+        } else {
+            try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
+        }
+    }
+
+    private func validateFrequency(_ frequency: Frequency) throws {
+        let freq = frequency.rawValue
+        guard Self.validFrequencyRange.contains(freq) else {
+            throw AudioError.invalidFrequency(
+                "Frequency \(freq) Hz is outside valid range \(Self.validFrequencyRange)"
+            )
+        }
+    }
+
+    private func ensureAudioSessionConfigured() throws {
+        if !isSessionConfigured {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.playback, mode: .default, options: [])
+            try session.setActive(true)
+            isSessionConfigured = true
+        }
+    }
+
+    private func ensureEngineRunning() throws {
+        if !engine.isRunning {
+            try engine.start()
+        }
+    }
+
+    private func startNote(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) -> UInt8 {
+        let decomposed = Self.decompose(frequency: frequency)
+        let midiNote = decomposed.note
+        let bendValue = Self.pitchBendValue(forCents: Cents(decomposed.cents))
+        sampler.overallGain = amplitudeDB.rawValue
+        sampler.sendPitchBend(bendValue, onChannel: Self.channel)
+        sampler.startNote(midiNote, withVelocity: velocity.rawValue, onChannel: Self.channel)
+        return midiNote
     }
 
     // MARK: - MIDI Helpers

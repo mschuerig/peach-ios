@@ -1,6 +1,6 @@
 # Story 27.1: Decompose Play Method
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,24 +18,24 @@ so that the method reads as a clear sequence of intent-revealing steps and each 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extract preset selection into private method (AC: #1, #2, #4)
-  - [ ] 1.1 Create `private func ensurePresetLoaded() async throws` that reads `userSettings.soundSource`, parses SF2 tag, calls `loadPreset`, and falls back to default on failure
-  - [ ] 1.2 Replace lines 109–118 in `play()` with single call
-- [ ] Task 2: Extract frequency validation into private method (AC: #1, #2, #4)
-  - [ ] 2.1 Create `private func validateFrequency(_ frequency: Frequency) throws` containing the guard + throw
-  - [ ] 2.2 Replace lines 120–127 in `play()` with single call
-- [ ] Task 3: Extract audio session configuration into private method (AC: #1, #2, #4)
-  - [ ] 3.1 Create `private func ensureAudioSessionConfigured() throws` containing the one-time AVAudioSession setup
-  - [ ] 3.2 Replace lines 129–135 in `play()` with single call
-- [ ] Task 4: Extract engine startup into private method (AC: #1, #2, #4)
-  - [ ] 4.1 Create `private func ensureEngineRunning() throws` containing the conditional `engine.start()`
-  - [ ] 4.2 Replace lines 137–139 in `play()` with single call
-- [ ] Task 5: Extract MIDI note-on sequence into private method (AC: #1, #2, #4)
-  - [ ] 5.1 Create `private func startNote(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) -> UInt8` that decomposes frequency, sets gain, sends pitch bend, starts MIDI note, and returns the midiNote
-  - [ ] 5.2 Replace lines 141–150 in `play()` with single call
-- [ ] Task 6: Verify all tests pass (AC: #3)
-  - [ ] 6.1 Run full test suite: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] 6.2 Confirm zero test modifications were needed
+- [x] Task 1: Extract preset selection into private method (AC: #1, #2, #4)
+  - [x] 1.1 Create `private func ensurePresetLoaded() async throws` that reads `userSettings.soundSource`, parses SF2 tag, calls `loadPreset`, and falls back to default on failure
+  - [x] 1.2 Replace lines 109–118 in `play()` with single call
+- [x] Task 2: Extract frequency validation into private method (AC: #1, #2, #4)
+  - [x] 2.1 Create `private func validateFrequency(_ frequency: Frequency) throws` containing the guard + throw
+  - [x] 2.2 Replace lines 120–127 in `play()` with single call
+- [x] Task 3: Extract audio session configuration into private method (AC: #1, #2, #4)
+  - [x] 3.1 Create `private func ensureAudioSessionConfigured() throws` containing the one-time AVAudioSession setup
+  - [x] 3.2 Replace lines 129–135 in `play()` with single call
+- [x] Task 4: Extract engine startup into private method (AC: #1, #2, #4)
+  - [x] 4.1 Create `private func ensureEngineRunning() throws` containing the conditional `engine.start()`
+  - [x] 4.2 Replace lines 137–139 in `play()` with single call
+- [x] Task 5: Extract MIDI note-on sequence into private method (AC: #1, #2, #4)
+  - [x] 5.1 Create `private func startNote(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) -> UInt8` that decomposes frequency, sets gain, sends pitch bend, starts MIDI note, and returns the midiNote
+  - [x] 5.2 Replace lines 141–150 in `play()` with single call
+- [x] Task 6: Verify all tests pass (AC: #3)
+  - [x] 6.1 Run full test suite: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] 6.2 Confirm zero test modifications were needed
 
 ## Dev Notes
 
@@ -102,8 +102,25 @@ func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+No debug issues encountered.
 
 ### Completion Notes List
 
+- Decomposed `play()` from 45 lines of mixed-abstraction inline code into 6 lines of intent-revealing named calls
+- Extracted 5 private methods: `ensurePresetLoaded()`, `validateFrequency(_:)`, `ensureAudioSessionConfigured()`, `ensureEngineRunning()`, `startNote(frequency:velocity:amplitudeDB:)`
+- Placed all new methods in `// MARK: - Play Sub-operations` section between NotePlayer Protocol and MIDI Helpers
+- All extracted methods are `private` — no new public API
+- Full test suite passes with zero test modifications — pure behavioral equivalence confirmed
+- Single file changed — no new files created
+
+### Change Log
+
+- 2026-03-01: Decomposed `play()` into 5 named sub-operations at uniform abstraction level
+
 ### File List
+
+- `Peach/Core/Audio/SoundFontNotePlayer.swift` (modified)
