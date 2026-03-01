@@ -227,7 +227,7 @@ development_status:
   # Epic 26: Pitch Matching UX Refinements
   epic-26: in-progress
   26-1-delay-targetnote-until-slider-touch: done # targetNote plays only when user first touches slider, not auto after referenceNote
-  26-2-reposition-feedback-indicator-above-slider: backlog # Move feedback indicator closer to top of screen so dragging finger doesn't obscure it
+  26-2-reposition-feedback-indicator-above-slider: ready-for-dev # Move feedback indicator closer to top of screen so dragging finger doesn't obscure it
   26-3-reduce-pitch-matching-range: backlog # Reduce cent range from ±100 to ±20
   epic-26-retrospective: optional
 
