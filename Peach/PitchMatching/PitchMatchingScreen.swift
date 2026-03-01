@@ -18,6 +18,13 @@ struct PitchMatchingScreen: View {
                     .accessibilityLabel(String(localized: "Target interval: \(interval.displayName)"))
             }
 
+            PitchMatchingFeedbackIndicator(
+                centError: pitchMatchingSession.lastResult?.userCentError
+            )
+            .frame(height: Self.feedbackIndicatorHeight)
+            .opacity(pitchMatchingSession.state == .showingFeedback ? 1 : 0)
+            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
+
             VerticalPitchSlider(
                 isActive: pitchMatchingSession.state == .awaitingSliderTouch || pitchMatchingSession.state == .playingTunable,
                 onValueChange: { value in
@@ -28,15 +35,6 @@ struct PitchMatchingScreen: View {
                 }
             )
             .padding()
-            .overlay {
-                if pitchMatchingSession.state == .showingFeedback {
-                    PitchMatchingFeedbackIndicator(
-                        centError: pitchMatchingSession.lastResult?.userCentError
-                    )
-                    .transition(.opacity)
-                }
-            }
-            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
         }
         .navigationTitle("Pitch Matching")
         .navigationBarTitleDisplayMode(.inline)
@@ -68,6 +66,8 @@ struct PitchMatchingScreen: View {
     }
 
     // MARK: - Layout Parameters (extracted for testability)
+
+    static let feedbackIndicatorHeight: CGFloat = 130
 
     static func feedbackAnimation(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .easeInOut(duration: 0.2)
