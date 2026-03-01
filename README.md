@@ -55,6 +55,14 @@ xcodebuild build -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 
 xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
+### Stress Tests
+
+SoundFont preset stress tests are skipped by default. To run them:
+
+```bash
+RUN_STRESS_TESTS=1 xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17' -only-testing:PeachTests/SoundFontPresetStressTests
+```
+
 ## Tech Stack
 
 - Swift 6 (strict concurrency), SwiftUI
