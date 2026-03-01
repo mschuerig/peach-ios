@@ -18,7 +18,8 @@ struct DirectedInterval: Hashable, Comparable, Sendable, Codable {
     }
 
     static func down(_ interval: Interval) -> DirectedInterval {
-        DirectedInterval(interval: interval, direction: .down)
+        if interval == .prime { return .prime }
+        return DirectedInterval(interval: interval, direction: .down)
     }
 
     // MARK: - Comparable

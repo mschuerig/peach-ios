@@ -1,6 +1,6 @@
 # Story 25.1: Direction Enum and DirectedInterval
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -506,6 +506,25 @@ None
 - Added direction-aware note range bounds for downward interval transposition
 - Updated localization catalog with direction-agnostic interval names and "Up"/"Down" direction entries
 - Updated all test files to use `DirectedInterval` APIs
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Michael | **Date:** 2026-03-01 | **Outcome:** Approved with fixes applied
+
+**Issues Found:** 1 High, 3 Medium, 3 Low — all HIGH and MEDIUM fixed automatically.
+
+**Fixes applied:**
+1. **[HIGH] Added downward interval tests to KazezNoteStrategyTests** — 3 new tests covering `.down(.perfectFifth)`, downward note range constraint with min=0, and `.down(.octave)` boundary
+2. **[MEDIUM] Added downward interval tests to PitchMatchingSessionTests** — 2 new tests covering downward challenge generation and note range constraints
+3. **[MEDIUM] Normalized `DirectedInterval.down(.prime)` to canonical `.prime`** — `down()` factory now returns `.prime` when interval is `.prime`, preventing semantically invalid distinct values
+4. **[MEDIUM] Fixed stale docstring in `Interval.swift`** — Removed reference to deleted `MIDINote.transposed(by:)` extension
+
+**Remaining LOW issues (not fixed):**
+- Inconsistent factory usage in `StartScreen.swift` (`[DirectedInterval.prime]` vs `[.prime]`)
+- Redundant `Comparable` operator in `Direction.swift` (auto-synthesized from enum order)
+- Missing downward transposition boundary test near MIDI 0 in `DirectedIntervalTests`
+
+**Verification:** Full test suite passes after all fixes (`** TEST SUCCEEDED **`).
 
 ### File List
 

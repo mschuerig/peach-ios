@@ -384,6 +384,59 @@ struct KazezNoteStrategyTests {
         }
     }
 
+    @Test("Downward perfect fifth produces targetNote.note 7 semitones below referenceNote")
+    func downwardPerfectFifthInterval() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(noteRangeMin: 48, noteRangeMax: 84, referencePitch: .concert440)
+
+        for _ in 0..<20 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .down(.perfectFifth),
+            )
+            #expect(comparison.targetNote.note.rawValue == comparison.referenceNote.rawValue - 7)
+            #expect(comparison.targetNote.note.rawValue >= 0)
+        }
+    }
+
+    @Test("Downward interval constrains reference note minimum to interval semitones")
+    func downwardIntervalNoteRangeConstraint() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(noteRangeMin: 0, noteRangeMax: 84, referencePitch: .concert440)
+
+        for _ in 0..<50 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .down(.perfectFifth),
+            )
+            // Reference note must be >= 7 so target (ref - 7) stays >= 0
+            #expect(comparison.referenceNote.rawValue >= 7)
+            #expect(comparison.targetNote.note.rawValue >= 0)
+        }
+    }
+
+    @Test("Downward octave constrains reference note minimum to 12")
+    func downwardOctaveNoteRangeConstraint() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(noteRangeMin: 0, noteRangeMax: 84, referencePitch: .concert440)
+
+        for _ in 0..<50 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .down(.octave),
+            )
+            #expect(comparison.referenceNote.rawValue >= 12)
+            #expect(comparison.targetNote.note.rawValue == comparison.referenceNote.rawValue - 12)
+            #expect(comparison.targetNote.note.rawValue >= 0)
+        }
+    }
+
     // MARK: - Helpers
 
     private func nextAfterCorrect(p: Double) -> Double {

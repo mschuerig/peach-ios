@@ -2,8 +2,7 @@ import Foundation
 
 /// Semitone distance between two notes, from prime (0) through octave (12).
 ///
-/// Used by `MIDINote.transposed(by:)` to transpose a note and by `TuningSystem`
-/// to look up the cent offset for that interval. Raw value is the semitone count.
+/// Wrapped by `DirectedInterval` to add direction. Raw value is the semitone count.
 enum Interval: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
     case prime = 0
     case minorSecond = 1

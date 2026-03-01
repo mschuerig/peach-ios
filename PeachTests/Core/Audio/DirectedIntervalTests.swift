@@ -36,6 +36,13 @@ struct DirectedIntervalTests {
         #expect(di.direction == .down)
     }
 
+    @Test("down factory with prime normalizes to canonical prime")
+    func downFactoryPrimeNormalization() async {
+        let di = DirectedInterval.down(.prime)
+        #expect(di == DirectedInterval.prime)
+        #expect(di.direction == .up)
+    }
+
     // MARK: - Display Name
 
     @Test("prime displayName is just Prime regardless of direction")

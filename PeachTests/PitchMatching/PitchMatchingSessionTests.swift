@@ -596,6 +596,34 @@ struct PitchMatchingSessionTests {
         #expect(challenge.targetNote.rawValue <= 127)
     }
 
+    @Test("generateChallenge with downward perfectFifth produces target 7 semitones below reference")
+    func generateChallengeDownwardPerfectFifthTarget() async throws {
+        let mockSettings = MockUserSettings()
+        mockSettings.noteRangeMin = MIDINote(60)
+        mockSettings.noteRangeMax = MIDINote(60)
+        let (session, _, _, _, _) = makePitchMatchingSession(userSettings: mockSettings)
+        session.start(intervals: [.down(.perfectFifth)])
+        try await waitForState(session, .playingTunable)
+
+        let challenge = try #require(session.currentChallenge)
+        #expect(challenge.targetNote.rawValue == challenge.referenceNote.rawValue - 7)
+    }
+
+    @Test("generateChallenge constrains reference note minimum for downward interval")
+    func generateChallengeConstrainsRangeForDownwardInterval() async throws {
+        let mockSettings = MockUserSettings()
+        mockSettings.noteRangeMin = MIDINote(0)
+        mockSettings.noteRangeMax = MIDINote(84)
+        let (session, _, _, _, _) = makePitchMatchingSession(userSettings: mockSettings)
+        session.start(intervals: [.down(.perfectFifth)])
+        try await waitForState(session, .playingTunable)
+
+        let challenge = try #require(session.currentChallenge)
+        // Reference note must be >= 7 so target (ref - 7) stays >= 0
+        #expect(challenge.referenceNote.rawValue >= 7)
+        #expect(challenge.targetNote.rawValue >= 0)
+    }
+
     // MARK: - Tuning System and Anchor Tests (Task 4)
 
     @Test("referenceFrequency anchor is target note frequency for intervals")
