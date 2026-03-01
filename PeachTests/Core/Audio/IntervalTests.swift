@@ -147,4 +147,34 @@ struct IntervalTests {
             try Interval.between(MIDINote(60), MIDINote(80))
         }
     }
+
+    // MARK: - Display Name (Story 23.4)
+
+    @Test("prime displayName uses correct localization key")
+    func primeDisplayName() async {
+        #expect(Interval.prime.displayName == String(localized: "Prime"))
+    }
+
+    @Test("perfectFifth displayName uses correct localization key")
+    func perfectFifthDisplayName() async {
+        #expect(Interval.perfectFifth.displayName == String(localized: "Perfect Fifth Up"))
+    }
+
+    @Test("octave displayName uses correct localization key")
+    func octaveDisplayName() async {
+        #expect(Interval.octave.displayName == String(localized: "Octave Up"))
+    }
+
+    @Test("all intervals have non-empty displayName")
+    func allIntervalsHaveDisplayName() async {
+        for interval in Interval.allCases {
+            #expect(!interval.displayName.isEmpty)
+        }
+    }
+
+    @Test("each interval has a unique displayName")
+    func uniqueDisplayNames() async {
+        let names = Set(Interval.allCases.map(\.displayName))
+        #expect(names.count == Interval.allCases.count)
+    }
 }

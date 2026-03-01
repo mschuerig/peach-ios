@@ -204,6 +204,54 @@ struct PerceptualProfileTests {
 
     // MARK: - Task 6 Tests: Standard Deviation Calculation
 
+    // MARK: - Interval Context Verification (Story 23.4)
+
+    @Test("ComparisonObserver uses referenceNote as profile key when interval is non-prime")
+    func comparisonObserverUsesReferenceNoteWithInterval() async throws {
+        let profile = PerceptualProfile()
+
+        let comparison = Comparison(
+            referenceNote: MIDINote(60),
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0))
+        )
+        let completed = CompletedComparison(
+            comparison: comparison,
+            userAnsweredHigher: true,
+            tuningSystem: .equalTemperament
+        )
+
+        profile.comparisonCompleted(completed)
+
+        // Profile should index by referenceNote (60), not targetNote (67)
+        let refStats = profile.statsForNote(MIDINote(60))
+        #expect(refStats.sampleCount == 1)
+        #expect(refStats.mean == 25.0) // offset magnitude
+
+        let targetStats = profile.statsForNote(MIDINote(67))
+        #expect(targetStats.sampleCount == 0)
+    }
+
+    @Test("PitchMatchingObserver uses referenceNote as profile key when interval is non-prime")
+    func pitchMatchingObserverUsesReferenceNoteWithInterval() async throws {
+        let profile = PerceptualProfile()
+
+        let completed = CompletedPitchMatching(
+            referenceNote: MIDINote(60),
+            targetNote: MIDINote(60).transposed(by: .perfectFifth),
+            initialCentOffset: 30.0,
+            userCentError: -12.3,
+            tuningSystem: .equalTemperament
+        )
+
+        profile.pitchMatchingCompleted(completed)
+
+        // Matching stats should be updated (indexed by referenceNote)
+        #expect(profile.matchingSampleCount == 1)
+        #expect(profile.matchingMean != nil)
+    }
+
+    // MARK: - Task 6 Tests: Standard Deviation Calculation
+
     @Test("Standard deviation for single note with variance")
     func standardDeviationSingleNote() async throws {
         let profile = PerceptualProfile()

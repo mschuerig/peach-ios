@@ -383,6 +383,63 @@ struct TrainingDataStoreTests {
 
     // MARK: - Pitch Matching Atomic Write Tests
 
+    // MARK: - Interval Context Verification (Story 23.4)
+
+    @Test("ComparisonObserver persists correct interval and tuningSystem for non-prime interval")
+    func comparisonObserverWithInterval() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let comparison = Comparison(
+            referenceNote: MIDINote(60),
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0))
+        )
+        let completed = CompletedComparison(
+            comparison: comparison,
+            userAnsweredHigher: true,
+            tuningSystem: .equalTemperament
+        )
+
+        store.comparisonCompleted(completed)
+
+        let fetched = try store.fetchAllComparisons()
+        #expect(fetched.count == 1)
+        #expect(fetched[0].referenceNote == 60)
+        #expect(fetched[0].targetNote == 67)
+        #expect(fetched[0].interval == 7)
+        #expect(fetched[0].tuningSystem == "equalTemperament")
+        #expect(fetched[0].centOffset == 25.0)
+    }
+
+    @Test("PitchMatchingObserver persists correct interval and tuningSystem for non-prime interval")
+    func pitchMatchingObserverWithInterval() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let completed = CompletedPitchMatching(
+            referenceNote: MIDINote(60),
+            targetNote: MIDINote(60).transposed(by: .perfectFifth),
+            initialCentOffset: 30.0,
+            userCentError: -5.0,
+            tuningSystem: .equalTemperament
+        )
+
+        store.pitchMatchingCompleted(completed)
+
+        let fetched = try store.fetchAllPitchMatchings()
+        #expect(fetched.count == 1)
+        #expect(fetched[0].referenceNote == 60)
+        #expect(fetched[0].targetNote == 67)
+        #expect(fetched[0].interval == 7)
+        #expect(fetched[0].tuningSystem == "equalTemperament")
+        #expect(fetched[0].initialCentOffset == 30.0)
+        #expect(fetched[0].userCentError == -5.0)
+    }
+
+    // MARK: - Pitch Matching Atomic Write Tests
+
     @Test("Pitch matching atomic write - successful save is complete")
     func pitchMatchingAtomicWriteSuccess() async throws {
         let container = try makeTestContainer()

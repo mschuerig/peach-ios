@@ -21,6 +21,24 @@ enum Interval: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
 
     var semitones: Int { rawValue }
 
+    var displayName: String {
+        switch self {
+        case .prime: String(localized: "Prime")
+        case .minorSecond: String(localized: "Minor Second Up")
+        case .majorSecond: String(localized: "Major Second Up")
+        case .minorThird: String(localized: "Minor Third Up")
+        case .majorThird: String(localized: "Major Third Up")
+        case .perfectFourth: String(localized: "Perfect Fourth Up")
+        case .tritone: String(localized: "Tritone Up")
+        case .perfectFifth: String(localized: "Perfect Fifth Up")
+        case .minorSixth: String(localized: "Minor Sixth Up")
+        case .majorSixth: String(localized: "Major Sixth Up")
+        case .minorSeventh: String(localized: "Minor Seventh Up")
+        case .majorSeventh: String(localized: "Major Seventh Up")
+        case .octave: String(localized: "Octave Up")
+        }
+    }
+
     static func < (lhs: Interval, rhs: Interval) -> Bool {
         lhs.rawValue < rhs.rawValue
     }

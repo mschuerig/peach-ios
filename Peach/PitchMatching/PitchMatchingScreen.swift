@@ -8,25 +8,33 @@ struct PitchMatchingScreen: View {
     private let logger = Logger(subsystem: "com.peach.app", category: "PitchMatchingScreen")
 
     var body: some View {
-        VerticalPitchSlider(
-            isActive: pitchMatchingSession.state == .playingTunable,
-            onValueChange: { value in
-                pitchMatchingSession.adjustPitch(value)
-            },
-            onCommit: { value in
-                pitchMatchingSession.commitPitch(value)
+        VStack(spacing: 8) {
+            if pitchMatchingSession.isIntervalMode, let interval = pitchMatchingSession.currentInterval {
+                Text(interval.displayName)
+                    .font(.title3)
+                    .accessibilityLabel(String(localized: "Target interval: \(interval.displayName)"))
             }
-        )
-        .padding()
-        .overlay {
-            if pitchMatchingSession.state == .showingFeedback {
-                PitchMatchingFeedbackIndicator(
-                    centError: pitchMatchingSession.lastResult?.userCentError
-                )
-                .transition(.opacity)
+
+            VerticalPitchSlider(
+                isActive: pitchMatchingSession.state == .playingTunable,
+                onValueChange: { value in
+                    pitchMatchingSession.adjustPitch(value)
+                },
+                onCommit: { value in
+                    pitchMatchingSession.commitPitch(value)
+                }
+            )
+            .padding()
+            .overlay {
+                if pitchMatchingSession.state == .showingFeedback {
+                    PitchMatchingFeedbackIndicator(
+                        centError: pitchMatchingSession.lastResult?.userCentError
+                    )
+                    .transition(.opacity)
+                }
             }
+            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
         }
-        .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
         .navigationTitle("Pitch Matching")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

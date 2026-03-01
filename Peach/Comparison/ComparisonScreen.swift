@@ -28,6 +28,12 @@ struct ComparisonScreen: View {
                 .padding(.horizontal)
             }
 
+            if comparisonSession.isIntervalMode, let interval = comparisonSession.currentInterval {
+                Text(interval.displayName)
+                    .font(.title3)
+                    .accessibilityLabel(String(localized: "Target interval: \(interval.displayName)"))
+            }
+
             Group {
                 if isCompactHeight {
                     HStack(spacing: 8) {

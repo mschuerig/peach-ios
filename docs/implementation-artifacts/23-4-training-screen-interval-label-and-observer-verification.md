@@ -1,6 +1,6 @@
 # Story 23.4: Training Screen Interval Label and Observer Verification
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -45,9 +45,9 @@ So that users see what interval they're training and all data flows correctly th
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `displayName` computed property to `Interval` enum (AC: #1, #3, #5)
-  - [ ] Add `var displayName: String` computed property to `Interval` in `Peach/Core/Audio/Interval.swift`
-  - [ ] Return localized strings using `String(localized:)` for each case:
+- [x] Task 1: Add `displayName` computed property to `Interval` enum (AC: #1, #3, #5)
+  - [x] Add `var displayName: String` computed property to `Interval` in `Peach/Core/Audio/Interval.swift`
+  - [x] Return localized strings using `String(localized:)` for each case:
     - `.prime` → "Prime" (though it won't display in UI since `isIntervalMode` is false)
     - `.minorSecond` → "Minor Second Up"
     - `.majorSecond` → "Major Second Up"
@@ -61,10 +61,10 @@ So that users see what interval they're training and all data flows correctly th
     - `.minorSeventh` → "Minor Seventh Up"
     - `.majorSeventh` → "Major Seventh Up"
     - `.octave` → "Octave Up"
-  - [ ] Write tests for `displayName` for `.prime`, `.perfectFifth`, and `.octave` at minimum
+  - [x] Write tests for `displayName` for `.prime`, `.perfectFifth`, and `.octave` at minimum
 
-- [ ] Task 2: Add interval label to `ComparisonScreen` (AC: #1, #2, #5)
-  - [ ] In `ComparisonScreen.swift` body, after the `DifficultyDisplayView` block (line 29) and before the `Group` (line 31), add:
+- [x] Task 2: Add interval label to `ComparisonScreen` (AC: #1, #2, #5)
+  - [x] In `ComparisonScreen.swift` body, after the `DifficultyDisplayView` block (line 29) and before the `Group` (line 31), add:
     ```swift
     if comparisonSession.isIntervalMode, let interval = comparisonSession.currentInterval {
         Text(interval.displayName)
@@ -72,10 +72,10 @@ So that users see what interval they're training and all data flows correctly th
             .accessibilityLabel(String(localized: "Target interval: \(interval.displayName)"))
     }
     ```
-  - [ ] When `isIntervalMode` is `false` (unison), the `if` block does not render — screen is unchanged from pre-v0.3
+  - [x] When `isIntervalMode` is `false` (unison), the `if` block does not render — screen is unchanged from pre-v0.3
 
-- [ ] Task 3: Add interval label to `PitchMatchingScreen` (AC: #3, #4, #5)
-  - [ ] In `PitchMatchingScreen.swift` body, wrap existing content in a `VStack` and add the label above the `VerticalPitchSlider`:
+- [x] Task 3: Add interval label to `PitchMatchingScreen` (AC: #3, #4, #5)
+  - [x] In `PitchMatchingScreen.swift` body, wrap existing content in a `VStack` and add the label above the `VerticalPitchSlider`:
     ```swift
     VStack(spacing: 8) {
         if pitchMatchingSession.isIntervalMode, let interval = pitchMatchingSession.currentInterval {
@@ -90,29 +90,29 @@ So that users see what interval they're training and all data flows correctly th
             .animation(...)
     }
     ```
-  - [ ] When `isIntervalMode` is `false` (unison), the `if` block does not render — screen is unchanged
+  - [x] When `isIntervalMode` is `false` (unison), the `if` block does not render — screen is unchanged
 
-- [ ] Task 4: Verify observer/profile data flows handle interval context (AC: #6)
-  - [ ] Write a verification test in `TrainingDataStoreTests.swift`:
+- [x] Task 4: Verify observer/profile data flows handle interval context (AC: #6)
+  - [x] Write a verification test in `TrainingDataStoreTests.swift`:
     - Create a `CompletedComparison` with `tuningSystem: .equalTemperament` and a non-prime interval (targetNote = referenceNote + 7 semitones)
     - Call `comparisonCompleted(_:)` on `TrainingDataStore`
     - Verify the persisted `ComparisonRecord` has correct `interval` (7), `tuningSystem` ("equal_temperament"), and `targetNote` values
-  - [ ] Write a verification test in `TrainingDataStoreTests.swift`:
+  - [x] Write a verification test in `TrainingDataStoreTests.swift`:
     - Create a `CompletedPitchMatching` with `tuningSystem: .equalTemperament`, `targetNote = referenceNote.transposed(by: .perfectFifth)`
     - Call `pitchMatchingCompleted(_:)` on `TrainingDataStore`
     - Verify the persisted `PitchMatchingRecord` has correct `interval` (7), `tuningSystem`, and `targetNote` values
-  - [ ] Write a verification test in `PerceptualProfileTests.swift`:
+  - [x] Write a verification test in `PerceptualProfileTests.swift`:
     - Create a `CompletedComparison` with an interval (e.g., `.perfectFifth`)
     - Call `comparisonCompleted(_:)` on `PerceptualProfile`
     - Verify profile uses `referenceNote` as key (not targetNote) — profile indexes by reference note
-  - [ ] Write a verification test in `PerceptualProfileTests.swift`:
+  - [x] Write a verification test in `PerceptualProfileTests.swift`:
     - Create a `CompletedPitchMatching` with an interval
     - Call `pitchMatchingCompleted(_:)` on `PerceptualProfile`
     - Verify profile uses `referenceNote` as key
 
-- [ ] Task 5: Add localization entries to String Catalog (AC: #1, #3, #5)
-  - [ ] The `String(localized:)` calls will auto-extract to `Localizable.xcstrings`
-  - [ ] After building, add German translations for all interval display names:
+- [x] Task 5: Add localization entries to String Catalog (AC: #1, #3, #5)
+  - [x] The `String(localized:)` calls will auto-extract to `Localizable.xcstrings`
+  - [x] After building, add German translations for all interval display names:
     - "Perfect Fifth Up" → "Reine Quinte aufwärts"
     - "Minor Second Up" → "Kleine Sekunde aufwärts"
     - "Major Second Up" → "Große Sekunde aufwärts"
@@ -128,10 +128,10 @@ So that users see what interval they're training and all data flows correctly th
     - "Prime" → "Prime"
     - "Target interval: %@" → "Zielintervall: %@"
 
-- [ ] Task 6: Run full test suite and commit (AC: all)
-  - [ ] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] Run: `tools/check-dependencies.sh`
-  - [ ] All tests pass, no dependency violations
+- [x] Task 6: Run full test suite and commit (AC: all)
+  - [x] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] Run: `tools/check-dependencies.sh`
+  - [x] All tests pass, no dependency violations
 
 ## Dev Notes
 
@@ -288,10 +288,33 @@ No new files created. No new directories. No cross-feature coupling. No new depe
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- DisplayName tests initially failed in full suite due to simulator locale set to `de-DE`. `String(localized:)` returned German translations, causing exact English string comparisons to fail. Fixed by using `String(localized:)` in test expectations to be locale-independent.
+
 ### Completion Notes List
 
+- Task 1: Added `displayName` computed property to `Interval` enum with `String(localized:)` for all 13 cases. Added 5 tests: prime/perfectFifth/octave key verification, non-empty check, uniqueness check.
+- Task 2: Added conditional interval label to `ComparisonScreen` between `DifficultyDisplayView` and answer buttons. Uses `.title3` font with `.accessibilityLabel` for VoiceOver. Hidden in unison mode via `if isIntervalMode`.
+- Task 3: Wrapped `PitchMatchingScreen` body in `VStack(spacing: 8)`, added conditional interval label above `VerticalPitchSlider`. Same styling and accessibility pattern as ComparisonScreen.
+- Task 4: Added 4 verification tests confirming observers persist correct interval (7 for perfectFifth), tuningSystem ("equalTemperament"), and targetNote. Confirmed PerceptualProfile indexes by referenceNote, not targetNote.
+- Task 5: Added 14 localization entries to `Localizable.xcstrings` — 13 interval display names + "Target interval: %@" accessibility label, all with German translations.
+- Task 6: Full test suite passes, dependency checker passes.
+
 ### File List
+
+- Peach/Core/Audio/Interval.swift (modified) — added `displayName` computed property
+- Peach/Comparison/ComparisonScreen.swift (modified) — added conditional interval label
+- Peach/PitchMatching/PitchMatchingScreen.swift (modified) — wrapped body in VStack, added conditional interval label
+- Peach/Resources/Localizable.xcstrings (modified) — added 14 localization entries with German translations
+- PeachTests/Core/Audio/IntervalTests.swift (modified) — added 5 displayName tests
+- PeachTests/Core/Data/TrainingDataStoreTests.swift (modified) — added 2 interval context verification tests
+- PeachTests/Core/Profile/PerceptualProfileTests.swift (modified) — added 2 interval context verification tests
+- docs/implementation-artifacts/23-4-training-screen-interval-label-and-observer-verification.md (modified) — task tracking
+- docs/implementation-artifacts/sprint-status.yaml (modified) — status update
+
+### Change Log
+
+- 2026-03-01: Implemented story 23.4 — Added interval display names to Interval enum, conditional interval labels to ComparisonScreen and PitchMatchingScreen, verification tests for observer/profile data flows, and German localization for all interval names.
