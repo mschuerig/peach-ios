@@ -232,7 +232,7 @@ development_status:
   epic-26-retrospective: optional
 
   # Epic 27: SoundFontNotePlayer Quality
-  epic-27: backlog
-  27-1-decompose-play-method: backlog # Extract sub-operations in play() so all are at same abstraction level
+  epic-27: in-progress
+  27-1-decompose-play-method: ready-for-dev # Extract sub-operations in play() so all are at same abstraction level
   27-2-preset-crash-investigation-tests: backlog # Tests iterating all presets × note range × durations to find Grand Piano crash root cause
   epic-27-retrospective: optional
