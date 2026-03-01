@@ -4,6 +4,9 @@ struct StartScreen: View {
     @State private var showInfoSheet = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+    @AppStorage(SettingsKeys.intervals)
+    private var intervalSelection = IntervalSelection.default
+
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
     }
@@ -27,7 +30,7 @@ struct StartScreen: View {
             Spacer()
 
             // Comparison Button (Primary Action)
-            NavigationLink(value: NavigationDestination.comparison(intervals: [DirectedInterval.prime])) {
+            NavigationLink(value: NavigationDestination.comparison(intervals: [.prime])) {
                 Text("Comparison")
                     .frame(maxWidth: .infinity)
             }
@@ -35,7 +38,7 @@ struct StartScreen: View {
             .controlSize(.large)
 
             // Pitch Matching Button (Secondary Action)
-            NavigationLink(value: NavigationDestination.pitchMatching(intervals: [DirectedInterval.prime])) {
+            NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.prime])) {
                 Text("Pitch Matching")
                     .frame(maxWidth: .infinity)
             }
@@ -46,7 +49,7 @@ struct StartScreen: View {
             Divider()
 
             // Interval Comparison Button
-            NavigationLink(value: NavigationDestination.comparison(intervals: [.up(.perfectFifth)])) {
+            NavigationLink(value: NavigationDestination.comparison(intervals: intervalSelection.intervals)) {
                 Text("Interval Comparison")
                     .frame(maxWidth: .infinity)
             }
@@ -54,7 +57,7 @@ struct StartScreen: View {
             .controlSize(.large)
 
             // Interval Pitch Matching Button
-            NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.up(.perfectFifth)])) {
+            NavigationLink(value: NavigationDestination.pitchMatching(intervals: intervalSelection.intervals)) {
                 Text("Interval Pitch Matching")
                     .frame(maxWidth: .infinity)
             }

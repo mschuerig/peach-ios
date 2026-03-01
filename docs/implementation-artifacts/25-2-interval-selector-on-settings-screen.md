@@ -1,6 +1,6 @@
 # Story 25.2: Interval Selector on Settings Screen
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -65,51 +65,51 @@ so that I can customize my interval ear training to focus on specific intervals 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `Interval.abbreviation` computed property (AC: 1)
-  - [ ] Add `abbreviation: String` to `Interval` enum returning standard notation: P1, m2, M2, m3, M3, P4, d5, P5, m6, M6, m7, M7, P8
-  - [ ] NOT localized — these are international standard music theory abbreviations (plain `String`, not `String(localized:)`)
-  - [ ] Add tests in `IntervalTests.swift` verifying all 13 abbreviations
-- [ ] Task 2: Add interval serialization for UserDefaults (AC: 2, 3)
-  - [ ] Create `Set<DirectedInterval>` ↔ JSON string serialization (encode/decode)
-  - [ ] Approach: extend or wrap to conform to `RawRepresentable` where `RawValue == String` for `@AppStorage` compatibility
-  - [ ] Handle decoding failure gracefully (return default)
-  - [ ] Add round-trip serialization tests
-- [ ] Task 3: Add `SettingsKeys.intervals` key and default (AC: 2, 3)
-  - [ ] Add `static let intervals = "intervals"` to `SettingsKeys`
-  - [ ] Add `static let defaultIntervals` — the JSON-encoded string of `[DirectedInterval.up(.perfectFifth)]`
-  - [ ] File: `Peach/Settings/SettingsKeys.swift`
-- [ ] Task 4: Update `AppUserSettings.intervals` to read from UserDefaults (AC: 3)
-  - [ ] Replace hardcoded `[.up(.perfectFifth)]` with UserDefaults read + JSON decode
-  - [ ] Fallback to `[.up(.perfectFifth)]` on decode failure or missing key
-  - [ ] File: `Peach/Settings/AppUserSettings.swift`
-  - [ ] Add test in `SettingsTests.swift` or new test file
-- [ ] Task 5: Create `IntervalSelectorView` subview (AC: 1, 4)
-  - [ ] New file `Peach/Settings/IntervalSelectorView.swift`
-  - [ ] Two-row grid: Up row (⏶) and Down row (⏷), each with 13 interval columns
-  - [ ] Row headers use ⏶/⏷ symbols (Unicode: U+23F6 / U+23F7), not text labels
-  - [ ] Column headers show `Interval.abbreviation`
-  - [ ] Each cell is a toggle button (visually distinct active/inactive states)
-  - [ ] Prime column: Down row cell disabled (prime has no direction)
-  - [ ] Minimum-selection guard: disable last active toggle
-  - [ ] Horizontal scroll if grid exceeds screen width
-  - [ ] Binding to `Set<DirectedInterval>` selection
-- [ ] Task 6: Add Intervals section to `SettingsScreen` (AC: 1, 5)
-  - [ ] New `Section` in the Form with localized title "Intervals"
-  - [ ] Contains `IntervalSelectorView` with `@AppStorage` binding
-  - [ ] Footer/help text explaining the selector purpose (localized EN/DE)
-  - [ ] File: `Peach/Settings/SettingsScreen.swift`
-- [ ] Task 7: Update `StartScreen` to use selected intervals (AC: 6)
-  - [ ] Replace hardcoded `[.up(.perfectFifth)]` in interval-mode NavigationLinks
-  - [ ] Read intervals from `AppUserSettings` via `@Environment` or `@AppStorage`
-  - [ ] Unison-mode buttons remain `[.prime]` (unchanged)
-  - [ ] File: `Peach/Start/StartScreen.swift`
-- [ ] Task 8: Add localized strings (AC: 5)
-  - [ ] Section title: "Intervals" (de: "Intervalle")
-  - [ ] Help text (EN + DE) explaining interval selector purpose
-  - [ ] File: `Peach/Resources/Localizable.xcstrings`
-- [ ] Task 9: Run full test suite (AC: 7)
-  - [ ] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`
-  - [ ] All tests pass
+- [x] Task 1: Add `Interval.abbreviation` computed property (AC: 1)
+  - [x] Add `abbreviation: String` to `Interval` enum returning standard notation: P1, m2, M2, m3, M3, P4, d5, P5, m6, M6, m7, M7, P8
+  - [x] NOT localized — these are international standard music theory abbreviations (plain `String`, not `String(localized:)`)
+  - [x] Add tests in `IntervalTests.swift` verifying all 13 abbreviations
+- [x] Task 2: Add interval serialization for UserDefaults (AC: 2, 3)
+  - [x] Create `Set<DirectedInterval>` ↔ JSON string serialization (encode/decode)
+  - [x] Approach: extend or wrap to conform to `RawRepresentable` where `RawValue == String` for `@AppStorage` compatibility
+  - [x] Handle decoding failure gracefully (return default)
+  - [x] Add round-trip serialization tests
+- [x] Task 3: Add `SettingsKeys.intervals` key and default (AC: 2, 3)
+  - [x] Add `static let intervals = "intervals"` to `SettingsKeys`
+  - [x] Add `static let defaultIntervals` — the JSON-encoded string of `[DirectedInterval.up(.perfectFifth)]`
+  - [x] File: `Peach/Settings/SettingsKeys.swift`
+- [x] Task 4: Update `AppUserSettings.intervals` to read from UserDefaults (AC: 3)
+  - [x] Replace hardcoded `[.up(.perfectFifth)]` with UserDefaults read + JSON decode
+  - [x] Fallback to `[.up(.perfectFifth)]` on decode failure or missing key
+  - [x] File: `Peach/Settings/AppUserSettings.swift`
+  - [x] Add test in `SettingsTests.swift` or new test file
+- [x] Task 5: Create `IntervalSelectorView` subview (AC: 1, 4)
+  - [x] New file `Peach/Settings/IntervalSelectorView.swift`
+  - [x] Two-row grid: Up row (⏶) and Down row (⏷), each with 13 interval columns
+  - [x] Row headers use ⏶/⏷ symbols (Unicode: U+23F6 / U+23F7), not text labels
+  - [x] Column headers show `Interval.abbreviation`
+  - [x] Each cell is a toggle button (visually distinct active/inactive states)
+  - [x] Prime column: Down row cell disabled (prime has no direction)
+  - [x] Minimum-selection guard: disable last active toggle
+  - [x] Horizontal scroll if grid exceeds screen width
+  - [x] Binding to `Set<DirectedInterval>` selection
+- [x] Task 6: Add Intervals section to `SettingsScreen` (AC: 1, 5)
+  - [x] New `Section` in the Form with localized title "Intervals"
+  - [x] Contains `IntervalSelectorView` with `@AppStorage` binding
+  - [x] Footer/help text explaining the selector purpose (localized EN/DE)
+  - [x] File: `Peach/Settings/SettingsScreen.swift`
+- [x] Task 7: Update `StartScreen` to use selected intervals (AC: 6)
+  - [x] Replace hardcoded `[.up(.perfectFifth)]` in interval-mode NavigationLinks
+  - [x] Read intervals from `AppUserSettings` via `@Environment` or `@AppStorage`
+  - [x] Unison-mode buttons remain `[.prime]` (unchanged)
+  - [x] File: `Peach/Start/StartScreen.swift`
+- [x] Task 8: Add localized strings (AC: 5)
+  - [x] Section title: "Intervals" (de: "Intervalle")
+  - [x] Help text (EN + DE) explaining interval selector purpose
+  - [x] File: `Peach/Resources/Localizable.xcstrings`
+- [x] Task 9: Run full test suite (AC: 7)
+  - [x] `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17 Pro'`
+  - [x] All tests pass
 
 ## Dev Notes
 
@@ -352,10 +352,38 @@ eec3fc0 Update sprint status: close epics 21-24, add epics 25-27
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no blockers.
+
 ### Completion Notes List
 
+- **Task 1:** Added `Interval.abbreviation` computed property returning standard music theory notation (P1, m2, M2, etc.). Plain `String`, not localized. Added parameterized tests verifying all 13 abbreviations plus uniqueness.
+- **Task 2:** Created `IntervalSelection` wrapper struct conforming to `RawRepresentable` (where `RawValue == String`) for `@AppStorage` compatibility. Uses JSON encode/decode of `Set<DirectedInterval>` via Foundation's `JSONEncoder`/`JSONDecoder`. Chose Approach B (wrapper type) to avoid retroactive conformance issues in Swift 6.2. Added comprehensive round-trip tests including single, multiple, all-25, empty set, invalid JSON, and default value tests.
+- **Task 3:** Added `SettingsKeys.intervals` key constant. Default is managed via `IntervalSelection.default` rather than a separate `defaultIntervals` string constant, which is cleaner since the wrapper type encapsulates the encoding.
+- **Task 4:** Updated `AppUserSettings.intervals` to read from UserDefaults via `IntervalSelection(rawValue:)` with fallback to `IntervalSelection.default.intervals` on missing key or decode failure. Added tests for default, persisted, and invalid JSON cases.
+- **Task 5:** Created `IntervalSelectorView` with SwiftUI `Grid` layout: header row with interval abbreviations, Up (⏶) and Down (⏷) rows with toggle buttons. Prime column Down row is disabled. Last active interval button is disabled (minimum-selection guard). Horizontal `ScrollView` for overflow.
+- **Task 6:** Added Intervals `Section` to `SettingsScreen` at top of Form with `@AppStorage` binding to `IntervalSelection`, localized title and footer help text.
+- **Task 7:** Updated `StartScreen` to read intervals from `@AppStorage(SettingsKeys.intervals)` for interval-mode buttons. Unison buttons remain `[.prime]`. Also fixed inconsistent `DirectedInterval.prime` factory usage to short form `.prime`.
+- **Task 8:** Added localization entries: "Intervals" → "Intervalle", help text translated to German.
+- **Task 9:** Full test suite passes with zero regressions.
+
 ### File List
+
+- `Peach/Core/Audio/Interval.swift` — Modified: added `abbreviation` computed property
+- `Peach/Settings/IntervalSelection.swift` — New: `RawRepresentable` wrapper for `Set<DirectedInterval>` serialization
+- `Peach/Settings/IntervalSelectorView.swift` — New: two-row grid subview for interval selection
+- `Peach/Settings/SettingsKeys.swift` — Modified: added `intervals` key constant
+- `Peach/Settings/AppUserSettings.swift` — Modified: `intervals` now reads from UserDefaults with JSON decode
+- `Peach/Settings/SettingsScreen.swift` — Modified: added Intervals section with `IntervalSelectorView`
+- `Peach/Start/StartScreen.swift` — Modified: interval-mode buttons read from `@AppStorage`; fixed `.prime` factory usage
+- `Peach/Resources/Localizable.xcstrings` — Modified: added "Intervals" and help text (EN/DE)
+- `PeachTests/Core/Audio/IntervalTests.swift` — Modified: added abbreviation tests
+- `PeachTests/Settings/SettingsTests.swift` — Modified: added serialization, AppUserSettings, and SettingsKeys tests
+- `docs/implementation-artifacts/sprint-status.yaml` — Modified: story status updated
+
+## Change Log
+
+- 2026-03-01: Implemented story 25.2 — Added interval selector grid to Settings screen, `IntervalSelection` serialization wrapper for `@AppStorage`, `Interval.abbreviation` property, updated `AppUserSettings.intervals` to read from UserDefaults, updated `StartScreen` to use user-selected intervals, added EN/DE localization

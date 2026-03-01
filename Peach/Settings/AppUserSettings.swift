@@ -26,7 +26,11 @@ final class AppUserSettings: UserSettings {
     }
 
     var intervals: Set<DirectedInterval> {
-        [.up(.perfectFifth)]
+        guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.intervals),
+              let selection = IntervalSelection(rawValue: raw) else {
+            return IntervalSelection.default.intervals
+        }
+        return selection.intervals
     }
 
     var tuningSystem: TuningSystem {

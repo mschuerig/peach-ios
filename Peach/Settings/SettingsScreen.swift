@@ -19,6 +19,9 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.varyLoudness)
     private var varyLoudness: Double = SettingsKeys.defaultVaryLoudness
 
+    @AppStorage(SettingsKeys.intervals)
+    private var intervalSelection = IntervalSelection.default
+
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
 
@@ -27,6 +30,7 @@ struct SettingsScreen: View {
 
     var body: some View {
         Form {
+            intervalSection
             noteRangeSection
             audioSection
             instrumentSection
@@ -47,6 +51,16 @@ struct SettingsScreen: View {
     }
 
     // MARK: - Sections
+
+    private var intervalSection: some View {
+        Section {
+            IntervalSelectorView(selection: $intervalSelection)
+        } header: {
+            Text(String(localized: "Intervals"))
+        } footer: {
+            Text(String(localized: "Select which intervals to practice. At least one must remain active."))
+        }
+    }
 
     private var noteRangeSection: some View {
         Section("Note Range") {

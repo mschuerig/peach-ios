@@ -20,6 +20,24 @@ enum Interval: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
 
     var semitones: Int { rawValue }
 
+    var abbreviation: String {
+        switch self {
+        case .prime: "P1"
+        case .minorSecond: "m2"
+        case .majorSecond: "M2"
+        case .minorThird: "m3"
+        case .majorThird: "M3"
+        case .perfectFourth: "P4"
+        case .tritone: "d5"
+        case .perfectFifth: "P5"
+        case .minorSixth: "m6"
+        case .majorSixth: "M6"
+        case .minorSeventh: "m7"
+        case .majorSeventh: "M7"
+        case .octave: "P8"
+        }
+    }
+
     var name: String {
         switch self {
         case .prime: String(localized: "Prime")

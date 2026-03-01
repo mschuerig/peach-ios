@@ -34,10 +34,34 @@ struct SettingsTests {
         #expect(SettingsKeys.soundSource == "soundSource")
     }
 
-    @Test("AppUserSettings returns hardcoded perfectFifth interval")
-    func appUserSettingsIntervalsHardcoded() {
+    @Test("intervals key is defined as string constant")
+    func intervalsKeyDefined() async {
+        #expect(SettingsKeys.intervals == "intervals")
+    }
+
+    @Test("AppUserSettings returns default perfectFifth when no UserDefaults entry")
+    func appUserSettingsIntervalsDefault() async {
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.intervals)
         let settings = AppUserSettings()
         #expect(settings.intervals == Set<DirectedInterval>([.up(.perfectFifth)]))
+    }
+
+    @Test("AppUserSettings reads persisted intervals from UserDefaults")
+    func appUserSettingsReadsPersistedIntervals() async {
+        let expected: Set<DirectedInterval> = [.up(.majorThird), .down(.perfectFifth)]
+        let selection = IntervalSelection(expected)
+        UserDefaults.standard.set(selection.rawValue, forKey: SettingsKeys.intervals)
+        let settings = AppUserSettings()
+        #expect(settings.intervals == expected)
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.intervals)
+    }
+
+    @Test("AppUserSettings falls back to default on invalid JSON")
+    func appUserSettingsIntervalsFallbackOnInvalidJSON() async {
+        UserDefaults.standard.set("not-valid-json", forKey: SettingsKeys.intervals)
+        let settings = AppUserSettings()
+        #expect(settings.intervals == Set<DirectedInterval>([.up(.perfectFifth)]))
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.intervals)
     }
 
     @Test("AppUserSettings returns hardcoded equalTemperament tuning system")
@@ -58,6 +82,55 @@ struct SettingsTests {
     func mockUserSettingsTuningSystemInjection() {
         let mock = MockUserSettings()
         #expect(mock.tuningSystem == .equalTemperament)
+    }
+
+    // MARK: - IntervalSelection Serialization
+
+    @Test("IntervalSelection round-trips single interval")
+    func intervalSelectionSingleRoundTrip() async {
+        let original = IntervalSelection([.up(.perfectFifth)])
+        let restored = IntervalSelection(rawValue: original.rawValue)
+        #expect(restored?.intervals == original.intervals)
+    }
+
+    @Test("IntervalSelection round-trips multiple intervals")
+    func intervalSelectionMultipleRoundTrip() async {
+        let original = IntervalSelection([.prime, .up(.majorThird), .down(.perfectFifth)])
+        let restored = IntervalSelection(rawValue: original.rawValue)
+        #expect(restored?.intervals == original.intervals)
+    }
+
+    @Test("IntervalSelection round-trips all 25 possible directed intervals")
+    func intervalSelectionAllDirectedIntervalsRoundTrip() async {
+        var all = Set<DirectedInterval>()
+        all.insert(.prime)
+        for interval in Interval.allCases where interval != .prime {
+            all.insert(.up(interval))
+            all.insert(.down(interval))
+        }
+        #expect(all.count == 25)
+        let original = IntervalSelection(all)
+        let restored = IntervalSelection(rawValue: original.rawValue)
+        #expect(restored?.intervals == all)
+    }
+
+    @Test("IntervalSelection round-trips empty set")
+    func intervalSelectionEmptyRoundTrip() async {
+        let original = IntervalSelection([])
+        let restored = IntervalSelection(rawValue: original.rawValue)
+        #expect(restored?.intervals == Set<DirectedInterval>())
+    }
+
+    @Test("IntervalSelection returns nil for invalid JSON")
+    func intervalSelectionInvalidJSON() async {
+        let result = IntervalSelection(rawValue: "not-json")
+        #expect(result == nil)
+    }
+
+    @Test("IntervalSelection default is up perfectFifth")
+    func intervalSelectionDefault() async {
+        let defaultSelection = IntervalSelection.default
+        #expect(defaultSelection.intervals == Set<DirectedInterval>([.up(.perfectFifth)]))
     }
 
     // MARK: - Task 2: Note Range Validation

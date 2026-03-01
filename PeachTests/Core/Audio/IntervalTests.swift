@@ -181,4 +181,31 @@ struct IntervalTests {
         let names = Set(Interval.allCases.map(\.name))
         #expect(names.count == Interval.allCases.count)
     }
+
+    // MARK: - Abbreviation
+
+    @Test("each interval maps to its standard abbreviation", arguments: [
+        (Interval.prime, "P1"),
+        (.minorSecond, "m2"),
+        (.majorSecond, "M2"),
+        (.minorThird, "m3"),
+        (.majorThird, "M3"),
+        (.perfectFourth, "P4"),
+        (.tritone, "d5"),
+        (.perfectFifth, "P5"),
+        (.minorSixth, "m6"),
+        (.majorSixth, "M6"),
+        (.minorSeventh, "m7"),
+        (.majorSeventh, "M7"),
+        (.octave, "P8"),
+    ])
+    func abbreviation(interval: Interval, expected: String) async {
+        #expect(interval.abbreviation == expected)
+    }
+
+    @Test("all intervals have unique abbreviations")
+    func uniqueAbbreviations() async {
+        let abbreviations = Set(Interval.allCases.map(\.abbreviation))
+        #expect(abbreviations.count == Interval.allCases.count)
+    }
 }

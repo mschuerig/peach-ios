@@ -9,6 +9,7 @@ enum SettingsKeys {
     static let referencePitch = "referencePitch"
     static let soundSource = "soundSource"
     static let varyLoudness = "varyLoudness"
+    static let intervals = "intervals"
 
     // MARK: - Default Values (matching TrainingSettings defaults)
 
