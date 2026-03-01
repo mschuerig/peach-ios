@@ -20,7 +20,7 @@ struct ComparisonSessionLifecycleTests {
             }
         }
 
-        f.session.startTraining()
+        f.session.start()
         await Task.yield()  // Let training task start
 
         // Verify we captured playingNote1 state
@@ -46,7 +46,7 @@ struct ComparisonSessionLifecycleTests {
             }
         }
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .idle)
 
         #expect(f.mockDataStore.saveCallCount == 0)
@@ -57,7 +57,7 @@ struct ComparisonSessionLifecycleTests {
     func stopDuringAwaitingAnswerDiscardsComparison() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.state == .awaitingAnswer)
@@ -72,7 +72,7 @@ struct ComparisonSessionLifecycleTests {
     func stopDuringFeedbackPreservesData() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -93,7 +93,7 @@ struct ComparisonSessionLifecycleTests {
     func stopClearsFeedbackState() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)
@@ -114,7 +114,7 @@ struct ComparisonSessionLifecycleTests {
         #expect(f.session.state == .idle)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Stop multiple times
         f.session.stop()
@@ -130,7 +130,7 @@ struct ComparisonSessionLifecycleTests {
     func stopTransitionsToIdleAndCancelsTraining() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         f.session.stop()
@@ -144,7 +144,7 @@ struct ComparisonSessionLifecycleTests {
     func simulatedOnDisappearTriggersStop() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         #expect(f.session.state != .idle)
@@ -160,14 +160,14 @@ struct ComparisonSessionLifecycleTests {
     func rapidStopAndStartSequence() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         await Task.yield()
 
         f.session.stop()
         #expect(f.session.state == .idle)
 
         f.mockPlayer.reset()
-        f.session.startTraining()
+        f.session.start()
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         #expect(f.session.state != .idle)
@@ -178,7 +178,7 @@ struct ComparisonSessionLifecycleTests {
     func stopDuringStateTransition() async {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         await Task.yield()
 
         f.session.stop()
@@ -193,7 +193,7 @@ struct ComparisonSessionLifecycleTests {
     func stopCallsStopAll() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         f.session.stop()
@@ -218,7 +218,7 @@ struct ComparisonSessionLifecycleTests {
             }
         }
 
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for feedback state (answer was given during target)
         try await waitForState(f.session, .showingFeedback)

@@ -34,6 +34,32 @@ struct SettingsTests {
         #expect(SettingsKeys.soundSource == "soundSource")
     }
 
+    @Test("AppUserSettings returns hardcoded perfectFifth interval")
+    func appUserSettingsIntervalsHardcoded() {
+        let settings = AppUserSettings()
+        #expect(settings.intervals == Set<Interval>([.perfectFifth]))
+    }
+
+    @Test("AppUserSettings returns hardcoded equalTemperament tuning system")
+    func appUserSettingsTuningSystemHardcoded() {
+        let settings = AppUserSettings()
+        #expect(settings.tuningSystem == .equalTemperament)
+    }
+
+    @Test("MockUserSettings allows interval test injection")
+    func mockUserSettingsIntervalInjection() {
+        let mock = MockUserSettings()
+        #expect(mock.intervals == Set<Interval>([.prime]))
+        mock.intervals = [.perfectFifth, .majorThird]
+        #expect(mock.intervals == Set<Interval>([.perfectFifth, .majorThird]))
+    }
+
+    @Test("MockUserSettings allows tuningSystem test injection")
+    func mockUserSettingsTuningSystemInjection() {
+        let mock = MockUserSettings()
+        #expect(mock.tuningSystem == .equalTemperament)
+    }
+
     // MARK: - Task 2: Note Range Validation
 
     @Test("Lower bound range enforces minimum gap from upper bound")

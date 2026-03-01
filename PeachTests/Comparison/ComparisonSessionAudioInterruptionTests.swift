@@ -13,7 +13,7 @@ struct ComparisonSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
         let session = f.session
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -35,7 +35,7 @@ struct ComparisonSessionAudioInterruptionTests {
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = 5.0
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .playingNote1)
 
         nc.post(
@@ -57,7 +57,7 @@ struct ComparisonSessionAudioInterruptionTests {
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = 0.01
 
-        session.startTraining()
+        session.start()
         try await waitForPlayCallCount(mockPlayer, 2)
         mockPlayer.simulatedPlaybackDuration = 5.0
 
@@ -78,7 +78,7 @@ struct ComparisonSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
         let session = f.session
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -104,7 +104,7 @@ struct ComparisonSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
         let session = f.session
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -143,7 +143,7 @@ struct ComparisonSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
         let session = f.session
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -168,7 +168,7 @@ struct ComparisonSessionAudioInterruptionTests {
             let nc = NotificationCenter()
             let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
             let session = f.session
-            session.startTraining()
+            session.start()
             try await waitForState(session, .awaitingAnswer)
 
             let userInfo: [AnyHashable: Any]? = reason.map { [AVAudioSessionRouteChangeReasonKey: $0] }
@@ -210,7 +210,7 @@ struct ComparisonSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
         let session = f.session
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -220,7 +220,7 @@ struct ComparisonSessionAudioInterruptionTests {
         )
         try await waitForState(session, .idle)
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
         #expect(session.state == .awaitingAnswer)
     }
@@ -230,7 +230,7 @@ struct ComparisonSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makeComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
         let session = f.session
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -240,7 +240,7 @@ struct ComparisonSessionAudioInterruptionTests {
         )
         try await waitForState(session, .idle)
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
         #expect(session.state == .awaitingAnswer)
     }

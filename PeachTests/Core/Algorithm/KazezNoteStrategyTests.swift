@@ -15,7 +15,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         #expect(comparison.referenceNote >= settings.noteRangeMin && comparison.referenceNote <= settings.noteRangeMax)
@@ -33,7 +34,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         #expect(comparison.targetNote.offset.magnitude == 100.0)
@@ -47,7 +49,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         #expect(comparison.targetNote.offset.magnitude == 50.0)
@@ -117,7 +120,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: last
+            lastComparison: last,
+            interval: .prime,
         )
 
         #expect(comparison.targetNote.offset.magnitude == 5.0)
@@ -134,7 +138,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: last
+            lastComparison: last,
+            interval: .prime,
         )
 
         #expect(comparison.targetNote.offset.magnitude == 100.0)
@@ -151,7 +156,8 @@ struct KazezNoteStrategyTests {
             let comparison = strategy.nextComparison(
                 profile: PerceptualProfile(),
                 settings: settings,
-                lastComparison: nil
+                lastComparison: nil,
+                interval: .prime,
             )
             #expect(comparison.referenceNote >= 48 && comparison.referenceNote <= 72)
         }
@@ -166,7 +172,8 @@ struct KazezNoteStrategyTests {
             let comparison = strategy.nextComparison(
                 profile: PerceptualProfile(),
                 settings: settings,
-                lastComparison: nil
+                lastComparison: nil,
+                interval: .prime,
             )
             #expect(comparison.referenceNote >= 60 && comparison.referenceNote <= 72)
         }
@@ -183,7 +190,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         #expect(comparison.targetNote.offset.magnitude == 100.0)
@@ -203,7 +211,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         // overallMean should be used, not maxCentDifference
@@ -224,7 +233,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         // overallMean (0.05) should be clamped to minCentDifference (1.0)
@@ -243,7 +253,8 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         // overallMean (200.0) should be clamped to maxCentDifference (100.0)
@@ -261,7 +272,8 @@ struct KazezNoteStrategyTests {
         var comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
         #expect(comparison.targetNote.offset.magnitude == 100.0)
 
@@ -275,7 +287,8 @@ struct KazezNoteStrategyTests {
             comparison = strategy.nextComparison(
                 profile: PerceptualProfile(),
                 settings: settings,
-                lastComparison: completed
+                lastComparison: completed,
+                interval: .prime,
             )
         }
 
@@ -294,12 +307,81 @@ struct KazezNoteStrategyTests {
         let comparison = strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: last
+            lastComparison: last,
+            interval: .prime,
         )
 
         // N = 5 × [1 + 0.09×√5] ≈ 5 × 1.201 ≈ 6.0
         #expect(comparison.targetNote.offset.magnitude > 5.0)
         #expect(comparison.targetNote.offset.magnitude < 7.0)
+    }
+
+    // MARK: - Interval Support
+
+    @Test("Unison interval produces targetNote.note == referenceNote")
+    func unisonIntervalSameNote() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(referencePitch: .concert440)
+
+        for _ in 0..<20 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .prime,
+            )
+            #expect(comparison.targetNote.note == comparison.referenceNote)
+        }
+    }
+
+    @Test("Perfect fifth interval produces targetNote.note 7 semitones above referenceNote")
+    func perfectFifthInterval() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(noteRangeMin: 48, noteRangeMax: 84, referencePitch: .concert440)
+
+        for _ in 0..<20 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .perfectFifth,
+            )
+            #expect(comparison.targetNote.note.rawValue == comparison.referenceNote.rawValue + 7)
+        }
+    }
+
+    @Test("MIDI range constraint prevents overflow with large interval")
+    func midiRangeConstraint() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(noteRangeMin: 60, noteRangeMax: 124, referencePitch: .concert440)
+
+        for _ in 0..<50 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .perfectFifth,
+            )
+            #expect(comparison.referenceNote.rawValue <= 120)
+            #expect(comparison.targetNote.note.rawValue <= 127)
+        }
+    }
+
+    @Test("Octave interval produces targetNote.note 12 semitones above referenceNote")
+    func octaveInterval() {
+        let strategy = KazezNoteStrategy()
+        let settings = TrainingSettings(noteRangeMin: 48, noteRangeMax: 84, referencePitch: .concert440)
+
+        for _ in 0..<20 {
+            let comparison = strategy.nextComparison(
+                profile: PerceptualProfile(),
+                settings: settings,
+                lastComparison: nil,
+                interval: .octave,
+            )
+            #expect(comparison.targetNote.note.rawValue == comparison.referenceNote.rawValue + 12)
+            #expect(comparison.targetNote.note.rawValue <= 127)
+        }
     }
 
     // MARK: - Helpers
@@ -311,7 +393,8 @@ struct KazezNoteStrategyTests {
         return strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: last
+            lastComparison: last,
+            interval: .prime,
         ).targetNote.offset.magnitude
     }
 
@@ -322,7 +405,8 @@ struct KazezNoteStrategyTests {
         return strategy.nextComparison(
             profile: PerceptualProfile(),
             settings: settings,
-            lastComparison: last
+            lastComparison: last,
+            interval: .prime,
         ).targetNote.offset.magnitude
     }
 

@@ -17,7 +17,7 @@ struct ComparisonSessionDifficultyTests {
     func currentDifficultyReturnsCentDifference() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentDifficulty == 100.0)
@@ -27,7 +27,7 @@ struct ComparisonSessionDifficultyTests {
     func currentDifficultyNilAfterStop() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
         f.session.stop()
 
@@ -49,7 +49,7 @@ struct ComparisonSessionDifficultyTests {
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer correctly (second note IS higher, user says higher)
@@ -65,7 +65,7 @@ struct ComparisonSessionDifficultyTests {
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer incorrectly (second note IS higher, user says lower)
@@ -83,7 +83,7 @@ struct ComparisonSessionDifficultyTests {
         let f = makeComparisonSession(comparisons: comparisons)
 
         // First comparison: 100 cents, answer correctly
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
         f.session.handleAnswer(isHigher: true)
         #expect(f.session.sessionBestCentDifference == 100.0)
@@ -106,7 +106,7 @@ struct ComparisonSessionDifficultyTests {
         let f = makeComparisonSession(comparisons: comparisons)
 
         // First comparison: 50 cents, answer correctly
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
         f.session.handleAnswer(isHigher: true)
         #expect(f.session.sessionBestCentDifference == 50.0)
@@ -127,7 +127,7 @@ struct ComparisonSessionDifficultyTests {
         ]
         let f = makeComparisonSession(comparisons: comparisons)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
         f.session.handleAnswer(isHigher: true)
         #expect(f.session.sessionBestCentDifference == 100.0)

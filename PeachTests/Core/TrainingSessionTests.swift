@@ -22,7 +22,7 @@ struct TrainingSessionTests {
     @Test("ComparisonSession.isIdle returns false when active")
     func comparisonSessionIsIdleFalseWhenActive() async throws {
         let fixture = makeComparisonSession()
-        fixture.session.startTraining()
+        fixture.session.start()
         try await waitForState(fixture.session, .awaitingAnswer)
         let trainingSession: TrainingSession = fixture.session
         #expect(!trainingSession.isIdle)
@@ -42,7 +42,7 @@ struct TrainingSessionTests {
     @Test("stop() through TrainingSession protocol stops ComparisonSession")
     func stopThroughProtocolStopsComparisonSession() async throws {
         let fixture = makeComparisonSession()
-        fixture.session.startTraining()
+        fixture.session.start()
         try await waitForState(fixture.session, .awaitingAnswer)
         let trainingSession: TrainingSession = fixture.session
         trainingSession.stop()

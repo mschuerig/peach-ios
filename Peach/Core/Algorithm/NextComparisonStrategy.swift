@@ -20,7 +20,7 @@ import Foundation
 /// in `PeachApp.swift` (Story 9.1).
 /// ```swift
 /// let strategy: NextComparisonStrategy = KazezNoteStrategy()
-/// let comparison = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil)
+/// let comparison = strategy.nextComparison(profile: profile, settings: settings, lastComparison: nil, interval: .prime)
 /// ```
 protocol NextComparisonStrategy {
     /// Selects the next comparison based on user's perceptual profile and settings
@@ -31,11 +31,15 @@ protocol NextComparisonStrategy {
     ///   - profile: User's perceptual profile with training statistics
     ///   - settings: Training configuration (note range, difficulty bounds, reference pitch)
     ///   - lastComparison: The most recently completed comparison (nil on first comparison)
+    ///   - interval: The musical interval to apply between reference and target note.
+    ///     `.prime` produces unison (target == reference); other intervals transpose the target
+    ///     upward by the interval's semitone count via `MIDINote.transposed(by:)`.
     /// - Returns: A Comparison ready to be played by NotePlayer
     func nextComparison(
         profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
-        lastComparison: CompletedComparison?
+        lastComparison: CompletedComparison?,
+        interval: Interval
     ) -> Comparison
 }
 

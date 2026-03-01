@@ -22,6 +22,7 @@ final class ComparisonSession: TrainingSession {
     private(set) var showFeedback: Bool = false
     private(set) var isLastAnswerCorrect: Bool? = nil
     private(set) var sessionBestCentDifference: Double? = nil
+    private(set) var currentInterval: Interval? = nil
 
     // MARK: - Dependencies
 
@@ -64,6 +65,8 @@ final class ComparisonSession: TrainingSession {
     private var lastCompletedComparison: CompletedComparison?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
+    private var sessionIntervals: Set<Interval> = []
+    private var sessionTuningSystem: TuningSystem = .equalTemperament
 
     // MARK: - Initialization
 
@@ -93,15 +96,21 @@ final class ComparisonSession: TrainingSession {
 
     var isIdle: Bool { state == .idle }
 
+    var isIntervalMode: Bool { currentInterval != nil && currentInterval != .prime }
+
     var currentDifficulty: Double? {
         currentComparison?.targetNote.offset.magnitude
     }
 
-    func startTraining() {
+    func start() {
         guard state == .idle else {
-            logger.warning("startTraining() called but state is \(String(describing: self.state)), not idle")
+            logger.warning("start() called but state is \(String(describing: self.state)), not idle")
             return
         }
+
+        precondition(!userSettings.intervals.isEmpty, "intervals must not be empty")
+        sessionIntervals = userSettings.intervals
+        sessionTuningSystem = userSettings.tuningSystem
 
         logger.info("Starting training loop")
         trainingTask = Task {
@@ -123,7 +132,7 @@ final class ComparisonSession: TrainingSession {
 
         stopTargetNoteIfPlaying()
 
-        let completed = CompletedComparison(comparison: comparison, userAnsweredHigher: isHigher, tuningSystem: .equalTemperament)
+        let completed = CompletedComparison(comparison: comparison, userAnsweredHigher: isHigher, tuningSystem: sessionTuningSystem)
         logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (target was \(comparison.isTargetHigher ? "higher" : "lower"))")
 
         lastCompletedComparison = completed
@@ -169,6 +178,8 @@ final class ComparisonSession: TrainingSession {
         currentComparison = nil
         lastCompletedComparison = nil
         sessionBestCentDifference = nil
+        currentInterval = nil
+        sessionIntervals = []
 
         showFeedback = false
         isLastAnswerCorrect = nil
@@ -192,10 +203,14 @@ final class ComparisonSession: TrainingSession {
         let settings = currentSettings
         let noteDuration = currentNoteDuration
 
+        let interval = sessionIntervals.randomElement()!
+        currentInterval = interval
+
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: settings,
-            lastComparison: lastCompletedComparison
+            lastComparison: lastCompletedComparison,
+            interval: interval
         )
         currentComparison = comparison
 
@@ -230,8 +245,8 @@ final class ComparisonSession: TrainingSession {
         noteDuration: TimeInterval,
         amplitudeDB: AmplitudeDB
     ) async throws {
-        let freq1 = comparison.referenceFrequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
-        let freq2 = comparison.targetFrequency(tuningSystem: .equalTemperament, referencePitch: settings.referencePitch)
+        let freq1 = comparison.referenceFrequency(tuningSystem: sessionTuningSystem, referencePitch: settings.referencePitch)
+        let freq2 = comparison.targetFrequency(tuningSystem: sessionTuningSystem, referencePitch: settings.referencePitch)
         logger.info("Comparison: ref=\(comparison.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(comparison.targetNote.offset.rawValue), higher=\(comparison.isTargetHigher)")
 
         state = .playingNote1

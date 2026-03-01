@@ -74,7 +74,7 @@ struct ComparisonScreen: View {
         }
         .onAppear {
             logger.info("ComparisonScreen appeared - starting training")
-            comparisonSession.startTraining()
+            comparisonSession.start()
         }
         .onDisappear {
             logger.info("ComparisonScreen disappeared - stopping training")

@@ -24,4 +24,12 @@ final class AppUserSettings: UserSettings {
     var varyLoudness: UnitInterval {
         UnitInterval(UserDefaults.standard.object(forKey: SettingsKeys.varyLoudness) as? Double ?? SettingsKeys.defaultVaryLoudness)
     }
+
+    var intervals: Set<Interval> {
+        [.perfectFifth]
+    }
+
+    var tuningSystem: TuningSystem {
+        .equalTemperament
+    }
 }

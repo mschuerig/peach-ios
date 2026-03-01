@@ -13,7 +13,7 @@ struct ComparisonSessionLoudnessTests {
         mockSettings.varyLoudness = 0.0
         let f = makeComparisonSession(userSettings: mockSettings)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playHistory.count == 2)
@@ -29,7 +29,7 @@ struct ComparisonSessionLoudnessTests {
         mockSettings.varyLoudness = 1.0
         let f = makeComparisonSession(userSettings: mockSettings)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playHistory.count == 2)
@@ -50,7 +50,7 @@ struct ComparisonSessionLoudnessTests {
         let f = makeComparisonSession(comparisons: comparisons, userSettings: mockSettings)
 
         // Run multiple comparisons
-        f.session.startTraining()
+        f.session.start()
         for _ in 0..<5 {
             try await waitForState(f.session, .awaitingAnswer)
             f.session.handleAnswer(isHigher: true)
@@ -81,7 +81,7 @@ struct ComparisonSessionLoudnessTests {
         mockSettings.varyLoudness = 0.5
         let f = makeComparisonSession(userSettings: mockSettings)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playHistory.count == 2)
@@ -102,7 +102,7 @@ struct ComparisonSessionLoudnessTests {
         mockSettings.varyLoudness = 1.0
         let f = makeComparisonSession(userSettings: mockSettings)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         let targetAmplitude = f.mockPlayer.playHistory[1].amplitudeDB
@@ -116,7 +116,7 @@ struct ComparisonSessionLoudnessTests {
     func defaultFactoryPassesZeroLoudness() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playHistory[0].amplitudeDB == 0.0)

@@ -10,6 +10,7 @@ final class MockNextComparisonStrategy: NextComparisonStrategy {
     var lastReceivedProfile: PitchDiscriminationProfile?
     var lastReceivedSettings: TrainingSettings?
     var lastReceivedLastComparison: CompletedComparison?
+    var lastReceivedInterval: Interval?
 
     // MARK: - Initialization
 
@@ -24,12 +25,14 @@ final class MockNextComparisonStrategy: NextComparisonStrategy {
     func nextComparison(
         profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
-        lastComparison: CompletedComparison?
+        lastComparison: CompletedComparison?,
+        interval: Interval
     ) -> Comparison {
         callCount += 1
         lastReceivedProfile = profile
         lastReceivedSettings = settings
         lastReceivedLastComparison = lastComparison
+        lastReceivedInterval = interval
 
         let comparison = comparisons[currentIndex % comparisons.count]
         currentIndex += 1
@@ -44,5 +47,6 @@ final class MockNextComparisonStrategy: NextComparisonStrategy {
         lastReceivedProfile = nil
         lastReceivedSettings = nil
         lastReceivedLastComparison = nil
+        lastReceivedInterval = nil
     }
 }

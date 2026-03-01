@@ -28,7 +28,7 @@ struct ComparisonSessionUserDefaultsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockStrategy.lastReceivedSettings?.noteRangeMin == 50)
@@ -56,7 +56,7 @@ struct ComparisonSessionUserDefaultsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockPlayer.lastDuration == 2.5)
@@ -84,7 +84,7 @@ struct ComparisonSessionUserDefaultsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockPlayer.playHistory.count >= 1)
@@ -114,7 +114,7 @@ struct ComparisonSessionUserDefaultsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockStrategy.lastReceivedSettings?.noteRangeMin.rawValue == SettingsKeys.defaultNoteRangeMin)

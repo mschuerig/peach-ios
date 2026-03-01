@@ -12,7 +12,7 @@ struct ComparisonSessionIntegrationTests {
     func callsPlayTwicePerComparison() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playCallCount == 2)
@@ -22,7 +22,7 @@ struct ComparisonSessionIntegrationTests {
     func playsCorrectFrequencies() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.lastFrequency != nil)
@@ -34,7 +34,7 @@ struct ComparisonSessionIntegrationTests {
     func passesCorrectDuration() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.lastDuration == 1.0)
@@ -44,7 +44,7 @@ struct ComparisonSessionIntegrationTests {
     func passesCorrectVelocity() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.lastVelocity == 63)
@@ -54,7 +54,7 @@ struct ComparisonSessionIntegrationTests {
     func passesDefaultAmplitude() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playHistory.count == 2)
@@ -68,7 +68,7 @@ struct ComparisonSessionIntegrationTests {
     func recordsComparisonOnAnswer() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -81,7 +81,7 @@ struct ComparisonSessionIntegrationTests {
     func comparisonRecordContainsCorrectData() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)
@@ -97,7 +97,7 @@ struct ComparisonSessionIntegrationTests {
         let f = makeComparisonSession()
         f.mockDataStore.shouldThrowError = true
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -115,7 +115,7 @@ struct ComparisonSessionIntegrationTests {
     func profileUpdatesIncrementallyAfterComparison() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -144,7 +144,7 @@ struct ComparisonSessionIntegrationTests {
     func profileAccumulatesMultipleComparisons() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -169,7 +169,7 @@ struct ComparisonSessionIntegrationTests {
     func profileUpdatesForAllAnswers() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)
@@ -217,7 +217,8 @@ struct ComparisonSessionIntegrationTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: TrainingSettings(referencePitch: .concert440),
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
 
         #expect(comparison.targetNote.offset.magnitude == 100.0)

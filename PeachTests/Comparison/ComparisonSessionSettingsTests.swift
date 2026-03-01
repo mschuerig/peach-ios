@@ -26,7 +26,7 @@ struct ComparisonSessionSettingsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockStrategy.lastReceivedSettings?.noteRangeMin == 48)
@@ -37,7 +37,7 @@ struct ComparisonSessionSettingsTests {
     func strategyReceivesUpdatedProfileAfterAnswer() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockStrategy.callCount == 1)
@@ -74,7 +74,7 @@ struct ComparisonSessionSettingsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockStrategy.lastReceivedSettings?.noteRangeMin == 48)
@@ -100,7 +100,7 @@ struct ComparisonSessionSettingsTests {
             observers: [mockDataStore, profile]
         )
 
-        session.startTraining()
+        session.start()
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockPlayer.lastDuration == 0.5)

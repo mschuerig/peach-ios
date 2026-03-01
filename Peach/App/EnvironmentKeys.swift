@@ -63,7 +63,8 @@ private final class PreviewComparisonStrategy: NextComparisonStrategy {
     func nextComparison(
         profile: PitchDiscriminationProfile,
         settings: TrainingSettings,
-        lastComparison: CompletedComparison?
+        lastComparison: CompletedComparison?,
+        interval: Interval
     ) -> Comparison {
         Comparison(referenceNote: MIDINote(60), targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(50.0)))
     }
@@ -76,4 +77,6 @@ private final class PreviewUserSettings: UserSettings {
     let referencePitch = Frequency(440.0)
     let soundSource = SoundSourceID("sf2:8:80")
     let varyLoudness = UnitInterval(0.0)
+    let intervals: Set<Interval> = [.perfectFifth]
+    let tuningSystem: TuningSystem = .equalTemperament
 }

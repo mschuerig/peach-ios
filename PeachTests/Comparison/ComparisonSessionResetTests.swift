@@ -59,7 +59,8 @@ struct ComparisonSessionResetTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: TrainingSettings(referencePitch: .concert440),
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
         #expect(comparison.targetNote.offset.magnitude == 100.0)
     }
@@ -88,7 +89,8 @@ struct ComparisonSessionResetTests {
         let comparison = strategy.nextComparison(
             profile: profile,
             settings: TrainingSettings(referencePitch: .concert440),
-            lastComparison: nil
+            lastComparison: nil,
+            interval: .prime,
         )
         #expect(comparison.targetNote.offset.magnitude == 100.0)
     }
@@ -175,7 +177,7 @@ struct ComparisonSessionResetTests {
         )
 
         // Start training and wait for non-idle state
-        session.startTraining()
+        session.start()
         try await waitForPlayCallCount(mockPlayer, 1)
         #expect(session.state != .idle)
 

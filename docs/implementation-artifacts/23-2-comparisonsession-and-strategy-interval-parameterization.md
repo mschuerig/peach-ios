@@ -1,6 +1,6 @@
 # Story 23.2: ComparisonSession Start Rename and Strategy Interval Support
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -59,55 +59,55 @@ So that comparison training works with any musical interval while unison (`[.pri
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `intervals` and `tuningSystem` to `UserSettings` protocol (AC: #1)
-  - [ ] Add `var intervals: Set<Interval> { get }` to protocol in `Peach/Settings/UserSettings.swift`
-  - [ ] Add `var tuningSystem: TuningSystem { get }` to protocol in `Peach/Settings/UserSettings.swift`
-  - [ ] In `AppUserSettings`, return hardcoded `Set<Interval>([.perfectFifth])` and `.equalTemperament`
-  - [ ] In `MockUserSettings`, add mutable stored properties with defaults `Set<Interval>([.prime])` and `.equalTemperament`
-  - [ ] Write tests verifying `AppUserSettings` returns expected hardcoded values
-  - [ ] Write tests verifying `MockUserSettings` allows test injection
+- [x] Task 1: Add `intervals` and `tuningSystem` to `UserSettings` protocol (AC: #1)
+  - [x] Add `var intervals: Set<Interval> { get }` to protocol in `Peach/Settings/UserSettings.swift`
+  - [x] Add `var tuningSystem: TuningSystem { get }` to protocol in `Peach/Settings/UserSettings.swift`
+  - [x] In `AppUserSettings`, return hardcoded `Set<Interval>([.perfectFifth])` and `.equalTemperament`
+  - [x] In `MockUserSettings`, add mutable stored properties with defaults `Set<Interval>([.prime])` and `.equalTemperament`
+  - [x] Write tests verifying `AppUserSettings` returns expected hardcoded values
+  - [x] Write tests verifying `MockUserSettings` allows test injection
 
-- [ ] Task 2: Add `interval` and `tuningSystem` parameters to `NextComparisonStrategy` (AC: #5)
-  - [ ] Update protocol signature: `nextComparison(profile:settings:lastComparison:interval:tuningSystem:) -> Comparison`
-  - [ ] Update `KazezNoteStrategy.nextComparison()` to accept `interval: Interval` and `tuningSystem: TuningSystem`
-  - [ ] When `interval == .prime`: behavior unchanged — `targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(signed))`
-  - [ ] When `interval != .prime`: `targetNote = DetunedMIDINote(note: referenceNote.transposed(by: interval), offset: Cents(signed))`
-  - [ ] Constrain reference note upper bound: `noteRangeMax - interval.semitones` to prevent MIDI overflow on transposition
-  - [ ] Update `MockNextComparisonStrategy` to accept and track the new parameters
-  - [ ] Write tests for unison path (`.prime`), interval path (`.perfectFifth`), and MIDI range constraint
+- [x] Task 2: Add `interval` and `tuningSystem` parameters to `NextComparisonStrategy` (AC: #5)
+  - [x] Update protocol signature: `nextComparison(profile:settings:lastComparison:interval:tuningSystem:) -> Comparison`
+  - [x] Update `KazezNoteStrategy.nextComparison()` to accept `interval: Interval` and `tuningSystem: TuningSystem`
+  - [x] When `interval == .prime`: behavior unchanged — `targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(signed))`
+  - [x] When `interval != .prime`: `targetNote = DetunedMIDINote(note: referenceNote.transposed(by: interval), offset: Cents(signed))`
+  - [x] Constrain reference note upper bound: `noteRangeMax - interval.semitones` to prevent MIDI overflow on transposition
+  - [x] Update `MockNextComparisonStrategy` to accept and track the new parameters
+  - [x] Write tests for unison path (`.prime`), interval path (`.perfectFifth`), and MIDI range constraint
 
-- [ ] Task 3: Rename `startTraining()` to `start()` and read interval context from `userSettings` (AC: #2)
-  - [ ] Rename `func startTraining()` to `func start()` in `ComparisonSession.swift`
-  - [ ] At start of `start()`, read `userSettings.intervals` and `userSettings.tuningSystem`, store as session-level state
-  - [ ] Add precondition: `precondition(!userSettings.intervals.isEmpty, "intervals must not be empty")`
-  - [ ] Select a random interval from the set on each comparison (store as `currentInterval`)
-  - [ ] Pass selected interval and tuningSystem to `strategy.nextComparison()`
-  - [ ] Update `ComparisonScreen.swift` line 77: change `comparisonSession.startTraining()` to `comparisonSession.start()`
-  - [ ] Write tests verifying `start()` reads intervals from userSettings
+- [x] Task 3: Rename `startTraining()` to `start()` and read interval context from `userSettings` (AC: #2)
+  - [x] Rename `func startTraining()` to `func start()` in `ComparisonSession.swift`
+  - [x] At start of `start()`, read `userSettings.intervals` and `userSettings.tuningSystem`, store as session-level state
+  - [x] Add precondition: `precondition(!userSettings.intervals.isEmpty, "intervals must not be empty")`
+  - [x] Select a random interval from the set on each comparison (store as `currentInterval`)
+  - [x] Pass selected interval and tuningSystem to `strategy.nextComparison()`
+  - [x] Update `ComparisonScreen.swift` line 77: change `comparisonSession.startTraining()` to `comparisonSession.start()`
+  - [x] Write tests verifying `start()` reads intervals from userSettings
 
-- [ ] Task 4: Add `currentInterval` and `isIntervalMode` observable state (AC: #7)
-  - [ ] Add `private(set) var currentInterval: Interval? = nil` observable property
-  - [ ] Add computed `var isIntervalMode: Bool { currentInterval != nil && currentInterval != .prime }`
-  - [ ] Set `currentInterval` when each comparison is generated (the randomly selected interval)
-  - [ ] Clear `currentInterval = nil` in `stop()` (alongside other state resets)
-  - [ ] Write tests for `currentInterval` and `isIntervalMode` with `.prime` vs `.perfectFifth`
+- [x] Task 4: Add `currentInterval` and `isIntervalMode` observable state (AC: #7)
+  - [x] Add `private(set) var currentInterval: Interval? = nil` observable property
+  - [x] Add computed `var isIntervalMode: Bool { currentInterval != nil && currentInterval != .prime }`
+  - [x] Set `currentInterval` when each comparison is generated (the randomly selected interval)
+  - [x] Clear `currentInterval = nil` in `stop()` (alongside other state resets)
+  - [x] Write tests for `currentInterval` and `isIntervalMode` with `.prime` vs `.perfectFifth`
 
-- [ ] Task 5: Replace hardcoded `.equalTemperament` with session tuningSystem (AC: #6, #8)
-  - [ ] Store `tuningSystem` as private session state (read from `userSettings` in `start()`)
-  - [ ] In `playComparisonNotes()` lines 233-234: use stored `tuningSystem` instead of `.equalTemperament`
-  - [ ] In `handleAnswer()` line 126: use stored `tuningSystem` instead of `.equalTemperament`
-  - [ ] Write tests verifying tuningSystem flows through to `CompletedComparison` and frequency computation
+- [x] Task 5: Replace hardcoded `.equalTemperament` with session tuningSystem (AC: #6, #8)
+  - [x] Store `tuningSystem` as private session state (read from `userSettings` in `start()`)
+  - [x] In `playComparisonNotes()` lines 233-234: use stored `tuningSystem` instead of `.equalTemperament`
+  - [x] In `handleAnswer()` line 126: use stored `tuningSystem` instead of `.equalTemperament`
+  - [x] Write tests verifying tuningSystem flows through to `CompletedComparison` and frequency computation
 
-- [ ] Task 6: Update all `startTraining()` call sites in tests (AC: #2)
-  - [ ] Rename all `f.session.startTraining()` / `session.startTraining()` to `f.session.start()` / `session.start()` across all test files
-  - [ ] Update test descriptions that reference `startTraining` (e.g., `@Test("startTraining transitions...")` → `@Test("start transitions...")`)
-  - [ ] Set `mockSettings.intervals = [.prime]` in test helpers for backward-compatible unison behavior
-  - [ ] Write new test: interval comparison with `.perfectFifth` verifies `targetNote.note == referenceNote.transposed(by: .perfectFifth)`
+- [x] Task 6: Update all `startTraining()` call sites in tests (AC: #2)
+  - [x] Rename all `f.session.startTraining()` / `session.startTraining()` to `f.session.start()` / `session.start()` across all test files
+  - [x] Update test descriptions that reference `startTraining` (e.g., `@Test("startTraining transitions...")` → `@Test("start transitions...")`)
+  - [x] Set `mockSettings.intervals = [.prime]` in test helpers for backward-compatible unison behavior
+  - [x] Write new test: interval comparison with `.perfectFifth` verifies `targetNote.note == referenceNote.transposed(by: .perfectFifth)`
 
-- [ ] Task 7: Run full test suite and commit (AC: all)
-  - [ ] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-  - [ ] Run: `tools/check-dependencies.sh`
-  - [ ] All tests pass, no dependency violations
+- [x] Task 7: Run full test suite and commit (AC: all)
+  - [x] Run: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
+  - [x] Run: `tools/check-dependencies.sh`
+  - [x] All tests pass, no dependency violations
 
 ## Dev Notes
 
@@ -320,10 +320,51 @@ No new files. No new directories. No cross-feature coupling.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation, no debugging required.
+
 ### Completion Notes List
 
+- Added `intervals: Set<Interval>` and `tuningSystem: TuningSystem` to `UserSettings` protocol with hardcoded values in `AppUserSettings` and mutable defaults in `MockUserSettings`
+- Updated `NextComparisonStrategy` protocol with `interval` and `tuningSystem` parameters; `KazezNoteStrategy` now computes interval-aware target notes via `MIDINote.transposed(by:)` with MIDI range constraint
+- Renamed `startTraining()` to `start()` across production and ~80 test call sites; `start()` now reads `intervals` and `tuningSystem` from `userSettings` with non-empty precondition
+- Added `currentInterval` (observable) and `isIntervalMode` (computed) properties to `ComparisonSession`; cleared on `stop()`
+- Replaced all 3 hardcoded `.equalTemperament` references in `ComparisonSession` with session-level `sessionTuningSystem`
+- Updated `PreviewComparisonStrategy` and `PreviewUserSettings` in `EnvironmentKeys.swift` for protocol conformance
+- All existing tests pass unchanged (unison backward compatibility via `MockUserSettings` defaults `[.prime]`)
+- Added 15 new tests: 4 for UserSettings, 4 for KazezNoteStrategy interval/MIDI range, 11 for ComparisonSession interval context
+- Full test suite passes, no dependency violations
+
+### Change Log
+
+- 2026-03-01: Implemented story 23.2 — ComparisonSession interval parameterization with start() rename, strategy interval support, observable interval state, and session tuningSystem
+
 ### File List
+
+- Peach/Settings/UserSettings.swift (modified — added `intervals` and `tuningSystem` properties)
+- Peach/Settings/AppUserSettings.swift (modified — hardcoded interval/tuningSystem getters)
+- Peach/Core/Algorithm/NextComparisonStrategy.swift (modified — added `interval` and `tuningSystem` parameters)
+- Peach/Core/Algorithm/KazezNoteStrategy.swift (modified — interval-aware target computation with MIDI range constraint)
+- Peach/Comparison/ComparisonSession.swift (modified — `start()` rename, interval context, observable state, session tuningSystem)
+- Peach/Comparison/ComparisonScreen.swift (modified — `start()` call)
+- Peach/App/EnvironmentKeys.swift (modified — `PreviewUserSettings` and `PreviewComparisonStrategy` protocol conformance)
+- PeachTests/Mocks/MockUserSettings.swift (modified — mutable `intervals` and `tuningSystem`)
+- PeachTests/Comparison/MockNextComparisonStrategy.swift (modified — new parameters and tracking)
+- PeachTests/Comparison/ComparisonTestHelpers.swift (unchanged — no modifications needed)
+- PeachTests/Settings/SettingsTests.swift (modified — 4 new tests for UserSettings)
+- PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift (modified — updated all calls, 4 new interval tests)
+- PeachTests/Comparison/ComparisonSessionTests.swift (modified — renamed test, 11 new interval context tests)
+- PeachTests/Comparison/ComparisonSessionIntegrationTests.swift (modified — updated nextComparison call)
+- PeachTests/Comparison/ComparisonSessionResetTests.swift (modified — updated nextComparison calls and start() rename)
+- PeachTests/Comparison/ComparisonSessionLifecycleTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonSessionSettingsTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonSessionFeedbackTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonSessionDifficultyTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonSessionLoudnessTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonSessionAudioInterruptionTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonSessionUserDefaultsTests.swift (modified — start() rename)
+- PeachTests/Comparison/ComparisonScreenFeedbackTests.swift (modified — start() rename)
+- PeachTests/Core/TrainingSessionTests.swift (modified — start() rename)

@@ -14,7 +14,7 @@ struct ComparisonScreenFeedbackTests {
     func feedbackReflectsCorrectnessAfterIncorrectToCorrect() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer incorrectly (answer "lower" when second note is higher)
@@ -37,7 +37,7 @@ struct ComparisonScreenFeedbackTests {
     func feedbackReflectsCorrectnessAfterCorrectToIncorrect() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer correctly (answer "higher" when second note is higher)
@@ -62,7 +62,7 @@ struct ComparisonScreenFeedbackTests {
     func showFeedbackIsFalseBetweenCycles() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // Complete first answer
@@ -86,7 +86,7 @@ struct ComparisonScreenFeedbackTests {
         #expect(f.session.showFeedback == false)
         #expect(f.session.isLastAnswerCorrect == nil)
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // First answer ever — no previous state to leak
@@ -101,7 +101,7 @@ struct ComparisonScreenFeedbackTests {
     func feedbackDisplaysCorrectlyOnConsecutiveSameCorrectness() async throws {
         let f = makeComparisonSession()
 
-        f.session.startTraining()
+        f.session.start()
         try await waitForState(f.session, .awaitingAnswer)
 
         // First answer: correct (answer "higher" when second note is higher)

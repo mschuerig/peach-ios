@@ -20,7 +20,7 @@ struct ComparisonSessionFeedbackTests {
         let f = makeComparisonSession(includeHaptic: true)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for awaitingAnswer state
         try await waitForState(f.session, .awaitingAnswer)
@@ -41,7 +41,7 @@ struct ComparisonSessionFeedbackTests {
         let f = makeComparisonSession(includeHaptic: true)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for awaitingAnswer state
         try await waitForState(f.session, .awaitingAnswer)
@@ -63,7 +63,7 @@ struct ComparisonSessionFeedbackTests {
         let f = makeComparisonSession(includeHaptic: true)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for awaitingAnswer state
         try await waitForState(f.session, .awaitingAnswer)
@@ -91,7 +91,7 @@ struct ComparisonSessionFeedbackTests {
         let f = makeComparisonSession(includeHaptic: true)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for awaitingAnswer state
         try await waitForState(f.session, .awaitingAnswer)
@@ -112,7 +112,7 @@ struct ComparisonSessionFeedbackTests {
         let f = makeComparisonSession(includeHaptic: true)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for awaitingAnswer state
         try await waitForState(f.session, .awaitingAnswer)
@@ -133,7 +133,7 @@ struct ComparisonSessionFeedbackTests {
         let f = makeComparisonSession(includeHaptic: true)
 
         // Start training
-        f.session.startTraining()
+        f.session.start()
 
         // Wait for awaitingAnswer state
         try await waitForState(f.session, .awaitingAnswer)
