@@ -1,6 +1,6 @@
 # Story 24.2: Start Screen Four Training Buttons
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -49,29 +49,29 @@ So that I can launch any training mode with a single tap (FR65).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Rename "Start Training" button label to "Comparison" (AC: 1, 4)
-  - [ ] Update button label from `"Start Training"` to `"Comparison"` in `StartScreen.swift`
-  - [ ] Update localization entry in `Localizable.xcstrings` (English: "Comparison", German: "Vergleich")
-- [ ] Task 2: Add visual separator between unison and interval groups (AC: 1)
-  - [ ] Add subtle spacing or divider between "Pitch Matching" and "Interval Comparison" buttons
-  - [ ] Verify separator is visible in both portrait and landscape
-- [ ] Task 3: Add "Interval Comparison" button (AC: 1, 2)
-  - [ ] Add NavigationLink with value `.comparison(intervals: [.perfectFifth])`
-  - [ ] Use `.bordered` style and `.controlSize(.large)`
-  - [ ] Add localization entry (English: "Interval Comparison", German: "Intervallvergleich")
-- [ ] Task 4: Add "Interval Pitch Matching" button (AC: 1, 3)
-  - [ ] Add NavigationLink with value `.pitchMatching(intervals: [.perfectFifth])`
-  - [ ] Use `.bordered` style and `.controlSize(.large)`
-  - [ ] Add localization entry (English: "Interval Pitch Matching", German: "Intervall-Tonhöhenübung")
-- [ ] Task 5: Verify responsive layout (AC: 5)
-  - [ ] Check layout in iPhone portrait and landscape
-  - [ ] Check layout in iPad portrait and landscape
-  - [ ] Ensure compact height mode spacing still works with 4 buttons
-- [ ] Task 6: Update tests (AC: 1-5)
-  - [ ] Add new tests for interval navigation destinations
-  - [ ] Update existing test assertions if button label changed
-  - [ ] Add test verifying ComparisonScreen can be instantiated with `[.perfectFifth]`
-  - [ ] Run full test suite
+- [x] Task 1: Rename "Start Training" button label to "Comparison" (AC: 1, 4)
+  - [x] Update button label from `"Start Training"` to `"Comparison"` in `StartScreen.swift`
+  - [x] Update localization entry in `Localizable.xcstrings` (English: "Comparison", German: "Vergleich")
+- [x] Task 2: Add visual separator between unison and interval groups (AC: 1)
+  - [x] Add subtle spacing or divider between "Pitch Matching" and "Interval Comparison" buttons
+  - [x] Verify separator is visible in both portrait and landscape
+- [x] Task 3: Add "Interval Comparison" button (AC: 1, 2)
+  - [x] Add NavigationLink with value `.comparison(intervals: [.perfectFifth])`
+  - [x] Use `.bordered` style and `.controlSize(.large)`
+  - [x] Add localization entry (English: "Interval Comparison", German: "Intervallvergleich")
+- [x] Task 4: Add "Interval Pitch Matching" button (AC: 1, 3)
+  - [x] Add NavigationLink with value `.pitchMatching(intervals: [.perfectFifth])`
+  - [x] Use `.bordered` style and `.controlSize(.large)`
+  - [x] Add localization entry (English: "Interval Pitch Matching", German: "Intervall-Tonhöhenübung")
+- [x] Task 5: Verify responsive layout (AC: 5)
+  - [x] Check layout in iPhone portrait and landscape
+  - [x] Check layout in iPad portrait and landscape
+  - [x] Ensure compact height mode spacing still works with 4 buttons
+- [x] Task 6: Update tests (AC: 1-5)
+  - [x] Add new tests for interval navigation destinations
+  - [x] Update existing test assertions if button label changed
+  - [x] Add test verifying ComparisonScreen can be instantiated with `[.perfectFifth]`
+  - [x] Run full test suite
 
 ## Dev Notes
 
@@ -250,10 +250,30 @@ c2661fc Implement story 23.4: Training Screen Interval Label and Observer Verifi
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no issues.
+
 ### Completion Notes List
 
+- Renamed "Start Training" button to "Comparison" using `Text("Comparison")` instead of `Text("Start Training")`
+- Removed `Label("Pitch Matching", systemImage: "waveform")` icon, replaced with `Text("Pitch Matching")` for consistency across all four buttons
+- Added `Divider()` between Pitch Matching and Interval Comparison buttons as visual separator
+- Added "Interval Comparison" NavigationLink with `.comparison(intervals: [.perfectFifth])`, `.bordered` style
+- Added "Interval Pitch Matching" NavigationLink with `.pitchMatching(intervals: [.perfectFifth])`, `.bordered` style
+- Added 3 localization entries: "Comparison" (de: "Vergleich"), "Interval Comparison" (de: "Intervallvergleich"), "Interval Pitch Matching" (de: "Intervall-Tonhöhenübung")
+- Added tests: `ComparisonScreen` instantiation with `[.perfectFifth]`, `PitchMatchingScreen` instantiation with `[.perfectFifth]`
+- Updated `allNavigationDestinationsCanBeCreated` test to include interval variants
+- All tests pass (full suite)
+
+### Change Log
+
+- 2026-03-01: Implemented story 24.2 — four training buttons on Start Screen with visual separator and localization
+
 ### File List
+
+- Peach/Start/StartScreen.swift (modified)
+- Peach/Resources/Localizable.xcstrings (modified)
+- PeachTests/Start/StartScreenTests.swift (modified)

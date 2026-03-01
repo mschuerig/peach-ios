@@ -25,9 +25,19 @@ struct StartScreenTests {
         #expect(mirror.children.count > 0)
     }
 
-    @Test("Comparison Screen can be instantiated")
+    @Test("Comparison Screen can be instantiated with prime intervals")
     func comparisonScreenCanBeInstantiated() {
         _ = ComparisonScreen(intervals: [.prime])
+    }
+
+    @Test("Comparison Screen can be instantiated with perfectFifth intervals")
+    func comparisonScreenCanBeInstantiatedWithPerfectFifth() {
+        _ = ComparisonScreen(intervals: [.perfectFifth])
+    }
+
+    @Test("Pitch Matching Screen can be instantiated with perfectFifth intervals")
+    func pitchMatchingScreenCanBeInstantiatedWithPerfectFifth() {
+        _ = PitchMatchingScreen(intervals: [.perfectFifth])
     }
 
     @Test("Settings Screen can be instantiated")
@@ -164,11 +174,14 @@ struct StartScreenTests {
         // This ensures the hub-and-spoke pattern has all spokes available
 
         let comparison = ComparisonScreen(intervals: [.prime])
+        let intervalComparison = ComparisonScreen(intervals: [.perfectFifth])
+        let pitchMatching = PitchMatchingScreen(intervals: [.prime])
+        let intervalPitchMatching = PitchMatchingScreen(intervals: [.perfectFifth])
         let settings = SettingsScreen()
         let profile = ProfileScreen()
         let info = InfoScreen()
 
         // If we can create all screens without crashing, navigation paths are valid
-        _ = (comparison, settings, profile, info)
+        _ = (comparison, intervalComparison, pitchMatching, intervalPitchMatching, settings, profile, info)
     }
 }

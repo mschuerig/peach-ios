@@ -1240,6 +1240,36 @@
           }
         }
       }
+    },
+    "Comparison": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vergleich"
+          }
+        }
+      }
+    },
+    "Interval Comparison": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervallvergleich"
+          }
+        }
+      }
+    },
+    "Interval Pitch Matching": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervall-Tonhöhenübung"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

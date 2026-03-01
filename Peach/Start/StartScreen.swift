@@ -26,9 +26,9 @@ struct StartScreen: View {
 
             Spacer()
 
-            // Start Training Button (Primary Action)
+            // Comparison Button (Primary Action)
             NavigationLink(value: NavigationDestination.comparison(intervals: [.prime])) {
-                Text("Start Training")
+                Text("Comparison")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
@@ -36,7 +36,26 @@ struct StartScreen: View {
 
             // Pitch Matching Button (Secondary Action)
             NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.prime])) {
-                Label("Pitch Matching", systemImage: "waveform")
+                Text("Pitch Matching")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+
+            // Visual separator between unison and interval groups
+            Divider()
+
+            // Interval Comparison Button
+            NavigationLink(value: NavigationDestination.comparison(intervals: [.perfectFifth])) {
+                Text("Interval Comparison")
+                    .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.large)
+
+            // Interval Pitch Matching Button
+            NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.perfectFifth])) {
+                Text("Interval Pitch Matching")
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.bordered)
