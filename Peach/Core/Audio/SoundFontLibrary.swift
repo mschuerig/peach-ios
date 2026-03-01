@@ -38,3 +38,15 @@ final class SoundFontLibrary {
         return availablePresets.first { $0.bank == bank && $0.program == program }
     }
 }
+
+// MARK: - SoundSourceProvider
+
+extension SoundFontLibrary: SoundSourceProvider {
+    var availableSources: [SoundSourceID] {
+        availablePresets.map { SoundSourceID($0.tag) }
+    }
+
+    func displayName(for source: SoundSourceID) -> String {
+        preset(forTag: source.rawValue)?.name ?? source.rawValue
+    }
+}

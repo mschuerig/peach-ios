@@ -20,7 +20,7 @@ struct SettingsScreen: View {
     private var varyLoudness: Double = SettingsKeys.defaultVaryLoudness
 
     @Environment(\.dataStoreResetter) private var dataStoreResetter
-    @Environment(\.soundFontLibrary) private var soundFontLibrary
+    @Environment(\.soundSourceProvider) private var soundSourceProvider
 
     @State private var showResetConfirmation = false
     @State private var showResetError = false
@@ -40,8 +40,7 @@ struct SettingsScreen: View {
                 soundSource = "sf2:8:80"
             } else if soundSource == "cello" {
                 soundSource = "sf2:0:42"
-            } else if soundSource.hasPrefix("sf2:"),
-                      soundFontLibrary.preset(forTag: soundSource) == nil {
+            } else if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == soundSource }) {
                 soundSource = SettingsKeys.defaultSoundSource
             }
         }
@@ -101,8 +100,8 @@ struct SettingsScreen: View {
     private var instrumentSection: some View {
         Section("Instrument") {
             Picker("Sound Source", selection: validatedSoundSource) {
-                ForEach(soundFontLibrary.availablePresets, id: \.tag) { preset in
-                    Text(preset.name).tag(preset.tag)
+                ForEach(soundSourceProvider.availableSources, id: \.self) { source in
+                    Text(soundSourceProvider.displayName(for: source)).tag(source.rawValue)
                 }
             }
         }
@@ -119,8 +118,8 @@ struct SettingsScreen: View {
                 if current == "cello" {
                     return "sf2:0:42"
                 }
-                // Validate sf2: tags exist in library
-                if current.hasPrefix("sf2:"), soundFontLibrary.preset(forTag: current) == nil {
+                // Validate tags exist in available sources
+                if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == current }) {
                     return SettingsKeys.defaultSoundSource
                 }
                 return current

@@ -78,6 +78,7 @@ struct PeachApp: App {
                 .environment(\.trendAnalyzer, trendAnalyzer)
                 .environment(\.thresholdTimeline, thresholdTimeline)
                 .environment(\.soundFontLibrary, soundFontLibrary)
+                .environment(\.soundSourceProvider, soundFontLibrary)
                 .environment(\.dataStoreResetter, { [dataStore, comparisonSession, profile] in
                     try dataStore.deleteAll()
                     try comparisonSession.resetTrainingData()

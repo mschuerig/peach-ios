@@ -1,6 +1,6 @@
 # Story 22.5: Extract SoundSourceProvider Protocol
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,30 +28,30 @@ So that the Settings feature is decoupled from the audio implementation.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `SoundSourceProvider` protocol (AC: #1, #2)
-  - [ ] 1.1 Create `Peach/Core/Audio/SoundSourceProvider.swift`
-  - [ ] 1.2 Define protocol with `availableSources: [SoundSourceID]` and `displayName(for: SoundSourceID) -> String`
-  - [ ] 1.3 Mark protocol `@MainActor` (SoundFontLibrary is `@MainActor`)
-- [ ] Task 2: Conform `SoundFontLibrary` to `SoundSourceProvider` (AC: #1)
-  - [ ] 2.1 Add `SoundSourceProvider` conformance to `SoundFontLibrary`
-  - [ ] 2.2 Implement `availableSources` — map `availablePresets` to `[SoundSourceID]` (use `SF2Preset.tag`)
-  - [ ] 2.3 Implement `displayName(for:)` — look up preset name by SoundSourceID
-- [ ] Task 3: Update `EnvironmentKeys.swift` (AC: #1)
-  - [ ] 3.1 Add new `@Entry var soundSourceProvider: any SoundSourceProvider = SoundFontLibrary()`
-- [ ] Task 4: Update `PeachApp.swift` composition root (AC: #1)
-  - [ ] 4.1 Inject `soundFontLibrary` as `soundSourceProvider` environment value
-- [ ] Task 5: Refactor `SettingsScreen` to use `SoundSourceProvider` (AC: #1, #2, #3)
-  - [ ] 5.1 Replace `@Environment(\.soundFontLibrary)` with `@Environment(\.soundSourceProvider)`
-  - [ ] 5.2 Replace `soundFontLibrary.availablePresets` iteration with `soundSourceProvider.availableSources`
-  - [ ] 5.3 Replace `preset.name` with `soundSourceProvider.displayName(for: source)`
-  - [ ] 5.4 Replace `soundFontLibrary.preset(forTag:) == nil` validation with `!availableSources.contains(...)` check
-  - [ ] 5.5 Verify no remaining references to `SoundFontLibrary` in SettingsScreen
-- [ ] Task 6: Update `project-context.md` (AC: #2)
-  - [ ] 6.1 Document `SoundSourceProvider` protocol and its role
-  - [ ] 6.2 Update SoundFontLibrary description to note protocol conformance
-- [ ] Task 7: Run full test suite and verify (AC: #3)
-  - [ ] 7.1 Run `xcodebuild test` — all tests pass
-  - [ ] 7.2 Run `tools/check-dependencies.sh` — all dependency rules pass
+- [x] Task 1: Create `SoundSourceProvider` protocol (AC: #1, #2)
+  - [x] 1.1 Create `Peach/Core/Audio/SoundSourceProvider.swift`
+  - [x] 1.2 Define protocol with `availableSources: [SoundSourceID]` and `displayName(for: SoundSourceID) -> String`
+  - [x] 1.3 Mark protocol `@MainActor` (SoundFontLibrary is `@MainActor`) — implicit via Swift 6.2 default MainActor isolation
+- [x] Task 2: Conform `SoundFontLibrary` to `SoundSourceProvider` (AC: #1)
+  - [x] 2.1 Add `SoundSourceProvider` conformance to `SoundFontLibrary`
+  - [x] 2.2 Implement `availableSources` — map `availablePresets` to `[SoundSourceID]` (use `SF2Preset.tag`)
+  - [x] 2.3 Implement `displayName(for:)` — look up preset name by SoundSourceID
+- [x] Task 3: Update `EnvironmentKeys.swift` (AC: #1)
+  - [x] 3.1 Add new `@Entry var soundSourceProvider: any SoundSourceProvider = SoundFontLibrary()`
+- [x] Task 4: Update `PeachApp.swift` composition root (AC: #1)
+  - [x] 4.1 Inject `soundFontLibrary` as `soundSourceProvider` environment value
+- [x] Task 5: Refactor `SettingsScreen` to use `SoundSourceProvider` (AC: #1, #2, #3)
+  - [x] 5.1 Replace `@Environment(\.soundFontLibrary)` with `@Environment(\.soundSourceProvider)`
+  - [x] 5.2 Replace `soundFontLibrary.availablePresets` iteration with `soundSourceProvider.availableSources`
+  - [x] 5.3 Replace `preset.name` with `soundSourceProvider.displayName(for: source)`
+  - [x] 5.4 Replace `soundFontLibrary.preset(forTag:) == nil` validation with `!availableSources.contains(...)` check
+  - [x] 5.5 Verify no remaining references to `SoundFontLibrary` in SettingsScreen
+- [x] Task 6: Update `project-context.md` (AC: #2)
+  - [x] 6.1 Document `SoundSourceProvider` protocol and its role
+  - [x] 6.2 Update SoundFontLibrary description to note protocol conformance
+- [x] Task 7: Run full test suite and verify (AC: #3)
+  - [x] 7.1 Run `xcodebuild test` — all tests pass
+  - [x] 7.2 Run `tools/check-dependencies.sh` — all dependency rules pass
 
 ## Dev Notes
 
@@ -207,8 +207,34 @@ It wraps the tag string (e.g., `"sf2:0:42"` for Cello). It's `Hashable` and `Sen
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+None — clean implementation with no issues.
 
 ### Completion Notes List
 
+- Created `SoundSourceProvider` protocol in `Core/Audio/` with `availableSources` and `displayName(for:)` — no framework imports, depends only on `SoundSourceID`
+- Protocol is implicitly `@MainActor` via Swift 6.2 default actor isolation (no explicit annotation per project rules)
+- Added `SoundSourceProvider` conformance to `SoundFontLibrary` via extension — `availableSources` maps presets to `[SoundSourceID]`, `displayName` looks up preset by tag
+- Added `@Entry var soundSourceProvider` to `EnvironmentKeys.swift`, wired in `PeachApp.swift` using existing `soundFontLibrary` instance
+- Refactored `SettingsScreen` to depend on `soundSourceProvider` protocol — removed all `soundFontLibrary` references; Picker uses `availableSources`/`displayName`, validation uses `contains` check instead of `preset(forTag:)` nil check
+- Simplified validation: removed `hasPrefix("sf2:")` guard — any unrecognized tag now resets to default
+- Updated `project-context.md` to document `SoundSourceProvider` protocol and `SoundFontLibrary` conformance
+- Full test suite passed (0 regressions), dependency rules all pass
+
+### Change Log
+
+- 2026-03-01: Implemented story 22.5 — extracted `SoundSourceProvider` protocol, decoupled `SettingsScreen` from `SoundFontLibrary`
+
 ### File List
+
+- `Peach/Core/Audio/SoundSourceProvider.swift` (NEW)
+- `Peach/Core/Audio/SoundFontLibrary.swift` (MODIFIED)
+- `Peach/App/EnvironmentKeys.swift` (MODIFIED)
+- `Peach/App/PeachApp.swift` (MODIFIED)
+- `Peach/Settings/SettingsScreen.swift` (MODIFIED)
+- `docs/project-context.md` (MODIFIED)
+- `docs/implementation-artifacts/sprint-status.yaml` (MODIFIED)
+- `docs/implementation-artifacts/22-5-extract-soundsourceprovider-protocol.md` (MODIFIED)

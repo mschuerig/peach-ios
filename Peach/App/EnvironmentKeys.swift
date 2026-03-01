@@ -4,6 +4,7 @@ import SwiftUI
 
 extension EnvironmentValues {
     @Entry var soundFontLibrary = SoundFontLibrary()
+    @Entry var soundSourceProvider: any SoundSourceProvider = SoundFontLibrary()
     @Entry var trendAnalyzer = TrendAnalyzer()
     @Entry var thresholdTimeline = ThresholdTimeline()
     @Entry var activeSession: (any TrainingSession)? = nil

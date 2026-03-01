@@ -201,5 +201,5 @@ development_status:
   22-2-domain-type-documentation-and-api-cleanup: done
   22-3-introduce-detunedmidinote-and-two-world-architecture: done
   22-4-unified-reference-target-naming: done
-  22-5-extract-soundsourceprovider-protocol: ready-for-dev
+  22-5-extract-soundsourceprovider-protocol: review
   epic-22-retrospective: optional
