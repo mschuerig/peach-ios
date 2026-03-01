@@ -171,7 +171,7 @@ NFR14: Tuning system precision — interval frequency computations must be accur
 - Arch-E: SoundSourceProvider protocol — extracts protocol from `SoundFontLibrary`, decouples `SettingsScreen` from concrete implementation.
 
 **From Architecture (v0.3 Amendment — Session & Data):**
-- Session parameterization: `startTraining(intervals:tuningSystem:)` and `startPitchMatching(intervals:tuningSystem:)` with `currentInterval` observable state and `isIntervalMode` computed property
+- Session parameterization: `startTraining()` and `startPitchMatching()` renamed to `start()` (intervals and tuningSystem read from `userSettings`); `start()` added to `TrainingSession` protocol; `currentInterval` observable state and `isIntervalMode` computed property
 - NextComparisonStrategy update: gains `interval` + `tuningSystem` parameters, computes targetNote from interval; MIDI range boundary enforcement (upper bound shrinks by interval semitones)
 - Data model updates: `ComparisonRecord` gains `tuningSystem`, renamed fields; `PitchMatchingRecord` gains `targetNote` and `tuningSystem`; value types gain target/tuning fields
 - NavigationDestination: `.training`→`.comparison(intervals:)`, `.pitchMatching(intervals:)` — parameterized with interval sets
@@ -2417,18 +2417,23 @@ So that every training result records full interval context for data integrity a
 **When** SwiftData schema changes are applied
 **Then** no `SchemaMigrationPlan` is needed — fresh schema version is acceptable
 
-### Story 23.2: ComparisonSession and Strategy Interval Parameterization
+### Story 23.2: ComparisonSession Start Rename and Strategy Interval Support
 
 As a **developer building interval training**,
-I want `ComparisonSession.startTraining(intervals:tuningSystem:)` to accept an interval set and tuning system (no defaults), `NextComparisonStrategy` to compute interval-aware targets using `MIDINote.transposed(by:)`, and `currentInterval`/`isIntervalMode` observable state,
+I want `ComparisonSession.startTraining()` renamed to `start()`, reading `intervals` and `tuningSystem` from `userSettings`, `NextComparisonStrategy` to compute interval-aware targets using `MIDINote.transposed(by:)`, and `currentInterval`/`isIntervalMode` observable state,
 So that comparison training works with any musical interval while unison (`[.prime]`) behaves identically to current behavior (FR66).
 
 **Acceptance Criteria:**
 
+**Given** `UserSettings` protocol has no `intervals` or `tuningSystem` properties
+**When** `intervals: Set<Interval>` and `tuningSystem: TuningSystem` are added to the protocol
+**Then** `AppUserSettings` returns hardcoded `[.perfectFifth]` for `intervals` and `.equalTemperament` for `tuningSystem` (no UserDefaults backing yet)
+**And** `MockUserSettings` exposes both as mutable properties for test injection
+
 **Given** `ComparisonSession` has a `startTraining()` method
-**When** it gains parameters `intervals: Set<Interval>` and `tuningSystem: TuningSystem` (no default value)
-**Then** the interval set must be non-empty (enforced by precondition)
-**And** both parameters are stored for the training run
+**When** it is renamed to `start()`
+**Then** it reads `intervals` and `tuningSystem` from the injected `userSettings`
+**And** the interval set must be non-empty (enforced by precondition)
 
 **Given** a training session with `intervals: [.prime]`
 **When** comparisons are generated
@@ -2459,18 +2464,18 @@ So that comparison training works with any musical interval while unison (`[.pri
 **When** `ComparisonObserver` (TrainingDataStore) receives it
 **Then** `tuningSystem` is persisted to `ComparisonRecord`
 
-### Story 23.3: PitchMatchingSession Interval Parameterization
+### Story 23.3: PitchMatchingSession Start Rename, Interval Support, and Protocol Update
 
 As a **developer building interval training**,
-I want `PitchMatchingSession.startPitchMatching(intervals:tuningSystem:)` to accept an interval set and tuning system (no defaults) and generate interval-aware challenges,
-So that pitch matching training works with any musical interval while unison (`[.prime]`) behaves identically to current behavior (FR66).
+I want `PitchMatchingSession.startPitchMatching()` renamed to `start()`, reading `intervals` and `tuningSystem` from `userSettings`, and `start()` pulled up into the `TrainingSession` protocol,
+So that pitch matching training works with any musical interval while unison (`[.prime]`) behaves identically to current behavior (FR66), and both session types share a common start interface.
 
 **Acceptance Criteria:**
 
 **Given** `PitchMatchingSession` has a `startPitchMatching()` method
-**When** it gains parameters `intervals: Set<Interval>` and `tuningSystem: TuningSystem` (no default value)
-**Then** the interval set must be non-empty (enforced by precondition)
-**And** both parameters are stored for the training run
+**When** it is renamed to `start()`
+**Then** it reads `intervals` and `tuningSystem` from the injected `userSettings`
+**And** the interval set must be non-empty (enforced by precondition)
 
 **Given** a pitch matching session with `intervals: [.prime]`
 **When** a challenge is generated
@@ -2506,6 +2511,11 @@ So that pitch matching training works with any musical interval while unison (`[
 **Given** `PitchMatchingSession` has `currentInterval` and `isIntervalMode` properties
 **When** `currentInterval` is `.perfectFifth`
 **Then** `isIntervalMode` returns `true`
+
+**Given** `TrainingSession` protocol currently requires `stop()` and `isIdle`
+**When** `start()` is added to the protocol
+**Then** both `ComparisonSession` and `PitchMatchingSession` satisfy the requirement through their renamed `start()` methods
+**And** any holder of a `TrainingSession` reference can call `start()` without knowing the concrete type
 
 ### Story 23.4: Training Screen Interval Label and Observer Verification
 
@@ -2562,12 +2572,12 @@ So that tapping an interval button launches the same screen with the interval co
 **Given** the destination handler in `ContentView`
 **When** routing `.comparison(let intervals)`
 **Then** `ComparisonScreen(intervals: intervals)` is created
-**And** the screen passes `intervals` to `session.startTraining(intervals:)`
+**And** the screen calls `session.start()`
 
 **Given** the destination handler routing `.pitchMatching(let intervals)`
 **When** navigating
 **Then** `PitchMatchingScreen(intervals: intervals)` is created
-**And** the screen passes `intervals` to `session.startPitchMatching(intervals:)`
+**And** the screen calls `session.start()`
 
 **Given** `NavigationDestination` conforms to `Hashable`
 **When** `Set<Interval>` is a parameter
@@ -2610,3 +2620,9 @@ So that I can launch any training mode with a single tap (FR65).
 **When** viewed in portrait and landscape on iPhone and iPad
 **Then** all four buttons are accessible and the visual separator is visible
 **And** the one-handed, thumb-friendly layout is preserved
+
+---
+
+## Action Items
+
+- [ ] **Future Epic:** Extend `SettingsScreen` to let users choose `tuningSystem` and `intervals`, backed by UserDefaults in `AppUserSettings` (currently hardcoded in Story 23.2)
