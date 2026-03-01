@@ -43,7 +43,7 @@ struct IntervalSelectorView: View {
             : DirectedInterval.down(interval)
         let isActive = selection.intervals.contains(directedInterval)
         let isPrimeDown = interval == .prime && direction == .down
-        let isLastActive = isActive && selection.intervals.count == 1
+        let isLastActive = selection.isLastRemaining(directedInterval)
 
         return Button {
             toggle(directedInterval)

@@ -9,10 +9,15 @@ struct IntervalSelection: RawRepresentable, Equatable, Sendable {
 
     init?(rawValue: String) {
         guard let data = rawValue.data(using: .utf8),
-              let decoded = try? JSONDecoder().decode(Set<DirectedInterval>.self, from: data) else {
+              let decoded = try? JSONDecoder().decode(Set<DirectedInterval>.self, from: data),
+              !decoded.isEmpty else {
             return nil
         }
         intervals = decoded
+    }
+
+    func isLastRemaining(_ interval: DirectedInterval) -> Bool {
+        intervals.count == 1 && intervals.contains(interval)
     }
 
     var rawValue: String {

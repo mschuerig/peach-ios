@@ -1,6 +1,6 @@
 # Story 25.2: Interval Selector on Settings Screen
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -387,3 +387,4 @@ None — clean implementation with no blockers.
 ## Change Log
 
 - 2026-03-01: Implemented story 25.2 — Added interval selector grid to Settings screen, `IntervalSelection` serialization wrapper for `@AppStorage`, `Interval.abbreviation` property, updated `AppUserSettings.intervals` to read from UserDefaults, updated `StartScreen` to use user-selected intervals, added EN/DE localization
+- 2026-03-01: Code review fixes — [H1] Extracted `isLastRemaining` from view to `IntervalSelection` for testability, added 3 minimum-selection guard tests (AC 7). [M1] `IntervalSelection.init?(rawValue:)` now rejects empty sets, falling back to default. [M2] Added `defer` blocks for UserDefaults cleanup in tests.
