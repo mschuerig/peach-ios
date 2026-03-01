@@ -46,6 +46,7 @@ final class PitchMatchingSession: TrainingSession {
     private var currentHandle: PlaybackHandle?
     private(set) var referenceFrequency: Double?
     private var pendingTunableFrequency: Frequency?
+    private var sliderTouchContinuation: CheckedContinuation<Void, Never>?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
 
@@ -101,7 +102,9 @@ final class PitchMatchingSession: TrainingSession {
     func adjustPitch(_ value: Double) {
         if state == .awaitingSliderTouch {
             state = .playingTunable
-            startTunableNote()
+            sliderTouchContinuation?.resume()
+            sliderTouchContinuation = nil
+            return
         }
         guard state == .playingTunable, let referenceFrequency else { return }
         let centOffset = value * Self.initialCentOffsetRange.upperBound
@@ -114,7 +117,9 @@ final class PitchMatchingSession: TrainingSession {
     func commitPitch(_ value: Double) {
         if state == .awaitingSliderTouch {
             state = .playingTunable
-            startTunableNote()
+            pendingTunableFrequency = nil
+            sliderTouchContinuation?.resume()
+            sliderTouchContinuation = nil
         }
         guard state == .playingTunable, let referenceFrequency else { return }
         let centOffset = value * Self.initialCentOffsetRange.upperBound
@@ -168,6 +173,8 @@ final class PitchMatchingSession: TrainingSession {
         trainingTask = nil
         feedbackTask?.cancel()
         feedbackTask = nil
+        sliderTouchContinuation?.resume()
+        sliderTouchContinuation = nil
         let handleToStop = currentHandle
         currentHandle = nil
         pendingTunableFrequency = nil
@@ -181,33 +188,6 @@ final class PitchMatchingSession: TrainingSession {
             try? await handleToStop?.stop()
         }
         state = .idle
-    }
-
-    private func startTunableNote() {
-        guard let frequency = pendingTunableFrequency else { return }
-        pendingTunableFrequency = nil
-        Task {
-            do {
-                let handle = try await notePlayer.play(
-                    frequency: frequency,
-                    velocity: velocity,
-                    amplitudeDB: AmplitudeDB(0.0)
-                )
-                guard state != .idle && !Task.isCancelled else {
-                    Task { try? await handle.stop() }
-                    return
-                }
-                currentHandle = handle
-            } catch is CancellationError {
-                logger.info("Tunable note start cancelled")
-            } catch let error as AudioError {
-                logger.error("Audio error starting tunable note: \(error.localizedDescription)")
-                stop()
-            } catch {
-                logger.error("Unexpected error starting tunable note: \(error.localizedDescription)")
-                stop()
-            }
-        }
     }
 
     // MARK: - Configuration
@@ -275,6 +255,28 @@ final class PitchMatchingSession: TrainingSession {
 
             self.pendingTunableFrequency = tunableFrequency
             state = .awaitingSliderTouch
+
+            await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                self.sliderTouchContinuation = continuation
+            }
+
+            guard !Task.isCancelled else { return }
+            guard let tunableFreq = pendingTunableFrequency else { return }
+            pendingTunableFrequency = nil
+            guard state == .playingTunable else { return }
+
+            let handle = try await notePlayer.play(
+                frequency: tunableFreq,
+                velocity: velocity,
+                amplitudeDB: AmplitudeDB(0.0)
+            )
+
+            guard state != .idle && !Task.isCancelled else {
+                Task { try? await handle.stop() }
+                return
+            }
+
+            currentHandle = handle
         } catch is CancellationError {
             logger.info("Training cancelled")
         } catch let error as AudioError {

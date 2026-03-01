@@ -1,6 +1,6 @@
 # Story 26.1: Delay targetNote Until Slider Touch
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -397,6 +397,7 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-03-01: Implemented story 26.1 — Added `awaitingSliderTouch` state to PitchMatchingSession state machine. Target note now plays only when user first touches the pitch slider, giving time to internalize the reference pitch.
+- 2026-03-01: Code review fixes — Replaced unstructured `startTunableNote()` Task with structured concurrency via `CheckedContinuation` in `playNextChallenge()`. Fixed audio resource leak in `commitPitch()` from `awaitingSliderTouch` (orphaned handle). `adjustPitch()` now returns early on transition (no nil-handle adjustment). Updated test names and assertions.
 
 ### File List
 

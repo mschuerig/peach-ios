@@ -172,13 +172,13 @@ struct PitchMatchingSessionTests {
         #expect(notePlayer.lastHandle != nil)
     }
 
-    @Test("commitPitch from awaitingSliderTouch produces valid result")
+    @Test("commitPitch from awaitingSliderTouch produces valid result without starting tunable note")
     func commitPitchFromAwaitingSliderTouchProducesResult() async throws {
         let mockSettings = MockUserSettings()
         mockSettings.noteRangeMin = MIDINote(69)
         mockSettings.noteRangeMax = MIDINote(69)
         mockSettings.referencePitch = .concert440
-        let (session, _, _, observer, _) = makePitchMatchingSession(userSettings: mockSettings)
+        let (session, notePlayer, _, observer, _) = makePitchMatchingSession(userSettings: mockSettings)
         session.start(intervals: [.prime])
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -187,6 +187,8 @@ struct PitchMatchingSessionTests {
 
         let result = try #require(observer.lastResult)
         #expect(abs(result.userCentError) < 0.01)
+        // Only reference note played — no tunable note started (would be immediately orphaned)
+        #expect(notePlayer.playCallCount == 1)
     }
 
     @Test("stop from awaitingSliderTouch transitions to idle with no tunable note")
@@ -329,8 +331,8 @@ struct PitchMatchingSessionTests {
         #expect(session.state == .awaitingSliderTouch)
     }
 
-    @Test("commitPitch is no-op when not playingTunable")
-    func commitPitchNoOpWhenNotPlayingTunable() async throws {
+    @Test("commitPitch is no-op when idle")
+    func commitPitchNoOpWhenIdle() async throws {
         let (session, _, _, observer, _) = makePitchMatchingSession()
         // Session is idle — commitPitch should do nothing
         session.commitPitch(0.0)
