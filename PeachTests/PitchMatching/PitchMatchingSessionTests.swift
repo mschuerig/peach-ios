@@ -439,6 +439,28 @@ struct PitchMatchingSessionTests {
         #expect(abs(handle.lastAdjustedFrequency! - expectedFreq) < 0.01)
     }
 
+    @Test("adjustPitch at center adjusts to target note frequency for intervals")
+    func adjustPitchCenterTargetFrequencyForInterval() async throws {
+        let mockSettings = MockUserSettings()
+        mockSettings.intervals = [.perfectFifth]
+        mockSettings.noteRangeMin = MIDINote(60)
+        mockSettings.noteRangeMax = MIDINote(60)
+        mockSettings.referencePitch = .concert440
+        let (session, notePlayer, _, _, _) = makePitchMatchingSession(userSettings: mockSettings)
+        session.start()
+        try await waitForState(session, .playingTunable)
+
+        let handle = try #require(notePlayer.lastHandle)
+        session.adjustPitch(0.0)
+        try await Task.sleep(for: .milliseconds(50))
+
+        // Target = G4 = MIDI 67, anchor should be target frequency
+        let expectedTargetFreq = TuningSystem.equalTemperament.frequency(
+            for: MIDINote(67), referencePitch: .concert440)
+        #expect(handle.adjustFrequencyCallCount == 1)
+        #expect(abs(handle.lastAdjustedFrequency! - expectedTargetFreq.rawValue) < 0.01)
+    }
+
     @Test("commitPitch converts and commits result")
     func commitPitchCommitsResult() async throws {
         let mockSettings = MockUserSettings()
@@ -605,6 +627,30 @@ struct PitchMatchingSessionTests {
             for: challenge.targetNote, referencePitch: .concert440)
         let refFreq = try #require(session.referenceFrequency)
         #expect(abs(refFreq - expectedTargetFreq.rawValue) < 0.01)
+    }
+
+    @Test("tunable note is detuned from target note for intervals")
+    func tunableNoteDetunedFromTargetForInterval() async throws {
+        let mockSettings = MockUserSettings()
+        mockSettings.intervals = [.perfectFifth]
+        mockSettings.noteRangeMin = MIDINote(60)
+        mockSettings.noteRangeMax = MIDINote(60)
+        mockSettings.referencePitch = .concert440
+        let (session, notePlayer, _, _, _) = makePitchMatchingSession(userSettings: mockSettings)
+        session.start()
+        try await waitForState(session, .playingTunable)
+
+        let challenge = try #require(session.currentChallenge)
+        #expect(challenge.targetNote.rawValue == 67)
+
+        // Tunable note should be detuned from TARGET (67), not reference (60)
+        let expectedFreq = TuningSystem.equalTemperament.frequency(
+            for: DetunedMIDINote(note: challenge.targetNote, offset: Cents(challenge.initialCentOffset)),
+            referencePitch: .concert440)
+
+        #expect(notePlayer.playCallCount >= 2)
+        let tunableFreq = notePlayer.lastFrequency!
+        #expect(abs(tunableFreq - expectedFreq.rawValue) < 0.01)
     }
 
     @Test("commitPitch at center produces zero cent error for interval")

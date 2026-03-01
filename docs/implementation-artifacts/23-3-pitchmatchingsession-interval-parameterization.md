@@ -1,6 +1,6 @@
 # Story 23.3: PitchMatchingSession Start Rename, Interval Support, and Protocol Update
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -348,6 +348,7 @@ None — clean implementation, no debugging needed.
 ### Change Log
 
 - 2026-03-01: Implemented story 23.3 — PitchMatchingSession start rename, interval support, and TrainingSession protocol update
+- 2026-03-01: Code review fixes — added 2 interval-mode tests (tunable note detuned from target, adjustPitch anchor), cleared `lastResult` in `stop()` for consistency with ComparisonSession
 
 ### File List
 

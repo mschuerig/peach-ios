@@ -208,6 +208,6 @@ development_status:
   epic-23: in-progress
   23-1-data-model-and-value-type-updates-for-interval-context: done
   23-2-comparisonsession-and-strategy-interval-parameterization: done
-  23-3-pitchmatchingsession-interval-parameterization: review
+  23-3-pitchmatchingsession-interval-parameterization: done
   23-4-training-screen-interval-label-and-observer-verification: backlog
   epic-23-retrospective: optional

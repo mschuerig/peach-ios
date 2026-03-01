@@ -159,6 +159,7 @@ final class PitchMatchingSession: TrainingSession {
         currentHandle = nil
         referenceFrequency = nil
         currentChallenge = nil
+        lastResult = nil
         currentInterval = nil
         sessionIntervals = []
         sessionTuningSystem = .equalTemperament
