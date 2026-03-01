@@ -203,3 +203,11 @@ development_status:
   22-4-unified-reference-target-naming: done
   22-5-extract-soundsourceprovider-protocol: done
   epic-22-retrospective: optional
+
+  # Epic 23: Intervals Everywhere — Generalize Training for Intervals
+  epic-23: in-progress
+  23-1-data-model-and-value-type-updates-for-interval-context: ready-for-dev
+  23-2-comparisonsession-and-strategy-interval-parameterization: backlog
+  23-3-pitchmatchingsession-interval-parameterization: backlog
+  23-4-training-screen-interval-label-and-observer-verification: backlog
+  epic-23-retrospective: optional
