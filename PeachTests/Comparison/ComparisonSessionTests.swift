@@ -294,4 +294,23 @@ struct ComparisonSessionTests {
         #expect(intervals.contains(interval))
         f.session.stop()
     }
+
+    // MARK: - Tuning System Visibility Tests (Story 30.3)
+
+    @Test("sessionTuningSystem is equalTemperament by default")
+    func sessionTuningSystemDefault() async {
+        let f = makeComparisonSession()
+        #expect(f.session.sessionTuningSystem == .equalTemperament)
+    }
+
+    @Test("sessionTuningSystem reflects userSettings after start")
+    func sessionTuningSystemFromSettings() async {
+        let f = makeComparisonSession()
+        f.mockPlayer.instantPlayback = true
+        f.mockSettings.tuningSystem = .justIntonation
+        f.session.start(intervals: [.prime])
+        await Task.yield()
+        #expect(f.session.sessionTuningSystem == .justIntonation)
+        f.session.stop()
+    }
 }

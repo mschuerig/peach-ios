@@ -66,7 +66,7 @@ final class ComparisonSession: TrainingSession {
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
     private var sessionIntervals: Set<DirectedInterval> = []
-    private var sessionTuningSystem: TuningSystem = .equalTemperament
+    private(set) var sessionTuningSystem: TuningSystem = .equalTemperament
 
     // MARK: - Initialization
 

@@ -12,10 +12,16 @@ struct PitchMatchingScreen: View {
     var body: some View {
         VStack(spacing: 8) {
             if pitchMatchingSession.isIntervalMode, let interval = pitchMatchingSession.currentInterval {
-                Text(interval.displayName)
-                    .font(.title3)
-                    .padding(.horizontal)
-                    .accessibilityLabel(String(localized: "Target interval: \(interval.displayName)"))
+                VStack(spacing: 2) {
+                    Text(interval.displayName)
+                        .font(.title3)
+                    Text(pitchMatchingSession.sessionTuningSystem.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.horizontal)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchMatchingSession.sessionTuningSystem.displayName)"))
             }
 
             PitchMatchingFeedbackIndicator(

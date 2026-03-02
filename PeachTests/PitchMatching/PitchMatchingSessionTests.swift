@@ -1134,4 +1134,23 @@ struct PitchMatchingSessionAudioInterruptionTests {
         #expect(session.state == .awaitingSliderTouch)
     }
 
+    // MARK: - Tuning System Visibility Tests (Story 30.3)
+
+    @Test("sessionTuningSystem is equalTemperament by default")
+    func sessionTuningSystemDefault() async {
+        let (session, _, _, _, _) = makePitchMatchingSession()
+        #expect(session.sessionTuningSystem == .equalTemperament)
+    }
+
+    @Test("sessionTuningSystem reflects userSettings after start")
+    func sessionTuningSystemFromSettings() async {
+        let (session, notePlayer, _, _, mockSettings) = makePitchMatchingSession()
+        notePlayer.instantPlayback = true
+        mockSettings.tuningSystem = .justIntonation
+        session.start(intervals: [.prime])
+        await Task.yield()
+        #expect(session.sessionTuningSystem == .justIntonation)
+        session.stop()
+    }
+
 }

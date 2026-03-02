@@ -34,7 +34,7 @@ final class PitchMatchingSession: TrainingSession {
     // MARK: - Interval State
 
     private var sessionIntervals: Set<DirectedInterval> = []
-    private var sessionTuningSystem: TuningSystem = .equalTemperament
+    private(set) var sessionTuningSystem: TuningSystem = .equalTemperament
     private(set) var currentInterval: DirectedInterval? = nil
     var isIntervalMode: Bool {
         guard let current = currentInterval else { return false }

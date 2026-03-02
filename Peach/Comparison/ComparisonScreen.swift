@@ -31,9 +31,15 @@ struct ComparisonScreen: View {
             }
 
             if comparisonSession.isIntervalMode, let interval = comparisonSession.currentInterval {
-                Text(interval.displayName)
-                    .font(.title3)
-                    .accessibilityLabel(String(localized: "Target interval: \(interval.displayName)"))
+                VStack(spacing: 2) {
+                    Text(interval.displayName)
+                        .font(.title3)
+                    Text(comparisonSession.sessionTuningSystem.displayName)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(comparisonSession.sessionTuningSystem.displayName)"))
             }
 
             Group {

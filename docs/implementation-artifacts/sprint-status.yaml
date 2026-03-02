@@ -252,7 +252,8 @@ development_status:
 
   # Epic 30: Implement Most Relevant Tuning System
   # Depends on: Epic 29 (specific tuning system TBD based on research findings)
-  epic-30: done
+  epic-30: in-progress
   30-1-add-tuning-system-case: done # Implement centOffset switch branch, storage identifier, tests for the chosen tuning system
   30-2-add-tuning-system-picker-to-settings: done # User can select between 12-TET and new system in Settings, localized names and descriptions
+  30-3-add-tuning-system-indicator-to-interval-training-screens: review # Show active tuning system name below interval name on both training screens
   epic-30-retrospective: optional
