@@ -4,12 +4,14 @@ claude-audit: Match Claude Code sessions with git commits to produce an audit tr
 
 Scans the git history of the current repo, finds Claude Code session transcripts
 that overlap with each commit's timestamp, and produces a per-commit markdown
-file containing only the human/assistant conversation (no tool calls, no subagents).
+file containing the conversation and (optionally) tool calls, thinking, and
+tool output.
 
 Output goes to .claude-audit/ at the repo root.
 
 Usage:
     python claude-audit.py [--repo-path PATH] [--output-dir DIR] [--author AUTHOR]
+                           [--detail minimal|standard|full]
 """
 
 import argparse
@@ -126,17 +128,17 @@ def find_session_dir(repo_root: Path) -> Path | None:
     return None
 
 
-def parse_session_file(filepath: Path) -> list[dict]:
+def parse_session_file(filepath: Path, detail: str = "minimal") -> list[dict]:
     """
     Parse a Claude Code session JSONL file.
 
     Returns a list of message dicts with:
       - role: "human" or "assistant"
-      - text: the message text content
+      - blocks: list of content block dicts (see extract_content_blocks)
       - timestamp: datetime
       - session_id: str
     
-    Filters out: tool_use, tool_result, subagent messages, system/meta messages.
+    What is included depends on the detail level (minimal / standard / full).
     """
     messages = []
     try:
@@ -184,16 +186,15 @@ def parse_session_file(filepath: Path) -> list[dict]:
 
                 session_id = entry.get("sessionId", filepath.stem)
 
-                # Extract text content only (skip tool_use and tool_result blocks)
                 content = message.get("content", "")
-                text = extract_text_content(content)
+                blocks = extract_content_blocks(content, detail)
 
-                if not text:
+                if not blocks:
                     continue
 
                 messages.append({
                     "role": "human" if role == "user" else "assistant",
-                    "text": text,
+                    "blocks": blocks,
                     "timestamp": timestamp,
                     "session_id": session_id,
                 })
@@ -203,29 +204,99 @@ def parse_session_file(filepath: Path) -> list[dict]:
     return messages
 
 
-def extract_text_content(content) -> str:
-    """Extract only text content from a message's content field.
-    
-    Content can be:
-      - A plain string (user messages)
-      - A list of content blocks (assistant messages), where we only want type=text
+def extract_content_blocks(content, detail: str = "minimal") -> list[dict]:
+    """Extract content blocks from a message's content field.
+
+    Returns a list of typed dicts:
+      {"type": "text", "text": "..."}
+      {"type": "tool_use", "name": "...", "input": {...}}
+      {"type": "thinking", "text": "..."}
+      {"type": "tool_result", "content": "...", "is_error": bool}
+
+    What gets included depends on the detail level:
+      minimal  — text only
+      standard — text + tool_use
+      full     — text + tool_use + thinking + tool_result
     """
     if isinstance(content, str):
-        return content.strip()
+        stripped = content.strip()
+        return [{"type": "text", "text": stripped}] if stripped else []
 
-    if isinstance(content, list):
-        texts = []
-        for block in content:
-            if isinstance(block, dict) and block.get("type") == "text":
-                text = block.get("text", "")
-                if text:
-                    texts.append(text.strip())
-        return "\n\n".join(texts)
+    if not isinstance(content, list):
+        return []
 
-    return ""
+    blocks = []
+    for block in content:
+        if not isinstance(block, dict):
+            continue
+        btype = block.get("type", "")
+
+        if btype == "text":
+            text = block.get("text", "").strip()
+            if text:
+                blocks.append({"type": "text", "text": text})
+
+        elif btype == "tool_use" and detail in ("standard", "full"):
+            blocks.append({
+                "type": "tool_use",
+                "name": block.get("name", "unknown"),
+                "input": block.get("input", {}),
+            })
+
+        elif btype == "thinking" and detail == "full":
+            text = block.get("thinking", "").strip()
+            if text:
+                blocks.append({"type": "thinking", "text": text})
+
+        elif btype == "tool_result" and detail == "full":
+            result_content = _extract_tool_result_text(block)
+            if result_content:
+                blocks.append({
+                    "type": "tool_result",
+                    "content": result_content,
+                    "is_error": block.get("is_error", False),
+                })
+
+    return blocks
 
 
-def load_all_sessions(session_dir: Path) -> dict[str, list[dict]]:
+# Maximum lines / chars to keep from a single tool result at detail=full.
+_TOOL_RESULT_MAX_LINES = 8
+_TOOL_RESULT_MAX_CHARS = 600
+
+
+def _extract_tool_result_text(block: dict) -> str:
+    """Pull a displayable string out of a tool_result content block, truncated."""
+    content = block.get("content", "")
+
+    # content can be a string or a list of sub-blocks
+    if isinstance(content, str):
+        raw = content
+    elif isinstance(content, list):
+        parts = []
+        for sub in content:
+            if isinstance(sub, dict) and sub.get("type") == "text":
+                parts.append(sub.get("text", ""))
+        raw = "\n".join(parts)
+    else:
+        return ""
+
+    raw = raw.strip()
+    if not raw:
+        return ""
+
+    # Truncate
+    lines = raw.splitlines()
+    if len(lines) > _TOOL_RESULT_MAX_LINES:
+        lines = lines[:_TOOL_RESULT_MAX_LINES]
+        lines.append(f"… ({len(raw.splitlines()) - _TOOL_RESULT_MAX_LINES} more lines)")
+    text = "\n".join(lines)
+    if len(text) > _TOOL_RESULT_MAX_CHARS:
+        text = text[:_TOOL_RESULT_MAX_CHARS] + " …(truncated)"
+    return text
+
+
+def load_all_sessions(session_dir: Path, detail: str = "minimal") -> dict[str, list[dict]]:
     """Load all non-agent session files from the session directory.
     
     Returns a dict mapping session_id -> sorted list of messages.
@@ -238,7 +309,7 @@ def load_all_sessions(session_dir: Path) -> dict[str, list[dict]]:
         if filepath.name.startswith("agent-"):
             continue
 
-        messages = parse_session_file(filepath)
+        messages = parse_session_file(filepath, detail)
         if not messages:
             continue
 
@@ -326,8 +397,8 @@ def ensure_aware(dt: datetime) -> datetime:
 
 
 def format_timestamp(dt: datetime) -> str:
-    """Format a datetime for display."""
-    return dt.strftime("%Y-%m-%d %H:%M:%S %Z")
+    """Format a datetime as ISO-8601 with minute precision."""
+    return dt.strftime("%Y-%m-%dT%H:%M")
 
 
 def generate_commit_markdown(
@@ -397,12 +468,22 @@ def generate_commit_markdown(
         lines.append("")
 
         for msg in messages:
-            role_label = "🧑 Human" if msg["role"] == "human" else "🤖 Assistant"
-            ts = msg["timestamp"].strftime("%H:%M:%S")
-            lines.append(f"### {role_label} ({ts})")
-            lines.append("")
-            lines.append(msg["text"])
-            lines.append("")
+            # If a "human" message contains only tool results (no actual user
+            # text), render the results without a misleading "Human" header.
+            has_text = any(b["type"] == "text" for b in msg["blocks"])
+            only_tool_results = all(b["type"] == "tool_result" for b in msg["blocks"])
+
+            if msg["role"] == "human" and not has_text and only_tool_results:
+                # Render tool results directly (they follow the preceding
+                # assistant tool_use call and are self-explanatory).
+                lines.extend(_render_blocks(msg["blocks"]))
+            else:
+                role_label = "🧑 Human" if msg["role"] == "human" else "🤖 Assistant"
+                ts = format_timestamp(msg["timestamp"])
+                lines.append(f"### {role_label} ({ts})")
+                lines.append("")
+                lines.extend(_render_blocks(msg["blocks"]))
+                lines.append("")
 
     # Bottom navigation
     if include_nav:
@@ -410,6 +491,68 @@ def generate_commit_markdown(
         lines.append("")
         lines.append(nav)
         lines.append("")
+
+    return "\n".join(lines)
+
+
+def _render_blocks(blocks: list[dict]) -> list[str]:
+    """Render a list of content blocks to markdown lines."""
+    lines = []
+    for block in blocks:
+        btype = block["type"]
+
+        if btype == "text":
+            lines.append(block["text"])
+            lines.append("")
+
+        elif btype == "tool_use":
+            compact_input = _format_tool_input(block["input"])
+            lines.append("<details>")
+            lines.append(f"<summary>🔧 <code>{block['name']}</code></summary>")
+            lines.append("")
+            lines.append(f"```")
+            lines.append(compact_input)
+            lines.append(f"```")
+            lines.append("")
+            lines.append("</details>")
+            lines.append("")
+
+        elif btype == "thinking":
+            lines.append("<details>")
+            lines.append("<summary>💭 Thinking</summary>")
+            lines.append("")
+            lines.append(block["text"])
+            lines.append("")
+            lines.append("</details>")
+            lines.append("")
+
+        elif btype == "tool_result":
+            error_tag = " ❌" if block.get("is_error") else ""
+            lines.append("<details>")
+            lines.append(f"<summary>📎 Result{error_tag}</summary>")
+            lines.append("")
+            lines.append("```")
+            lines.append(block["content"])
+            lines.append("```")
+            lines.append("")
+            lines.append("</details>")
+            lines.append("")
+
+    return lines
+
+
+def _format_tool_input(input_dict: dict) -> str:
+    """Format tool input for display inside a code block, one arg per line."""
+    if not input_dict:
+        return "(no arguments)"
+
+    lines = []
+    for key, value in input_dict.items():
+        val_str = json.dumps(value, ensure_ascii=False) if not isinstance(value, str) else value
+        # Truncate individual values that are very long
+        if len(val_str) > 120:
+            val_str = val_str[:117] + "…"
+        lines.append(f"{key}: {val_str}")
 
     return "\n".join(lines)
 
@@ -434,6 +577,7 @@ def generate_index(
     commits_with_sessions: list[tuple[dict, list[tuple[str, list[dict]]]]],
     total_commits: int,
     repo_root: Path,
+    detail: str = "minimal",
 ) -> str:
     """Generate the index.md file listing all audited commits."""
     lines = []
@@ -441,6 +585,7 @@ def generate_index(
     lines.append(f'repo: "{repo_root}"')
     lines.append(f"total_commits: {total_commits}")
     lines.append(f"audited_commits: {len(commits_with_sessions)}")
+    lines.append(f'detail: "{detail}"')
     lines.append(f'generated: "{datetime.now(timezone.utc).isoformat()}"')
     lines.append("---")
     lines.append("")
@@ -455,7 +600,7 @@ def generate_index(
 
     for commit, matched in commits_with_sessions:
         short = commit["short_hash"]
-        date = commit["timestamp"].strftime("%Y-%m-%d %H:%M")
+        date = format_timestamp(commit["timestamp"])
         subject = commit["subject"]
         n_sessions = len(matched)
         n_messages = sum(len(msgs) for _, msgs in matched)
@@ -500,6 +645,14 @@ def main():
         "--dry-run",
         action="store_true",
         help="Show what would be generated without writing files",
+    )
+    parser.add_argument(
+        "--detail",
+        choices=("minimal", "standard", "full"),
+        default="minimal",
+        help="Detail level: minimal (human/assistant text only), "
+             "standard (+tool call names & arguments), "
+             "full (+thinking blocks, +truncated tool output). Default: minimal.",
     )
     parser.add_argument(
         "--rebuild",
@@ -550,13 +703,14 @@ def main():
 
     # Load sessions
     info("Loading sessions...")
-    sessions = load_all_sessions(session_dir)
+    sessions = load_all_sessions(session_dir, detail=args.detail)
     if not sessions:
-        info("No sessions found (or all sessions contained only tool calls).")
+        info("No sessions found (or all sessions were empty at this detail level).")
         sys.exit(0)
 
     total_messages = sum(len(msgs) for msgs in sessions.values())
-    info(f"  Found {len(sessions)} session(s) with {total_messages} human/assistant message(s)")
+    detail_label = {"minimal": "conversation", "standard": "conversation+tools", "full": "full detail"}
+    info(f"  Found {len(sessions)} session(s) with {total_messages} entries ({detail_label[args.detail]})")
 
     # Get commits
     info("Reading git history...")
@@ -585,7 +739,7 @@ def main():
         # Header
         parts.append(generate_index(
             [(c, commit_sessions[c["hash"]]) for c in audited],
-            len(commits), repo_root,
+            len(commits), repo_root, detail=args.detail,
         ))
 
         # Each commit, oldest first, no nav links
@@ -662,7 +816,7 @@ def main():
         info("\nNo new commits to audit.")
         # Still regenerate index in case it was deleted
         commits_with_sessions = [(c, commit_sessions[c["hash"]]) for c in audited]
-        index_md = generate_index(commits_with_sessions, len(commits), repo_root)
+        index_md = generate_index(commits_with_sessions, len(commits), repo_root, detail=args.detail)
         index_path = output_dir / "index.md"
         index_path.write_text(index_md, encoding="utf-8")
         info(f"  index.md refreshed — {len(commits_with_sessions)} audited commits")
@@ -698,7 +852,7 @@ def main():
     commits_with_sessions = [(c, commit_sessions[c["hash"]]) for c in audited]
 
     # Write index
-    index_md = generate_index(commits_with_sessions, len(commits), repo_root)
+    index_md = generate_index(commits_with_sessions, len(commits), repo_root, detail=args.detail)
     index_path = output_dir / "index.md"
     index_path.write_text(index_md, encoding="utf-8")
     info(f"  index.md — {len(commits_with_sessions)} audited commits")
