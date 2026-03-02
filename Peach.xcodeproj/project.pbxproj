@@ -61,9 +61,9 @@
 			path = PeachTests;
 			sourceTree = "<group>";
 		};
-		4C51896E2F4CB18300EF6441 /* tools */ = {
+		4CEC64532F55314C002420F1 /* bin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = tools;
+			path = bin;
 			sourceTree = "<group>";
 		};
 		4CEF40492F3E763100BA099F /* docs */ = {
@@ -102,8 +102,8 @@
 				4CBCEE5B2F45CC28006FEF97 /* LICENSE */,
 				4CBCEE5C2F45CC28006FEF97 /* NOTICE */,
 				4CBCEE5D2F45CC28006FEF97 /* README.md */,
-				4C51896E2F4CB18300EF6441 /* tools */,
 				4C53463244000000000SF202 /* GeneralUser-GS.sf2 */,
+				4CEC64532F55314C002420F1 /* bin */,
 			);
 			sourceTree = "<group>";
 		};
