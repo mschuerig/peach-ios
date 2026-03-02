@@ -241,7 +241,7 @@ development_status:
   # Work order: top to bottom
   epic-28: in-progress
   28-1-audit-interval-and-tuningsystem-domain-types: done # Adam reviews Interval, DirectedInterval, Direction, TuningSystem, MIDINote, DetunedMIDINote, Frequency for hidden assumptions and musical correctness
-  28-2-audit-noteplayer-and-frequency-computation-chain: ready-for-dev # Adam reviews full pipeline from domain types through TuningSystem.frequency() to SoundFontNotePlayer
+  28-2-audit-noteplayer-and-frequency-computation-chain: review # Adam reviews full pipeline from domain types through TuningSystem.frequency() to SoundFontNotePlayer
   epic-28-retrospective: optional
 
   # Epic 29: Tuning System Landscape — Research Practical Alternatives to 12-TET

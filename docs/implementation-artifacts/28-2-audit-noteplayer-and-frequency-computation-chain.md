@@ -1,6 +1,6 @@
 # Story 28.2: Audit NotePlayer and Frequency Computation Chain
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,35 +26,35 @@ so that implementation-level errors, hidden assumptions, and precision issues ar
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Load the Adam agent persona (`/bmad-agent-music-domain-expert`) (AC: #1)
-- [ ] Task 2: Audit the forward pipeline — TuningSystem → Frequency → NotePlayer (AC: #1, #8, #9)
-  - [ ] 2.1 `NotePlayer.swift` — protocol design, `Frequency`-based API, default duration extension, `stopAll()`
-  - [ ] 2.2 `TuningSystem.frequency(for:referencePitch:)` → `NotePlayer.play()` data flow — confirm sessions pass explicit `tuningSystem` and `referencePitch` (no defaults)
-  - [ ] 2.3 `Comparison.swift` — `referenceFrequency()` and `targetFrequency()` convenience methods
-- [ ] Task 3: Audit the SoundFont playback sub-operations (AC: #1, #2, #3, #5)
-  - [ ] 3.1 `SoundFontNotePlayer.startNote()` — decompose → pitchBendValue → overallGain → sendPitchBend → startNote sequence
-  - [ ] 3.2 `SoundFontNotePlayer.decompose(frequency:)` — Hz-to-MIDI inverse formula, rounding, clamping, cent remainder
-  - [ ] 3.3 `SoundFontNotePlayer.pitchBendValue(forCents:)` — cents-to-14-bit-MIDI-bend formula, ±200 cent assumption, clamping
-  - [ ] 3.4 `sendPitchBendRange()` — RPN CC#101/100/6/38 sequence, ±2 semitone range, MIDI spec compliance
-- [ ] Task 4: Audit the PlaybackHandle adjustment chain (AC: #4)
-  - [ ] 4.1 `SoundFontPlaybackHandle.adjustFrequency()` — centDifference computation from base MIDI note, ±200 cent guard
-  - [ ] 4.2 `SoundFontPlaybackHandle.stop()` — fade-out, noteOff, pitch bend reset sequence
-- [ ] Task 5: End-to-end precision analysis (AC: #6)
-  - [ ] 5.1 Forward chain: `DetunedMIDINote` → `TuningSystem.frequency()` → `decompose()` → MIDI note + pitch bend → sounding frequency — quantify cumulative error
-  - [ ] 5.2 Pitch bend resolution: 14-bit MIDI (0–16383) across ±200 cents = ~0.024 cents/step — is this sufficient for 0.1-cent target?
-  - [ ] 5.3 `adjustFrequency()` chain: target Hz → decompose → centDifference from base → pitchBendValue — does double-decompose introduce error?
-- [ ] Task 6: Non-12-TET generalizability assessment (AC: #7, #8)
-  - [ ] 6.1 Just intonation example: P5 at +1.955¢ from 12-TET — trace through full pipeline and verify correctness
-  - [ ] 6.2 Large-offset intervals: just M3 at -13.686¢ from 12-TET — does decompose round to the same MIDI note? Does pitch bend range cover it?
-  - [ ] 6.3 Identify which components are genuinely 12-TET-specific (MIDI grid) vs. which carry hidden 12-TET assumptions
-  - [ ] 6.4 Assess whether `adjustFrequency()` ±200 cent limit constrains non-12-TET pitch matching
-- [ ] Task 7: Write audit report (AC: #10, #11)
-  - [ ] 7.1 Per-component assessment (correct / suspect / wrong) with rationale
-  - [ ] 7.2 Precision analysis summary
-  - [ ] 7.3 Hidden assumption inventory
-  - [ ] 7.4 Non-12-TET readiness assessment
-  - [ ] 7.5 Recommendations catalogue (for future implementation stories)
-  - [ ] 7.6 Save report to `docs/implementation-artifacts/`
+- [x] Task 1: Load the Adam agent persona (`/bmad-agent-music-domain-expert`) (AC: #1)
+- [x] Task 2: Audit the forward pipeline — TuningSystem → Frequency → NotePlayer (AC: #1, #8, #9)
+  - [x] 2.1 `NotePlayer.swift` — protocol design, `Frequency`-based API, default duration extension, `stopAll()`
+  - [x] 2.2 `TuningSystem.frequency(for:referencePitch:)` → `NotePlayer.play()` data flow — confirm sessions pass explicit `tuningSystem` and `referencePitch` (no defaults)
+  - [x] 2.3 `Comparison.swift` — `referenceFrequency()` and `targetFrequency()` convenience methods
+- [x] Task 3: Audit the SoundFont playback sub-operations (AC: #1, #2, #3, #5)
+  - [x] 3.1 `SoundFontNotePlayer.startNote()` — decompose → pitchBendValue → overallGain → sendPitchBend → startNote sequence
+  - [x] 3.2 `SoundFontNotePlayer.decompose(frequency:)` — Hz-to-MIDI inverse formula, rounding, clamping, cent remainder
+  - [x] 3.3 `SoundFontNotePlayer.pitchBendValue(forCents:)` — cents-to-14-bit-MIDI-bend formula, ±200 cent assumption, clamping
+  - [x] 3.4 `sendPitchBendRange()` — RPN CC#101/100/6/38 sequence, ±2 semitone range, MIDI spec compliance
+- [x] Task 4: Audit the PlaybackHandle adjustment chain (AC: #4)
+  - [x] 4.1 `SoundFontPlaybackHandle.adjustFrequency()` — centDifference computation from base MIDI note, ±200 cent guard
+  - [x] 4.2 `SoundFontPlaybackHandle.stop()` — fade-out, noteOff, pitch bend reset sequence
+- [x] Task 5: End-to-end precision analysis (AC: #6)
+  - [x] 5.1 Forward chain: `DetunedMIDINote` → `TuningSystem.frequency()` → `decompose()` → MIDI note + pitch bend → sounding frequency — quantify cumulative error
+  - [x] 5.2 Pitch bend resolution: 14-bit MIDI (0–16383) across ±200 cents = ~0.024 cents/step — is this sufficient for 0.1-cent target?
+  - [x] 5.3 `adjustFrequency()` chain: target Hz → decompose → centDifference from base → pitchBendValue — does double-decompose introduce error?
+- [x] Task 6: Non-12-TET generalizability assessment (AC: #7, #8)
+  - [x] 6.1 Just intonation example: P5 at +1.955¢ from 12-TET — trace through full pipeline and verify correctness
+  - [x] 6.2 Large-offset intervals: just M3 at -13.686¢ from 12-TET — does decompose round to the same MIDI note? Does pitch bend range cover it?
+  - [x] 6.3 Identify which components are genuinely 12-TET-specific (MIDI grid) vs. which carry hidden 12-TET assumptions
+  - [x] 6.4 Assess whether `adjustFrequency()` ±200 cent limit constrains non-12-TET pitch matching
+- [x] Task 7: Write audit report (AC: #10, #11)
+  - [x] 7.1 Per-component assessment (correct / suspect / wrong) with rationale
+  - [x] 7.2 Precision analysis summary
+  - [x] 7.3 Hidden assumption inventory
+  - [x] 7.4 Non-12-TET readiness assessment
+  - [x] 7.5 Recommendations catalogue (for future implementation stories)
+  - [x] 7.6 Save report to `docs/implementation-artifacts/`
 
 ## Dev Notes
 
@@ -192,10 +192,33 @@ A markdown audit report saved to `docs/implementation-artifacts/` containing:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — research/audit story, no code changes or debugging.
+
 ### Completion Notes List
 
+- Loaded Adam (Music Domain Expert) persona and applied `#audit-assumptions` methodology
+- Audited all 9 pipeline components systematically: NotePlayer protocol, TuningSystem.frequency(), Comparison convenience methods, startNote() sequence, decompose(), pitchBendValue(), sendPitchBendRange(), adjustFrequency(), stop()
+- Verified decompose() is the algebraically exact inverse of TuningSystem.frequency() — no precision loss
+- Confirmed pitchBendValue() correctly maps ±200 cents to 14-bit MIDI pitch bend with 0.024 cents/step resolution
+- Confirmed sendPitchBendRange() is fully MIDI-spec-compliant (RPN sequence CC#101/100/6/38)
+- Proved adjustFrequency() double-decompose introduces zero cumulative error (algebraic identity)
+- End-to-end precision: ≤0.025 cents worst case — 4× below the 0.1-cent NFR14 target
+- Traced just P5 (+1.955¢) and just M3 (-13.686¢) through the full pipeline — both handled correctly
+- Classified all "12-TET-looking" code as MIDI spec definitions, not hidden tuning assumptions
+- Confirmed ±200 cent pitch bend range accommodates all common non-12-TET deviations
+- Assessed NotePlayer protocol boundary — Frequency is the correct parameter type
+- Catalogued 5 recommendations for future stories (all low priority, documentation-only)
+- No blocking issues found — pipeline is ready for non-12-TET tuning systems
+
+### Change Log
+
+- 2026-03-02: Completed audit of NotePlayer and frequency computation chain (story 28.2)
+
 ### File List
+
+- `docs/implementation-artifacts/28-2-audit-report-noteplayer-and-frequency-computation-chain.md` (new) — Comprehensive audit report
+- `docs/implementation-artifacts/28-2-audit-noteplayer-and-frequency-computation-chain.md` (modified) — Story file updated with task completion, Dev Agent Record, File List, Change Log, Status
