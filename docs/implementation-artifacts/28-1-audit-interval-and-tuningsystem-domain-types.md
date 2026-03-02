@@ -1,6 +1,6 @@
 # Story 28.1: Audit Interval and TuningSystem Domain Types
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -25,31 +25,31 @@ so that domain-level errors are caught before building on these foundations.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Load the Adam agent persona (`/bmad-agent-music-domain-expert`) (AC: #1)
-- [ ] Task 2: Audit each domain type systematically (AC: #1, #2, #3)
-  - [ ] 2.1 `Interval.swift` — enum design, case completeness, `between()` method, naming/abbreviations
-  - [ ] 2.2 `DirectedInterval.swift` — direction semantics, `between()` vs `Interval.between()`, `Comparable` ordering
-  - [ ] 2.3 `Direction.swift` — binary up/down model adequacy
-  - [ ] 2.4 `TuningSystem.swift` — `centOffset(for:)` correctness, `frequency(for:referencePitch:)` formula, generalizability for non-equal tuning systems
-  - [ ] 2.5 `MIDINote.swift` — range, `name` property (sharps-only), `random(in:)` semantics
-  - [ ] 2.6 `DetunedMIDINote.swift` — offset semantics, relationship to logical/physical worlds
-  - [ ] 2.7 `Frequency.swift` — Hz representation, `concert440` constant
-  - [ ] 2.8 `Cents.swift` — universality claim (tuning-system-agnostic?), magnitude semantics
-- [ ] Task 3: Assess the two-world architecture as a whole (AC: #8)
-  - [ ] 3.1 Verify logical world types carry no frequency/tuning knowledge
-  - [ ] 3.2 Verify TuningSystem is the sole bridge
-  - [ ] 3.3 Assess whether the architecture holds for non-12-TET tuning systems
-- [ ] Task 4: Verify `TuningSystem.frequency()` against the equal temperament formula (AC: #4)
-  - [ ] 4.1 Formula: `referencePitch * 2^((midiNote - 69 + cents/100) / 12)` — check implementation matches
-  - [ ] 4.2 Assess whether `centOffset(for:)` return type and semantics generalize to non-equal temperaments
-- [ ] Task 5: Review naming accuracy (AC: #7)
-  - [ ] 5.1 Interval case names against standard music theory nomenclature
-  - [ ] 5.2 Abbreviations: tritone as "d5" vs "A4" vs "TT"
-  - [ ] 5.3 `MIDINote.name` — sharps-only (no flats/enharmonics), octave numbering convention
-- [ ] Task 6: Write audit report (AC: #9)
-  - [ ] 6.1 For each type: state framework, assessment (correct/suspect/wrong), rationale
-  - [ ] 6.2 Catalogue code change recommendations separately (AC: #10)
-  - [ ] 6.3 Save report to `docs/implementation-artifacts/`
+- [x] Task 1: Load the Adam agent persona (`/bmad-agent-music-domain-expert`) (AC: #1)
+- [x] Task 2: Audit each domain type systematically (AC: #1, #2, #3)
+  - [x] 2.1 `Interval.swift` — enum design, case completeness, `between()` method, naming/abbreviations
+  - [x] 2.2 `DirectedInterval.swift` — direction semantics, `between()` vs `Interval.between()`, `Comparable` ordering
+  - [x] 2.3 `Direction.swift` — binary up/down model adequacy
+  - [x] 2.4 `TuningSystem.swift` — `centOffset(for:)` correctness, `frequency(for:referencePitch:)` formula, generalizability for non-equal tuning systems
+  - [x] 2.5 `MIDINote.swift` — range, `name` property (sharps-only), `random(in:)` semantics
+  - [x] 2.6 `DetunedMIDINote.swift` — offset semantics, relationship to logical/physical worlds
+  - [x] 2.7 `Frequency.swift` — Hz representation, `concert440` constant
+  - [x] 2.8 `Cents.swift` — universality claim (tuning-system-agnostic?), magnitude semantics
+- [x] Task 3: Assess the two-world architecture as a whole (AC: #8)
+  - [x] 3.1 Verify logical world types carry no frequency/tuning knowledge
+  - [x] 3.2 Verify TuningSystem is the sole bridge
+  - [x] 3.3 Assess whether the architecture holds for non-12-TET tuning systems
+- [x] Task 4: Verify `TuningSystem.frequency()` against the equal temperament formula (AC: #4)
+  - [x] 4.1 Formula: `referencePitch * 2^((midiNote - 69 + cents/100) / 12)` — check implementation matches
+  - [x] 4.2 Assess whether `centOffset(for:)` return type and semantics generalize to non-equal temperaments
+- [x] Task 5: Review naming accuracy (AC: #7)
+  - [x] 5.1 Interval case names against standard music theory nomenclature
+  - [x] 5.2 Abbreviations: tritone as "d5" vs "A4" vs "TT"
+  - [x] 5.3 `MIDINote.name` — sharps-only (no flats/enharmonics), octave numbering convention
+- [x] Task 6: Write audit report (AC: #9)
+  - [x] 6.1 For each type: state framework, assessment (correct/suspect/wrong), rationale
+  - [x] 6.2 Catalogue code change recommendations separately (AC: #10)
+  - [x] 6.3 Save report to `docs/implementation-artifacts/`
 
 ## Dev Notes
 
@@ -136,8 +136,31 @@ A markdown audit report saved to `docs/implementation-artifacts/` containing:
 
 ### Agent Model Used
 
+Claude Opus 4.6 with Adam (Music Domain Expert) persona
+
 ### Debug Log References
+
+None — research/audit story, no code changes or debugging required.
 
 ### Completion Notes List
 
+- Loaded Adam (Music Domain Expert) agent persona and used `#audit-assumptions` methodology
+- Read all 8 source files in `Peach/Core/Audio/`: Interval, DirectedInterval, Direction, TuningSystem, MIDINote, DetunedMIDINote, Frequency, Cents
+- Read `docs/project-context.md` for architecture context and two-world design documentation
+- Searched codebase for usage patterns of `centOffset(for:)`, `Interval.between()`, and `DetunedMIDINote(note:)` to understand the full pipeline
+- Discovered that `centOffset(for:)` is unused in production code — only tested in TuningSystemTests
+- Verified `frequency(for:referencePitch:)` formula against 4 known values including a just-intonation perfect fifth
+- Assessed all 8 types: 6 correct, 2 suspect (tritone abbreviation "d5", `centOffset(for:)` API shape)
+- Identified 5 hidden assumptions, rated None to Medium severity
+- Catalogued 5 recommendations (3 low-priority doc/naming changes, 2 no-change-needed)
+- Overall verdict: Foundations are solid, architecture holds for planned tuning system extensions
+
 ### File List
+
+- `docs/implementation-artifacts/28-1-audit-report-interval-and-tuningsystem-domain-types.md` (new) — Comprehensive audit report
+- `docs/implementation-artifacts/28-1-audit-interval-and-tuningsystem-domain-types.md` (modified) — Story file task checkboxes and Dev Agent Record
+- `docs/implementation-artifacts/sprint-status.yaml` (modified) — Status updated
+
+## Change Log
+
+- 2026-03-02: Completed domain type audit. Produced audit report with per-type assessments, hidden assumption inventory, two-world architecture verification, and recommendations catalogue. No code changes — audit/research story.
