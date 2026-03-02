@@ -1,6 +1,6 @@
 # Story 30.2: Add Tuning System Picker to Settings
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -358,6 +358,7 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-03-02: Implemented story 30.2 — Added Tuning System Picker to Settings screen, enabling users to select between Equal Temperament and Just Intonation. Added displayName to TuningSystem, live UserDefaults persistence in AppUserSettings, @AppStorage-backed Picker in SettingsScreen, German localizations, and 7 new tests (1 updated).
+- 2026-03-02: Code review — All 9 ACs verified as implemented. All 6 tasks genuinely complete. 787 tests pass, build clean, no dependency violations. Fixed: stale TuningSystem docstring (M1), epic-28/29/30 statuses updated (M2). Low: audioSection footer scope noted but acceptable (L1). Story approved.
 
 ### File List
 

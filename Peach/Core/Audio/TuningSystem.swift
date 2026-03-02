@@ -2,9 +2,9 @@ import Foundation
 
 /// Defines how intervals map to cent offsets from 12-TET.
 ///
-/// An enum (not a protocol) so it can drive a future Settings picker via
-/// `CaseIterable`. Currently only `.equalTemperament`; adding a case
-/// (e.g. `.justIntonation`) supplies non-zero cent deviations.
+/// An enum (not a protocol) so it can drive the Settings picker via
+/// `CaseIterable`. Adding a new case supplies non-zero cent deviations
+/// and a `displayName` — no changes to interval or training logic required.
 enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     case equalTemperament
     case justIntonation

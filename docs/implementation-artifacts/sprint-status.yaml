@@ -239,20 +239,20 @@ development_status:
 
   # Epic 28: Domain Foundations Audit — Adam Reviews the Music Layer
   # Work order: top to bottom
-  epic-28: in-progress
+  epic-28: done
   28-1-audit-interval-and-tuningsystem-domain-types: done # Adam reviews Interval, DirectedInterval, Direction, TuningSystem, MIDINote, DetunedMIDINote, Frequency for hidden assumptions and musical correctness
   28-2-audit-noteplayer-and-frequency-computation-chain: done # Adam reviews full pipeline from domain types through TuningSystem.frequency() to SoundFontNotePlayer
   epic-28-retrospective: optional
 
   # Epic 29: Tuning System Landscape — Research Practical Alternatives to 12-TET
   # Depends on: Epic 28
-  epic-29: in-progress
+  epic-29: done
   29-1-research-tuning-systems-used-by-musicians-in-practice: done # Adam-led research: which tuning systems matter beyond 12-TET, who uses them, for what contexts
   epic-29-retrospective: optional
 
   # Epic 30: Implement Most Relevant Tuning System
   # Depends on: Epic 29 (specific tuning system TBD based on research findings)
-  epic-30: in-progress
+  epic-30: done
   30-1-add-tuning-system-case: done # Implement centOffset switch branch, storage identifier, tests for the chosen tuning system
-  30-2-add-tuning-system-picker-to-settings: review # User can select between 12-TET and new system in Settings, localized names and descriptions
+  30-2-add-tuning-system-picker-to-settings: done # User can select between 12-TET and new system in Settings, localized names and descriptions
   epic-30-retrospective: optional
