@@ -37,7 +37,7 @@ No other candidate comes close on the combination of practical relevance, pedago
 
 ### 2.2 Just Intonation (5-limit)
 
-**Usage classification: Core practical relevance — used daily by millions of musicians**
+**Usage classification: Core practical relevance — the target intonation for millions of ensemble musicians**
 
 Just intonation intervals are defined by simple frequency ratios involving the prime factors 2, 3, and 5. These ratios produce the "pure" intervals that the ear naturally gravitates toward.
 
@@ -243,8 +243,8 @@ For 5-limit just intonation:
 | **Practical relevance** | **5** — used by millions of musicians daily | 3 — partial use (fifths only) | 1 — experimental niche | 2 — historical niche | 2 — early music niche |
 | **Pedagogical value** | **5** — directly teaches ensemble tuning skills | 3 — useful for melodic tendency | 1 — no practical application | 1 — historical interest only | 1 — historical interest |
 | **Architectural fit** | **5** — position-independent, fits API perfectly | 5 — same API compatibility | 2 — interval mapping problematic | 1 — position-dependent, breaks API | 1 — position-dependent |
-| **Implementation simplicity** | **5** — 13 constant values, no logic changes | 5 — same simplicity | 2 — interval mapping redesign | 4 — needs new API parameter | 3 — wolf interval handling |
-| **Total** | **20/20** | **16/20** | **6/20** | **8/20** | **7/20** |
+| **Implementation simplicity** | **4** — 13 constant values, but 4 edge cases require careful documentation (syntonic comma, tritone ambiguity, m7 ratio choice, position-independence simplification) | 5 — same simplicity | 2 — interval mapping redesign | 4 — needs new API parameter | 3 — wolf interval handling |
+| **Total** | **19/20** | **16/20** | **6/20** | **8/20** | **7/20** |
 
 ### 5.2 Rationale
 
@@ -413,7 +413,7 @@ From these three building blocks:
 | TT | M2 × M3 = (9/8)(5/4) | 45/32 |
 | P5 | 3rd harmonic | 3/2 |
 | m6 | P8 ÷ M3 = 2/(5/4) | 8/5 |
-| M6 | P5 × M3 ÷ P8 ... simpler: P8 ÷ m3 = 2/(6/5) | 5/3 |
+| M6 | P8 ÷ m3 = 2/(6/5) | 5/3 |
 | m7 | P5 × m3 = (3/2)(6/5) | 9/5 |
 | M7 | P5 × M3 = (3/2)(5/4) | 15/8 |
 | P8 | 2nd harmonic | 2/1 |

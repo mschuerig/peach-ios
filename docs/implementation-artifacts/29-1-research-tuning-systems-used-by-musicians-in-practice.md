@@ -1,6 +1,6 @@
 # Story 29.1: Research Tuning Systems Used by Musicians in Practice
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -162,17 +162,38 @@ No debug issues encountered. This is a research story with no code changes.
   - Non-Western systems: architecturally incompatible with Western interval model
 - **Task 3:** Assessed ear training relevance. Only JI is regularly used in music education ear training curricula. JI training develops ensemble tuning skills, chord tuning awareness, and intonation flexibility. Web research confirmed existing apps (INTUNATOR, tuneUp, Sonofield) are adding JI support.
 - **Task 4:** Architecture compatibility assessment confirmed: JI is position-independent (fits `centOffset(for:)`), all deviations within ±18¢ (well within ±200¢ limit), no pipeline changes needed. Well temperaments and meantone are position-dependent and incompatible. FR55 fully satisfied. AC #9 finding: the `centOffset(for:)` API shape is sufficient for the recommended system.
-- **Task 5:** Recommended 5-limit Just Intonation, scoring 20/20 on practical relevance, pedagogical value, architectural fit, and implementation simplicity. Provided complete 13-interval cent offset table. Documented 4 edge cases: broken M2/m7 octave complement (syntonic comma), tritone ambiguity (45/32 vs 64/45), m7 ratio choice (9/5 vs 16/9 vs 7/4), position-independence as a simplification of real-world JI.
+- **Task 5:** Recommended 5-limit Just Intonation, scoring 19/20 on practical relevance, pedagogical value, architectural fit, and implementation simplicity. Provided complete 13-interval cent offset table. Documented 4 edge cases: broken M2/m7 octave complement (syntonic comma), tritone ambiguity (45/32 vs 64/45), m7 ratio choice (9/5 vs 16/9 vs 7/4), position-independence as a simplification of real-world JI.
 - **Task 6:** Wrote comprehensive research report (6 sections + 2 appendices) saved to `docs/implementation-artifacts/29-1-research-report-tuning-systems-used-by-musicians.md`. Report includes all deliverables Epic 30 needs: system name (`.justIntonation`), storage identifier (`"justIntonation"`), localized names (EN: "Just Intonation", DE: "Reine Stimmung"), user-facing descriptions, complete cent offset table, Swift implementation preview, and edge case documentation.
 
 ### Implementation Plan
 
 This is a research story. No code was changed. The research report is the sole deliverable.
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Michael (via adversarial code review workflow)
+**Date:** 2026-03-02
+**Verdict:** Approved with fixes applied
+
+**AC Validation:** All 9 acceptance criteria verified as implemented. All 13 cent offset values mathematically verified against `1200 × log₂(ratio)`. All Interval enum case names cross-referenced against `Peach/Core/Audio/Interval.swift`.
+
+**Issues found:** 0 High, 3 Medium, 3 Low
+
+**MEDIUM issues (fixed):**
+1. **Appendix A M6 derivation error** — First derivation attempt `P5 × M3 ÷ P8` produces 15/16, not 5/3. Removed incorrect derivation, kept correct one (`P8 ÷ m3 = 2/(6/5)`).
+2. **Scoring matrix inflated to 20/20** — Report documents 4 edge cases yet gave 5/5 on "implementation simplicity." Adjusted to 4/5 (19/20 total), acknowledging edge cases require careful documentation.
+3. **"Used daily by millions of musicians" imprecise** — Musicians adjust toward just intervals by ear, not by consciously "using JI." Rephrased to "the target intonation for millions of ensemble musicians."
+
+**LOW issues (noted, not fixed):**
+4. AC #2 structure inconsistently applied across sections (JI section thorough, others implicit)
+5. External URL references (10+ links) unverifiable from code review
+6. Tritone edge case could explicitly address DirectedInterval interaction for Epic 30 implementers
+
 ### Change Log
 
 - 2026-03-02: Research report created at `docs/implementation-artifacts/29-1-research-report-tuning-systems-used-by-musicians.md`
 - 2026-03-02: All 6 tasks completed; story status updated to "review"
+- 2026-03-02: Code review — 3 MEDIUM issues fixed in research report (M6 derivation error, scoring inflation, imprecise usage claim); story status updated to "done"
 
 ### File List
 
