@@ -5,9 +5,9 @@ xcuserdata/
 build/
 DerivedData/
 
-# SF2 SoundFont cache (downloaded manually via tools/download-sf2.sh)
+# Local cache (not tracked in git)
 *.sf2
-.sf2-cache/
+.cache/
 
 # macOS
 .DS_Store

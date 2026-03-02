@@ -3,9 +3,9 @@
 # download-sf2.sh — Download the GeneralUser GS SF2 SoundFont for Peach.
 #
 # Run this script once before your first build:
-#   ./tools/download-sf2.sh
+#   ./bin/download-sf2.sh
 #
-# The SF2 file is placed at .sf2-cache/GeneralUser-GS.sf2 in the project root.
+# The SF2 file is placed at .cache/GeneralUser-GS.sf2 in the project root.
 # Xcode includes this file in the app bundle via Copy Bundle Resources.
 # If the file is missing, the Xcode build will fail with a "file not found" error.
 #
@@ -18,11 +18,11 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
 CONFIG_FILE="${SCRIPT_DIR}/sf2-sources.conf"
-CACHE_DIR="${PROJECT_ROOT}/.sf2-cache"
+CACHE_DIR="${PROJECT_ROOT}/.cache"
 
 if [ ! -f "${CONFIG_FILE}" ]; then
     echo "error: SF2 config file not found: ${CONFIG_FILE}" >&2
-    echo "note: Ensure tools/sf2-sources.conf exists in the project." >&2
+    echo "note: Ensure bin/sf2-sources.conf exists in the project." >&2
     exit 1
 fi
 
@@ -76,7 +76,7 @@ download_sf2() {
     if file "${TEMP_FILE}" | grep -qi "HTML"; then
         rm -f "${TEMP_FILE}"
         echo "error: Download returned an HTML page instead of an SF2 file." >&2
-        echo "note: The download URL may have changed. Check tools/sf2-sources.conf." >&2
+        echo "note: The download URL may have changed. Check bin/sf2-sources.conf." >&2
         exit 1
     fi
 
@@ -106,7 +106,7 @@ download_sf2
 if ! verify_checksum "${CACHED_SF2}"; then
     rm -f "${CACHED_SF2}"
     echo "error: Downloaded file has incorrect checksum." >&2
-    echo "note: The expected checksum in tools/sf2-sources.conf may need updating." >&2
+    echo "note: The expected checksum in bin/sf2-sources.conf may need updating." >&2
     exit 1
 fi
 

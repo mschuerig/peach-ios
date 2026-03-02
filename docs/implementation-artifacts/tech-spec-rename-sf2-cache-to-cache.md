@@ -2,7 +2,7 @@
 title: 'Rename .sf2-cache to .cache'
 slug: 'rename-sf2-cache-to-cache'
 created: '2026-03-02'
-status: 'ready-for-dev'
+status: 'completed'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['Shell script', 'Xcode project (pbxproj)', 'Markdown', 'gitignore']
 files_to_modify: ['.gitignore:10', 'bin/download-sf2.sh:8,21', 'Peach.xcodeproj/project.pbxproj:27', 'README.md:44']
@@ -67,41 +67,41 @@ Rename the `.sf2-cache/` directory to `.cache/` across all active configuration,
 
 ### Tasks
 
-- [ ] Task 1: Rename the physical directory
+- [x] Task 1: Rename the physical directory
   - Action: `mv .sf2-cache .cache` in the project root
   - Notes: This must happen first — subsequent file edits reference the new path
 
-- [ ] Task 2: Update `.gitignore`
+- [x] Task 2: Update `.gitignore`
   - File: `.gitignore`
   - Action: Line 8 — change comment from `# SF2 SoundFont cache (downloaded manually via tools/download-sf2.sh)` to `# Local cache (not tracked in git)`
   - Action: Line 10 — change `.sf2-cache/` to `.cache/`
   - Notes: The `*.sf2` glob on line 9 stays as-is
 
-- [ ] Task 3: Update download script
+- [x] Task 3: Update download script
   - File: `bin/download-sf2.sh`
   - Action: Line 8 — change comment path from `.sf2-cache/GeneralUser-GS.sf2` to `.cache/GeneralUser-GS.sf2`
   - Action: Line 21 — change `CACHE_DIR="${PROJECT_ROOT}/.sf2-cache"` to `CACHE_DIR="${PROJECT_ROOT}/.cache"`
   - Notes: All derived paths (`CACHED_SF2`, `TEMP_FILE`) are built from `CACHE_DIR`, so they update automatically
 
-- [ ] Task 4: Update Xcode project file
+- [x] Task 4: Update Xcode project file
   - File: `Peach.xcodeproj/project.pbxproj`
   - Action: Line 27 — change `path = ".sf2-cache/GeneralUser-GS.sf2"` to `path = ".cache/GeneralUser-GS.sf2"`
   - Notes: Only this one PBXFileReference line contains the directory path; other SF2 references use just the filename
 
-- [ ] Task 5: Update README
+- [x] Task 5: Update README
   - File: `README.md`
   - Action: Line 44 — change `` `.sf2-cache/` `` to `` `.cache/` ``
 
-- [ ] Task 6: Verify build
+- [x] Task 6: Verify build
   - Action: Run `bin/build.sh` to confirm the project builds with the new path
   - Notes: The Xcode build will fail if the PBXFileReference path doesn't match the actual file location
 
 ### Acceptance Criteria
 
-- [ ] AC 1: Given the project is freshly cloned, when a developer runs `bin/download-sf2.sh`, then the SF2 file is downloaded to `.cache/GeneralUser-GS.sf2`
-- [ ] AC 2: Given `.cache/GeneralUser-GS.sf2` exists, when the project is built with `bin/build.sh`, then the build succeeds without file-not-found errors
-- [ ] AC 3: Given the `.gitignore` is updated, when `git status` is run, then the `.cache/` directory does not appear as untracked
-- [ ] AC 4: Given the repository has no `.sf2-cache` directory, when searching all active files (excluding `docs/claude-audit/` and `docs/implementation-artifacts/infra-sf2-build-download-cache.md`), then zero references to `.sf2-cache` remain
+- [x] AC 1: Given the project is freshly cloned, when a developer runs `bin/download-sf2.sh`, then the SF2 file is downloaded to `.cache/GeneralUser-GS.sf2`
+- [x] AC 2: Given `.cache/GeneralUser-GS.sf2` exists, when the project is built with `bin/build.sh`, then the build succeeds without file-not-found errors
+- [x] AC 3: Given the `.gitignore` is updated, when `git status` is run, then the `.cache/` directory does not appear as untracked
+- [x] AC 4: Given the repository has no `.sf2-cache` directory, when searching all active files (excluding `docs/claude-audit/` and `docs/implementation-artifacts/infra-sf2-build-download-cache.md`), then zero references to `.sf2-cache` remain
 
 ## Additional Context
 
@@ -123,3 +123,9 @@ No automated tests needed — this is a configuration/infrastructure change.
 - Developers with an existing `.sf2-cache/` directory will need to manually rename it to `.cache/` or re-run `bin/download-sf2.sh`
 - The `*.sf2` gitignore glob (line 9) is independent of the directory and stays unchanged
 - Future cached artifacts can be placed directly in `.cache/` without any further configuration changes
+
+## Review Notes
+- Adversarial review completed
+- Findings: 9 total, 3 fixed, 6 skipped
+- Resolution approach: walk-through
+- Fixed pre-existing bugs: stale `tools/` path references in README.md and bin/download-sf2.sh

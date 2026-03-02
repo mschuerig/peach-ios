@@ -24,7 +24,7 @@
 		0A0000000000000000000001 /* Peach.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Peach.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		0A0000000000000000000002 /* PeachTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PeachTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		4C4ED39A2F41046000F7A392 /* CLAUDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CLAUDE.md; sourceTree = "<group>"; };
-		4C53463244000000000SF202 /* GeneralUser-GS.sf2 */ = {isa = PBXFileReference; lastKnownFileType = file; name = "GeneralUser-GS.sf2"; path = ".sf2-cache/GeneralUser-GS.sf2"; sourceTree = "<group>"; };
+		4C53463244000000000SF202 /* GeneralUser-GS.sf2 */ = {isa = PBXFileReference; lastKnownFileType = file; name = "GeneralUser-GS.sf2"; path = ".cache/GeneralUser-GS.sf2"; sourceTree = "<group>"; };
 		4CBCEE5B2F45CC28006FEF97 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
 		4CBCEE5C2F45CC28006FEF97 /* NOTICE */ = {isa = PBXFileReference; lastKnownFileType = text; path = NOTICE; sourceTree = "<group>"; };
 		4CBCEE5D2F45CC28006FEF97 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
