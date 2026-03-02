@@ -254,5 +254,5 @@ development_status:
   # Depends on: Epic 29 (specific tuning system TBD based on research findings)
   epic-30: in-progress
   30-1-add-tuning-system-case: done # Implement centOffset switch branch, storage identifier, tests for the chosen tuning system
-  30-2-add-tuning-system-picker-to-settings: ready-for-dev # User can select between 12-TET and new system in Settings, localized names and descriptions
+  30-2-add-tuning-system-picker-to-settings: review # User can select between 12-TET and new system in Settings, localized names and descriptions
   epic-30-retrospective: optional

@@ -1,6 +1,6 @@
 # Story 30.2: Add Tuning System Picker to Settings
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,30 +24,30 @@ so that I can train my ear with the tuning system that matches my musical contex
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `displayName` to `TuningSystem` and write tests (AC: #9)
-  - [ ] 1.1 Write failing test: `displayName returns localized name for equalTemperament`
-  - [ ] 1.2 Write failing test: `displayName returns localized name for justIntonation`
-  - [ ] 1.3 Write failing test: `all cases have non-empty displayName`
-  - [ ] 1.4 Implement `displayName` computed property in `TuningSystem.swift` using `String(localized:)`
-- [ ] Task 2: Add `tuningSystem` key to `SettingsKeys` and write tests (AC: #3)
-  - [ ] 2.1 Write failing test: `tuningSystem key is defined as string constant`
-  - [ ] 2.2 Write failing test: `defaultTuningSystem is equalTemperament`
-  - [ ] 2.3 Add `static let tuningSystem = "tuningSystem"` and `static let defaultTuningSystem = "equalTemperament"` to `SettingsKeys`
-- [ ] Task 3: Make `AppUserSettings.tuningSystem` read from UserDefaults and write tests (AC: #4, #6, #7)
-  - [ ] 3.1 Update existing test: `appUserSettingsTuningSystemHardcoded` → rename to `appUserSettingsTuningSystemDefault` and verify it returns `.equalTemperament` when no UserDefaults entry exists
-  - [ ] 3.2 Write failing test: `AppUserSettings reads persisted tuningSystem from UserDefaults`
-  - [ ] 3.3 Write failing test: `AppUserSettings falls back to equalTemperament on invalid string`
-  - [ ] 3.4 Implement live UserDefaults read in `AppUserSettings.tuningSystem`
-- [ ] Task 4: Add Tuning System Picker to SettingsScreen (AC: #1, #2, #5)
-  - [ ] 4.1 Add `@AppStorage(SettingsKeys.tuningSystem)` property to `SettingsScreen`
-  - [ ] 4.2 Add Picker to `audioSection` after the Vary Loudness slider
-  - [ ] 4.3 Add section footer with localized description text
-- [ ] Task 5: Add German localizations (AC: #8)
-  - [ ] 5.1 Use `bin/add-localization.py` to add all new German translations
-- [ ] Task 6: Run full test suite and verify (AC: all)
-  - [ ] 6.1 Run `bin/test.sh` — all existing + new tests must pass
-  - [ ] 6.2 Run `bin/build.sh` — no warnings or errors
-  - [ ] 6.3 Run `bin/check-dependencies.sh` — no dependency violations
+- [x] Task 1: Add `displayName` to `TuningSystem` and write tests (AC: #9)
+  - [x] 1.1 Write failing test: `displayName returns localized name for equalTemperament`
+  - [x] 1.2 Write failing test: `displayName returns localized name for justIntonation`
+  - [x] 1.3 Write failing test: `all cases have non-empty displayName`
+  - [x] 1.4 Implement `displayName` computed property in `TuningSystem.swift` using `String(localized:)`
+- [x] Task 2: Add `tuningSystem` key to `SettingsKeys` and write tests (AC: #3)
+  - [x] 2.1 Write failing test: `tuningSystem key is defined as string constant`
+  - [x] 2.2 Write failing test: `defaultTuningSystem is equalTemperament`
+  - [x] 2.3 Add `static let tuningSystem = "tuningSystem"` and `static let defaultTuningSystem = "equalTemperament"` to `SettingsKeys`
+- [x] Task 3: Make `AppUserSettings.tuningSystem` read from UserDefaults and write tests (AC: #4, #6, #7)
+  - [x] 3.1 Update existing test: `appUserSettingsTuningSystemHardcoded` → rename to `appUserSettingsTuningSystemDefault` and verify it returns `.equalTemperament` when no UserDefaults entry exists
+  - [x] 3.2 Write failing test: `AppUserSettings reads persisted tuningSystem from UserDefaults`
+  - [x] 3.3 Write failing test: `AppUserSettings falls back to equalTemperament on invalid string`
+  - [x] 3.4 Implement live UserDefaults read in `AppUserSettings.tuningSystem`
+- [x] Task 4: Add Tuning System Picker to SettingsScreen (AC: #1, #2, #5)
+  - [x] 4.1 Add `@AppStorage(SettingsKeys.tuningSystem)` property to `SettingsScreen`
+  - [x] 4.2 Add Picker to `audioSection` after the Vary Loudness slider
+  - [x] 4.3 Add section footer with localized description text
+- [x] Task 5: Add German localizations (AC: #8)
+  - [x] 5.1 Use `bin/add-localization.py` to add all new German translations
+- [x] Task 6: Run full test suite and verify (AC: all)
+  - [x] 6.1 Run `bin/test.sh` — all existing + new tests must pass
+  - [x] 6.2 Run `bin/build.sh` — no warnings or errors
+  - [x] 6.3 Run `bin/check-dependencies.sh` — no dependency violations
 
 ## Dev Notes
 
@@ -340,10 +340,33 @@ e915d9e Review story 29.1: Research Tuning Systems Used by Musicians in Practice
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- displayName tests initially failed because they compared against hardcoded English strings; simulator runs in German locale, so `String(localized:)` returns German. Fixed by comparing against `String(localized:)` in tests (matching existing DirectedInterval test pattern).
+
 ### Completion Notes List
 
+- Task 1: Added `displayName` computed property to `TuningSystem` with `String(localized:)` for both cases. Added 3 tests.
+- Task 2: Added `tuningSystem` key and `defaultTuningSystem` constant to `SettingsKeys`. Added 2 tests.
+- Task 3: Replaced hardcoded `.equalTemperament` in `AppUserSettings.tuningSystem` with live `UserDefaults` read using `fromStorageIdentifier`. Renamed existing test, added 2 new tests (persistence + fallback).
+- Task 4: Added `@AppStorage(SettingsKeys.tuningSystem)` property and `Picker` to `audioSection` in `SettingsScreen`. Added section footer with localized description.
+- Task 5: Added 4 German translations via `bin/add-localization.py`.
+- Task 6: Full suite (787 tests) passes, build clean, no dependency violations.
+
+### Change Log
+
+- 2026-03-02: Implemented story 30.2 — Added Tuning System Picker to Settings screen, enabling users to select between Equal Temperament and Just Intonation. Added displayName to TuningSystem, live UserDefaults persistence in AppUserSettings, @AppStorage-backed Picker in SettingsScreen, German localizations, and 7 new tests (1 updated).
+
 ### File List
+
+- Peach/Core/Audio/TuningSystem.swift (modified — added `displayName` computed property)
+- Peach/Settings/SettingsKeys.swift (modified — added `tuningSystem` key and `defaultTuningSystem` constant)
+- Peach/Settings/AppUserSettings.swift (modified — replaced hardcoded `.equalTemperament` with UserDefaults read)
+- Peach/Settings/SettingsScreen.swift (modified — added `@AppStorage` property, Picker in audioSection, footer text)
+- Peach/Resources/Localizable.xcstrings (modified — 4 new German translations)
+- PeachTests/Core/Audio/TuningSystemTests.swift (modified — added 3 displayName tests)
+- PeachTests/Settings/SettingsTests.swift (modified — renamed 1 test, added 4 new tests)
+- docs/implementation-artifacts/sprint-status.yaml (modified — status updated)
+- docs/implementation-artifacts/30-2-add-tuning-system-picker-to-settings.md (modified — task checkboxes, dev record)

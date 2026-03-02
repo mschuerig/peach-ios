@@ -125,6 +125,25 @@ struct TuningSystemTests {
         #expect(dict[.equalTemperament] == "12-TET")
     }
 
+    // MARK: - Display Names
+
+    @Test("displayName returns Equal Temperament for equalTemperament")
+    func displayNameEqualTemperament() async {
+        #expect(TuningSystem.equalTemperament.displayName == String(localized: "Equal Temperament"))
+    }
+
+    @Test("displayName returns Just Intonation for justIntonation")
+    func displayNameJustIntonation() async {
+        #expect(TuningSystem.justIntonation.displayName == String(localized: "Just Intonation"))
+    }
+
+    @Test("all cases have non-empty displayName")
+    func allCasesHaveDisplayName() async {
+        for system in TuningSystem.allCases {
+            #expect(!system.displayName.isEmpty)
+        }
+    }
+
     // MARK: - frequency(for: DetunedMIDINote) (Story 22.3 AC #3)
 
     @Test("A4 with zero offset returns 440.0 Hz")

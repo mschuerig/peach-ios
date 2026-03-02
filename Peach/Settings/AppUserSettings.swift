@@ -34,6 +34,10 @@ final class AppUserSettings: UserSettings {
     }
 
     var tuningSystem: TuningSystem {
-        .equalTemperament
+        guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.tuningSystem),
+              let system = TuningSystem.fromStorageIdentifier(raw) else {
+            return .equalTemperament
+        }
+        return system
     }
 }

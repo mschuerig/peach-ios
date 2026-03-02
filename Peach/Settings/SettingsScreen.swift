@@ -22,6 +22,9 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.intervals)
     private var intervalSelection = IntervalSelection.default
 
+    @AppStorage(SettingsKeys.tuningSystem)
+    private var tuningSystemIdentifier: String = SettingsKeys.defaultTuningSystem
+
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
 
@@ -80,7 +83,7 @@ struct SettingsScreen: View {
     }
 
     private var audioSection: some View {
-        Section("Audio") {
+        Section {
             Stepper(
                 "Duration: \(noteDuration, specifier: "%.1f")s",
                 value: $noteDuration,
@@ -103,6 +106,15 @@ struct SettingsScreen: View {
                     Text("Max")
                 }
             }
+            Picker(String(localized: "Tuning System"), selection: $tuningSystemIdentifier) {
+                ForEach(TuningSystem.allCases, id: \.self) { system in
+                    Text(system.displayName).tag(system.storageIdentifier)
+                }
+            }
+        } header: {
+            Text("Audio")
+        } footer: {
+            Text(String(localized: "Select how intervals are tuned. Equal Temperament divides the octave into 12 equal steps. Just Intonation uses pure frequency ratios."))
         }
     }
 

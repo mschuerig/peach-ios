@@ -64,8 +64,35 @@ struct SettingsTests {
         #expect(settings.intervals == Set<DirectedInterval>([.up(.perfectFifth)]))
     }
 
-    @Test("AppUserSettings returns hardcoded equalTemperament tuning system")
-    func appUserSettingsTuningSystemHardcoded() {
+    @Test("tuningSystem key is defined as string constant")
+    func tuningSystemKeyDefined() async {
+        #expect(SettingsKeys.tuningSystem == "tuningSystem")
+    }
+
+    @Test("defaultTuningSystem is equalTemperament storage identifier")
+    func defaultTuningSystemValue() async {
+        #expect(SettingsKeys.defaultTuningSystem == "equalTemperament")
+    }
+
+    @Test("AppUserSettings returns equalTemperament when no UserDefaults entry")
+    func appUserSettingsTuningSystemDefault() async {
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.tuningSystem)
+        let settings = AppUserSettings()
+        #expect(settings.tuningSystem == .equalTemperament)
+    }
+
+    @Test("AppUserSettings reads persisted tuningSystem from UserDefaults")
+    func appUserSettingsReadsPersistedTuningSystem() async {
+        defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.tuningSystem) }
+        UserDefaults.standard.set("justIntonation", forKey: SettingsKeys.tuningSystem)
+        let settings = AppUserSettings()
+        #expect(settings.tuningSystem == .justIntonation)
+    }
+
+    @Test("AppUserSettings falls back to equalTemperament on invalid tuningSystem string")
+    func appUserSettingsTuningSystemFallbackOnInvalid() async {
+        defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.tuningSystem) }
+        UserDefaults.standard.set("pythagorean", forKey: SettingsKeys.tuningSystem)
         let settings = AppUserSettings()
         #expect(settings.tuningSystem == .equalTemperament)
     }

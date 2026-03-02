@@ -1432,6 +1432,46 @@
           }
         }
       }
+    },
+    "Equal Temperament": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gleichstufige Stimmung"
+          }
+        }
+      }
+    },
+    "Just Intonation": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reine Stimmung"
+          }
+        }
+      }
+    },
+    "Tuning System": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stimmung"
+          }
+        }
+      }
+    },
+    "Select how intervals are tuned. Equal Temperament divides the octave into 12 equal steps. Just Intonation uses pure frequency ratios.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle die Stimmung für Intervalle. Die gleichstufige Stimmung teilt die Oktave in 12 gleiche Schritte. Reine Stimmung verwendet reine Frequenzverhältnisse."
+          }
+        }
+      }
     }
   },
   "version": "1.1"

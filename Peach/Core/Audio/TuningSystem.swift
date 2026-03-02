@@ -49,6 +49,15 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
         frequency(for: DetunedMIDINote(note), referencePitch: referencePitch)
     }
 
+    // MARK: - Display
+
+    var displayName: String {
+        switch self {
+        case .equalTemperament: String(localized: "Equal Temperament")
+        case .justIntonation: String(localized: "Just Intonation")
+        }
+    }
+
     // MARK: - Storage Identifiers
 
     var storageIdentifier: String {
