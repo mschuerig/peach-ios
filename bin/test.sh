@@ -121,7 +121,7 @@ elif [[ "$TEST_RESULT" == "failed" ]]; then
         echo "Failed tests:"
         echo "$FAILED_TESTS" | while IFS= read -r line; do
             # Trim to just the test identifier
-            name=$(echo "$line" | sed 's/.*Test [Cc]ase.*\[//; s/\].*//; s/.*Test "//; s/" failed.*/; s/.*✘ Test //')
+            name=$(echo "$line" | sed 's/.*Test [Cc]ase.*\[//; s/\].*//; s/.*Test "//; s/" failed.*//; s/.*✘ Test //')
             [[ -n "$name" ]] && echo "  • $name"
         done
         echo ""
