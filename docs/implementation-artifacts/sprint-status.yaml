@@ -247,7 +247,7 @@ development_status:
   # Epic 29: Tuning System Landscape — Research Practical Alternatives to 12-TET
   # Depends on: Epic 28
   epic-29: in-progress
-  29-1-research-tuning-systems-used-by-musicians-in-practice: ready-for-dev # Adam-led research: which tuning systems matter beyond 12-TET, who uses them, for what contexts
+  29-1-research-tuning-systems-used-by-musicians-in-practice: review # Adam-led research: which tuning systems matter beyond 12-TET, who uses them, for what contexts
   epic-29-retrospective: optional
 
   # Epic 30: Implement Most Relevant Tuning System

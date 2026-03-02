@@ -1,6 +1,6 @@
 # Story 29.1: Research Tuning Systems Used by Musicians in Practice
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,34 +24,34 @@ so that Epic 30's implementation targets the most practically relevant tuning sy
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Load the Adam agent persona (`/bmad-agent-music-domain-expert`) (AC: all)
-- [ ] Task 2: Survey tuning system families and practical usage (AC: #1, #2)
-  - [ ] 2.1 Equal temperament variants (19-TET, 31-TET, 53-TET, etc.) — who uses them, where
-  - [ ] 2.2 Just intonation — fixed-ratio intervals (5-limit, 7-limit) as used in ear training and choral/ensemble practice
-  - [ ] 2.3 Pythagorean tuning — historical and pedagogical significance
-  - [ ] 2.4 Well temperaments (Werckmeister, Kirnberger, Vallotti) — historical keyboard practice
-  - [ ] 2.5 Meantone temperaments (quarter-comma, third-comma) — Renaissance/Baroque practice
-  - [ ] 2.6 Non-Western tuning systems — brief survey of practical relevance for Peach's target audience
-- [ ] Task 3: Ear training relevance assessment (AC: #3)
-  - [ ] 3.1 Which tuning systems are actively used in ear training curricula?
-  - [ ] 3.2 What pedagogical value does non-12-TET ear training offer to working musicians?
-  - [ ] 3.3 Which systems help musicians understand intonation differences they encounter in practice (e.g., string quartet tuning, choral intonation)?
-- [ ] Task 4: Architecture compatibility assessment (AC: #4, #9)
-  - [ ] 4.1 Classify each candidate as "position-independent" (fits `centOffset(for:)`) or "position-dependent" (would require API extension)
-  - [ ] 4.2 Verify cent offset ranges against ±200 cent pipeline limit
-  - [ ] 4.3 Confirm no pipeline changes needed for compatible candidates (cross-reference 28.2 conclusions)
-- [ ] Task 5: Recommendation and cent offset table (AC: #5, #6, #7)
-  - [ ] 5.1 Score each candidate on: practical relevance, pedagogical value, architectural fit, implementation simplicity
-  - [ ] 5.2 Recommend the top candidate with full rationale
-  - [ ] 5.3 Provide the complete cent offset table (P1–P8) for the recommended system
-  - [ ] 5.4 Document edge cases and limitations
-- [ ] Task 6: Write research report (AC: #8)
-  - [ ] 6.1 Executive summary with recommendation
-  - [ ] 6.2 Tuning system survey with usage classification
-  - [ ] 6.3 Ear training relevance analysis
-  - [ ] 6.4 Architecture compatibility matrix
-  - [ ] 6.5 Recommended system detail with cent offset table
-  - [ ] 6.6 Save report to `docs/implementation-artifacts/`
+- [x] Task 1: Load the Adam agent persona (`/bmad-agent-music-domain-expert`) (AC: all)
+- [x] Task 2: Survey tuning system families and practical usage (AC: #1, #2)
+  - [x] 2.1 Equal temperament variants (19-TET, 31-TET, 53-TET, etc.) — who uses them, where
+  - [x] 2.2 Just intonation — fixed-ratio intervals (5-limit, 7-limit) as used in ear training and choral/ensemble practice
+  - [x] 2.3 Pythagorean tuning — historical and pedagogical significance
+  - [x] 2.4 Well temperaments (Werckmeister, Kirnberger, Vallotti) — historical keyboard practice
+  - [x] 2.5 Meantone temperaments (quarter-comma, third-comma) — Renaissance/Baroque practice
+  - [x] 2.6 Non-Western tuning systems — brief survey of practical relevance for Peach's target audience
+- [x] Task 3: Ear training relevance assessment (AC: #3)
+  - [x] 3.1 Which tuning systems are actively used in ear training curricula?
+  - [x] 3.2 What pedagogical value does non-12-TET ear training offer to working musicians?
+  - [x] 3.3 Which systems help musicians understand intonation differences they encounter in practice (e.g., string quartet tuning, choral intonation)?
+- [x] Task 4: Architecture compatibility assessment (AC: #4, #9)
+  - [x] 4.1 Classify each candidate as "position-independent" (fits `centOffset(for:)`) or "position-dependent" (would require API extension)
+  - [x] 4.2 Verify cent offset ranges against ±200 cent pipeline limit
+  - [x] 4.3 Confirm no pipeline changes needed for compatible candidates (cross-reference 28.2 conclusions)
+- [x] Task 5: Recommendation and cent offset table (AC: #5, #6, #7)
+  - [x] 5.1 Score each candidate on: practical relevance, pedagogical value, architectural fit, implementation simplicity
+  - [x] 5.2 Recommend the top candidate with full rationale
+  - [x] 5.3 Provide the complete cent offset table (P1–P8) for the recommended system
+  - [x] 5.4 Document edge cases and limitations
+- [x] Task 6: Write research report (AC: #8)
+  - [x] 6.1 Executive summary with recommendation
+  - [x] 6.2 Tuning system survey with usage classification
+  - [x] 6.3 Ear training relevance analysis
+  - [x] 6.4 Architecture compatibility matrix
+  - [x] 6.5 Recommended system detail with cent offset table
+  - [x] 6.6 Save report to `docs/implementation-artifacts/`
 
 ## Dev Notes
 
@@ -144,10 +144,36 @@ Recent commits (all in Epic 28):
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+No debug issues encountered. This is a research story with no code changes.
+
 ### Completion Notes List
 
+- **Task 1:** Loaded Adam (Music Domain Expert) agent persona from `_bmad/standalone/agents/music-domain-expert.md`. Adopted domain expertise for all subsequent research tasks.
+- **Task 2:** Surveyed six tuning system families with practical usage classification:
+  - Equal temperament variants (19-TET, 31-TET, 53-TET): experimental/niche, no practical relevance
+  - 5-limit Just Intonation: core practical relevance — used daily by string quartets, choirs, wind ensembles
+  - Pythagorean: partial practical use (fifths/fourths), pedagogically significant
+  - Well temperaments: historical keyboard niche, position-dependent (breaks API)
+  - Meantone: historical early music niche, position-dependent (breaks API)
+  - Non-Western systems: architecturally incompatible with Western interval model
+- **Task 3:** Assessed ear training relevance. Only JI is regularly used in music education ear training curricula. JI training develops ensemble tuning skills, chord tuning awareness, and intonation flexibility. Web research confirmed existing apps (INTUNATOR, tuneUp, Sonofield) are adding JI support.
+- **Task 4:** Architecture compatibility assessment confirmed: JI is position-independent (fits `centOffset(for:)`), all deviations within ±18¢ (well within ±200¢ limit), no pipeline changes needed. Well temperaments and meantone are position-dependent and incompatible. FR55 fully satisfied. AC #9 finding: the `centOffset(for:)` API shape is sufficient for the recommended system.
+- **Task 5:** Recommended 5-limit Just Intonation, scoring 20/20 on practical relevance, pedagogical value, architectural fit, and implementation simplicity. Provided complete 13-interval cent offset table. Documented 4 edge cases: broken M2/m7 octave complement (syntonic comma), tritone ambiguity (45/32 vs 64/45), m7 ratio choice (9/5 vs 16/9 vs 7/4), position-independence as a simplification of real-world JI.
+- **Task 6:** Wrote comprehensive research report (6 sections + 2 appendices) saved to `docs/implementation-artifacts/29-1-research-report-tuning-systems-used-by-musicians.md`. Report includes all deliverables Epic 30 needs: system name (`.justIntonation`), storage identifier (`"justIntonation"`), localized names (EN: "Just Intonation", DE: "Reine Stimmung"), user-facing descriptions, complete cent offset table, Swift implementation preview, and edge case documentation.
+
+### Implementation Plan
+
+This is a research story. No code was changed. The research report is the sole deliverable.
+
+### Change Log
+
+- 2026-03-02: Research report created at `docs/implementation-artifacts/29-1-research-report-tuning-systems-used-by-musicians.md`
+- 2026-03-02: All 6 tasks completed; story status updated to "review"
+
 ### File List
+
+- `docs/implementation-artifacts/29-1-research-report-tuning-systems-used-by-musicians.md` (new) — Complete research report with recommendation, survey, compatibility analysis, and Epic 30 implementation specification
