@@ -257,3 +257,11 @@ development_status:
   30-2-add-tuning-system-picker-to-settings: done # User can select between 12-TET and new system in Settings, localized names and descriptions
   30-3-add-tuning-system-indicator-to-interval-training-screens: done # Show active tuning system name below interval name on both training screens
   epic-30-retrospective: optional
+
+  # Epic 31: Structured Notes — NoteRange Refactoring
+  epic-31: in-progress
+  31-1-create-noterange-value-type: ready-for-dev
+  31-2-adopt-noterange-in-usersettings-and-settings-screen: backlog
+  31-3-adopt-noterange-in-training-sessions-and-strategy: backlog
+  31-4-adopt-noterange-in-profile-and-visualization: backlog
+  epic-31-retrospective: optional
