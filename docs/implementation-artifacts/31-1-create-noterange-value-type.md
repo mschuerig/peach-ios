@@ -1,6 +1,6 @@
 # Story 31.1: Create NoteRange Value Type
 
-Status: ready-for-dev
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -21,37 +21,37 @@ so that note range constraints are expressed once and reused throughout the code
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `NoteRange` struct (AC: #1, #5)
-  - [ ] 1.1 Write failing test: valid construction with exactly 12 semitone gap
-  - [ ] 1.2 Write failing test: valid construction with large gap (e.g., 48 semitones)
-  - [ ] 1.3 Write failing test: verify `Equatable` conformance (two equal ranges, two different ranges)
-  - [ ] 1.4 Write failing test: verify `Hashable` conformance (can be used as dictionary key / in Set)
-  - [ ] 1.5 Implement `NoteRange` struct with `precondition` validation
-  - [ ] 1.6 Verify tests pass
-- [ ] Task 2: Implement `contains(_:)` (AC: #2)
-  - [ ] 2.1 Write failing test: note at lowerBound returns `true`
-  - [ ] 2.2 Write failing test: note at upperBound returns `true`
-  - [ ] 2.3 Write failing test: note in middle returns `true`
-  - [ ] 2.4 Write failing test: note below lowerBound returns `false`
-  - [ ] 2.5 Write failing test: note above upperBound returns `false`
-  - [ ] 2.6 Implement `contains(_:)`
-  - [ ] 2.7 Verify tests pass
-- [ ] Task 3: Implement `clamped(_:)` (AC: #3)
-  - [ ] 3.1 Write failing test: note below range returns `lowerBound`
-  - [ ] 3.2 Write failing test: note above range returns `upperBound`
-  - [ ] 3.3 Write failing test: note within range returns same note
-  - [ ] 3.4 Write failing test: note at boundaries returns same note
-  - [ ] 3.5 Implement `clamped(_:)`
-  - [ ] 3.6 Verify tests pass
-- [ ] Task 4: Implement `semitoneSpan` (AC: #4)
-  - [ ] 4.1 Write failing test: span of exactly 12 returns 12
-  - [ ] 4.2 Write failing test: span of 48 (C2–C6) returns 48
-  - [ ] 4.3 Implement `semitoneSpan` computed property
-  - [ ] 4.4 Verify tests pass
-- [ ] Task 5: Run full test suite (AC: #6)
-  - [ ] 5.1 Run `bin/test.sh` — all tests must pass
-  - [ ] 5.2 Run `bin/build.sh` — no warnings or errors
-  - [ ] 5.3 Run `bin/check-dependencies.sh` — no dependency violations
+- [x] Task 1: Create `NoteRange` struct (AC: #1, #5)
+  - [x] 1.1 Write failing test: valid construction with exactly 12 semitone gap
+  - [x] 1.2 Write failing test: valid construction with large gap (e.g., 48 semitones)
+  - [x] 1.3 Write failing test: verify `Equatable` conformance (two equal ranges, two different ranges)
+  - [x] 1.4 Write failing test: verify `Hashable` conformance (can be used as dictionary key / in Set)
+  - [x] 1.5 Implement `NoteRange` struct with `precondition` validation
+  - [x] 1.6 Verify tests pass
+- [x] Task 2: Implement `contains(_:)` (AC: #2)
+  - [x] 2.1 Write failing test: note at lowerBound returns `true`
+  - [x] 2.2 Write failing test: note at upperBound returns `true`
+  - [x] 2.3 Write failing test: note in middle returns `true`
+  - [x] 2.4 Write failing test: note below lowerBound returns `false`
+  - [x] 2.5 Write failing test: note above upperBound returns `false`
+  - [x] 2.6 Implement `contains(_:)`
+  - [x] 2.7 Verify tests pass
+- [x] Task 3: Implement `clamped(_:)` (AC: #3)
+  - [x] 3.1 Write failing test: note below range returns `lowerBound`
+  - [x] 3.2 Write failing test: note above range returns `upperBound`
+  - [x] 3.3 Write failing test: note within range returns same note
+  - [x] 3.4 Write failing test: note at boundaries returns same note
+  - [x] 3.5 Implement `clamped(_:)`
+  - [x] 3.6 Verify tests pass
+- [x] Task 4: Implement `semitoneSpan` (AC: #4)
+  - [x] 4.1 Write failing test: span of exactly 12 returns 12
+  - [x] 4.2 Write failing test: span of 48 (C2–C6) returns 48
+  - [x] 4.3 Implement `semitoneSpan` computed property
+  - [x] 4.4 Verify tests pass
+- [x] Task 5: Run full test suite (AC: #6)
+  - [x] 5.1 Run `bin/test.sh` — all tests must pass (814 passed, 0 failed)
+  - [x] 5.2 Run `bin/build.sh` — no warnings or errors (build succeeded)
+  - [x] 5.3 Run `bin/check-dependencies.sh` — no dependency violations (all rules passed)
 
 ## Dev Notes
 
@@ -346,14 +346,32 @@ This is story 1 of 4 in Epic 31. The subsequent stories will adopt `NoteRange`:
 - [Source: docs/project-context.md] — Swift 6.2, precondition pattern, value types, testing rules, file placement rules
 - [Source: docs/implementation-artifacts/30-3-add-tuning-system-indicator-to-interval-training-screens.md] — Most recent story, 793 tests passing
 
+## Change Log
+
+- 2026-03-04: Implemented NoteRange value type with full test coverage (16 tests). TDD workflow: wrote all tests first (RED — build failed with "Cannot find 'NoteRange' in scope"), then implemented the struct (GREEN — all tests pass). No refactoring needed.
+- 2026-03-04: Code review — added 6 MIDI boundary edge case tests (construction, contains, clamped at MIDI 0 and 127). Total: 22 NoteRange tests, 820 tests passing.
+
 ## Dev Agent Record
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+No issues encountered.
+
 ### Completion Notes List
 
+- Created `NoteRange` struct following established domain value type pattern (MIDINote, Cents, Frequency)
+- Precondition validates minimum 12-semitone span at construction time
+- 22 tests covering: construction/validation (including MIDI boundary edges), Equatable, Hashable, contains, clamped, semitoneSpan
+- All 820 tests pass, build clean, dependency rules pass
+- Only 2 new files created, 0 existing files modified — exactly per story scope
+
 ### File List
+
+- `Peach/Core/Audio/NoteRange.swift` (created)
+- `PeachTests/Core/Audio/NoteRangeTests.swift` (created, updated in review — added 6 boundary tests)
+- `docs/implementation-artifacts/31-1-create-noterange-value-type.md` (updated — tasks, status, dev record)
+- `docs/implementation-artifacts/sprint-status.yaml` (updated — story status)
