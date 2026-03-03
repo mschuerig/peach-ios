@@ -180,6 +180,49 @@ struct SettingsTests {
         #expect(!selection.isLastRemaining(.up(.majorThird)))
     }
 
+    // MARK: - NoteRange Integration
+
+    @Test("SettingsKeys defaultNoteRange is C2-C6")
+    func defaultNoteRange() async {
+        let range = SettingsKeys.defaultNoteRange
+        #expect(range.lowerBound == MIDINote(36))
+        #expect(range.upperBound == MIDINote(84))
+    }
+
+    @Test("AppUserSettings returns default NoteRange when no UserDefaults entries")
+    func appUserSettingsNoteRangeDefault() async {
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.noteRangeMin)
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.noteRangeMax)
+        let settings = AppUserSettings()
+        #expect(settings.noteRange == NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84)))
+    }
+
+    @Test("AppUserSettings reads custom NoteRange from UserDefaults")
+    func appUserSettingsNoteRangeCustom() async {
+        defer {
+            UserDefaults.standard.removeObject(forKey: SettingsKeys.noteRangeMin)
+            UserDefaults.standard.removeObject(forKey: SettingsKeys.noteRangeMax)
+        }
+        UserDefaults.standard.set(48, forKey: SettingsKeys.noteRangeMin)
+        UserDefaults.standard.set(96, forKey: SettingsKeys.noteRangeMax)
+        let settings = AppUserSettings()
+        #expect(settings.noteRange == NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(96)))
+    }
+
+    @Test("MockUserSettings noteRange defaults to C2-C6")
+    func mockUserSettingsNoteRange() async {
+        let mock = MockUserSettings()
+        #expect(mock.noteRange == NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84)))
+    }
+
+    @Test("MockUserSettings allows noteRange injection")
+    func mockUserSettingsNoteRangeInjection() async {
+        let mock = MockUserSettings()
+        mock.noteRange = NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72))
+        #expect(mock.noteRange.lowerBound == MIDINote(48))
+        #expect(mock.noteRange.upperBound == MIDINote(72))
+    }
+
     // MARK: - Task 2: Note Range Validation
 
     @Test("Lower bound range enforces minimum gap from upper bound")

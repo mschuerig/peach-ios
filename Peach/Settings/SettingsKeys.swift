@@ -24,19 +24,19 @@ enum SettingsKeys {
 
     // MARK: - Note Range Constants
 
-    static let minimumNoteGap: Int = 12
+    static let defaultNoteRange = NoteRange(
+        lowerBound: MIDINote(defaultNoteRangeMin),
+        upperBound: MIDINote(defaultNoteRangeMax)
+    )
+
     static let absoluteMinNote: Int = 21   // A0
     static let absoluteMaxNote: Int = 108  // C8
 
-    /// Computes the allowed range for the lower bound Stepper
-    /// Ensures lower bound stays at least `minimumNoteGap` below upper bound
     static func lowerBoundRange(noteRangeMax: Int) -> ClosedRange<Int> {
-        absoluteMinNote...(noteRangeMax - minimumNoteGap)
+        absoluteMinNote...(noteRangeMax - NoteRange.minimumSpan)
     }
 
-    /// Computes the allowed range for the upper bound Stepper
-    /// Ensures upper bound stays at least `minimumNoteGap` above lower bound
     static func upperBoundRange(noteRangeMin: Int) -> ClosedRange<Int> {
-        (noteRangeMin + minimumNoteGap)...absoluteMaxNote
+        (noteRangeMin + NoteRange.minimumSpan)...absoluteMaxNote
     }
 }

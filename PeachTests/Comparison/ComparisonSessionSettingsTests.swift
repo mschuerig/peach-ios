@@ -10,8 +10,7 @@ struct ComparisonSessionSettingsTests {
     @Test("Strategy receives correct settings")
     func strategyReceivesCorrectSettings() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.noteRangeMin = MIDINote(48)
-        mockSettings.noteRangeMax = MIDINote(72)
+        mockSettings.noteRange = NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72))
 
         let mockPlayer = MockNotePlayer()
         let mockDataStore = MockTrainingDataStore()
@@ -57,8 +56,7 @@ struct ComparisonSessionSettingsTests {
     @Test("ComparisonSession with custom UserSettings uses those values")
     func customUserSettingsUsesValues() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.noteRangeMin = MIDINote(48)
-        mockSettings.noteRangeMax = MIDINote(72)
+        mockSettings.noteRange = NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72))
         mockSettings.referencePitch = 432.0
 
         let mockPlayer = MockNotePlayer()

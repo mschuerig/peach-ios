@@ -11,8 +11,7 @@ struct ComparisonSessionUserDefaultsTests {
     @Test("Changing UserSettings values changes TrainingSettings built by ComparisonSession")
     func userSettingsChangesAffectSettings() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.noteRangeMin = MIDINote(50)
-        mockSettings.noteRangeMax = MIDINote(70)
+        mockSettings.noteRange = NoteRange(lowerBound: MIDINote(50), upperBound: MIDINote(70))
         mockSettings.referencePitch = 432.0
 
         let mockPlayer = MockNotePlayer()
@@ -119,8 +118,7 @@ struct ComparisonSessionUserDefaultsTests {
 
         #expect(mockStrategy.lastReceivedSettings?.noteRangeMin.rawValue == SettingsKeys.defaultNoteRangeMin)
 
-        mockSettings.noteRangeMin = MIDINote(50)
-        mockSettings.noteRangeMax = MIDINote(70)
+        mockSettings.noteRange = NoteRange(lowerBound: MIDINote(50), upperBound: MIDINote(70))
         mockSettings.noteDuration = 2.0
 
         session.handleAnswer(isHigher: true)

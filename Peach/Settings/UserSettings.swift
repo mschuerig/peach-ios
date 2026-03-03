@@ -1,8 +1,7 @@
 import Foundation
 
 protocol UserSettings {
-    var noteRangeMin: MIDINote { get }
-    var noteRangeMax: MIDINote { get }
+    var noteRange: NoteRange { get }
     var noteDuration: NoteDuration { get }
     var referencePitch: Frequency { get }
     var soundSource: SoundSourceID { get }

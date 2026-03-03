@@ -194,8 +194,8 @@ final class PitchMatchingSession: TrainingSession {
 
     private var currentSettings: TrainingSettings {
         TrainingSettings(
-            noteRangeMin: userSettings.noteRangeMin,
-            noteRangeMax: userSettings.noteRangeMax,
+            noteRangeMin: userSettings.noteRange.lowerBound,
+            noteRangeMax: userSettings.noteRange.upperBound,
             referencePitch: userSettings.referencePitch
         )
     }

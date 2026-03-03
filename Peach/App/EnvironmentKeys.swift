@@ -73,8 +73,7 @@ private final class PreviewComparisonStrategy: NextComparisonStrategy {
 }
 
 private final class PreviewUserSettings: UserSettings {
-    let noteRangeMin = MIDINote(36)
-    let noteRangeMax = MIDINote(84)
+    let noteRange = NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84))
     let noteDuration = NoteDuration(0.75)
     let referencePitch = Frequency(440.0)
     let soundSource = SoundSourceID("sf2:8:80")

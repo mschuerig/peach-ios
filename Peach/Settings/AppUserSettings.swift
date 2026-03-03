@@ -1,12 +1,11 @@
 import Foundation
 
 final class AppUserSettings: UserSettings {
-    var noteRangeMin: MIDINote {
-        MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMin) as? Int ?? SettingsKeys.defaultNoteRangeMin)
-    }
-
-    var noteRangeMax: MIDINote {
-        MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax)
+    var noteRange: NoteRange {
+        NoteRange(
+            lowerBound: MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMin) as? Int ?? SettingsKeys.defaultNoteRangeMin),
+            upperBound: MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax)
+        )
     }
 
     var noteDuration: NoteDuration {
