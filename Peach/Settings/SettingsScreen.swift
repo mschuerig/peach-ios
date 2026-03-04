@@ -55,16 +55,6 @@ struct SettingsScreen: View {
 
     // MARK: - Sections
 
-    private var intervalSection: some View {
-        Section {
-            IntervalSelectorView(selection: $intervalSelection)
-        } header: {
-            Text(String(localized: "Intervals"))
-        } footer: {
-            Text(String(localized: "Select which intervals to practice. At least one must remain active."))
-        }
-    }
-
     private var trainingRangeSection: some View {
         Section(String(localized: "Training Range")) {
             Stepper(
@@ -82,9 +72,19 @@ struct SettingsScreen: View {
         }
     }
 
+    private var intervalSection: some View {
+        Section {
+            IntervalSelectorView(selection: $intervalSelection)
+        } header: {
+            Text(String(localized: "Intervals"))
+        } footer: {
+            Text(String(localized: "Select which intervals to practice. At least one must remain active."))
+        }
+    }
+
     private var soundSection: some View {
         Section {
-            Picker("Sound Source", selection: validatedSoundSource) {
+            Picker(String(localized: "Sound Source"), selection: validatedSoundSource) {
                 ForEach(soundSourceProvider.availableSources, id: \.self) { source in
                     Text(soundSourceProvider.displayName(for: source)).tag(source.rawValue)
                 }
@@ -113,21 +113,6 @@ struct SettingsScreen: View {
         }
     }
 
-    private var difficultySection: some View {
-        Section(String(localized: "Difficulty")) {
-            VStack(alignment: .leading) {
-                Text("Vary Loudness")
-                Slider(value: $varyLoudness, in: 0...1) {
-                    Text("Vary Loudness")
-                } minimumValueLabel: {
-                    Text("Off")
-                } maximumValueLabel: {
-                    Text("Max")
-                }
-            }
-        }
-    }
-
     private var validatedSoundSource: Binding<String> {
         Binding(
             get: {
@@ -141,6 +126,21 @@ struct SettingsScreen: View {
                 soundSource = newValue
             }
         )
+    }
+
+    private var difficultySection: some View {
+        Section(String(localized: "Difficulty")) {
+            VStack(alignment: .leading) {
+                Text("Vary Loudness")
+                Slider(value: $varyLoudness, in: 0...1) {
+                    Text("Vary Loudness")
+                } minimumValueLabel: {
+                    Text("Off")
+                } maximumValueLabel: {
+                    Text("Max")
+                }
+            }
+        }
     }
 
     private var dataSection: some View {

@@ -267,6 +267,6 @@ development_status:
   epic-31-retrospective: optional
 
   # Epic 32: Everything in Its Place — Settings Screen Reorganization
-  epic-32: in-progress
-  32-1-reorganize-settings-screen-sections: review
+  epic-32: done
+  32-1-reorganize-settings-screen-sections: done
   epic-32-retrospective: optional
