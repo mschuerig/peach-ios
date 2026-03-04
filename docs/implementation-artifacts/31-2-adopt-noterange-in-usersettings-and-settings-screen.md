@@ -1,6 +1,6 @@
 # Story 31.2: Adopt NoteRange in UserSettings and Settings Screen
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -435,12 +435,13 @@ No issues encountered. All changes compiled and tested on first pass.
 - Migrated ~20 test locations in `PitchMatchingSessionTests` from `noteRangeMin`/`noteRangeMax` to `noteRange` with valid 12-semitone spans
 - Migrated ~4 locations each in `ComparisonSessionSettingsTests` and `ComparisonSessionUserDefaultsTests`
 - Added 5 new NoteRange integration tests in `SettingsTests`
-- Tests: 820 → 825 (5 new), all passing
+- Tests: 820 → 826 (6 new), all passing
 - SettingsScreen unchanged (uses `@AppStorage` with raw Int, Steppers use updated `SettingsKeys` range functions)
 
 ### Change Log
 
 - 2026-03-04: Implemented story 31.2 — replaced separate `noteRangeMin`/`noteRangeMax` in `UserSettings` protocol with single `noteRange: NoteRange`, updated all consumers and tests
+- 2026-03-04: Code review — added defensive fallback in `AppUserSettings.noteRange` for corrupted UserDefaults (falls back to `defaultNoteRange` if gap < 12 semitones), +1 test
 
 ### File List
 

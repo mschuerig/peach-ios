@@ -2,10 +2,12 @@ import Foundation
 
 final class AppUserSettings: UserSettings {
     var noteRange: NoteRange {
-        NoteRange(
-            lowerBound: MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMin) as? Int ?? SettingsKeys.defaultNoteRangeMin),
-            upperBound: MIDINote(UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax)
-        )
+        let lower = UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMin) as? Int ?? SettingsKeys.defaultNoteRangeMin
+        let upper = UserDefaults.standard.object(forKey: SettingsKeys.noteRangeMax) as? Int ?? SettingsKeys.defaultNoteRangeMax
+        guard upper - lower >= NoteRange.minimumSpan else {
+            return SettingsKeys.defaultNoteRange
+        }
+        return NoteRange(lowerBound: MIDINote(lower), upperBound: MIDINote(upper))
     }
 
     var noteDuration: NoteDuration {

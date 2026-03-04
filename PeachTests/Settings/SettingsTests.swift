@@ -215,6 +215,18 @@ struct SettingsTests {
         #expect(mock.noteRange == NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84)))
     }
 
+    @Test("AppUserSettings falls back to default NoteRange when UserDefaults has invalid gap")
+    func appUserSettingsNoteRangeFallbackOnInvalidGap() async {
+        defer {
+            UserDefaults.standard.removeObject(forKey: SettingsKeys.noteRangeMin)
+            UserDefaults.standard.removeObject(forKey: SettingsKeys.noteRangeMax)
+        }
+        UserDefaults.standard.set(60, forKey: SettingsKeys.noteRangeMin)
+        UserDefaults.standard.set(65, forKey: SettingsKeys.noteRangeMax)
+        let settings = AppUserSettings()
+        #expect(settings.noteRange == SettingsKeys.defaultNoteRange)
+    }
+
     @Test("MockUserSettings allows noteRange injection")
     func mockUserSettingsNoteRangeInjection() async {
         let mock = MockUserSettings()
