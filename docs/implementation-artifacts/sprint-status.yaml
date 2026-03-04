@@ -270,3 +270,10 @@ development_status:
   epic-32: done
   32-1-reorganize-settings-screen-sections: done
   epic-32-retrospective: optional
+
+  # Epic 33: Take Your Data — Training Data Export
+  epic-33: in-progress
+  33-1-define-and-document-csv-export-schema: ready-for-dev
+  33-2-implement-csv-export-service: backlog
+  33-3-add-export-ui-to-settings-screen: backlog
+  epic-33-retrospective: optional
