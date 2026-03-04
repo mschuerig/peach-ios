@@ -281,6 +281,6 @@ development_status:
   # Epic 34: Bring Your Data — Training Data Import
   epic-34: in-progress
   34-1-implement-csv-import-parser: done
-  34-2-implement-merge-logic-with-duplicate-detection: ready-for-dev
+  34-2-implement-merge-logic-with-duplicate-detection: review
   34-3-add-import-ui-with-replace-merge-choice: backlog
   epic-34-retrospective: optional

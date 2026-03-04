@@ -1,6 +1,6 @@
 # Story 34.2: Implement Merge Logic with Duplicate Detection
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,38 +22,38 @@ So that users can choose how to combine imported data with existing records.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define ImportMode enum (AC: #1, #2)
-  - [ ] 1.1 Write tests for ImportMode cases
-  - [ ] 1.2 Create `ImportMode` enum in `TrainingDataImporter.swift` with `.replace` and `.merge` cases
+- [x] Task 1: Define ImportMode enum (AC: #1, #2)
+  - [x] 1.1 Write tests for ImportMode cases
+  - [x] 1.2 Create `ImportMode` enum in `TrainingDataImporter.swift` with `.replace` and `.merge` cases
 
-- [ ] Task 2: Define ImportSummary result type (AC: #3)
-  - [ ] 2.1 Write tests for ImportSummary construction and computed properties
-  - [ ] 2.2 Create `ImportSummary` struct with fields: `comparisonsImported`, `pitchMatchingsImported`, `comparisonsSkipped`, `pitchMatchingsSkipped`, `parseErrors` count
-  - [ ] 2.3 Add computed property `totalImported` and `totalSkipped`
+- [x] Task 2: Define ImportSummary result type (AC: #3)
+  - [x] 2.1 Write tests for ImportSummary construction and computed properties
+  - [x] 2.2 Create `ImportSummary` struct with fields: `comparisonsImported`, `pitchMatchingsImported`, `comparisonsSkipped`, `pitchMatchingsSkipped`, `parseErrors` count
+  - [x] 2.3 Add computed property `totalImported` and `totalSkipped`
 
-- [ ] Task 3: Implement replace mode (AC: #2, #3)
-  - [ ] 3.1 Write tests: replace with records deletes all existing and inserts all imported; replace with empty import deletes all existing; replace propagates store errors
-  - [ ] 3.2 Implement `TrainingDataImporter.importData(_:mode:into:) throws -> ImportSummary` for `.replace` mode
-  - [ ] 3.3 Call `store.deleteAll()` then save all parsed comparison and pitch matching records
+- [x] Task 3: Implement replace mode (AC: #2, #3)
+  - [x] 3.1 Write tests: replace with records deletes all existing and inserts all imported; replace with empty import deletes all existing; replace propagates store errors
+  - [x] 3.2 Implement `TrainingDataImporter.importData(_:mode:into:) throws -> ImportSummary` for `.replace` mode
+  - [x] 3.3 Call `store.deleteAll()` then save all parsed comparison and pitch matching records
 
-- [ ] Task 4: Implement duplicate detection for merge mode (AC: #1)
-  - [ ] 4.1 Write tests: duplicate detected by timestamp+referenceNote+targetNote+trainingType; non-duplicate inserted; existing records not modified
-  - [ ] 4.2 Define `DuplicateKey` private struct (Hashable) containing the four discriminator fields
-  - [ ] 4.3 Build a `Set<DuplicateKey>` from existing records fetched via `store.fetchAllComparisons()` and `store.fetchAllPitchMatchings()`
-  - [ ] 4.4 Filter imported records against duplicate set
+- [x] Task 4: Implement duplicate detection for merge mode (AC: #1)
+  - [x] 4.1 Write tests: duplicate detected by timestamp+referenceNote+targetNote+trainingType; non-duplicate inserted; existing records not modified
+  - [x] 4.2 Define `DuplicateKey` private struct (Hashable) containing the four discriminator fields
+  - [x] 4.3 Build a `Set<DuplicateKey>` from existing records fetched via `store.fetchAllComparisons()` and `store.fetchAllPitchMatchings()`
+  - [x] 4.4 Filter imported records against duplicate set
 
-- [ ] Task 5: Implement merge mode (AC: #1, #3)
-  - [ ] 5.1 Write tests: merge inserts only non-duplicates; merge with all duplicates imports zero; merge with no duplicates imports all; merge with mixed duplicates reports correct counts
-  - [ ] 5.2 Implement `.merge` mode in `importData` method using duplicate detection from Task 4
+- [x] Task 5: Implement merge mode (AC: #1, #3)
+  - [x] 5.1 Write tests: merge inserts only non-duplicates; merge with all duplicates imports zero; merge with no duplicates imports all; merge with mixed duplicates reports correct counts
+  - [x] 5.2 Implement `.merge` mode in `importData` method using duplicate detection from Task 4
 
-- [ ] Task 6: Edge case tests (AC: #4)
-  - [ ] 6.1 Write test: empty import (no records) returns zero summary for both modes
-  - [ ] 6.2 Write test: import with only parse errors returns error count in summary
-  - [ ] 6.3 Write test: records with identical timestamps but different training types are NOT duplicates
-  - [ ] 6.4 Write test: records with identical timestamps and training type but different notes are NOT duplicates
+- [x] Task 6: Edge case tests (AC: #4)
+  - [x] 6.1 Write test: empty import (no records) returns zero summary for both modes
+  - [x] 6.2 Write test: import with only parse errors returns error count in summary
+  - [x] 6.3 Write test: records with identical timestamps but different training types are NOT duplicates
+  - [x] 6.4 Write test: records with identical timestamps and training type but different notes are NOT duplicates
 
-- [ ] Task 7: Run full test suite (AC: #4)
-  - [ ] 7.1 Run `bin/test.sh` and verify zero regressions
+- [x] Task 7: Run full test suite (AC: #4)
+  - [x] 7.1 Run `bin/test.sh` and verify zero regressions
 
 ## Dev Notes
 
@@ -271,10 +271,30 @@ Recent commits show the standard workflow:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — implementation was straightforward with no blocking issues.
+
 ### Completion Notes List
 
+- Implemented `TrainingDataImporter` enum with nested `ImportMode` and `ImportSummary` types
+- Replace mode: calls `store.deleteAll()` then saves all imported records
+- Merge mode: builds `Set<DuplicateKey>` from existing records (fetch-then-filter O(n+m) approach), filters imported records against set, inserts only non-duplicates
+- `DuplicateKey` is a private Hashable struct matching on timestamp + referenceNote + targetNote + trainingType
+- Newly inserted keys are added to the duplicate set to handle duplicates within the import file itself
+- Parse error count passed through from `ImportResult.errors.count` for UI summary
+- 18 new tests covering: ImportMode cases, ImportSummary fields/computed properties, replace mode (with records, empty, errors), merge mode (non-duplicates, all duplicates, no duplicates, mixed, existing not modified), edge cases (empty import both modes, only errors, same timestamp different type, same timestamp different notes)
+- Full test suite: 917 tests pass, zero regressions (was 899)
+
+### Change Log
+
+- 2026-03-04: Implemented story 34.2 — TrainingDataImporter with merge/replace modes and duplicate detection
+
 ### File List
+
+- `Peach/Core/Data/TrainingDataImporter.swift` (new)
+- `PeachTests/Core/Data/TrainingDataImporterTests.swift` (new)
+- `docs/implementation-artifacts/34-2-implement-merge-logic-with-duplicate-detection.md` (modified)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified)
