@@ -282,5 +282,5 @@ development_status:
   epic-34: in-progress
   34-1-implement-csv-import-parser: done
   34-2-implement-merge-logic-with-duplicate-detection: done
-  34-3-add-import-ui-with-replace-merge-choice: ready-for-dev
+  34-3-add-import-ui-with-replace-merge-choice: review
   epic-34-retrospective: optional

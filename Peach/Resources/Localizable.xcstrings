@@ -1532,6 +1532,106 @@
           }
         }
       }
+    },
+    "Import Training Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdaten importieren"
+          }
+        }
+      }
+    },
+    "Replace All Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Daten ersetzen"
+          }
+        }
+      }
+    },
+    "Merge with Existing Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit vorhandenen Daten zusammenführen"
+          }
+        }
+      }
+    },
+    "Replace deletes all existing data first. Merge keeps existing data and skips duplicates.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Ersetzen“ löscht alle vorhandenen Daten. „Zusammenführen“ behält vorhandene Daten und überspringt Duplikate."
+          }
+        }
+      }
+    },
+    "Import Complete": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import abgeschlossen"
+          }
+        }
+      }
+    },
+    "%lld records imported, %lld duplicates skipped, %lld errors.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Datensätze importiert, %lld Duplikate übersprungen, %lld Fehler."
+          }
+        }
+      }
+    },
+    "Could not access the selected file.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf die ausgewählte Datei konnte nicht zugegriffen werden."
+          }
+        }
+      }
+    },
+    "Could not read the selected file.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die ausgewählte Datei konnte nicht gelesen werden."
+          }
+        }
+      }
+    },
+    "The file contains no valid training data.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei enthält keine gültigen Trainingsdaten."
+          }
+        }
+      }
+    },
+    "Import Failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import fehlgeschlagen"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

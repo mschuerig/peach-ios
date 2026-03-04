@@ -100,6 +100,19 @@ final class ThresholdTimeline {
         return result
     }
 
+    /// Replaces all data and recomputes aggregated points from the given records
+    func rebuild(from records: [ComparisonRecord]) {
+        dataPoints = records.map {
+            TimelineDataPoint(
+                timestamp: $0.timestamp,
+                centOffset: abs($0.centOffset),
+                isCorrect: $0.isCorrect,
+                referenceNote: $0.referenceNote
+            )
+        }
+        recomputeAggregatedPoints()
+    }
+
     func reset() {
         dataPoints = []
         aggregatedPoints = []

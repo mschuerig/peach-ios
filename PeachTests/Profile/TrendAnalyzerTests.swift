@@ -166,4 +166,45 @@ struct TrendAnalyzerTests {
         let retrieved = env.trendAnalyzer
         #expect(retrieved.trend == .improving)
     }
+
+    // MARK: - rebuild(from:) tests
+
+    @Test("rebuild(from:) produces same trend as fresh init with same records")
+    func rebuildMatchesInit() async throws {
+        let offsets = Array(repeating: 50.0, count: 10) + Array(repeating: 30.0, count: 10)
+        let records = makeRecords(absCentOffsets: offsets)
+
+        let freshAnalyzer = TrendAnalyzer(records: records)
+        let rebuiltAnalyzer = TrendAnalyzer()
+        rebuiltAnalyzer.rebuild(from: records)
+
+        #expect(rebuiltAnalyzer.trend == freshAnalyzer.trend)
+        #expect(rebuiltAnalyzer.trend == .improving)
+    }
+
+    @Test("rebuild(from:) replaces previous data entirely")
+    func rebuildReplacesPreviousData() async throws {
+        let decliningOffsets = Array(repeating: 30.0, count: 10) + Array(repeating: 50.0, count: 10)
+        let decliningRecords = makeRecords(absCentOffsets: decliningOffsets)
+        let analyzer = TrendAnalyzer(records: decliningRecords)
+        #expect(analyzer.trend == .declining)
+
+        let improvingOffsets = Array(repeating: 50.0, count: 10) + Array(repeating: 30.0, count: 10)
+        let improvingRecords = makeRecords(absCentOffsets: improvingOffsets)
+        analyzer.rebuild(from: improvingRecords)
+
+        #expect(analyzer.trend == .improving)
+    }
+
+    @Test("rebuild(from:) with empty records clears trend")
+    func rebuildWithEmptyRecords() async throws {
+        let offsets = Array(repeating: 50.0, count: 10) + Array(repeating: 30.0, count: 10)
+        let records = makeRecords(absCentOffsets: offsets)
+        let analyzer = TrendAnalyzer(records: records)
+        #expect(analyzer.trend == .improving)
+
+        analyzer.rebuild(from: [])
+
+        #expect(analyzer.trend == nil)
+    }
 }

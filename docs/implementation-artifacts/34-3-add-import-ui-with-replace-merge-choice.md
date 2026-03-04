@@ -1,6 +1,6 @@
 # Story 34.3: Add Import UI with Replace/Merge Choice
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,40 +24,40 @@ So that I can restore backups or combine data from multiple devices.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `rebuild(from:)` methods to TrendAnalyzer and ThresholdTimeline (AC: #4)
-  - [ ] 1.1 Write tests: TrendAnalyzer.rebuild(from:) produces same state as init(records:)
-  - [ ] 1.2 Write tests: ThresholdTimeline.rebuild(from:) produces same state as init(records:)
-  - [ ] 1.3 Implement `TrendAnalyzer.rebuild(from records: [ComparisonRecord])` — reset + re-feed
-  - [ ] 1.4 Implement `ThresholdTimeline.rebuild(from records: [ComparisonRecord])` — reset + re-feed
+- [x] Task 1: Add `rebuild(from:)` methods to TrendAnalyzer and ThresholdTimeline (AC: #4)
+  - [x] 1.1 Write tests: TrendAnalyzer.rebuild(from:) produces same state as init(records:)
+  - [x] 1.2 Write tests: ThresholdTimeline.rebuild(from:) produces same state as init(records:)
+  - [x] 1.3 Implement `TrendAnalyzer.rebuild(from records: [ComparisonRecord])` — reset + re-feed
+  - [x] 1.4 Implement `ThresholdTimeline.rebuild(from records: [ComparisonRecord])` — reset + re-feed
 
-- [ ] Task 2: Add `trainingDataImportAction` environment entry (AC: #4)
-  - [ ] 2.1 Add `@Entry var trainingDataImportAction: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil` in `EnvironmentKeys.swift`
-  - [ ] 2.2 Wire closure in `PeachApp.swift` that calls `TrainingDataImporter.importData`, then rebuilds profile, trend analyzer, and threshold timeline from updated store data
+- [x] Task 2: Add `trainingDataImportAction` environment entry (AC: #4)
+  - [x] 2.1 Add `@Entry var trainingDataImportAction: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil` in `EnvironmentKeys.swift`
+  - [x] 2.2 Wire closure in `PeachApp.swift` that calls `TrainingDataImporter.importData`, then rebuilds profile, trend analyzer, and threshold timeline from updated store data
 
-- [ ] Task 3: Add import UI to SettingsScreen (AC: #1, #2, #3, #4, #5)
-  - [ ] 3.1 Add `@Environment(\.trainingDataImportAction)` dependency
-  - [ ] 3.2 Add state variables: `@State private var showFileImporter = false`, `@State private var importParseResult: CSVImportParser.ImportResult?`, `@State private var showImportModeChoice = false`, `@State private var showImportSummary = false`, `@State private var importSummary: TrainingDataImporter.ImportSummary?`, `@State private var showImportError = false`, `@State private var importErrorMessage = ""`
-  - [ ] 3.3 Add "Import Training Data" button to `dataSection` (between export and reset)
-  - [ ] 3.4 Add `.fileImporter(isPresented:allowedContentTypes:)` modifier for `.commaSeparatedText`
-  - [ ] 3.5 Implement file reading with security-scoped resource access (`startAccessingSecurityScopedResource` / `stopAccessingSecurityScopedResource`)
-  - [ ] 3.6 Parse CSV with `CSVImportParser.parse()` and validate result
-  - [ ] 3.7 Add `.confirmationDialog` for Replace vs Merge choice with destructive warning on Replace
-  - [ ] 3.8 Call import action closure and store summary result
-  - [ ] 3.9 Show summary alert with imported/skipped/error counts
-  - [ ] 3.10 Re-prepare export after successful import (`prepareExport()`)
+- [x] Task 3: Add import UI to SettingsScreen (AC: #1, #2, #3, #4, #5)
+  - [x] 3.1 Add `@Environment(\.trainingDataImportAction)` dependency
+  - [x] 3.2 Add state variables: `@State private var showFileImporter = false`, `@State private var importParseResult: CSVImportParser.ImportResult?`, `@State private var showImportModeChoice = false`, `@State private var showImportSummary = false`, `@State private var importSummary: TrainingDataImporter.ImportSummary?`, `@State private var showImportError = false`, `@State private var importErrorMessage = ""`
+  - [x] 3.3 Add "Import Training Data" button to `dataSection` (between export and reset)
+  - [x] 3.4 Add `.fileImporter(isPresented:allowedContentTypes:)` modifier for `.commaSeparatedText`
+  - [x] 3.5 Implement file reading with security-scoped resource access (`startAccessingSecurityScopedResource` / `stopAccessingSecurityScopedResource`)
+  - [x] 3.6 Parse CSV with `CSVImportParser.parse()` and validate result
+  - [x] 3.7 Add `.confirmationDialog` for Replace vs Merge choice with destructive warning on Replace
+  - [x] 3.8 Call import action closure and store summary result
+  - [x] 3.9 Show summary alert with imported/skipped/error counts
+  - [x] 3.10 Re-prepare export after successful import (`prepareExport()`)
 
-- [ ] Task 4: Add localized strings (AC: #1, #3, #4, #5)
-  - [ ] 4.1 Add all import-related strings via `bin/add-localization.py --batch`
+- [x] Task 4: Add localized strings (AC: #1, #3, #4, #5)
+  - [x] 4.1 Add all import-related strings via `bin/add-localization.py --batch`
 
-- [ ] Task 5: Write tests (AC: #1, #2, #3, #4, #5)
-  - [ ] 5.1 Test import action closure: replace mode imports records and rebuilds profile
-  - [ ] 5.2 Test import action closure: merge mode imports non-duplicates and rebuilds profile
-  - [ ] 5.3 Test import action closure: profile is rebuilt from ALL store records (not just imported)
-  - [ ] 5.4 Test TrendAnalyzer.rebuild(from:) matches fresh init behavior
-  - [ ] 5.5 Test ThresholdTimeline.rebuild(from:) matches fresh init behavior
+- [x] Task 5: Write tests (AC: #1, #2, #3, #4, #5)
+  - [x] 5.1 Test import action closure: replace mode imports records and rebuilds profile
+  - [x] 5.2 Test import action closure: merge mode imports non-duplicates and rebuilds profile
+  - [x] 5.3 Test import action closure: profile is rebuilt from ALL store records (not just imported)
+  - [x] 5.4 Test TrendAnalyzer.rebuild(from:) matches fresh init behavior
+  - [x] 5.5 Test ThresholdTimeline.rebuild(from:) matches fresh init behavior
 
-- [ ] Task 6: Run full test suite
-  - [ ] 6.1 Run `bin/test.sh` and verify zero regressions
+- [x] Task 6: Run full test suite
+  - [x] 6.1 Run `bin/test.sh` and verify zero regressions
 
 ## Dev Notes
 
@@ -380,10 +380,33 @@ Recent commits: story 34.1 (parser), 34.2 (merge logic), quick spec for CSV expo
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None needed — clean implementation.
+
 ### Completion Notes List
 
+- Task 1: Added `rebuild(from:)` to both TrendAnalyzer and ThresholdTimeline. Both methods reuse existing private recompute methods, matching the init(records:) pattern exactly.
+- Task 2: Added `trainingDataImportAction` environment entry following the existing `trainingDataExportAction` pattern. Closure captures dataStore, profile, trendAnalyzer, thresholdTimeline and rebuilds all in-memory state after import.
+- Task 3: Added full import UI flow to SettingsScreen: file picker (.commaSeparatedText), security-scoped resource access, CSV parsing/validation, replace/merge confirmation dialog, import execution, summary alert, and error handling. Import button placed between export and reset in data section.
+- Task 4: Added 10 German localization strings for all import-related UI text.
+- Task 5: Wrote 11 new tests: 3 for TrendAnalyzer.rebuild, 3 for ThresholdTimeline.rebuild, 5 integration tests for the import action closure.
+- Task 6: Full test suite passes — 928 tests (was 917, +11 new).
+
+### Change Log
+
+- 2026-03-04: Implemented story 34.3 — Import UI with replace/merge choice. Added rebuild methods, environment wiring, full import flow in SettingsScreen, localization, and tests.
+
 ### File List
+
+- Peach/Core/Profile/TrendAnalyzer.swift (modified — added rebuild(from:))
+- Peach/Core/Profile/ThresholdTimeline.swift (modified — added rebuild(from:))
+- Peach/App/EnvironmentKeys.swift (modified — added trainingDataImportAction entry)
+- Peach/App/PeachApp.swift (modified — wired import closure with profile/trend/timeline rebuild)
+- Peach/Settings/SettingsScreen.swift (modified — added import button, file importer, dialogs, action methods)
+- Peach/Resources/Localizable.xcstrings (modified — added 10 German translations)
+- PeachTests/Profile/TrendAnalyzerTests.swift (modified — added 3 rebuild tests)
+- PeachTests/Core/Profile/ThresholdTimelineTests.swift (modified — added 3 rebuild tests)
+- PeachTests/Settings/TrainingDataImportActionTests.swift (new — 5 import action integration tests)

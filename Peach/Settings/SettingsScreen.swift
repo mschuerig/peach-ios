@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsScreen: View {
     @AppStorage(SettingsKeys.noteRangeMin)
@@ -28,11 +29,19 @@ struct SettingsScreen: View {
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.trainingDataExportAction) private var trainingDataExportAction
+    @Environment(\.trainingDataImportAction) private var trainingDataImportAction
 
     @State private var showResetConfirmation = false
     @State private var showResetError = false
     @State private var csvExportItem: CSVExportItem?
     @State private var showExportError = false
+    @State private var showFileImporter = false
+    @State private var importParseResult: CSVImportParser.ImportResult?
+    @State private var showImportModeChoice = false
+    @State private var showImportSummary = false
+    @State private var importSummary: TrainingDataImporter.ImportSummary?
+    @State private var showImportError = false
+    @State private var importErrorMessage = ""
 
     var body: some View {
         Form {
@@ -59,6 +68,38 @@ struct SettingsScreen: View {
             Button("OK") { }
         } message: {
             Text("Could not export training data. Please try again.")
+        }
+        .fileImporter(
+            isPresented: $showFileImporter,
+            allowedContentTypes: [.commaSeparatedText]
+        ) { result in
+            handleFileSelection(result)
+        }
+        .confirmationDialog(
+            "Import Training Data",
+            isPresented: $showImportModeChoice,
+            titleVisibility: .visible
+        ) {
+            Button("Replace All Data", role: .destructive) {
+                performImport(mode: .replace)
+            }
+            Button("Merge with Existing Data") {
+                performImport(mode: .merge)
+            }
+        } message: {
+            Text("Replace deletes all existing data first. Merge keeps existing data and skips duplicates.")
+        }
+        .alert("Import Complete", isPresented: $showImportSummary) {
+            Button("OK") { }
+        } message: {
+            if let summary = importSummary {
+                Text("\(summary.totalImported) records imported, \(summary.totalSkipped) duplicates skipped, \(summary.parseErrorCount) errors.")
+            }
+        }
+        .alert("Import Failed", isPresented: $showImportError) {
+            Button("OK") { }
+        } message: {
+            Text(importErrorMessage)
         }
     }
 
@@ -166,6 +207,12 @@ struct SettingsScreen: View {
                     .foregroundStyle(.secondary)
             }
 
+            Button {
+                showFileImporter = true
+            } label: {
+                Label("Import Training Data", systemImage: "square.and.arrow.down")
+            }
+
             Button("Reset All Training Data", role: .destructive) {
                 showResetConfirmation = true
             }
@@ -192,6 +239,48 @@ struct SettingsScreen: View {
         } catch {
             showResetError = true
         }
+    }
+
+    private func handleFileSelection(_ result: Result<URL, Error>) {
+        switch result {
+        case .success(let url):
+            guard url.startAccessingSecurityScopedResource() else {
+                importErrorMessage = String(localized: "Could not access the selected file.")
+                showImportError = true
+                return
+            }
+            defer { url.stopAccessingSecurityScopedResource() }
+            do {
+                let csvString = try String(contentsOf: url, encoding: .utf8)
+                let parseResult = CSVImportParser.parse(csvString)
+                if parseResult.comparisons.isEmpty && parseResult.pitchMatchings.isEmpty {
+                    importErrorMessage = String(localized: "The file contains no valid training data.")
+                    showImportError = true
+                    return
+                }
+                importParseResult = parseResult
+                showImportModeChoice = true
+            } catch {
+                importErrorMessage = String(localized: "Could not read the selected file.")
+                showImportError = true
+            }
+        case .failure:
+            break
+        }
+    }
+
+    private func performImport(mode: TrainingDataImporter.ImportMode) {
+        guard let parseResult = importParseResult else { return }
+        do {
+            let summary = try trainingDataImportAction?(parseResult, mode)
+            importSummary = summary
+            showImportSummary = true
+            prepareExport()
+        } catch {
+            importErrorMessage = String(localized: "Import Failed")
+            showImportError = true
+        }
+        importParseResult = nil
     }
 
     private func prepareExport() {

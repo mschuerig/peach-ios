@@ -86,6 +86,22 @@ struct PeachApp: App {
                 .environment(\.trainingDataExportAction, { [dataStore] in
                     try TrainingDataExporter.export(from: dataStore)
                 })
+                .environment(\.trainingDataImportAction, { [dataStore, profile, trendAnalyzer, thresholdTimeline] parseResult, mode in
+                    let summary = try TrainingDataImporter.importData(parseResult, mode: mode, into: dataStore)
+                    let allComparisons = try dataStore.fetchAllComparisons()
+                    let allPitchMatchings = try dataStore.fetchAllPitchMatchings()
+                    profile.reset()
+                    profile.resetMatching()
+                    for record in allComparisons {
+                        profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
+                    }
+                    for record in allPitchMatchings {
+                        profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
+                    }
+                    trendAnalyzer.rebuild(from: allComparisons)
+                    thresholdTimeline.rebuild(from: allComparisons)
+                    return summary
+                })
                 .modelContainer(modelContainer)
                 .onChange(of: comparisonSession.isIdle) { _, isIdle in
                     if !isIdle {

@@ -38,6 +38,12 @@ final class TrendAnalyzer {
         recompute()
     }
 
+    /// Replaces all data and recomputes trend from the given records
+    func rebuild(from records: [ComparisonRecord]) {
+        absOffsets = records.map { abs($0.centOffset) }
+        recompute()
+    }
+
     /// Resets all trend data to initial state
     /// Used by Settings "Reset All Training Data" action
     func reset() {

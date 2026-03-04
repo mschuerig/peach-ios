@@ -10,6 +10,7 @@ extension EnvironmentValues {
     @Entry var perceptualProfile = PerceptualProfile()
     @Entry var dataStoreResetter: (() throws -> Void)? = nil
     @Entry var trainingDataExportAction: (() throws -> String)? = nil
+    @Entry var trainingDataImportAction: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil
 }
 
 // MARK: - Session Environment Keys

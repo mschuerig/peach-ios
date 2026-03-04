@@ -422,4 +422,47 @@ struct ThresholdTimelineTests {
         #expect(timeline.rollingMean().isEmpty)
         #expect(timeline.rollingStdDev().isEmpty)
     }
+
+    // MARK: - rebuild(from:) tests
+
+    @Test("rebuild(from:) produces same state as fresh init with same records")
+    func rebuildMatchesInit() async throws {
+        let records = makeDailyRecords(offsets: [10.0, 20.0, 30.0, 40.0, 50.0])
+
+        let freshTimeline = ThresholdTimeline(records: records)
+        let rebuiltTimeline = ThresholdTimeline()
+        rebuiltTimeline.rebuild(from: records)
+
+        #expect(rebuiltTimeline.dataPoints.count == freshTimeline.dataPoints.count)
+        #expect(rebuiltTimeline.aggregatedPoints.count == freshTimeline.aggregatedPoints.count)
+        for i in 0..<freshTimeline.aggregatedPoints.count {
+            #expect(rebuiltTimeline.aggregatedPoints[i].meanThreshold == freshTimeline.aggregatedPoints[i].meanThreshold)
+            #expect(rebuiltTimeline.aggregatedPoints[i].comparisonCount == freshTimeline.aggregatedPoints[i].comparisonCount)
+        }
+    }
+
+    @Test("rebuild(from:) replaces previous data entirely")
+    func rebuildReplacesPreviousData() async throws {
+        let initialRecords = makeDailyRecords(offsets: [10.0, 20.0, 30.0])
+        let timeline = ThresholdTimeline(records: initialRecords)
+        #expect(timeline.dataPoints.count == 3)
+
+        let newRecords = makeDailyRecords(offsets: [40.0, 50.0])
+        timeline.rebuild(from: newRecords)
+
+        #expect(timeline.dataPoints.count == 2)
+        #expect(timeline.aggregatedPoints.count == 2)
+    }
+
+    @Test("rebuild(from:) with empty records clears all data")
+    func rebuildWithEmptyRecords() async throws {
+        let records = makeDailyRecords(offsets: [10.0, 20.0, 30.0])
+        let timeline = ThresholdTimeline(records: records)
+        #expect(timeline.dataPoints.count == 3)
+
+        timeline.rebuild(from: [])
+
+        #expect(timeline.dataPoints.isEmpty)
+        #expect(timeline.aggregatedPoints.isEmpty)
+    }
 }
