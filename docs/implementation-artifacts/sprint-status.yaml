@@ -263,5 +263,5 @@ development_status:
   31-1-create-noterange-value-type: done
   31-2-adopt-noterange-in-usersettings-and-settings-screen: done
   31-3-adopt-noterange-in-training-sessions-and-strategy: done
-  31-4-adopt-noterange-in-profile-and-visualization: ready-for-dev
+  31-4-adopt-noterange-in-profile-and-visualization: review
   epic-31-retrospective: optional

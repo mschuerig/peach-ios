@@ -14,7 +14,7 @@ struct SummaryStatisticsTests {
         profile.update(note: 60, centOffset: 40, isCorrect: true)
         profile.update(note: 62, centOffset: 30, isCorrect: true)
 
-        let stats = SummaryStatisticsView.computeStats(from: profile, midiRange: 36...84)
+        let stats = SummaryStatisticsView.computeStats(from: profile, noteRange: SettingsKeys.defaultNoteRange)
 
         // Mean of unsigned per-note means: (40 + 30) / 2 = 35
         #expect(stats != nil)
@@ -29,7 +29,7 @@ struct SummaryStatisticsTests {
         profile.update(note: 62, centOffset: 40, isCorrect: true)
         profile.update(note: 64, centOffset: 60, isCorrect: true)
 
-        let stats = SummaryStatisticsView.computeStats(from: profile, midiRange: 36...84)
+        let stats = SummaryStatisticsView.computeStats(from: profile, noteRange: SettingsKeys.defaultNoteRange)
 
         #expect(stats != nil)
         // abs means: [20, 40, 60], mean of abs = 40
@@ -43,7 +43,7 @@ struct SummaryStatisticsTests {
     func coldStartReturnsNil() async throws {
         let profile = PerceptualProfile()
 
-        let stats = SummaryStatisticsView.computeStats(from: profile, midiRange: 36...84)
+        let stats = SummaryStatisticsView.computeStats(from: profile, noteRange: SettingsKeys.defaultNoteRange)
 
         #expect(stats == nil)
     }
@@ -53,7 +53,7 @@ struct SummaryStatisticsTests {
         let profile = PerceptualProfile()
         profile.update(note: 60, centOffset: 50, isCorrect: true)
 
-        let stats = SummaryStatisticsView.computeStats(from: profile, midiRange: 36...84)
+        let stats = SummaryStatisticsView.computeStats(from: profile, noteRange: SettingsKeys.defaultNoteRange)
 
         #expect(stats != nil)
         #expect(stats!.mean == 50.0)
@@ -68,7 +68,7 @@ struct SummaryStatisticsTests {
         mock.setStats(for: MIDINote(60), mean: 40.0)
         mock.setStats(for: MIDINote(62), mean: 20.0)
 
-        let stats = SummaryStatisticsView.computeStats(from: mock, midiRange: 36...84)
+        let stats = SummaryStatisticsView.computeStats(from: mock, noteRange: SettingsKeys.defaultNoteRange)
 
         #expect(stats != nil)
         #expect(stats!.mean == 30.0)

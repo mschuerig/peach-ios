@@ -3,7 +3,11 @@ import SwiftUI
 /// Layout calculator for piano keyboard rendering
 /// Computes key positions, types, and note names for a given MIDI range
 struct PianoKeyboardLayout {
-    let midiRange: ClosedRange<Int>
+    let noteRange: NoteRange
+
+    private var rawRange: ClosedRange<Int> {
+        noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue
+    }
 
     /// Standard piano key pattern per octave: which pitch classes are white keys
     /// C=0, C#=1, D=2, D#=3, E=4, F=5, F#=6, G=7, G#=8, A=9, A#=10, B=11
@@ -27,7 +31,7 @@ struct PianoKeyboardLayout {
 
     /// Number of white keys in the range
     var whiteKeyCount: Int {
-        (midiRange.lowerBound...midiRange.upperBound).filter { Self.isWhiteKey(midiNote: $0) }.count
+        rawRange.filter { Self.isWhiteKey(midiNote: $0) }.count
     }
 
     /// Width of a single white key given total width
@@ -41,14 +45,11 @@ struct PianoKeyboardLayout {
         let keyWidth = whiteKeyWidth(totalWidth: totalWidth)
 
         if Self.isWhiteKey(midiNote: midiNote) {
-            // Count white keys before this one
-            let whiteIndex = (midiRange.lowerBound..<midiNote).filter { Self.isWhiteKey(midiNote: $0) }.count
+            let whiteIndex = (rawRange.lowerBound..<midiNote).filter { Self.isWhiteKey(midiNote: $0) }.count
             return (CGFloat(whiteIndex) + 0.5) * keyWidth
         } else {
-            // Black key sits between the surrounding white keys
-            // Find the white key just before and just after
-            let prevWhite = (midiRange.lowerBound..<midiNote).reversed().first { Self.isWhiteKey(midiNote: $0) } ?? midiRange.lowerBound
-            let nextWhite = ((midiNote + 1)...midiRange.upperBound).first { Self.isWhiteKey(midiNote: $0) } ?? midiRange.upperBound
+            let prevWhite = (rawRange.lowerBound..<midiNote).reversed().first { Self.isWhiteKey(midiNote: $0) } ?? rawRange.lowerBound
+            let nextWhite = ((midiNote + 1)...rawRange.upperBound).first { Self.isWhiteKey(midiNote: $0) } ?? rawRange.upperBound
 
             let prevX = xPosition(forMidiNote: prevWhite, totalWidth: totalWidth)
             let nextX = xPosition(forMidiNote: nextWhite, totalWidth: totalWidth)
@@ -58,7 +59,7 @@ struct PianoKeyboardLayout {
 
     /// Octave boundary notes in the range (C notes) with their note names
     var octaveBoundaries: [(midiNote: Int, name: String)] {
-        (midiRange.lowerBound...midiRange.upperBound)
+        rawRange
             .filter { Self.isOctaveBoundary(midiNote: $0) }
             .map { (midiNote: $0, name: Self.noteName(midiNote: $0)) }
     }

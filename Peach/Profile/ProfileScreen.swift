@@ -4,7 +4,7 @@ struct ProfileScreen: View {
     @Environment(\.perceptualProfile) private var profile
     @Environment(\.thresholdTimeline) private var timeline
 
-    private let midiRange: ClosedRange<Int> = 36...84
+    private let noteRange = SettingsKeys.defaultNoteRange
 
     var body: some View {
         VStack(spacing: 0) {
@@ -13,7 +13,7 @@ struct ProfileScreen: View {
             ThresholdTimelineView()
                 .padding(.horizontal)
 
-            SummaryStatisticsView(midiRange: midiRange)
+            SummaryStatisticsView(noteRange: noteRange)
 
             Divider()
                 .padding(.horizontal)

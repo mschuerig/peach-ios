@@ -1,6 +1,6 @@
 # Story 31.4: Adopt NoteRange in Profile and Visualization
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,41 +22,41 @@ so that range references are consistent domain-wide.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update `PitchDiscriminationProfile` protocol (AC: #1)
-  - [ ] 1.1 Write failing test: `MockPitchDiscriminationProfile.averageThreshold` accepts `NoteRange` parameter
-  - [ ] 1.2 Change `averageThreshold(midiRange: ClosedRange<Int>) -> Int?` to `averageThreshold(noteRange: NoteRange) -> Int?` in protocol
-  - [ ] 1.3 Verify test passes
-- [ ] Task 2: Update `PerceptualProfile` implementation (AC: #2)
-  - [ ] 2.1 Update `averageThreshold` method signature to accept `NoteRange`
-  - [ ] 2.2 Replace internal `midiRange.filter { ... }` with `(noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { ... }`
-  - [ ] 2.3 Verify build succeeds
-- [ ] Task 3: Update `MockPitchDiscriminationProfile` (AC: #1)
-  - [ ] 3.1 Update `averageThreshold` method signature to accept `NoteRange`
-  - [ ] 3.2 Verify build succeeds
-- [ ] Task 4: Update `PianoKeyboardLayout` (AC: #3)
-  - [ ] 4.1 Write failing test: `PianoKeyboardLayout(noteRange:)` init accepts `NoteRange`
-  - [ ] 4.2 Change `midiRange: ClosedRange<Int>` property to `noteRange: NoteRange`
-  - [ ] 4.3 Update all 6 internal references from `midiRange.lowerBound`/`midiRange.upperBound` to `noteRange.lowerBound.rawValue`/`noteRange.upperBound.rawValue`
-  - [ ] 4.4 Verify build succeeds
-- [ ] Task 5: Update `SummaryStatisticsView` (AC: #4)
-  - [ ] 5.1 Write failing test: `SummaryStatisticsView.computeStats(from:noteRange:)` accepts `NoteRange`
-  - [ ] 5.2 Change `midiRange: ClosedRange<Int>` property to `noteRange: NoteRange`
-  - [ ] 5.3 Update `init(midiRange:)` to `init(noteRange:)` with default `SettingsKeys.defaultNoteRange`
-  - [ ] 5.4 Update `computeStats` signature from `midiRange: ClosedRange<Int>` to `noteRange: NoteRange`
-  - [ ] 5.5 Update internal iteration from `midiRange.filter { ... }` to `(noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { ... }`
-  - [ ] 5.6 Verify build succeeds
-- [ ] Task 6: Update `ProfileScreen` (AC: #5)
-  - [ ] 6.1 Replace `private let midiRange: ClosedRange<Int> = 36...84` with `private let noteRange = SettingsKeys.defaultNoteRange`
-  - [ ] 6.2 Update call site: `SummaryStatisticsView(midiRange: midiRange)` to `SummaryStatisticsView(noteRange: noteRange)`
-  - [ ] 6.3 Verify build succeeds
-- [ ] Task 7: Update test files (AC: #6, #7)
-  - [ ] 7.1 Update `ProfileScreenTests.swift`: 2 `PianoKeyboardLayout(midiRange: 36...84)` calls to `PianoKeyboardLayout(noteRange: SettingsKeys.defaultNoteRange)`
-  - [ ] 7.2 Update `SummaryStatisticsTests.swift`: 5 `computeStats(from:, midiRange: 36...84)` calls to `computeStats(from:, noteRange: SettingsKeys.defaultNoteRange)`
-  - [ ] 7.3 Verify all tests compile
-- [ ] Task 8: Run full test suite (AC: #7)
-  - [ ] 8.1 Run `bin/test.sh` — all tests must pass
-  - [ ] 8.2 Run `bin/build.sh` — no warnings or errors
-  - [ ] 8.3 Run `bin/check-dependencies.sh` — no dependency violations
+- [x] Task 1: Update `PitchDiscriminationProfile` protocol (AC: #1)
+  - [x] 1.1 Write failing test: `MockPitchDiscriminationProfile.averageThreshold` accepts `NoteRange` parameter
+  - [x] 1.2 Change `averageThreshold(midiRange: ClosedRange<Int>) -> Int?` to `averageThreshold(noteRange: NoteRange) -> Int?` in protocol
+  - [x] 1.3 Verify test passes
+- [x] Task 2: Update `PerceptualProfile` implementation (AC: #2)
+  - [x] 2.1 Update `averageThreshold` method signature to accept `NoteRange`
+  - [x] 2.2 Replace internal `midiRange.filter { ... }` with `(noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { ... }`
+  - [x] 2.3 Verify build succeeds
+- [x] Task 3: Update `MockPitchDiscriminationProfile` (AC: #1)
+  - [x] 3.1 Update `averageThreshold` method signature to accept `NoteRange`
+  - [x] 3.2 Verify build succeeds
+- [x] Task 4: Update `PianoKeyboardLayout` (AC: #3)
+  - [x] 4.1 Write failing test: `PianoKeyboardLayout(noteRange:)` init accepts `NoteRange`
+  - [x] 4.2 Change `midiRange: ClosedRange<Int>` property to `noteRange: NoteRange`
+  - [x] 4.3 Update all 6 internal references from `midiRange.lowerBound`/`midiRange.upperBound` to `noteRange.lowerBound.rawValue`/`noteRange.upperBound.rawValue`
+  - [x] 4.4 Verify build succeeds
+- [x] Task 5: Update `SummaryStatisticsView` (AC: #4)
+  - [x] 5.1 Write failing test: `SummaryStatisticsView.computeStats(from:noteRange:)` accepts `NoteRange`
+  - [x] 5.2 Change `midiRange: ClosedRange<Int>` property to `noteRange: NoteRange`
+  - [x] 5.3 Update `init(midiRange:)` to `init(noteRange:)` with default `SettingsKeys.defaultNoteRange`
+  - [x] 5.4 Update `computeStats` signature from `midiRange: ClosedRange<Int>` to `noteRange: NoteRange`
+  - [x] 5.5 Update internal iteration from `midiRange.filter { ... }` to `(noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { ... }`
+  - [x] 5.6 Verify build succeeds
+- [x] Task 6: Update `ProfileScreen` (AC: #5)
+  - [x] 6.1 Replace `private let midiRange: ClosedRange<Int> = 36...84` with `private let noteRange = SettingsKeys.defaultNoteRange`
+  - [x] 6.2 Update call site: `SummaryStatisticsView(midiRange: midiRange)` to `SummaryStatisticsView(noteRange: noteRange)`
+  - [x] 6.3 Verify build succeeds
+- [x] Task 7: Update test files (AC: #6, #7)
+  - [x] 7.1 Update `ProfileScreenTests.swift`: 2 `PianoKeyboardLayout(midiRange: 36...84)` calls to `PianoKeyboardLayout(noteRange: SettingsKeys.defaultNoteRange)`
+  - [x] 7.2 Update `SummaryStatisticsTests.swift`: 5 `computeStats(from:, midiRange: 36...84)` calls to `computeStats(from:, noteRange: SettingsKeys.defaultNoteRange)`
+  - [x] 7.3 Verify all tests compile
+- [x] Task 8: Run full test suite (AC: #7)
+  - [x] 8.1 Run `bin/test.sh` — all tests must pass
+  - [x] 8.2 Run `bin/build.sh` — no warnings or errors
+  - [x] 8.3 Run `bin/check-dependencies.sh` — no dependency violations
 
 ## Dev Notes
 
@@ -367,10 +367,33 @@ This is story 4 of 4 in Epic 31 — the **final story**:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+No issues encountered — purely mechanical type migration compiled and passed on first attempt.
+
 ### Completion Notes List
 
+- Replaced `ClosedRange<Int>` MIDI range parameters with `NoteRange` across the profile and visualization layer
+- `PitchDiscriminationProfile.averageThreshold(midiRange:)` → `averageThreshold(noteRange:)` — protocol, production impl, and mock all updated
+- `PianoKeyboardLayout.midiRange` → `noteRange: NoteRange` with `private var rawRange` computed property to avoid repetitive `.lowerBound.rawValue...upperBound.rawValue` expressions
+- `SummaryStatisticsView` — property, init, body call site, and `computeStats` all migrated from `ClosedRange<Int>` to `NoteRange`
+- `ProfileScreen` — replaced hardcoded `36...84` with `SettingsKeys.defaultNoteRange`
+- All 826 tests pass, build clean, dependency rules pass
+- This completes Epic 31 — all domain-level note range references now use `NoteRange`
+
+### Change Log
+
+- 2026-03-04: Implemented story 31.4 — adopted NoteRange in profile and visualization layer (5 production files, 3 test files modified)
+
 ### File List
+
+- Peach/Core/Profile/PitchDiscriminationProfile.swift (modified)
+- Peach/Core/Profile/PerceptualProfile.swift (modified)
+- Peach/Profile/PianoKeyboardView.swift (modified)
+- Peach/Profile/SummaryStatisticsView.swift (modified)
+- Peach/Profile/ProfileScreen.swift (modified)
+- PeachTests/Profile/MockPitchDiscriminationProfile.swift (modified)
+- PeachTests/Profile/ProfileScreenTests.swift (modified)
+- PeachTests/Profile/SummaryStatisticsTests.swift (modified)

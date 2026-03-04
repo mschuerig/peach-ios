@@ -26,7 +26,7 @@ final class MockPitchDiscriminationProfile: PitchDiscriminationProfile {
         noteStats[note.rawValue] ?? PerceptualNote()
     }
 
-    func averageThreshold(midiRange: ClosedRange<Int>) -> Int? {
+    func averageThreshold(noteRange: NoteRange) -> Int? {
         nil
     }
 

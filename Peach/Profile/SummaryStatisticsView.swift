@@ -6,14 +6,14 @@ struct SummaryStatisticsView: View {
     @Environment(\.perceptualProfile) private var profile
     @Environment(\.trendAnalyzer) private var trendAnalyzer
 
-    private let midiRange: ClosedRange<Int>
+    private let noteRange: NoteRange
 
-    init(midiRange: ClosedRange<Int> = 36...84) {
-        self.midiRange = midiRange
+    init(noteRange: NoteRange = SettingsKeys.defaultNoteRange) {
+        self.noteRange = noteRange
     }
 
     var body: some View {
-        let stats = Self.computeStats(from: profile, midiRange: midiRange)
+        let stats = Self.computeStats(from: profile, noteRange: noteRange)
 
         HStack(spacing: 24) {
             statItem(
@@ -83,8 +83,8 @@ struct SummaryStatisticsView: View {
 
     /// Computes display statistics from the profile using per-note means
     /// Returns nil if no trained notes exist (cold start)
-    static func computeStats(from profile: PitchDiscriminationProfile, midiRange: ClosedRange<Int>) -> Stats? {
-        let trainedNotes = midiRange.filter { profile.statsForNote(MIDINote($0)).isTrained }
+    static func computeStats(from profile: PitchDiscriminationProfile, noteRange: NoteRange) -> Stats? {
+        let trainedNotes = (noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { profile.statsForNote(MIDINote($0)).isTrained }
         guard !trainedNotes.isEmpty else { return nil }
 
         let means = trainedNotes.map { profile.statsForNote(MIDINote($0)).mean }

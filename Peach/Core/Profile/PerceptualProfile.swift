@@ -87,8 +87,8 @@ final class PerceptualProfile: PitchDiscriminationProfile, PitchMatchingProfile 
         return sqrt(variance)
     }
 
-    func averageThreshold(midiRange: ClosedRange<Int>) -> Int? {
-        let trainedNotes = midiRange.filter { statsForNote(MIDINote($0)).isTrained }
+    func averageThreshold(noteRange: NoteRange) -> Int? {
+        let trainedNotes = (noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { statsForNote(MIDINote($0)).isTrained }
         guard !trainedNotes.isEmpty else { return nil }
         let avg = trainedNotes.map { statsForNote(MIDINote($0)).mean }.reduce(0.0, +) / Double(trainedNotes.count)
         return Int(avg)

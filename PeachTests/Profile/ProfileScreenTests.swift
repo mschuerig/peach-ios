@@ -42,7 +42,7 @@ struct ProfileScreenTests {
 
     @Test("Piano layout counts white keys in default range")
     func whiteKeyCount() async throws {
-        let layout = PianoKeyboardLayout(midiRange: 36...84)
+        let layout = PianoKeyboardLayout(noteRange: SettingsKeys.defaultNoteRange)
         #expect(layout.whiteKeyCount == 29)
     }
 
@@ -57,7 +57,7 @@ struct ProfileScreenTests {
 
     @Test("Piano layout X position maps MIDI notes to horizontal coordinates")
     func xPositionMapping() async throws {
-        let layout = PianoKeyboardLayout(midiRange: 36...84)
+        let layout = PianoKeyboardLayout(noteRange: SettingsKeys.defaultNoteRange)
         let totalWidth: CGFloat = 290
 
         let firstX = layout.xPosition(forMidiNote: 36, totalWidth: totalWidth)
