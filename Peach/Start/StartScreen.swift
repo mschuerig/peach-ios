@@ -14,7 +14,7 @@ struct StartScreen: View {
     // MARK: - Layout Parameters (extracted for testability)
 
     static func sectionSpacing(isCompact: Bool) -> CGFloat {
-        isCompact ? 16 : 28
+        isCompact ? 24 : 28
     }
 
     static func cardSpacing(isCompact: Bool) -> CGFloat {
@@ -90,12 +90,12 @@ struct StartScreen: View {
             NavigationLink(value: NavigationDestination.comparison(intervals: [.prime])) {
                 trainingCard("Hear & Compare", systemImage: "ear")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(TrainingCardButtonStyle())
 
             NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.prime])) {
                 trainingCard("Tune & Match", systemImage: "arrow.up.and.down")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(TrainingCardButtonStyle())
         }
     }
 
@@ -108,12 +108,12 @@ struct StartScreen: View {
             NavigationLink(value: NavigationDestination.comparison(intervals: intervalSelection.intervals)) {
                 trainingCard("Hear & Compare", systemImage: "ear")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(TrainingCardButtonStyle())
 
             NavigationLink(value: NavigationDestination.pitchMatching(intervals: intervalSelection.intervals)) {
                 trainingCard("Tune & Match", systemImage: "arrow.up.and.down")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(TrainingCardButtonStyle())
         }
     }
 
@@ -124,7 +124,7 @@ struct StartScreen: View {
         systemImage: String
     ) -> some View {
         Label(title, systemImage: systemImage)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
             .foregroundStyle(.primary)
@@ -132,6 +132,14 @@ struct StartScreen: View {
                 RoundedRectangle(cornerRadius: Self.cardCornerRadius)
                     .fill(.regularMaterial)
             )
+    }
+}
+
+private struct TrainingCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.7 : 1.0)
+            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 

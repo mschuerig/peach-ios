@@ -1,6 +1,6 @@
 # Story 35.3: Visual Design Polish
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -195,6 +195,7 @@ None — clean implementation with no debugging needed.
 ### Change Log
 
 - 2026-03-04: Implemented visual design polish — material card buttons, improved typography and spacing, removed section divider
+- 2026-03-04: Code review fixes — added 44pt minimum touch target, added TrainingCardButtonStyle for press feedback, restored landscape section spacing to 24pt
 
 ### File List
 

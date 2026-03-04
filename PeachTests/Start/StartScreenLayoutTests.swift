@@ -8,9 +8,9 @@ struct StartScreenLayoutTests {
 
     // MARK: - Section Spacing
 
-    @Test("Section spacing is 16pt in compact mode")
+    @Test("Section spacing is 24pt in compact mode")
     func sectionSpacingCompact() async {
-        #expect(StartScreen.sectionSpacing(isCompact: true) == 16)
+        #expect(StartScreen.sectionSpacing(isCompact: true) == 24)
     }
 
     @Test("Section spacing is 28pt in regular mode")
