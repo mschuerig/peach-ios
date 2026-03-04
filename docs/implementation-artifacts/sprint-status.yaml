@@ -274,6 +274,6 @@ development_status:
   # Epic 33: Take Your Data — Training Data Export
   epic-33: in-progress
   33-1-define-and-document-csv-export-schema: done
-  33-2-implement-csv-export-service: ready-for-dev
+  33-2-implement-csv-export-service: review
   33-3-add-export-ui-to-settings-screen: backlog
   epic-33-retrospective: optional

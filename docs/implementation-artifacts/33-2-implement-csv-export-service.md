@@ -1,6 +1,6 @@
 # Story 33.2: Implement CSV Export Service
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,21 +22,21 @@ so that the export logic is testable and decoupled from the UI.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `TrainingDataExporter` enum in `Core/Data/` (AC: #1, #2, #3)
-  - [ ] 1.1 Add `static func export(from store: TrainingDataStore) throws -> String`
-  - [ ] 1.2 Fetch all comparisons and pitch matchings from the store
-  - [ ] 1.3 Merge both arrays into timestamped tuples, sort by timestamp ascending
-  - [ ] 1.4 Format each record using `CSVRecordFormatter.format(_:)`
-  - [ ] 1.5 Combine header row + data rows with `\n` line endings
-  - [ ] 1.6 Return header-only string when no records exist
-- [ ] Task 2: Write tests for `TrainingDataExporter` (AC: #1, #2, #3, #4)
-  - [ ] 2.1 Test export with mixed comparison and pitch matching records produces correctly sorted CSV
-  - [ ] 2.2 Test export with only comparison records
-  - [ ] 2.3 Test export with only pitch matching records
-  - [ ] 2.4 Test export with no records returns header row only
-  - [ ] 2.5 Test timestamp ordering across mixed record types
-  - [ ] 2.6 Test that CSV output starts with the correct header row
-  - [ ] 2.7 Test that row count equals record count + 1 (header)
+- [x] Task 1: Create `TrainingDataExporter` enum in `Core/Data/` (AC: #1, #2, #3)
+  - [x] 1.1 Add `static func export(from store: TrainingDataStore) throws -> String`
+  - [x] 1.2 Fetch all comparisons and pitch matchings from the store
+  - [x] 1.3 Merge both arrays into timestamped tuples, sort by timestamp ascending
+  - [x] 1.4 Format each record using `CSVRecordFormatter.format(_:)`
+  - [x] 1.5 Combine header row + data rows with `\n` line endings
+  - [x] 1.6 Return header-only string when no records exist
+- [x] Task 2: Write tests for `TrainingDataExporter` (AC: #1, #2, #3, #4)
+  - [x] 2.1 Test export with mixed comparison and pitch matching records produces correctly sorted CSV
+  - [x] 2.2 Test export with only comparison records
+  - [x] 2.3 Test export with only pitch matching records
+  - [x] 2.4 Test export with no records returns header row only
+  - [x] 2.5 Test timestamp ordering across mixed record types
+  - [x] 2.6 Test that CSV output starts with the correct header row
+  - [x] 2.7 Test that row count equals record count + 1 (header)
 
 ## Dev Notes
 
@@ -171,10 +171,27 @@ Run full test suite: `bin/test.sh`
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Initial build had a compile error: optional `Substring?` compared directly with `String` in `csvStartsWithHeader` test. Fixed by unwrapping via `lines` array indexing.
+
 ### Completion Notes List
 
+- Created `TrainingDataExporter` as a stateless `enum` with a single `static func export(from:)` method, following the same pattern as `CSVExportSchema` and `CSVRecordFormatter`
+- Implementation fetches both record types from `TrainingDataStore`, merges into timestamped tuples, sorts ascending, and formats using `CSVRecordFormatter`
+- Empty store returns header-only string (no trailing newline)
+- Errors propagate from `TrainingDataStore` — no wrapping or catching
+- Implicitly `@MainActor` (not marked `nonisolated`) since it calls `TrainingDataStore` methods
+- 7 tests cover all scenarios: mixed records, comparison-only, pitch-matching-only, empty store, timestamp ordering, header verification, row count
+- All 857 tests pass (0 regressions)
+
 ### File List
+
+- `Peach/Core/Data/TrainingDataExporter.swift` (new) — Export service: fetch + merge + sort + format
+- `PeachTests/Core/Data/TrainingDataExporterTests.swift` (new) — 7 tests covering all ACs
+
+## Change Log
+
+- 2026-03-04: Implemented TrainingDataExporter service and full test suite (Story 33.2)
