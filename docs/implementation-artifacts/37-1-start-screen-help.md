@@ -1,6 +1,6 @@
 # Story 37.1: Start Screen Help
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -194,9 +194,10 @@ None.
 ### Change Log
 
 - 2026-03-04: Implemented Start Screen Help — restructured InfoScreen with help content, added 13 German translations, 4 new tests
+- 2026-03-04: Review fixes — removed dead `developerEmail` property, dynamic copyright year, locale-independent test assertions, stronger test coverage
 
 ### File List
 
-- `Peach/Info/InfoScreen.swift` — restructured with help content sections, consolidated header, ScrollView layout
+- `Peach/Info/InfoScreen.swift` — restructured with help content sections, consolidated header, ScrollView layout, dynamic copyright year
 - `Peach/Resources/Localizable.xcstrings` — added 13 new German translations for help content
-- `PeachTests/Start/StartScreenTests.swift` — added 4 tests for help content static constants
+- `PeachTests/Start/StartScreenTests.swift` — added 4 tests for help content, strengthened with locale-independent assertions

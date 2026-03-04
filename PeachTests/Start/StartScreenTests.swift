@@ -134,9 +134,12 @@ struct StartScreenTests {
         #expect(InfoScreen.developerName == "Michael Schürig")
     }
 
-    @Test("Info Screen has correct developer email")
-    func infoScreenHasCorrectDeveloperEmail() {
-        #expect(InfoScreen.developerEmail == "michael@schuerig.de")
+    @Test("Info Screen copyright notice contains current year and developer name")
+    func infoScreenHasCopyrightNotice() async {
+        let currentYear = Calendar.current.component(.year, from: Date())
+        #expect(InfoScreen.copyrightNotice.contains("\(currentYear)"))
+        #expect(InfoScreen.copyrightNotice.contains(InfoScreen.developerName))
+        #expect(InfoScreen.copyrightNotice.contains("©"))
     }
 
     @Test("Info Screen has correct license name")
@@ -168,27 +171,33 @@ struct StartScreenTests {
 
     // MARK: - Info Screen Help Content Tests
 
-    @Test("Info Screen has non-empty app description")
-    func infoScreenHasAppDescription() {
-        #expect(!InfoScreen.appDescription.isEmpty)
+    @Test("Info Screen app description mentions Peach")
+    func infoScreenHasAppDescription() async {
+        #expect(InfoScreen.appDescription.contains("Peach"))
+        #expect(InfoScreen.appDescription.count > 50)
     }
 
-    @Test("Info Screen has four training mode descriptions")
-    func infoScreenHasFourTrainingModes() {
-        #expect(InfoScreen.trainingModes.count == 4)
+    @Test("Info Screen has four training modes with dash-separated names")
+    func infoScreenHasFourTrainingModes() async {
+        let modes = InfoScreen.trainingModes
+        #expect(modes.count == 4)
+        for mode in modes {
+            #expect(mode.name.contains("–"))
+        }
     }
 
     @Test("Info Screen training modes have non-empty names and descriptions")
-    func infoScreenTrainingModesAreComplete() {
+    func infoScreenTrainingModesAreComplete() async {
         for mode in InfoScreen.trainingModes {
             #expect(!mode.name.isEmpty)
             #expect(!mode.description.isEmpty)
         }
     }
 
-    @Test("Info Screen has non-empty getting started text")
-    func infoScreenHasGettingStarted() {
-        #expect(!InfoScreen.gettingStartedText.isEmpty)
+    @Test("Info Screen getting started text mentions Peach")
+    func infoScreenHasGettingStarted() async {
+        #expect(InfoScreen.gettingStartedText.contains("Peach"))
+        #expect(InfoScreen.gettingStartedText.count > 30)
     }
 
     // MARK: - Hub and Spoke Pattern Verification

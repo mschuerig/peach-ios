@@ -10,8 +10,8 @@ struct InfoScreen: View {
     }
 
     static let developerName = "Michael Schürig"
-    static let developerEmail = "michael@schuerig.de"
     static let licenseName = "MIT"
+    static let copyrightYear = Calendar.current.component(.year, from: Date())
     static let gitHubURL: URL = {
         guard let url = URL(string: "https://github.com/mschuerig/peach") else {
             preconditionFailure("Invalid GitHub URL constant")
@@ -49,6 +49,10 @@ struct InfoScreen: View {
 
     static let gettingStartedText = String(localized: "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically.")
 
+    static var copyrightNotice: String {
+        "© \(copyrightYear) \(developerName)"
+    }
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -81,7 +85,7 @@ struct InfoScreen: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            Text("© 2026 \(Self.developerName)")
+            Text(verbatim: Self.copyrightNotice)
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
