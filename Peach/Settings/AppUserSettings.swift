@@ -36,7 +36,7 @@ final class AppUserSettings: UserSettings {
 
     var tuningSystem: TuningSystem {
         guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.tuningSystem),
-              let system = TuningSystem.fromStorageIdentifier(raw) else {
+              let system = TuningSystem(identifier: raw) else {
             return .equalTemperament
         }
         return system

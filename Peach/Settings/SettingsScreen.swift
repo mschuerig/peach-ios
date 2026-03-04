@@ -112,7 +112,7 @@ struct SettingsScreen: View {
             )
             Picker(String(localized: "Tuning System"), selection: $tuningSystemIdentifier) {
                 ForEach(TuningSystem.allCases, id: \.self) { system in
-                    Text(system.displayName).tag(system.storageIdentifier)
+                    Text(system.displayName).tag(system.identifier)
                 }
             }
         } header: {

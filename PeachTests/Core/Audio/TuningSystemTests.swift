@@ -364,39 +364,37 @@ struct TuningSystemTests {
         #expect(centError < 0.1)
     }
 
-    // MARK: - Storage Identifiers (Story 23.1)
+    // MARK: - String Identifier
 
-    @Test("storageIdentifier returns stable string for equalTemperament")
-    func storageIdentifierEqualTemperament() async {
-        #expect(TuningSystem.equalTemperament.storageIdentifier == "equalTemperament")
+    @Test("identifier returns stable string for equalTemperament")
+    func identifierEqualTemperament() async {
+        #expect(TuningSystem.equalTemperament.identifier == "equalTemperament")
     }
 
-    @Test("fromStorageIdentifier round-trips equalTemperament")
-    func fromStorageIdentifierRoundTrip() async {
+    @Test("init(identifier:) round-trips equalTemperament")
+    func identifierRoundTrip() async {
         let original = TuningSystem.equalTemperament
-        let identifier = original.storageIdentifier
-        let restored = TuningSystem.fromStorageIdentifier(identifier)
+        let restored = TuningSystem(identifier: original.identifier)
         #expect(restored == original)
     }
 
-    @Test("storageIdentifier returns justIntonation for justIntonation")
-    func storageIdentifierJustIntonation() async {
-        #expect(TuningSystem.justIntonation.storageIdentifier == "justIntonation")
+    @Test("identifier returns justIntonation for justIntonation")
+    func identifierJustIntonation() async {
+        #expect(TuningSystem.justIntonation.identifier == "justIntonation")
     }
 
-    @Test("fromStorageIdentifier round-trips justIntonation")
-    func fromStorageIdentifierJustIntonationRoundTrip() async {
+    @Test("init(identifier:) round-trips justIntonation")
+    func identifierJustIntonationRoundTrip() async {
         let original = TuningSystem.justIntonation
-        let identifier = original.storageIdentifier
-        let restored = TuningSystem.fromStorageIdentifier(identifier)
+        let restored = TuningSystem(identifier: original.identifier)
         #expect(restored == original)
     }
 
-    @Test("fromStorageIdentifier returns nil for unknown identifier")
-    func fromStorageIdentifierUnknown() async {
-        #expect(TuningSystem.fromStorageIdentifier("") == nil)
-        #expect(TuningSystem.fromStorageIdentifier("EqualTemperament") == nil)
-        #expect(TuningSystem.fromStorageIdentifier("pythagorean") == nil)
+    @Test("init(identifier:) returns nil for unknown identifier")
+    func identifierUnknown() async {
+        #expect(TuningSystem(identifier: "") == nil)
+        #expect(TuningSystem(identifier: "EqualTemperament") == nil)
+        #expect(TuningSystem(identifier: "pythagorean") == nil)
     }
 
     // MARK: - frequency(for: MIDINote) Convenience (Story 22.3 AC #4)

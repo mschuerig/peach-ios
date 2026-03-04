@@ -115,7 +115,7 @@ extension TrainingDataStore: PitchMatchingObserver {
             initialCentOffset: result.initialCentOffset,
             userCentError: result.userCentError,
             interval: interval,
-            tuningSystem: result.tuningSystem.storageIdentifier,
+            tuningSystem: result.tuningSystem.identifier,
             timestamp: result.timestamp
         )
 
@@ -143,7 +143,7 @@ extension TrainingDataStore: ComparisonObserver {
             centOffset: comparison.targetNote.offset.rawValue,
             isCorrect: completed.isCorrect,
             interval: interval,
-            tuningSystem: completed.tuningSystem.storageIdentifier,
+            tuningSystem: completed.tuningSystem.identifier,
             timestamp: completed.timestamp
         )
 

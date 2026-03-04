@@ -65,19 +65,19 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
         }
     }
 
-    // MARK: - Storage Identifiers
+    // MARK: - String Identifier
 
-    var storageIdentifier: String {
+    var identifier: String {
         switch self {
         case .equalTemperament: return "equalTemperament"
         case .justIntonation: return "justIntonation"
         }
     }
 
-    static func fromStorageIdentifier(_ id: String) -> TuningSystem? {
-        switch id {
-        case "equalTemperament": return .equalTemperament
-        case "justIntonation": return .justIntonation
+    nonisolated init?(identifier: String) {
+        switch identifier {
+        case "equalTemperament": self = .equalTemperament
+        case "justIntonation": self = .justIntonation
         default: return nil
         }
     }

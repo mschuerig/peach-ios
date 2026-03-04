@@ -1,6 +1,6 @@
 # Story 34.1: Implement CSV Import Parser
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,33 +20,33 @@ So that import logic is testable and decoupled from the UI.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define CSVImportError type (AC: #2, #3)
-  - [ ] 1.1 Write tests for error type construction and descriptive messages
-  - [ ] 1.2 Create `CSVImportError` enum in `Peach/Core/Data/CSVImportError.swift`
-  - [ ] 1.3 Cases: `invalidHeader(expected:actual:)`, `invalidRowData(row:column:value:reason:)`
-- [ ] Task 2: Define CSVImportResult type (AC: #1, #3)
-  - [ ] 2.1 Write tests for result type holding both records and errors
-  - [ ] 2.2 Create `CSVImportResult` struct in `CSVImportParser.swift` (nested type)
-  - [ ] 2.3 Fields: `comparisons: [ComparisonRecord]`, `pitchMatchings: [PitchMatchingRecord]`, `errors: [CSVImportError]`
-- [ ] Task 3: Implement header validation (AC: #2)
-  - [ ] 3.1 Write tests: valid header passes, missing column fails, extra column fails, wrong order fails
-  - [ ] 3.2 Implement `validateHeader(_:)` comparing against `CSVExportSchema.allColumns`
-- [ ] Task 4: Implement RFC 4180 CSV line parsing (AC: #1, #3)
-  - [ ] 4.1 Write tests: unescaped fields, quoted fields with commas, quoted fields with embedded quotes, fields with newlines
-  - [ ] 4.2 Implement `parseCSVLine(_:)` returning `[String]` handling RFC 4180 escaping
-- [ ] Task 5: Implement field-level parsing and validation (AC: #1, #3)
-  - [ ] 5.1 Write tests: valid/invalid training type, timestamp, MIDI notes (0-127), doubles, booleans, interval abbreviations, tuning system identifiers
-  - [ ] 5.2 Implement interval abbreviation reverse lookup (abbreviation string to `Int` raw value)
-  - [ ] 5.3 Implement field parsers for each column type
-- [ ] Task 6: Implement row-to-record conversion (AC: #1, #3)
-  - [ ] 6.1 Write tests: valid comparison row, valid pitch matching row, row with wrong column count, row with invalid field, type-specific empty field validation
-  - [ ] 6.2 Implement `parseRow(_:rowNumber:)` dispatching by trainingType to build ComparisonRecord or PitchMatchingRecord
-- [ ] Task 7: Implement top-level parse method (AC: #1, #2, #3, #4)
-  - [ ] 7.1 Write tests: complete valid CSV with mixed types, header-only CSV, invalid header CSV, CSV with mix of valid/invalid rows, empty string input
-  - [ ] 7.2 Implement `CSVImportParser.parse(_:) -> CSVImportResult`
-  - [ ] 7.3 Verify all rows processed even when some fail (error collection, not early abort)
-- [ ] Task 8: Run full test suite (AC: #4)
-  - [ ] 8.1 Run `bin/test.sh` and verify zero regressions
+- [x] Task 1: Define CSVImportError type (AC: #2, #3)
+  - [x] 1.1 Write tests for error type construction and descriptive messages
+  - [x] 1.2 Create `CSVImportError` enum in `Peach/Core/Data/CSVImportError.swift`
+  - [x] 1.3 Cases: `invalidHeader(expected:actual:)`, `invalidRowData(row:column:value:reason:)`
+- [x] Task 2: Define CSVImportResult type (AC: #1, #3)
+  - [x] 2.1 Write tests for result type holding both records and errors
+  - [x] 2.2 Create `CSVImportResult` struct in `CSVImportParser.swift` (nested type)
+  - [x] 2.3 Fields: `comparisons: [ComparisonRecord]`, `pitchMatchings: [PitchMatchingRecord]`, `errors: [CSVImportError]`
+- [x] Task 3: Implement header validation (AC: #2)
+  - [x] 3.1 Write tests: valid header passes, missing column fails, extra column fails, wrong order fails
+  - [x] 3.2 Implement `validateHeader(_:)` comparing against `CSVExportSchema.allColumns`
+- [x] Task 4: Implement RFC 4180 CSV line parsing (AC: #1, #3)
+  - [x] 4.1 Write tests: unescaped fields, quoted fields with commas, quoted fields with embedded quotes, fields with newlines
+  - [x] 4.2 Implement `parseCSVLine(_:)` returning `[String]` handling RFC 4180 escaping
+- [x] Task 5: Implement field-level parsing and validation (AC: #1, #3)
+  - [x] 5.1 Write tests: valid/invalid training type, timestamp, MIDI notes (0-127), doubles, booleans, interval abbreviations, tuning system identifiers
+  - [x] 5.2 Implement interval abbreviation reverse lookup (abbreviation string to `Int` raw value)
+  - [x] 5.3 Implement field parsers for each column type
+- [x] Task 6: Implement row-to-record conversion (AC: #1, #3)
+  - [x] 6.1 Write tests: valid comparison row, valid pitch matching row, row with wrong column count, row with invalid field, type-specific empty field validation
+  - [x] 6.2 Implement `parseRow(_:rowNumber:)` dispatching by trainingType to build ComparisonRecord or PitchMatchingRecord
+- [x] Task 7: Implement top-level parse method (AC: #1, #2, #3, #4)
+  - [x] 7.1 Write tests: complete valid CSV with mixed types, header-only CSV, invalid header CSV, CSV with mix of valid/invalid rows, empty string input
+  - [x] 7.2 Implement `CSVImportParser.parse(_:) -> CSVImportResult`
+  - [x] 7.3 Verify all rows processed even when some fail (error collection, not early abort)
+- [x] Task 8: Run full test suite (AC: #4)
+  - [x] 8.1 Run `bin/test.sh` and verify zero regressions
 
 ## Dev Notes
 
@@ -193,8 +193,33 @@ struct CSVImportParserTests {
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+- Concurrency fix: Removed `Sendable` from `CSVImportParser.Result` since `@Model` classes are not `Sendable`
+- Concurrency fix: Used inline tuning system validation instead of calling MainActor-isolated `TuningSystem.fromStorageIdentifier(_:)` from `nonisolated` context
+- Concurrency fix: Replaced `ISO8601DateFormatter` static property with `Date.ISO8601FormatStyle` to avoid non-Sendable static state
 
 ### Completion Notes List
 
+- Implemented `CSVImportError` enum with `invalidHeader` and `invalidRowData` cases, conforming to `LocalizedError`
+- Implemented `CSVImportParser` as `nonisolated enum` with nested `Result` struct
+- Header validation compares against `CSVExportSchema.allColumns` exactly
+- RFC 4180 CSV line parser handles quoted fields with commas, embedded quotes, and newlines
+- Field-level validation for all 12 columns: training type, timestamp (ISO 8601), MIDI notes (0-127), interval abbreviations, tuning system identifiers, doubles, booleans
+- Type-specific empty field enforcement: comparison rows must have empty pitchMatching fields and vice versa
+- Interval abbreviation reverse lookup built from `Interval.allCases`
+- Error collection strategy: continues parsing after invalid rows, collecting errors with row numbers
+- 72 tests covering all ACs: valid data, invalid headers, invalid fields, edge cases (MIDI 0/127), mixed record types, empty input
+- Full suite: 899 tests, zero regressions
+
 ### File List
+
+- `Peach/Core/Data/CSVImportError.swift` (new)
+- `Peach/Core/Data/CSVImportParser.swift` (new)
+- `PeachTests/Core/Data/CSVImportParserTests.swift` (new)
+
+### Change Log
+
+- 2026-03-04: Implemented CSV import parser with error types, header validation, RFC 4180 parsing, field-level validation, row-to-record conversion, and comprehensive tests (72 new tests)
