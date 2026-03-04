@@ -1,6 +1,6 @@
 # Story 31.3: Adopt NoteRange in Training Sessions and Strategy
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -365,6 +365,7 @@ No issues encountered. Purely mechanical refactoring — all changes compiled an
 ### Change Log
 
 - 2026-03-04: Implemented story 31.3 — adopted NoteRange in TrainingSettings, training sessions, and strategy
+- 2026-03-04: Review story 31.3 — fixed stale test description referencing removed noteRangeMin/noteRangeMax API
 
 ### File List
 

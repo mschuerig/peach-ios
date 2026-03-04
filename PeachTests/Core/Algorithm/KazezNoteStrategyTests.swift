@@ -147,7 +147,7 @@ struct KazezNoteStrategyTests {
 
     // MARK: - Note Range
 
-    @Test("Notes always within settings noteRangeMin...noteRangeMax")
+    @Test("Notes always within settings noteRange")
     func noteRange() {
         let strategy = KazezNoteStrategy()
         let settings = TrainingSettings(noteRange: NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72)), referencePitch: .concert440)

@@ -262,6 +262,6 @@ development_status:
   epic-31: in-progress
   31-1-create-noterange-value-type: done
   31-2-adopt-noterange-in-usersettings-and-settings-screen: done
-  31-3-adopt-noterange-in-training-sessions-and-strategy: review
+  31-3-adopt-noterange-in-training-sessions-and-strategy: done
   31-4-adopt-noterange-in-profile-and-visualization: backlog
   epic-31-retrospective: optional
