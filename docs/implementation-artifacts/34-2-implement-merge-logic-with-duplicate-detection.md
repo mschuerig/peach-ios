@@ -1,6 +1,6 @@
 # Story 34.2: Implement Merge Logic with Duplicate Detection
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -291,6 +291,7 @@ None — implementation was straightforward with no blocking issues.
 ### Change Log
 
 - 2026-03-04: Implemented story 34.2 — TrainingDataImporter with merge/replace modes and duplicate detection
+- 2026-03-04: Code review fixes — replaced magic strings with TrainingType constants, added intra-file dedup test, removed weak ImportMode test, simplified makeStore() helper, added non-atomicity comment on replace mode
 
 ### File List
 

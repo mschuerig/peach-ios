@@ -37,6 +37,8 @@ enum TrainingDataImporter {
         _ parseResult: CSVImportParser.ImportResult,
         into store: TrainingDataStore
     ) throws -> ImportSummary {
+        // Non-atomic: if a save fails after deleteAll, existing data is lost with partial import.
+        // Acceptable for MVP — a future enhancement could wrap in a single transaction.
         try store.deleteAll()
 
         for record in parseResult.comparisons {
@@ -70,7 +72,7 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 referenceNote: record.referenceNote,
                 targetNote: record.targetNote,
-                trainingType: "comparison"
+                trainingType: TrainingType.comparison
             ))
         }
         for record in existingPitchMatchings {
@@ -78,7 +80,7 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 referenceNote: record.referenceNote,
                 targetNote: record.targetNote,
-                trainingType: "pitchMatching"
+                trainingType: TrainingType.pitchMatching
             ))
         }
 
@@ -89,7 +91,7 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 referenceNote: record.referenceNote,
                 targetNote: record.targetNote,
-                trainingType: "comparison"
+                trainingType: TrainingType.comparison
             )
             if existingKeys.contains(key) {
                 comparisonsSkipped += 1
@@ -107,7 +109,7 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 referenceNote: record.referenceNote,
                 targetNote: record.targetNote,
-                trainingType: "pitchMatching"
+                trainingType: TrainingType.pitchMatching
             )
             if existingKeys.contains(key) {
                 pitchMatchingsSkipped += 1
@@ -128,6 +130,11 @@ enum TrainingDataImporter {
     }
 
     // MARK: - Duplicate Key
+
+    private enum TrainingType {
+        static let comparison = "comparison"
+        static let pitchMatching = "pitchMatching"
+    }
 
     private struct DuplicateKey: Hashable {
         let timestamp: Date

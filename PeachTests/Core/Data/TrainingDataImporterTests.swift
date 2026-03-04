@@ -13,23 +13,14 @@ struct TrainingDataImporterTests {
         return try ModelContainer(for: ComparisonRecord.self, PitchMatchingRecord.self, configurations: config)
     }
 
-    private func makeStore() throws -> (TrainingDataStore, ModelContainer) {
+    private func makeStore() throws -> TrainingDataStore {
         let container = try makeTestContainer()
         let context = ModelContext(container)
-        return (TrainingDataStore(modelContext: context), container)
+        return TrainingDataStore(modelContext: context)
     }
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
         Date(timeIntervalSinceReferenceDate: 794_394_000 + minutesOffset * 60)
-    }
-
-    // MARK: - ImportMode Tests
-
-    @Test("ImportMode has replace and merge cases")
-    func importModeHasBothCases() async throws {
-        let replace = TrainingDataImporter.ImportMode.replace
-        let merge = TrainingDataImporter.ImportMode.merge
-        #expect(replace != merge)
     }
 
     // MARK: - ImportSummary Tests
@@ -114,7 +105,7 @@ struct TrainingDataImporterTests {
 
     @Test("replace mode deletes existing and inserts all imported")
     func replaceModeDeletesAndInserts() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         // Pre-populate existing records
         try store.save(makeComparison(minutesOffset: 0))
@@ -144,7 +135,7 @@ struct TrainingDataImporterTests {
 
     @Test("replace with empty import deletes all existing")
     func replaceModeEmptyImport() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         try store.save(makeComparison(minutesOffset: 0))
         try store.save(makePitchMatching(minutesOffset: 1))
@@ -162,7 +153,7 @@ struct TrainingDataImporterTests {
 
     @Test("replace mode passes through parse error count")
     func replaceModePassesThroughErrors() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let errors: [CSVImportError] = [
             .invalidRowData(row: 1, column: "test", value: "bad", reason: "bad"),
@@ -183,7 +174,7 @@ struct TrainingDataImporterTests {
 
     @Test("merge inserts only non-duplicate comparisons")
     func mergeInsertNonDuplicateComparison() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         // Existing record
         try store.save(makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64))
@@ -207,7 +198,7 @@ struct TrainingDataImporterTests {
 
     @Test("merge inserts only non-duplicate pitch matchings")
     func mergeInsertNonDuplicatePitchMatching() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         try store.save(makePitchMatching(minutesOffset: 0, referenceNote: 69, targetNote: 72))
 
@@ -229,7 +220,7 @@ struct TrainingDataImporterTests {
 
     @Test("merge does not modify existing records")
     func mergeDoesNotModifyExisting() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let existing = ComparisonRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
@@ -254,7 +245,7 @@ struct TrainingDataImporterTests {
 
     @Test("merge with all duplicates imports zero")
     func mergeAllDuplicates() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         try store.save(makeComparison(minutesOffset: 0))
         try store.save(makePitchMatching(minutesOffset: 1))
@@ -273,7 +264,7 @@ struct TrainingDataImporterTests {
 
     @Test("merge with no duplicates imports all")
     func mergeNoDuplicates() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let importResult = makeImportResult(
             comparisons: [makeComparison(minutesOffset: 0), makeComparison(minutesOffset: 1)],
@@ -289,7 +280,7 @@ struct TrainingDataImporterTests {
 
     @Test("merge with mixed duplicates reports correct counts")
     func mergeMixedDuplicates() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         try store.save(makeComparison(minutesOffset: 0))
         try store.save(makePitchMatching(minutesOffset: 1))
@@ -320,7 +311,7 @@ struct TrainingDataImporterTests {
 
     @Test("empty import returns zero summary for replace mode")
     func emptyImportReplace() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let summary = try TrainingDataImporter.importData(makeImportResult(), mode: .replace, into: store)
 
@@ -333,7 +324,7 @@ struct TrainingDataImporterTests {
 
     @Test("empty import returns zero summary for merge mode")
     func emptyImportMerge() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let summary = try TrainingDataImporter.importData(makeImportResult(), mode: .merge, into: store)
 
@@ -346,7 +337,7 @@ struct TrainingDataImporterTests {
 
     @Test("import with only parse errors returns error count in summary")
     func onlyParseErrors() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let errors: [CSVImportError] = [
             .invalidRowData(row: 1, column: "test", value: "bad", reason: "bad"),
@@ -362,9 +353,35 @@ struct TrainingDataImporterTests {
         #expect(summary.totalSkipped == 0)
     }
 
+    @Test("merge deduplicates identical records within the same import file")
+    func mergeDeduplicatesWithinImportFile() async throws {
+        let store = try makeStore()
+
+        // Import two identical comparison records in the same batch
+        let importResult = makeImportResult(
+            comparisons: [
+                makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64),
+                makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64)
+            ],
+            pitchMatchings: [
+                makePitchMatching(minutesOffset: 1, referenceNote: 69, targetNote: 72),
+                makePitchMatching(minutesOffset: 1, referenceNote: 69, targetNote: 72)
+            ]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.comparisonsImported == 1)
+        #expect(summary.comparisonsSkipped == 1)
+        #expect(summary.pitchMatchingsImported == 1)
+        #expect(summary.pitchMatchingsSkipped == 1)
+        #expect(try store.fetchAllComparisons().count == 1)
+        #expect(try store.fetchAllPitchMatchings().count == 1)
+    }
+
     @Test("records with identical timestamps but different training types are not duplicates")
     func sameTimestampDifferentType() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let timestamp = fixedDate()
         // Existing comparison
@@ -389,7 +406,7 @@ struct TrainingDataImporterTests {
 
     @Test("records with identical timestamps and training type but different notes are not duplicates")
     func sameTimestampDifferentNotes() async throws {
-        let (store, _) = try makeStore()
+        let store = try makeStore()
 
         let timestamp = fixedDate()
         // Existing comparison with ref=60, target=64
