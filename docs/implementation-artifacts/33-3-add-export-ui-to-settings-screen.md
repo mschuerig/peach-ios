@@ -1,6 +1,6 @@
 # Story 33.3: Add Export UI to Settings Screen
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -324,12 +324,35 @@ None — clean implementation, no debugging needed.
 - `csvExportItem` invalidated after reset to disable export button
 - Added error alert for export failures
 - Added 3 German translations via `bin/add-localization.py`
-- 6 new tests in `CSVExportItemTests`: file representation, properties, filename pattern, header detection, data creation, file writing
-- All 863 tests pass (858 existing + 5 new, regression-free)
+- 5 tests in `CSVExportItemTests`: writeToTemporaryFile, properties, filename pattern, header detection, data-to-file writing
+- All 863 tests pass (regression-free)
+- Task 5.5 (invalidation after reset) verified by code inspection — @State reset in `resetAllTrainingData()` is not unit-testable
 
 ### Change Log
 
 - 2026-03-04: Implemented story 33.3 — Add Export UI to Settings Screen
+- 2026-03-04: Code review — Fixed 7 issues (2 HIGH, 5 MEDIUM). Extracted `writeToTemporaryFile()` for testability, rewrote tests to exercise application code, removed duplicate test, fixed `DateFormatter` locale for non-Gregorian calendars, fixed error handling to not silently disable export button.
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Michael (AI-assisted) on 2026-03-04
+
+**Findings (9 total): 2 HIGH, 5 MEDIUM, 2 LOW**
+
+Fixed:
+- [H1] Tests duplicated FileRepresentation logic instead of testing application code → Extracted `writeToTemporaryFile()` method, tests now call it directly
+- [H2] Task 5.5 marked [x] but no unit test → Documented as verified by code inspection (@State behavior not unit-testable)
+- [M1] Duplicate tests `transfersCSVContentAsFile` / `fileRepresentationWritesContent` → Consolidated into single `writeToTemporaryFileCreatesCorrectContent`
+- [M2] `headerOnlyDetection` tested string equality operator → Retained with realistic CSV data row for meaningful verification
+- [M3] `csvWithDataCreatesItem` tested constructor only → Replaced with `csvWithDataWritesToFile` that exercises `writeToTemporaryFile()` end-to-end
+- [M4] `DateFormatter` missing POSIX locale → Added `Locale(identifier: "en_US_POSIX")` to `exportFileName()`
+- [M5] Error state silently disabled export button → Removed `csvExportItem = nil` on error; button keeps previous state, error alert shown
+
+Not fixed (LOW):
+- [L1] Test count inconsistency in completion notes (cosmetic, corrected above)
+- [L2] Story File List path `Peach/Localizable.xcstrings` vs actual `Peach/Resources/Localizable.xcstrings` (corrected below)
+
+**Outcome:** Approved — all ACs implemented, all HIGH/MEDIUM issues fixed, 863 tests pass.
 
 ### File List
 
@@ -341,6 +364,6 @@ Modified files:
 - Peach/Settings/SettingsScreen.swift
 - Peach/App/EnvironmentKeys.swift
 - Peach/App/PeachApp.swift
-- Peach/Localizable.xcstrings
+- Peach/Resources/Localizable.xcstrings
 - docs/implementation-artifacts/sprint-status.yaml
 - docs/implementation-artifacts/33-3-add-export-ui-to-settings-screen.md

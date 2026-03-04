@@ -5,17 +5,16 @@ import UniformTypeIdentifiers
 @Suite("CSVExportItem")
 struct CSVExportItemTests {
 
-    @Test("transfers CSV content as file with correct content type")
-    func transfersCSVContentAsFile() async throws {
+    @Test("writeToTemporaryFile creates file with correct CSV content")
+    func writeToTemporaryFileCreatesCorrectContent() async throws {
         let csvString = "col1,col2\nval1,val2"
-        let item = CSVExportItem(csvString: csvString, fileName: "test.csv")
+        let item = CSVExportItem(csvString: csvString, fileName: "test-export.csv")
 
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent(item.fileName)
-        try item.csvString.write(to: url, atomically: true, encoding: .utf8)
+        let url = try item.writeToTemporaryFile()
 
         let written = try String(contentsOf: url, encoding: .utf8)
         #expect(written == csvString)
+        #expect(url.lastPathComponent == "test-export.csv")
 
         try FileManager.default.removeItem(at: url)
     }
@@ -31,6 +30,7 @@ struct CSVExportItemTests {
     @Test("filename follows peach-training-data-YYYY-MM-DD.csv pattern")
     func filenamePattern() async {
         let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd"
         let expectedDate = formatter.string(from: Date())
         let expectedName = "peach-training-data-\(expectedDate).csv"
@@ -39,40 +39,29 @@ struct CSVExportItemTests {
         #expect(name == expectedName)
     }
 
-    @Test("header-only CSV is correctly detected as no data")
+    @Test("header-only CSV is detected as no exportable data")
     func headerOnlyDetection() async {
         let headerOnly = CSVExportSchema.headerRow
         let hasData = headerOnly != CSVExportSchema.headerRow
         #expect(hasData == false)
 
-        let withData = CSVExportSchema.headerRow + "\nval1,val2"
+        let withData = CSVExportSchema.headerRow + "\ncomparison,2026-01-01,60,C4,62,D4,m2,equalTemperament,50.0,true,,"
         let hasDataTrue = withData != CSVExportSchema.headerRow
         #expect(hasDataTrue == true)
     }
 
-    @Test("CSV with data rows creates CSVExportItem")
-    func csvWithDataCreatesItem() async {
+    @Test("CSV with data rows writes completely to temporary file")
+    func csvWithDataWritesToFile() async throws {
         let csv = CSVExportSchema.headerRow + "\ncomparison,2026-01-01,60,C4,62,D4,m2,equalTemperament,50.0,true,,"
         let item = CSVExportItem(csvString: csv, fileName: CSVExportItem.exportFileName())
 
-        #expect(item.csvString == csv)
-        #expect(item.fileName.hasPrefix("peach-training-data-"))
-        #expect(item.fileName.hasSuffix(".csv"))
-    }
+        let url = try item.writeToTemporaryFile()
+        let written = try String(contentsOf: url, encoding: .utf8)
 
-    @Test("file representation writes CSV content to temporary file")
-    func fileRepresentationWritesContent() async throws {
-        let csvContent = "col1,col2\nval1,val2\nval3,val4"
-        let fileName = "test-export.csv"
-        let item = CSVExportItem(csvString: csvContent, fileName: fileName)
-
-        let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent(fileName)
-        try item.csvString.write(to: url, atomically: true, encoding: .utf8)
-
-        let fileContent = try String(contentsOf: url, encoding: .utf8)
-        #expect(fileContent == csvContent)
-        #expect(url.lastPathComponent == fileName)
+        #expect(written == csv)
+        #expect(written.contains(CSVExportSchema.headerRow))
+        #expect(url.lastPathComponent.hasPrefix("peach-training-data-"))
+        #expect(url.lastPathComponent.hasSuffix(".csv"))
 
         try FileManager.default.removeItem(at: url)
     }

@@ -203,7 +203,6 @@ struct SettingsScreen: View {
                 csvExportItem = nil
             }
         } catch {
-            csvExportItem = nil
             showExportError = true
         }
     }
