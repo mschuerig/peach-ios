@@ -83,6 +83,9 @@ struct PeachApp: App {
                     try comparisonSession.resetTrainingData()
                     profile.resetMatching()
                 })
+                .environment(\.trainingDataExportAction, { [dataStore] in
+                    try TrainingDataExporter.export(from: dataStore)
+                })
                 .modelContainer(modelContainer)
                 .onChange(of: comparisonSession.isIdle) { _, isIdle in
                     if !isIdle {

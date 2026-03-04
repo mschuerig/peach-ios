@@ -27,9 +27,12 @@ struct SettingsScreen: View {
 
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
+    @Environment(\.trainingDataExportAction) private var trainingDataExportAction
 
     @State private var showResetConfirmation = false
     @State private var showResetError = false
+    @State private var csvExportItem: CSVExportItem?
+    @State private var showExportError = false
 
     var body: some View {
         Form {
@@ -45,11 +48,17 @@ struct SettingsScreen: View {
             if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == soundSource }) {
                 soundSource = SettingsKeys.defaultSoundSource
             }
+            prepareExport()
         }
         .alert("Reset Failed", isPresented: $showResetError) {
             Button("OK") { }
         } message: {
             Text("Could not delete training records. Please try again.")
+        }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK") { }
+        } message: {
+            Text("Could not export training data. Please try again.")
         }
     }
 
@@ -145,6 +154,18 @@ struct SettingsScreen: View {
 
     private var dataSection: some View {
         Section("Data") {
+            if let csvExportItem {
+                ShareLink(
+                    item: csvExportItem,
+                    preview: SharePreview("Peach Training Data", image: Image(systemName: "doc.text"))
+                ) {
+                    Label("Export Training Data", systemImage: "square.and.arrow.up")
+                }
+            } else {
+                Label("Export Training Data", systemImage: "square.and.arrow.up")
+                    .foregroundStyle(.secondary)
+            }
+
             Button("Reset All Training Data", role: .destructive) {
                 showResetConfirmation = true
             }
@@ -167,8 +188,23 @@ struct SettingsScreen: View {
     private func resetAllTrainingData() {
         do {
             try dataStoreResetter?()
+            csvExportItem = nil
         } catch {
             showResetError = true
+        }
+    }
+
+    private func prepareExport() {
+        do {
+            guard let csv = try trainingDataExportAction?() else { return }
+            if csv != CSVExportSchema.headerRow {
+                csvExportItem = CSVExportItem(csvString: csv, fileName: CSVExportItem.exportFileName())
+            } else {
+                csvExportItem = nil
+            }
+        } catch {
+            csvExportItem = nil
+            showExportError = true
         }
     }
 }

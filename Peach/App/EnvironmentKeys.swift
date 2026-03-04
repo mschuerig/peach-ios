@@ -9,6 +9,7 @@ extension EnvironmentValues {
     @Entry var activeSession: (any TrainingSession)? = nil
     @Entry var perceptualProfile = PerceptualProfile()
     @Entry var dataStoreResetter: (() throws -> Void)? = nil
+    @Entry var trainingDataExportAction: (() throws -> String)? = nil
 }
 
 // MARK: - Session Environment Keys
