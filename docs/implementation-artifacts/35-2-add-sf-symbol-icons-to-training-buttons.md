@@ -1,6 +1,6 @@
 # Story 35.2: Add SF Symbol Icons to Training Buttons
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -76,7 +76,7 @@ The four buttons need distinct icons. The same button name appears in both secti
 
 **Candidate icons (discuss with user):**
 - "Hear & Compare" → `ear` (listening/hearing), `waveform` (sound wave comparison), `speaker.wave.2` (audio)
-- "Tune & Match" → `tuningfork` (tuning), `arrow.up.and.down` (slider-based matching), `dial.medium` (fine-tuning)
+- "Tune & Match" → `tuningfork` (tuning), `slider.horizontal.below.rectangle` (slider-based matching), `dial.medium` (fine-tuning)
 
 Alternatively, all four buttons could use unique icons if the sections feel too similar:
 - Single Notes / Hear & Compare → `ear`
@@ -125,7 +125,7 @@ Key learnings from Story 35.1:
 - Section headers added: "Single Notes" and "Intervals" with `.font(.headline)`
 - Button labels changed to "Hear & Compare" and "Tune & Match"
 - Training screen nav titles also updated to match (ComparisonScreen → "Hear & Compare", PitchMatchingScreen → "Tune & Match")
-- 930 tests pass, build clean
+- 927 tests pass, build clean (3 orphaned ProfilePreviewView tests removed in 35.1 review)
 - Localization key ordering matters — keys were sorted alphabetically in review
 
 ### Git Intelligence
@@ -160,7 +160,7 @@ None — clean implementation with no issues.
 
 ### Completion Notes List
 
-- Icons chosen with user: `ear` for "Hear & Compare", `arrow.up.and.down` for "Tune & Match"
+- Icons chosen with user: `ear` for "Hear & Compare", `arrow.up.and.down` for "Tune & Match" (visual appearance confirmed in Xcode preview)
 - Replaced 4 `Text(...)` with `Label(..., systemImage:)` in StartScreen.swift
 - SwiftUI `Label` provides decorative icon behavior for VoiceOver and automatic dynamic type scaling — no extra code needed
 - No new localization strings introduced (button text unchanged, SF Symbols are language-independent)
@@ -169,6 +169,7 @@ None — clean implementation with no issues.
 ### Change Log
 
 - 2026-03-04: Implemented story 35.2 — added SF Symbol icons to all four training buttons on Start Screen
+- 2026-03-04: Code review — 3 LOW documentation issues fixed (stale test count, modified candidate list, missing visual verification note). All ACs verified, all tasks confirmed done, 927 tests pass.
 
 ### File List
 
