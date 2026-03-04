@@ -291,3 +291,7 @@ development_status:
   35-2-add-sf-symbol-icons-to-training-buttons: done
   35-3-visual-design-polish: done
   epic-35-retrospective: optional
+
+  # Epic 36: Speak Clearly — Localization & Wording Polish
+  epic-36: in-progress
+  36-1-interactive-localization-and-wording-review: ready-for-dev
