@@ -436,21 +436,21 @@ struct TrainingDataImporterTests {
 
     // MARK: - CSV Round-Trip Duplicate Detection
 
-    @Test("merge detects duplicates after export-import round-trip with sub-millisecond timestamps")
+    @Test("merge detects duplicates after export-import round-trip with sub-second timestamps")
     func mergeDetectsDuplicatesAfterRoundTrip() async throws {
         let store = try makeStore()
 
-        // Record with sub-millisecond precision (like Date() produces)
-        let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.123456)
+        // Record with sub-second precision (like Date() produces)
+        let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.999)
         let record = ComparisonRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
             interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
         )
         try store.save(record)
 
-        // Simulate export → import: format to ISO8601 string, parse back
-        let exported = timestamp.formatted(Date.ISO8601FormatStyle(includingFractionalSeconds: true))
-        let reimported = try Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(exported)
+        // Simulate export → import: format to ISO8601 without fractional seconds, parse back
+        let exported = timestamp.formatted(.iso8601)
+        let reimported = try Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(exported)
 
         let importedRecord = ComparisonRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
