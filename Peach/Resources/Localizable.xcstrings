@@ -1632,6 +1632,46 @@
           }
         }
       }
+    },
+    "Could not import the training data. Please try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Trainingsdaten konnten nicht importiert werden. Bitte versuche es erneut."
+          }
+        }
+      }
+    },
+    "%lld records imported": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Datensätze importiert"
+          }
+        }
+      }
+    },
+    "%lld duplicates skipped": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Duplikate übersprungen"
+          }
+        }
+      }
+    },
+    "%lld errors": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Fehler"
+          }
+        }
+      }
     }
   },
   "version": "1.1"

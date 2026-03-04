@@ -93,7 +93,7 @@ struct SettingsScreen: View {
             Button("OK") { }
         } message: {
             if let summary = importSummary {
-                Text("\(summary.totalImported) records imported, \(summary.totalSkipped) duplicates skipped, \(summary.parseErrorCount) errors.")
+                Text(importSummaryMessage(summary))
             }
         }
         .alert("Import Failed", isPresented: $showImportError) {
@@ -254,7 +254,12 @@ struct SettingsScreen: View {
                 let csvString = try String(contentsOf: url, encoding: .utf8)
                 let parseResult = CSVImportParser.parse(csvString)
                 if parseResult.comparisons.isEmpty && parseResult.pitchMatchings.isEmpty {
-                    importErrorMessage = String(localized: "The file contains no valid training data.")
+                    if parseResult.errors.isEmpty {
+                        importErrorMessage = String(localized: "The file contains no valid training data.")
+                    } else {
+                        let details = parseResult.errors.prefix(5).map { $0.errorDescription ?? "" }.joined(separator: "\n")
+                        importErrorMessage = String(localized: "The file contains no valid training data.") + "\n\n" + details
+                    }
                     showImportError = true
                     return
                 }
@@ -277,10 +282,22 @@ struct SettingsScreen: View {
             showImportSummary = true
             prepareExport()
         } catch {
-            importErrorMessage = String(localized: "Import Failed")
+            importErrorMessage = String(localized: "Could not import the training data. Please try again.")
             showImportError = true
         }
         importParseResult = nil
+    }
+
+    private func importSummaryMessage(_ summary: TrainingDataImporter.ImportSummary) -> String {
+        var parts: [String] = []
+        parts.append(String(localized: "\(summary.totalImported) records imported"))
+        if summary.totalSkipped > 0 {
+            parts.append(String(localized: "\(summary.totalSkipped) duplicates skipped"))
+        }
+        if summary.parseErrorCount > 0 {
+            parts.append(String(localized: "\(summary.parseErrorCount) errors"))
+        }
+        return parts.joined(separator: ", ") + "."
     }
 
     private func prepareExport() {
