@@ -277,3 +277,10 @@ development_status:
   33-2-implement-csv-export-service: done
   33-3-add-export-ui-to-settings-screen: done
   epic-33-retrospective: optional
+
+  # Epic 34: Bring Your Data — Training Data Import
+  epic-34: in-progress
+  34-1-implement-csv-import-parser: ready-for-dev
+  34-2-implement-merge-logic-with-duplicate-detection: backlog
+  34-3-add-import-ui-with-replace-merge-choice: backlog
+  epic-34-retrospective: optional
