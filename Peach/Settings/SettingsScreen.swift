@@ -108,13 +108,13 @@ struct SettingsScreen: View {
     private var trainingRangeSection: some View {
         Section(String(localized: "Training Range")) {
             Stepper(
-                "Lower: \(PianoKeyboardLayout.noteName(midiNote: noteRangeMin))",
+                "Lowest Note: \(PianoKeyboardLayout.noteName(midiNote: noteRangeMin))",
                 value: $noteRangeMin,
                 in: SettingsKeys.lowerBoundRange(noteRangeMax: noteRangeMax),
                 step: 1
             )
             Stepper(
-                "Upper: \(PianoKeyboardLayout.noteName(midiNote: noteRangeMax))",
+                "Highest Note: \(PianoKeyboardLayout.noteName(midiNote: noteRangeMax))",
                 value: $noteRangeMax,
                 in: SettingsKeys.upperBoundRange(noteRangeMin: noteRangeMin),
                 step: 1
@@ -134,7 +134,7 @@ struct SettingsScreen: View {
 
     private var soundSection: some View {
         Section {
-            Picker(String(localized: "Sound Source"), selection: validatedSoundSource) {
+            Picker(String(localized: "Sound"), selection: validatedSoundSource) {
                 ForEach(soundSourceProvider.availableSources, id: \.self) { source in
                     Text(soundSourceProvider.displayName(for: source)).tag(source.rawValue)
                 }
@@ -146,7 +146,7 @@ struct SettingsScreen: View {
                 step: 0.1
             )
             Stepper(
-                "Reference Pitch: \(Int(referencePitch)) Hz",
+                "Concert Pitch: \(Int(referencePitch)) Hz",
                 value: $referencePitch,
                 in: 380...500,
                 step: 1

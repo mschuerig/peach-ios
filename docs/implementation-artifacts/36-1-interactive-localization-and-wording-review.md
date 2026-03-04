@@ -1,6 +1,6 @@
 # Story 36.1: Interactive Localization and Wording Review
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -22,47 +22,47 @@ so that the app feels polished and professional regardless of language.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Audit current localization state (AC: #1, #3)
-  - [ ] 1.1 Run `bin/add-localization.py --missing` to identify all keys missing German translations (currently 12 known missing).
-  - [ ] 1.2 Run `bin/add-localization.py --list` to get the full key inventory for review.
-  - [ ] 1.3 Identify and list all 22 stale keys (marked `"state": "stale"` in xcstrings) — discuss removal with user.
+- [x] Task 1: Audit current localization state (AC: #1, #3)
+  - [x] 1.1 Run `bin/add-localization.py --missing` to identify all keys missing German translations (currently 12 known missing).
+  - [x] 1.2 Run `bin/add-localization.py --list` to get the full key inventory for review.
+  - [x] 1.3 Identify and list all 22 stale keys (marked `"state": "stale"` in xcstrings) — discuss removal with user.
 
-- [ ] Task 2: Fix missing German translations (AC: #3)
-  - [ ] 2.1 Present each of the 12 missing German translations to the user for review.
-  - [ ] 2.2 Apply approved translations using `bin/add-localization.py "Key" "German Translation"` or batch mode.
-  - [ ] 2.3 Verify no missing translations remain after applying.
+- [x] Task 2: Fix missing German translations (AC: #3)
+  - [x] 2.1 Present each of the 12 missing German translations to the user for review.
+  - [x] 2.2 Apply approved translations using `bin/add-localization.py "Key" "German Translation"` or batch mode.
+  - [x] 2.3 Verify no missing translations remain after applying.
 
-- [ ] Task 3: Interactive English wording review (AC: #1)
-  - [ ] 3.1 Review all English strings screen-by-screen with the user, organized by feature area:
+- [x] Task 3: Interactive English wording review (AC: #1)
+  - [x] 3.1 Review all English strings screen-by-screen with the user, organized by feature area:
     - Start Screen strings (button labels, section headers, navigation)
     - Settings Screen strings (section headers, labels, toggles, alerts)
     - Comparison Screen strings (training interface, feedback)
     - Pitch Matching Screen strings (training interface, slider, feedback)
     - Profile Screen strings (statistics, charts, accessibility)
     - Info Screen strings (developer info, acknowledgments)
-  - [ ] 3.2 For each string, discuss: Is it clear? Is it consistent with similar strings? Could it be more natural?
-  - [ ] 3.3 Collect all approved English wording changes.
+  - [x] 3.2 For each string, discuss: Is it clear? Is it consistent with similar strings? Could it be more natural?
+  - [x] 3.3 Collect all approved English wording changes.
 
-- [ ] Task 4: Interactive German wording review (AC: #1, #4)
-  - [ ] 4.1 Review all German translations screen-by-screen with the user (same organization as Task 3).
-  - [ ] 4.2 Check for consistency in German terminology (e.g., "Übung" vs "Training", "Einstellungen" consistency, musical terms).
-  - [ ] 4.3 Verify natural German phrasing — not literal translations but idiomatic German.
-  - [ ] 4.4 Collect all approved German wording changes.
+- [x] Task 4: Interactive German wording review (AC: #1, #4)
+  - [x] 4.1 Review all German translations screen-by-screen with the user (same organization as Task 3).
+  - [x] 4.2 Check for consistency in German terminology (e.g., "Übung" vs "Training", "Einstellungen" consistency, musical terms).
+  - [x] 4.3 Verify natural German phrasing — not literal translations but idiomatic German.
+  - [x] 4.4 Collect all approved German wording changes.
 
-- [ ] Task 5: Apply all approved changes (AC: #2)
-  - [ ] 5.1 Apply English wording changes by editing `Localizable.xcstrings` directly (English keys are the source strings in SwiftUI `Text()` calls — changing an English key requires updating the corresponding Swift source file AND the xcstrings key).
-  - [ ] 5.2 Apply German translation changes using `bin/add-localization.py` or direct edit.
-  - [ ] 5.3 If any English source strings changed, update the corresponding `.swift` files that reference them.
-  - [ ] 5.4 Run `bin/add-localization.py --sort` to ensure alphabetical key ordering.
+- [x] Task 5: Apply all approved changes (AC: #2)
+  - [x] 5.1 Apply English wording changes by editing `Localizable.xcstrings` directly (English keys are the source strings in SwiftUI `Text()` calls — changing an English key requires updating the corresponding Swift source file AND the xcstrings key).
+  - [x] 5.2 Apply German translation changes using `bin/add-localization.py` or direct edit.
+  - [x] 5.3 If any English source strings changed, update the corresponding `.swift` files that reference them.
+  - [x] 5.4 Run `bin/add-localization.py --sort` to ensure alphabetical key ordering.
 
-- [ ] Task 6: Clean up stale keys (AC: #1)
-  - [ ] 6.1 Review the 22 stale keys with the user — confirm which should be deleted vs retained.
-  - [ ] 6.2 Remove confirmed stale keys from `Localizable.xcstrings`.
+- [x] Task 6: Clean up stale keys (AC: #1)
+  - [x] 6.1 Review the 22 stale keys with the user — confirm which should be deleted vs retained.
+  - [x] 6.2 Remove confirmed stale keys from `Localizable.xcstrings`.
 
-- [ ] Task 7: Final verification (AC: #2, #3, #4)
-  - [ ] 7.1 Run `bin/add-localization.py --missing` to confirm zero missing translations.
-  - [ ] 7.2 Run `bin/build.sh` to verify clean build (no broken string references).
-  - [ ] 7.3 Run `bin/test.sh` to verify all tests pass.
+- [x] Task 7: Final verification (AC: #2, #3, #4)
+  - [x] 7.1 Run `bin/add-localization.py --missing` to confirm zero missing translations.
+  - [x] 7.2 Run `bin/build.sh` to verify clean build (no broken string references).
+  - [x] 7.3 Run `bin/test.sh` to verify all tests pass.
 
 ## Dev Notes
 
@@ -199,10 +199,30 @@ This is why English changes are more involved than German-only changes. The dev 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None.
+
 ### Completion Notes List
 
+- Added German translations for all 12 missing keys (profile statistics, chart labels, accessibility strings)
+- Reviewed all English strings screen-by-screen with user — user requested 4 wording changes on Settings Screen
+- Reviewed all German translations screen-by-screen with user — all confirmed as natural and idiomatic
+- Changed "Tune & Match" button icon from `arrow.up.and.down` to `target` (user-requested improvement)
+- Removed all 22 stale keys from xcstrings (interval "Up" variants, unused chart labels, deprecated accessibility strings)
+- Applied 4 Settings Screen wording changes (user-requested): Lower→Lowest Note, Upper→Highest Note, Sound Source→Sound, Reference Pitch→Concert Pitch
+- Sorted all keys alphabetically
+- Final state: 117 keys, 0 missing translations, 0 stale keys
+- Build succeeds, 931 tests pass
+
+### Change Log
+
+- 2026-03-04: Completed interactive localization review — added 12 German translations, removed 22 stale keys, changed Tune & Match icon to `target`, renamed 4 Settings Screen labels
+
 ### File List
+
+- `Peach/Resources/Localizable.xcstrings` — added 12 German translations, removed 22 stale keys, migrated 4 renamed keys, sorted alphabetically
+- `Peach/Start/StartScreen.swift` — changed "Tune & Match" icon from `arrow.up.and.down` to `target`
+- `Peach/Settings/SettingsScreen.swift` — renamed Lower→Lowest Note, Upper→Highest Note, Sound Source→Sound, Reference Pitch→Concert Pitch

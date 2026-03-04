@@ -93,7 +93,7 @@ struct StartScreen: View {
             .buttonStyle(TrainingCardButtonStyle())
 
             NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.prime])) {
-                trainingCard("Tune & Match", systemImage: "arrow.up.and.down")
+                trainingCard("Tune & Match", systemImage: "target")
             }
             .buttonStyle(TrainingCardButtonStyle())
         }
@@ -111,7 +111,7 @@ struct StartScreen: View {
             .buttonStyle(TrainingCardButtonStyle())
 
             NavigationLink(value: NavigationDestination.pitchMatching(intervals: intervalSelection.intervals)) {
-                trainingCard("Tune & Match", systemImage: "arrow.up.and.down")
+                trainingCard("Tune & Match", systemImage: "target")
             }
             .buttonStyle(TrainingCardButtonStyle())
         }
