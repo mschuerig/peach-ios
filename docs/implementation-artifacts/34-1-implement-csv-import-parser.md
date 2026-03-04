@@ -1,6 +1,6 @@
 # Story 34.1: Implement CSV Import Parser
 
-Status: review
+Status: done
 
 ## Story
 
@@ -79,7 +79,7 @@ trainingType,timestamp,referenceNote,referenceNoteName,targetNote,targetNoteName
 - `referenceNote`, `targetNote`: MIDI integers 0-127
 - `referenceNoteName`, `targetNoteName`: **display-only, ignore on import** (e.g., `C4`, `A#3`)
 - `interval`: abbreviation string — must reverse-map to semitone count (see table below)
-- `tuningSystem`: `"equalTemperament"` or `"justIntonation"` — validate via `TuningSystem.fromStorageIdentifier(_:)`
+- `tuningSystem`: `"equalTemperament"` or `"justIntonation"` — validate via `TuningSystem(identifier:)`
 - `centOffset`, `isCorrect`: comparison-only (empty for pitchMatching)
 - `initialCentOffset`, `userCentError`: pitchMatching-only (empty for comparison)
 
@@ -134,7 +134,7 @@ The parser MUST NOT abort on the first invalid row. It collects errors with row 
 | Column names & order | `CSVExportSchema.allColumns` | Validate header exactly |
 | Training type values | `CSVExportSchema.TrainingType.comparison.csvValue` / `.pitchMatching.csvValue` | Match trainingType field |
 | Interval reverse lookup | `Interval.allCases` + `.abbreviation` + `.rawValue` | Build `[String: Int]` dictionary |
-| Tuning system validation | `TuningSystem.fromStorageIdentifier(_:)` | Validate tuningSystem field, returns nil for invalid |
+| Tuning system validation | `TuningSystem(identifier:)` | Validate tuningSystem field, returns nil for invalid |
 | Record constructors | `ComparisonRecord(referenceNote:targetNote:centOffset:isCorrect:interval:tuningSystem:timestamp:)` | Build from parsed fields |
 | Record constructors | `PitchMatchingRecord(referenceNote:targetNote:initialCentOffset:userCentError:interval:tuningSystem:timestamp:)` | Build from parsed fields |
 
@@ -185,7 +185,7 @@ struct CSVImportParserTests {
 - [Source: Peach/Core/Data/ComparisonRecord.swift] — Data model with init signature
 - [Source: Peach/Core/Data/PitchMatchingRecord.swift] — Data model with init signature
 - [Source: Peach/Core/Audio/Interval.swift] — Interval enum with abbreviation and rawValue
-- [Source: Peach/Core/Audio/TuningSystem.swift:77-83] — `fromStorageIdentifier(_:)` for validation
+- [Source: Peach/Core/Audio/TuningSystem.swift:77-83] — `init?(identifier:)` for validation
 - [Source: docs/planning-artifacts/epics.md#Epic 34] — Epic and story definitions
 - [Source: docs/project-context.md] — TDD workflow, testing conventions, commit format
 
@@ -198,7 +198,7 @@ Claude Opus 4.6
 ### Debug Log References
 
 - Concurrency fix: Removed `Sendable` from `CSVImportParser.Result` since `@Model` classes are not `Sendable`
-- Concurrency fix: Used inline tuning system validation instead of calling MainActor-isolated `TuningSystem.fromStorageIdentifier(_:)` from `nonisolated` context
+- Concurrency fix: Renamed `TuningSystem.fromStorageIdentifier(_:)` to `nonisolated init?(identifier:)` for use from `nonisolated` context
 - Concurrency fix: Replaced `ISO8601DateFormatter` static property with `Date.ISO8601FormatStyle` to avoid non-Sendable static state
 
 ### Completion Notes List
@@ -211,7 +211,7 @@ Claude Opus 4.6
 - Type-specific empty field enforcement: comparison rows must have empty pitchMatching fields and vice versa
 - Interval abbreviation reverse lookup built from `Interval.allCases`
 - Error collection strategy: continues parsing after invalid rows, collecting errors with row numbers
-- 72 tests covering all ACs: valid data, invalid headers, invalid fields, edge cases (MIDI 0/127), mixed record types, empty input
+- 36 tests covering all ACs: valid data, invalid headers, invalid fields, edge cases (MIDI 0/127), mixed record types, empty input, RFC 4180 quoting, CRLF line endings, fractional-second timestamps
 - Full suite: 899 tests, zero regressions
 
 ### File List
@@ -219,7 +219,13 @@ Claude Opus 4.6
 - `Peach/Core/Data/CSVImportError.swift` (new)
 - `Peach/Core/Data/CSVImportParser.swift` (new)
 - `PeachTests/Core/Data/CSVImportParserTests.swift` (new)
+- `Peach/Core/Audio/TuningSystem.swift` (modified: renamed `storageIdentifier` → `identifier`, `fromStorageIdentifier(_:)` → `init?(identifier:)`)
+- `Peach/Core/Data/TrainingDataStore.swift` (modified: updated `storageIdentifier` → `identifier` call sites)
+- `Peach/Settings/AppUserSettings.swift` (modified: updated `fromStorageIdentifier` → `init?(identifier:)`)
+- `Peach/Settings/SettingsScreen.swift` (modified: updated `storageIdentifier` → `identifier`)
+- `PeachTests/Core/Audio/TuningSystemTests.swift` (modified: updated tests for renamed API)
 
 ### Change Log
 
-- 2026-03-04: Implemented CSV import parser with error types, header validation, RFC 4180 parsing, field-level validation, row-to-record conversion, and comprehensive tests (72 new tests)
+- 2026-03-04: Implemented CSV import parser with error types, header validation, RFC 4180 parsing, field-level validation, row-to-record conversion, and tests (36 new tests). Renamed `TuningSystem.storageIdentifier`/`fromStorageIdentifier` → `identifier`/`init?(identifier:)` for nonisolated access.
+- 2026-03-04: Code review fixes — renamed `Result` → `ImportResult` to avoid shadowing `Swift.Result`; made `parseCSVLine` and `intervalRawValue` private; fixed `splitIntoLines` to use `unicodeScalars` (Swift treats `\r\n` as single grapheme cluster); added fractional-second ISO 8601 support; added CRLF, RFC 4180 quoting, and interval coverage tests (36 tests total)

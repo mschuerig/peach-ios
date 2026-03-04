@@ -58,7 +58,7 @@ struct CSVImportParserTests {
             referenceNote: 60, targetNote: 67, initialCentOffset: 25.0, userCentError: 3.2,
             interval: 7, tuningSystem: "equalTemperament", timestamp: fixedDate()
         )
-        let result = CSVImportParser.Result(
+        let result = CSVImportParser.ImportResult(
             comparisons: [comparison],
             pitchMatchings: [pitchMatching],
             errors: []
@@ -76,7 +76,7 @@ struct CSVImportParserTests {
             interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate()
         )
         let error = CSVImportError.invalidRowData(row: 3, column: "referenceNote", value: "abc", reason: "not an integer")
-        let result = CSVImportParser.Result(
+        let result = CSVImportParser.ImportResult(
             comparisons: [comparison],
             pitchMatchings: [],
             errors: [error]
@@ -134,52 +134,71 @@ struct CSVImportParserTests {
         })
     }
 
-    // MARK: - Task 4: RFC 4180 CSV Line Parsing
+    // MARK: - Task 4: RFC 4180 CSV Line Parsing (via integration)
 
-    @Test("parses unescaped fields")
-    func parsesUnescapedFields() async {
-        let fields = CSVImportParser.parseCSVLine("a,b,c")
-        #expect(fields == ["a", "b", "c"])
+    @Test("handles quoted field with comma in note name column")
+    func handlesQuotedFieldWithComma() async {
+        let row = "comparison,2026-03-03T14:30:00Z,60,\"C,4\",64,E4,M3,equalTemperament,15.5,true,,"
+        let csv = makeCSV([row])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.comparisons.count == 1)
+        #expect(result.errors.isEmpty)
     }
 
-    @Test("parses quoted fields with commas")
-    func parsesQuotedFieldsWithCommas() async {
-        let fields = CSVImportParser.parseCSVLine("\"a,b\",c,d")
-        #expect(fields == ["a,b", "c", "d"])
+    @Test("handles quoted field with embedded quotes in note name column")
+    func handlesQuotedFieldWithEmbeddedQuotes() async {
+        let row = "comparison,2026-03-03T14:30:00Z,60,\"C\"\"4\",64,E4,M3,equalTemperament,15.5,true,,"
+        let csv = makeCSV([row])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.comparisons.count == 1)
+        #expect(result.errors.isEmpty)
     }
 
-    @Test("parses quoted fields with embedded quotes")
-    func parsesQuotedFieldsWithEmbeddedQuotes() async {
-        let fields = CSVImportParser.parseCSVLine("\"say \"\"hi\"\"\",b,c")
-        #expect(fields == ["say \"hi\"", "b", "c"])
+    @Test("handles Windows-style CRLF line endings")
+    func handlesCRLFLineEndings() async {
+        let header = CSVExportSchema.headerRow
+        let csv = header + "\r\n" + validComparisonRow + "\r\n" + validPitchMatchingRow
+        let result = CSVImportParser.parse(csv)
+        #expect(result.comparisons.count == 1)
+        #expect(result.pitchMatchings.count == 1)
+        #expect(result.errors.isEmpty)
     }
 
-    @Test("parses empty fields")
-    func parsesEmptyFields() async {
-        let fields = CSVImportParser.parseCSVLine("a,,c,")
-        #expect(fields == ["a", "", "c", ""])
-    }
+    // MARK: - Task 5: Field-Level Parsing (via integration)
 
-    // MARK: - Task 5: Field-Level Parsing
+    @Test("all 13 interval abbreviations parse successfully")
+    func allIntervalAbbreviationsParse() async {
+        let abbreviations = ["P1", "m2", "M2", "m3", "M3", "P4", "d5", "P5", "m6", "M6", "m7", "M7", "P8"]
+        let expectedRawValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
-    @Test("valid interval abbreviations reverse lookup")
-    func validIntervalAbbreviationsReverseLookup() async {
-        let expected: [(String, Int)] = [
-            ("P1", 0), ("m2", 1), ("M2", 2), ("m3", 3), ("M3", 4),
-            ("P4", 5), ("d5", 6), ("P5", 7), ("m6", 8), ("M6", 9),
-            ("m7", 10), ("M7", 11), ("P8", 12),
-        ]
-        for (abbreviation, rawValue) in expected {
-            #expect(CSVImportParser.intervalRawValue(from: abbreviation) == rawValue,
-                    "Expected \(rawValue) for '\(abbreviation)'")
+        let rows = abbreviations.map { abbr in
+            "comparison,2026-03-03T14:30:00Z,60,C4,64,E4,\(abbr),equalTemperament,15.5,true,,"
+        }
+        let csv = makeCSV(rows)
+        let result = CSVImportParser.parse(csv)
+        #expect(result.comparisons.count == 13)
+        #expect(result.errors.isEmpty)
+        for (index, rawValue) in expectedRawValues.enumerated() {
+            #expect(result.comparisons[index].interval == rawValue)
         }
     }
 
-    @Test("invalid interval abbreviation returns nil")
-    func invalidIntervalAbbreviationReturnsNil() async {
-        #expect(CSVImportParser.intervalRawValue(from: "P6") == nil)
-        #expect(CSVImportParser.intervalRawValue(from: "") == nil)
-        #expect(CSVImportParser.intervalRawValue(from: "invalid") == nil)
+    @Test("invalid interval abbreviation produces error")
+    func invalidIntervalAbbreviationProducesError() async {
+        let row = "comparison,2026-03-03T14:30:00Z,60,C4,64,E4,P6,equalTemperament,15.5,true,,"
+        let csv = makeCSV([row])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.comparisons.isEmpty)
+        #expect(result.errors.count == 1)
+    }
+
+    @Test("timestamp with fractional seconds parses successfully")
+    func timestampWithFractionalSeconds() async {
+        let row = "comparison,2026-03-03T14:30:00.000Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let csv = makeCSV([row])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.comparisons.count == 1)
+        #expect(result.errors.isEmpty)
     }
 
     // MARK: - Task 6: Row-to-Record Conversion

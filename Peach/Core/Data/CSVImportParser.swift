@@ -2,7 +2,7 @@ import Foundation
 
 nonisolated enum CSVImportParser {
 
-    struct Result {
+    struct ImportResult {
         var comparisons: [ComparisonRecord]
         var pitchMatchings: [PitchMatchingRecord]
         var errors: [CSVImportError]
@@ -18,13 +18,13 @@ nonisolated enum CSVImportParser {
         return map
     }()
 
-    static func intervalRawValue(from abbreviation: String) -> Int? {
+    private static func intervalRawValue(from abbreviation: String) -> Int? {
         abbreviationToRawValue[abbreviation]
     }
 
     // MARK: - Top-Level Parse
 
-    static func parse(_ csvContent: String) -> Result {
+    static func parse(_ csvContent: String) -> ImportResult {
         var comparisons: [ComparisonRecord] = []
         var pitchMatchings: [PitchMatchingRecord] = []
         var errors: [CSVImportError] = []
@@ -33,12 +33,12 @@ nonisolated enum CSVImportParser {
 
         guard let headerLine = lines.first, !headerLine.isEmpty else {
             errors.append(.invalidHeader(expected: CSVExportSchema.headerRow, actual: "(empty)"))
-            return Result(comparisons: comparisons, pitchMatchings: pitchMatchings, errors: errors)
+            return ImportResult(comparisons: comparisons, pitchMatchings: pitchMatchings, errors: errors)
         }
 
         if let headerError = validateHeader(headerLine) {
             errors.append(headerError)
-            return Result(comparisons: comparisons, pitchMatchings: pitchMatchings, errors: errors)
+            return ImportResult(comparisons: comparisons, pitchMatchings: pitchMatchings, errors: errors)
         }
 
         let dataLines = lines.dropFirst()
@@ -55,7 +55,7 @@ nonisolated enum CSVImportParser {
             }
         }
 
-        return Result(comparisons: comparisons, pitchMatchings: pitchMatchings, errors: errors)
+        return ImportResult(comparisons: comparisons, pitchMatchings: pitchMatchings, errors: errors)
     }
 
     // MARK: - Header Validation
@@ -82,7 +82,7 @@ nonisolated enum CSVImportParser {
 
     // MARK: - RFC 4180 CSV Line Parsing
 
-    static func parseCSVLine(_ line: String) -> [String] {
+    private static func parseCSVLine(_ line: String) -> [String] {
         var fields: [String] = []
         var current = ""
         var inQuotes = false
@@ -131,17 +131,27 @@ nonisolated enum CSVImportParser {
         var lines: [String] = []
         var current = ""
         var inQuotes = false
+        var previousWasCR = false
 
-        for char in content {
-            if char == "\"" {
+        for scalar in content.unicodeScalars {
+            if previousWasCR && scalar == "\n" && !inQuotes {
+                previousWasCR = false
+                continue
+            }
+            previousWasCR = false
+
+            if scalar == "\"" {
                 inQuotes.toggle()
-                current.append(char)
-            } else if (char == "\n" || char == "\r") && !inQuotes {
-                if char == "\r" { continue }
+                current.unicodeScalars.append(scalar)
+            } else if scalar == "\r" && !inQuotes {
+                lines.append(current)
+                current = ""
+                previousWasCR = true
+            } else if scalar == "\n" && !inQuotes {
                 lines.append(current)
                 current = ""
             } else {
-                current.append(char)
+                current.unicodeScalars.append(scalar)
             }
         }
 
@@ -272,6 +282,9 @@ nonisolated enum CSVImportParser {
     // MARK: - ISO 8601 Parsing
 
     private static func parseISO8601(_ string: String) -> Date? {
-        try? Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(string)
+        if let date = try? Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(string) {
+            return date
+        }
+        return try? Date.ISO8601FormatStyle(includingFractionalSeconds: true).parse(string)
     }
 }
