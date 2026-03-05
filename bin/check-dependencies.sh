@@ -5,9 +5,11 @@
 # Rules enforced:
 #   1. Core/ must not import SwiftUI, UIKit, or Charts
 #   2. SwiftData imports only allowed in Core/Data/ and App/
-#   3. UIKit imports only allowed in Comparison/HapticFeedbackManager.swift and App/
+#   3. UIKit imports only allowed in PitchComparison/HapticFeedbackManager.swift and App/
 #   4. Feature views must not import SwiftData directly
 #   5. No cross-feature type references between feature directories
+#   6. No print() in production code (use Logger)
+#   7. No Combine in production code (use async/await)
 
 set -euo pipefail
 
@@ -79,16 +81,16 @@ for dir in "$SRC_DIR"/*/; do
 done
 
 # ─── Rule 3: UIKit only in allowed files ─────────────────────────────────
-# Allowed: App/ (composition root), Comparison/HapticFeedbackManager.swift
+# Allowed: App/ (composition root), PitchComparison/HapticFeedbackManager.swift
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "App" ]] && continue
     [[ "$dirname" == "Core" ]] && continue
     [[ "$dirname" == "Resources" ]] && continue
 
-    if [[ "$dirname" == "Comparison" ]]; then
+    if [[ "$dirname" == "PitchComparison" ]]; then
         check_import "$dir" "UIKit" \
-            "Comparison/ must not import UIKit (except HapticFeedbackManager.swift)" \
+            "PitchComparison/ must not import UIKit (except HapticFeedbackManager.swift)" \
             "HapticFeedbackManager.swift"
     else
         check_import "$dir" "UIKit" \
@@ -105,13 +107,12 @@ for dir in "$SRC_DIR"/*/; do
 done
 
 # ─── Rule 5: Cross-feature type references ───────────────────────────────
-# Feature directories: Comparison, PitchMatching, Profile, Settings, Start, Info
-# Each feature's Screen type should not be referenced from other features,
+# Feature directories must not reference each other's Screen types.
 # EXCEPT: Start/ is the navigation router and legitimately references all screens.
 # Only App/, Start/ (router), and the feature's own directory may reference its Screen.
 
-FEATURES=("Comparison" "PitchMatching" "Profile" "Settings" "Start" "Info")
-SCREEN_TYPES=("ComparisonScreen" "PitchMatchingScreen" "ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
+FEATURES=("PitchComparison" "PitchMatching" "Profile" "Settings" "Start" "Info")
+SCREEN_TYPES=("PitchComparisonScreen" "PitchMatchingScreen" "ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
 
 for i in "${!FEATURES[@]}"; do
     feature="${FEATURES[$i]}"
@@ -140,6 +141,18 @@ done
 matches=$(grep -rn "ComparisonFeedbackIndicator" "$SRC_DIR/PitchMatching/" --include="*.swift" 2>/dev/null || true)
 if [[ -n "$matches" ]]; then
     red "VIOLATION: PitchMatching/ references ComparisonFeedbackIndicator (cross-feature dependency)"
+    echo "$matches" | while IFS= read -r line; do
+        echo "  $line"
+    done
+    echo
+    ERRORS=$((ERRORS + 1))
+fi
+
+# ─── Rule 7: No print() in production code ──────────────────────────────
+# All logging should use os.Logger, not print()
+matches=$(grep -rn 'print(' "$SRC_DIR" --include="*.swift" || true)
+if [[ -n "$matches" ]]; then
+    red "VIOLATION: print() found in production code (use Logger from os framework)"
     echo "$matches" | while IFS= read -r line; do
         echo "  $line"
     done

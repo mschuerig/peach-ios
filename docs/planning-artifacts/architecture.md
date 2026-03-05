@@ -3,7 +3,7 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
 status: 'amended'
 completedAt: '2026-02-12'
-amendedAt: '2026-02-28'
+amendedAt: '2026-03-06'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 workflowType: 'architecture'
 project_name: 'Peach'
@@ -1504,3 +1504,83 @@ PeachTests/
 **Requirements Coverage:** All 15 new FRs (FR53–FR67) mapped to specific components. All prerequisite refactorings have clear scope and rationale. NFR for tuning system precision (0.1 cent) preserved through domain type migration.
 
 **Gap Analysis:** No critical gaps. Profile computation for interval-specific statistics is explicitly deferred — the data foundation is in place for future work.
+
+## Code Review Amendment — Domain Type Strengthening and Progress Tracking
+
+*Amended: 2026-03-06*
+
+This amendment documents architectural refinements identified during a comprehensive code review. No new features — these are structural improvements to type safety, constant management, logging, and progress tracking.
+
+### Domain Type Threading
+
+Raw `Double`/`Int`/`TimeInterval` values have been replaced with domain types at all public API boundaries:
+
+| Interface | Before | After |
+|---|---|---|
+| `PitchComparisonProfile` methods | `Double` for cent values | `Cents` |
+| `PitchMatchingProfile` methods | `Double` for cent values | `Cents` |
+| `CompletedPitchMatching` fields | `Double` for offsets/errors | `Cents` |
+| `PitchMatchingChallenge.initialCentOffset` | `Double` | `Cents` |
+| Session `sessionBestCentError` | `Double` | `Cents` |
+| Session `referenceFrequency` | `Double` | `Frequency` |
+| Session `feedbackDuration` | `TimeInterval` | `Duration` |
+| `TrainingStatsView` metric values | `Double` | `Cents` |
+
+**Deliberate exceptions** (raw types preserved):
+- `PerceptualNote` internals — Welford's algorithm arithmetic would be noisy with `Cents` wrappers
+- Persistence records (`PitchComparisonRecord`, `PitchMatchingRecord`) — SwiftData boundary uses raw `Double`/`Int`
+- `NotePlayer.play(duration:)` — stays `TimeInterval`; `NoteDuration` clamps to 0.3-3.0 which breaks test values
+
+### Constant Extraction
+
+Magic numbers have been extracted to named constants:
+
+| Constant | Location | Value |
+|---|---|---|
+| `Cents.perOctave` | `Cents.swift` | `1200.0` |
+| `SoundFontNotePlayer.pitchBendRangeSemitones` | `SoundFontNotePlayer.swift` | `2` |
+| `SoundFontNotePlayer.pitchBendRangeCents` | `SoundFontNotePlayer.swift` | `200.0` |
+| `TrainingConstants.feedbackDuration` | `TrainingConstants.swift` | `.milliseconds(400)` |
+| `TrainingConstants.defaultNoteVelocity` | `TrainingConstants.swift` | `MIDIVelocity(63)` |
+| `TrainingConstants.defaultAmplitudeDB` | `TrainingConstants.swift` | `AmplitudeDB(0.0)` |
+| `TrainingModeConfig.defaultEWMAHalflife` | `TrainingModeConfig.swift` | `.seconds(7 * 86400)` |
+| `TrainingModeConfig.defaultSessionGap` | `TrainingModeConfig.swift` | `.seconds(1800)` |
+| `ProgressTimeline` bucket thresholds | `ProgressTimeline.swift` | Named constants |
+| `KazezNoteStrategy` coefficients | `KazezNoteStrategy.swift` | Named via `KazezConfiguration` |
+
+### Training Modes and Progress Tracking
+
+Four training modes are now formally tracked:
+
+```
+enum TrainingMode: CaseIterable {
+    case unisonPitchComparison
+    case intervalPitchComparison
+    case unisonMatching
+    case intervalMatching
+}
+```
+
+Each mode has a `TrainingModeConfig` with independent parameters for:
+- Display name and unit label
+- Optimal baseline (expert-level target)
+- EWMA half-life for smoothing
+- Session gap for bucket grouping
+
+`ProgressTimeline` tracks all four modes independently, conforms to both observer protocols, and provides trend analysis per mode. It is injected as an observer into both sessions and as an `@Environment` dependency for profile views.
+
+### Logging Standards
+
+- `TrainingDataStore` migrated from `print()` to `os.Logger` at `.warning` level for save errors
+- `PitchMatchingSession` and `PitchComparisonSession` use `os.Logger` for lifecycle events
+- `PeachApp` uses `os.Logger` for startup timing
+- `bin/check-dependencies.sh` now enforces: no `print()` calls in production code
+
+### Updated Service Table
+
+| Component | Responsibility |
+|---|---|
+| `TrainingConstants` | Shared configuration constants used by both sessions: feedback duration, default velocity, default amplitude |
+| `TrainingModeConfig` | Per-mode configuration for progress tracking: display names, EWMA parameters, baselines |
+| `ProgressTimeline` | Progress tracking across four training modes with EWMA smoothing, adaptive bucketing, and trend analysis. Conforms to both observer protocols |
+| `DirectedInterval` | Value type combining `Interval` + `Direction` (up/down) for settings and session parameterization |

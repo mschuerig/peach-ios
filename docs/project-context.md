@@ -52,6 +52,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Value types by default** — `struct` for data carriers; `class` only for `@Observable` or reference semantics
 - **`final class`** — mark classes `final` unless inheritance is explicitly designed for
 - **No force unwrapping (`!`)** — no `@IBOutlet`, no implicit unwraps
+- **Domain types at interfaces** — use `Cents`, `Frequency`, `MIDINote`, `MIDIVelocity`, `AmplitudeDB`, `NoteDuration` at public API boundaries. Unwrap to `.rawValue` only at: (1) persistence boundaries (SwiftData records store raw `Double`/`Int`), (2) arithmetic-heavy internals (Welford's algorithm in `PerceptualProfile`), (3) display formatting. Protocol signatures (`PitchComparisonProfile`, `PitchMatchingProfile`) use `Cents` for all cent-valued properties
+- **`Duration` for time intervals** — use Swift `Duration` (e.g., `.milliseconds(400)`) for feedback timing and configuration constants. `TimeInterval` is acceptable for `NotePlayer.play(duration:)` since `NoteDuration` clamps and would break test values
 
 **Error Handling:**
 - **Typed error enums per service** — `enum AudioError: Error`, `enum DataStoreError: Error`; errors are specific and descriptive
@@ -61,7 +63,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **SwiftUI Views:**
 - **Views are thin** — observe state, render, send actions; no business logic in views
-- **Views only interact with `PitchComparisonSession`, `PitchMatchingSession`, `PerceptualProfile`, and `TrainingSession`** — never import or reference `NotePlayer`, `NextPitchComparisonStrategy`, or `TrainingDataStore` from views
+- **Views only interact with `PitchComparisonSession`, `PitchMatchingSession`, `PerceptualProfile`, `ProgressTimeline`, and `TrainingSession`** — never import or reference `NotePlayer`, `NextPitchComparisonStrategy`, or `TrainingDataStore` from views
 - **`@Environment` for dependency injection** — use `@Entry` macro on `EnvironmentValues` extensions (e.g., `@Entry var pitchComparisonSession = PitchComparisonSession(...)`); **never use `@EnvironmentObject`** (incompatible with `@Observable`); **never use manual `EnvironmentKey` structs** — `@Entry` eliminates the boilerplate
 - **Extract subviews at ~40 lines** — when a view body exceeds ~40 lines, extract child views
 - **Responsive layout** — detect `@Environment(\.verticalSizeClass)` for compact/regular; extract layout parameters to `static` methods for unit testability
@@ -82,10 +84,13 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents`) and physical world (`Frequency`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontNotePlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
 
 **State Management:**
-- **`PitchComparisonSession` is the central state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
+- **`PitchComparisonSession` state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
+- **`PitchMatchingSession` state machine** — `idle` → `playingReference` → `awaitingSliderTouch` → `playingTunable` → `showingFeedback` → (loop). Any state → `idle` via `stop()`
+- **Both sessions conform to `TrainingSession` protocol** — `start(intervals:)`, `stop()`, `isIdle`. `PeachApp` tracks `activeSession` to ensure only one runs at a time
 - **State transitions are guarded** — preconditions enforced; never skip states
-- **Observer pattern** — `PitchComparisonObserver` protocol; observers injected as array into `PitchComparisonSession`
-- **Settings read live** — `PitchComparisonSession` reads from `UserSettings` protocol on each pitch comparison, not cached; `SoundFontNotePlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
+- **Observer pattern** — `PitchComparisonObserver` and `PitchMatchingObserver` protocols; observers injected as arrays into their respective sessions. Both `TrainingDataStore`, `PerceptualProfile`, and `ProgressTimeline` conform to both observer protocols
+- **Feedback duration** — shared `TrainingConstants.feedbackDuration` (400ms `Duration`) applies to both session types
+- **Settings read live** — both sessions read from `UserSettings` protocol at `start()` time; `SoundFontNotePlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
 
 **Composition Root (`PeachApp.swift`):**
 - **All service instantiation happens in `PeachApp.swift`** — this is the single dependency graph source of truth
@@ -93,7 +98,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **When Adding New Components:**
 - New injectable service → add `@Entry var myService = MyService()` in `App/EnvironmentKeys.swift`, wire in `PeachApp.swift`
-- New `PitchComparisonObserver` → add to observer array in `PeachApp.swift`; inject only needed mocks in tests
+- New `PitchComparisonObserver` or `PitchMatchingObserver` → add to observer array in `PeachApp.swift`; inject only needed mocks in tests
 - New SwiftData `@Model` → register in `ModelContainer` schema in `PeachApp.swift`
 - New layout logic → extract to `static` methods for unit testability
 - New state transitions → respect existing guards in `PitchComparisonSession`; use `waitForState` helper in tests
@@ -223,7 +228,9 @@ Never run only specific test files — always the complete suite.
 - **MIDI note range: 0–127** — `PerceptualProfile` is indexed by MIDI note (128 slots, 0-based); out-of-range = crash
 - **Cent offset applies to target note only** — reference note is exact MIDI note, target note = reference note + cent offset; never offset both notes
 - **Use `TuningSystem.frequency(for:referencePitch:)` for all Hz conversions** — accepts `MIDINote` or `DetunedMIDINote`; always requires explicit `tuningSystem` and `referencePitch` parameters; the app requires 0.1-cent precision
-- **Feedback phase is 0.4 seconds** — preserve this timing in the training loop; it's a perceptual learning design decision
+- **Feedback phase is 400ms** — defined in `TrainingConstants.feedbackDuration`; applies to both session types; it's a perceptual learning design decision
+- **Interval training constrains note range** — when interval > prime, the upper bound of the note selection range shrinks by `interval.semitones` to keep the target note within valid MIDI range (0-127)
+- **Four training modes** — unison comparison, interval comparison, unison matching, interval matching. Each has independent progress tracking via `TrainingModeConfig`. `ProgressTimeline` tracks all four
 
 **Never Do This:**
 - `ObservableObject` / `@Published` → use `@Observable`
@@ -239,12 +246,15 @@ Never run only specific test files — always the complete suite.
 - `@testable import` to test private methods → test through protocol interfaces
 - Premature abstractions, `Utils/` directories, speculative features → keep it simple
 - `Pitch` struct → deleted; use `DetunedMIDINote` + `TuningSystem.frequency(for:referencePitch:)` instead
+- `print()` in production code → use `os.Logger` with appropriate log levels
+- Raw `Double` at public interfaces where domain types exist → use `Cents`, `Frequency`, `MIDINote`, etc.
 
 **Error Resilience:**
-- **`PitchComparisonSession` is the error boundary** — catches all service errors; training loop continues gracefully
-- **Audio interruption mid-pitch-comparison** → discard incomplete pitch comparison, stop training
-- **App backgrounding** → stop training; return to Start Screen on foreground
+- **Both sessions are error boundaries** — `PitchComparisonSession` and `PitchMatchingSession` catch all service errors; training loops continue gracefully
+- **Audio interruption** → discard incomplete exercise, stop the active session
+- **App backgrounding** → stop the active session; return to Start Screen on foreground
 - **Empty profile (cold start)** → `KazezNoteStrategy` starts at `maxCentDifference` (or `profile.overallMean` if some pitch comparison training exists); handle gracefully
+- **Logging** — sessions use `os.Logger` for lifecycle events; `TrainingDataStore` logs save errors at `.warning` level (never `print()`)
 
 ---
 
@@ -262,4 +272,4 @@ Never run only specific test files — always the complete suite.
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-03-01 (Story 23.1 data model updates)
+Last Updated: 2026-03-06 (Code review: domain types, training modes, logging)

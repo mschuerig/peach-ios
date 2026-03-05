@@ -1,9 +1,11 @@
 import SwiftData
 import Foundation
+import os
 
 /// Pure persistence layer for PitchComparisonRecord and PitchMatchingRecord storage and retrieval
 /// Responsibilities: CREATE, READ, DELETE operations only - no business logic
 final class TrainingDataStore {
+    private static let logger = Logger(subsystem: "com.peach.app", category: "TrainingDataStore")
     private let modelContext: ModelContext
 
     /// Creates a TrainingDataStore with the given ModelContext
@@ -122,9 +124,9 @@ extension TrainingDataStore: PitchMatchingObserver {
         do {
             try save(record)
         } catch let error as DataStoreError {
-            print("⚠️ TrainingDataStore pitch matching save error: \(error.localizedDescription)")
+            Self.logger.warning("Pitch matching save error: \(error.localizedDescription)")
         } catch {
-            print("⚠️ TrainingDataStore pitch matching unexpected error: \(error.localizedDescription)")
+            Self.logger.warning("Pitch matching unexpected error: \(error.localizedDescription)")
         }
     }
 }
@@ -151,10 +153,10 @@ extension TrainingDataStore: PitchComparisonObserver {
             try save(record)
         } catch let error as DataStoreError {
             // Data error - log but don't propagate (observers shouldn't fail training)
-            print("⚠️ TrainingDataStore save error: \(error.localizedDescription)")
+            Self.logger.warning("Pitch comparison save error: \(error.localizedDescription)")
         } catch {
             // Unexpected error - log but don't propagate
-            print("⚠️ TrainingDataStore unexpected error: \(error.localizedDescription)")
+            Self.logger.warning("Pitch comparison unexpected error: \(error.localizedDescription)")
         }
     }
 }
