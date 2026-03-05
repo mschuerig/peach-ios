@@ -28,13 +28,11 @@ struct SettingsScreen: View {
 
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
-    @Environment(\.csvExportDocumentAction) private var csvExportDocumentAction
-    @Environment(\.trainingDataImportAction) private var trainingDataImportAction
+    @Environment(\.trainingDataTransferService) private var transferService
 
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
-    @State private var csvDocument: CSVDocument?
     @State private var showExporter = false
     @State private var showExportError = false
     @State private var showFileImporter = false
@@ -110,11 +108,11 @@ struct SettingsScreen: View {
             if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == soundSource }) {
                 soundSource = SettingsKeys.defaultSoundSource
             }
-            refreshExportDocument()
+            transferService.refreshExport()
         }
         .fileExporter(
             isPresented: $showExporter,
-            document: csvDocument,
+            document: transferService.exportCSV.map { CSVDocument(csvString: $0) },
             contentType: .commaSeparatedText,
             defaultFilename: CSVDocument.exportFileName()
         ) { result in
@@ -136,7 +134,19 @@ struct SettingsScreen: View {
             isPresented: $showFileImporter,
             allowedContentTypes: [.commaSeparatedText]
         ) { result in
-            handleFileSelection(result)
+            switch result {
+            case .success(let url):
+                switch transferService.readFileForImport(url: url) {
+                case .success(let parseResult):
+                    importParseResult = parseResult
+                    showImportModeChoice = true
+                case .failure(let message):
+                    importErrorMessage = message
+                    showImportError = true
+                }
+            case .failure:
+                break
+            }
         }
         .confirmationDialog(
             "Import Training Data",
@@ -144,10 +154,10 @@ struct SettingsScreen: View {
             titleVisibility: .visible
         ) {
             Button("Replace All Data", role: .destructive) {
-                performImport(mode: .replace)
+                completeImport(mode: .replace)
             }
             Button("Merge with Existing Data") {
-                performImport(mode: .merge)
+                completeImport(mode: .merge)
             }
         } message: {
             Text("Replace deletes all existing data first. Merge keeps existing data and skips duplicates.")
@@ -156,7 +166,7 @@ struct SettingsScreen: View {
             Button("OK") { }
         } message: {
             if let summary = importSummary {
-                Text(importSummaryMessage(summary))
+                Text(transferService.formatImportSummary(summary))
             }
         }
         .alert("Import Failed", isPresented: $showImportError) {
@@ -259,15 +269,15 @@ struct SettingsScreen: View {
     private var dataSection: some View {
         Section("Data") {
             Button {
-                refreshExportDocument()
-                if csvDocument != nil {
+                transferService.refreshExport()
+                if transferService.exportCSV != nil {
                     showExporter = true
                 }
             } label: {
                 Label("Export Training Data", systemImage: "square.and.arrow.up")
             }
-            .disabled(csvDocument == nil)
-            .foregroundStyle(csvDocument == nil ? .secondary : .primary)
+            .disabled(transferService.exportCSV == nil)
+            .foregroundStyle(transferService.exportCSV == nil ? .secondary : .primary)
 
             Button {
                 showFileImporter = true
@@ -297,77 +307,23 @@ struct SettingsScreen: View {
     private func resetAllTrainingData() {
         do {
             try dataStoreResetter?()
-            refreshExportDocument()
+            transferService.refreshExport()
         } catch {
             showResetError = true
         }
     }
 
-    private func handleFileSelection(_ result: Result<URL, Error>) {
-        switch result {
-        case .success(let url):
-            guard url.startAccessingSecurityScopedResource() else {
-                importErrorMessage = String(localized: "Could not access the selected file.")
-                showImportError = true
-                return
-            }
-            defer { url.stopAccessingSecurityScopedResource() }
-            do {
-                let csvString = try String(contentsOf: url, encoding: .utf8)
-                let parseResult = CSVImportParser.parse(csvString)
-                if parseResult.comparisons.isEmpty && parseResult.pitchMatchings.isEmpty {
-                    if parseResult.errors.isEmpty {
-                        importErrorMessage = String(localized: "The file contains no valid training data.")
-                    } else {
-                        let details = parseResult.errors.prefix(5).map { $0.errorDescription ?? "" }.joined(separator: "\n")
-                        importErrorMessage = String(localized: "The file contains no valid training data.") + "\n\n" + details
-                    }
-                    showImportError = true
-                    return
-                }
-                importParseResult = parseResult
-                showImportModeChoice = true
-            } catch {
-                importErrorMessage = String(localized: "Could not read the selected file.")
-                showImportError = true
-            }
-        case .failure:
-            break
-        }
-    }
-
-    private func performImport(mode: TrainingDataImporter.ImportMode) {
+    private func completeImport(mode: TrainingDataImporter.ImportMode) {
         guard let parseResult = importParseResult else { return }
         do {
-            let summary = try trainingDataImportAction?(parseResult, mode)
+            let summary = try transferService.performImport(parseResult: parseResult, mode: mode)
             importSummary = summary
             showImportSummary = true
-            refreshExportDocument()
         } catch {
             importErrorMessage = String(localized: "Could not import the training data. Please try again.")
             showImportError = true
         }
         importParseResult = nil
-    }
-
-    private func importSummaryMessage(_ summary: TrainingDataImporter.ImportSummary) -> String {
-        var parts: [String] = []
-        parts.append(String(localized: "\(summary.totalImported) records imported"))
-        if summary.totalSkipped > 0 {
-            parts.append(String(localized: "\(summary.totalSkipped) duplicates skipped"))
-        }
-        if summary.parseErrorCount > 0 {
-            parts.append(String(localized: "\(summary.parseErrorCount) errors"))
-        }
-        return parts.joined(separator: ", ") + "."
-    }
-
-    private func refreshExportDocument() {
-        do {
-            csvDocument = try csvExportDocumentAction?()
-        } catch {
-            showExportError = true
-        }
     }
 }
 

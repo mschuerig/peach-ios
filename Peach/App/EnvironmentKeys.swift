@@ -9,9 +9,7 @@ extension EnvironmentValues {
     @Entry var activeSession: (any TrainingSession)? = nil
     @Entry var perceptualProfile = PerceptualProfile()
     @Entry var dataStoreResetter: (() throws -> Void)? = nil
-    @Entry var trainingDataExportAction: (() throws -> String)? = nil
-    @Entry var csvExportDocumentAction: (() throws -> CSVDocument?)? = nil
-    @Entry var trainingDataImportAction: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil
+    @Entry var trainingDataTransferService: TrainingDataTransferService = TrainingDataTransferService.preview()
 }
 
 // MARK: - Session Environment Keys

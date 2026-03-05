@@ -12,6 +12,7 @@ struct PeachApp: App {
     @State private var trendAnalyzer: TrendAnalyzer
     @State private var thresholdTimeline: ThresholdTimeline
     @State private var soundFontLibrary: SoundFontLibrary
+    @State private var transferService: TrainingDataTransferService
     @State private var activeSession: (any TrainingSession)?
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
@@ -44,6 +45,13 @@ struct PeachApp: App {
 
             let thresholdTimeline = ThresholdTimeline(records: existingRecords)
             _thresholdTimeline = State(wrappedValue: thresholdTimeline)
+
+            _transferService = State(wrappedValue: TrainingDataTransferService(
+                dataStore: dataStore,
+                profile: profile,
+                trendAnalyzer: trendAnalyzer,
+                thresholdTimeline: thresholdTimeline
+            ))
 
             let strategy = KazezNoteStrategy()
 
@@ -83,30 +91,7 @@ struct PeachApp: App {
                     try comparisonSession.resetTrainingData()
                     profile.resetMatching()
                 })
-                .environment(\.trainingDataExportAction, { [dataStore] in
-                    try TrainingDataExporter.export(from: dataStore)
-                })
-                .environment(\.csvExportDocumentAction, { [dataStore] in
-                    let csv = try TrainingDataExporter.export(from: dataStore)
-                    guard csv != CSVExportSchema.headerRow else { return nil }
-                    return CSVDocument(csvString: csv)
-                })
-                .environment(\.trainingDataImportAction, { [dataStore, profile, trendAnalyzer, thresholdTimeline] parseResult, mode in
-                    let summary = try TrainingDataImporter.importData(parseResult, mode: mode, into: dataStore)
-                    let allComparisons = try dataStore.fetchAllComparisons()
-                    let allPitchMatchings = try dataStore.fetchAllPitchMatchings()
-                    profile.reset()
-                    profile.resetMatching()
-                    for record in allComparisons {
-                        profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
-                    }
-                    for record in allPitchMatchings {
-                        profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
-                    }
-                    trendAnalyzer.rebuild(from: allComparisons)
-                    thresholdTimeline.rebuild(from: allComparisons)
-                    return summary
-                })
+                .environment(\.trainingDataTransferService, transferService)
                 .modelContainer(modelContainer)
                 .onChange(of: comparisonSession.isIdle) { _, isIdle in
                     if !isIdle {
