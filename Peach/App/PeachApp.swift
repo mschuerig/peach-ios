@@ -11,6 +11,7 @@ struct PeachApp: App {
     @State private var profile: PerceptualProfile
     @State private var trendAnalyzer: TrendAnalyzer
     @State private var thresholdTimeline: ThresholdTimeline
+    @State private var progressTimeline: ProgressTimeline
     @State private var soundFontLibrary: SoundFontLibrary
     @State private var transferService: TrainingDataTransferService
     @State private var activeSession: (any TrainingSession)?
@@ -47,6 +48,12 @@ struct PeachApp: App {
             let thresholdTimeline = ThresholdTimeline(records: existingRecords)
             _thresholdTimeline = State(wrappedValue: thresholdTimeline)
 
+            let progressTimeline = ProgressTimeline(
+                comparisonRecords: existingRecords,
+                pitchMatchingRecords: pitchMatchingRecords
+            )
+            _progressTimeline = State(wrappedValue: progressTimeline)
+
             _transferService = State(wrappedValue: TrainingDataTransferService(
                 dataStore: dataStore,
                 profile: profile,
@@ -63,14 +70,16 @@ struct PeachApp: App {
                 userSettings: userSettings,
                 dataStore: dataStore,
                 trendAnalyzer: trendAnalyzer,
-                thresholdTimeline: thresholdTimeline
+                thresholdTimeline: thresholdTimeline,
+                progressTimeline: progressTimeline
             ))
 
             _pitchMatchingSession = State(wrappedValue: Self.createPitchMatchingSession(
                 notePlayer: notePlayer,
                 profile: profile,
                 userSettings: userSettings,
-                dataStore: dataStore
+                dataStore: dataStore,
+                progressTimeline: progressTimeline
             ))
         } catch {
             fatalError("Failed to initialize app: \(error)")
@@ -86,6 +95,7 @@ struct PeachApp: App {
                 .environment(\.perceptualProfile, profile)
                 .environment(\.trendAnalyzer, trendAnalyzer)
                 .environment(\.thresholdTimeline, thresholdTimeline)
+                .environment(\.progressTimeline, progressTimeline)
                 .environment(\.soundSourceProvider, soundFontLibrary)
                 .environment(\.dataStoreResetter, { [dataStore, comparisonSession, profile] in
                     try dataStore.deleteAll()
@@ -147,16 +157,17 @@ struct PeachApp: App {
         userSettings: UserSettings,
         dataStore: TrainingDataStore,
         trendAnalyzer: TrendAnalyzer,
-        thresholdTimeline: ThresholdTimeline
+        thresholdTimeline: ThresholdTimeline,
+        progressTimeline: ProgressTimeline
     ) -> ComparisonSession {
         let hapticManager = HapticFeedbackManager()
-        let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer, thresholdTimeline]
+        let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer, thresholdTimeline, progressTimeline]
         return ComparisonSession(
             notePlayer: notePlayer,
             strategy: strategy,
             profile: profile,
             userSettings: userSettings,
-            resettables: [trendAnalyzer, thresholdTimeline],
+            resettables: [trendAnalyzer, thresholdTimeline, progressTimeline],
             observers: observers
         )
     }
@@ -165,12 +176,13 @@ struct PeachApp: App {
         notePlayer: NotePlayer,
         profile: PerceptualProfile,
         userSettings: UserSettings,
-        dataStore: TrainingDataStore
+        dataStore: TrainingDataStore,
+        progressTimeline: ProgressTimeline
     ) -> PitchMatchingSession {
         PitchMatchingSession(
             notePlayer: notePlayer,
             profile: profile,
-            observers: [dataStore, profile],
+            observers: [dataStore, profile, progressTimeline],
             userSettings: userSettings,
             backgroundNotificationName: UIApplication.didEnterBackgroundNotification,
             foregroundNotificationName: UIApplication.willEnterForegroundNotification

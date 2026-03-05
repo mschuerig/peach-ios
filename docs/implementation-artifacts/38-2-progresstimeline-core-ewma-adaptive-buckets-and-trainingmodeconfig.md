@@ -1,6 +1,6 @@
 # Story 38.2: ProgressTimeline Core — EWMA, Adaptive Buckets, and TrainingModeConfig
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,37 +24,37 @@ So that the profile visualization has a clean, testable, configurable data sourc
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement `TrainingModeConfig` (AC: #1)
-  - [ ] 1.1 Create `peach/Core/Profile/TrainingModeConfig.swift` with struct holding all tuneable parameters
-  - [ ] 1.2 Define four static configurations: unisonDiscrimination, intervalDiscrimination, unisonMatching, intervalMatching
-  - [ ] 1.3 Write tests for all four configurations and parameter access
+- [x] Task 1: Implement `TrainingModeConfig` (AC: #1)
+  - [x] 1.1 Create `peach/Core/Profile/TrainingModeConfig.swift` with struct holding all tuneable parameters
+  - [x] 1.2 Define four static configurations: unisonDiscrimination, intervalDiscrimination, unisonMatching, intervalMatching
+  - [x] 1.3 Write tests for all four configurations and parameter access
 
-- [ ] Task 2: Implement adaptive time bucket grouping (AC: #2, #3)
-  - [ ] 2.1 Define `TimeBucket` struct (periodStart, periodEnd, bucketSize enum)
-  - [ ] 2.2 Implement bucket boundary computation: per-session (<24h), per-day (<7d), per-week (<30d), per-month (beyond)
-  - [ ] 2.3 Write tests for bucket assignment across all time ranges
+- [x] Task 2: Implement adaptive time bucket grouping (AC: #2, #3)
+  - [x] 2.1 Define `TimeBucket` struct (periodStart, periodEnd, bucketSize enum)
+  - [x] 2.2 Implement bucket boundary computation: per-session (<24h), per-day (<7d), per-week (<30d), per-month (beyond)
+  - [x] 2.3 Write tests for bucket assignment across all time ranges
 
-- [ ] Task 3: Implement EWMA computation (AC: #2, #3)
-  - [ ] 3.1 Implement EWMA with configurable halflife (alpha = exp(-ln(2) * dt / halflife))
-  - [ ] 3.2 Implement per-bucket standard deviation
-  - [ ] 3.3 Write tests for EWMA correctness with known input/output pairs
-  - [ ] 3.4 Write tests for stddev computation
+- [x] Task 3: Implement EWMA computation (AC: #2, #3)
+  - [x] 3.1 Implement EWMA with configurable halflife (alpha = exp(-ln(2) * dt / halflife))
+  - [x] 3.2 Implement per-bucket standard deviation
+  - [x] 3.3 Write tests for EWMA correctness with known input/output pairs
+  - [x] 3.4 Write tests for stddev computation
 
-- [ ] Task 4: Implement `ProgressTimeline` class (AC: #2, #3, #4, #5)
-  - [ ] 4.1 Create `peach/Core/Profile/ProgressTimeline.swift` as `@Observable final class`
-  - [ ] 4.2 Initialize from `[ComparisonRecord]` and `[PitchMatchingRecord]` at startup
-  - [ ] 4.3 Implement metric extraction: `centOffset` (correct only) for discrimination, `abs(userCentError)` for matching
-  - [ ] 4.4 Implement cold-start detection (< 20 records per mode)
-  - [ ] 4.5 Implement trend computation (improving/stable/declining) for modes with 100+ records
-  - [ ] 4.6 Conform to `ComparisonObserver` for incremental discrimination updates
-  - [ ] 4.7 Conform to `PitchMatchingObserver` for incremental matching updates
-  - [ ] 4.8 Conform to `Resettable` for data reset support
+- [x] Task 4: Implement `ProgressTimeline` class (AC: #2, #3, #4, #5)
+  - [x] 4.1 Create `peach/Core/Profile/ProgressTimeline.swift` as `@Observable final class`
+  - [x] 4.2 Initialize from `[ComparisonRecord]` and `[PitchMatchingRecord]` at startup
+  - [x] 4.3 Implement metric extraction: `centOffset` (correct only) for discrimination, `abs(userCentError)` for matching
+  - [x] 4.4 Implement cold-start detection (< 20 records per mode)
+  - [x] 4.5 Implement trend computation (improving/stable/declining) for modes with 100+ records
+  - [x] 4.6 Conform to `ComparisonObserver` for incremental discrimination updates
+  - [x] 4.7 Conform to `PitchMatchingObserver` for incremental matching updates
+  - [x] 4.8 Conform to `Resettable` for data reset support
 
-- [ ] Task 5: Wire into composition root (AC: #4)
-  - [ ] 5.1 Add `@Entry var progressTimeline` to `EnvironmentKeys.swift`
-  - [ ] 5.2 Initialize `ProgressTimeline` in `PeachApp.swift` from fetched records
-  - [ ] 5.3 Add to `ComparisonSession` observers array and `PitchMatchingSession` observers array
-  - [ ] 5.4 Add to resettables array
+- [x] Task 5: Wire into composition root (AC: #4)
+  - [x] 5.1 Add `@Entry var progressTimeline` to `EnvironmentKeys.swift`
+  - [x] 5.2 Initialize `ProgressTimeline` in `PeachApp.swift` from fetched records
+  - [x] 5.3 Add to `ComparisonSession` observers array and `PitchMatchingSession` observers array
+  - [x] 5.4 Add to resettables array
 
 ## Dev Notes
 
@@ -198,10 +198,33 @@ else:                      → per-month bucket (Calendar.current.dateInterval(o
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no debugging issues.
+
 ### Completion Notes List
 
+- Implemented `TrainingModeConfig` struct with four static configurations centralizing all tuneable parameters (AC #1)
+- Implemented `ProgressTimeline` as `@Observable final class` with adaptive time bucketing: per-session (<24h, 30-min gap), per-day (<7d), per-week (<30d), per-month (beyond) (AC #2, #3)
+- EWMA computation uses time-weighted formula with configurable halflife (default 7 days); standard deviation computed per bucket (AC #2, #3)
+- Discrimination metric: `abs(centOffset)` on correct answers only; matching metric: `abs(userCentError)` on all records (AC #2, #3)
+- Incremental updates via `ComparisonObserver` and `PitchMatchingObserver` conformances — no full rescan needed (AC #4)
+- Cold-start detection: `.noData` (0 records), `.coldStart(recordsNeeded:)` (1-19), `.active` (20+); trend available at 100+ records (AC #5)
+- `Resettable` conformance for data reset support
+- Wired into composition root: environment key, PeachApp initialization, observer arrays, resettables array
+- 25 new tests (5 TrainingModeConfig + 20 ProgressTimeline), all 995 tests pass, dependency rules clean
+
+### Change Log
+
+- 2026-03-05: Implemented story 38.2 — ProgressTimeline core data pipeline with EWMA, adaptive buckets, TrainingModeConfig, and composition root wiring
+
 ### File List
+
+- Peach/Core/Profile/TrainingModeConfig.swift (new)
+- Peach/Core/Profile/ProgressTimeline.swift (new)
+- Peach/App/EnvironmentKeys.swift (modified — added `@Entry var progressTimeline`)
+- Peach/App/PeachApp.swift (modified — initialize, wire observers, resettables, environment)
+- PeachTests/Core/Profile/TrainingModeConfigTests.swift (new)
+- PeachTests/Core/Profile/ProgressTimelineTests.swift (new)
