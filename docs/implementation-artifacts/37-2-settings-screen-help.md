@@ -1,6 +1,6 @@
 # Story 37.2: Settings Screen Help
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -212,11 +212,12 @@ None — clean implementation with no blocking issues.
 ### Change Log
 
 - 2026-03-05: Implemented Settings Screen help with toolbar button, help sheet, 5 help sections, German translations, and tests
+- 2026-03-05: Review fixes — stronger tests: verify section titles match settings groups in order, use title-based lookup instead of brittle magic indices, split non-empty test from title test (944 tests pass)
 
 ### File List
 
 - Peach/Settings/SettingsScreen.swift (modified — added helpSections static property, showHelpSheet state, toolbar button, help sheet)
 - Peach/Resources/Localizable.xcstrings (modified — added 6 German translations for help strings)
-- PeachTests/Settings/SettingsTests.swift (modified — added 4 help section tests)
+- PeachTests/Settings/SettingsTests.swift (modified — added 5 help section tests with title verification and title-based lookup)
 - docs/implementation-artifacts/37-2-settings-screen-help.md (modified — task checkboxes, dev agent record, status)
 - docs/implementation-artifacts/sprint-status.yaml (modified — status updated)

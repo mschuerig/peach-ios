@@ -242,24 +242,40 @@ struct SettingsTests {
         #expect(SettingsScreen.helpSections.count == 5)
     }
 
-    @Test("each help section has a non-empty title and body")
-    func helpSectionContent() async {
+    @Test("help section titles match settings groups in order")
+    func helpSectionTitlesMatchSettingsGroups() async {
+        let expectedTitles = [
+            String(localized: "Training Range"),
+            String(localized: "Intervals"),
+            String(localized: "Sound"),
+            String(localized: "Difficulty"),
+            String(localized: "Data"),
+        ]
+        let actualTitles = SettingsScreen.helpSections.map(\.title)
+        #expect(actualTitles == expectedTitles)
+    }
+
+    @Test("each help section has a non-empty body")
+    func helpSectionBodiesNonEmpty() async {
         for section in SettingsScreen.helpSections {
-            #expect(!section.title.isEmpty)
-            #expect(!section.body.isEmpty)
+            #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
         }
     }
 
     @Test("concert pitch help contains practical 440 Hz context")
     func concertPitchHelpContainsPracticalContext() async {
-        let soundSection = SettingsScreen.helpSections[2]
-        #expect(soundSection.body.contains("440"))
+        let soundTitle = String(localized: "Sound")
+        let soundSection = SettingsScreen.helpSections.first { $0.title == soundTitle }
+        #expect(soundSection != nil)
+        #expect(soundSection?.body.contains("440") == true)
     }
 
     @Test("tuning system help contains Equal Temperament reference")
     func tuningSystemHelpContainsKeyTerm() async {
-        let soundSection = SettingsScreen.helpSections[2]
-        let bodyLower = soundSection.body.lowercased()
+        let soundTitle = String(localized: "Sound")
+        let soundSection = SettingsScreen.helpSections.first { $0.title == soundTitle }
+        #expect(soundSection != nil)
+        let bodyLower = soundSection?.body.lowercased() ?? ""
         #expect(bodyLower.contains("equal temperament") || bodyLower.contains("gleichstufig"))
     }
 
