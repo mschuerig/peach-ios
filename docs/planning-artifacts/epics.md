@@ -3538,7 +3538,155 @@ So that we design a profile visualization that is encouraging, actionable, and u
 **Then** a UX concept is produced with enough detail for implementation (layout sketches, data mapping, interaction patterns)
 **And** the concept is approved by the developer before implementation begins
 
-**Note:** Implementation stories (38.2+) will be defined after the design is approved in this story. The scope and number of implementation stories depend on the chosen visualization approach.
+**Note:** Implementation stories (38.2+) defined after design approval in 38.1. Approved concept: Progress Timeline with Adaptive Buckets (see story file for full UX spec).
+
+### Story 38.2: ProgressTimeline Core — EWMA, Adaptive Buckets, and TrainingModeConfig
+
+As a **developer**,
+I want a core data pipeline that computes EWMA statistics over adaptive time buckets per training mode,
+So that the profile visualization has a clean, testable, configurable data source.
+
+**Acceptance Criteria:**
+
+**Given** a `TrainingModeConfig` struct
+**When** it is initialized for any training mode
+**Then** it centralizes all tuneable parameters: display name, unit label, optimal baseline, EWMA halflife, cold start thresholds, and bucket boundaries
+**And** no magic numbers exist outside this configuration type
+
+**Given** a set of `ComparisonRecord` entries for unison discrimination
+**When** `ProgressTimeline` processes them
+**Then** it groups records into adaptive time buckets (per-session for last 24h, per-day for last 7d, per-week for last 30d, per-month beyond)
+**And** computes EWMA with the configured halflife (default 7 days)
+**And** computes standard deviation per bucket
+**And** discrimination mode uses `centOffset` on correct answers only as its metric
+
+**Given** a set of `PitchMatchingRecord` entries
+**When** `ProgressTimeline` processes them
+**Then** matching mode uses `abs(userCentError)` as its metric
+**And** the same EWMA and bucketing logic applies (parameterized, not duplicated)
+
+**Given** `ProgressTimeline` is `@Observable`
+**When** a new training record is added via observer protocol
+**Then** it updates incrementally without re-scanning all records
+
+**Given** fewer than 20 records for a training mode
+**When** `ProgressTimeline` is queried
+**Then** it reports cold-start state (no trend computation, limited display data)
+
+**Technical hints:**
+- New files: `Core/Profile/ProgressTimeline.swift`, `Core/Profile/TrainingModeConfig.swift`
+- Protocol: `TrainingModeMetrics` for parameterization across modes
+- Conforms to `ComparisonObserver` and `PitchMatchingObserver` for incremental updates
+- All thresholds and parameters configurable via `TrainingModeConfig`
+- Reference approved UX concept in `docs/implementation-artifacts/38-1-brainstorm-and-design-profile-visualization.md`
+
+### Story 38.3: ProgressChartView and Profile Screen Redesign
+
+As a **user**,
+I want to see my training progress on the Profile Screen as one card per training mode with a timeline chart,
+So that I can understand how my ear training is improving over time.
+
+**Depends on:** Story 38.2
+
+**Acceptance Criteria:**
+
+**Given** the user navigates to the Profile Screen
+**When** they have training data for one or more modes
+**Then** they see one card per trained mode, stacked vertically
+**And** each card shows: headline EWMA value + stddev + trend indicator above the chart
+**And** each card shows a chart with EWMA line, stddev band, and optimal baseline (dashed)
+**And** modes with no data are not shown
+
+**Given** the chart renders adaptive time buckets
+**When** the user views it
+**Then** recent time is shown in detail (per-session/per-day) and older time is compressed (per-week/per-month)
+**And** bucket labels show appropriate time formats ("2h ago", "Mon", "Mar 1", "Jan")
+
+**Given** fewer than 20 records for a mode
+**When** the card is displayed
+**Then** it shows an encouraging cold-start message instead of a chart
+**And** for 1-19 records: "Keep going! X more sessions to see your trend"
+
+**Given** the chart view
+**When** it renders on iPhone and iPad in portrait and landscape
+**Then** it adapts responsively using SwiftUI layout
+
+**Given** the chart view
+**When** VoiceOver is active
+**Then** all visual elements have accessibility descriptions
+
+**Technical hints:**
+- New file: `Profile/ProgressChartView.swift` — single parameterized view taking `TrainingModeMetrics`
+- Refactor `ProfileScreen.swift` to card-based layout iterating over modes
+- Use Apple Charts framework (AreaMark for stddev band, LineMark for EWMA, RuleMark for baseline)
+- Old views (`ThresholdTimelineView`, `SummaryStatisticsView`, `MatchingStatisticsView`) replaced by new layout
+- Reference approved UX concept in `docs/implementation-artifacts/38-1-brainstorm-and-design-profile-visualization.md`
+
+### Story 38.4: Focus+Context Chart Interaction
+
+As a **user**,
+I want to tap a time region on my progress chart to see more detail,
+So that I can explore specific periods of my training history.
+
+**Depends on:** Story 38.3
+
+**Acceptance Criteria:**
+
+**Given** the progress chart on the Profile Screen
+**When** the user taps a time bucket region
+**Then** that bucket expands into finer granularity (month -> weeks, week -> days)
+**And** surrounding buckets compress proportionally to maintain chart width
+**And** the expansion animates smoothly
+
+**Given** an expanded bucket region
+**When** the user taps it again or taps a different region
+**Then** the expanded region collapses back to its original bucket size
+**And** the collapse animates smoothly
+
+**Given** the focus+context interaction
+**When** used with VoiceOver
+**Then** the interaction is accessible (tap targets have labels, expanded state is announced)
+
+**Technical hints:**
+- Implemented within `ProgressChartView` using chart overlay gestures
+- `ProgressTimeline` must support querying sub-buckets for a given time range
+- Smooth SwiftUI animation for expand/collapse transitions
+- Reference approved UX concept in `docs/implementation-artifacts/38-1-brainstorm-and-design-profile-visualization.md`
+
+### Story 38.5: Start Screen Sparkline and Training Screen Summary
+
+As a **user**,
+I want a quick glance at my progress on the Start Screen and a text summary during training,
+So that I feel encouraged without navigating to the full Profile Screen.
+
+**Depends on:** Story 38.2
+
+**Acceptance Criteria:**
+
+**Given** the Start Screen
+**When** the user has training data for one or more modes
+**Then** a small sparkline appears for each trained mode (tiny EWMA line, no axes or labels)
+**And** the sparkline is tinted green if improving, amber if stable, subtle gray if declining
+**And** the current EWMA value appears beside it as small text (e.g., "8.2c")
+
+**Given** the Start Screen
+**When** the user has no training data
+**Then** no sparklines are shown
+
+**Given** a Training Screen (Comparison or Pitch Matching)
+**When** the user is in a training session for a mode with sufficient data (20+ records)
+**Then** a single-line text summary appears: "Current accuracy: X.X cents (improving/stable/declining)"
+
+**Given** a Training Screen
+**When** the user has fewer than 20 records for that mode
+**Then** no accuracy summary is shown
+
+**Technical hints:**
+- New file: `Profile/SparklineView.swift` or `Start/ProgressSparklineView.swift`
+- Sparkline reads from same `ProgressTimeline` data via environment
+- Training screen text derived from `ProgressTimeline` EWMA value and trend
+- Keep views thin — all computation in Core
+- Reference approved UX concept in `docs/implementation-artifacts/38-1-brainstorm-and-design-profile-visualization.md`
 
 ---
 
