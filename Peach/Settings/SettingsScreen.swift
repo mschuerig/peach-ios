@@ -105,9 +105,6 @@ struct SettingsScreen: View {
             }
         }
         .onAppear {
-            if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == soundSource }) {
-                soundSource = SettingsKeys.defaultSoundSource
-            }
             transferService.refreshExport()
         }
         .fileExporter(
@@ -207,7 +204,7 @@ struct SettingsScreen: View {
 
     private var soundSection: some View {
         Section {
-            Picker(String(localized: "Sound"), selection: validatedSoundSource) {
+            Picker(String(localized: "Sound"), selection: $soundSource) {
                 ForEach(soundSourceProvider.availableSources, id: \.self) { source in
                     Text(soundSourceProvider.displayName(for: source)).tag(source.rawValue)
                 }
@@ -234,21 +231,6 @@ struct SettingsScreen: View {
         } footer: {
             Text(String(localized: "Select how intervals are tuned. Equal Temperament divides the octave into 12 equal steps. Just Intonation uses pure frequency ratios."))
         }
-    }
-
-    private var validatedSoundSource: Binding<String> {
-        Binding(
-            get: {
-                let current = soundSource
-                if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == current }) {
-                    return SettingsKeys.defaultSoundSource
-                }
-                return current
-            },
-            set: { newValue in
-                soundSource = newValue
-            }
-        )
     }
 
     private var difficultySection: some View {

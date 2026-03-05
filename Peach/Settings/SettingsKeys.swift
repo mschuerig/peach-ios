@@ -39,4 +39,17 @@ enum SettingsKeys {
     static func upperBoundRange(noteRangeMin: Int) -> ClosedRange<Int> {
         (noteRangeMin + NoteRange.minimumSpan)...absoluteMaxNote
     }
+
+    // MARK: - Sound Source Validation
+
+    static func validateSoundSource(
+        against provider: some SoundSourceProvider,
+        userDefaults: UserDefaults = .standard
+    ) {
+        guard let current = userDefaults.string(forKey: soundSource),
+              provider.availableSources.contains(where: { $0.rawValue == current }) else {
+            userDefaults.set(defaultSoundSource, forKey: soundSource)
+            return
+        }
+    }
 }

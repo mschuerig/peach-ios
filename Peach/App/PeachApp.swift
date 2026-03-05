@@ -27,6 +27,7 @@ struct PeachApp: App {
 
             let soundFontLibrary = SoundFontLibrary()
             _soundFontLibrary = State(wrappedValue: soundFontLibrary)
+            SettingsKeys.validateSoundSource(against: soundFontLibrary)
 
             let userSettings = AppUserSettings()
             let notePlayer = try SoundFontNotePlayer(userSettings: userSettings, stopPropagationDelay: .zero)
