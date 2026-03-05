@@ -2,7 +2,7 @@
 title: 'Fix trend arrow to reflect wrong answers using stddev-based computation'
 slug: 'fix-trend-stddev'
 created: '2026-03-05'
-status: 'ready-for-dev'
+status: 'implementation-complete'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['Swift 6.2', 'SwiftUI', '@Observable', 'Swift Testing']
 files_to_modify:
@@ -106,13 +106,13 @@ Key changes:
 
 ### Tasks
 
-- [ ] Task 1: Remove `trendChangeThreshold` from `TrainingModeConfig`
+- [x] Task 1: Remove `trendChangeThreshold` from `TrainingModeConfig`
   - File: `Peach/Core/Profile/TrainingModeConfig.swift`
   - Action: Remove `let trendChangeThreshold: Double` property and its value from all 4 static instances (`.unisonComparison`, `.intervalComparison`, `.unisonMatching`, `.intervalMatching`)
   - File: `PeachTests/Core/Profile/TrainingModeConfigTests.swift`
   - Action: Remove any test assertions that reference `trendChangeThreshold`
 
-- [ ] Task 2: Add running stddev fields to `ModeState`
+- [x] Task 2: Add running stddev fields to `ModeState`
   - File: `Peach/Core/Profile/ProgressTimeline.swift`
   - Action in `ModeState` struct (line ~209):
     - Add fields: `var runningMean: Double = 0`, `var runningM2: Double = 0`
@@ -138,7 +138,7 @@ Key changes:
       ```
     - Remove the existing `state.recordCount = sorted.count` line (now accumulated in loop)
 
-- [ ] Task 3: Remove `isCorrect` filter from comparison metric extraction
+- [x] Task 3: Remove `isCorrect` filter from comparison metric extraction
   - File: `Peach/Core/Profile/ProgressTimeline.swift`
   - Action in `TrainingMode.extractMetrics` (line ~40-41):
     - Change `.unisonComparison` from `comparisonRecords.filter { $0.isCorrect && $0.interval == 0 }` to `comparisonRecords.filter { $0.interval == 0 }`
@@ -146,7 +146,7 @@ Key changes:
   - Action in `TrainingMode.metric(from completed: CompletedComparison)` (line ~55-56):
     - Remove `guard completed.isCorrect else { return nil }`
 
-- [ ] Task 4: Replace `recomputeTrend` with stddev-based algorithm
+- [x] Task 4: Replace `recomputeTrend` with stddev-based algorithm
   - File: `Peach/Core/Profile/ProgressTimeline.swift`
   - Action: Replace the body of `recomputeTrend(config:)` (line ~273) with:
     ```swift
@@ -171,7 +171,7 @@ Key changes:
     ```
   - Note: `config` parameter is now unused but kept for API compatibility with `addPoint` and `buildModeState` call sites. Alternatively, remove the parameter — both callers can be updated.
 
-- [ ] Task 5: Update and add tests
+- [x] Task 5: Update and add tests
   - File: `PeachTests/Core/Profile/ProgressTimelineTests.swift`
   - Action — **Invert** `incorrectRecordsExcluded` (line ~349):
     - Rename to `incorrectRecordsIncludedInMetrics`

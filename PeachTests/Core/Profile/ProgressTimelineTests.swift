@@ -83,7 +83,7 @@ struct ProgressTimelineTests {
 
     // MARK: - Mode Routing Tests
 
-    @Test("unison comparison uses interval 0 comparison records with correct only")
+    @Test("unison comparison uses interval 0 comparison records including incorrect")
     func unisonComparisonMetric() async {
         let records = [
             makeComparisonRecord(centOffset: 10.0, isCorrect: true, interval: 0, hoursAgo: 2),
@@ -91,9 +91,8 @@ struct ProgressTimelineTests {
         ]
         let timeline = ProgressTimeline(comparisonRecords: records)
         let buckets = timeline.buckets(for: .unisonComparison)
-        // Only 1 correct record contributes to metric
         let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
-        #expect(totalRecords == 1)
+        #expect(totalRecords == 2)
     }
 
     @Test("interval comparison uses interval != 0 comparison records")
@@ -346,14 +345,14 @@ struct ProgressTimelineTests {
         #expect(buckets.first?.recordCount == 2)
     }
 
-    @Test("incorrect comparison records are excluded from comparison metric")
-    func incorrectRecordsExcluded() async {
+    @Test("incorrect comparison records are included in comparison metrics")
+    func incorrectRecordsIncludedInMetrics() async {
         let timeline = ProgressTimeline()
 
         let referenceNote = MIDINote(60)
         let targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(10.0))
         let comparison = Comparison(referenceNote: referenceNote, targetNote: targetNote)
-        // User answers wrong — isCorrect will be false
+        // User answers wrong — isCorrect will be false, but metric still contributes
         let completed = CompletedComparison(
             comparison: comparison,
             userAnsweredHigher: false,
@@ -363,7 +362,7 @@ struct ProgressTimelineTests {
 
         let buckets = timeline.buckets(for: .unisonComparison)
         let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
-        #expect(totalRecords == 0)
+        #expect(totalRecords == 1)
     }
 
     // MARK: - Reset Tests
@@ -380,40 +379,36 @@ struct ProgressTimelineTests {
 
     // MARK: - Trend Tests
 
-    @Test("improving trend when recent values are lower than older values")
+    @Test("improving trend when latest value is below EWMA and within stddev")
     func improvingTrend() async {
-        // Create 100+ records where older ones have higher cent offsets
+        // Many records at 20.0 cents, then latest at 10.0 (below EWMA, within stddev)
         var records: [ComparisonRecord] = []
-        for i in 0..<120 {
-            let centOffset = i < 60 ? 30.0 : 10.0
-            records.append(makeComparisonRecord(
-                centOffset: centOffset,
-                hoursAgo: Double(120 - i) * 2
-            ))
+        for i in 0..<10 {
+            records.append(makeComparisonRecord(centOffset: 20.0, hoursAgo: Double(12 - i)))
         }
+        records.append(makeComparisonRecord(centOffset: 10.0, hoursAgo: 0.5))
         let timeline = ProgressTimeline(comparisonRecords: records)
         let trend = timeline.trend(for: .unisonComparison)
         #expect(trend == .improving)
     }
 
-    @Test("declining trend when recent values are higher than older values")
+    @Test("declining trend when latest value is outside 1 stddev above mean")
     func decliningTrend() async {
+        // Many records at 10.0 cents with low variance, then latest at 50.0
         var records: [ComparisonRecord] = []
-        for i in 0..<120 {
-            let centOffset = i < 60 ? 10.0 : 30.0
-            records.append(makeComparisonRecord(
-                centOffset: centOffset,
-                hoursAgo: Double(120 - i) * 2
-            ))
+        for i in 0..<10 {
+            records.append(makeComparisonRecord(centOffset: 10.0, hoursAgo: Double(12 - i)))
         }
+        records.append(makeComparisonRecord(centOffset: 50.0, hoursAgo: 0.5))
         let timeline = ProgressTimeline(comparisonRecords: records)
         let trend = timeline.trend(for: .unisonComparison)
         #expect(trend == .declining)
     }
 
-    @Test("stable trend when values are consistent")
+    @Test("stable trend when latest value is within stddev and at or above EWMA")
     func stableTrend() async {
-        let records = makeComparisonRecords(count: 120, centOffset: 15.0)
+        // Consistent records at 15.0 cents — latest equals EWMA, within stddev
+        let records = makeComparisonRecords(count: 10, centOffset: 15.0)
         let timeline = ProgressTimeline(comparisonRecords: records)
         let trend = timeline.trend(for: .unisonComparison)
         #expect(trend == .stable)
@@ -433,6 +428,74 @@ struct ProgressTimelineTests {
         let timeline = ProgressTimeline(comparisonRecords: records)
         let trend = timeline.trend(for: .unisonComparison)
         #expect(trend != nil)
+    }
+
+    @Test("declining trend from wrong comparison answer with high centOffset")
+    func decliningTrendFromWrongAnswers() async {
+        // Start with correct records at low centOffset
+        var records: [ComparisonRecord] = []
+        for i in 0..<10 {
+            records.append(makeComparisonRecord(centOffset: 8.0, hoursAgo: Double(12 - i)))
+        }
+        let timeline = ProgressTimeline(comparisonRecords: records)
+
+        // Add a wrong comparison answer (high centOffset) incrementally
+        let referenceNote = MIDINote(60)
+        let targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(50.0))
+        let comparison = Comparison(referenceNote: referenceNote, targetNote: targetNote)
+        let completed = CompletedComparison(
+            comparison: comparison,
+            userAnsweredHigher: false,
+            tuningSystem: .equalTemperament
+        )
+        timeline.comparisonCompleted(completed)
+
+        let trend = timeline.trend(for: .unisonComparison)
+        #expect(trend == .declining)
+    }
+
+    @Test("value exactly at runningMean + stddev is stable, not declining")
+    func boundaryAtMeanPlusStddev() async {
+        // Records: 10 values of 10.0, then 1 value of 20.0
+        // Running mean ≈ 10.91, stddev ≈ 2.87, mean+stddev ≈ 13.78
+        // Add a value exactly at mean + stddev boundary via bulk rebuild
+        // Use values that produce a known mean+stddev, then set latest = mean+stddev
+        // Simpler: 5 records at 10, 5 at 20 → mean=15, stddev=5, mean+stddev=20
+        // Latest at 20.0 → value > 15+5 is 20 > 20 = false → stable (if >= ewma)
+        var records: [ComparisonRecord] = []
+        for i in 0..<5 {
+            records.append(makeComparisonRecord(centOffset: 10.0, hoursAgo: Double(12 - i)))
+        }
+        for i in 0..<5 {
+            records.append(makeComparisonRecord(centOffset: 20.0, hoursAgo: Double(7 - i)))
+        }
+        let timeline = ProgressTimeline(comparisonRecords: records)
+        let trend = timeline.trend(for: .unisonComparison)
+        // value(20) == runningMean(15) + stddev(5) → NOT greater, so not declining
+        #expect(trend != .declining)
+    }
+
+    @Test("value exactly at EWMA is stable, not improving")
+    func boundaryAtEwma() async {
+        // All identical values → ewma == mean == latest, stddev == 0
+        // value >= ewma → stable
+        let records = makeComparisonRecords(count: 5, centOffset: 12.0)
+        let timeline = ProgressTimeline(comparisonRecords: records)
+        let trend = timeline.trend(for: .unisonComparison)
+        #expect(trend == .stable)
+    }
+
+    @Test("pitch matching declining when latest error is outside stddev")
+    func pitchMatchingDecliningWhenOutsideStddev() async {
+        // Low-error records followed by one high-error record
+        var records: [PitchMatchingRecord] = []
+        for i in 0..<10 {
+            records.append(makePitchMatchingRecord(userCentError: 3.0, hoursAgo: Double(12 - i)))
+        }
+        records.append(makePitchMatchingRecord(userCentError: 40.0, hoursAgo: 0.5))
+        let timeline = ProgressTimeline(pitchMatchingRecords: records)
+        let trend = timeline.trend(for: .unisonMatching)
+        #expect(trend == .declining)
     }
 
     // MARK: - Sub-Bucket Tests

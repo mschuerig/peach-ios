@@ -37,10 +37,10 @@ enum TrainingMode: CaseIterable {
     ) -> [(timestamp: Date, value: Double)] {
         switch self {
         case .unisonComparison:
-            comparisonRecords.filter { $0.isCorrect && $0.interval == 0 }
+            comparisonRecords.filter { $0.interval == 0 }
                 .map { (timestamp: $0.timestamp, value: abs($0.centOffset)) }
         case .intervalComparison:
-            comparisonRecords.filter { $0.isCorrect && $0.interval != 0 }
+            comparisonRecords.filter { $0.interval != 0 }
                 .map { (timestamp: $0.timestamp, value: abs($0.centOffset)) }
         case .unisonMatching:
             pitchMatchingRecords.filter { $0.interval == 0 }
@@ -53,7 +53,6 @@ enum TrainingMode: CaseIterable {
 
     /// Returns a metric if this completed comparison belongs to this mode, nil otherwise.
     func metric(from completed: CompletedComparison) -> (timestamp: Date, value: Double)? {
-        guard completed.isCorrect else { return nil }
         let interval = (try? Interval.between(completed.comparison.referenceNote, completed.comparison.targetNote.note))?.rawValue ?? 0
         let isUnison = interval == 0
         switch self {
@@ -212,10 +211,21 @@ final class ProgressTimeline {
         var recordCount: Int = 0
         var computedTrend: Trend?
         var allMetrics: [MetricPoint] = []
+        var runningMean: Double = 0
+        var runningM2: Double = 0
+
+        var runningStddev: Double? {
+            recordCount >= 2 ? sqrt(runningM2 / Double(recordCount)) : nil
+        }
 
         mutating func addPoint(_ point: MetricPoint, config: TrainingModeConfig) {
             recordCount += 1
             allMetrics.append(point)
+
+            let delta = point.value - runningMean
+            runningMean += delta / Double(recordCount)
+            let delta2 = point.value - runningMean
+            runningM2 += delta * delta2
 
             let sessionGapSeconds = config.sessionGap.timeIntervalSeconds
 
@@ -237,7 +247,7 @@ final class ProgressTimeline {
             }
 
             recomputeEWMA(config: config)
-            recomputeTrend(config: config)
+            recomputeTrend()
         }
 
         private mutating func updateBucket(at index: Int, with value: Double) {
@@ -270,32 +280,22 @@ final class ProgressTimeline {
             ewma = currentEWMA
         }
 
-        mutating func recomputeTrend(config: TrainingModeConfig) {
-            guard recordCount >= 2 else {
+        mutating func recomputeTrend() {
+            guard recordCount >= 2,
+                  let stddev = runningStddev,
+                  let ewma = ewma,
+                  let latest = allMetrics.last else {
                 computedTrend = nil
                 return
             }
 
-            let allValues = allMetrics.map(\.value)
-            let midpoint = allValues.count / 2
-            let earlierHalf = allValues[..<midpoint]
-            let laterHalf = allValues[midpoint...]
-
-            let earlierMean = earlierHalf.reduce(0.0, +) / Double(earlierHalf.count)
-            let laterMean = laterHalf.reduce(0.0, +) / Double(laterHalf.count)
-
-            guard earlierMean > 0 else {
-                computedTrend = .stable
-                return
-            }
-
-            let changeRatio = (laterMean - earlierMean) / earlierMean
-            if changeRatio < -config.trendChangeThreshold {
-                computedTrend = .improving
-            } else if changeRatio > config.trendChangeThreshold {
+            let value = latest.value
+            if value > runningMean + stddev {
                 computedTrend = .declining
-            } else {
+            } else if value >= ewma {
                 computedTrend = .stable
+            } else {
+                computedTrend = .improving
             }
         }
     }
@@ -305,11 +305,17 @@ final class ProgressTimeline {
         guard !metrics.isEmpty else { return state }
 
         let sorted = metrics.sorted { $0.timestamp < $1.timestamp }
-        state.recordCount = sorted.count
         state.allMetrics = sorted
+        for metric in sorted {
+            state.recordCount += 1
+            let delta = metric.value - state.runningMean
+            state.runningMean += delta / Double(state.recordCount)
+            let delta2 = metric.value - state.runningMean
+            state.runningM2 += delta * delta2
+        }
         state.buckets = assignBuckets(sorted, now: now, sessionGap: config.sessionGap.timeIntervalSeconds)
         state.recomputeEWMA(config: config)
-        state.recomputeTrend(config: config)
+        state.recomputeTrend()
 
         return state
     }

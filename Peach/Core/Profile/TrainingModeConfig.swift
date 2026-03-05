@@ -18,10 +18,6 @@ struct TrainingModeConfig {
     /// Half-life for exponentially weighted moving average smoothing.
     let ewmaHalflife: Duration
 
-    /// Fractional change required to classify trend as improving or declining.
-    /// A value of 0.05 means 5% change between the earlier and later halves.
-    let trendChangeThreshold: Double
-
     /// Maximum gap between consecutive records that still counts as the same training session.
     let sessionGap: Duration
 }
@@ -32,7 +28,6 @@ extension TrainingModeConfig {
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(8.0),
         ewmaHalflife: .seconds(7 * 86400),
-        trendChangeThreshold: 0.05,
         sessionGap: .seconds(1800)
     )
 
@@ -41,7 +36,6 @@ extension TrainingModeConfig {
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(12.0),
         ewmaHalflife: .seconds(7 * 86400),
-        trendChangeThreshold: 0.05,
         sessionGap: .seconds(1800)
     )
 
@@ -50,7 +44,6 @@ extension TrainingModeConfig {
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(5.0),
         ewmaHalflife: .seconds(7 * 86400),
-        trendChangeThreshold: 0.05,
         sessionGap: .seconds(1800)
     )
 
@@ -59,7 +52,6 @@ extension TrainingModeConfig {
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(8.0),
         ewmaHalflife: .seconds(7 * 86400),
-        trendChangeThreshold: 0.05,
         sessionGap: .seconds(1800)
     )
 }
