@@ -32,10 +32,10 @@ struct TrainingDataImportActionTests {
         profile.reset()
         profile.resetMatching()
         for record in allComparisons {
-            profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
+            profile.update(note: MIDINote(record.referenceNote), centOffset: Cents(abs(record.centOffset)), isCorrect: record.isCorrect)
         }
         for record in allPitchMatchings {
-            profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
+            profile.updateMatching(note: MIDINote(record.referenceNote), centError: Cents(record.userCentError))
         }
         progressTimeline.rebuild(pitchComparisonRecords: allComparisons, pitchMatchingRecords: allPitchMatchings)
         return summary

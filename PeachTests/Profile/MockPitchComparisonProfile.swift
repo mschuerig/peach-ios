@@ -3,15 +3,15 @@
 final class MockPitchComparisonProfile: PitchComparisonProfile {
     var updateCallCount = 0
     var lastNote: MIDINote?
-    var lastCentOffset: Double?
+    var lastCentOffset: Cents?
     var lastIsCorrect: Bool?
-    var overallMean: Double? = nil
-    var overallStdDev: Double? = nil
+    var overallMean: Cents? = nil
+    var overallStdDev: Cents? = nil
     var resetCallCount = 0
 
     private var noteStats: [Int: PerceptualNote] = [:]
 
-    func update(note: MIDINote, centOffset: Double, isCorrect: Bool) {
+    func update(note: MIDINote, centOffset: Cents, isCorrect: Bool) {
         updateCallCount += 1
         lastNote = note
         lastCentOffset = centOffset
@@ -26,11 +26,11 @@ final class MockPitchComparisonProfile: PitchComparisonProfile {
         noteStats[note.rawValue] ?? PerceptualNote()
     }
 
-    func averageThreshold(noteRange: NoteRange) -> Int? {
+    func averageThreshold(noteRange: NoteRange) -> Cents? {
         nil
     }
 
-    func setDifficulty(note: MIDINote, difficulty: Double) {}
+    func setDifficulty(note: MIDINote, difficulty: Cents) {}
 
     func reset() {
         resetCallCount += 1

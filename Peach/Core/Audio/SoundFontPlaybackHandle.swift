@@ -52,9 +52,9 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         let baseMidi = Double(midiNote)
         let centDifference = (targetMidi - baseMidi) * 100.0
 
-        guard abs(centDifference) <= 200.0 else {
+        guard abs(centDifference) <= SoundFontNotePlayer.pitchBendRangeCents else {
             throw AudioError.invalidFrequency(
-                "Target frequency \(freq) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote), exceeding ±200 cent pitch bend range"
+                "Target frequency \(freq) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote), exceeding ±\(Int(SoundFontNotePlayer.pitchBendRangeCents)) cent pitch bend range"
             )
         }
 

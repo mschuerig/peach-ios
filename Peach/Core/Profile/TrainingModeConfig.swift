@@ -23,35 +23,41 @@ struct TrainingModeConfig {
 }
 
 extension TrainingModeConfig {
+    /// EWMA half-life shared across all training modes (7 days).
+    private static let defaultEWMAHalflife: Duration = .seconds(7 * 86400)
+
+    /// Maximum gap between consecutive records within one session (30 minutes).
+    private static let defaultSessionGap: Duration = .seconds(1800)
+
     static let unisonPitchComparison = TrainingModeConfig(
         displayName: String(localized: "Hear & Compare – Single Notes"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(8.0),
-        ewmaHalflife: .seconds(7 * 86400),
-        sessionGap: .seconds(1800)
+        ewmaHalflife: defaultEWMAHalflife,
+        sessionGap: defaultSessionGap
     )
 
     static let intervalPitchComparison = TrainingModeConfig(
         displayName: String(localized: "Hear & Compare – Intervals"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(12.0),
-        ewmaHalflife: .seconds(7 * 86400),
-        sessionGap: .seconds(1800)
+        ewmaHalflife: defaultEWMAHalflife,
+        sessionGap: defaultSessionGap
     )
 
     static let unisonMatching = TrainingModeConfig(
         displayName: String(localized: "Tune & Match – Single Notes"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(5.0),
-        ewmaHalflife: .seconds(7 * 86400),
-        sessionGap: .seconds(1800)
+        ewmaHalflife: defaultEWMAHalflife,
+        sessionGap: defaultSessionGap
     )
 
     static let intervalMatching = TrainingModeConfig(
         displayName: String(localized: "Tune & Match – Intervals"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: Cents(8.0),
-        ewmaHalflife: .seconds(7 * 86400),
-        sessionGap: .seconds(1800)
+        ewmaHalflife: defaultEWMAHalflife,
+        sessionGap: defaultSessionGap
     )
 }

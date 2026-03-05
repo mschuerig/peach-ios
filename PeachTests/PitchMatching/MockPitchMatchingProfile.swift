@@ -3,13 +3,13 @@
 final class MockPitchMatchingProfile: PitchMatchingProfile {
     var updateMatchingCallCount = 0
     var lastNote: Int?
-    var lastCentError: Double?
-    var matchingMean: Double? = nil
-    var matchingStdDev: Double? = nil
+    var lastCentError: Cents?
+    var matchingMean: Cents? = nil
+    var matchingStdDev: Cents? = nil
     var matchingSampleCount: Int = 0
     var resetMatchingCallCount = 0
 
-    func updateMatching(note: MIDINote, centError: Double) {
+    func updateMatching(note: MIDINote, centError: Cents) {
         updateMatchingCallCount += 1
         lastNote = note.rawValue
         lastCentError = centError

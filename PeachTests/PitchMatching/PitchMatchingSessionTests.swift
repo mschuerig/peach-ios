@@ -186,7 +186,7 @@ struct PitchMatchingSessionTests {
 
         let result = try #require(observer.lastResult)
         // Slider at 0 means "accept detuned pitch as-is" — error should equal initialCentOffset, not 0
-        #expect(abs(result.userCentError - challenge.initialCentOffset) < 0.01)
+        #expect(abs(result.userCentError.rawValue - challenge.initialCentOffset.rawValue) < 0.01)
         // Only reference note played — no tunable note started (would be immediately orphaned)
         #expect(notePlayer.playCallCount == 1)
     }
@@ -215,7 +215,7 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         let baseFreq = TuningSystem.equalTemperament.frequency(for: challenge.referenceNote, referencePitch: .concert440)
-        let expectedTunableFreq = baseFreq.rawValue * pow(2.0, challenge.initialCentOffset / 1200.0)
+        let expectedTunableFreq = baseFreq.rawValue * pow(2.0, challenge.initialCentOffset.rawValue / 1200.0)
 
         // The second play call (handle-returning) should be the tunable note
         #expect(notePlayer.playCallCount >= 2)
@@ -249,12 +249,12 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         // Slider value that cancels initialCentOffset → 0 cent error
-        let correctingValue = -challenge.initialCentOffset / 20.0
+        let correctingValue = -challenge.initialCentOffset.rawValue / 20.0
         session.commitPitch(correctingValue)
         try await waitForState(session, .showingFeedback)
 
         let result = try #require(observer.lastResult)
-        #expect(abs(result.userCentError) < 0.01)
+        #expect(abs(result.userCentError.rawValue) < 0.01)
     }
 
     @Test("commitPitch sharp produces positive cent error")
@@ -268,13 +268,13 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         // Slider value that produces exactly +10 cents: initialCentOffset + value * 20 = 10
-        let value = (10.0 - challenge.initialCentOffset) / 20.0
+        let value = (10.0 - challenge.initialCentOffset.rawValue) / 20.0
         session.commitPitch(value)
         try await waitForState(session, .showingFeedback)
 
         let result = try #require(observer.lastResult)
         #expect(result.userCentError > 0)
-        #expect(abs(result.userCentError - 10.0) < 0.1)
+        #expect(abs(result.userCentError.rawValue - 10.0) < 0.1)
     }
 
     @Test("commitPitch notifies observers")
@@ -355,13 +355,13 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         // Slider value that produces exactly -10 cents: initialCentOffset + value * 20 = -10
-        let value = (-10.0 - challenge.initialCentOffset) / 20.0
+        let value = (-10.0 - challenge.initialCentOffset.rawValue) / 20.0
         session.commitPitch(value)
         try await waitForState(session, .showingFeedback)
 
         let result = try #require(observer.lastResult)
         #expect(result.userCentError < 0)
-        #expect(abs(result.userCentError + 10.0) < 0.1)
+        #expect(abs(result.userCentError.rawValue + 10.0) < 0.1)
     }
 
     // MARK: - stop() Tests
@@ -481,7 +481,7 @@ struct PitchMatchingSessionTests {
         let adjustCountBefore = handle.adjustFrequencyCallCount
 
         // Slider value that cancels initialCentOffset → exact target frequency
-        let correctingValue = -challenge.initialCentOffset / 20.0
+        let correctingValue = -challenge.initialCentOffset.rawValue / 20.0
         session.adjustPitch(correctingValue)
         try await Task.sleep(for: .milliseconds(50))
 
@@ -506,7 +506,7 @@ struct PitchMatchingSessionTests {
         try await Task.sleep(for: .milliseconds(50))
 
         let targetFreq = TuningSystem.equalTemperament.frequency(for: challenge.targetNote, referencePitch: .concert440).rawValue
-        let totalCentOffset = challenge.initialCentOffset + 20.0
+        let totalCentOffset = challenge.initialCentOffset.rawValue + 20.0
         let expectedFreq = targetFreq * pow(2.0, totalCentOffset / 1200.0)
         #expect(handle.adjustFrequencyCallCount == adjustCountBefore + 1)
         #expect(abs(handle.lastAdjustedFrequency! - expectedFreq) < 0.01)
@@ -525,7 +525,7 @@ struct PitchMatchingSessionTests {
         let handle = try #require(notePlayer.lastHandle)
         let adjustCountBefore = handle.adjustFrequencyCallCount
         // Slider value that cancels initialCentOffset → exact target frequency
-        let correctingValue = -challenge.initialCentOffset / 20.0
+        let correctingValue = -challenge.initialCentOffset.rawValue / 20.0
         session.adjustPitch(correctingValue)
         try await Task.sleep(for: .milliseconds(50))
 
@@ -546,12 +546,12 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         // Slider value that cancels initialCentOffset → 0 cent error
-        let correctingValue = -challenge.initialCentOffset / 20.0
+        let correctingValue = -challenge.initialCentOffset.rawValue / 20.0
         session.commitPitch(correctingValue)
         try await waitForState(session, .showingFeedback)
 
         let result = try #require(observer.lastResult)
-        #expect(abs(result.userCentError) < 0.01)
+        #expect(abs(result.userCentError.rawValue) < 0.01)
     }
 
     @Test("commitPitch produces 10 cent sharp error at correct slider value")
@@ -565,13 +565,13 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         // Slider value that produces exactly +10 cents: initialCentOffset + value * 20 = 10
-        let value = (10.0 - challenge.initialCentOffset) / 20.0
+        let value = (10.0 - challenge.initialCentOffset.rawValue) / 20.0
         session.commitPitch(value)
         try await waitForState(session, .showingFeedback)
 
         let result = try #require(observer.lastResult)
         #expect(result.userCentError > 0)
-        #expect(abs(result.userCentError - 10.0) < 0.1)
+        #expect(abs(result.userCentError.rawValue - 10.0) < 0.1)
     }
 
     @Test("adjustPitch is no-op when idle")
@@ -714,7 +714,7 @@ struct PitchMatchingSessionTests {
         let expectedTargetFreq = TuningSystem.equalTemperament.frequency(
             for: challenge.targetNote, referencePitch: .concert440)
         let refFreq = try #require(session.referenceFrequency)
-        #expect(abs(refFreq - expectedTargetFreq.rawValue) < 0.01)
+        #expect(abs(refFreq.rawValue - expectedTargetFreq.rawValue) < 0.01)
     }
 
     @Test("tunable note is detuned from target note for intervals")
@@ -731,7 +731,7 @@ struct PitchMatchingSessionTests {
 
         // Tunable note should be detuned from TARGET (67), not reference (60)
         let expectedFreq = TuningSystem.equalTemperament.frequency(
-            for: DetunedMIDINote(note: challenge.targetNote, offset: Cents(challenge.initialCentOffset)),
+            for: DetunedMIDINote(note: challenge.targetNote, offset: challenge.initialCentOffset),
             referencePitch: .concert440)
 
         #expect(notePlayer.playCallCount >= 2)
@@ -750,12 +750,12 @@ struct PitchMatchingSessionTests {
 
         let challenge = try #require(session.currentChallenge)
         // Slider value that cancels initialCentOffset → 0 cent error
-        let correctingValue = -challenge.initialCentOffset / 20.0
+        let correctingValue = -challenge.initialCentOffset.rawValue / 20.0
         session.commitPitch(correctingValue)
         try await waitForState(session, .showingFeedback)
 
         let result = try #require(observer.lastResult)
-        #expect(abs(result.userCentError) < 0.01)
+        #expect(abs(result.userCentError.rawValue) < 0.01)
     }
 
     @Test("CompletedPitchMatching carries session tuningSystem")

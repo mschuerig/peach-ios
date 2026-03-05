@@ -35,7 +35,7 @@ struct PitchMatchingProfileTests {
         profile.updateMatching(note: 60, centError: -20.0) // abs = 20
         // stdDev of [10, 20] = sqrt(50) ≈ 7.071
         let stdDev = try #require(profile.matchingStdDev)
-        #expect(abs(stdDev - 7.0710678) < 0.001)
+        #expect(abs(stdDev.rawValue - 7.0710678) < 0.001)
     }
 
     @Test("single sample returns nil stdDev")

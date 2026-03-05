@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct PitchMatchingFeedbackIndicator: View {
-    let centError: Double?
+    let centError: Cents?
 
     enum FeedbackBand {
         case deadCenter
@@ -17,19 +17,20 @@ struct PitchMatchingFeedbackIndicator: View {
 
     var body: some View {
         if let centError {
-            let band = Self.band(centError: centError)
+            let error = centError.rawValue
+            let band = Self.band(centError: error)
             VStack(spacing: 4) {
-                Image(systemName: Self.arrowSymbolName(centError: centError))
+                Image(systemName: Self.arrowSymbolName(centError: error))
                     .font(.system(size: Self.iconSizeForBand(band)))
                     .foregroundStyle(Self.feedbackColor(band: band))
                     .accessibilityRemoveTraits(.isImage)
 
-                Text(Self.centOffsetText(centError: centError))
+                Text(Self.centOffsetText(centError: error))
                     .font(.title2)
                     .foregroundStyle(Self.feedbackColor(band: band))
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(Self.accessibilityLabel(centError: centError))
+            .accessibilityLabel(Self.accessibilityLabel(centError: error))
         }
     }
 

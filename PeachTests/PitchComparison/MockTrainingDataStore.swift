@@ -101,8 +101,8 @@ final class MockTrainingDataStore: PitchComparisonRecordStoring, PitchComparison
         let record = PitchMatchingRecord(
             referenceNote: result.referenceNote.rawValue,
             targetNote: result.targetNote.rawValue,
-            initialCentOffset: result.initialCentOffset,
-            userCentError: result.userCentError,
+            initialCentOffset: result.initialCentOffset.rawValue,
+            userCentError: result.userCentError.rawValue,
             interval: 0,
             tuningSystem: "equalTemperament",
             timestamp: result.timestamp

@@ -18,21 +18,22 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
     // MARK: - Initialization
 
     init() {
-        self.noteStats = Array(repeating: PerceptualNote(), count: 128)
+        self.noteStats = Array(repeating: PerceptualNote(), count: MIDINote.validRange.count)
         logger.info("PerceptualProfile initialized (cold start)")
     }
 
     // MARK: - Incremental Update
 
-    func update(note: MIDINote, centOffset: Double, isCorrect: Bool) {
+    func update(note: MIDINote, centOffset: Cents, isCorrect: Bool) {
         let index = note.rawValue
+        let offset = centOffset.rawValue
 
         var stats = noteStats[index]
 
         stats.sampleCount += 1
-        let delta = centOffset - stats.mean
+        let delta = offset - stats.mean
         stats.mean += delta / Double(stats.sampleCount)
-        let delta2 = centOffset - stats.mean
+        let delta2 = offset - stats.mean
         stats.m2 += delta * delta2
 
         let variance = stats.sampleCount < 2 ? 0.0 : stats.m2 / Double(stats.sampleCount - 1)
@@ -65,15 +66,15 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
 
     // MARK: - Summary Statistics
 
-    var overallMean: Double? {
+    var overallMean: Cents? {
         let trainedStats = noteStats.filter { $0.sampleCount > 0 }
         guard !trainedStats.isEmpty else { return nil }
 
         let sum = trainedStats.reduce(0.0) { $0 + $1.mean }
-        return sum / Double(trainedStats.count)
+        return Cents(sum / Double(trainedStats.count))
     }
 
-    var overallStdDev: Double? {
+    var overallStdDev: Cents? {
         let trainedStats = noteStats.filter { $0.sampleCount > 0 }
         guard trainedStats.count >= 2 else { return nil }
 
@@ -84,14 +85,14 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
             .map { pow($0 - mean, 2) }
             .reduce(0.0, +) / Double(means.count - 1)
 
-        return sqrt(variance)
+        return Cents(sqrt(variance))
     }
 
-    func averageThreshold(noteRange: NoteRange) -> Int? {
+    func averageThreshold(noteRange: NoteRange) -> Cents? {
         let trainedNotes = (noteRange.lowerBound.rawValue...noteRange.upperBound.rawValue).filter { statsForNote(MIDINote($0)).isTrained }
         guard !trainedNotes.isEmpty else { return nil }
         let avg = trainedNotes.map { statsForNote(MIDINote($0)).mean }.reduce(0.0, +) / Double(trainedNotes.count)
-        return Int(avg)
+        return Cents(avg)
     }
 
     // MARK: - Accessors
@@ -103,21 +104,21 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
     // MARK: - Reset
 
     func reset() {
-        noteStats = Array(repeating: PerceptualNote(), count: 128)
+        noteStats = Array(repeating: PerceptualNote(), count: MIDINote.validRange.count)
         logger.info("PerceptualProfile reset to cold start")
     }
 
     // MARK: - Regional Difficulty Management
 
-    func setDifficulty(note: MIDINote, difficulty: Double) {
-        noteStats[note.rawValue].currentDifficulty = difficulty
-        logger.debug("Set difficulty for note \(note.rawValue): \(difficulty) cents")
+    func setDifficulty(note: MIDINote, difficulty: Cents) {
+        noteStats[note.rawValue].currentDifficulty = difficulty.rawValue
+        logger.debug("Set difficulty for note \(note.rawValue): \(difficulty.rawValue) cents")
     }
 
     // MARK: - Matching Statistics (PitchMatchingProfile)
 
-    func updateMatching(note: MIDINote, centError: Double) {
-        let absError = abs(centError)
+    func updateMatching(note: MIDINote, centError: Cents) {
+        let absError = centError.magnitude
         matchingCount += 1
         let delta = absError - matchingMeanAbs
         matchingMeanAbs += delta / Double(matchingCount)
@@ -125,13 +126,13 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
         matchingM2 += delta * delta2
     }
 
-    var matchingMean: Double? {
-        matchingCount > 0 ? matchingMeanAbs : nil
+    var matchingMean: Cents? {
+        matchingCount > 0 ? Cents(matchingMeanAbs) : nil
     }
 
-    var matchingStdDev: Double? {
+    var matchingStdDev: Cents? {
         guard matchingCount >= 2 else { return nil }
-        return sqrt(matchingM2 / Double(matchingCount - 1))
+        return Cents(sqrt(matchingM2 / Double(matchingCount - 1)))
     }
 
     var matchingSampleCount: Int {
@@ -149,13 +150,17 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
 // MARK: - PerceptualNote
 
 struct PerceptualNote {
+    /// Default difficulty (in cents) assigned to untrained notes on cold start.
+    /// Represents the easiest possible comparison -- a full semitone difference.
+    static let coldStartDifficulty: Double = 100.0
+
     var mean: Double
     var stdDev: Double
     var m2: Double
     var sampleCount: Int
     var currentDifficulty: Double
 
-    init(mean: Double = 0.0, stdDev: Double = 0.0, m2: Double = 0.0, sampleCount: Int = 0, currentDifficulty: Double = 100.0) {
+    init(mean: Double = 0.0, stdDev: Double = 0.0, m2: Double = 0.0, sampleCount: Int = 0, currentDifficulty: Double = coldStartDifficulty) {
         self.mean = mean
         self.stdDev = stdDev
         self.m2 = m2
@@ -173,11 +178,10 @@ struct PerceptualNote {
 extension PerceptualProfile: PitchComparisonObserver {
     func pitchComparisonCompleted(_ completed: CompletedPitchComparison) {
         let pitchComparison = completed.pitchComparison
-        let centOffset = pitchComparison.targetNote.offset.magnitude
 
         update(
             note: pitchComparison.referenceNote,
-            centOffset: centOffset,
+            centOffset: Cents(pitchComparison.targetNote.offset.magnitude),
             isCorrect: completed.isCorrect
         )
     }

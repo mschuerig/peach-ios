@@ -21,10 +21,17 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - Constants
 
-    static let channel: UInt8 = 0
-    private static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
-    static let pitchBendCenter: UInt16 = 8192
-    static let validFrequencyRange = 20.0...20000.0
+    nonisolated static let channel: UInt8 = 0
+    private nonisolated static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
+    nonisolated static let pitchBendCenter: UInt16 = 8192
+    nonisolated static let validFrequencyRange = 20.0...20000.0
+
+    /// Pitch bend range in semitones, set via MIDI RPN in `sendPitchBendRange()`.
+    /// All pitch bend calculations derive their cent limits from this value.
+    nonisolated static let pitchBendRangeSemitones: Int = 2
+
+    /// Maximum pitch bend displacement in cents, derived from `pitchBendRangeSemitones`.
+    nonisolated static let pitchBendRangeCents: Double = Double(pitchBendRangeSemitones) * 100.0
     /// Duration to mute `sampler.volume` before stopping a note, allowing the audio render
     /// thread to propagate silence and avoid click/pop artifacts. Set to `.zero` to skip the
     /// fade-out entirely (notes stop immediately). 25ms covers 2+ render cycles at 44.1kHz/512.
@@ -177,10 +184,11 @@ final class SoundFontNotePlayer: NotePlayer {
     // MARK: - MIDI Helpers
 
     private func sendPitchBendRange() {
-        sampler.sendController(101, withValue: 0, onChannel: Self.channel)
-        sampler.sendController(100, withValue: 0, onChannel: Self.channel)
-        sampler.sendController(6, withValue: 2, onChannel: Self.channel)
-        sampler.sendController(38, withValue: 0, onChannel: Self.channel)
+        // MIDI RPN 0x0000 (Pitch Bend Sensitivity): set range to ±pitchBendRangeSemitones
+        sampler.sendController(101, withValue: 0, onChannel: Self.channel)   // RPN MSB
+        sampler.sendController(100, withValue: 0, onChannel: Self.channel)   // RPN LSB
+        sampler.sendController(6, withValue: UInt8(Self.pitchBendRangeSemitones), onChannel: Self.channel)  // Data Entry MSB (semitones)
+        sampler.sendController(38, withValue: 0, onChannel: Self.channel)    // Data Entry LSB (cents)
     }
 
     // MARK: - Static Helpers
@@ -196,7 +204,7 @@ final class SoundFontNotePlayer: NotePlayer {
     }
 
     nonisolated static func pitchBendValue(forCents cents: Cents) -> UInt16 {
-        let raw = Int(8192.0 + cents.rawValue * 8192.0 / 200.0)
+        let raw = Int(Double(pitchBendCenter) + cents.rawValue * Double(pitchBendCenter) / pitchBendRangeCents)
         let clamped = Swift.min(16383, Swift.max(0, raw))
         return UInt16(clamped)
     }

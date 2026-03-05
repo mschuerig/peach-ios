@@ -112,8 +112,8 @@ extension TrainingDataStore: PitchMatchingObserver {
         let record = PitchMatchingRecord(
             referenceNote: result.referenceNote.rawValue,
             targetNote: result.targetNote.rawValue,
-            initialCentOffset: result.initialCentOffset,
-            userCentError: result.userCentError,
+            initialCentOffset: result.initialCentOffset.rawValue,
+            userCentError: result.userCentError.rawValue,
             interval: interval,
             tuningSystem: result.tuningSystem.identifier,
             timestamp: result.timestamp

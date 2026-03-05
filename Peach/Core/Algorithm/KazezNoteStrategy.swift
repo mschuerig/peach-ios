@@ -1,7 +1,28 @@
 import Foundation
 import OSLog
 
+/// Adaptive pitch comparison selection using the Kazez difficulty adjustment formula.
+///
+/// After a correct answer the cent difference narrows; after an incorrect answer it widens.
+/// The adjustment is non-linear: `p * (1 +/- k * sqrt(p))`, where `k` is a coefficient
+/// that produces larger absolute changes at higher difficulties and gentler changes near
+/// threshold.
+///
+/// Reference:
+///   Kazez, D., Kazez, B., Zembar, M. J., & Andrews, D. (2001).
+///   A Computer Program for Testing (and Improving?) Pitch Perception.
+///   College Music Society National Conference.
 final class KazezNoteStrategy: NextPitchComparisonStrategy {
+
+    // MARK: - Algorithm Parameters
+
+    /// Coefficient for narrowing (making harder) after a correct answer.
+    /// Formula: `p * (1.0 - k * sqrt(p))` where k = 0.05.
+    private static let narrowingCoefficient: Double = 0.05
+
+    /// Coefficient for widening (making easier) after an incorrect answer.
+    /// Formula: `p * (1.0 + k * sqrt(p))` where k = 0.09.
+    private static let wideningCoefficient: Double = 0.09
 
     // MARK: - Properties
 
@@ -31,7 +52,7 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
                 ? kazezNarrow(p: p).clamped(to: difficultyRange)
                 : kazezWiden(p: p).clamped(to: difficultyRange)
         } else if let profileMean = profile.overallMean {
-            magnitude = profileMean.clamped(to: difficultyRange)
+            magnitude = profileMean.rawValue.clamped(to: difficultyRange)
         } else {
             magnitude = settings.maxCentDifference.rawValue
         }
@@ -42,9 +63,9 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
         let maxNote: MIDINote
         if interval.direction == .up {
             minNote = settings.noteRange.lowerBound
-            maxNote = MIDINote(min(settings.noteRange.upperBound.rawValue, 127 - interval.interval.semitones))
+            maxNote = MIDINote(min(settings.noteRange.upperBound.rawValue, MIDINote.validRange.upperBound - interval.interval.semitones))
         } else {
-            minNote = MIDINote(max(settings.noteRange.lowerBound.rawValue, interval.interval.semitones))
+            minNote = MIDINote(max(settings.noteRange.lowerBound.rawValue, MIDINote.validRange.lowerBound + interval.interval.semitones))
             maxNote = settings.noteRange.upperBound
         }
         let note = MIDINote.random(in: minNote...maxNote)
@@ -61,10 +82,10 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
     // MARK: - Kazez Formulas
 
     private func kazezNarrow(p: Double) -> Double {
-        p * (1.0 - 0.05 * p.squareRoot())
+        p * (1.0 - Self.narrowingCoefficient * p.squareRoot())
     }
 
     private func kazezWiden(p: Double) -> Double {
-        p * (1.0 + 0.09 * p.squareRoot())
+        p * (1.0 + Self.wideningCoefficient * p.squareRoot())
     }
 }

@@ -195,7 +195,7 @@ struct PitchComparisonSessionIntegrationTests {
 
         // Loading uses abs() on stored signed centOffset for unsigned threshold
         for record in records {
-            profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
+            profile.update(note: MIDINote(record.referenceNote), centOffset: Cents(abs(record.centOffset)), isCorrect: record.isCorrect)
         }
 
         let stats60 = profile.statsForNote(60)

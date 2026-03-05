@@ -27,7 +27,7 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
             case .majorSixth:   return 884.359
             case .minorSeventh: return 1017.596
             case .majorSeventh: return 1088.269
-            case .octave:       return 1200.0
+            case .octave:       return Cents.perOctave
             }
         }
     }
@@ -44,12 +44,12 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
         let remainder = ((distance % 12) + 12) % 12
         let octaves = (distance - remainder) / 12
         let interval = Interval(rawValue: remainder)!
-        return Double(octaves) * 1200.0 + centOffset(for: interval) + note.offset.rawValue
+        return Double(octaves) * Cents.perOctave + centOffset(for: interval) + note.offset.rawValue
     }
 
     func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency {
         let cents = totalCentOffset(for: note)
-        return Frequency(referencePitch.rawValue * pow(2.0, cents / 1200.0))
+        return Frequency(referencePitch.rawValue * pow(2.0, cents / Cents.perOctave))
     }
 
     func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency {

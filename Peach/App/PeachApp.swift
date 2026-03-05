@@ -52,10 +52,10 @@ struct PeachApp: App {
                     profile.reset()
                     profile.resetMatching()
                     for record in comparisons {
-                        profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
+                        profile.update(note: MIDINote(record.referenceNote), centOffset: Cents(abs(record.centOffset)), isCorrect: record.isCorrect)
                     }
                     for record in pitchMatchings {
-                        profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
+                        profile.updateMatching(note: MIDINote(record.referenceNote), centError: Cents(record.userCentError))
                     }
                     progressTimeline.rebuild(pitchComparisonRecords: comparisons, pitchMatchingRecords: pitchMatchings)
                 }
@@ -134,12 +134,12 @@ struct PeachApp: App {
         for record in pitchComparisonRecords {
             profile.update(
                 note: MIDINote(record.referenceNote),
-                centOffset: abs(record.centOffset),
+                centOffset: Cents(abs(record.centOffset)),
                 isCorrect: record.isCorrect
             )
         }
         for record in pitchMatchingRecords {
-            profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
+            profile.updateMatching(note: MIDINote(record.referenceNote), centError: Cents(record.userCentError))
         }
         let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
         logger.info("Profile loaded from \(pitchComparisonRecords.count) comparison + \(pitchMatchingRecords.count) matching records in \(elapsed, format: .fixed(precision: 1))ms")

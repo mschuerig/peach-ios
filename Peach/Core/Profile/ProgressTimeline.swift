@@ -71,9 +71,9 @@ enum TrainingMode: CaseIterable {
         let isUnison = interval == 0
         switch self {
         case .unisonMatching where isUnison:
-            return (timestamp: result.timestamp, value: abs(result.userCentError))
+            return (timestamp: result.timestamp, value: result.userCentError.magnitude)
         case .intervalMatching where !isUnison:
-            return (timestamp: result.timestamp, value: abs(result.userCentError))
+            return (timestamp: result.timestamp, value: result.userCentError.magnitude)
         default:
             return nil
         }
@@ -122,6 +122,20 @@ struct TimeBucket {
 /// `TrainingModeConfig` controlling smoothing, thresholds, and bucketing.
 @Observable
 final class ProgressTimeline {
+
+    // MARK: - Bucket Age Thresholds
+
+    /// Records younger than this are bucketed per training session.
+    private static let recentThreshold: TimeInterval = 24 * 3600
+
+    /// Records younger than this (but older than recentThreshold) are bucketed per day.
+    private static let weekThreshold: TimeInterval = 7 * 86400
+
+    /// Records younger than this (but older than weekThreshold) are bucketed per week.
+    /// Older records are bucketed per month.
+    private static let monthThreshold: TimeInterval = 30 * 86400
+
+    private static let secondsPerDay: TimeInterval = 86400
 
     private var modeData: [TrainingMode: ModeState] = [:]
 
@@ -330,7 +344,7 @@ final class ProgressTimeline {
             let age = now.timeIntervalSince(metric.timestamp)
             let bucketInfo: (key: Date, end: Date, size: BucketSize)
 
-            if age < 24 * 3600 {
+            if age < Self.recentThreshold {
                 if let lastGroup = groups.last,
                    lastGroup.size == .session,
                    metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGap {
@@ -339,11 +353,11 @@ final class ProgressTimeline {
                     continue
                 }
                 bucketInfo = (key: metric.timestamp, end: metric.timestamp, size: .session)
-            } else if age < 7 * 86400 {
+            } else if age < Self.weekThreshold {
                 let dayStart = calendar.startOfDay(for: metric.timestamp)
-                let dayEnd = dayStart.addingTimeInterval(86400)
+                let dayEnd = dayStart.addingTimeInterval(Self.secondsPerDay)
                 bucketInfo = (key: dayStart, end: dayEnd, size: .day)
-            } else if age < 30 * 86400 {
+            } else if age < Self.monthThreshold {
                 if let weekInterval = calendar.dateInterval(of: .weekOfYear, for: metric.timestamp) {
                     bucketInfo = (key: weekInterval.start, end: weekInterval.end, size: .week)
                 } else {
@@ -410,7 +424,7 @@ final class ProgressTimeline {
                 }
             case .day:
                 let dayStart = calendar.startOfDay(for: metric.timestamp)
-                groupInfo = (key: dayStart, end: dayStart.addingTimeInterval(86400))
+                groupInfo = (key: dayStart, end: dayStart.addingTimeInterval(Self.secondsPerDay))
             case .session:
                 if let lastGroup = groups.last,
                    metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGap {

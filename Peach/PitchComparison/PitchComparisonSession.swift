@@ -21,7 +21,7 @@ final class PitchComparisonSession: TrainingSession {
     private(set) var state: PitchComparisonSessionState = .idle
     private(set) var showFeedback: Bool = false
     private(set) var isLastAnswerCorrect: Bool? = nil
-    private(set) var sessionBestCentDifference: Double? = nil
+    private(set) var sessionBestCentDifference: Cents? = nil
     private(set) var currentInterval: DirectedInterval? = nil
 
     // MARK: - Dependencies
@@ -54,9 +54,9 @@ final class PitchComparisonSession: TrainingSession {
 
     private let maxLoudnessOffsetDB: Float = 5.0
 
-    private let velocity: MIDIVelocity = 63
+    private let velocity: MIDIVelocity = TrainingConstants.velocity
 
-    private let feedbackDuration: TimeInterval = 0.4
+    private let feedbackDuration: Duration = TrainingConstants.feedbackDuration
 
     // MARK: - Training State
 
@@ -100,12 +100,12 @@ final class PitchComparisonSession: TrainingSession {
         return current.interval != .prime
     }
 
-    var currentDifficulty: Double? {
-        currentPitchComparison?.targetNote.offset.magnitude
+    var currentDifficulty: Cents? {
+        currentPitchComparison.map { Cents($0.targetNote.offset.magnitude) }
     }
 
-    var lastCompletedCentDifference: Double? {
-        lastCompletedPitchComparison?.pitchComparison.targetNote.offset.magnitude
+    var lastCompletedCentDifference: Cents? {
+        lastCompletedPitchComparison.map { Cents($0.pitchComparison.targetNote.offset.magnitude) }
     }
 
     func start(intervals: Set<DirectedInterval>) {
@@ -292,7 +292,7 @@ final class PitchComparisonSession: TrainingSession {
 
     private func trackSessionBest(_ completed: CompletedPitchComparison) {
         guard completed.isCorrect else { return }
-        let diff = completed.pitchComparison.targetNote.offset.magnitude
+        let diff = Cents(completed.pitchComparison.targetNote.offset.magnitude)
         if let best = sessionBestCentDifference {
             if diff < best { sessionBestCentDifference = diff }
         } else {
@@ -305,10 +305,10 @@ final class PitchComparisonSession: TrainingSession {
         showFeedback = true
 
         state = .showingFeedback
-        logger.info("Entering feedback state (duration: \(self.feedbackDuration)s)")
+        logger.info("Entering feedback state")
 
         feedbackTask = Task {
-            try? await Task.sleep(for: .milliseconds(Int(feedbackDuration * 1000)))
+            try? await Task.sleep(for: feedbackDuration)
             if state == .showingFeedback && !Task.isCancelled {
                 showFeedback = false
                 logger.info("Feedback complete, starting next comparison")

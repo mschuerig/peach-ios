@@ -164,7 +164,7 @@ struct PerceptualProfileTests {
         // Train ALL notes to avoid untrained notes being in weak spots
         for note in 0..<128 {
             let threshold: Double = (note == 60) ? 80.0 : (note == 62) ? 10.0 : 30.0
-            profile.update(note: MIDINote(note), centOffset: threshold, isCorrect: true)
+            profile.update(note: MIDINote(note), centOffset: Cents(threshold), isCorrect: true)
         }
 
         let weakSpots = profile.weakSpots(count: 5)
@@ -278,7 +278,7 @@ struct PerceptualProfileTests {
         #expect(profile.matchingSampleCount == 1)
         // Matching mean is abs(centError), verifying the actual value was recorded
         let mean = try #require(profile.matchingMean)
-        #expect(abs(mean - 12.3) < 0.01)
+        #expect(abs(mean.rawValue - 12.3) < 0.01)
     }
 
     // MARK: - Task 6 Tests: Standard Deviation Calculation

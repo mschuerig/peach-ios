@@ -5,14 +5,14 @@ import SwiftUI
 /// Shows "Latest: X.X ¢ <trend arrow>" and "Best: X.X ¢".
 /// Used by both ComparisonScreen and PitchMatchingScreen.
 struct TrainingStatsView: View {
-    let latestValue: Double?
-    let sessionBest: Double?
+    let latestValue: Cents?
+    let sessionBest: Cents?
     let trend: Trend?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
-                Text("Latest: \(Self.formattedCents(latestValue ?? 0)) ¢")
+                Text("Latest: \(Self.formattedCents(latestValue?.rawValue ?? 0)) ¢")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 if let trend {
@@ -24,14 +24,14 @@ struct TrainingStatsView: View {
             }
             .opacity(latestValue != nil ? 1 : 0)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(latestValue.map { Self.latestAccessibilityLabel($0, trend: trend) } ?? "")
+            .accessibilityLabel(latestValue.map { Self.latestAccessibilityLabel($0.rawValue, trend: trend) } ?? "")
             .accessibilityHidden(latestValue == nil)
 
-            Text("Best: \(Self.formattedCents(sessionBest ?? 0)) ¢")
+            Text("Best: \(Self.formattedCents(sessionBest?.rawValue ?? 0)) ¢")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .opacity(sessionBest != nil ? 1 : 0)
-                .accessibilityLabel(sessionBest.map { Self.bestAccessibilityLabel($0) } ?? "")
+                .accessibilityLabel(sessionBest.map { Self.bestAccessibilityLabel($0.rawValue) } ?? "")
                 .accessibilityHidden(sessionBest == nil)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

@@ -38,7 +38,7 @@ struct PitchMatchingScreen: View {
     var body: some View {
         VStack(spacing: 8) {
             TrainingStatsView(
-                latestValue: pitchMatchingSession.lastResult.map { abs($0.userCentError) },
+                latestValue: pitchMatchingSession.lastResult.map { Cents($0.userCentError.magnitude) },
                 sessionBest: pitchMatchingSession.sessionBestCentError,
                 trend: progressTimeline.trend(for: trainingMode)
             )

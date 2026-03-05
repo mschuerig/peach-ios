@@ -13,7 +13,8 @@ struct ProgressTimelineTests {
         centOffset: Double,
         isCorrect: Bool = true,
         interval: Int = 0,
-        hoursAgo: Double = 1
+        hoursAgo: Double = 1,
+        date: Date? = nil
     ) -> PitchComparisonRecord {
         PitchComparisonRecord(
             referenceNote: 60,
@@ -22,7 +23,7 @@ struct ProgressTimelineTests {
             isCorrect: isCorrect,
             interval: interval,
             tuningSystem: "equalTemperament",
-            timestamp: now.addingTimeInterval(-hoursAgo * 3600)
+            timestamp: date ?? now.addingTimeInterval(-hoursAgo * 3600)
         )
     }
 
@@ -149,11 +150,17 @@ struct ProgressTimelineTests {
 
     @Test("records between 1-7 days old are grouped by day")
     func dayBuckets() async {
-        // Two records on the same day (2 days ago), one on a different day (3 days ago)
+        // Use calendar-day-aligned offsets to avoid midnight boundary flakiness.
+        // Place records at noon 2 days ago (×2, same day) and noon 3 days ago (different day).
+        let calendar = Calendar.current
+        let now = Date()
+        let noon2DaysAgo = calendar.startOfDay(for: now.addingTimeInterval(-2 * 86400)).addingTimeInterval(12 * 3600)
+        let noon3DaysAgo = calendar.startOfDay(for: now.addingTimeInterval(-3 * 86400)).addingTimeInterval(12 * 3600)
+
         let records = [
-            makePitchComparisonRecord(centOffset: 10.0, hoursAgo: 72),  // 3 days ago
-            makePitchComparisonRecord(centOffset: 12.0, hoursAgo: 48),  // 2 days ago
-            makePitchComparisonRecord(centOffset: 14.0, hoursAgo: 47),  // 2 days ago (same day)
+            makePitchComparisonRecord(centOffset: 10.0, date: noon3DaysAgo),
+            makePitchComparisonRecord(centOffset: 12.0, date: noon2DaysAgo),
+            makePitchComparisonRecord(centOffset: 14.0, date: noon2DaysAgo.addingTimeInterval(3600)),  // same day, 1h later
         ]
         let timeline = ProgressTimeline(pitchComparisonRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchComparison)

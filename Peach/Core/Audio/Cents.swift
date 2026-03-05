@@ -6,6 +6,9 @@ import Foundation
 /// `DetunedMIDINote` (microtonal offset), `Comparison` (cent difference
 /// between notes), and `TrainingSettings` (difficulty bounds).
 struct Cents: Hashable, Comparable, Sendable {
+    /// The number of cents in one octave (1200 = 12 semitones x 100 cents).
+    static let perOctave: Double = 1200.0
+
     let rawValue: Double
 
     var magnitude: Double {

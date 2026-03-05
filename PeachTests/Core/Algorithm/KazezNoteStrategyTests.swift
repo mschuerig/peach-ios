@@ -217,7 +217,7 @@ struct KazezNoteStrategyTests {
 
         // overallMean should be used, not maxCentDifference
         let expectedMean = try #require(profile.overallMean)
-        #expect(comparison.targetNote.offset.magnitude == expectedMean)
+        #expect(comparison.targetNote.offset.magnitude == expectedMean.rawValue)
         #expect(comparison.targetNote.offset.magnitude != 100.0)
     }
 

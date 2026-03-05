@@ -22,7 +22,7 @@ final class PitchMatchingSession: TrainingSession {
     private(set) var state: PitchMatchingSessionState = .idle
     private(set) var currentChallenge: PitchMatchingChallenge?
     private(set) var lastResult: CompletedPitchMatching?
-    private(set) var sessionBestCentError: Double?
+    private(set) var sessionBestCentError: Cents?
 
     // MARK: - Dependencies
 
@@ -45,16 +45,19 @@ final class PitchMatchingSession: TrainingSession {
     // MARK: - Internal State
 
     private var currentHandle: PlaybackHandle?
-    private(set) var referenceFrequency: Double?
+    private(set) var referenceFrequency: Frequency?
     private var pendingTunableFrequency: Frequency?
     private var sliderTouchContinuation: CheckedContinuation<Void, Never>?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
 
+    /// Maximum starting offset for pitch matching challenges.
+    /// The tunable note begins at a random offset within this range.
     private static let initialCentOffsetRange: ClosedRange<Double> = -20.0...20.0
+    private static var maxInitialCentOffset: Cents { Cents(initialCentOffsetRange.upperBound) }
 
-    private let velocity: MIDIVelocity = 63
-    private let feedbackDuration: TimeInterval = 0.4
+    private let velocity: MIDIVelocity = TrainingConstants.velocity
+    private let feedbackDuration: Duration = TrainingConstants.feedbackDuration
 
     // MARK: - Initialization
 
@@ -127,8 +130,8 @@ final class PitchMatchingSession: TrainingSession {
 
     private func sliderFrequency(for value: Double) -> Double? {
         guard let referenceFrequency, let challenge = currentChallenge else { return nil }
-        let centOffset = challenge.initialCentOffset + value * Self.initialCentOffsetRange.upperBound
-        return referenceFrequency * pow(2.0, centOffset / 1200.0)
+        let centOffset = challenge.initialCentOffset.rawValue + value * Self.initialCentOffsetRange.upperBound
+        return referenceFrequency.rawValue * pow(2.0, centOffset / Cents.perOctave)
     }
 
     private func commitResult(userFrequency: Double) {
@@ -142,8 +145,8 @@ final class PitchMatchingSession: TrainingSession {
         }
 
         guard let referenceFrequency else { return }
-        let userCentError = 1200.0 * log2(userFrequency / referenceFrequency)
-        logger.info("Result: ref=\(challenge.referenceNote.rawValue), target=\(challenge.targetNote.rawValue), initialOffset=\(challenge.initialCentOffset)cents, userCentError=\(userCentError)cents")
+        let userCentError = Cents(Cents.perOctave * log2(userFrequency / referenceFrequency.rawValue))
+        logger.info("Result: ref=\(challenge.referenceNote.rawValue), target=\(challenge.targetNote.rawValue), initialOffset=\(challenge.initialCentOffset.rawValue)cents, userCentError=\(userCentError.rawValue)cents")
 
         let result = CompletedPitchMatching(
             referenceNote: challenge.referenceNote,
@@ -153,14 +156,14 @@ final class PitchMatchingSession: TrainingSession {
             tuningSystem: sessionTuningSystem
         )
         lastResult = result
-        trackSessionBest(abs(userCentError))
+        trackSessionBest(Cents(userCentError.magnitude))
 
         observers.forEach { $0.pitchMatchingCompleted(result) }
 
         state = .showingFeedback
 
         feedbackTask = Task {
-            try? await Task.sleep(for: .milliseconds(Int(feedbackDuration * 1000)))
+            try? await Task.sleep(for: feedbackDuration)
             guard !Task.isCancelled else { return }
             await playNextChallenge()
         }
@@ -217,18 +220,18 @@ final class PitchMatchingSession: TrainingSession {
         let maxNote: MIDINote
         if interval.direction == .up {
             minNote = settings.noteRange.lowerBound
-            maxNote = MIDINote(min(settings.noteRange.upperBound.rawValue, 127 - interval.interval.semitones))
+            maxNote = MIDINote(min(settings.noteRange.upperBound.rawValue, MIDINote.validRange.upperBound - interval.interval.semitones))
         } else {
-            minNote = MIDINote(max(settings.noteRange.lowerBound.rawValue, interval.interval.semitones))
+            minNote = MIDINote(max(settings.noteRange.lowerBound.rawValue, MIDINote.validRange.lowerBound + interval.interval.semitones))
             maxNote = settings.noteRange.upperBound
         }
         let note = MIDINote.random(in: minNote...maxNote)
         let targetNote = note.transposed(by: interval)
-        let offset = Double.random(in: Self.initialCentOffsetRange)
+        let offset = Cents(Double.random(in: Self.initialCentOffsetRange))
         return PitchMatchingChallenge(referenceNote: note, targetNote: targetNote, initialCentOffset: offset)
     }
 
-    private func trackSessionBest(_ absCentError: Double) {
+    private func trackSessionBest(_ absCentError: Cents) {
         if let best = sessionBestCentError {
             if absCentError < best { sessionBestCentError = absCentError }
         } else {
@@ -251,8 +254,8 @@ final class PitchMatchingSession: TrainingSession {
                 for: challenge.referenceNote, referencePitch: settings.referencePitch)
             let targetFreq = sessionTuningSystem.frequency(
                 for: challenge.targetNote, referencePitch: settings.referencePitch)
-            self.referenceFrequency = targetFreq.rawValue
-            logger.info("Challenge: ref=\(challenge.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(challenge.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(challenge.initialCentOffset)cents")
+            self.referenceFrequency = targetFreq
+            logger.info("Challenge: ref=\(challenge.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(challenge.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(challenge.initialCentOffset.rawValue)cents")
 
             state = .playingReference
             try await notePlayer.play(
@@ -265,7 +268,7 @@ final class PitchMatchingSession: TrainingSession {
             guard state != .idle && !Task.isCancelled else { return }
 
             let tunableFrequency = sessionTuningSystem.frequency(
-                for: DetunedMIDINote(note: challenge.targetNote, offset: Cents(challenge.initialCentOffset)),
+                for: DetunedMIDINote(note: challenge.targetNote, offset: challenge.initialCentOffset),
                 referencePitch: settings.referencePitch)
 
             self.pendingTunableFrequency = tunableFrequency
