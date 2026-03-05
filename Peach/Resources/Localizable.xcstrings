@@ -1,117 +1,47 @@
 {
-  "sourceLanguage" : "en",
-  "strings" : {
-    "**Hear & Compare – Single Notes** – Listen to two notes and decide which one is higher.\n\n**Hear & Compare – Intervals** – The same idea, but with musical intervals between notes.\n\n**Tune & Match – Single Notes** – Hear a note and slide to match its pitch.\n\n**Tune & Match – Intervals** – Match pitches using musical intervals." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Hören & Vergleichen – Einzeltöne** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Hören & Vergleichen – Intervalle** – Dasselbe Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Stimmen & Treffen – Einzeltöne** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Stimmen & Treffen – Intervalle** – Gleiche Tonhöhen mit musikalischen Intervallen an."
+  "sourceLanguage": "en",
+  "strings": {
+    "**Hear & Compare – Single Notes** – Listen to two notes and decide which one is higher.\n\n**Hear & Compare – Intervals** – The same idea, but with musical intervals between notes.\n\n**Tune & Match – Single Notes** – Hear a note and slide to match its pitch.\n\n**Tune & Match – Intervals** – Match pitches using musical intervals.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Hören & Vergleichen – Einzeltöne** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Hören & Vergleichen – Intervalle** – Dasselbe Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Stimmen & Treffen – Einzeltöne** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Stimmen & Treffen – Intervalle** – Gleiche Tonhöhen mit musikalischen Intervallen an."
           }
         }
       }
     },
-    "%.1f cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%.1f Cent"
+    "%.1f cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%.1f Cent"
           }
         }
       }
     },
-    "%lld cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Cent"
-          }
-        },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld cent"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld cents"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "%lld duplicates skipped" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Duplikate übersprungen"
-          }
-        }
-      }
-    },
-    "%lld errors" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Fehler"
-          }
-        }
-      }
-    },
-    "%lld of %lld correct" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%1$lld von %2$lld richtig"
-          }
-        }
-      }
-    },
-    "%lld pitch matching exercises completed" : {
-      "localizations" : {
-        "de" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Tonhöhenübung abgeschlossen"
-                }
-              },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld Tonhöhenübungen abgeschlossen"
-                }
-              }
-            }
+    "%lld cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Cent"
           }
         },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld pitch matching exercise completed"
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld cent"
                 }
               },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "%lld pitch matching exercises completed"
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld cents"
                 }
               }
             }
@@ -119,67 +49,69 @@
         }
       }
     },
-    "%lld records imported" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Datensätze importiert"
+    "%lld duplicates skipped": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Duplikate übersprungen"
           }
         }
       }
     },
-    "%lld records imported, %lld duplicates skipped, %lld errors." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "%lld Datensätze importiert, %lld Duplikate übersprungen, %lld Fehler."
+    "%lld errors": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Fehler"
           }
         }
       }
     },
-    "© 2026" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "© 2026"
+    "%lld of %lld correct": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld von %2$lld richtig"
           }
         }
       }
     },
-    "±%.1f cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "±%.1f Cent"
-          }
-        }
-      }
-    },
-    "±%lld cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "±%lld Cent"
+    "%lld pitch matching exercises completed": {
+      "localizations": {
+        "de": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Tonhöhenübung abgeschlossen"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld Tonhöhenübungen abgeschlossen"
+                }
+              }
+            }
           }
         },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "±%lld cent"
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld pitch matching exercise completed"
                 }
               },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "±%lld cents"
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "%lld pitch matching exercises completed"
                 }
               }
             }
@@ -187,564 +119,67 @@
         }
       }
     },
-    "Acknowledgments" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Danksagungen"
+    "%lld records imported": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Datensätze importiert"
           }
         }
       }
     },
-    "Audio" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Audio"
+    "%lld records imported, %lld duplicates skipped, %lld errors.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Datensätze importiert, %lld Duplikate übersprungen, %lld Fehler."
           }
         }
       }
     },
-    "average" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Durchschnitt"
+    "© 2026": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "© 2026"
           }
         }
       }
     },
-    "cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cent"
+    "±%.1f cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "±%.1f Cent"
           }
         }
       }
     },
-    "Cents" : {
-      "comment" : "\"Cents\" is a unit of currency in the Czech Republic.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cent"
-          }
-        }
-      }
-    },
-    "cents flat" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cent zu tief"
-          }
-        }
-      }
-    },
-    "cents sharp" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Cent zu hoch"
-          }
-        }
-      }
-    },
-    "Concert Pitch: %lld Hz" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kammerton: %lld Hz"
-          }
-        }
-      }
-    },
-    "Correct" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Richtig"
-          }
-        }
-      }
-    },
-    "Could not access the selected file." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Auf die ausgewählte Datei konnte nicht zugegriffen werden."
-          }
-        }
-      }
-    },
-    "Could not delete training records. Please try again." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsdaten konnten nicht gelöscht werden. Bitte versuche es erneut."
-          }
-        }
-      }
-    },
-    "Could not export training data. Please try again." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsdaten konnten nicht exportiert werden. Bitte versuche es erneut."
-          }
-        }
-      }
-    },
-    "Could not import the training data. Please try again." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Trainingsdaten konnten nicht importiert werden. Bitte versuche es erneut."
-          }
-        }
-      }
-    },
-    "Could not read the selected file." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die ausgewählte Datei konnte nicht gelesen werden."
-          }
-        }
-      }
-    },
-    "Current difficulty: %@ cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktuelle Schwierigkeit: %@ Cent"
-          }
-        }
-      }
-    },
-    "Current: %@ ¢" : {
-      "comment" : "A label displaying the user's current training difficulty and, optionally, their best-ever score.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aktuell: %@ ¢"
-          }
-        }
-      }
-    },
-    "Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Daten"
-          }
-        }
-      }
-    },
-    "Dead center" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Volltreffer"
-          }
-        }
-      }
-    },
-    "Developer: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Entwickler: %@"
-          }
-        }
-      }
-    },
-    "Difficulty" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schwierigkeit"
-          }
-        }
-      }
-    },
-    "Done" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Fertig"
-          }
-        }
-      }
-    },
-    "Down" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "abwärts"
-          }
-        }
-      }
-    },
-    "Duration: %.1fs" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dauer: %.1fs"
-          }
-        }
-      }
-    },
-    "Equal Temperament" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gleichstufige Stimmung"
-          }
-        }
-      }
-    },
-    "Export Failed" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Export fehlgeschlagen"
-          }
-        }
-      }
-    },
-    "Export Training Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsdaten exportieren"
-          }
-        }
-      }
-    },
-    "Getting Started" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Erste Schritte"
-          }
-        }
-      }
-    },
-    "Hear & Compare" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hören & Vergleichen"
-          }
-        }
-      }
-    },
-    "Hear & Compare – Intervals" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hören & Vergleichen – Intervalle"
-          }
-        }
-      }
-    },
-    "Hear & Compare – Single Notes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hören & Vergleichen – Einzeltöne"
-          }
-        }
-      }
-    },
-    "Hear a note and slide to match its pitch." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Höre einen Ton und gleiche die Tonhöhe mit dem Regler an."
-          }
-        }
-      }
-    },
-    "Higher" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Höher"
-          }
-        }
-      }
-    },
-    "Highest Note: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Höchster Ton: %@"
-          }
-        }
-      }
-    },
-    "Import Complete" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import abgeschlossen"
-          }
-        }
-      }
-    },
-    "Import Failed" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Import fehlgeschlagen"
-          }
-        }
-      }
-    },
-    "Import Training Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsdaten importieren"
-          }
-        }
-      }
-    },
-    "Incorrect" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Falsch"
-          }
-        }
-      }
-    },
-    "Info" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Info"
-          }
-        }
-      }
-    },
-    "Instrument" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Instrument"
-          }
-        }
-      }
-    },
-    "Intervals" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Intervalle"
-          }
-        }
-      }
-    },
-    "Just Intonation" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reine Stimmung"
-          }
-        }
-      }
-    },
-    "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle einfach einen Trainingsmodus auf dem Startbildschirm und leg los. Peach passt sich automatisch deinem Niveau an."
-          }
-        }
-      }
-    },
-    "License: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lizenz: %@"
-          }
-        }
-      }
-    },
-    "Listen to two notes and decide which one is higher." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Höre zwei Töne und entscheide, welcher höher ist."
-          }
-        }
-      }
-    },
-    "Lower" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiefer"
-          }
-        }
-      }
-    },
-    "Lowest Note: %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tiefster Ton: %@"
-          }
-        }
-      }
-    },
-    "Major Second" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Große Sekunde"
-          }
-        }
-      }
-    },
-    "Major Seventh" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Große Septime"
-          }
-        }
-      }
-    },
-    "Major Sixth" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Große Sexte"
-          }
-        }
-      }
-    },
-    "Major Third" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Große Terz"
-          }
-        }
-      }
-    },
-    "Match pitches using musical intervals." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Gleiche Tonhöhen mit musikalischen Intervallen an."
-          }
-        }
-      }
-    },
-    "Max" : {
-      "comment" : "Slider maximum label indicating full loudness variation in Settings.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Max"
-          }
-        }
-      }
-    },
-    "Mean" : {
-      "comment" : "Label for the mean value in the summary statistics view.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mittelwert"
-          }
-        }
-      }
-    },
-    "Mean detection threshold: %lld cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mittlere Erkennungsschwelle: %lld Cent"
+    "±%lld cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "±%lld Cent"
           }
         },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Mean detection threshold: %lld cent"
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "±%lld cent"
                 }
               },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Mean detection threshold: %lld cents"
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "±%lld cents"
                 }
               }
             }
@@ -752,400 +187,564 @@
         }
       }
     },
-    "Mean Error" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mittlerer Fehler"
+    "Acknowledgments": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Danksagungen"
           }
         }
       }
     },
-    "Mean matching error: %.1f cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mittlerer Abgleichfehler: %.1f Cent"
+    "Audio": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Audio"
           }
         }
       }
     },
-    "Merge with Existing Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Mit vorhandenen Daten zusammenführen"
+    "average": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Durchschnitt"
           }
         }
       }
     },
-    "Minor Second" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kleine Sekunde"
+    "cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cent"
           }
         }
       }
     },
-    "Minor Seventh" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kleine Septime"
+    "Cents": {
+      "comment": "\"Cents\" is a unit of currency in the Czech Republic.",
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cent"
           }
         }
       }
     },
-    "Minor Sixth" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kleine Sexte"
+    "cents flat": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cent zu tief"
           }
         }
       }
     },
-    "Minor Third" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Kleine Terz"
+    "cents sharp": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cent zu hoch"
           }
         }
       }
     },
-    "No training data yet" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Trainingsdaten"
+    "Concert Pitch: %lld Hz": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kammerton: %lld Hz"
           }
         }
       }
     },
-    "Note Range" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tonumfang"
+    "Correct": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Richtig"
           }
         }
       }
     },
-    "Octave" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Oktave"
+    "Could not access the selected file.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auf die ausgewählte Datei konnte nicht zugegriffen werden."
           }
         }
       }
     },
-    "Off" : {
-      "comment" : "Slider minimum label indicating no loudness variation in Settings.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aus"
+    "Could not delete training records. Please try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdaten konnten nicht gelöscht werden. Bitte versuche es erneut."
           }
         }
       }
     },
-    "OK" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "OK"
+    "Could not export training data. Please try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdaten konnten nicht exportiert werden. Bitte versuche es erneut."
           }
         }
       }
     },
-    "Peach" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Peach"
+    "Could not import the training data. Please try again.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Trainingsdaten konnten nicht importiert werden. Bitte versuche es erneut."
           }
         }
       }
     },
-    "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Peach hilft dir, dein Gehör für Musik zu trainieren. Übe, Unterschiede zwischen Tönen zu hören und Tonhöhen genau zu treffen."
+    "Could not read the selected file.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die ausgewählte Datei konnte nicht gelesen werden."
           }
         }
       }
     },
-    "Perfect Fifth" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reine Quinte"
+    "Current difficulty: %@ cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuelle Schwierigkeit: %@ Cent"
           }
         }
       }
     },
-    "Perfect Fourth" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Reine Quarte"
+    "Current: %@ ¢": {
+      "comment": "A label displaying the user's current training difficulty and, optionally, their best-ever score.",
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell: %@ ¢"
           }
         }
       }
     },
-    "Pitch adjustment slider" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tonhöhenregler"
+    "Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daten"
           }
         }
       }
     },
-    "Pitch Matching" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tonhöhenübung"
+    "Dead center": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volltreffer"
           }
         }
       }
     },
-    "Pitch matching statistics" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tonhöhenübungsstatistik"
+    "Developer: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entwickler: %@"
           }
         }
       }
     },
-    "Prime" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Prime"
+    "Difficulty": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwierigkeit"
           }
         }
       }
     },
-    "Profile" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Profil"
+    "Done": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fertig"
           }
         }
       }
     },
-    "Replace All Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Daten ersetzen"
+    "Down": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "abwärts"
           }
         }
       }
     },
-    "Replace deletes all existing data first. Merge keeps existing data and skips duplicates." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "„Ersetzen“ löscht alle vorhandenen Daten. „Zusammenführen“ behält vorhandene Daten und überspringt Duplikate."
+    "Duration: %.1fs": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dauer: %.1fs"
           }
         }
       }
     },
-    "Reset" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurücksetzen"
+    "Equal Temperament": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gleichstufige Stimmung"
           }
         }
       }
     },
-    "Reset All Training Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Trainingsdaten löschen"
+    "Export Failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export fehlgeschlagen"
           }
         }
       }
     },
-    "Reset Failed" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zurücksetzen fehlgeschlagen"
+    "Export Training Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdaten exportieren"
           }
         }
       }
     },
-    "Reset Training Data" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsdaten löschen"
+    "Getting Started": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erste Schritte"
           }
         }
       }
     },
-    "Samples" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Übungen"
+    "Hear & Compare": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hören & Vergleichen"
           }
         }
       }
     },
-    "Select how intervals are tuned. Equal Temperament divides the octave into 12 equal steps. Just Intonation uses pure frequency ratios." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle die Stimmung für Intervalle. Die gleichstufige Stimmung teilt die Oktave in 12 gleiche Schritte. Reine Stimmung verwendet reine Frequenzverhältnisse."
+    "Hear & Compare – Intervals": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hören & Vergleichen – Intervalle"
           }
         }
       }
     },
-    "Select which intervals to practice. At least one must remain active." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle die Intervalle aus, die du üben möchtest. Mindestens eines muss aktiv bleiben."
+    "Hear & Compare – Single Notes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hören & Vergleichen – Einzeltöne"
           }
         }
       }
     },
-    "Session best: %@ ¢" : {
-      "comment" : "A label below the current difficulty label, indicating the user's best score for the current difficulty level. The argument is the best score in cents for the current difficulty level.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bestleistung: %@ ¢"
+    "Hear a note and slide to match its pitch.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höre einen Ton und gleiche die Tonhöhe mit dem Regler an."
           }
         }
       }
     },
-    "Session best: %@ cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bestleistung: %@ Cent"
+    "Higher": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höher"
           }
         }
       }
     },
-    "Settings" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einstellungen"
+    "Highest Note: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höchster Ton: %@"
           }
         }
       }
     },
-    "Single Notes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einzeltöne"
+    "Import Complete": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import abgeschlossen"
           }
         }
       }
     },
-    "Sound" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klang"
+    "Import Failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import fehlgeschlagen"
           }
         }
       }
     },
-    "Sounds provided by [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php)." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Klänge bereitgestellt von [GeneralUser GS von S. Christian Collins](https://schristiancollins.com/generaluser.php)."
+    "Import Training Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdaten importieren"
           }
         }
       }
     },
-    "Standard deviation: %.1f cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Standardabweichung: %.1f Cent"
+    "Incorrect": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Falsch"
           }
         }
       }
     },
-    "Standard deviation: %lld cents" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Standardabweichung: %lld Cent"
+    "Info": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Info"
+          }
+        }
+      }
+    },
+    "Instrument": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instrument"
+          }
+        }
+      }
+    },
+    "Intervals": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalle"
+          }
+        }
+      }
+    },
+    "Just Intonation": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reine Stimmung"
+          }
+        }
+      }
+    },
+    "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle einfach einen Trainingsmodus auf dem Startbildschirm und leg los. Peach passt sich automatisch deinem Niveau an."
+          }
+        }
+      }
+    },
+    "License: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lizenz: %@"
+          }
+        }
+      }
+    },
+    "Listen to two notes and decide which one is higher.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Höre zwei Töne und entscheide, welcher höher ist."
+          }
+        }
+      }
+    },
+    "Lower": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiefer"
+          }
+        }
+      }
+    },
+    "Lowest Note: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tiefster Ton: %@"
+          }
+        }
+      }
+    },
+    "Major Second": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Große Sekunde"
+          }
+        }
+      }
+    },
+    "Major Seventh": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Große Septime"
+          }
+        }
+      }
+    },
+    "Major Sixth": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Große Sexte"
+          }
+        }
+      }
+    },
+    "Major Third": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Große Terz"
+          }
+        }
+      }
+    },
+    "Match pitches using musical intervals.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gleiche Tonhöhen mit musikalischen Intervallen an."
+          }
+        }
+      }
+    },
+    "Max": {
+      "comment": "Slider maximum label indicating full loudness variation in Settings.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Max"
+          }
+        }
+      }
+    },
+    "Mean": {
+      "comment": "Label for the mean value in the summary statistics view.",
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittelwert"
+          }
+        }
+      }
+    },
+    "Mean detection threshold: %lld cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittlere Erkennungsschwelle: %lld Cent"
           }
         },
-        "en" : {
-          "variations" : {
-            "plural" : {
-              "one" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Standard deviation: %lld cent"
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Mean detection threshold: %lld cent"
                 }
               },
-              "other" : {
-                "stringUnit" : {
-                  "state" : "translated",
-                  "value" : "Standard deviation: %lld cents"
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Mean detection threshold: %lld cents"
                 }
               }
             }
@@ -1153,289 +752,750 @@
         }
       }
     },
-    "Start pitch matching to see your accuracy" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starte Tonhöhenübungen, um deine Genauigkeit zu sehen"
+    "Mean Error": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittlerer Fehler"
           }
         }
       }
     },
-    "Start training to build your profile" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainiere, um dein Profil aufzubauen"
+    "Mean matching error: %.1f cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mittlerer Abgleichfehler: %.1f Cent"
           }
         }
       }
     },
-    "Std Dev" : {
-      "comment" : "Label for the standard deviation value in the summary statistics view.",
-      "isCommentAutoGenerated" : true,
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Std.-Abw."
+    "Merge with Existing Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mit vorhandenen Daten zusammenführen"
           }
         }
       }
     },
-    "Submit pitch" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tonhöhe bestätigen"
+    "Minor Second": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kleine Sekunde"
           }
         }
       }
     },
-    "Summary statistics" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zusammenfassung"
+    "Minor Seventh": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kleine Septime"
           }
         }
       }
     },
-    "Target interval: %@, %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zielintervall: %@, %@"
+    "Minor Sixth": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kleine Sexte"
           }
         }
       }
     },
-    "The file contains no valid training data." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Die Datei enthält keine gültigen Trainingsdaten."
+    "Minor Third": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kleine Terz"
           }
         }
       }
     },
-    "The same idea, but with musical intervals between notes." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dasselbe Prinzip, aber mit musikalischen Intervallen zwischen den Tönen."
+    "No training data yet": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noch keine Trainingsdaten"
           }
         }
       }
     },
-    "This will permanently delete all training data and reset your profile. This cannot be undone." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alle Trainingsdaten werden unwiderruflich gelöscht und dein Profil wird zurückgesetzt."
+    "Note Range": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonumfang"
           }
         }
       }
     },
-    "Threshold timeline showing %lld comparisons over %@. Current average: %lld cents." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schwellenverlauf mit %lld Vergleichen über %@. Aktueller Durchschnitt: %lld Cent."
+    "Octave": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oktave"
           }
         }
       }
     },
-    "Threshold timeline. No training data available." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Schwellenverlauf. Keine Trainingsdaten vorhanden."
+    "Off": {
+      "comment": "Slider minimum label indicating no loudness variation in Settings.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus"
           }
         }
       }
     },
-    "Time" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zeit"
+    "OK": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "OK"
           }
         }
       }
     },
-    "Training Modes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingsmodi"
+    "Peach": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peach"
           }
         }
       }
     },
-    "Training Range" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tonumfang"
+    "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Peach hilft dir, dein Gehör für Musik zu trainieren. Übe, Unterschiede zwischen Tönen zu hören und Tonhöhen genau zu treffen."
           }
         }
       }
     },
-    "Trend" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trend"
+    "Perfect Fifth": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reine Quinte"
           }
         }
       }
     },
-    "Trend: declining" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trend: nachlassend"
+    "Perfect Fourth": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reine Quarte"
           }
         }
       }
     },
-    "Trend: improving" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trend: verbessernd"
+    "Pitch adjustment slider": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonhöhenregler"
           }
         }
       }
     },
-    "Trend: stable" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trend: stabil"
+    "Pitch Matching": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonhöhenübung"
           }
         }
       }
     },
-    "Tritone" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tritonus"
+    "Pitch matching statistics": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonhöhenübungsstatistik"
           }
         }
       }
     },
-    "Tune & Match" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stimmen & Treffen"
+    "Prime": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prime"
           }
         }
       }
     },
-    "Tune & Match – Intervals" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stimmen & Treffen – Intervalle"
+    "Profile": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil"
           }
         }
       }
     },
-    "Tune & Match – Single Notes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stimmen & Treffen – Einzeltöne"
+    "Replace All Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Daten ersetzen"
           }
         }
       }
     },
-    "Tuning System" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Stimmung"
+    "Replace deletes all existing data first. Merge keeps existing data and skips duplicates.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "„Ersetzen“ löscht alle vorhandenen Daten. „Zusammenführen“ behält vorhandene Daten und überspringt Duplikate."
           }
         }
       }
     },
-    "Up" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "aufwärts"
+    "Reset": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen"
           }
         }
       }
     },
-    "Upper" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Obergrenze"
+    "Reset All Training Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Trainingsdaten löschen"
           }
         }
       }
     },
-    "Vary Loudness" : {
-      "comment" : "Slider label for controlling loudness variation between training notes in Settings.",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Lautstärke variieren"
+    "Reset Failed": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zurücksetzen fehlgeschlagen"
           }
         }
       }
     },
-    "Version %@" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Version %@"
+    "Reset Training Data": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsdaten löschen"
           }
         }
       }
     },
-    "What is Peach?" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Was ist Peach?"
+    "Samples": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Übungen"
+          }
+        }
+      }
+    },
+    "Select how intervals are tuned. Equal Temperament divides the octave into 12 equal steps. Just Intonation uses pure frequency ratios.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle die Stimmung für Intervalle. Die gleichstufige Stimmung teilt die Oktave in 12 gleiche Schritte. Reine Stimmung verwendet reine Frequenzverhältnisse."
+          }
+        }
+      }
+    },
+    "Select which intervals to practice. At least one must remain active.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle die Intervalle aus, die du üben möchtest. Mindestens eines muss aktiv bleiben."
+          }
+        }
+      }
+    },
+    "Session best: %@ ¢": {
+      "comment": "A label below the current difficulty label, indicating the user's best score for the current difficulty level. The argument is the best score in cents for the current difficulty level.",
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestleistung: %@ ¢"
+          }
+        }
+      }
+    },
+    "Session best: %@ cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestleistung: %@ Cent"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
+          }
+        }
+      }
+    },
+    "Single Notes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einzeltöne"
+          }
+        }
+      }
+    },
+    "Sound": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klang"
+          }
+        }
+      }
+    },
+    "Sounds provided by [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php).": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klänge bereitgestellt von [GeneralUser GS von S. Christian Collins](https://schristiancollins.com/generaluser.php)."
+          }
+        }
+      }
+    },
+    "Standard deviation: %.1f cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardabweichung: %.1f Cent"
+          }
+        }
+      }
+    },
+    "Standard deviation: %lld cents": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Standardabweichung: %lld Cent"
+          }
+        },
+        "en": {
+          "variations": {
+            "plural": {
+              "one": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Standard deviation: %lld cent"
+                }
+              },
+              "other": {
+                "stringUnit": {
+                  "state": "translated",
+                  "value": "Standard deviation: %lld cents"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Start pitch matching to see your accuracy": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starte Tonhöhenübungen, um deine Genauigkeit zu sehen"
+          }
+        }
+      }
+    },
+    "Start training to build your profile": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainiere, um dein Profil aufzubauen"
+          }
+        }
+      }
+    },
+    "Std Dev": {
+      "comment": "Label for the standard deviation value in the summary statistics view.",
+      "isCommentAutoGenerated": true,
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Std.-Abw."
+          }
+        }
+      }
+    },
+    "Submit pitch": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonhöhe bestätigen"
+          }
+        }
+      }
+    },
+    "Summary statistics": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zusammenfassung"
+          }
+        }
+      }
+    },
+    "Target interval: %@, %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zielintervall: %@, %@"
+          }
+        }
+      }
+    },
+    "The file contains no valid training data.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Datei enthält keine gültigen Trainingsdaten."
+          }
+        }
+      }
+    },
+    "The same idea, but with musical intervals between notes.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dasselbe Prinzip, aber mit musikalischen Intervallen zwischen den Tönen."
+          }
+        }
+      }
+    },
+    "This will permanently delete all training data and reset your profile. This cannot be undone.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alle Trainingsdaten werden unwiderruflich gelöscht und dein Profil wird zurückgesetzt."
+          }
+        }
+      }
+    },
+    "Threshold timeline showing %lld comparisons over %@. Current average: %lld cents.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwellenverlauf mit %lld Vergleichen über %@. Aktueller Durchschnitt: %lld Cent."
+          }
+        }
+      }
+    },
+    "Threshold timeline. No training data available.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schwellenverlauf. Keine Trainingsdaten vorhanden."
+          }
+        }
+      }
+    },
+    "Time": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeit"
+          }
+        }
+      }
+    },
+    "Training Modes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trainingsmodi"
+          }
+        }
+      }
+    },
+    "Training Range": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tonumfang"
+          }
+        }
+      }
+    },
+    "Trend": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend"
+          }
+        }
+      }
+    },
+    "Trend: declining": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend: nachlassend"
+          }
+        }
+      }
+    },
+    "Trend: improving": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend: verbessernd"
+          }
+        }
+      }
+    },
+    "Trend: stable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend: stabil"
+          }
+        }
+      }
+    },
+    "Tritone": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tritonus"
+          }
+        }
+      }
+    },
+    "Tune & Match": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stimmen & Treffen"
+          }
+        }
+      }
+    },
+    "Tune & Match – Intervals": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stimmen & Treffen – Intervalle"
+          }
+        }
+      }
+    },
+    "Tune & Match – Single Notes": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stimmen & Treffen – Einzeltöne"
+          }
+        }
+      }
+    },
+    "Tuning System": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stimmung"
+          }
+        }
+      }
+    },
+    "Up": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "aufwärts"
+          }
+        }
+      }
+    },
+    "Upper": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Obergrenze"
+          }
+        }
+      }
+    },
+    "Vary Loudness": {
+      "comment": "Slider label for controlling loudness variation between training notes in Settings.",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lautstärke variieren"
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        }
+      }
+    },
+    "What is Peach?": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Was ist Peach?"
+          }
+        }
+      }
+    },
+    "Settings Help": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen – Hilfe"
+          }
+        }
+      }
+    },
+    "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lege die **tiefste** und **höchste Note** für dein Training fest. Ein größerer Bereich ist anspruchsvoller. Wenn du gerade erst anfängst, probiere einen kleineren Bereich und erweitere ihn, wenn sich dein Gehör verbessert."
+          }
+        }
+      }
+    },
+    "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervalle sind der Abstand zwischen zwei Tönen. Wähle aus, welche Intervalle du üben möchtest. Beginne mit wenigen und füge weitere hinzu, wenn du sicherer wirst."
+          }
+        }
+      }
+    },
+    "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wähle den **Klang**, mit dem du trainieren möchtest — jedes Instrument hat einen eigenen Charakter.\n\n**Dauer** bestimmt, wie lange jeder Ton gespielt wird.\n\n**Kammerton** legt die Referenzstimmung fest. Die meisten Musiker verwenden 440 Hz. Manche Orchester stimmen auf 442 Hz.\n\n**Stimmung** bestimmt, wie Intervalle berechnet werden. Die gleichstufige Stimmung teilt die Oktave in 12 gleiche Schritte und ist Standard in der westlichen Musik. Die reine Stimmung verwendet ganzzahlige Frequenzverhältnisse und klingt bei manchen Intervallen harmonischer."
+          }
+        }
+      }
+    },
+    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Lautstärke variieren** verändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt."
+          }
+        }
+      }
+    },
+    "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Exportieren** speichert deine Trainingsdaten als Datei, die du als Backup aufbewahren oder auf ein anderes Gerät übertragen kannst.\n\n**Importieren** lädt Trainingsdaten aus einer Datei. Du kannst deine aktuellen Daten ersetzen oder mit bestehenden Einträgen zusammenführen.\n\n**Zurücksetzen** löscht alle Trainingsdaten unwiderruflich und setzt dein Profil zurück. Dies kann nicht rückgängig gemacht werden."
           }
         }
       }
     }
   },
-  "version" : "1.1"
+  "version": "1.1"
 }

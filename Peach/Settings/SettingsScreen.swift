@@ -31,6 +31,7 @@ struct SettingsScreen: View {
     @Environment(\.trainingDataExportAction) private var trainingDataExportAction
     @Environment(\.trainingDataImportAction) private var trainingDataImportAction
 
+    @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
     @State private var csvExportItem: CSVExportItem?
@@ -43,6 +44,29 @@ struct SettingsScreen: View {
     @State private var showImportError = false
     @State private var importErrorMessage = ""
 
+    static let helpSections: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Training Range"),
+            body: String(localized: "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.")
+        ),
+        HelpSection(
+            title: String(localized: "Intervals"),
+            body: String(localized: "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.")
+        ),
+        HelpSection(
+            title: String(localized: "Sound"),
+            body: String(localized: "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.")
+        ),
+        HelpSection(
+            title: String(localized: "Difficulty"),
+            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.")
+        ),
+        HelpSection(
+            title: String(localized: "Data"),
+            body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
+        ),
+    ]
+
     var body: some View {
         Form {
             trainingRangeSection
@@ -53,6 +77,34 @@ struct SettingsScreen: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showHelpSheet = true
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+            }
+        }
+        .sheet(isPresented: $showHelpSheet) {
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        HelpContentView(sections: Self.helpSections)
+                    }
+                    .padding()
+                }
+                .navigationTitle(String(localized: "Settings Help"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(String(localized: "Done")) {
+                            showHelpSheet = false
+                        }
+                    }
+                }
+            }
+        }
         .onAppear {
             if !soundSourceProvider.availableSources.contains(where: { $0.rawValue == soundSource }) {
                 soundSource = SettingsKeys.defaultSoundSource

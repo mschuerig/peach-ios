@@ -235,6 +235,34 @@ struct SettingsTests {
         #expect(mock.noteRange.upperBound == MIDINote(72))
     }
 
+    // MARK: - Settings Help Sections
+
+    @Test("helpSections returns five sections matching settings groups")
+    func helpSectionsCount() async {
+        #expect(SettingsScreen.helpSections.count == 5)
+    }
+
+    @Test("each help section has a non-empty title and body")
+    func helpSectionContent() async {
+        for section in SettingsScreen.helpSections {
+            #expect(!section.title.isEmpty)
+            #expect(!section.body.isEmpty)
+        }
+    }
+
+    @Test("concert pitch help contains practical 440 Hz context")
+    func concertPitchHelpContainsPracticalContext() async {
+        let soundSection = SettingsScreen.helpSections[2]
+        #expect(soundSection.body.contains("440"))
+    }
+
+    @Test("tuning system help contains Equal Temperament reference")
+    func tuningSystemHelpContainsKeyTerm() async {
+        let soundSection = SettingsScreen.helpSections[2]
+        let bodyLower = soundSection.body.lowercased()
+        #expect(bodyLower.contains("equal temperament") || bodyLower.contains("gleichstufig"))
+    }
+
     // MARK: - Task 2: Note Range Validation
 
     @Test("Lower bound range enforces minimum gap from upper bound")
