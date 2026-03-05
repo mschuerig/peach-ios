@@ -3688,6 +3688,43 @@ So that I feel encouraged without navigating to the full Profile Screen.
 - Keep views thin — all computation in Core
 - Reference approved UX concept in `docs/implementation-artifacts/38-1-brainstorm-and-design-profile-visualization.md`
 
+### Story 38.6: Fix Trend Arrow — Stddev-Based Computation Including Wrong Answers
+
+As a **user**,
+I want the trend arrow to reflect my actual performance including wrong answers,
+So that I get honest feedback when my ear training is declining.
+
+**Depends on:** Story 38.5
+
+**Acceptance Criteria:**
+
+**Given** a comparison training session
+**When** the user answers incorrectly multiple times in a row
+**Then** the trend arrow shows declining (arrow.up.right, orange)
+
+**Given** any training mode with 2+ records
+**When** the latest answer's metric value is above `runningMean + runningStddev`
+**Then** the trend is `.declining`
+
+**Given** any training mode with 2+ records
+**When** the latest answer's metric value is between EWMA (inclusive) and `runningMean + runningStddev` (inclusive)
+**Then** the trend is `.stable`
+
+**Given** any training mode with 2+ records
+**When** the latest answer's metric value is below the current EWMA
+**Then** the trend is `.improving`
+
+**Given** any training mode with fewer than 2 records
+**When** the trend is queried
+**Then** it returns `nil`
+
+**Technical hints:**
+- Bug: `TrainingMode.extractMetrics` and `metric(from:)` filter on `isCorrect` — wrong answers never enter trend computation
+- Replace half-split trend algorithm in `ProgressTimeline.recomputeTrend` with stddev + EWMA thresholds
+- Add running mean/stddev to `ModeState` via Welford's algorithm (already used in `updateBucket`)
+- Remove dead `trendChangeThreshold` from `TrainingModeConfig`
+- Tech spec: `docs/implementation-artifacts/tech-spec-fix-trend-stddev.md`
+
 ---
 
 ## Action Items
