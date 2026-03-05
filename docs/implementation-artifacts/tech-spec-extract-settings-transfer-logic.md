@@ -237,3 +237,9 @@ test_patterns: ['struct-based @Suite', 'factory methods for fixtures', 'in-memor
 - `CSVDocument.exportFileName()` stays in `Settings/` — it's a view-layer concern.
 - The `dataStoreResetter` environment closure stays — it's used by `resetAllTrainingData` and involves `ComparisonSession.resetTrainingData()` which the transfer service doesn't need to know about.
 - After this refactoring, `SettingsScreen` should drop from ~379 lines to ~280 lines, with zero business logic methods.
+
+## Review Notes
+- Adversarial review completed
+- Findings: 12 total, 5 fixed, 7 skipped (noise)
+- Resolution approach: auto-fix
+- Fixed: export error alerting, localization fragments, try! in preview, security-scoped resource guard, UserDefaults test cleanup
