@@ -1,6 +1,6 @@
 # Story 37.3: Training Screen Help
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -263,7 +263,7 @@ None — clean implementation with no issues.
 - Added 4-section help content to PitchMatchingScreen (Goal, Controls, Feedback, Intervals) matching the same tone
 - Both screens: toolbar help button (questionmark.circle), .sheet with NavigationStack + HelpContentView + "Done" dismiss
 - Training session stop/start on help sheet show/dismiss via `.onChange(of: showHelpSheet)` — prevents audio playing while reading help
-- 12 new German translations added via `bin/add-localization.py --batch`
+- 14 German translations total via `bin/add-localization.py` (12 initial + 2 missing keys "Feedback" and "Help" added during code review)
 - 8 new tests: section count, title order, non-empty bodies, interval key term verification for both screens
 - All 952 tests pass, build clean, dependency rules pass
 
@@ -271,7 +271,7 @@ None — clean implementation with no issues.
 
 - Peach/Comparison/ComparisonScreen.swift (modified — added helpSections, showHelpSheet, help button, sheet, onChange)
 - Peach/PitchMatching/PitchMatchingScreen.swift (modified — added helpSections, showHelpSheet, help button, sheet, onChange)
-- Peach/Resources/Localizable.xcstrings (modified — 12 new German translations)
+- Peach/Resources/Localizable.xcstrings (modified — 14 German translations total)
 - PeachTests/Comparison/ComparisonScreenLayoutTests.swift (modified — 4 new help section tests)
 - PeachTests/PitchMatching/PitchMatchingScreenTests.swift (modified — 4 new help section tests)
 - docs/implementation-artifacts/sprint-status.yaml (modified — story status update)
@@ -279,3 +279,4 @@ None — clean implementation with no issues.
 ### Change Log
 
 - 2026-03-05: Implemented story 37.3 — Training Screen Help. Added help button and help sheet to both ComparisonScreen and PitchMatchingScreen with mode-specific help content, session pause/resume on help access, full English/German localization, and 8 new tests.
+- 2026-03-05: Code review fix — added 2 missing German translations ("Feedback" → "Feedback", "Help" → "Hilfe") that were not detected by the initial `--missing` check because String Catalog discovery requires an Xcode build step.

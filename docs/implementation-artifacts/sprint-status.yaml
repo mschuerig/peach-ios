@@ -297,7 +297,7 @@ development_status:
   36-1-interactive-localization-and-wording-review: done
 
   # Epic 37: Show Me How — Built-in Help
-  epic-37: in-progress
+  epic-37: done
   37-1-start-screen-help: done
   37-2-settings-screen-help: done
-  37-3-training-screen-help: review
+  37-3-training-screen-help: done
