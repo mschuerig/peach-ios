@@ -4,23 +4,17 @@ import SwiftData
 @Observable
 final class TrainingDataTransferService {
     private let dataStore: TrainingDataStore
-    private let profile: PerceptualProfile
-    private let trendAnalyzer: TrendAnalyzer
-    private let thresholdTimeline: ThresholdTimeline
+    private let onDataChanged: ([ComparisonRecord], [PitchMatchingRecord]) -> Void
 
     private(set) var exportCSV: String?
     private(set) var exportError: Error?
 
     init(
         dataStore: TrainingDataStore,
-        profile: PerceptualProfile,
-        trendAnalyzer: TrendAnalyzer,
-        thresholdTimeline: ThresholdTimeline
+        onDataChanged: @escaping ([ComparisonRecord], [PitchMatchingRecord]) -> Void
     ) {
         self.dataStore = dataStore
-        self.profile = profile
-        self.trendAnalyzer = trendAnalyzer
-        self.thresholdTimeline = thresholdTimeline
+        self.onDataChanged = onDataChanged
     }
 
     // MARK: - Export
@@ -74,16 +68,7 @@ final class TrainingDataTransferService {
         let allComparisons = try dataStore.fetchAllComparisons()
         let allPitchMatchings = try dataStore.fetchAllPitchMatchings()
 
-        profile.reset()
-        profile.resetMatching()
-        for record in allComparisons {
-            profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
-        }
-        for record in allPitchMatchings {
-            profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
-        }
-        trendAnalyzer.rebuild(from: allComparisons)
-        thresholdTimeline.rebuild(from: allComparisons)
+        onDataChanged(allComparisons, allPitchMatchings)
 
         refreshExport()
         return summary
@@ -99,9 +84,7 @@ final class TrainingDataTransferService {
         let dataStore = TrainingDataStore(modelContext: container.mainContext)
         return TrainingDataTransferService(
             dataStore: dataStore,
-            profile: PerceptualProfile(),
-            trendAnalyzer: TrendAnalyzer(),
-            thresholdTimeline: ThresholdTimeline()
+            onDataChanged: { _, _ in }
         )
     }
 

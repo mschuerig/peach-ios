@@ -24,8 +24,7 @@ struct TrainingDataImportActionTests {
         mode: TrainingDataImporter.ImportMode,
         dataStore: TrainingDataStore,
         profile: PerceptualProfile,
-        trendAnalyzer: TrendAnalyzer,
-        thresholdTimeline: ThresholdTimeline
+        progressTimeline: ProgressTimeline
     ) throws -> TrainingDataImporter.ImportSummary {
         let summary = try TrainingDataImporter.importData(parseResult, mode: mode, into: dataStore)
         let allComparisons = try dataStore.fetchAllComparisons()
@@ -38,8 +37,7 @@ struct TrainingDataImportActionTests {
         for record in allPitchMatchings {
             profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
         }
-        trendAnalyzer.rebuild(from: allComparisons)
-        thresholdTimeline.rebuild(from: allComparisons)
+        progressTimeline.rebuild(comparisonRecords: allComparisons, pitchMatchingRecords: allPitchMatchings)
         return summary
     }
 
@@ -49,8 +47,7 @@ struct TrainingDataImportActionTests {
     func replaceImportsAndRebuildsProfile() async throws {
         let store = try makeStore()
         let profile = PerceptualProfile()
-        let trendAnalyzer = TrendAnalyzer()
-        let thresholdTimeline = ThresholdTimeline()
+        let progressTimeline = ProgressTimeline()
 
         let comparisons = [
             ComparisonRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate()),
@@ -60,12 +57,11 @@ struct TrainingDataImportActionTests {
 
         let summary = try performImportAction(
             parseResult: parseResult, mode: .replace,
-            dataStore: store, profile: profile, trendAnalyzer: trendAnalyzer, thresholdTimeline: thresholdTimeline
+            dataStore: store, profile: profile, progressTimeline: progressTimeline
         )
 
         #expect(summary.totalImported == 2)
         #expect(profile.overallMean != nil)
-        #expect(thresholdTimeline.dataPoints.count == 2)
     }
 
     // MARK: - Merge mode
@@ -74,8 +70,7 @@ struct TrainingDataImportActionTests {
     func mergeImportsNonDuplicatesAndRebuildsProfile() async throws {
         let store = try makeStore()
         let profile = PerceptualProfile()
-        let trendAnalyzer = TrendAnalyzer()
-        let thresholdTimeline = ThresholdTimeline()
+        let progressTimeline = ProgressTimeline()
 
         // Pre-existing record
         let existing = ComparisonRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate())
@@ -90,7 +85,7 @@ struct TrainingDataImportActionTests {
 
         let summary = try performImportAction(
             parseResult: parseResult, mode: .merge,
-            dataStore: store, profile: profile, trendAnalyzer: trendAnalyzer, thresholdTimeline: thresholdTimeline
+            dataStore: store, profile: profile, progressTimeline: progressTimeline
         )
 
         #expect(summary.comparisonsImported == 1)
@@ -105,8 +100,7 @@ struct TrainingDataImportActionTests {
     func profileRebuiltFromAllRecords() async throws {
         let store = try makeStore()
         let profile = PerceptualProfile()
-        let trendAnalyzer = TrendAnalyzer()
-        let thresholdTimeline = ThresholdTimeline()
+        let progressTimeline = ProgressTimeline()
 
         // Pre-existing records
         for i in 0..<3 {
@@ -123,53 +117,30 @@ struct TrainingDataImportActionTests {
 
         _ = try performImportAction(
             parseResult: parseResult, mode: .merge,
-            dataStore: store, profile: profile, trendAnalyzer: trendAnalyzer, thresholdTimeline: thresholdTimeline
+            dataStore: store, profile: profile, progressTimeline: progressTimeline
         )
 
         // Profile should have all 5 records (3 existing + 2 imported)
         let allRecords = try store.fetchAllComparisons()
         #expect(allRecords.count == 5)
-        #expect(thresholdTimeline.dataPoints.count == 5)
     }
 
-    // MARK: - TrendAnalyzer rebuild
+    // MARK: - ProgressTimeline rebuild
 
-    @Test("TrendAnalyzer rebuild matches fresh init behavior")
-    func trendAnalyzerRebuildMatchesFreshInit() async throws {
-        let offsets = Array(repeating: 50.0, count: 10) + Array(repeating: 30.0, count: 10)
-        let records = offsets.enumerated().map { index, offset in
+    @Test("ProgressTimeline rebuild matches fresh init behavior")
+    func progressTimelineRebuildMatchesFreshInit() async throws {
+        let records = (0..<25).map { i in
             ComparisonRecord(
-                referenceNote: 60, targetNote: 60, centOffset: offset, isCorrect: true,
+                referenceNote: 60, targetNote: 60, centOffset: Double(50 - i), isCorrect: true,
                 interval: 0, tuningSystem: "equalTemperament",
-                timestamp: Date(timeIntervalSince1970: Double(index) * 60)
+                timestamp: Date(timeIntervalSince1970: Double(i) * 3600)
             )
         }
 
-        let freshAnalyzer = TrendAnalyzer(records: records)
-        let rebuiltAnalyzer = TrendAnalyzer()
-        rebuiltAnalyzer.rebuild(from: records)
+        let freshTimeline = ProgressTimeline(comparisonRecords: records)
+        let rebuiltTimeline = ProgressTimeline()
+        rebuiltTimeline.rebuild(comparisonRecords: records, pitchMatchingRecords: [])
 
-        #expect(rebuiltAnalyzer.trend == freshAnalyzer.trend)
-        #expect(rebuiltAnalyzer.trend == .improving)
-    }
-
-    // MARK: - ThresholdTimeline rebuild
-
-    @Test("ThresholdTimeline rebuild matches fresh init behavior")
-    func thresholdTimelineRebuildMatchesFreshInit() async throws {
-        let records = (0..<5).map { i in
-            ComparisonRecord(
-                referenceNote: 60, targetNote: 60, centOffset: Double(10 + i * 10), isCorrect: true,
-                interval: 0, tuningSystem: "equalTemperament",
-                timestamp: Date(timeIntervalSince1970: Double(i + 2) * 86400 + 43200)
-            )
-        }
-
-        let freshTimeline = ThresholdTimeline(records: records)
-        let rebuiltTimeline = ThresholdTimeline()
-        rebuiltTimeline.rebuild(from: records)
-
-        #expect(rebuiltTimeline.dataPoints.count == freshTimeline.dataPoints.count)
-        #expect(rebuiltTimeline.aggregatedPoints.count == freshTimeline.aggregatedPoints.count)
+        #expect(rebuiltTimeline.state(for: .unisonComparison) == freshTimeline.state(for: .unisonComparison))
     }
 }

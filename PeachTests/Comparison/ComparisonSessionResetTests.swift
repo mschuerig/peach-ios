@@ -95,24 +95,22 @@ struct ComparisonSessionResetTests {
         #expect(comparison.targetNote.offset.magnitude == 100.0)
     }
 
-    // MARK: - TrendAnalyzer Reset
+    // MARK: - ProgressTimeline Reset
 
-    @Test("resetTrainingData clears TrendAnalyzer trend data")
-    func resetTrainingDataClearsTrendAnalyzer() throws {
-        // Create TrendAnalyzer with enough records to produce a trend
-        var records: [ComparisonRecord] = []
-        for i in 0..<30 {
-            records.append(ComparisonRecord(
+    @Test("resetTrainingData clears ProgressTimeline data")
+    func resetTrainingDataClearsProgressTimeline() throws {
+        let records = (0..<30).map { i in
+            ComparisonRecord(
                 referenceNote: 60,
                 targetNote: 61,
                 centOffset: Double(i) + 1.0,
                 isCorrect: true,
-                interval: 1,
+                interval: 0,
                 tuningSystem: "equalTemperament"
-            ))
+            )
         }
-        let trendAnalyzer = TrendAnalyzer(records: records)
-        #expect(trendAnalyzer.trend != nil)
+        let progressTimeline = ProgressTimeline(comparisonRecords: records)
+        #expect(progressTimeline.state(for: .unisonComparison) != .noData)
 
         let profile = PerceptualProfile()
         let session = ComparisonSession(
@@ -120,47 +118,12 @@ struct ComparisonSessionResetTests {
             strategy: MockNextComparisonStrategy(),
             profile: profile,
             userSettings: MockUserSettings(),
-            resettables: [trendAnalyzer]
-        )
-
-        // Reset via ComparisonSession
-        try session.resetTrainingData()
-
-        // Verify TrendAnalyzer is cleared
-        #expect(trendAnalyzer.trend == nil)
-    }
-
-    // MARK: - ThresholdTimeline Reset
-
-    @Test("resetTrainingData clears ThresholdTimeline data points")
-    func resetTrainingDataClearsThresholdTimeline() throws {
-        var records: [ComparisonRecord] = []
-        for i in 0..<10 {
-            records.append(ComparisonRecord(
-                referenceNote: 60,
-                targetNote: 61,
-                centOffset: Double(i) + 1.0,
-                isCorrect: true,
-                interval: 1,
-                tuningSystem: "equalTemperament"
-            ))
-        }
-        let timeline = ThresholdTimeline(records: records)
-        #expect(!timeline.dataPoints.isEmpty)
-
-        let profile = PerceptualProfile()
-        let session = ComparisonSession(
-            notePlayer: MockNotePlayer(),
-            strategy: MockNextComparisonStrategy(),
-            profile: profile,
-            userSettings: MockUserSettings(),
-            resettables: [timeline]
+            resettables: [progressTimeline]
         )
 
         try session.resetTrainingData()
 
-        #expect(timeline.dataPoints.isEmpty)
-        #expect(timeline.aggregatedPoints.isEmpty)
+        #expect(progressTimeline.state(for: .unisonComparison) == .noData)
     }
 
     // MARK: - Stop Before Reset

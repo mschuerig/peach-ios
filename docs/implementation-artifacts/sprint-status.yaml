@@ -306,7 +306,7 @@ development_status:
   epic-38: in-progress
   38-1-brainstorm-and-design-profile-visualization: done
   38-2-progresstimeline-core-ewma-adaptive-buckets-and-trainingmodeconfig: done
-  38-3-progresschartview-and-profile-screen-redesign: ready-for-dev
+  38-3-progresschartview-and-profile-screen-redesign: review
   38-4-focus-context-chart-interaction: backlog
   38-5-start-screen-sparkline-and-training-screen-summary: backlog
 

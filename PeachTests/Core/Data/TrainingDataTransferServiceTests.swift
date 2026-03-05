@@ -13,24 +13,20 @@ struct TrainingDataTransferServiceTests {
         return try ModelContainer(for: ComparisonRecord.self, PitchMatchingRecord.self, configurations: config)
     }
 
-    private func makeService() throws -> (
+    private func makeService(
+        onDataChanged: @escaping ([ComparisonRecord], [PitchMatchingRecord]) -> Void = { _, _ in }
+    ) throws -> (
         service: TrainingDataTransferService,
-        dataStore: TrainingDataStore,
-        profile: PerceptualProfile
+        dataStore: TrainingDataStore
     ) {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let dataStore = TrainingDataStore(modelContext: context)
-        let profile = PerceptualProfile()
-        let trendAnalyzer = TrendAnalyzer()
-        let thresholdTimeline = ThresholdTimeline()
         let service = TrainingDataTransferService(
             dataStore: dataStore,
-            profile: profile,
-            trendAnalyzer: trendAnalyzer,
-            thresholdTimeline: thresholdTimeline
+            onDataChanged: onDataChanged
         )
-        return (service, dataStore, profile)
+        return (service, dataStore)
     }
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
@@ -65,7 +61,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("refreshExport returns CSV string when records exist")
     func refreshExportWithRecords() async throws {
-        let (service, dataStore, _) = try makeService()
+        let (service, dataStore) = try makeService()
         try dataStore.save(makeComparison())
         service.refreshExport()
         #expect(service.exportCSV != nil)
@@ -74,7 +70,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("refreshExport returns nil when store is empty")
     func refreshExportEmpty() async throws {
-        let (service, _, _) = try makeService()
+        let (service, _) = try makeService()
         service.refreshExport()
         #expect(service.exportCSV == nil)
     }
@@ -87,7 +83,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("readFileForImport returns failure for non-security-scoped URL")
     func readFileForImportNonSecurityScoped() async throws {
-        let (service, _, _) = try makeService()
+        let (service, _) = try makeService()
         let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent("test-\(UUID()).csv")
         try "test".write(to: tempURL, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: tempURL) }
@@ -103,7 +99,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("performImport with replace mode returns correct summary")
     func performImportReplace() async throws {
-        let (service, dataStore, _) = try makeService()
+        let (service, dataStore) = try makeService()
         try dataStore.save(makeComparison(minutesOffset: 0))
 
         let parseResult = CSVImportParser.ImportResult(
@@ -119,7 +115,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("performImport with merge mode returns correct summary")
     func performImportMerge() async throws {
-        let (service, dataStore, _) = try makeService()
+        let (service, dataStore) = try makeService()
         try dataStore.save(makeComparison(minutesOffset: 0))
 
         let parseResult = CSVImportParser.ImportResult(
@@ -132,23 +128,30 @@ struct TrainingDataTransferServiceTests {
         #expect(summary.comparisonsSkipped == 1)
     }
 
-    @Test("performImport rebuilds profile after import")
-    func performImportRebuildsProfile() async throws {
-        let (service, _, profile) = try makeService()
-        #expect(profile.overallMean == nil)
+    @Test("performImport calls onDataChanged callback")
+    func performImportCallsOnDataChanged() async throws {
+        var callbackComparisons: [ComparisonRecord]?
+        var callbackPitchMatchings: [PitchMatchingRecord]?
+
+        let (service, _) = try makeService { comparisons, pitchMatchings in
+            callbackComparisons = comparisons
+            callbackPitchMatchings = pitchMatchings
+        }
 
         let parseResult = CSVImportParser.ImportResult(
             comparisons: [makeComparison()],
-            pitchMatchings: [],
+            pitchMatchings: [makePitchMatching()],
             errors: []
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
-        #expect(profile.overallMean != nil)
+
+        #expect(callbackComparisons?.count == 1)
+        #expect(callbackPitchMatchings?.count == 1)
     }
 
     @Test("performImport refreshes export CSV after import")
     func performImportRefreshesExport() async throws {
-        let (service, _, _) = try makeService()
+        let (service, _) = try makeService()
         #expect(service.exportCSV == nil)
 
         let parseResult = CSVImportParser.ImportResult(
@@ -164,7 +167,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("formatImportSummary with only imported records")
     func formatSummaryImportedOnly() async throws {
-        let (service, _, _) = try makeService()
+        let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
             comparisonsImported: 8, pitchMatchingsImported: 2,
             comparisonsSkipped: 0, pitchMatchingsSkipped: 0, parseErrorCount: 0
@@ -176,7 +179,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("formatImportSummary with skipped duplicates")
     func formatSummaryWithSkipped() async throws {
-        let (service, _, _) = try makeService()
+        let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
             comparisonsImported: 5, pitchMatchingsImported: 0,
             comparisonsSkipped: 3, pitchMatchingsSkipped: 0, parseErrorCount: 0
@@ -188,7 +191,7 @@ struct TrainingDataTransferServiceTests {
 
     @Test("formatImportSummary with parse errors")
     func formatSummaryWithErrors() async throws {
-        let (service, _, _) = try makeService()
+        let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
             comparisonsImported: 10, pitchMatchingsImported: 0,
             comparisonsSkipped: 3, pitchMatchingsSkipped: 0, parseErrorCount: 2

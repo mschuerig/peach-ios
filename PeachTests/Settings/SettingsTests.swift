@@ -338,29 +338,24 @@ struct SettingsTests {
         #expect(profile.overallStdDev == nil)
     }
 
-    @Test("TrendAnalyzer reset clears all trend data")
-    func trendAnalyzerResetClearsData() {
-        // Create with enough records to have a trend
-        var records: [ComparisonRecord] = []
-        for i in 0..<30 {
-            let record = ComparisonRecord(
+    @Test("ProgressTimeline reset clears all data")
+    func progressTimelineResetClearsData() {
+        let records = (0..<30).map { i in
+            ComparisonRecord(
                 referenceNote: 60,
                 targetNote: 61,
                 centOffset: Double(i) + 1.0,
                 isCorrect: true,
-                interval: 1,
+                interval: 0,
                 tuningSystem: "equalTemperament"
             )
-            records.append(record)
         }
-        let analyzer = TrendAnalyzer(records: records)
-        #expect(analyzer.trend != nil)
+        let timeline = ProgressTimeline(comparisonRecords: records)
+        #expect(timeline.state(for: .unisonComparison) != .noData)
 
-        // Reset
-        analyzer.reset()
+        timeline.reset()
 
-        // Verify cleared state
-        #expect(analyzer.trend == nil)
+        #expect(timeline.state(for: .unisonComparison) == .noData)
     }
 
     @Test("Reset deletes all records from SwiftData")

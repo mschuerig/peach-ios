@@ -22,20 +22,12 @@ struct ResettableTests {
         #expect(mock2.resetCallCount == 1)
     }
 
-    @Test("TrendAnalyzer conforms to Resettable")
-    func trendAnalyzerConformsToResettable() async throws {
-        let analyzer = TrendAnalyzer()
-        let resettable: Resettable = analyzer
-        try resettable.reset()
-        #expect(analyzer.trend == nil)
-    }
-
-    @Test("ThresholdTimeline conforms to Resettable")
-    func thresholdTimelineConformsToResettable() async throws {
-        let timeline = ThresholdTimeline()
+    @Test("ProgressTimeline conforms to Resettable")
+    func progressTimelineConformsToResettable() async throws {
+        let timeline = ProgressTimeline()
         let resettable: Resettable = timeline
         try resettable.reset()
-        #expect(timeline.dataPoints.isEmpty)
+        #expect(timeline.state(for: .unisonComparison) == .noData)
     }
 
     @Test("ComparisonSession.resetTrainingData calls reset on all resettables")

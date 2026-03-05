@@ -82,21 +82,9 @@
     "%lld pitch matching exercises completed": {
       "localizations": {
         "de": {
-          "variations": {
-            "plural": {
-              "one": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld Tonhöhenübung abgeschlossen"
-                }
-              },
-              "other": {
-                "stringUnit": {
-                  "state": "translated",
-                  "value": "%lld Tonhöhenübungen abgeschlossen"
-                }
-              }
-            }
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Tonhöhen-Übungen abgeschlossen"
           }
         },
         "en": {
@@ -1632,6 +1620,136 @@
           "stringUnit": {
             "state": "translated",
             "value": "Hilfe"
+          }
+        }
+      }
+    },
+    "Keep going! %lld more sessions to see your trend": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter so! Noch %lld Trainings, um deinen Trend zu sehen"
+          }
+        }
+      }
+    },
+    "Improving": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbessernd"
+          }
+        }
+      }
+    },
+    "Stable": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stabil"
+          }
+        }
+      }
+    },
+    "Declining": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nachlassend"
+          }
+        }
+      }
+    },
+    "Progress chart for %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortschrittsdiagramm für %@"
+          }
+        }
+      }
+    },
+    "Current: %@ %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktuell: %@ %@"
+          }
+        }
+      }
+    },
+    "trend: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trend: %@"
+          }
+        }
+      }
+    },
+    "Profile. No training data available.": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil. Keine Trainingsdaten vorhanden."
+          }
+        }
+      }
+    },
+    "Profile showing progress for: %@": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Profil zeigt Fortschritt für: %@"
+          }
+        }
+      }
+    },
+    "Unison Comparison": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einklangvergleich"
+          }
+        }
+      }
+    },
+    "Interval Comparison": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervallvergleich"
+          }
+        }
+      }
+    },
+    "Unison Matching": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einklang-Matching"
+          }
+        }
+      }
+    },
+    "Interval Matching": {
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Intervall-Matching"
           }
         }
       }

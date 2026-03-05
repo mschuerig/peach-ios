@@ -9,8 +9,6 @@ struct PeachApp: App {
     @State private var comparisonSession: ComparisonSession
     @State private var pitchMatchingSession: PitchMatchingSession
     @State private var profile: PerceptualProfile
-    @State private var trendAnalyzer: TrendAnalyzer
-    @State private var thresholdTimeline: ThresholdTimeline
     @State private var progressTimeline: ProgressTimeline
     @State private var soundFontLibrary: SoundFontLibrary
     @State private var transferService: TrainingDataTransferService
@@ -42,12 +40,6 @@ struct PeachApp: App {
             )
             _profile = State(wrappedValue: profile)
 
-            let trendAnalyzer = TrendAnalyzer(records: existingRecords)
-            _trendAnalyzer = State(wrappedValue: trendAnalyzer)
-
-            let thresholdTimeline = ThresholdTimeline(records: existingRecords)
-            _thresholdTimeline = State(wrappedValue: thresholdTimeline)
-
             let progressTimeline = ProgressTimeline(
                 comparisonRecords: existingRecords,
                 pitchMatchingRecords: pitchMatchingRecords
@@ -56,9 +48,17 @@ struct PeachApp: App {
 
             _transferService = State(wrappedValue: TrainingDataTransferService(
                 dataStore: dataStore,
-                profile: profile,
-                trendAnalyzer: trendAnalyzer,
-                thresholdTimeline: thresholdTimeline
+                onDataChanged: { [profile, progressTimeline] comparisons, pitchMatchings in
+                    profile.reset()
+                    profile.resetMatching()
+                    for record in comparisons {
+                        profile.update(note: MIDINote(record.referenceNote), centOffset: abs(record.centOffset), isCorrect: record.isCorrect)
+                    }
+                    for record in pitchMatchings {
+                        profile.updateMatching(note: MIDINote(record.referenceNote), centError: record.userCentError)
+                    }
+                    progressTimeline.rebuild(comparisonRecords: comparisons, pitchMatchingRecords: pitchMatchings)
+                }
             ))
 
             let strategy = KazezNoteStrategy()
@@ -69,8 +69,6 @@ struct PeachApp: App {
                 profile: profile,
                 userSettings: userSettings,
                 dataStore: dataStore,
-                trendAnalyzer: trendAnalyzer,
-                thresholdTimeline: thresholdTimeline,
                 progressTimeline: progressTimeline
             ))
 
@@ -93,8 +91,6 @@ struct PeachApp: App {
                 .environment(\.pitchMatchingSession, pitchMatchingSession)
                 .environment(\.activeSession, activeSession)
                 .environment(\.perceptualProfile, profile)
-                .environment(\.trendAnalyzer, trendAnalyzer)
-                .environment(\.thresholdTimeline, thresholdTimeline)
                 .environment(\.progressTimeline, progressTimeline)
                 .environment(\.soundSourceProvider, soundFontLibrary)
                 .environment(\.dataStoreResetter, { [dataStore, comparisonSession, profile] in
@@ -156,18 +152,16 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         userSettings: UserSettings,
         dataStore: TrainingDataStore,
-        trendAnalyzer: TrendAnalyzer,
-        thresholdTimeline: ThresholdTimeline,
         progressTimeline: ProgressTimeline
     ) -> ComparisonSession {
         let hapticManager = HapticFeedbackManager()
-        let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, trendAnalyzer, thresholdTimeline, progressTimeline]
+        let observers: [ComparisonObserver] = [dataStore, profile, hapticManager, progressTimeline]
         return ComparisonSession(
             notePlayer: notePlayer,
             strategy: strategy,
             profile: profile,
             userSettings: userSettings,
-            resettables: [trendAnalyzer, thresholdTimeline, progressTimeline],
+            resettables: [progressTimeline],
             observers: observers
         )
     }

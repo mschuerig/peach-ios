@@ -7,10 +7,9 @@ struct ProfileScreenLayoutTests {
 
     // MARK: - Accessibility Summary
 
-    @Test("Accessibility summary shows comparison count and current average")
+    @Test("Accessibility summary lists active modes")
     func accessibilitySummaryWithData() async throws {
-        // 30 records across 30 different days so aggregation produces 30 points
-        let records = (0..<30).map { i in
+        let records = (0..<25).map { i in
             ComparisonRecord(
                 referenceNote: 60,
                 targetNote: 60,
@@ -18,21 +17,21 @@ struct ProfileScreenLayoutTests {
                 isCorrect: true,
                 interval: 0,
                 tuningSystem: "equalTemperament",
-                timestamp: Date().addingTimeInterval(Double(i - 30) * 86400)
+                timestamp: Date().addingTimeInterval(Double(i - 25) * 3600)
             )
         }
-        let timeline = ThresholdTimeline(records: records)
+        let timeline = ProgressTimeline(comparisonRecords: records)
 
-        let summary = ProfileScreen.accessibilitySummary(timeline: timeline)
+        let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
-        #expect(summary.contains("30"), "Expected comparison count 30 in: \(summary)")
-        #expect(summary.contains("50"), "Expected current average ~50 in: \(summary)")
+        let expectedName = TrainingModeConfig.unisonComparison.displayName
+        #expect(summary.contains(expectedName))
     }
 
     @Test("Accessibility summary empty state is non-empty")
     func accessibilitySummaryEmpty() async throws {
-        let timeline = ThresholdTimeline()
-        let summary = ProfileScreen.accessibilitySummary(timeline: timeline)
+        let timeline = ProgressTimeline()
+        let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
         #expect(!summary.isEmpty)
     }

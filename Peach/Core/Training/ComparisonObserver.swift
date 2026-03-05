@@ -9,8 +9,7 @@ import Foundation
 /// ## Conforming Types
 /// - TrainingDataStore: Persists comparison results
 /// - PerceptualProfile: Updates detection threshold statistics
-/// - TrendAnalyzer: Tracks accuracy trends over time
-/// - ThresholdTimeline: Records threshold snapshots for timeline visualization
+/// - ProgressTimeline: Tracks accuracy trends and timeline data per training mode
 /// - HapticFeedbackManager: Provides haptic feedback
 ///
 /// ## Usage
