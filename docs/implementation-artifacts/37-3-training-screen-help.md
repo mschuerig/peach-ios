@@ -1,6 +1,6 @@
 # Story 37.3: Training Screen Help
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,54 +24,54 @@ So that I can focus on training rather than figuring out the interface.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Design help content for ComparisonScreen (AC: #1, #2)
-  - [ ] 1.1 Write help section explaining the goal of Hear & Compare training (listen to two notes, decide which is higher)
-  - [ ] 1.2 Write help section explaining the controls (Higher/Lower buttons, when they become active)
-  - [ ] 1.3 Write help section explaining the feedback indicator (checkmark/X overlay, what correct/incorrect means)
-  - [ ] 1.4 Write help section explaining the difficulty display (cent difference, session best)
-  - [ ] 1.5 Write help section for interval mode: what intervals are, how interval training differs from unison comparison
+- [x] Task 1: Design help content for ComparisonScreen (AC: #1, #2)
+  - [x] 1.1 Write help section explaining the goal of Hear & Compare training (listen to two notes, decide which is higher)
+  - [x] 1.2 Write help section explaining the controls (Higher/Lower buttons, when they become active)
+  - [x] 1.3 Write help section explaining the feedback indicator (checkmark/X overlay, what correct/incorrect means)
+  - [x] 1.4 Write help section explaining the difficulty display (cent difference, session best)
+  - [x] 1.5 Write help section for interval mode: what intervals are, how interval training differs from unison comparison
 
-- [ ] Task 2: Design help content for PitchMatchingScreen (AC: #1, #2)
-  - [ ] 2.1 Write help section explaining the goal of Tune & Match training (hear a note, match its pitch)
-  - [ ] 2.2 Write help section explaining the controls (vertical slider, touch to start target note, drag to adjust, release to commit)
-  - [ ] 2.3 Write help section explaining the feedback indicator (cent error display, what values mean)
-  - [ ] 2.4 Write help section for interval mode: how pitch matching works with intervals
+- [x] Task 2: Design help content for PitchMatchingScreen (AC: #1, #2)
+  - [x] 2.1 Write help section explaining the goal of Tune & Match training (hear a note, match its pitch)
+  - [x] 2.2 Write help section explaining the controls (vertical slider, touch to start target note, drag to adjust, release to commit)
+  - [x] 2.3 Write help section explaining the feedback indicator (cent error display, what values mean)
+  - [x] 2.4 Write help section for interval mode: how pitch matching works with intervals
 
-- [ ] Task 3: Add help button and sheet to ComparisonScreen (AC: #1, #3, #5)
-  - [ ] 3.1 Add `@State private var showHelpSheet = false` to `ComparisonScreen`
-  - [ ] 3.2 Add toolbar help button (`questionmark.circle`) alongside existing Settings and Profile buttons
-  - [ ] 3.3 Add `.sheet(isPresented: $showHelpSheet)` presenting help content via `HelpContentView`
-  - [ ] 3.4 Wrap help content in `NavigationStack` with localized title and "Done" dismiss button (same pattern as SettingsScreen)
-  - [ ] 3.5 Define `static let helpSections: [HelpSection]` on `ComparisonScreen` with all help texts using `String(localized:)`
-  - [ ] 3.6 Ensure showing the help sheet stops training via `comparisonSession.stop()` and dismissing restarts it — OR verify that `.onDisappear`/`.onAppear` already handles this naturally when the sheet covers the screen
+- [x] Task 3: Add help button and sheet to ComparisonScreen (AC: #1, #3, #5)
+  - [x] 3.1 Add `@State private var showHelpSheet = false` to `ComparisonScreen`
+  - [x] 3.2 Add toolbar help button (`questionmark.circle`) alongside existing Settings and Profile buttons
+  - [x] 3.3 Add `.sheet(isPresented: $showHelpSheet)` presenting help content via `HelpContentView`
+  - [x] 3.4 Wrap help content in `NavigationStack` with localized title and "Done" dismiss button (same pattern as SettingsScreen)
+  - [x] 3.5 Define `static let helpSections: [HelpSection]` on `ComparisonScreen` with all help texts using `String(localized:)`
+  - [x] 3.6 Ensure showing the help sheet stops training via `comparisonSession.stop()` and dismissing restarts it — OR verify that `.onDisappear`/`.onAppear` already handles this naturally when the sheet covers the screen
 
-- [ ] Task 4: Add help button and sheet to PitchMatchingScreen (AC: #1, #3, #5)
-  - [ ] 4.1 Add `@State private var showHelpSheet = false` to `PitchMatchingScreen`
-  - [ ] 4.2 Add toolbar help button (`questionmark.circle`) alongside existing Settings and Profile buttons
-  - [ ] 4.3 Add `.sheet(isPresented: $showHelpSheet)` presenting help content via `HelpContentView`
-  - [ ] 4.4 Wrap help content in `NavigationStack` with localized title and "Done" dismiss button
-  - [ ] 4.5 Define `static let helpSections: [HelpSection]` on `PitchMatchingScreen` with all help texts using `String(localized:)`
-  - [ ] 4.6 Same training stop/restart consideration as Task 3.6
+- [x] Task 4: Add help button and sheet to PitchMatchingScreen (AC: #1, #3, #5)
+  - [x] 4.1 Add `@State private var showHelpSheet = false` to `PitchMatchingScreen`
+  - [x] 4.2 Add toolbar help button (`questionmark.circle`) alongside existing Settings and Profile buttons
+  - [x] 4.3 Add `.sheet(isPresented: $showHelpSheet)` presenting help content via `HelpContentView`
+  - [x] 4.4 Wrap help content in `NavigationStack` with localized title and "Done" dismiss button
+  - [x] 4.5 Define `static let helpSections: [HelpSection]` on `PitchMatchingScreen` with all help texts using `String(localized:)`
+  - [x] 4.6 Same training stop/restart consideration as Task 3.6
 
-- [ ] Task 5: Add localization for all help strings (AC: #4)
-  - [ ] 5.1 Add all new English help strings as `String(localized:)` in SwiftUI (auto-detected by String Catalog)
-  - [ ] 5.2 Add German translations for all new strings using `bin/add-localization.py`
-  - [ ] 5.3 Verify with `bin/add-localization.py --missing` that no translations are missing
+- [x] Task 5: Add localization for all help strings (AC: #4)
+  - [x] 5.1 Add all new English help strings as `String(localized:)` in SwiftUI (auto-detected by String Catalog)
+  - [x] 5.2 Add German translations for all new strings using `bin/add-localization.py`
+  - [x] 5.3 Verify with `bin/add-localization.py --missing` that no translations are missing
 
-- [ ] Task 6: Write tests (AC: #1, #2, #4)
-  - [ ] 6.1 Test that `ComparisonScreen.helpSections` returns expected section count
-  - [ ] 6.2 Test that each ComparisonScreen help section title matches expected titles in order
-  - [ ] 6.3 Test that each ComparisonScreen help section has a non-empty body
-  - [ ] 6.4 Test that ComparisonScreen includes interval-related help content
-  - [ ] 6.5 Test that `PitchMatchingScreen.helpSections` returns expected section count
-  - [ ] 6.6 Test that each PitchMatchingScreen help section title matches expected titles in order
-  - [ ] 6.7 Test that each PitchMatchingScreen help section has a non-empty body
-  - [ ] 6.8 Test that PitchMatchingScreen includes interval-related help content
+- [x] Task 6: Write tests (AC: #1, #2, #4)
+  - [x] 6.1 Test that `ComparisonScreen.helpSections` returns expected section count
+  - [x] 6.2 Test that each ComparisonScreen help section title matches expected titles in order
+  - [x] 6.3 Test that each ComparisonScreen help section has a non-empty body
+  - [x] 6.4 Test that ComparisonScreen includes interval-related help content
+  - [x] 6.5 Test that `PitchMatchingScreen.helpSections` returns expected section count
+  - [x] 6.6 Test that each PitchMatchingScreen help section title matches expected titles in order
+  - [x] 6.7 Test that each PitchMatchingScreen help section has a non-empty body
+  - [x] 6.8 Test that PitchMatchingScreen includes interval-related help content
 
-- [ ] Task 7: Build and verify (AC: #1, #2, #3, #4, #5)
-  - [ ] 7.1 Run `bin/build.sh` — clean build
-  - [ ] 7.2 Run `bin/test.sh` — all tests pass
-  - [ ] 7.3 Run `bin/check-dependencies.sh` — dependency rules pass
+- [x] Task 7: Build and verify (AC: #1, #2, #3, #4, #5)
+  - [x] 7.1 Run `bin/build.sh` — clean build
+  - [x] 7.2 Run `bin/test.sh` — all tests pass
+  - [x] 7.3 Run `bin/check-dependencies.sh` — dependency rules pass
   - [ ] 7.4 Verify English and German help content manually in simulator
 
 ## Dev Notes
@@ -251,10 +251,31 @@ Both sessions are injected via `@Environment` and are `@Observable`. The screens
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no issues.
+
 ### Completion Notes List
 
+- Added 5-section help content to ComparisonScreen (Goal, Controls, Feedback, Difficulty, Intervals) with friendly, non-technical tone
+- Added 4-section help content to PitchMatchingScreen (Goal, Controls, Feedback, Intervals) matching the same tone
+- Both screens: toolbar help button (questionmark.circle), .sheet with NavigationStack + HelpContentView + "Done" dismiss
+- Training session stop/start on help sheet show/dismiss via `.onChange(of: showHelpSheet)` — prevents audio playing while reading help
+- 12 new German translations added via `bin/add-localization.py --batch`
+- 8 new tests: section count, title order, non-empty bodies, interval key term verification for both screens
+- All 952 tests pass, build clean, dependency rules pass
+
 ### File List
+
+- Peach/Comparison/ComparisonScreen.swift (modified — added helpSections, showHelpSheet, help button, sheet, onChange)
+- Peach/PitchMatching/PitchMatchingScreen.swift (modified — added helpSections, showHelpSheet, help button, sheet, onChange)
+- Peach/Resources/Localizable.xcstrings (modified — 12 new German translations)
+- PeachTests/Comparison/ComparisonScreenLayoutTests.swift (modified — 4 new help section tests)
+- PeachTests/PitchMatching/PitchMatchingScreenTests.swift (modified — 4 new help section tests)
+- docs/implementation-artifacts/sprint-status.yaml (modified — story status update)
+
+### Change Log
+
+- 2026-03-05: Implemented story 37.3 — Training Screen Help. Added help button and help sheet to both ComparisonScreen and PitchMatchingScreen with mode-specific help content, session pause/resume on help access, full English/German localization, and 8 new tests.

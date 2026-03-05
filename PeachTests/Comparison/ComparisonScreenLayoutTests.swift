@@ -67,4 +67,40 @@ struct ComparisonScreenLayoutTests {
     func compactButtonMinHeightExceedsTapTarget() {
         #expect(ComparisonScreen.buttonMinHeight(isCompact: true) >= 44)
     }
+
+    // MARK: - Help Sections (Story 37.3)
+
+    @Test("helpSections returns five sections for comparison training")
+    func helpSectionsCount() async {
+        #expect(ComparisonScreen.helpSections.count == 5)
+    }
+
+    @Test("help section titles match expected order")
+    func helpSectionTitlesOrder() async {
+        let expectedTitles = [
+            String(localized: "Goal"),
+            String(localized: "Controls"),
+            String(localized: "Feedback"),
+            String(localized: "Difficulty"),
+            String(localized: "Intervals"),
+        ]
+        let actualTitles = ComparisonScreen.helpSections.map(\.title)
+        #expect(actualTitles == expectedTitles)
+    }
+
+    @Test("each help section has a non-empty body")
+    func helpSectionBodiesNonEmpty() async {
+        for section in ComparisonScreen.helpSections {
+            #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
+        }
+    }
+
+    @Test("intervals help section explains interval training")
+    func intervalsHelpContainsKeyTerms() async {
+        let intervalsTitle = String(localized: "Intervals")
+        let intervalsSection = ComparisonScreen.helpSections.first { $0.title == intervalsTitle }
+        #expect(intervalsSection != nil)
+        let body = intervalsSection?.body.lowercased() ?? ""
+        #expect(body.contains("interval"))
+    }
 }

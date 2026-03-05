@@ -7,7 +7,28 @@ struct PitchMatchingScreen: View {
     @Environment(\.pitchMatchingSession) private var pitchMatchingSession
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @State private var showHelpSheet = false
+
     private let logger = Logger(subsystem: "com.peach.app", category: "PitchMatchingScreen")
+
+    static let helpSections: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Goal"),
+            body: String(localized: "You'll hear a **reference note**. Your goal is to match its pitch by sliding to the exact same frequency. The closer you get, the better your ear is becoming.")
+        ),
+        HelpSection(
+            title: String(localized: "Controls"),
+            body: String(localized: "**Touch** the slider to hear your note, then **drag** up or down to adjust the pitch. When you think you've matched the reference, **release** the slider to lock in your answer.")
+        ),
+        HelpSection(
+            title: String(localized: "Feedback"),
+            body: String(localized: "After each attempt, you'll see how many **cents** off you were. A smaller number means a closer match — zero would be perfect. Use the feedback to fine-tune your listening.")
+        ),
+        HelpSection(
+            title: String(localized: "Intervals"),
+            body: String(localized: "In interval mode, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it.")
+        ),
+    ]
 
     var body: some View {
         VStack(spacing: 8) {
@@ -48,6 +69,12 @@ struct PitchMatchingScreen: View {
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
                 HStack(spacing: 20) {
+                    Button {
+                        showHelpSheet = true
+                    } label: {
+                        Label("Help", systemImage: "questionmark.circle")
+                    }
+
                     NavigationLink(value: NavigationDestination.settings) {
                         Image(systemName: "gearshape")
                             .imageScale(.large)
@@ -60,6 +87,34 @@ struct PitchMatchingScreen: View {
                     }
                     .accessibilityLabel("Profile")
                 }
+            }
+        }
+        .sheet(isPresented: $showHelpSheet) {
+            NavigationStack {
+                ScrollView {
+                    VStack(spacing: 24) {
+                        HelpContentView(sections: Self.helpSections)
+                    }
+                    .padding()
+                }
+                .navigationTitle(String(localized: "Training Help"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(String(localized: "Done")) {
+                            showHelpSheet = false
+                        }
+                    }
+                }
+            }
+        }
+        .onChange(of: showHelpSheet) { _, isShowing in
+            if isShowing {
+                logger.info("Help sheet shown - stopping pitch matching")
+                pitchMatchingSession.stop()
+            } else {
+                logger.info("Help sheet dismissed - restarting pitch matching")
+                pitchMatchingSession.start(intervals: intervals)
             }
         }
         .onAppear {
