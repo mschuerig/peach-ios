@@ -7,6 +7,8 @@ struct TrainingModeConfig {
     let ewmaHalflifeDays: Double
     let coldStartThreshold: Int
     let trendThreshold: Int
+    let trendChangeThreshold: Double
+    let sessionGapSeconds: TimeInterval
 }
 
 extension TrainingModeConfig {
@@ -16,7 +18,9 @@ extension TrainingModeConfig {
         optimalBaseline: 8.0,
         ewmaHalflifeDays: 7.0,
         coldStartThreshold: 20,
-        trendThreshold: 100
+        trendThreshold: 100,
+        trendChangeThreshold: 0.05,
+        sessionGapSeconds: 1800
     )
 
     static let intervalComparison = TrainingModeConfig(
@@ -25,7 +29,9 @@ extension TrainingModeConfig {
         optimalBaseline: 12.0,
         ewmaHalflifeDays: 7.0,
         coldStartThreshold: 20,
-        trendThreshold: 100
+        trendThreshold: 100,
+        trendChangeThreshold: 0.05,
+        sessionGapSeconds: 1800
     )
 
     static let unisonMatching = TrainingModeConfig(
@@ -34,7 +40,9 @@ extension TrainingModeConfig {
         optimalBaseline: 5.0,
         ewmaHalflifeDays: 7.0,
         coldStartThreshold: 20,
-        trendThreshold: 100
+        trendThreshold: 100,
+        trendChangeThreshold: 0.05,
+        sessionGapSeconds: 1800
     )
 
     static let intervalMatching = TrainingModeConfig(
@@ -43,6 +51,8 @@ extension TrainingModeConfig {
         optimalBaseline: 8.0,
         ewmaHalflifeDays: 7.0,
         coldStartThreshold: 20,
-        trendThreshold: 100
+        trendThreshold: 100,
+        trendChangeThreshold: 0.05,
+        sessionGapSeconds: 1800
     )
 }

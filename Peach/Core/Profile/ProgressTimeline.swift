@@ -33,7 +33,7 @@ enum BucketSize {
 
 struct TimeBucket {
     let periodStart: Date
-    let periodEnd: Date
+    var periodEnd: Date
     let bucketSize: BucketSize
     var mean: Double
     var stddev: Double
@@ -127,24 +127,22 @@ final class ProgressTimeline {
         var ewma: Double?
         var recordCount: Int = 0
         var computedTrend: Trend?
-        private var allValues: [Double] = []
+        var allValues: [Double] = []
 
         mutating func addPoint(_ point: MetricPoint, config: TrainingModeConfig) {
             recordCount += 1
             allValues.append(point.value)
 
-            let now = Date()
-
-            // Find or create the most recent bucket
+            // Merge into current session bucket if within session gap, otherwise create new bucket
             if let lastIndex = buckets.indices.last,
-               buckets[lastIndex].periodEnd >= point.timestamp {
-                // Update existing bucket
+               buckets[lastIndex].bucketSize == .session,
+               point.timestamp.timeIntervalSince(buckets[lastIndex].periodEnd) < config.sessionGapSeconds {
                 updateBucket(at: lastIndex, with: point.value)
+                buckets[lastIndex].periodEnd = point.timestamp
             } else {
-                // Create new session bucket for this point
                 let bucket = TimeBucket(
                     periodStart: point.timestamp,
-                    periodEnd: now,
+                    periodEnd: point.timestamp,
                     bucketSize: .session,
                     mean: point.value,
                     stddev: 0,
@@ -172,7 +170,7 @@ final class ProgressTimeline {
             buckets[index] = bucket
         }
 
-        private mutating func recomputeEWMA(config: TrainingModeConfig) {
+        mutating func recomputeEWMA(config: TrainingModeConfig) {
             guard !buckets.isEmpty else {
                 ewma = nil
                 return
@@ -186,7 +184,7 @@ final class ProgressTimeline {
             ewma = currentEWMA
         }
 
-        private mutating func recomputeTrend(config: TrainingModeConfig) {
+        mutating func recomputeTrend(config: TrainingModeConfig) {
             guard recordCount >= config.trendThreshold else {
                 computedTrend = nil
                 return
@@ -205,9 +203,9 @@ final class ProgressTimeline {
             }
 
             let changeRatio = (laterMean - earlierMean) / earlierMean
-            if changeRatio < -0.05 {
+            if changeRatio < -config.trendChangeThreshold {
                 computedTrend = .improving
-            } else if changeRatio > 0.05 {
+            } else if changeRatio > config.trendChangeThreshold {
                 computedTrend = .declining
             } else {
                 computedTrend = .stable
@@ -221,58 +219,19 @@ final class ProgressTimeline {
 
         let sorted = metrics.sorted { $0.timestamp < $1.timestamp }
         state.recordCount = sorted.count
-
-        // Assign to adaptive buckets
-        state.buckets = assignBuckets(sorted, now: now)
-
-        // Store all values for trend
-        let allValues = sorted.map(\.value)
-        state = ModeState()
-        state.recordCount = sorted.count
-        state.buckets = assignBuckets(sorted, now: now)
-
-        // Compute EWMA
-        if !state.buckets.isEmpty {
-            var currentEWMA = state.buckets[0].mean
-            for i in 1..<state.buckets.count {
-                let dt = state.buckets[i].periodStart.timeIntervalSince(state.buckets[i - 1].periodStart) / 86400.0
-                let alpha = 1.0 - exp(-log(2.0) * dt / config.ewmaHalflifeDays)
-                currentEWMA = alpha * state.buckets[i].mean + (1.0 - alpha) * currentEWMA
-            }
-            state.ewma = currentEWMA
-        }
-
-        // Compute trend
-        if allValues.count >= config.trendThreshold {
-            let midpoint = allValues.count / 2
-            let earlierMean = allValues[..<midpoint].reduce(0.0, +) / Double(midpoint)
-            let laterMean = allValues[midpoint...].reduce(0.0, +) / Double(allValues.count - midpoint)
-
-            if earlierMean > 0 {
-                let changeRatio = (laterMean - earlierMean) / earlierMean
-                if changeRatio < -0.05 {
-                    state.computedTrend = .improving
-                } else if changeRatio > 0.05 {
-                    state.computedTrend = .declining
-                } else {
-                    state.computedTrend = .stable
-                }
-            } else {
-                state.computedTrend = .stable
-            }
-        }
+        state.allValues = sorted.map(\.value)
+        state.buckets = assignBuckets(sorted, now: now, sessionGap: config.sessionGapSeconds)
+        state.recomputeEWMA(config: config)
+        state.recomputeTrend(config: config)
 
         return state
     }
 
     // MARK: - Bucket Assignment
 
-    private func assignBuckets(_ metrics: [MetricPoint], now: Date) -> [TimeBucket] {
+    private func assignBuckets(_ metrics: [MetricPoint], now: Date, sessionGap: TimeInterval = 1800) -> [TimeBucket] {
         let calendar = Calendar.current
         var groups: [(key: Date, end: Date, size: BucketSize, points: [Double])] = []
-
-        // Group by session proximity for <24h, by day for <7d, by week for <30d, by month beyond
-        let sessionGap: TimeInterval = 30 * 60 // 30 minutes
 
         for metric in metrics {
             let age = now.timeIntervalSince(metric.timestamp)

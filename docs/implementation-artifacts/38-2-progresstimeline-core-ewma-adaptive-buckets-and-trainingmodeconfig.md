@@ -1,6 +1,6 @@
 # Story 38.2: ProgressTimeline Core — EWMA, Adaptive Buckets, and TrainingModeConfig
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -219,6 +219,7 @@ None — clean implementation with no debugging issues.
 ### Change Log
 
 - 2026-03-05: Implemented story 38.2 — ProgressTimeline core data pipeline with EWMA, adaptive buckets, TrainingModeConfig, and composition root wiring
+- 2026-03-05: Code review fixes — H1: populated allValues during init for correct incremental trend; H2: fixed incremental session bucketing to use proximity check; H3: moved magic numbers (trendChangeThreshold, sessionGapSeconds) into TrainingModeConfig; M1: eliminated EWMA/trend code duplication via shared ModeState methods; added session merging test
 
 ### File List
 

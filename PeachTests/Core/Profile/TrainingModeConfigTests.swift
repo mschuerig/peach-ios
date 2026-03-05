@@ -13,6 +13,8 @@ struct TrainingModeConfigTests {
         #expect(config.coldStartThreshold == 20)
         #expect(config.trendThreshold == 100)
         #expect(config.unitLabel == "cents")
+        #expect(config.trendChangeThreshold == 0.05)
+        #expect(config.sessionGapSeconds == 1800)
     }
 
     @Test("interval comparison has expected parameters")
@@ -23,6 +25,8 @@ struct TrainingModeConfigTests {
         #expect(config.coldStartThreshold == 20)
         #expect(config.trendThreshold == 100)
         #expect(config.unitLabel == "cents")
+        #expect(config.trendChangeThreshold == 0.05)
+        #expect(config.sessionGapSeconds == 1800)
     }
 
     @Test("unison matching has expected parameters")
@@ -33,6 +37,8 @@ struct TrainingModeConfigTests {
         #expect(config.coldStartThreshold == 20)
         #expect(config.trendThreshold == 100)
         #expect(config.unitLabel == "cents")
+        #expect(config.trendChangeThreshold == 0.05)
+        #expect(config.sessionGapSeconds == 1800)
     }
 
     @Test("interval matching has expected parameters")
@@ -43,6 +49,8 @@ struct TrainingModeConfigTests {
         #expect(config.coldStartThreshold == 20)
         #expect(config.trendThreshold == 100)
         #expect(config.unitLabel == "cents")
+        #expect(config.trendChangeThreshold == 0.05)
+        #expect(config.sessionGapSeconds == 1800)
     }
 
     @Test("all four configurations have unique display names")

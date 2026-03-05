@@ -228,7 +228,8 @@ struct ProgressTimelineTests {
         let ewma = timeline.currentEWMA(for: .unisonComparison)
         #expect(ewma != nil)
         if let ewma {
-            // Should be close to 15.0 (exact value depends on bucket timestamp placement)
+            // EWMA should weight recent values more than older ones; exact value
+            // varies with calendar-dependent bucket boundaries (±2.0 tolerance)
             #expect(abs(ewma - 15.0) < 2.0)
         }
     }
@@ -326,6 +327,35 @@ struct ProgressTimelineTests {
         let unisonBuckets = timeline.buckets(for: .unisonComparison)
         let unisonCount = unisonBuckets.reduce(0) { $0 + $1.recordCount }
         #expect(unisonCount == 0)
+    }
+
+    @Test("incremental updates within same session merge into one bucket")
+    func incrementalSessionMerging() async {
+        let timeline = ProgressTimeline()
+
+        let referenceNote = MIDINote(60)
+        let targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(10.0))
+        let comparison = Comparison(referenceNote: referenceNote, targetNote: targetNote)
+
+        // Add two correct comparisons in quick succession (same session)
+        let completed1 = CompletedComparison(
+            comparison: comparison,
+            userAnsweredHigher: true,
+            tuningSystem: .equalTemperament
+        )
+        timeline.comparisonCompleted(completed1)
+
+        let completed2 = CompletedComparison(
+            comparison: comparison,
+            userAnsweredHigher: true,
+            tuningSystem: .equalTemperament
+        )
+        timeline.comparisonCompleted(completed2)
+
+        let buckets = timeline.buckets(for: .unisonComparison)
+        // Both records should be in the same session bucket
+        #expect(buckets.count == 1)
+        #expect(buckets.first?.recordCount == 2)
     }
 
     @Test("incorrect comparison records are excluded from comparison metric")
