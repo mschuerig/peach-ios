@@ -1,6 +1,6 @@
 # Story 38.4: Focus+Context Chart Interaction
 
-Status: in-progress
+Status: wont-do
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

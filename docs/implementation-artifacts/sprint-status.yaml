@@ -307,7 +307,7 @@ development_status:
   38-1-brainstorm-and-design-profile-visualization: done
   38-2-progresstimeline-core-ewma-adaptive-buckets-and-trainingmodeconfig: done
   38-3-progresschartview-and-profile-screen-redesign: done
-  38-4-focus-context-chart-interaction: in-progress
+  38-4-focus-context-chart-interaction: wont-do
   38-5-start-screen-sparkline-and-training-screen-summary: backlog
 
   # Cleanup: Consistent "Comparison" terminology
