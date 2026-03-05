@@ -2,7 +2,7 @@
 title: 'Template-Based Localized Help Content'
 slug: 'template-based-localized-help-content'
 created: '2026-03-05'
-status: 'ready-for-dev'
+status: 'complete'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['Swift 6.2', 'SwiftUI', 'String Catalogs (xcstrings)', 'iOS 26']
 files_to_modify: ['Peach/App/HelpContentView.swift (new)', 'Peach/Info/InfoScreen.swift', 'Peach/Resources/Localizable.xcstrings', 'PeachTests/Start/StartScreenTests.swift', 'PeachTests/App/HelpContentViewTests.swift (new)']
@@ -74,7 +74,7 @@ Replace per-fragment localization with per-section localized Markdown templates 
 
 ### Tasks
 
-- [ ] Task 1: Create `HelpSection` and `HelpContentView` in `Peach/App/HelpContentView.swift`
+- [x] Task 1: Create `HelpSection` and `HelpContentView` in `Peach/App/HelpContentView.swift`
   - File: `Peach/App/HelpContentView.swift` (new)
   - Action: Create a `HelpSection` struct with `title: String` and `body: String` properties. Create `HelpContentView` that takes `[HelpSection]` and renders each section as a `.headline` title + Markdown body text.
   - Details:
@@ -85,7 +85,7 @@ Replace per-fragment localization with per-section localized Markdown templates 
     - Add `.frame(maxWidth: .infinity, alignment: .leading)`
     - Add `#Preview` with sample sections
 
-- [ ] Task 2: Consolidate InfoScreen help content into template strings
+- [x] Task 2: Consolidate InfoScreen help content into template strings
   - File: `Peach/Info/InfoScreen.swift`
   - Action: Replace the 13+ individual `String(localized:)` calls with ~3 consolidated localized Markdown strings:
     - `appDescription` — stays as-is (already 1 string)
@@ -95,13 +95,13 @@ Replace per-fragment localization with per-section localized Markdown templates 
   - Keep: Section title strings ("What is Peach?", "Training Modes", "Getting Started") as they are short and needed by `HelpSection`
   - Add a static `helpSections` property that returns `[HelpSection]` composing the 3 sections
 
-- [ ] Task 3: Refactor InfoScreen view body to use `HelpContentView`
+- [x] Task 3: Refactor InfoScreen view body to use `HelpContentView`
   - File: `Peach/Info/InfoScreen.swift`
   - Action: Replace `helpSection` computed property with `HelpContentView(sections: Self.helpSections)`. Refactor `acknowledgmentsSection` to also use `HelpContentView` with a Markdown link: `[GeneralUser GS by S. Christian Collins](url)`.
   - Keep: `headerSection` as-is (needs `.largeTitle` + `.caption` font variation)
   - Remove: `helpSection` and `acknowledgmentsSection` computed properties
 
-- [ ] Task 4: Update German translations for consolidated keys
+- [x] Task 4: Update German translations for consolidated keys
   - File: `Peach/Resources/Localizable.xcstrings`
   - Action: Use `bin/add-localization.py` to add German translations for new consolidated strings. Remove stale keys for the old individual strings (will happen automatically on next Xcode build, or manually).
   - Key changes:
@@ -110,7 +110,7 @@ Replace per-fragment localization with per-section localized Markdown templates 
     - KEEP: `appDescription`, `gettingStartedText`, section titles (unchanged)
   - Run `bin/add-localization.py --missing` to verify no translations are missing
 
-- [ ] Task 5: Update tests
+- [x] Task 5: Update tests
   - File: `PeachTests/Start/StartScreenTests.swift`
   - Action: Update help content tests to reflect new structure:
     - Remove `infoScreenHasFourTrainingModes` (no more `trainingModes` array)
@@ -123,7 +123,7 @@ Replace per-fragment localization with per-section localized Markdown templates 
     - `HelpSection` can be instantiated with title and body
     - `HelpContentView` can be instantiated with an array of sections
 
-- [ ] Task 6: Build, test, and verify
+- [x] Task 6: Build, test, and verify
   - Action: Run `bin/build.sh` — clean build with no errors
   - Action: Run `bin/test.sh` — all tests pass
   - Action: Run `bin/add-localization.py --missing` — no new missing translations
@@ -131,17 +131,17 @@ Replace per-fragment localization with per-section localized Markdown templates 
 
 ### Acceptance Criteria
 
-- [ ] AC 1: Given InfoScreen is displayed, when viewing help content, then all three help sections (What is Peach?, Training Modes, Getting Started) appear with correct content and inline Markdown formatting (bold mode names).
+- [x] AC 1: Given InfoScreen is displayed, when viewing help content, then all three help sections (What is Peach?, Training Modes, Getting Started) appear with correct content and inline Markdown formatting (bold mode names).
 
-- [ ] AC 2: Given InfoScreen in German locale, when viewing help content, then all section titles and body text appear in German with correct Markdown formatting.
+- [x] AC 2: Given InfoScreen in German locale, when viewing help content, then all section titles and body text appear in German with correct Markdown formatting.
 
-- [ ] AC 3: Given the `HelpContentView` component, when used with an array of `HelpSection` values, then each section renders with a `.headline` title and Markdown-formatted body text.
+- [x] AC 3: Given the `HelpContentView` component, when used with an array of `HelpSection` values, then each section renders with a `.headline` title and Markdown-formatted body text.
 
-- [ ] AC 4: Given the refactored InfoScreen, when counting localization keys for help content, then there are fewer keys than before (~6 vs 13+) while maintaining the same user-visible content.
+- [x] AC 4: Given the refactored InfoScreen, when counting localization keys for help content, then there are fewer keys than before (~6 vs 13+) while maintaining the same user-visible content.
 
-- [ ] AC 5: Given the acknowledgments section, when rendered, then the SoundFont credit appears as a clickable Markdown link.
+- [x] AC 5: Given the acknowledgments section, when rendered, then the SoundFont credit appears as a clickable Markdown link.
 
-- [ ] AC 6: Given the header section, when displayed, then it still shows Peach title (large), version, dynamic copyright year, license, and GitHub link — unchanged from current behavior.
+- [x] AC 6: Given the header section, when displayed, then it still shows Peach title (large), version, dynamic copyright year, license, and GitHub link — unchanged from current behavior.
 
 ## Additional Context
 

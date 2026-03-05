@@ -147,11 +147,6 @@ struct StartScreenTests {
         #expect(InfoScreen.licenseName == "MIT")
     }
 
-    @Test("Info Screen has SoundFont credit")
-    func infoScreenHasSoundFontCredit() {
-        #expect(InfoScreen.soundFontCredit == "GeneralUser GS by S. Christian Collins")
-    }
-
     @Test("Info Screen has non-empty version string")
     func infoScreenHasNonEmptyVersion() {
         let view = InfoScreen()
@@ -177,21 +172,16 @@ struct StartScreenTests {
         #expect(InfoScreen.appDescription.count > 50)
     }
 
-    @Test("Info Screen has four training modes with dash-separated names")
-    func infoScreenHasFourTrainingModes() async {
-        let modes = InfoScreen.trainingModes
-        #expect(modes.count == 4)
-        for mode in modes {
-            #expect(mode.name.contains("–"))
-        }
+    @Test("Info Screen training modes description contains dash-separated mode names")
+    func infoScreenHasTrainingModesDescription() async {
+        let description = InfoScreen.trainingModesDescription
+        #expect(description.contains("–"))
+        #expect(description.count > 100)
     }
 
-    @Test("Info Screen training modes have non-empty names and descriptions")
-    func infoScreenTrainingModesAreComplete() async {
-        for mode in InfoScreen.trainingModes {
-            #expect(!mode.name.isEmpty)
-            #expect(!mode.description.isEmpty)
-        }
+    @Test("Info Screen has three help sections")
+    func infoScreenHasThreeHelpSections() async {
+        #expect(InfoScreen.helpSections.count == 3)
     }
 
     @Test("Info Screen getting started text mentions Peach")
