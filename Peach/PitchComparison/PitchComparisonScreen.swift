@@ -54,24 +54,37 @@ struct PitchComparisonScreen: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            TrainingStatsView(
-                latestValue: pitchComparisonSession.lastCompletedCentDifference,
-                sessionBest: pitchComparisonSession.sessionBestCentDifference,
-                trend: progressTimeline.trend(for: trainingMode)
-            )
-            .padding(.horizontal)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading) {
+                    TrainingStatsView(
+                        latestValue: pitchComparisonSession.lastCompletedCentDifference,
+                        sessionBest: pitchComparisonSession.sessionBestCentDifference,
+                        trend: progressTimeline.trend(for: trainingMode)
+                    )
 
-            if pitchComparisonSession.isIntervalMode, let interval = pitchComparisonSession.currentInterval {
-                VStack(spacing: 2) {
-                    Text(interval.displayName)
-                        .font(.title3)
-                    Text(pitchComparisonSession.sessionTuningSystem.displayName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if pitchComparisonSession.isIntervalMode, let interval = pitchComparisonSession.currentInterval {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(interval.displayName)
+                                .font(.title3)
+                            Text(pitchComparisonSession.sessionTuningSystem.displayName)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchComparisonSession.sessionTuningSystem.displayName)"))
+                    }
                 }
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchComparisonSession.sessionTuningSystem.displayName)"))
+
+                Spacer()
+
+                PitchComparisonFeedbackIndicator(
+                    isCorrect: pitchComparisonSession.isLastAnswerCorrect
+                )
+                .opacity(pitchComparisonSession.showFeedback ? 1 : 0)
+                .accessibilityHidden(!pitchComparisonSession.showFeedback)
+                .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchComparisonSession.showFeedback)
             }
+            .padding(.horizontal)
 
             Group {
                 if isCompactHeight {
@@ -88,16 +101,6 @@ struct PitchComparisonScreen: View {
             }
         }
         .padding()
-        .overlay {
-            if pitchComparisonSession.showFeedback {
-                PitchComparisonFeedbackIndicator(
-                    isCorrect: pitchComparisonSession.isLastAnswerCorrect,
-                    iconSize: Self.feedbackIconSize(isCompact: isCompactHeight)
-                )
-                .transition(.opacity)
-            }
-        }
-        .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchComparisonSession.showFeedback)
         .navigationTitle("Hear & Compare")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -216,10 +219,6 @@ struct PitchComparisonScreen: View {
 
     static func buttonTextFont(isCompact: Bool) -> Font {
         isCompact ? .title2 : .title
-    }
-
-    static func feedbackIconSize(isCompact: Bool) -> CGFloat {
-        isCompact ? 70 : PitchComparisonFeedbackIndicator.defaultIconSize
     }
 
     // MARK: - Helpers

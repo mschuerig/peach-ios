@@ -42,25 +42,12 @@ struct PitchComparisonScreenLayoutTests {
         #expect(PitchComparisonScreen.buttonTextFont(isCompact: false) == .title)
     }
 
-    // MARK: - Feedback Icon Size
-
-    @Test("Feedback icon size is 70pt in compact mode")
-    func feedbackIconSizeCompact() {
-        #expect(PitchComparisonScreen.feedbackIconSize(isCompact: true) == 70)
-    }
-
-    @Test("Feedback icon size is 100pt in regular mode")
-    func feedbackIconSizeRegular() {
-        #expect(PitchComparisonScreen.feedbackIconSize(isCompact: false) == 100)
-    }
-
     // MARK: - Compact vs Regular Consistency
 
     @Test("All compact dimensions are smaller than regular dimensions")
     func compactDimensionsSmallerThanRegular() {
         #expect(PitchComparisonScreen.buttonIconSize(isCompact: true) < PitchComparisonScreen.buttonIconSize(isCompact: false))
         #expect(PitchComparisonScreen.buttonMinHeight(isCompact: true) < PitchComparisonScreen.buttonMinHeight(isCompact: false))
-        #expect(PitchComparisonScreen.feedbackIconSize(isCompact: true) < PitchComparisonScreen.feedbackIconSize(isCompact: false))
     }
 
     @Test("Compact button min height exceeds 44pt minimum tap target")

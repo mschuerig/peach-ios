@@ -2,7 +2,7 @@
 title: 'Pitch Comparison Feedback: Checkmark/X Icons in Top-Right'
 slug: 'pitch-comparison-feedback-checkmark-top-right'
 created: '2026-03-06'
-status: 'ready-for-dev'
+status: 'complete'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['SwiftUI', 'Swift 6.2']
 files_to_modify: ['Peach/PitchComparison/PitchComparisonFeedbackIndicator.swift', 'Peach/PitchComparison/PitchComparisonScreen.swift', 'PeachTests/PitchComparison/PitchComparisonScreenLayoutTests.swift']
@@ -74,7 +74,7 @@ Replace `hand.thumbsup.fill` / `hand.thumbsdown.fill` with `checkmark.circle.fil
 
 ### Tasks
 
-- [ ] Task 1: Simplify `PitchComparisonFeedbackIndicator` with new icons and font sizing
+- [x] Task 1: Simplify `PitchComparisonFeedbackIndicator` with new icons and font sizing
   - File: `Peach/PitchComparison/PitchComparisonFeedbackIndicator.swift`
   - Action: Replace icon names and remove fixed-size constants
   - Details:
@@ -86,7 +86,7 @@ Replace `hand.thumbsup.fill` / `hand.thumbsdown.fill` with `checkmark.circle.fil
     - Update the doc comment to say "checkmark (green) for correct answers or X (red) for incorrect answers"
     - Update the code example in the doc comment to remove the `iconSize` parameter usage
 
-- [ ] Task 2: Restructure `PitchComparisonScreen` layout to top-right feedback
+- [x] Task 2: Restructure `PitchComparisonScreen` layout to top-right feedback
   - File: `Peach/PitchComparison/PitchComparisonScreen.swift`
   - Action: Replace centered overlay with HStack layout matching `PitchMatchingScreen` pattern
   - Details:
@@ -100,7 +100,7 @@ Replace `hand.thumbsup.fill` / `hand.thumbsdown.fill` with `checkmark.circle.fil
     - Add `.padding(.horizontal)` to the HStack (matching PitchMatchingScreen)
     - Remove `.padding(.horizontal)` from TrainingStatsView if it becomes redundant
 
-- [ ] Task 3: Update layout tests to remove `feedbackIconSize` tests
+- [x] Task 3: Update layout tests to remove `feedbackIconSize` tests
   - File: `PeachTests/PitchComparison/PitchComparisonScreenLayoutTests.swift`
   - Action: Remove tests for the deleted `feedbackIconSize(isCompact:)` method
   - Details:
