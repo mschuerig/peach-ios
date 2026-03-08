@@ -48,14 +48,14 @@ Training data is device-local only. No mechanism to sync across devices or recov
 
 The `PerceptualProfile` is rebuilt from all stored records on every app startup. Currently fast (milliseconds for thousands of records), but performance has not been profiled for very large datasets (tens of thousands of records over months of training). A caching strategy may become necessary.
 
-### TD-3: No Deinit Safety on PlaybackHandle
+### TD-3: Data Export/Import Schema Evolution
 
-`PlaybackHandle` relies on explicit `stop()` calls. If a handle is deallocated without being stopped, the note continues playing until the audio engine is torn down. All current code paths stop handles explicitly, but orphan safety could be added via `deinit`.
+`TrainingDataTransferService` exports and imports CSV with a fixed schema. Future model changes (new fields, renamed columns) will require migration logic in the CSV parser to maintain backward compatibility with previously exported files.
 
-### TD-4: Single Fixed Interval for v0.3
+### TD-4: Progress Chart Drill-Down Disabled
 
-The initial interval training implementation is limited to a single fixed interval (perfect fifth up, 700 cents in 12-TET). The settings UI for selecting intervals per direction has been implemented, but multiple concurrent intervals in training rotation and tuning system selection beyond 12-TET are deferred.
+`ProgressTimeline` supports drill-down from month → week → day → session granularity, and the infrastructure is built and tested. However, interactive chart expansion is currently gated behind a feature flag (`chartExpansionEnabled = false`) pending UX evaluation.
 
-### TD-5: No Temporal Progress Visualization
+### TD-5: PlaybackHandle Relies on Explicit Cleanup
 
-The Profile Screen shows current snapshot statistics and a threshold timeline chart, but does not yet support profile snapshots over time — a full temporal view showing how the perceptual profile shape has evolved. Identified as a future enhancement.
+`SoundFontPlaybackHandle` has no `deinit`-based safety net. If a handle is dropped without `stop()`, the note plays until the audio engine shuts down. All current code paths stop handles explicitly, but a defensive `deinit` could catch future misuse.

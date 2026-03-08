@@ -19,7 +19,9 @@ The following table summarizes the most architecturally significant terms:
 | **Two-World Architecture** | Strict separation between logical types (MIDINote, Interval, Cents) and physical types (Frequency). Bridged exclusively through `TuningSystem`. |
 | **Observer Fan-Out** | Pattern where sessions notify an array of observers (DataStore, Profile, ProgressTimeline, Haptic) after each completed exercise. Each observer handles its own errors. |
 | **Welford's Algorithm** | Incremental online algorithm for computing mean and variance without storing all historical data. Used in `PerceptualProfile` for O(1) per-record updates. |
-| **TuningSystem** | Enum (`.equalTemperament`) that maps musical intervals to cent offsets and computes frequencies from detuned MIDI notes. |
-| **ProgressTimeline** | Tracks training progress over time for all four modes independently. Uses EWMA smoothing with adaptive time bucketing. Provides trend analysis. |
-| **DirectedInterval** | Value type combining `Interval` + `Direction` (up/down) for session parameterization. |
-| **TrainingConstants** | Shared configuration (feedback duration 400ms, default velocity, default amplitude) used by both session types. |
+| **TuningSystem** | Enum (`.equalTemperament`, `.justIntonation`) that maps musical intervals to cent offsets and computes frequencies from detuned MIDI notes. |
+| **ProgressTimeline** | Tracks training progress across all four modes independently. Uses EWMA smoothing with adaptive time bucketing (session → day → week → month). Provides trend analysis (improving / stable / declining). Replaces the earlier `TrendAnalyzer` and `ThresholdTimeline`. |
+| **TrainingModeConfig** | Per-mode configuration defining display names, expert baselines, and EWMA parameters. Drives `ProgressTimeline` and `ProgressChartView` behavior for each of the four training modes. |
+| **DirectedInterval** | Value type combining `Interval` + `Direction` (up/down). Users select which directed intervals to train via `IntervalSelection` in Settings. |
+| **TrainingDataTransferService** | Service for CSV-based data export and import (merge or replace modes). Triggers full profile and timeline rebuild on import. |
+| **TrainingConstants** | Shared configuration (feedback duration, default velocity, default amplitude) used by both session types. |

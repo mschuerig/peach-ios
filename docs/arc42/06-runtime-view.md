@@ -9,45 +9,34 @@ sequenceDiagram
     actor User
     participant CS as PitchComparisonSession
     participant Strategy as KazezNoteStrategy
-    participant Profile as PerceptualProfile
-    participant NP as SoundFontNotePlayer
-    participant Observers as Observers<br>(DataStore, Profile,<br>Haptic, Trend, Timeline)
+    participant NP as NotePlayer
+    participant Observers as Observers<br>(DataStore, Profile,<br>Haptic, ProgressTimeline)
 
     User->>CS: start(intervals)
     activate CS
 
     loop Each pitch comparison
-        CS->>Strategy: nextPitchComparison(profile, settings, lastPitchComparison, interval)
-        Strategy->>Profile: read weak spots, mean threshold
-        Strategy-->>CS: PitchComparison(referenceNote, targetNote)
+        CS->>Strategy: select next comparison<br>(based on profile and settings)
+        Strategy-->>CS: PitchComparison
 
-        CS->>CS: state = playingNote1
-        CS->>NP: play(frequency1, duration)
-        Note over NP: Note 1 plays for configured duration
+        CS->>NP: play note 1 (fixed duration)
+        CS->>NP: play note 2 (fixed duration)
+        Note over CS: Answer buttons enabled<br>during note 2
 
-        CS->>CS: state = playingNote2
-        CS->>NP: play(frequency2, duration)
-        Note over CS: Buttons enabled — user can answer<br>while note 2 is still playing
+        User->>CS: answer: higher / lower
+        CS->>Observers: fan-out completed result
 
-        User->>CS: handleAnswer(isHigher: true/false)
-        CS->>CS: compute isCorrect
-        CS->>Observers: pitchComparisonCompleted(result)
-        Note over Observers: DataStore persists record<br>Profile updates statistics<br>HapticManager buzzes on wrong<br>TrendAnalyzer/Timeline update
-
-        CS->>CS: state = showingFeedback (400ms)
-        Note over User: Sees thumbs up/down
+        CS->>CS: show feedback (400ms)
     end
 
-    User->>CS: stop() [navigate away / background]
-    CS->>NP: stop current handle
-    CS->>CS: state = idle
+    User->>CS: stop (navigate away / background)
     deactivate CS
 ```
 
 **Key behavior:**
-- Buttons are enabled during `playingNote2` — the user can answer before the second note finishes
-- The 400ms feedback phase is skippable if the user navigates away
-- Audio interruptions (phone call, headphone disconnect) trigger `stop()` automatically via `AudioSessionInterruptionMonitor`
+- The user can answer while note 2 is still playing — no need to wait
+- The 400ms feedback phase is skippable by navigating away
+- Audio interruptions (phone call, headphone disconnect) trigger automatic stop via `AudioSessionInterruptionMonitor`
 
 ## Pitch Matching Loop
 
@@ -57,49 +46,41 @@ The user tunes a note to match a target pitch.
 sequenceDiagram
     actor User
     participant PMS as PitchMatchingSession
-    participant NP as SoundFontNotePlayer
+    participant NP as NotePlayer
     participant Handle as PlaybackHandle
-    participant Observers as Observers<br>(DataStore, Profile)
+    participant Observers as Observers<br>(DataStore, Profile,<br>ProgressTimeline)
 
     User->>PMS: start(intervals)
     activate PMS
 
     loop Each pitch matching attempt
-        PMS->>PMS: generate PitchMatchingChallenge<br>(reference + random ±20¢ offset)
+        PMS->>PMS: generate challenge<br>(reference + random offset)
 
-        PMS->>PMS: state = playingReference
-        PMS->>NP: play(referenceFreq, duration)
-        Note over NP: Reference note plays<br>for configured duration
+        PMS->>NP: play reference (fixed duration)
 
-        PMS->>PMS: state = playingTunable
-        PMS->>NP: play(tunableFreq) → handle
-        Note over PMS: Slider becomes active
+        PMS->>NP: play tunable note → handle
+        Note over PMS: Awaiting slider touch
 
         loop User drags slider
-            User->>PMS: adjustPitch(sliderValue)
-            PMS->>Handle: adjustFrequency(newFreq)
-            Note over NP: Real-time pitch bend<br>(14-bit MIDI resolution)
+            User->>PMS: adjust pitch
+            PMS->>Handle: adjustFrequency (real-time)
         end
 
-        User->>PMS: commitPitch(finalValue) [releases slider]
+        User->>PMS: commit (release slider)
         PMS->>Handle: stop()
-        PMS->>PMS: compute userCentError
-        PMS->>Observers: pitchMatchingCompleted(result)
+        PMS->>Observers: fan-out completed result
 
-        PMS->>PMS: state = showingFeedback (400ms)
-        Note over User: Sees arrow + cent error
+        PMS->>PMS: show feedback (400ms)
     end
 
-    User->>PMS: stop()
-    PMS->>Handle: stop current handle
-    PMS->>PMS: state = idle
+    User->>PMS: stop (navigate away / background)
     deactivate PMS
 ```
 
 **Key behavior:**
-- The slider maps -1.0..+1.0 to ±20 cents from the initial offset
-- No visual feedback during active tuning — only after release
-- `adjustFrequency()` on the `PlaybackHandle` uses MIDI pitch bend for real-time frequency change
+- After the reference plays, the tunable note starts but the slider waits for user touch before the session advances
+- Real-time pitch adjustment via `PlaybackHandle.adjustFrequency()` — the user hears the change as they drag
+- No visual feedback during active tuning — only after the slider is released
 
 ## App Startup and Profile Rebuild
 
@@ -108,33 +89,26 @@ sequenceDiagram
     participant App as PeachApp.init()
     participant DS as TrainingDataStore
     participant Profile as PerceptualProfile
-    participant Trend as TrendAnalyzer
-    participant Timeline as ThresholdTimeline
+    participant PT as ProgressTimeline
 
-    App->>App: Create ModelContainer<br>(PitchComparisonRecord + PitchMatchingRecord)
-    App->>DS: init(modelContext)
-    App->>Profile: init()
+    App->>App: Create ModelContainer
 
-    App->>DS: fetchAllPitchComparisons()
-    DS-->>App: [PitchComparisonRecord]
-
-    loop Each historical record
-        App->>Profile: update(note, centOffset, isCorrect)
-        App->>Trend: pitchComparisonCompleted(record)
-        App->>Timeline: pitchComparisonCompleted(record)
+    App->>DS: fetch all comparison records
+    loop Each record
+        App->>Profile: update statistics
+        App->>PT: update progress
     end
 
-    App->>DS: fetchAllPitchMatchings()
-    DS-->>App: [PitchMatchingRecord]
-
-    loop Each historical record
-        App->>Profile: updateMatching(note, centError)
+    App->>DS: fetch all matching records
+    loop Each record
+        App->>Profile: update matching statistics
+        App->>PT: update progress
     end
 
-    Note over App: All services wired.<br>Inject into SwiftUI environment.
+    Note over App: Inject all services<br>into SwiftUI environment
 ```
 
-The perceptual profile is never persisted — it is always rebuilt from raw records. This ensures the profile is always consistent with the stored data and simplifies the data model.
+The perceptual profile and progress timeline are never persisted — they are always rebuilt from raw records. This ensures consistency with stored data and simplifies the data model.
 
 ## Audio Interruption Handling
 

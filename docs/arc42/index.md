@@ -1,7 +1,7 @@
 # Peach — arc42 Architecture Documentation
 
-**Version:** 1.0
-**Date:** 2026-03-02
+**Version:** 1.1
+**Date:** 2026-03-08
 **Based on:** arc42 Template v9.0
 
 This documentation describes the software architecture of **Peach**, an iOS pitch ear training app. It follows the [arc42](https://arc42.org) template structure.

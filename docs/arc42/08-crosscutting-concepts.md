@@ -25,14 +25,15 @@ Both training sessions use a **synchronous observer fan-out** for side effects a
 
 ```mermaid
 graph LR
-    CS["PitchComparisonSession"] -->|"pitchComparisonCompleted()"| DS["TrainingDataStore<br><i>persists record</i>"]
-    CS -->|"pitchComparisonCompleted()"| PP["PerceptualProfile<br><i>updates statistics</i>"]
-    CS -->|"pitchComparisonCompleted()"| HM["HapticFeedbackManager<br><i>buzzes on wrong</i>"]
-    CS -->|"pitchComparisonCompleted()"| TA["TrendAnalyzer<br><i>updates trend</i>"]
-    CS -->|"pitchComparisonCompleted()"| TL["ThresholdTimeline<br><i>updates chart data</i>"]
+    CS["PitchComparisonSession"] -->|"completed()"| DS["TrainingDataStore<br><i>persists record</i>"]
+    CS -->|"completed()"| PP["PerceptualProfile<br><i>updates statistics</i>"]
+    CS -->|"completed()"| HM["HapticFeedbackManager<br><i>buzzes on wrong</i>"]
+    CS -->|"completed()"| PT["ProgressTimeline<br><i>updates progress + trend</i>"]
 ```
 
-Observers are injected at construction time via `[PitchComparisonObserver]` and `[PitchMatchingObserver]` arrays. Each observer handles its own errors internally — a persistence failure does not break the training loop. This keeps the session as a clean orchestrator that delegates all side effects.
+Observers are injected at construction time via `[PitchComparisonObserver]` and `[PitchMatchingObserver]` arrays. Each observer handles its own errors internally — a persistence failure does not break the training loop. The session is a clean orchestrator that delegates all side effects.
+
+`PitchMatchingSession` uses the same pattern with `DataStore`, `PerceptualProfile`, and `ProgressTimeline` as observers (no haptic feedback for matching).
 
 ## Protocol-First Design and Dependency Injection
 
