@@ -41,7 +41,12 @@ struct StartScreen: View {
         }
         .padding()
         .navigationTitle("Peach")
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Text("Peach")
+                    .font(.headline)
+            }
             ToolbarItem(placement: .navigationBarLeading) {
                 Button {
                     showInfoSheet = true

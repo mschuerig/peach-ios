@@ -2,7 +2,7 @@
 title: 'Start Screen Inline Navigation Title'
 slug: 'start-screen-inline-nav-title'
 created: '2026-03-08'
-status: 'ready-for-dev'
+status: 'completed'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['SwiftUI']
 files_to_modify: ['Peach/Start/StartScreen.swift']
@@ -59,7 +59,7 @@ Replace `.navigationTitle("Peach")` with a custom `ToolbarItem(placement: .princ
 
 ### Tasks
 
-- [ ] Task 1: Replace large navigation title with custom inline principal title
+- [x] Task 1: Replace large navigation title with custom inline principal title
   - File: `Peach/Start/StartScreen.swift`
   - Action: Remove `.navigationTitle("Peach")` (line 43). Add a `ToolbarItem(placement: .principal)` inside the existing `.toolbar` block (before or after the existing toolbar items):
     ```swift
@@ -101,3 +101,12 @@ This is a visual-only change with no business logic. Manual verification in port
 
 - If `.headline` doesn't match the desired visual weight, consider `.body.bold()` or a custom size. Visual review in Simulator recommended.
 - The existing `ToolbarItem(placement: .navigationBarLeading)` and `ToolbarItemGroup(placement: .navigationBarTrailing)` remain unchanged.
+
+## Review Notes
+
+- Adversarial review completed
+- Findings: 7 total, 2 fixed, 5 skipped (noise/undecided/no-action-needed)
+- Resolution approach: auto-fix
+- F1 (Medium, real): Added `.navigationTitle("Peach")` back with `.navigationBarTitleDisplayMode(.inline)` to explicitly suppress large title mode
+- F2 (Medium, real): Kept `.navigationTitle("Peach")` to preserve VoiceOver screen-title announcement
+- F3 (Low, real): No action needed — `Text("Peach")` uses the same string catalog key
