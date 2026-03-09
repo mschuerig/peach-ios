@@ -312,3 +312,7 @@ development_status:
 
   # Cleanup: Consistent "PitchComparison" terminology
   cleanup-rename-discrimination-to-pitch-comparison: done # Completed naming-symmetry rename across ~70 source/test files and ~19 doc files
+
+  # Epic 39: App Icon Redesign — AI-Generated Peach Icon
+  epic-39: in-progress
+  39-1-app-icon-redesign: ready-for-dev
