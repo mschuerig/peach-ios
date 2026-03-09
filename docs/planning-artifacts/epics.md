@@ -413,7 +413,7 @@ Users can access contextual help on the Start Screen, Settings Screen, and Train
 **FRs covered:** None (new feature, not in original PRD)
 **Depends on:** Epic 32, Epic 35
 
-### Epic 38: See Your Strengths — Perceptual Profile Visualization
+### Epic 38: See Your Strengths — Perceptual Profile Visualization ✅ Done
 Users see a useful and easily understandable visualization of their perceptual profile that encourages them by showing progress and highlights weak spots where further training would give the most improvement.
 **FRs covered:** FR21 (redesign/enhancement)
 
@@ -3689,7 +3689,3 @@ So that I feel encouraged without navigating to the full Profile Screen.
 - Reference approved UX concept in `docs/implementation-artifacts/38-1-brainstorm-and-design-profile-visualization.md`
 
 ---
-
-## Action Items
-
-- [ ] **Future Epic:** Extend `SettingsScreen` to let users choose `tuningSystem` and `intervals`, backed by UserDefaults in `AppUserSettings` (currently hardcoded in Story 23.2)
