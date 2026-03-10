@@ -238,6 +238,17 @@ Claude Opus 4.6 (claude-opus-4-6)
 
 ### Completion Notes List
 
+- Task 1 (tool selection): ChatGPT/DALL-E selected. Recraft was initially preferred for SVG output but has restrictive free-tier licensing (no commercial use). ChatGPT grants full ownership even on free tier.
+- Task 2 (prompt iteration): Extensive iteration attempted. Key findings:
+  - Symmetrical peach shape always reads as posterior — side/3/4 view fixes this
+  - Sound waves emanating from a peach risk looking like flatulence
+  - "Peach-ear" concept (ear shaped/colored like a peach with stem+leaves) is the most promising direction
+  - Cross-section peach with ear as pit looked like a strawberry at icon size
+  - Separate sound wave SVG layer looked moth-eaten under Liquid Glass (stroked paths disintegrate; filled crescents too small to read)
+  - DALL-E struggles with: transparent backgrounds, mirroring/facing direction, incremental edits, separating foreground from fruit concept
+  - Best result so far: a standalone ear colored in peach tones with stem and two leaves (cartoon/sticker style) — concept works but execution needs refinement
+- Story paused at ready-for-dev — no final icon selected yet
+
 ### Change Log
 
 ### File List
