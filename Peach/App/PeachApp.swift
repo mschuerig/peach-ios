@@ -14,6 +14,7 @@ struct PeachApp: App {
     @State private var transferService: TrainingDataTransferService
     @State private var notePlayer: any NotePlayer
     @State private var activeSession: (any TrainingSession)?
+    @State private var userSettings: any UserSettings
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
@@ -29,7 +30,8 @@ struct PeachApp: App {
             _soundFontLibrary = State(wrappedValue: soundFontLibrary)
             SettingsKeys.validateSoundSource(against: soundFontLibrary)
 
-            let userSettings = AppUserSettings()
+            let userSettings: any UserSettings = AppUserSettings()
+            _userSettings = State(wrappedValue: userSettings)
             let notePlayer: any NotePlayer = try SoundFontNotePlayer(userSettings: userSettings, stopPropagationDelay: .zero)
             _notePlayer = State(wrappedValue: notePlayer)
 
@@ -69,7 +71,6 @@ struct PeachApp: App {
                 notePlayer: notePlayer,
                 strategy: strategy,
                 profile: profile,
-                userSettings: userSettings,
                 dataStore: dataStore,
                 progressTimeline: progressTimeline
             ))
@@ -77,7 +78,6 @@ struct PeachApp: App {
             _pitchMatchingSession = State(wrappedValue: Self.createPitchMatchingSession(
                 notePlayer: notePlayer,
                 profile: profile,
-                userSettings: userSettings,
                 dataStore: dataStore,
                 progressTimeline: progressTimeline
             ))
@@ -95,15 +95,17 @@ struct PeachApp: App {
                 .environment(\.perceptualProfile, profile)
                 .environment(\.progressTimeline, progressTimeline)
                 .environment(\.soundSourceProvider, soundFontLibrary)
-                .environment(\.soundPreviewPlay, { [notePlayer] in
+                .environment(\.userSettings, userSettings)
+                .environment(\.soundPreviewPlay, { [notePlayer, userSettings] (duration: Duration) in
                     let frequency = TuningSystem.equalTemperament.frequency(
                         for: MIDINote(69),
-                        referencePitch: AppUserSettings().referencePitch
+                        referencePitch: userSettings.referencePitch
                     )
+                    let seconds = Double(duration.components.seconds) + Double(duration.components.attoseconds) / 1e18
                     try? await notePlayer.play(
                         frequency: frequency,
-                        duration: TrainingConstants.previewDuration,
-                        velocity: TrainingConstants.velocity,
+                        duration: seconds,
+                        velocity: MIDIVelocity(63),
                         amplitudeDB: AmplitudeDB(0)
                     )
                 })
@@ -167,7 +169,6 @@ struct PeachApp: App {
         notePlayer: NotePlayer,
         strategy: NextPitchComparisonStrategy,
         profile: PerceptualProfile,
-        userSettings: UserSettings,
         dataStore: TrainingDataStore,
         progressTimeline: ProgressTimeline
     ) -> PitchComparisonSession {
@@ -177,7 +178,6 @@ struct PeachApp: App {
             notePlayer: notePlayer,
             strategy: strategy,
             profile: profile,
-            userSettings: userSettings,
             resettables: [progressTimeline],
             observers: observers
         )
@@ -186,7 +186,6 @@ struct PeachApp: App {
     private static func createPitchMatchingSession(
         notePlayer: NotePlayer,
         profile: PerceptualProfile,
-        userSettings: UserSettings,
         dataStore: TrainingDataStore,
         progressTimeline: ProgressTimeline
     ) -> PitchMatchingSession {
@@ -194,7 +193,6 @@ struct PeachApp: App {
             notePlayer: notePlayer,
             profile: profile,
             observers: [dataStore, profile, progressTimeline],
-            userSettings: userSettings,
             backgroundNotificationName: UIApplication.didEnterBackgroundNotification,
             foregroundNotificationName: UIApplication.willEnterForegroundNotification
         )

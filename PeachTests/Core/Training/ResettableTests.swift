@@ -38,7 +38,6 @@ struct ResettableTests {
             notePlayer: MockNotePlayer(),
             strategy: MockNextPitchComparisonStrategy(),
             profile: PerceptualProfile(),
-            userSettings: MockUserSettings(),
             resettables: [mock1, mock2]
         )
 

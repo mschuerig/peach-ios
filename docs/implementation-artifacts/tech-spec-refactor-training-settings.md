@@ -2,7 +2,7 @@
 title: 'Refactor TrainingSettings into Session-Specific Types'
 slug: 'refactor-training-settings'
 created: '2026-03-10'
-status: 'ready-for-dev'
+status: 'completed'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['Swift 6.2', 'SwiftUI', 'Swift Testing']
 files_to_modify:
@@ -140,7 +140,7 @@ Additionally, `AmplitudeDB` wraps `Float` which forces conversions when used in 
 
 Tasks are ordered by dependency (lowest-level first). Each task should compile after completion.
 
-- [ ] **Task 1: Change `AmplitudeDB` from `Float` to `Double`**
+- [x] **Task 1: Change `AmplitudeDB` from `Float` to `Double`**
   - File: `Peach/Core/Audio/AmplitudeDB.swift`
   - Action: Change `rawValue: Float` → `rawValue: Double`, `validRange: ClosedRange<Float>` → `ClosedRange<Double>`, `init(_ rawValue: Float)` → `init(_ rawValue: Double)`. Remove `ExpressibleByFloatLiteral` extension (now redundant — `Double` literal works directly). Update `ExpressibleByIntegerLiteral` to use `Double(value)`.
   - File: `Peach/Core/Audio/SoundFontNotePlayer.swift` L178
@@ -150,7 +150,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - File: `Peach/PitchComparison/PitchComparisonSession.swift` L244-245
   - Action: Remove `Float()` casts in `calculateTargetAmplitude` — no longer needed since `AmplitudeDB` is `Double`. Change: `let range = varyLoudness * maxLoudnessOffsetDB.rawValue` and `let offset = Double.random(in: -range...range)`.
 
-- [ ] **Task 2: Create `PitchComparisonTrainingSettings`**
+- [x] **Task 2: Create `PitchComparisonTrainingSettings`**
   - File: `Peach/Core/Training/PitchComparisonTrainingSettings.swift` (new file)
   - Action: Create struct with all pitch comparison tunable parameters:
     ```swift
@@ -184,7 +184,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
     ```
   - Notes: File placement in `Core/Training/` per codebase convention (shared training domain type). `import Foundation` only. No SwiftUI. Default values match current behavior except `maxLoudnessOffsetDB` which changes from 5.0 to 10.0.
 
-- [ ] **Task 3: Create `PitchMatchingTrainingSettings`**
+- [x] **Task 3: Create `PitchMatchingTrainingSettings`**
   - File: `Peach/Core/Training/PitchMatchingTrainingSettings.swift` (new file)
   - Action: Create struct with all pitch matching tunable parameters:
     ```swift
@@ -216,7 +216,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
     ```
   - Notes: `initialCentOffsetRange` replaces the static constant on `PitchMatchingSession`. `maxInitialCentOffset` computed property: `Cents(initialCentOffsetRange.upperBound)`.
 
-- [ ] **Task 4: Add `from(UserSettings)` factory methods**
+- [x] **Task 4: Add `from(UserSettings)` factory methods**
   - File: `Peach/Core/Training/PitchComparisonTrainingSettings.swift`
   - Action: Add factory method:
     ```swift
@@ -235,7 +235,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - Action: Add equivalent factory method.
   - Notes: Factory methods only set user-configurable parameters; constants (`maxLoudnessOffsetDB`, `velocity`, `feedbackDuration`, `minCentDifference`, `maxCentDifference`, `initialCentOffsetRange`) keep their defaults.
 
-- [ ] **Task 5: Update `TrainingSession` protocol**
+- [x] **Task 5: Update `TrainingSession` protocol**
   - File: `Peach/Core/TrainingSession.swift`
   - Action: Remove `start(intervals:)` from the protocol. Keep `stop()` and `isIdle`. The protocol becomes:
     ```swift
@@ -246,7 +246,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
     ```
   - Notes: `PeachApp` only uses `activeSession` for `stop()` and `isIdle` tracking.
 
-- [ ] **Task 6: Update `NextPitchComparisonStrategy` and `KazezNoteStrategy`**
+- [x] **Task 6: Update `NextPitchComparisonStrategy` and `KazezNoteStrategy`**
   - File: `Peach/Core/Algorithm/NextPitchComparisonStrategy.swift`
   - Action: Change `settings: TrainingSettings` → `settings: PitchComparisonTrainingSettings` in protocol method signature. **Delete the `TrainingSettings` struct** (L56-73) — it's replaced by the two new types. Update doc comments.
   - File: `Peach/Core/Algorithm/KazezNoteStrategy.swift`
@@ -254,7 +254,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - File: `PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift`
   - Action: Replace all `TrainingSettings(...)` with `PitchComparisonTrainingSettings(...)`. Add required `intervals:` parameter.
 
-- [ ] **Task 7: Refactor `PitchComparisonSession`**
+- [x] **Task 7: Refactor `PitchComparisonSession`**
   - File: `Peach/PitchComparison/PitchComparisonSession.swift`
   - Action — Remove `UserSettings` dependency:
     - Remove `private let userSettings: UserSettings` (L38)
@@ -282,7 +282,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
     - Clear `settings = nil` instead of clearing `sessionIntervals` and `sessionTuningSystem`
     - `sessionTuningSystem` is `private(set)` and read by views — replace with computed property: `var sessionTuningSystem: TuningSystem { settings?.tuningSystem ?? .equalTemperament }`
 
-- [ ] **Task 8: Refactor `PitchMatchingSession`**
+- [x] **Task 8: Refactor `PitchMatchingSession`**
   - File: `Peach/PitchMatching/PitchMatchingSession.swift`
   - Action — Remove `UserSettings` dependency:
     - Remove `private let userSettings: UserSettings` (L32) and `userSettings:` from `init()`
@@ -309,7 +309,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - Action — Update `commitResult`:
     - `feedbackDuration` → `settings!.feedbackDuration`
 
-- [ ] **Task 9: Add `UserSettings` environment key and update screens**
+- [x] **Task 9: Add `UserSettings` environment key and update screens**
   - File: `Peach/App/EnvironmentKeys.swift`
   - Action: Add `@Entry var userSettings: any UserSettings = PreviewUserSettings()` to the core environment keys section.
   - File: `Peach/App/PeachApp.swift`
@@ -319,11 +319,11 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - File: `Peach/PitchMatching/PitchMatchingScreen.swift`
   - Action: Same pattern. Add `@Environment(\.userSettings)`. Change both `start(intervals:)` calls to `start(settings: .from(userSettings, intervals: intervals))`.
 
-- [ ] **Task 10: Update preview stubs in `EnvironmentKeys.swift`**
+- [x] **Task 10: Update preview stubs in `EnvironmentKeys.swift`**
   - File: `Peach/App/EnvironmentKeys.swift`
   - Action: Update `PreviewPitchComparisonStrategy` to use `PitchComparisonTrainingSettings` instead of `TrainingSettings`. Remove `userSettings:` from preview session constructors. Remove `PreviewUserSettings` class if no longer needed (check: still needed for `@Entry var userSettings` default).
 
-- [ ] **Task 11: Move `previewDuration` to `SettingsScreen`**
+- [x] **Task 11: Move `previewDuration` to `SettingsScreen`**
   - File: `Peach/Settings/SettingsScreen.swift`
   - Action: Add `private static let previewDuration: TimeInterval = 2.0`. Use it when calling `soundPreviewPlay`.
   - File: `Peach/App/EnvironmentKeys.swift`
@@ -331,7 +331,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - File: `Peach/App/PeachApp.swift`
   - Action: Update `soundPreviewPlay` closure to accept `duration: TimeInterval` parameter. Replace `TrainingConstants.previewDuration` with the parameter. Replace `TrainingConstants.velocity` with `MIDIVelocity(63)` literal (or keep as-is until Task 12).
 
-- [ ] **Task 12: Remove `TrainingConstants`**
+- [x] **Task 12: Remove `TrainingConstants`**
   - File: `Peach/Core/Training/TrainingConstants.swift`
   - Action: Delete file. All values have been distributed:
     - `feedbackDuration` → default parameter in both settings types
@@ -340,7 +340,7 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - File: `Peach/App/PeachApp.swift`
   - Action: Replace any remaining `TrainingConstants.velocity` reference in `soundPreviewPlay` with `MIDIVelocity(63)`.
 
-- [ ] **Task 13: Update all tests**
+- [x] **Task 13: Update all tests**
   - File: `PeachTests/PitchComparison/*.swift` (10 files, ~1850 lines)
   - Action: In all factory methods that create `PitchComparisonSession`:
     - Remove `userSettings:` parameter from session init
@@ -355,54 +355,54 @@ Tasks are ordered by dependency (lowest-level first). Each task should compile a
   - Action: Replace `TrainingSettings(...)` with `PitchComparisonTrainingSettings(referencePitch: ..., intervals: ..., ...)`.
   - Notes: `MockUserSettings` should be kept for testing the `from()` factory methods on the settings types.
 
-- [ ] **Task 14: Create settings type tests**
+- [x] **Task 14: Create settings type tests**
   - File: `PeachTests/Core/Training/PitchComparisonTrainingSettingsTests.swift` (new file)
   - Action: Test default values, test `from(userSettings:intervals:)` factory maps correctly.
   - File: `PeachTests/Core/Training/PitchMatchingTrainingSettingsTests.swift` (new file)
   - Action: Same pattern.
 
-- [ ] **Task 15: Update `project-context.md`**
+- [x] **Task 15: Update `project-context.md`**
   - File: `docs/project-context.md`
   - Action: Update references to `TrainingSettings` → describe the two new types. Update `TrainingConstants` references (removed). Add `PitchComparisonTrainingSettings` and `PitchMatchingTrainingSettings` to the domain types list. Update session documentation to reflect that sessions receive settings via `start()` and don't depend on `UserSettings`. Update the "Settings read live" note — settings are now snapshot at start time.
 
 ### Acceptance Criteria
 
 **AmplitudeDB:**
-- [ ] AC 1: Given `AmplitudeDB(5.0)`, when accessing `rawValue`, then it returns `Double(5.0)` (not `Float`).
-- [ ] AC 2: Given `AmplitudeDB(-100.0)`, when accessing `rawValue`, then it returns `-90.0` (clamped, as `Double`).
-- [ ] AC 3: Given `SoundFontNotePlayer` playing a note with `AmplitudeDB(3.0)`, when `startNote` executes, then `sampler.overallGain` receives `Float(3.0)`.
+- [x] AC 1: Given `AmplitudeDB(5.0)`, when accessing `rawValue`, then it returns `Double(5.0)` (not `Float`).
+- [x] AC 2: Given `AmplitudeDB(-100.0)`, when accessing `rawValue`, then it returns `-90.0` (clamped, as `Double`).
+- [x] AC 3: Given `SoundFontNotePlayer` playing a note with `AmplitudeDB(3.0)`, when `startNote` executes, then `sampler.overallGain` receives `Float(3.0)`.
 
 **PitchComparisonTrainingSettings:**
-- [ ] AC 4: Given default `PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime])`, when checking defaults, then `maxLoudnessOffsetDB == AmplitudeDB(10.0)`, `velocity == MIDIVelocity(63)`, `feedbackDuration == .milliseconds(400)`, `minCentDifference == Cents(0.1)`, `maxCentDifference == Cents(100.0)`.
-- [ ] AC 5: Given a `MockUserSettings` with custom values, when calling `.from(userSettings, intervals: [.up(.perfectFifth)])`, then the settings reflect all user-configurable values and intervals.
+- [x] AC 4: Given default `PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime])`, when checking defaults, then `maxLoudnessOffsetDB == AmplitudeDB(10.0)`, `velocity == MIDIVelocity(63)`, `feedbackDuration == .milliseconds(400)`, `minCentDifference == Cents(0.1)`, `maxCentDifference == Cents(100.0)`.
+- [x] AC 5: Given a `MockUserSettings` with custom values, when calling `.from(userSettings, intervals: [.up(.perfectFifth)])`, then the settings reflect all user-configurable values and intervals.
 
 **PitchMatchingTrainingSettings:**
-- [ ] AC 6: Given default `PitchMatchingTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime])`, when checking defaults, then `maxLoudnessOffsetDB == AmplitudeDB(10.0)`, `initialCentOffsetRange == -20.0...20.0`, `velocity == MIDIVelocity(63)`, `feedbackDuration == .milliseconds(400)`.
-- [ ] AC 7: Given a `MockUserSettings`, when calling `.from(userSettings, intervals:)`, then settings map correctly.
+- [x] AC 6: Given default `PitchMatchingTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime])`, when checking defaults, then `maxLoudnessOffsetDB == AmplitudeDB(10.0)`, `initialCentOffsetRange == -20.0...20.0`, `velocity == MIDIVelocity(63)`, `feedbackDuration == .milliseconds(400)`.
+- [x] AC 7: Given a `MockUserSettings`, when calling `.from(userSettings, intervals:)`, then settings map correctly.
 
 **PitchComparisonSession decoupling:**
-- [ ] AC 8: Given a `PitchComparisonSession` created without `userSettings:` parameter, when calling `start(settings: PitchComparisonTrainingSettings(...))`, then the session starts and uses the provided settings for note generation, loudness variation, and timing.
-- [ ] AC 9: Given a running `PitchComparisonSession`, when the session generates a comparison, then it reads `noteDuration`, `velocity`, `varyLoudness`, and `maxLoudnessOffsetDB` from the stored settings (not from any `UserSettings` instance).
-- [ ] AC 10: Given `PitchComparisonTrainingSettings` with `varyLoudness: UnitInterval(0.8)` and `maxLoudnessOffsetDB: AmplitudeDB(10.0)`, when generating a comparison, then the target note amplitude is randomized within `±8.0 dB`.
+- [x] AC 8: Given a `PitchComparisonSession` created without `userSettings:` parameter, when calling `start(settings: PitchComparisonTrainingSettings(...))`, then the session starts and uses the provided settings for note generation, loudness variation, and timing.
+- [x] AC 9: Given a running `PitchComparisonSession`, when the session generates a comparison, then it reads `noteDuration`, `velocity`, `varyLoudness`, and `maxLoudnessOffsetDB` from the stored settings (not from any `UserSettings` instance).
+- [x] AC 10: Given `PitchComparisonTrainingSettings` with `varyLoudness: UnitInterval(0.8)` and `maxLoudnessOffsetDB: AmplitudeDB(10.0)`, when generating a comparison, then the target note amplitude is randomized within `±8.0 dB`.
 
 **PitchMatchingSession decoupling:**
-- [ ] AC 11: Given a `PitchMatchingSession` created without `userSettings:` parameter, when calling `start(settings: PitchMatchingTrainingSettings(...))`, then the session starts and uses provided settings.
-- [ ] AC 12: Given `PitchMatchingTrainingSettings` with custom `initialCentOffsetRange: -30.0...30.0`, when generating a challenge, then the initial offset is within `±30.0` cents.
+- [x] AC 11: Given a `PitchMatchingSession` created without `userSettings:` parameter, when calling `start(settings: PitchMatchingTrainingSettings(...))`, then the session starts and uses provided settings.
+- [x] AC 12: Given `PitchMatchingTrainingSettings` with custom `initialCentOffsetRange: -30.0...30.0`, when generating a challenge, then the initial offset is within `±30.0` cents.
 
 **PitchMatchingSession varyLoudness:**
-- [ ] AC 13: Given `PitchMatchingTrainingSettings` with `varyLoudness: UnitInterval(0.0)`, when playing a challenge, then both reference and tunable notes play at `AmplitudeDB(0.0)`.
-- [ ] AC 14: Given `PitchMatchingTrainingSettings` with `varyLoudness: UnitInterval(1.0)` and `maxLoudnessOffsetDB: AmplitudeDB(10.0)`, when playing a challenge, then the reference note plays at `AmplitudeDB(0.0)` and the tunable note plays at a randomized amplitude within `±10.0 dB`.
+- [x] AC 13: Given `PitchMatchingTrainingSettings` with `varyLoudness: UnitInterval(0.0)`, when playing a challenge, then both reference and tunable notes play at `AmplitudeDB(0.0)`.
+- [x] AC 14: Given `PitchMatchingTrainingSettings` with `varyLoudness: UnitInterval(1.0)` and `maxLoudnessOffsetDB: AmplitudeDB(10.0)`, when playing a challenge, then the reference note plays at `AmplitudeDB(0.0)` and the tunable note plays at a randomized amplitude within `±10.0 dB`.
 
 **TrainingSession protocol:**
-- [ ] AC 15: Given the `TrainingSession` protocol, when inspecting its requirements, then it only declares `stop()` and `isIdle` (no `start` method).
+- [x] AC 15: Given the `TrainingSession` protocol, when inspecting its requirements, then it only declares `stop()` and `isIdle` (no `start` method).
 
 **Preview duration:**
-- [ ] AC 16: Given the `SettingsScreen`, when triggering sound preview, then it passes `2.0` seconds to the `soundPreviewPlay` closure.
+- [x] AC 16: Given the `SettingsScreen`, when triggering sound preview, then it passes `2.0` seconds to the `soundPreviewPlay` closure.
 
 **Integration:**
-- [ ] AC 17: Given the full app, when navigating to pitch comparison training, then the screen builds settings from `UserSettings` via `.from()` and passes them to `start()`.
-- [ ] AC 18: Given the full app, when navigating to pitch matching training, then the screen builds settings from `UserSettings` via `.from()` and passes them to `start()`.
-- [ ] AC 19: Given the full test suite, when running all tests, then all tests pass.
+- [x] AC 17: Given the full app, when navigating to pitch comparison training, then the screen builds settings from `UserSettings` via `.from()` and passes them to `start()`.
+- [x] AC 18: Given the full app, when navigating to pitch matching training, then the screen builds settings from `UserSettings` via `.from()` and passes them to `start()`.
+- [x] AC 19: Given the full test suite, when running all tests, then all tests pass.
 
 ## Additional Context
 
@@ -435,3 +435,9 @@ None — pure refactoring with one behavioral addition (varyLoudness for matchin
 - **`sessionTuningSystem` public access**: Both sessions expose `sessionTuningSystem` as `private(set)`. After refactoring, this becomes a computed property reading from optional settings. When idle (settings == nil), it returns `.equalTemperament` as the default.
 - **`MockUserSettings` retention**: Keep for testing `from()` factory methods. No longer needed in session tests.
 - **Future consideration**: If more training modes are added, each would get its own settings type following this same pattern.
+
+## Review Notes
+- Adversarial review completed
+- Findings: 11 total, 1 fixed (F1: sound preview captured fresh AppUserSettings instead of injected instance), 10 skipped (intentional/noise/acceptable)
+- Resolution approach: selective fix
+- Additional change: `previewDuration` and `soundPreviewPlay` closure use `Duration` instead of `TimeInterval` per user request

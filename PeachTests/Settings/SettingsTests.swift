@@ -8,9 +8,9 @@ struct SettingsTests {
 
     // MARK: - Task 1: @AppStorage Keys and Defaults
 
-    @Test("Algorithm defaults match TrainingSettings defaults")
+    @Test("Algorithm defaults match PitchComparisonTrainingSettings defaults")
     func algorithmDefaultsMatchTrainingSettings() {
-        let trainingDefaults = TrainingSettings(referencePitch: .concert440)
+        let trainingDefaults = PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime])
 
         #expect(SettingsKeys.defaultNoteRangeMin == trainingDefaults.noteRange.lowerBound.rawValue)
         #expect(SettingsKeys.defaultNoteRangeMax == trainingDefaults.noteRange.upperBound.rawValue)
@@ -283,7 +283,7 @@ struct SettingsTests {
 
     @Test("previewDuration is 2 seconds")
     func previewDurationValue() async {
-        #expect(TrainingConstants.previewDuration == 2.0)
+        #expect(SettingsScreen.previewDuration == .seconds(2))
     }
 
     // MARK: - Task 2: Note Range Validation

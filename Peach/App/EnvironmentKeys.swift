@@ -8,9 +8,10 @@ extension EnvironmentValues {
     @Entry var activeSession: (any TrainingSession)? = nil
     @Entry var perceptualProfile = PerceptualProfile()
     @Entry var dataStoreResetter: (() throws -> Void)? = nil
-    @Entry var soundPreviewPlay: (() async -> Void)? = nil
+    @Entry var soundPreviewPlay: ((Duration) async -> Void)? = nil
     @Entry var soundPreviewStop: (() async -> Void)? = nil
     @Entry var trainingDataTransferService: TrainingDataTransferService = TrainingDataTransferService.preview()
+    @Entry var userSettings: any UserSettings = PreviewUserSettings()
 }
 
 // MARK: - Session Environment Keys
@@ -25,7 +26,6 @@ extension EnvironmentValues {
             notePlayer: PreviewNotePlayer(),
             strategy: strategy,
             profile: profile,
-            userSettings: PreviewUserSettings(),
             observers: observers
         )
     }()
@@ -33,9 +33,7 @@ extension EnvironmentValues {
     @Entry var pitchMatchingSession: PitchMatchingSession = {
         PitchMatchingSession(
             notePlayer: PreviewNotePlayer(),
-            profile: PerceptualProfile(),
-            observers: [],
-            userSettings: PreviewUserSettings()
+            profile: PerceptualProfile()
         )
     }()
 }
@@ -64,7 +62,7 @@ private final class PreviewPitchComparisonDataStore: PitchComparisonRecordStorin
 private final class PreviewPitchComparisonStrategy: NextPitchComparisonStrategy {
     func nextPitchComparison(
         profile: PitchComparisonProfile,
-        settings: TrainingSettings,
+        settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval
     ) -> PitchComparison {

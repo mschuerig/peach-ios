@@ -11,9 +11,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Audio interruption began stops training from awaitingAnswer state")
     func audioInterruption_Began_StopsFromAwaitingAnswer() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -29,13 +29,13 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Audio interruption began stops training from playingNote1 state")
     func audioInterruption_Began_StopsFromPlayingNote1() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
         let mockPlayer = f.mockPlayer
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = 5.0
 
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .playingNote1)
 
         nc.post(
@@ -51,13 +51,13 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Audio interruption began stops training from playingNote2 state")
     func audioInterruption_Began_StopsFromPlayingNote2() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
         let mockPlayer = f.mockPlayer
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = 0.01
 
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForPlayCallCount(mockPlayer, 2)
         mockPlayer.simulatedPlaybackDuration = 5.0
 
@@ -76,9 +76,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Audio interruption ended does NOT auto-restart training")
     func audioInterruption_Ended_DoesNotAutoRestart() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -102,9 +102,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Audio interruption with nil type is handled gracefully")
     func audioInterruption_NilType_HandledGracefully() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -121,7 +121,7 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Audio interruption on idle session is safe (no crash)")
     func audioInterruption_Began_WhileIdle_IsSafe() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
         #expect(session.state == .idle)
 
@@ -141,9 +141,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Route change oldDeviceUnavailable stops training")
     func routeChange_OldDeviceUnavailable_StopsTraining() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -166,9 +166,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
 
         for reason in nonStopReasons {
             let nc = NotificationCenter()
-            let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+            let f = makePitchComparisonSession(notificationCenter: nc)
             let session = f.session
-            session.start(intervals: [.prime])
+            session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
             try await waitForState(session, .awaitingAnswer)
 
             let userInfo: [AnyHashable: Any]? = reason.map { [AVAudioSessionRouteChangeReasonKey: $0] }
@@ -188,7 +188,7 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Route change oldDeviceUnavailable on idle session is safe")
     func routeChange_OldDeviceUnavailable_WhileIdle_IsSafe() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
         #expect(session.state == .idle)
 
@@ -208,9 +208,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Training can restart after audio interruption stops it")
     func canRestartAfterInterruption() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -220,7 +220,7 @@ struct PitchComparisonSessionAudioInterruptionTests {
         )
         try await waitForState(session, .idle)
 
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
         #expect(session.state == .awaitingAnswer)
     }
@@ -228,9 +228,9 @@ struct PitchComparisonSessionAudioInterruptionTests {
     @Test("Training can restart after route change stops it")
     func canRestartAfterRouteChange() async throws {
         let nc = NotificationCenter()
-        let f = makePitchComparisonSession(userSettings: { let s = MockUserSettings(); s.noteDuration = NoteDuration(0.3); return s }(), notificationCenter: nc)
+        let f = makePitchComparisonSession(notificationCenter: nc)
         let session = f.session
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -240,7 +240,7 @@ struct PitchComparisonSessionAudioInterruptionTests {
         )
         try await waitForState(session, .idle)
 
-        session.start(intervals: [.prime])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
         #expect(session.state == .awaitingAnswer)
     }

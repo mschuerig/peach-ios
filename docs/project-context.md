@@ -53,7 +53,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`final class`** — mark classes `final` unless inheritance is explicitly designed for
 - **No force unwrapping (`!`)** — no `@IBOutlet`, no implicit unwraps
 - **Domain types at interfaces** — use `Cents`, `Frequency`, `MIDINote`, `MIDIVelocity`, `AmplitudeDB`, `NoteDuration` at public API boundaries. Unwrap to `.rawValue` only at: (1) persistence boundaries (SwiftData records store raw `Double`/`Int`), (2) arithmetic-heavy internals (Welford's algorithm in `PerceptualProfile`), (3) display formatting. Protocol signatures (`PitchComparisonProfile`, `PitchMatchingProfile`) use `Cents` for all cent-valued properties
-- **`Duration` for time intervals** — use Swift `Duration` (e.g., `.milliseconds(400)`) for feedback timing and configuration constants. `TimeInterval` is acceptable for `NotePlayer.play(duration:)` since `NoteDuration` clamps and would break test values
+- **`Duration` for time intervals** — use Swift `Duration` (e.g., `.milliseconds(400)`, `.seconds(2)`) for all timing values: feedback durations, preview durations, configuration constants. `TimeInterval` is only acceptable at the `NotePlayer.play(duration:)` boundary since `NoteDuration` clamps and would break test values. Convert `Duration` → `TimeInterval` at the call site when passing to `NotePlayer`
 
 **Error Handling:**
 - **Typed error enums per service** — `enum AudioError: Error`, `enum DataStoreError: Error`; errors are specific and descriptive
@@ -86,11 +86,11 @@ _This file contains critical rules and patterns that AI agents must follow when 
 **State Management:**
 - **`PitchComparisonSession` state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
 - **`PitchMatchingSession` state machine** — `idle` → `playingReference` → `awaitingSliderTouch` → `playingTunable` → `showingFeedback` → (loop). Any state → `idle` via `stop()`
-- **Both sessions conform to `TrainingSession` protocol** — `start(intervals:)`, `stop()`, `isIdle`. `PeachApp` tracks `activeSession` to ensure only one runs at a time
+- **Both sessions conform to `TrainingSession` protocol** — `stop()`, `isIdle`. `PeachApp` tracks `activeSession` to ensure only one runs at a time
 - **State transitions are guarded** — preconditions enforced; never skip states
 - **Observer pattern** — `PitchComparisonObserver` and `PitchMatchingObserver` protocols; observers injected as arrays into their respective sessions. Both `TrainingDataStore`, `PerceptualProfile`, and `ProgressTimeline` conform to both observer protocols
-- **Feedback duration** — shared `TrainingConstants.feedbackDuration` (400ms `Duration`) applies to both session types
-- **Settings read live** — both sessions read from `UserSettings` protocol at `start()` time; `SoundFontNotePlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
+- **Session-specific settings types** — `PitchComparisonTrainingSettings` and `PitchMatchingTrainingSettings` are value-type snapshots created at `start()` time via `from(userSettings, intervals:)` factory methods. Each contains all tunable parameters with sensible defaults. Sessions receive these as parameters to `start(settings:)` and are decoupled from `UserSettings`
+- **Settings flow** — Views read `@Environment(\.userSettings)`, construct the appropriate settings type via factory method, and pass it to `session.start(settings:)`. `SoundFontNotePlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
 
 **Composition Root (`PeachApp.swift`):**
 - **All service instantiation happens in `PeachApp.swift`** — this is the single dependency graph source of truth
@@ -228,7 +228,7 @@ Never run only specific test files — always the complete suite.
 - **MIDI note range: 0–127** — `PerceptualProfile` is indexed by MIDI note (128 slots, 0-based); out-of-range = crash
 - **Cent offset applies to target note only** — reference note is exact MIDI note, target note = reference note + cent offset; never offset both notes
 - **Use `TuningSystem.frequency(for:referencePitch:)` for all Hz conversions** — accepts `MIDINote` or `DetunedMIDINote`; always requires explicit `tuningSystem` and `referencePitch` parameters; the app requires 0.1-cent precision
-- **Feedback phase is 400ms** — defined in `TrainingConstants.feedbackDuration`; applies to both session types; it's a perceptual learning design decision
+- **Feedback phase is 400ms** — default in both `PitchComparisonTrainingSettings` and `PitchMatchingTrainingSettings`; it's a perceptual learning design decision
 - **Interval training constrains note range** — when interval > prime, the upper bound of the note selection range shrinks by `interval.semitones` to keep the target note within valid MIDI range (0-127)
 - **Four training modes** — unison comparison, interval comparison, unison matching, interval matching. Each has independent progress tracking via `TrainingModeConfig`. `ProgressTimeline` tracks all four
 
@@ -272,4 +272,4 @@ Never run only specific test files — always the complete suite.
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-03-06 (Code review: domain types, training modes, logging)
+Last Updated: 2026-03-10 (Refactored TrainingSettings into session-specific types; removed TrainingConstants)

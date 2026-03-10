@@ -2,72 +2,47 @@ import Testing
 import Foundation
 @testable import Peach
 
-/// Tests for PitchComparisonSession settings via UserSettings protocol (Story 19.3, originally Story 6.2)
-@Suite("PitchComparisonSession UserSettings Tests")
+@Suite("PitchComparisonSession Settings Snapshot Tests")
 struct PitchComparisonSessionUserDefaultsTests {
 
-    // MARK: - UserSettings Tests
+    @Test("Settings values are passed to strategy")
+    func settingsValuesPassedToStrategy() async throws {
+        let f = makePitchComparisonSession()
 
-    @Test("Changing UserSettings values changes TrainingSettings built by PitchComparisonSession")
-    func userSettingsChangesAffectSettings() async throws {
-        let mockSettings = MockUserSettings()
-        mockSettings.noteRange = NoteRange(lowerBound: MIDINote(50), upperBound: MIDINote(70))
-        mockSettings.referencePitch = 432.0
-
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextPitchComparisonStrategy()
-
-        let session = PitchComparisonSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            userSettings: mockSettings,
-            observers: [mockDataStore, profile]
+        let settings = PitchComparisonTrainingSettings(
+            noteRange: NoteRange(lowerBound: MIDINote(50), upperBound: MIDINote(70)),
+            referencePitch: Frequency(432.0),
+            intervals: [.prime]
         )
+        f.session.start(settings: settings)
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.start(intervals: [.prime])
-        try await waitForState(session, .awaitingAnswer)
+        #expect(f.mockStrategy.lastReceivedSettings?.noteRange.lowerBound == MIDINote(50))
+        #expect(f.mockStrategy.lastReceivedSettings?.noteRange.upperBound == MIDINote(70))
+        #expect(f.mockStrategy.lastReceivedSettings?.referencePitch == Frequency(432.0))
 
-        #expect(mockStrategy.lastReceivedSettings?.noteRange.lowerBound == MIDINote(50))
-        #expect(mockStrategy.lastReceivedSettings?.noteRange.upperBound == MIDINote(70))
-        #expect(mockStrategy.lastReceivedSettings?.referencePitch == 432.0)
-
-        session.stop()
+        f.session.stop()
     }
 
-    @Test("Note duration from UserSettings is passed to NotePlayer")
-    func noteDurationFromUserSettingsPassedToPlayer() async throws {
-        let mockSettings = MockUserSettings()
-        mockSettings.noteDuration = 2.5
+    @Test("Note duration from settings is passed to NotePlayer")
+    func noteDurationPassedToPlayer() async throws {
+        let f = makePitchComparisonSession()
 
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextPitchComparisonStrategy()
-
-        let session = PitchComparisonSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            userSettings: mockSettings,
-            observers: [mockDataStore, profile]
+        let settings = PitchComparisonTrainingSettings(
+            referencePitch: Frequency(440.0),
+            intervals: [.prime],
+            noteDuration: NoteDuration(2.5)
         )
+        f.session.start(settings: settings)
+        try await waitForState(f.session, .awaitingAnswer)
 
-        session.start(intervals: [.prime])
-        try await waitForState(session, .awaitingAnswer)
+        #expect(f.mockPlayer.lastDuration == 2.5)
 
-        #expect(mockPlayer.lastDuration == 2.5)
-
-        session.stop()
+        f.session.stop()
     }
 
-    @Test("Reference pitch from UserSettings is passed to frequency calculation")
-    func referencePitchFromUserSettingsAffectsFrequency() async throws {
-        let mockSettings = MockUserSettings()
-        mockSettings.referencePitch = 432.0
-
+    @Test("Reference pitch from settings affects frequency calculation")
+    func referencePitchAffectsFrequency() async throws {
         let mockPlayer = MockNotePlayer()
         let mockDataStore = MockTrainingDataStore()
         let profile = PerceptualProfile()
@@ -79,55 +54,19 @@ struct PitchComparisonSessionUserDefaultsTests {
             notePlayer: mockPlayer,
             strategy: mockStrategy,
             profile: profile,
-            userSettings: mockSettings,
             observers: [mockDataStore, profile]
         )
 
-        session.start(intervals: [.prime])
+        let settings = PitchComparisonTrainingSettings(
+            referencePitch: Frequency(432.0),
+            intervals: [.prime]
+        )
+        session.start(settings: settings)
         try await waitForState(session, .awaitingAnswer)
 
         #expect(mockPlayer.playHistory.count >= 1)
         let referenceFreq = mockPlayer.playHistory[0].frequency
         #expect(abs(referenceFreq - 432.0) < 0.01)
-
-        session.stop()
-    }
-
-    @Test("Settings changed mid-training take effect on next comparison")
-    func settingsChangedMidTrainingTakeEffect() async throws {
-        let mockSettings = MockUserSettings()
-
-        let mockPlayer = MockNotePlayer()
-        let mockDataStore = MockTrainingDataStore()
-        let profile = PerceptualProfile()
-        let mockStrategy = MockNextPitchComparisonStrategy(comparisons: [
-            PitchComparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
-            PitchComparison(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)))
-        ])
-
-        let session = PitchComparisonSession(
-            notePlayer: mockPlayer,
-            strategy: mockStrategy,
-            profile: profile,
-            userSettings: mockSettings,
-            observers: [mockDataStore, profile]
-        )
-
-        session.start(intervals: [.prime])
-        try await waitForState(session, .awaitingAnswer)
-
-        #expect(mockStrategy.lastReceivedSettings?.noteRange.lowerBound.rawValue == SettingsKeys.defaultNoteRangeMin)
-
-        mockSettings.noteRange = NoteRange(lowerBound: MIDINote(50), upperBound: MIDINote(70))
-        mockSettings.noteDuration = 2.0
-
-        session.handleAnswer(isHigher: true)
-        try await waitForPlayCallCount(mockPlayer, 3)
-
-        #expect(mockStrategy.callCount == 2, "Second comparison should have been requested")
-        #expect(mockStrategy.lastReceivedSettings?.noteRange.lowerBound == MIDINote(50))
-        #expect(mockStrategy.lastReceivedSettings?.noteRange.upperBound == MIDINote(70))
-        #expect(mockPlayer.lastDuration == 2.0)
 
         session.stop()
     }

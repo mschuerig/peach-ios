@@ -12,7 +12,7 @@ struct PitchComparisonSessionIntegrationTests {
     func callsPlayTwicePerComparison() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playCallCount == 2)
@@ -22,7 +22,7 @@ struct PitchComparisonSessionIntegrationTests {
     func playsCorrectFrequencies() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.lastFrequency != nil)
@@ -34,7 +34,7 @@ struct PitchComparisonSessionIntegrationTests {
     func passesCorrectDuration() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.lastDuration == 1.0)
@@ -44,7 +44,7 @@ struct PitchComparisonSessionIntegrationTests {
     func passesCorrectVelocity() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.lastVelocity == 63)
@@ -54,7 +54,7 @@ struct PitchComparisonSessionIntegrationTests {
     func passesDefaultAmplitude() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockPlayer.playHistory.count == 2)
@@ -68,7 +68,7 @@ struct PitchComparisonSessionIntegrationTests {
     func recordsComparisonOnAnswer() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -81,7 +81,7 @@ struct PitchComparisonSessionIntegrationTests {
     func comparisonRecordContainsCorrectData() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)
@@ -97,7 +97,7 @@ struct PitchComparisonSessionIntegrationTests {
         let f = makePitchComparisonSession()
         f.mockDataStore.shouldThrowError = true
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -115,7 +115,7 @@ struct PitchComparisonSessionIntegrationTests {
     func profileUpdatesIncrementallyAfterComparison() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -144,7 +144,7 @@ struct PitchComparisonSessionIntegrationTests {
     func profileAccumulatesMultipleComparisons() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -169,7 +169,7 @@ struct PitchComparisonSessionIntegrationTests {
     func profileUpdatesForAllAnswers() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)
@@ -216,7 +216,7 @@ struct PitchComparisonSessionIntegrationTests {
 
         let comparison = strategy.nextPitchComparison(
             profile: profile,
-            settings: TrainingSettings(referencePitch: .concert440),
+            settings: PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime]),
             lastPitchComparison: nil,
             interval: .prime,
         )

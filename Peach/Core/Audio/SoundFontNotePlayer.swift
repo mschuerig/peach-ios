@@ -175,7 +175,7 @@ final class SoundFontNotePlayer: NotePlayer {
         let decomposed = Self.decompose(frequency: frequency)
         let midiNote = decomposed.note
         let bendValue = Self.pitchBendValue(forCents: Cents(decomposed.cents))
-        sampler.overallGain = amplitudeDB.rawValue
+        sampler.overallGain = Float(amplitudeDB.rawValue)
         sampler.sendPitchBend(bendValue, onChannel: Self.channel)
         sampler.startNote(midiNote, withVelocity: velocity.rawValue, onChannel: Self.channel)
         return midiNote

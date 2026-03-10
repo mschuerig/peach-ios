@@ -46,6 +46,8 @@ struct SettingsScreen: View {
     @State private var showImportError = false
     @State private var importErrorMessage = ""
 
+    static let previewDuration: Duration = .seconds(2)
+
     static let helpSections: [HelpSection] = [
         HelpSection(
             title: String(localized: "Training Range"),
@@ -317,7 +319,7 @@ struct SettingsScreen: View {
             Task { await soundPreviewStop?() }
         } else {
             previewTask = Task {
-                await soundPreviewPlay?()
+                await soundPreviewPlay?(Self.previewDuration)
                 previewTask = nil
             }
         }

@@ -9,8 +9,8 @@ final class MockNotePlayer: NotePlayer {
     var lastFrequency: Double?
     var lastDuration: TimeInterval?
     var lastVelocity: UInt8?
-    var lastAmplitudeDB: Float?
-    var playHistory: [(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Float)] = []
+    var lastAmplitudeDB: Double?
+    var playHistory: [(frequency: Double, duration: TimeInterval, velocity: UInt8, amplitudeDB: Double)] = []
     var shouldThrowError = false
     var errorToThrow: AudioError = .engineStartFailed("Mock error")
 

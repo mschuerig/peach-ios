@@ -14,8 +14,7 @@ struct PitchComparisonSessionResetTests {
         let session = PitchComparisonSession(
             notePlayer: MockNotePlayer(),
             strategy: MockNextPitchComparisonStrategy(),
-            profile: profile,
-            userSettings: MockUserSettings()
+            profile: profile
         )
 
         // Simulate converged state: lower difficulty on several notes
@@ -44,8 +43,7 @@ struct PitchComparisonSessionResetTests {
         let session = PitchComparisonSession(
             notePlayer: MockNotePlayer(),
             strategy: strategy,
-            profile: profile,
-            userSettings: MockUserSettings()
+            profile: profile
         )
 
         // Simulate converged state
@@ -58,7 +56,7 @@ struct PitchComparisonSessionResetTests {
         // Cold start: nil lastPitchComparison with reset profile → should return 100.0
         let comparison = strategy.nextPitchComparison(
             profile: profile,
-            settings: TrainingSettings(referencePitch: .concert440),
+            settings: PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime]),
             lastPitchComparison: nil,
             interval: .prime,
         )
@@ -72,8 +70,7 @@ struct PitchComparisonSessionResetTests {
         let session = PitchComparisonSession(
             notePlayer: MockNotePlayer(),
             strategy: strategy,
-            profile: profile,
-            userSettings: MockUserSettings()
+            profile: profile
         )
 
         // Set up trained neighbors across a range
@@ -88,7 +85,7 @@ struct PitchComparisonSessionResetTests {
         // With all stats cleared, bootstrap should find no trained neighbors → 100.0
         let comparison = strategy.nextPitchComparison(
             profile: profile,
-            settings: TrainingSettings(referencePitch: .concert440),
+            settings: PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime]),
             lastPitchComparison: nil,
             interval: .prime,
         )
@@ -117,7 +114,6 @@ struct PitchComparisonSessionResetTests {
             notePlayer: MockNotePlayer(),
             strategy: MockNextPitchComparisonStrategy(),
             profile: profile,
-            userSettings: MockUserSettings(),
             resettables: [progressTimeline]
         )
 
@@ -135,12 +131,11 @@ struct PitchComparisonSessionResetTests {
         let session = PitchComparisonSession(
             notePlayer: mockPlayer,
             strategy: MockNextPitchComparisonStrategy(),
-            profile: profile,
-            userSettings: MockUserSettings()
+            profile: profile
         )
 
         // Start training and wait for non-idle state
-        session.start(intervals: [.prime])
+        session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(mockPlayer, 1)
         #expect(session.state != .idle)
 

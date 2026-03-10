@@ -14,7 +14,7 @@ struct PitchComparisonScreenFeedbackTests {
     func feedbackReflectsCorrectnessAfterIncorrectToCorrect() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer incorrectly (answer "lower" when second note is higher)
@@ -37,7 +37,7 @@ struct PitchComparisonScreenFeedbackTests {
     func feedbackReflectsCorrectnessAfterCorrectToIncorrect() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer correctly (answer "higher" when second note is higher)
@@ -62,7 +62,7 @@ struct PitchComparisonScreenFeedbackTests {
     func showFeedbackIsFalseBetweenCycles() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Complete first answer
@@ -86,7 +86,7 @@ struct PitchComparisonScreenFeedbackTests {
         #expect(f.session.showFeedback == false)
         #expect(f.session.isLastAnswerCorrect == nil)
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // First answer ever — no previous state to leak
@@ -101,7 +101,7 @@ struct PitchComparisonScreenFeedbackTests {
     func feedbackDisplaysCorrectlyOnConsecutiveSameCorrectness() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // First answer: correct (answer "higher" when second note is higher)

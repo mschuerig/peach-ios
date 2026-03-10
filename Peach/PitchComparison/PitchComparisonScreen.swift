@@ -7,6 +7,9 @@ struct PitchComparisonScreen: View {
     /// Training session injected via environment
     @Environment(\.pitchComparisonSession) private var pitchComparisonSession
 
+    /// User settings for building training configuration
+    @Environment(\.userSettings) private var userSettings
+
     /// Progress timeline for accuracy summary
     @Environment(\.progressTimeline) private var progressTimeline
 
@@ -151,12 +154,12 @@ struct PitchComparisonScreen: View {
                 pitchComparisonSession.stop()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
-                pitchComparisonSession.start(intervals: intervals)
+                pitchComparisonSession.start(settings: .from(userSettings, intervals: intervals))
             }
         }
         .onAppear {
             logger.info("PitchComparisonScreen appeared - starting training")
-            pitchComparisonSession.start(intervals: intervals)
+            pitchComparisonSession.start(settings: .from(userSettings, intervals: intervals))
         }
         .onDisappear {
             logger.info("PitchComparisonScreen disappeared - stopping training")

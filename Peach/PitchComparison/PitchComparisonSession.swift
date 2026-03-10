@@ -33,39 +33,17 @@ final class PitchComparisonSession: TrainingSession {
     private let observers: [PitchComparisonObserver]
     private var interruptionMonitor: AudioSessionInterruptionMonitor?
 
-    // MARK: - Configuration
-
-    private let userSettings: UserSettings
-
-    private var currentSettings: TrainingSettings {
-        TrainingSettings(
-            noteRange: userSettings.noteRange,
-            referencePitch: userSettings.referencePitch
-        )
-    }
-
-    private var currentNoteDuration: TimeInterval {
-        userSettings.noteDuration.rawValue
-    }
-
-    private var currentVaryLoudness: Double {
-        userSettings.varyLoudness.rawValue
-    }
-
-    private let maxLoudnessOffsetDB: Float = 5.0
-
-    private let velocity: MIDIVelocity = TrainingConstants.velocity
-
-    private let feedbackDuration: Duration = TrainingConstants.feedbackDuration
-
     // MARK: - Training State
 
+    private var settings: PitchComparisonTrainingSettings?
     private var currentPitchComparison: PitchComparison?
     private var lastCompletedPitchComparison: CompletedPitchComparison?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
-    private var sessionIntervals: Set<DirectedInterval> = []
-    private(set) var sessionTuningSystem: TuningSystem = .equalTemperament
+
+    var sessionTuningSystem: TuningSystem {
+        settings?.tuningSystem ?? .equalTemperament
+    }
 
     // MARK: - Initialization
 
@@ -73,7 +51,6 @@ final class PitchComparisonSession: TrainingSession {
         notePlayer: NotePlayer,
         strategy: NextPitchComparisonStrategy,
         profile: PitchComparisonProfile,
-        userSettings: UserSettings,
         resettables: [Resettable] = [],
         observers: [PitchComparisonObserver] = [],
         notificationCenter: NotificationCenter = .default
@@ -81,7 +58,6 @@ final class PitchComparisonSession: TrainingSession {
         self.notePlayer = notePlayer
         self.strategy = strategy
         self.profile = profile
-        self.userSettings = userSettings
         self.resettables = resettables
         self.observers = observers
         self.interruptionMonitor = AudioSessionInterruptionMonitor(
@@ -108,15 +84,14 @@ final class PitchComparisonSession: TrainingSession {
         lastCompletedPitchComparison.map { Cents($0.pitchComparison.targetNote.offset.magnitude) }
     }
 
-    func start(intervals: Set<DirectedInterval>) {
+    func start(settings: PitchComparisonTrainingSettings) {
         guard state == .idle else {
             logger.warning("start() called but state is \(String(describing: self.state)), not idle")
             return
         }
 
-        precondition(!intervals.isEmpty, "intervals must not be empty")
-        sessionIntervals = intervals
-        sessionTuningSystem = userSettings.tuningSystem
+        precondition(!settings.intervals.isEmpty, "intervals must not be empty")
+        self.settings = settings
 
         logger.info("Starting training loop")
         trainingTask = Task {
@@ -185,8 +160,7 @@ final class PitchComparisonSession: TrainingSession {
         lastCompletedPitchComparison = nil
         sessionBestCentDifference = nil
         currentInterval = nil
-        sessionIntervals = []
-        sessionTuningSystem = .equalTemperament
+        settings = nil
 
         showFeedback = false
         isLastAnswerCorrect = nil
@@ -207,10 +181,9 @@ final class PitchComparisonSession: TrainingSession {
     }
 
     private func playNextPitchComparison() async {
-        let settings = currentSettings
-        let noteDuration = currentNoteDuration
+        guard let settings else { return }
 
-        let interval = sessionIntervals.randomElement()!
+        let interval = settings.intervals.randomElement()!
         currentInterval = interval
 
         let pitchComparison = strategy.nextPitchComparison(
@@ -221,13 +194,11 @@ final class PitchComparisonSession: TrainingSession {
         )
         currentPitchComparison = pitchComparison
 
-        let amplitudeDB = calculateTargetAmplitude(varyLoudness: currentVaryLoudness)
+        let amplitudeDB = calculateTargetAmplitude()
 
         do {
             try await playPitchComparisonNotes(
                 pitchComparison: pitchComparison,
-                settings: settings,
-                noteDuration: noteDuration,
                 amplitudeDB: amplitudeDB
             )
         } catch let error as AudioError {
@@ -239,25 +210,27 @@ final class PitchComparisonSession: TrainingSession {
         }
     }
 
-    private func calculateTargetAmplitude(varyLoudness: Double) -> AmplitudeDB {
+    private func calculateTargetAmplitude() -> AmplitudeDB {
+        guard let settings else { return AmplitudeDB(0.0) }
+        let varyLoudness = settings.varyLoudness.rawValue
         guard varyLoudness > 0.0 else { return AmplitudeDB(0.0) }
-        let range = Float(varyLoudness) * maxLoudnessOffsetDB
-        let offset = Float.random(in: -range...range)
+        let range = varyLoudness * settings.maxLoudnessOffsetDB.rawValue
+        let offset = Double.random(in: -range...range)
         return AmplitudeDB(offset)
     }
 
     private func playPitchComparisonNotes(
         pitchComparison: PitchComparison,
-        settings: TrainingSettings,
-        noteDuration: TimeInterval,
         amplitudeDB: AmplitudeDB
     ) async throws {
-        let freq1 = pitchComparison.referenceFrequency(tuningSystem: sessionTuningSystem, referencePitch: settings.referencePitch)
-        let freq2 = pitchComparison.targetFrequency(tuningSystem: sessionTuningSystem, referencePitch: settings.referencePitch)
+        guard let settings else { return }
+
+        let freq1 = pitchComparison.referenceFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
+        let freq2 = pitchComparison.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("PitchComparison: ref=\(pitchComparison.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(pitchComparison.targetNote.offset.rawValue), higher=\(pitchComparison.isTargetHigher)")
 
         state = .playingNote1
-        try await notePlayer.play(frequency: freq1, duration: noteDuration, velocity: velocity, amplitudeDB: AmplitudeDB(0.0))
+        try await notePlayer.play(frequency: freq1, duration: settings.noteDuration.rawValue, velocity: settings.velocity, amplitudeDB: AmplitudeDB(0.0))
 
         guard state != .idle && !Task.isCancelled else {
             logger.info("Training stopped during note 1, aborting comparison")
@@ -265,7 +238,7 @@ final class PitchComparisonSession: TrainingSession {
         }
 
         state = .playingNote2
-        try await notePlayer.play(frequency: freq2, duration: noteDuration, velocity: velocity, amplitudeDB: amplitudeDB)
+        try await notePlayer.play(frequency: freq2, duration: settings.noteDuration.rawValue, velocity: settings.velocity, amplitudeDB: amplitudeDB)
 
         guard state != .idle && !Task.isCancelled else {
             logger.info("Training stopped during note 2, aborting comparison")
@@ -301,6 +274,8 @@ final class PitchComparisonSession: TrainingSession {
     }
 
     private func transitionToFeedback(_ completed: CompletedPitchComparison) {
+        guard let settings else { return }
+
         isLastAnswerCorrect = completed.isCorrect
         showFeedback = true
 
@@ -308,7 +283,7 @@ final class PitchComparisonSession: TrainingSession {
         logger.info("Entering feedback state")
 
         feedbackTask = Task {
-            try? await Task.sleep(for: feedbackDuration)
+            try? await Task.sleep(for: settings.feedbackDuration)
             if state == .showingFeedback && !Task.isCancelled {
                 showFeedback = false
                 logger.info("Feedback complete, starting next comparison")

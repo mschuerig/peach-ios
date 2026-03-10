@@ -7,7 +7,7 @@ import Foundation
 ///
 /// # Architecture Boundary
 ///
-/// NextPitchComparisonStrategy reads from PitchComparisonProfile and TrainingSettings,
+/// NextPitchComparisonStrategy reads from PitchComparisonProfile and PitchComparisonTrainingSettings,
 /// and returns a PitchComparison value type. It has no concept of:
 /// - Audio playback (NotePlayer's responsibility)
 /// - Data persistence (TrainingDataStore's responsibility)
@@ -37,37 +37,8 @@ protocol NextPitchComparisonStrategy {
     /// - Returns: A PitchComparison ready to be played by NotePlayer
     func nextPitchComparison(
         profile: PitchComparisonProfile,
-        settings: TrainingSettings,
+        settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval
     ) -> PitchComparison
-}
-
-/// Training configuration for pitch comparison selection
-///
-/// Contains settings that control the adaptive algorithm's behavior.
-/// Exposed to users via SettingsScreen (@AppStorage) and read live by PitchComparisonSession.
-///
-/// # Defaults
-///
-/// - Note range: C2 to C6 (MIDI 36-84) — typical vocal/instrument range
-/// - Reference pitch: 440Hz — standard concert pitch (A4)
-/// - Difficulty bounds: 0.1 to 100.0 cents — practical human pitch comparison range
-struct TrainingSettings {
-    var noteRange: NoteRange
-    var referencePitch: Frequency
-    var minCentDifference: Cents
-    var maxCentDifference: Cents
-
-    init(
-        noteRange: NoteRange = NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84)),
-        referencePitch: Frequency,
-        minCentDifference: Cents = 0.1,
-        maxCentDifference: Cents = 100.0
-    ) {
-        self.noteRange = noteRange
-        self.referencePitch = referencePitch
-        self.minCentDifference = minCentDifference
-        self.maxCentDifference = maxCentDifference
-    }
 }

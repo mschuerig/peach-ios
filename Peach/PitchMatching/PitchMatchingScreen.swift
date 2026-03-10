@@ -5,6 +5,7 @@ struct PitchMatchingScreen: View {
     let intervals: Set<DirectedInterval>
 
     @Environment(\.pitchMatchingSession) private var pitchMatchingSession
+    @Environment(\.userSettings) private var userSettings
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -136,12 +137,12 @@ struct PitchMatchingScreen: View {
                 pitchMatchingSession.stop()
             } else {
                 logger.info("Help sheet dismissed - restarting pitch matching")
-                pitchMatchingSession.start(intervals: intervals)
+                pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
             }
         }
         .onAppear {
             logger.info("PitchMatchingScreen appeared - starting pitch matching")
-            pitchMatchingSession.start(intervals: intervals)
+            pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
         }
         .onDisappear {
             logger.info("PitchMatchingScreen disappeared - stopping pitch matching")

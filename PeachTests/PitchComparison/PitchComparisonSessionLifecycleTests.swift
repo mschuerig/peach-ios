@@ -20,7 +20,7 @@ struct PitchComparisonSessionLifecycleTests {
             }
         }
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         await Task.yield()  // Let training task start
 
         // Verify we captured playingNote1 state
@@ -46,7 +46,7 @@ struct PitchComparisonSessionLifecycleTests {
             }
         }
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .idle)
 
         #expect(f.mockDataStore.saveCallCount == 0)
@@ -57,7 +57,7 @@ struct PitchComparisonSessionLifecycleTests {
     func stopDuringAwaitingAnswerDiscardsComparison() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.state == .awaitingAnswer)
@@ -72,7 +72,7 @@ struct PitchComparisonSessionLifecycleTests {
     func stopDuringFeedbackPreservesData() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -93,7 +93,7 @@ struct PitchComparisonSessionLifecycleTests {
     func stopClearsFeedbackState() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)
@@ -114,7 +114,7 @@ struct PitchComparisonSessionLifecycleTests {
         #expect(f.session.state == .idle)
 
         // Start training
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
 
         // Stop multiple times
         f.session.stop()
@@ -130,7 +130,7 @@ struct PitchComparisonSessionLifecycleTests {
     func stopTransitionsToIdleAndCancelsTraining() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         f.session.stop()
@@ -144,7 +144,7 @@ struct PitchComparisonSessionLifecycleTests {
     func simulatedOnDisappearTriggersStop() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         #expect(f.session.state != .idle)
@@ -160,14 +160,14 @@ struct PitchComparisonSessionLifecycleTests {
     func rapidStopAndStartSequence() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         await Task.yield()
 
         f.session.stop()
         #expect(f.session.state == .idle)
 
         f.mockPlayer.reset()
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         #expect(f.session.state != .idle)
@@ -178,7 +178,7 @@ struct PitchComparisonSessionLifecycleTests {
     func stopDuringStateTransition() async {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         await Task.yield()
 
         f.session.stop()
@@ -193,7 +193,7 @@ struct PitchComparisonSessionLifecycleTests {
     func stopCallsStopAll() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         f.session.stop()
@@ -218,7 +218,7 @@ struct PitchComparisonSessionLifecycleTests {
             }
         }
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
 
         // Wait for feedback state (answer was given during target)
         try await waitForState(f.session, .showingFeedback)

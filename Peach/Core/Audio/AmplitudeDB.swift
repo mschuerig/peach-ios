@@ -1,11 +1,11 @@
 import Foundation
 
 struct AmplitudeDB: Hashable, Comparable, Sendable {
-    static let validRange: ClosedRange<Float> = -90.0...12.0
+    static let validRange: ClosedRange<Double> = -90.0...12.0
 
-    let rawValue: Float
+    let rawValue: Double
 
-    init(_ rawValue: Float) {
+    init(_ rawValue: Double) {
         self.rawValue = rawValue.clamped(to: Self.validRange)
     }
 
@@ -20,7 +20,7 @@ struct AmplitudeDB: Hashable, Comparable, Sendable {
 
 extension AmplitudeDB: ExpressibleByFloatLiteral {
     init(floatLiteral value: Double) {
-        self.init(Float(value))
+        self.init(value)
     }
 }
 
@@ -28,6 +28,6 @@ extension AmplitudeDB: ExpressibleByFloatLiteral {
 
 extension AmplitudeDB: ExpressibleByIntegerLiteral {
     init(integerLiteral value: Int) {
-        self.init(Float(value))
+        self.init(Double(value))
     }
 }

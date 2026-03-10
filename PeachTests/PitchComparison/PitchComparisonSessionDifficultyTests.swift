@@ -17,7 +17,7 @@ struct PitchComparisonSessionDifficultyTests {
     func currentDifficultyReturnsCentDifference() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentDifficulty == 100.0)
@@ -27,7 +27,7 @@ struct PitchComparisonSessionDifficultyTests {
     func currentDifficultyNilAfterStop() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
         f.session.stop()
 
@@ -49,7 +49,7 @@ struct PitchComparisonSessionDifficultyTests {
         ]
         let f = makePitchComparisonSession(comparisons: comparisons)
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer correctly (second note IS higher, user says higher)
@@ -65,7 +65,7 @@ struct PitchComparisonSessionDifficultyTests {
         ]
         let f = makePitchComparisonSession(comparisons: comparisons)
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Answer incorrectly (second note IS higher, user says lower)
@@ -83,7 +83,7 @@ struct PitchComparisonSessionDifficultyTests {
         let f = makePitchComparisonSession(comparisons: comparisons)
 
         // First comparison: 100 cents, answer correctly
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
         f.session.handleAnswer(isHigher: true)
         #expect(f.session.sessionBestCentDifference == 100.0)
@@ -106,7 +106,7 @@ struct PitchComparisonSessionDifficultyTests {
         let f = makePitchComparisonSession(comparisons: comparisons)
 
         // First comparison: 50 cents, answer correctly
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
         f.session.handleAnswer(isHigher: true)
         #expect(f.session.sessionBestCentDifference == 50.0)
@@ -127,7 +127,7 @@ struct PitchComparisonSessionDifficultyTests {
         ]
         let f = makePitchComparisonSession(comparisons: comparisons)
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
         f.session.handleAnswer(isHigher: true)
         #expect(f.session.sessionBestCentDifference == 100.0)

@@ -2,6 +2,14 @@ import Testing
 import Foundation
 @testable import Peach
 
+// MARK: - Default Test Settings
+
+let defaultTestSettings = PitchComparisonTrainingSettings(
+    referencePitch: Frequency(440.0),
+    intervals: [.prime],
+    noteDuration: NoteDuration(1.0)
+)
+
 // MARK: - Shared Test Fixture
 
 struct PitchComparisonSessionFixture {
@@ -12,7 +20,6 @@ struct PitchComparisonSessionFixture {
     let mockStrategy: MockNextPitchComparisonStrategy
     let mockHaptic: MockHapticFeedbackManager?
     let notificationCenter: NotificationCenter?
-    let mockSettings: MockUserSettings
 }
 
 func makePitchComparisonSession(
@@ -20,7 +27,6 @@ func makePitchComparisonSession(
         PitchComparison(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
         PitchComparison(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)))
     ],
-    userSettings: MockUserSettings = MockUserSettings(),
     resettables: [Resettable] = [],
     includeHaptic: Bool = false,
     notificationCenter: NotificationCenter? = nil
@@ -44,7 +50,6 @@ func makePitchComparisonSession(
         notePlayer: mockPlayer,
         strategy: mockStrategy,
         profile: profile,
-        userSettings: userSettings,
         resettables: resettables,
         observers: observers,
         notificationCenter: notificationCenter ?? .default
@@ -57,8 +62,7 @@ func makePitchComparisonSession(
         profile: profile,
         mockStrategy: mockStrategy,
         mockHaptic: mockHaptic,
-        notificationCenter: notificationCenter,
-        mockSettings: userSettings
+        notificationCenter: notificationCenter
     )
 }
 

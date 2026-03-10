@@ -38,7 +38,7 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
 
     func nextPitchComparison(
         profile: PitchComparisonProfile,
-        settings: TrainingSettings,
+        settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval
     ) -> PitchComparison {

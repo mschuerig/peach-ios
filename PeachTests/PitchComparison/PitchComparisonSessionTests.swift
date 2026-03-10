@@ -24,7 +24,7 @@ struct PitchComparisonSessionTests {
             }
         }
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         await Task.yield()
 
         #expect(capturedState == .playingNote1)
@@ -35,7 +35,7 @@ struct PitchComparisonSessionTests {
     func transitionsFromNote1ToNote2() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(f.mockPlayer, 2)
 
         #expect(f.mockPlayer.playCallCount >= 2)
@@ -46,7 +46,7 @@ struct PitchComparisonSessionTests {
     func transitionsFromNote2ToAwaitingAnswer() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.state == .awaitingAnswer)
@@ -56,7 +56,7 @@ struct PitchComparisonSessionTests {
     func handleAnswerTransitionsToShowingFeedback() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -68,7 +68,7 @@ struct PitchComparisonSessionTests {
     func loopsBackAfterFeedback() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -83,7 +83,7 @@ struct PitchComparisonSessionTests {
     func stopTransitionsToIdle() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForPlayCallCount(f.mockPlayer, 1)
 
         f.session.stop()
@@ -97,7 +97,7 @@ struct PitchComparisonSessionTests {
         f.mockPlayer.shouldThrowError = true
         f.mockPlayer.errorToThrow = .engineStartFailed("Test error")
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .idle)
 
         #expect(f.session.state == .idle)
@@ -116,7 +116,7 @@ struct PitchComparisonSessionTests {
             }
         }
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         await Task.yield()
 
         #expect(capturedState == .playingNote1)
@@ -126,7 +126,7 @@ struct PitchComparisonSessionTests {
     func buttonsEnabledDuringAwaitingAnswer() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.state == .awaitingAnswer)
@@ -136,7 +136,7 @@ struct PitchComparisonSessionTests {
     func completesFullLoop() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -156,7 +156,7 @@ struct PitchComparisonSessionTests {
             ]
         )
 
-        f.session.start(intervals: [.up(.perfectFifth)])
+        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockStrategy.lastReceivedInterval == .up(.perfectFifth))
@@ -172,7 +172,7 @@ struct PitchComparisonSessionTests {
     func currentIntervalSetAfterStartPrime() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentInterval == .prime)
@@ -186,7 +186,7 @@ struct PitchComparisonSessionTests {
             ]
         )
 
-        f.session.start(intervals: [.up(.perfectFifth)])
+        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentInterval == .up(.perfectFifth))
@@ -196,7 +196,7 @@ struct PitchComparisonSessionTests {
     func isIntervalModeFalseForPrime() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(!f.session.isIntervalMode)
@@ -210,7 +210,7 @@ struct PitchComparisonSessionTests {
             ]
         )
 
-        f.session.start(intervals: [.up(.perfectFifth)])
+        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.isIntervalMode)
@@ -220,7 +220,7 @@ struct PitchComparisonSessionTests {
     func currentIntervalClearedAfterStop() async throws {
         let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.stop()
@@ -230,13 +230,9 @@ struct PitchComparisonSessionTests {
 
     @Test("tuningSystem from userSettings flows through to CompletedPitchComparison record")
     func tuningSystemFlowsToRecord() async throws {
-        let settings = MockUserSettings()
-        // Explicitly set tuningSystem to verify it flows from userSettings → session → record
-        // (currently only .equalTemperament exists; test guards the flow path for future tuning systems)
-        settings.tuningSystem = .equalTemperament
-        let f = makePitchComparisonSession(userSettings: settings)
+        let f = makePitchComparisonSession()
 
-        f.session.start(intervals: [.prime])
+        f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
@@ -257,11 +253,10 @@ struct PitchComparisonSessionTests {
             notePlayer: mockPlayer,
             strategy: strategy,
             profile: profile,
-            userSettings: MockUserSettings(),
             observers: [mockDataStore, profile]
         )
 
-        session.start(intervals: [.up(.perfectFifth)])
+        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(session, .awaitingAnswer)
 
         session.handleAnswer(isHigher: true)
@@ -275,7 +270,7 @@ struct PitchComparisonSessionTests {
     @Test("start with perfectFifth sets currentInterval to perfectFifth")
     func startWithPerfectFifthSetsCurrentInterval() async throws {
         let f = makePitchComparisonSession()
-        f.session.start(intervals: [.up(.perfectFifth)])
+        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentInterval == .up(.perfectFifth))
@@ -287,7 +282,7 @@ struct PitchComparisonSessionTests {
     func startWithMultipleIntervals() async throws {
         let f = makePitchComparisonSession()
         let intervals: Set<DirectedInterval> = [.prime, .up(.perfectFifth)]
-        f.session.start(intervals: intervals)
+        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: intervals))
         try await waitForState(f.session, .awaitingAnswer)
 
         let interval = try #require(f.session.currentInterval)
@@ -303,12 +298,16 @@ struct PitchComparisonSessionTests {
         #expect(f.session.sessionTuningSystem == .equalTemperament)
     }
 
-    @Test("sessionTuningSystem reflects userSettings after start")
+    @Test("sessionTuningSystem reflects settings after start")
     func sessionTuningSystemFromSettings() async {
         let f = makePitchComparisonSession()
         f.mockPlayer.instantPlayback = true
-        f.mockSettings.tuningSystem = .justIntonation
-        f.session.start(intervals: [.prime])
+        let settings = PitchComparisonTrainingSettings(
+            referencePitch: Frequency(440.0),
+            intervals: [.prime],
+            tuningSystem: .justIntonation
+        )
+        f.session.start(settings: settings)
         await Task.yield()
         #expect(f.session.sessionTuningSystem == .justIntonation)
         f.session.stop()
@@ -318,8 +317,12 @@ struct PitchComparisonSessionTests {
     func sessionTuningSystemResetsOnStop() async {
         let f = makePitchComparisonSession()
         f.mockPlayer.instantPlayback = true
-        f.mockSettings.tuningSystem = .justIntonation
-        f.session.start(intervals: [.prime])
+        let settings = PitchComparisonTrainingSettings(
+            referencePitch: Frequency(440.0),
+            intervals: [.prime],
+            tuningSystem: .justIntonation
+        )
+        f.session.start(settings: settings)
         await Task.yield()
         f.session.stop()
         #expect(f.session.sessionTuningSystem == .equalTemperament)
