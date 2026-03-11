@@ -320,3 +320,15 @@ development_status:
   # Epic 40: Version Your Data — CSV Export Format Versioning
   epic-40: done
   40-1-add-csv-format-version-metadata: done
+
+  # Epic 41: Read Your Chart — Profile Screen Chart UX Redesign
+  epic-41: backlog
+  41-1-multi-granularity-bucket-pipeline: backlog
+  41-2-scrollable-chart-with-fixed-y-axis: backlog
+  41-3-granularity-zone-separators: backlog
+  41-4-tap-to-select-data-points: backlog
+  41-5-accessibility-and-performance-hardening: backlog
+  41-6-tipkit-help-overlay-system: backlog
+  41-7-help-button-with-tip-reset: backlog
+  41-8-narrative-headlines: backlog
+  41-9-session-level-detail-markers: backlog

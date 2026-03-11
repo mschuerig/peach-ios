@@ -3690,7 +3690,62 @@ So that I feel encouraged without navigating to the full Profile Screen.
 
 ---
 
-## Epic 39 Requirements (Profile Screen Chart UX Redesign)
+## Epic 39: App Icon Redesign — AI-Generated Peach Icon
+
+Users get a polished, professional app icon that clearly conveys "peach" and "hearing/sound", replacing the previous icon with a new AI-generated design assembled in Icon Composer with Liquid Glass effects.
+
+### Story 39.1: App Icon Redesign
+
+As a **musician using Peach**,
+I want the app to have a polished, professional icon that clearly conveys "peach" and "hearing/sound",
+so that the app looks credible on the App Store and my home screen, and communicates its ear-training purpose at a glance.
+
+**Acceptance Criteria:**
+
+**Given** the icon design, **when** viewed, **then** it prominently features a recognizable peach fruit that does NOT resemble a human posterior
+**Given** the icon design, **when** viewed, **then** it incorporates a visual element representing hearing or sound integrated naturally with the peach
+**Given** the icon design, **when** evaluated against Apple's iOS icon guidelines, **then** foreground layers have clearly defined edges, no baked-in shadows or specular highlights, and artwork is 1024x1024px in sRGB or Display P3 color space
+**Given** the icon at small sizes (40x40px), **when** viewed on a home screen, **then** the design remains recognizable and the key elements are still distinguishable
+**Given** the final icon, **when** assembled in Icon Composer and added to the Xcode project as a `.icon` file, **then** it replaces the existing `AppIcon` asset catalog entry and the build succeeds with zero warnings
+**Given** the AI image generation process, **when** creating the icon, **then** a well-crafted prompt is developed through iteration, and the selected AI tool and final prompt are documented for reproducibility
+**Given** the layered icon design, **when** assembled in Icon Composer, **then** the icon has at least a background layer and one foreground layer group, producing a Liquid Glass effect with depth and vitality
+
+**Technical hints:**
+- AI-generated foreground artwork on transparent background, assembled in Icon Composer
+- Background color/gradient set in Icon Composer, not baked into artwork
+- Output: `AppIcon.icon` file replacing existing `AppIcon.appiconset`
+- No Swift code changes required
+
+---
+
+## Epic 40: Version Your Data — CSV Export Format Versioning
+
+Exported CSV files include format version metadata so future app versions can correctly interpret and import data even if the format evolves, using a chain-of-responsibility architecture for versioned parsing.
+
+### Story 40.1: Add CSV Format Version Metadata
+
+As a **user who exports and imports training data**,
+I want exported CSV files to contain a format version identifier,
+so that future versions of the app can correctly interpret and import my data even if the format evolves.
+
+**Acceptance Criteria:**
+
+**Given** an export operation, **when** CSV files are generated, **then** a metadata line `# peach-export-format:1` appears as the very first line before the header row
+**Given** an import operation, **when** a file is loaded, **then** a version reader extracts the format version from the metadata line before any parsing occurs
+**Given** a file without a metadata line, **when** imported, **then** it is rejected with a clear error
+**Given** a file with an unrecognized version, **when** imported, **then** a localized error tells the user to update the app
+**Given** version-specific parsing, **when** a new format version is needed, **then** adding a new `CSVVersionedParser` conformance and registering it is sufficient — no changes to existing parsers or orchestrator
+**Given** the existing v1 parsing logic, **when** the refactoring is complete, **then** all current parsing behavior is preserved exactly
+**Given** existing export and import tests, **when** run after changes, **then** all pass with no regressions
+
+**Technical hints:**
+- Chain of responsibility: `CSVVersionedParser` protocol with version-specific conformances
+- New version reader extracts format version before parsing
+- Additive architecture: new versions require only a new conformance + registration
+
+---
+
+## Epic 41 Requirements (Profile Screen Chart UX Redesign)
 
 **Source:** `docs/planning-artifacts/research/technical-profile-screen-chart-ux-research-2026-03-11.md`
 **Context:** Third iteration of profile visualization. Research supersedes older planning artifacts for profile chart UX.
@@ -3726,22 +3781,22 @@ NFR6: Swift Charts performance — total data points must stay well under 2K; se
 
 ### FR Coverage Map
 
-FR1: Epic 39, Story 39.2 — Horizontally scrollable multi-granularity timeline
-FR2: Epic 39, Story 39.2 — Fixed Y-axis visible while scrolling
-FR3: Epic 39, Story 39.2 — Chart pinned to right edge on load
-FR4: Epic 39, Stories 39.1/39.3 — Granularity zone separators (tint + dividers + labels)
-FR5: Epic 39, Story 39.4 — Tap-to-select data point annotations
-FR6: Epic 39, Story 39.6 — TipKit sequential help overlay system
-FR7: Epic 39, Story 39.7 — Persistent "?" button to replay tips
-FR8: Epic 39, Story 39.8 — Narrative headlines above charts
-FR9: Epic 39, Story 39.1 — Multi-granularity bucket concatenation from ProgressTimeline
-FR10: Epic 39, Story 39.9 — Session-level markers for recent sessions
+FR1: Epic 41, Story 41.2 — Horizontally scrollable multi-granularity timeline
+FR2: Epic 41, Story 41.2 — Fixed Y-axis visible while scrolling
+FR3: Epic 41, Story 41.2 — Chart pinned to right edge on load
+FR4: Epic 41, Stories 41.1/41.3 — Granularity zone separators (tint + dividers + labels)
+FR5: Epic 41, Story 41.4 — Tap-to-select data point annotations
+FR6: Epic 41, Story 41.6 — TipKit sequential help overlay system
+FR7: Epic 41, Story 41.7 — Persistent "?" button to replay tips
+FR8: Epic 41, Story 41.8 — Narrative headlines above charts
+FR9: Epic 41, Story 41.1 — Multi-granularity bucket concatenation from ProgressTimeline
+FR10: Epic 41, Story 41.9 — Session-level markers for recent sessions
 
-## Epic 39: Read Your Chart — Profile Screen Chart UX Redesign
+## Epic 41: Read Your Chart — Profile Screen Chart UX Redesign
 
 Users can understand their training progress at a glance through a scrollable multi-granularity chart, contextual TipKit help overlays, narrative headlines, and session-level detail markers. The fixed Y-axis stays visible while scrolling, granularity zones are clearly labeled, and the chart opens pinned to the most recent data.
 
-### Story 39.1: Multi-Granularity Bucket Pipeline
+### Story 41.1: Multi-Granularity Bucket Pipeline
 
 As a **developer**,
 I want `ProgressTimeline` to produce concatenated multi-granularity buckets and a layout calculator to compute zone geometry,
@@ -3778,13 +3833,13 @@ So that the scrollable chart has a clean, testable data source with all granular
 - `ChartLayoutCalculator` and `GranularityZoneConfig` conformances are pure Core (no SwiftUI import except `Color` in the config — or use a wrapper)
 - TDD: write tests first in `PeachTests/Core/Profile/`
 
-### Story 39.2: Scrollable Chart with Fixed Y-Axis
+### Story 41.2: Scrollable Chart with Fixed Y-Axis
 
 As a **user**,
 I want to scroll horizontally through my training history with the Y-axis always visible,
 So that I can explore my full progress timeline without losing context for what the numbers mean.
 
-**Depends on:** Story 39.1
+**Depends on:** Story 41.1
 
 **Acceptance Criteria:**
 
@@ -3818,13 +3873,13 @@ So that I can explore my full progress timeline without losing context for what 
 - Keep headline row (EWMA, stddev, trend arrow) unchanged for now
 - Retain existing `AreaMark` (stddev band), `LineMark` (EWMA), `RuleMark` (baseline)
 
-### Story 39.3: Granularity Zone Separators
+### Story 41.3: Granularity Zone Separators
 
 As a **user**,
 I want to see clear visual boundaries between monthly, daily, and session-level zones on my chart,
 So that I understand the time scale changes as I scroll through my history.
 
-**Depends on:** Story 39.2
+**Depends on:** Story 41.2
 
 **Acceptance Criteria:**
 
@@ -3847,18 +3902,18 @@ So that I understand the time scale changes as I scroll through my history.
 **Then** no zone separators or labels are shown (nothing to separate)
 
 **Technical hints:**
-- Use `GranularityZoneConfig.backgroundTint` from 39.1 for zone tints
+- Use `GranularityZoneConfig.backgroundTint` from 41.1 for zone tints
 - Zone boundaries from `ChartLayoutCalculator` zone boundary indices
 - Localize zone labels via `add-localization.py`
 - `RectangleMark` or background `Rectangle` for tint areas; `RuleMark` for vertical dividers
 
-### Story 39.4: Tap-to-Select Data Points
+### Story 41.4: Tap-to-Select Data Points
 
 As a **user**,
 I want to tap any data point on my chart to see its details,
 So that I can inspect specific periods of my training history.
 
-**Depends on:** Story 39.2
+**Depends on:** Story 41.2
 
 **Acceptance Criteria:**
 
@@ -3890,13 +3945,13 @@ So that I can inspect specific periods of my training history.
 - Annotation content: reuse `formatEWMA`, `formatStdDev`, `bucketLabel` from existing helpers
 - Remove the disabled `chartExpansionEnabled` code path — this replaces that interaction model
 
-### Story 39.5: Accessibility and Performance Hardening
+### Story 41.5: Accessibility and Performance Hardening
 
 As a **user with accessibility needs**,
 I want the redesigned chart to work well with VoiceOver, Dynamic Type, Increase Contrast, and Reduce Motion,
 So that the chart is usable regardless of my accessibility settings.
 
-**Depends on:** Stories 39.2–39.4
+**Depends on:** Stories 41.2–41.4
 
 **Acceptance Criteria:**
 
@@ -3928,13 +3983,13 @@ So that the chart is usable regardless of my accessibility settings.
 - Reduce Motion: check `AccessibilityEnvironment.reduceMotion` or `UIAccessibility.isReduceMotionEnabled`
 - Increase Contrast: conditional color modifiers checking `colorSchemeContrast` environment value
 
-### Story 39.6: TipKit Help Overlay System
+### Story 41.6: TipKit Help Overlay System
 
 As a **first-time user**,
 I want guided explanations of each chart element to appear one at a time,
 So that I understand what the EWMA line, stddev band, baseline, and granularity zones mean without needing external documentation.
 
-**Depends on:** Story 39.2
+**Depends on:** Story 41.2
 
 **Acceptance Criteria:**
 
@@ -3963,13 +4018,13 @@ So that I understand what the EWMA line, stddev band, baseline, and granularity 
 - New file: `Profile/ChartTips.swift`
 - Localize all tip titles and messages (DE+EN) via `add-localization.py`
 
-### Story 39.7: Help Button with Tip Reset
+### Story 41.7: Help Button with Tip Reset
 
 As a **returning user**,
 I want a "?" button on each progress card that replays all chart help tips,
 So that I can re-read the explanations whenever I need a refresher.
 
-**Depends on:** Story 39.6
+**Depends on:** Story 41.6
 
 **Acceptance Criteria:**
 
@@ -3990,13 +4045,13 @@ So that I can re-read the explanations whenever I need a refresher.
 - On tap: call `Tips.resetDatastore()` scoped to chart tips, or invalidate display rules
 - SF Symbol: `questionmark.circle`
 
-### Story 39.8: Narrative Headlines
+### Story 41.8: Narrative Headlines
 
 As a **user**,
 I want plain-language progress summaries above my chart instead of just raw numbers,
 So that I can understand whether I'm improving without interpreting the chart myself.
 
-**Depends on:** Story 39.2
+**Depends on:** Story 41.2
 
 **Acceptance Criteria:**
 
@@ -4028,13 +4083,13 @@ So that I can understand whether I'm improving without interpreting the chart my
 - TDD: write tests first in `PeachTests/Core/Profile/NarrativeFormatterTests.swift`
 - Localize via `add-localization.py`
 
-### Story 39.9: Session-Level Detail Markers
+### Story 41.9: Session-Level Detail Markers
 
 As a **user**,
 I want to see individual recent practice sessions as distinct markers on the rightmost chart zone,
 So that I can reflect on specific sessions and understand what caused variability in my recent performance.
 
-**Depends on:** Story 39.2
+**Depends on:** Story 41.2
 
 **Acceptance Criteria:**
 
@@ -4044,7 +4099,7 @@ So that I can reflect on specific sessions and understand what caused variabilit
 **And** markers are visually distinct from the EWMA line (different shape or emphasis)
 
 **Given** a session marker
-**When** the user taps it (using the existing tap-to-select from 39.4)
+**When** the user taps it (using the existing tap-to-select from 41.4)
 **Then** the annotation popover shows session-specific detail: date/time, duration, record count, mean accuracy
 
 **Given** session-level data
@@ -4056,6 +4111,6 @@ So that I can reflect on specific sessions and understand what caused variabilit
 - Add `PointMark` or symbol annotation within the session zone in the scrollable chart
 - Session duration derivable from first-to-last record timestamp within the session bucket
 - Reuse existing `TimeBucket` data — no new data source needed
-- The existing tap-to-select (39.4) already handles annotation display
+- The existing tap-to-select (41.4) already handles annotation display
 
 ---
