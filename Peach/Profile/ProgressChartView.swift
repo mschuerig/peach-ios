@@ -7,6 +7,8 @@ struct ProgressChartView: View {
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    @State private var scrollPosition = Date()
+
     private var config: TrainingModeConfig { mode.config }
 
     var body: some View {
@@ -100,12 +102,23 @@ struct ProgressChartView: View {
 
     private func scrollableChartBody(buckets: [TimeBucket], yDomain: ClosedRange<Double>) -> some View {
         let domainLength = Self.visibleDomainLength(for: buckets)
-        let initialX = Self.initialScrollPosition(for: buckets, visibleDomainLength: domainLength)
+        let visibleSlice = Self.windowedSlice(
+            from: buckets,
+            scrollPosition: scrollPosition,
+            domainLength: domainLength,
+            buffer: 5
+        )
 
-        return chartContent(buckets: buckets, yDomain: yDomain)
+        return chartContent(buckets: visibleSlice, yDomain: yDomain)
             .chartScrollableAxes(.horizontal)
             .chartXVisibleDomain(length: domainLength)
-            .chartScrollPosition(initialX: initialX)
+            .chartScrollPosition(x: $scrollPosition)
+            .onAppear {
+                scrollPosition = Self.initialScrollPosition(
+                    for: buckets,
+                    visibleDomainLength: domainLength
+                )
+            }
     }
 
     private func staticChartBody(buckets: [TimeBucket], yDomain: ClosedRange<Double>) -> some View {
@@ -113,8 +126,13 @@ struct ProgressChartView: View {
     }
 
     private func chartContent(buckets: [TimeBucket], yDomain: ClosedRange<Double>) -> some View {
-        Chart {
-            ForEach(Array(buckets.enumerated()), id: \.offset) { _, bucket in
+        let bucketSizeByDate = Dictionary(
+            buckets.map { ($0.periodStart, $0.bucketSize) },
+            uniquingKeysWith: { _, last in last }
+        )
+
+        return Chart {
+            ForEach(buckets, id: \.periodStart) { bucket in
                 AreaMark(
                     x: .value("Time", bucket.periodStart),
                     yStart: .value("Low", max(0, bucket.mean - bucket.stddev)),
@@ -123,7 +141,7 @@ struct ProgressChartView: View {
                 .foregroundStyle(.blue.opacity(0.15))
             }
 
-            ForEach(Array(buckets.enumerated()), id: \.offset) { _, bucket in
+            ForEach(buckets, id: \.periodStart) { bucket in
                 LineMark(
                     x: .value("Time", bucket.periodStart),
                     y: .value("EWMA", bucket.mean)
@@ -142,7 +160,7 @@ struct ProgressChartView: View {
                 AxisGridLine()
                 AxisValueLabel {
                     if let date = value.as(Date.self) {
-                        let size = Self.bucketSize(for: date, in: buckets)
+                        let size = bucketSizeByDate[date] ?? .day
                         Text(Self.formatAxisLabel(date, size: size))
                     }
                 }
@@ -165,8 +183,9 @@ struct ProgressChartView: View {
     static func yDomain(for buckets: [TimeBucket]) -> ClosedRange<Double> {
         guard !buckets.isEmpty else { return 0...1 }
         let yMin = buckets.map { max(0, $0.mean - $0.stddev) }.min() ?? 0
-        let yMax = buckets.map { $0.mean + $0.stddev }.max() ?? 1
-        return yMin...max(yMin, yMax)
+        let rawMax = buckets.map { $0.mean + $0.stddev }.max() ?? 1
+        let yMax = max(yMin + 1, rawMax)
+        return yMin...yMax
     }
 
     static func windowedBuckets(from buckets: [TimeBucket], visibleRange: Range<Int>, buffer: Int) -> [TimeBucket] {
@@ -174,6 +193,19 @@ struct ProgressChartView: View {
         let start = max(0, visibleRange.lowerBound - buffer)
         let end = min(buckets.count, visibleRange.upperBound + buffer)
         return Array(buckets[start..<end])
+    }
+
+    static func windowedSlice(
+        from buckets: [TimeBucket],
+        scrollPosition: Date,
+        domainLength: TimeInterval,
+        buffer: Int
+    ) -> [TimeBucket] {
+        guard !buckets.isEmpty else { return [] }
+        let windowEnd = scrollPosition.addingTimeInterval(domainLength)
+        let firstVisible = buckets.firstIndex { $0.periodStart >= scrollPosition } ?? 0
+        let lastVisible = (buckets.lastIndex { $0.periodStart <= windowEnd } ?? (buckets.count - 1)) + 1
+        return windowedBuckets(from: buckets, visibleRange: firstVisible..<lastVisible, buffer: buffer)
     }
 
     private static let visibleBucketCount = 12
@@ -196,10 +228,6 @@ struct ProgressChartView: View {
     static func initialScrollPosition(for buckets: [TimeBucket], visibleDomainLength: TimeInterval) -> Date {
         guard let last = buckets.last else { return Date() }
         return last.periodStart.addingTimeInterval(-visibleDomainLength)
-    }
-
-    private static func bucketSize(for date: Date, in buckets: [TimeBucket]) -> BucketSize {
-        buckets.first { $0.periodStart == date }?.bucketSize ?? .day
     }
 
     private static func formatAxisLabel(_ date: Date, size: BucketSize) -> String {

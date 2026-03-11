@@ -47,7 +47,7 @@ struct ProgressChartViewTests {
         ]
         let domain = ProgressChartView.yDomain(for: buckets)
         #expect(domain.lowerBound == 15.0)
-        #expect(domain.upperBound == 15.0)
+        #expect(domain.upperBound == 16.0)
     }
 
     // MARK: - Data Windowing
@@ -116,6 +116,44 @@ struct ProgressChartViewTests {
         #expect(configs[.month]?.pointWidth == 30)
         #expect(configs[.day]?.pointWidth == 40)
         #expect(configs[.session]?.pointWidth == 50)
+    }
+
+    // MARK: - Windowed Slice from Scroll Position
+
+    @Test("windowed slice from scroll position returns correct range with buffer")
+    func windowedSliceFromScrollPosition() async {
+        let base = Date(timeIntervalSinceReferenceDate: 0)
+        let buckets = (0..<50).map { i in
+            TimeBucket(
+                periodStart: base.addingTimeInterval(Double(i) * 86400),
+                periodEnd: base.addingTimeInterval(Double(i) * 86400 + 3600),
+                bucketSize: .day,
+                mean: Double(i),
+                stddev: 1.0,
+                recordCount: 5
+            )
+        }
+        let scrollPos = base.addingTimeInterval(20 * 86400)
+        let result = ProgressChartView.windowedSlice(
+            from: buckets,
+            scrollPosition: scrollPos,
+            domainLength: 10 * 86400,
+            buffer: 5
+        )
+        // Visible: indices 20-30, with buffer 5: indices 15-35
+        #expect(result.first?.mean == 15.0)
+        #expect(result.last?.mean == 35.0)
+    }
+
+    @Test("windowed slice from scroll position with empty buckets returns empty")
+    func windowedSliceFromScrollPositionEmpty() async {
+        let result = ProgressChartView.windowedSlice(
+            from: [],
+            scrollPosition: Date(),
+            domainLength: 86400,
+            buffer: 5
+        )
+        #expect(result.isEmpty)
     }
 
     // MARK: - Initial Scroll Position
@@ -199,11 +237,4 @@ struct ProgressChartViewTests {
         }
     }
 
-    private func dateFromComponents(year: Int, month: Int, day: Int) -> Date {
-        var components = DateComponents()
-        components.year = year
-        components.month = month
-        components.day = day
-        return Calendar.current.date(from: components)!
-    }
 }

@@ -1,6 +1,6 @@
 # Story 41.2: Scrollable Chart with Fixed Y-Axis
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -244,9 +244,31 @@ Claude Opus 4.6
 - Removed 7 obsolete tests: bucket label formatting (4), display buckets (3)
 - 1029 tests pass, `check-dependencies.sh` clean
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Michael (via Claude Opus 4.6) on 2026-03-11
+
+**Outcome:** Changes Requested → Fixed
+
+**Findings fixed:**
+- **C1 (CRITICAL):** Data windowing was dead code — `windowedBuckets` defined/tested but never called. Added `@State scrollPosition` with `.chartScrollPosition(x:)` binding, `.onAppear` for initial position, and new `windowedSlice(from:scrollPosition:domainLength:buffer:)` that bridges scroll position to index-based windowing. AC #4 now implemented.
+- **H1 (HIGH):** `bucketSize(for:in:)` O(n) linear scan replaced with pre-built `Dictionary` in `chartContent` for O(1) axis label lookups.
+- **H2 (HIGH):** `ForEach` with `id: \.offset` replaced with `id: \.periodStart` for stable SwiftUI identity during scroll.
+- **H3 (HIGH):** Y-domain zero-range fixed — added `max(yMin + 1, rawMax)` to guarantee minimum 1-unit spread.
+- **M2 (MEDIUM):** Removed dead `dateFromComponents` test helper.
+
+**Findings accepted (no code change):**
+- **M1 (MEDIUM):** `initialScrollPosition` kept internal for test access, consistent with project pattern.
+- **M3 (MEDIUM):** Test count in completion notes was inaccurate (13 not 12). Corrected below.
+- **L1 (LOW):** Magic number 86400 acknowledged but left as-is — `TimeInterval` constants are idiomatic Swift.
+- **L2 (LOW):** Test count in completion notes corrected.
+
+**Tests:** 1035 pass (was 1029 claimed), `check-dependencies.sh` clean.
+
 ### Change Log
 
 - 2026-03-11: Implemented scrollable chart with fixed Y-axis, data windowing, and multi-granularity X-axis labels
+- 2026-03-11: Review fixes — connected data windowing to scroll position, O(1) axis label lookup, stable ForEach IDs, Y-domain minimum range, removed dead code
 
 ### File List
 
