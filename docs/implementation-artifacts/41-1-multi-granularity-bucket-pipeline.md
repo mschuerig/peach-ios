@@ -1,6 +1,6 @@
 # Story 41.1: Multi-Granularity Bucket Pipeline
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,22 +24,22 @@ So that the scrollable chart has a clean, testable data source with all granular
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `allGranularityBuckets(for:)` to `ProgressTimeline` (AC: #1, #4, #5)
-  - [ ] 1.1 Write tests first in `PeachTests/Core/Profile/ProgressTimelineTests.swift` — multi-month data produces month+day+session concatenation; single-day data produces only sessions; empty data returns empty array; boundary dates (exactly 24h, exactly 30d) are assigned correctly
-  - [ ] 1.2 Implement `allGranularityBuckets(for:)` in `ProgressTimeline.swift` — new public method that regroups `allMetrics` into age-based granularity zones concatenated chronologically. Do NOT modify `buckets(for:)` or `assignBuckets`
-  - [ ] 1.3 Verify existing `buckets(for:)` tests still pass unchanged
+- [x] Task 1: Add `allGranularityBuckets(for:)` to `ProgressTimeline` (AC: #1, #4, #5)
+  - [x] 1.1 Write tests first in `PeachTests/Core/Profile/ProgressTimelineTests.swift` — multi-month data produces month+day+session concatenation; single-day data produces only sessions; empty data returns empty array; boundary dates (exactly 24h, exactly 30d) are assigned correctly
+  - [x] 1.2 Implement `allGranularityBuckets(for:)` in `ProgressTimeline.swift` — new public method that regroups `allMetrics` into age-based granularity zones concatenated chronologically. Do NOT modify `buckets(for:)` or `assignBuckets`
+  - [x] 1.3 Verify existing `buckets(for:)` tests still pass unchanged
 
-- [ ] Task 2: Create `GranularityZoneConfig` protocol and conformances (AC: #3)
-  - [ ] 2.1 Write tests first in `PeachTests/Core/Profile/GranularityZoneConfigTests.swift` — each config returns expected pointWidth, backgroundTint, and axis labels formatted correctly for sample dates
-  - [ ] 2.2 Create `Peach/Core/Profile/GranularityZoneConfig.swift` — protocol definition + `MonthlyZoneConfig`, `DailyZoneConfig`, `SessionZoneConfig` conformances
-  - [ ] 2.3 Resolve the `Color` import issue: `GranularityZoneConfig` lives in Core/ which must not import SwiftUI. Use a `struct GranularityTint` wrapper with semantic named colors (e.g., `.primary`, `.secondary`) that the UI layer maps to SwiftUI `Color` values. OR define the protocol in Core/ without `backgroundTint` and extend with a computed property in the Profile/ UI layer
+- [x] Task 2: Create `GranularityZoneConfig` protocol and conformances (AC: #3)
+  - [x] 2.1 Write tests first in `PeachTests/Core/Profile/GranularityZoneConfigTests.swift` — each config returns expected pointWidth, backgroundTint, and axis labels formatted correctly for sample dates
+  - [x] 2.2 Create `Peach/Core/Profile/GranularityZoneConfig.swift` — protocol definition + `MonthlyZoneConfig`, `DailyZoneConfig`, `SessionZoneConfig` conformances
+  - [x] 2.3 Resolve the `Color` import issue: `GranularityZoneConfig` lives in Core/ which must not import SwiftUI. Use a `struct GranularityTint` wrapper with semantic named colors (e.g., `.primary`, `.secondary`) that the UI layer maps to SwiftUI `Color` values. OR define the protocol in Core/ without `backgroundTint` and extend with a computed property in the Profile/ UI layer
 
-- [ ] Task 3: Create `ChartLayoutCalculator` (AC: #2)
-  - [ ] 3.1 Write tests first in `PeachTests/Core/Profile/ChartLayoutCalculatorTests.swift` — total width computation, zone boundary indices for various bucket arrays, single-zone case returns no boundaries, empty array returns zero width
-  - [ ] 3.2 Create `Peach/Core/Profile/ChartLayoutCalculator.swift` — pure enum with static methods: `totalWidth(for:configs:)`, `zoneBoundaries(for:)`. No UI dependencies
+- [x] Task 3: Create `ChartLayoutCalculator` (AC: #2)
+  - [x] 3.1 Write tests first in `PeachTests/Core/Profile/ChartLayoutCalculatorTests.swift` — total width computation, zone boundary indices for various bucket arrays, single-zone case returns no boundaries, empty array returns zero width
+  - [x] 3.2 Create `Peach/Core/Profile/ChartLayoutCalculator.swift` — pure enum with static methods: `totalWidth(for:configs:)`, `zoneBoundaries(for:)`. No UI dependencies
 
-- [ ] Task 4: Run full test suite
-  - [ ] 4.1 Run `bin/test.sh` — all existing + new tests pass
+- [x] Task 4: Run full test suite
+  - [x] 4.1 Run `bin/test.sh` — all existing + new tests pass
 
 ## Dev Notes
 
@@ -161,10 +161,33 @@ Modified files:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+- Initial GranularityZoneConfig axis label tests failed due to locale-dependent formatting (simulator uses German locale). Fixed by making tests locale-aware instead of hardcoding English abbreviations.
+
 ### Completion Notes List
 
+- Implemented `allGranularityBuckets(for:)` on `ProgressTimeline` — new public method producing concatenated multi-granularity `[TimeBucket]` array (month → day → session, no weekly). Existing `buckets(for:)` API unchanged.
+- Created `GranularityZoneConfig` protocol in Core/ with `pointWidth: CGFloat` and `axisLabelFormatter: (Date) -> String`. Three conformances: `MonthlyZoneConfig` (30pt), `DailyZoneConfig` (40pt), `SessionZoneConfig` (50pt). `backgroundTint` intentionally omitted from Core/ to avoid SwiftUI import — UI layer maps `BucketSize` → `Color` separately.
+- Created `ChartLayoutCalculator` as pure static enum with `totalWidth(for:configs:)` and `zoneBoundaries(for:)`. Returns `[ZoneBoundary]` with `startIndex`, `endIndex`, `bucketSize`.
+- All 1027 tests pass (1010 existing + 17 new). No regressions. `bin/check-dependencies.sh` passes.
+
+### Change Log
+
+- 2026-03-11: Implemented story 41.1 — multi-granularity bucket pipeline with GranularityZoneConfig protocol and ChartLayoutCalculator
+
 ### File List
+
+New files:
+- Peach/Core/Profile/GranularityZoneConfig.swift
+- Peach/Core/Profile/ChartLayoutCalculator.swift
+- PeachTests/Core/Profile/GranularityZoneConfigTests.swift
+- PeachTests/Core/Profile/ChartLayoutCalculatorTests.swift
+
+Modified files:
+- Peach/Core/Profile/ProgressTimeline.swift
+- PeachTests/Core/Profile/ProgressTimelineTests.swift
+- docs/implementation-artifacts/sprint-status.yaml
+- docs/implementation-artifacts/41-1-multi-granularity-bucket-pipeline.md

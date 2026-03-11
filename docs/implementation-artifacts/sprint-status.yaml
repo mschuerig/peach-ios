@@ -323,7 +323,7 @@ development_status:
 
   # Epic 41: Read Your Chart — Profile Screen Chart UX Redesign
   epic-41: in-progress
-  41-1-multi-granularity-bucket-pipeline: ready-for-dev
+  41-1-multi-granularity-bucket-pipeline: review
   41-2-scrollable-chart-with-fixed-y-axis: backlog
   41-3-granularity-zone-separators: backlog
   41-4-tap-to-select-data-points: backlog

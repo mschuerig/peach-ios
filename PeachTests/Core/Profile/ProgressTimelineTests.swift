@@ -604,6 +604,213 @@ struct ProgressTimelineTests {
         #expect(subs.isEmpty)
     }
 
+    // MARK: - Multi-Granularity Bucket Tests
+
+    @Test("multi-month data produces month, day, and session zones")
+    func multiGranularityAllZones() async {
+        let calendar = Calendar.current
+        let now = Date()
+
+        // Data 45 days ago → month zone
+        let monthDate = calendar.startOfDay(for: now.addingTimeInterval(-45 * 86400)).addingTimeInterval(12 * 3600)
+        // Data 5 days ago → day zone
+        let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
+        // Data 2 hours ago → session zone
+        let sessionDate = now.addingTimeInterval(-2 * 3600)
+
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: monthDate),
+            makePitchComparisonRecord(centOffset: 12.0, date: dayDate),
+            makePitchComparisonRecord(centOffset: 8.0, date: sessionDate),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        let sizes = Set(buckets.map(\.bucketSize))
+        #expect(sizes.contains(.month))
+        #expect(sizes.contains(.day))
+        #expect(sizes.contains(.session))
+    }
+
+    @Test("single-day data produces only session buckets")
+    func multiGranularitySingleDay() async {
+        let now = Date()
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: now.addingTimeInterval(-2 * 3600)),
+            makePitchComparisonRecord(centOffset: 12.0, date: now.addingTimeInterval(-1 * 3600)),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        #expect(!buckets.isEmpty)
+        for bucket in buckets {
+            #expect(bucket.bucketSize == .session)
+        }
+    }
+
+    @Test("empty mode returns empty array for allGranularityBuckets")
+    func multiGranularityEmpty() async {
+        let timeline = ProgressTimeline()
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+        #expect(buckets.isEmpty)
+    }
+
+    @Test("record exactly 30 days old goes to month zone")
+    func multiGranularityBoundary30Days() async {
+        let now = Date()
+        let exactly30DaysAgo = now.addingTimeInterval(-30 * 86400)
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: exactly30DaysAgo),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        #expect(buckets.count == 1)
+        #expect(buckets.first?.bucketSize == .month)
+    }
+
+    @Test("record exactly 24 hours old goes to day zone not session")
+    func multiGranularityBoundary24Hours() async {
+        let now = Date()
+        let exactly24HoursAgo = now.addingTimeInterval(-24 * 3600)
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: exactly24HoursAgo),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        #expect(buckets.count == 1)
+        #expect(buckets.first?.bucketSize == .day)
+    }
+
+    @Test("session merging in allGranularityBuckets for records within sessionGap")
+    func multiGranularitySessionMerging() async {
+        let now = Date()
+        // Two records 10 minutes apart (< 30 min session gap)
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: now.addingTimeInterval(-2 * 3600)),
+            makePitchComparisonRecord(centOffset: 12.0, date: now.addingTimeInterval(-2 * 3600 + 600)),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        #expect(buckets.count == 1)
+        #expect(buckets.first?.recordCount == 2)
+        #expect(buckets.first?.bucketSize == .session)
+    }
+
+    @Test("allGranularityBuckets are sorted chronologically")
+    func multiGranularityChronologicalOrder() async {
+        let calendar = Calendar.current
+        let now = Date()
+
+        let monthDate = calendar.startOfDay(for: now.addingTimeInterval(-45 * 86400)).addingTimeInterval(12 * 3600)
+        let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
+        let sessionDate = now.addingTimeInterval(-2 * 3600)
+
+        let records = [
+            makePitchComparisonRecord(centOffset: 8.0, date: sessionDate),
+            makePitchComparisonRecord(centOffset: 10.0, date: monthDate),
+            makePitchComparisonRecord(centOffset: 12.0, date: dayDate),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        for i in 1..<buckets.count {
+            #expect(buckets[i].periodStart >= buckets[i - 1].periodStart)
+        }
+    }
+
+    @Test("allGranularityBuckets retains correct BucketSize tag per zone")
+    func multiGranularityBucketSizeTags() async {
+        let calendar = Calendar.current
+        let now = Date()
+
+        let monthDate = calendar.startOfDay(for: now.addingTimeInterval(-45 * 86400)).addingTimeInterval(12 * 3600)
+        let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
+        let sessionDate = now.addingTimeInterval(-2 * 3600)
+
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: monthDate),
+            makePitchComparisonRecord(centOffset: 12.0, date: dayDate),
+            makePitchComparisonRecord(centOffset: 8.0, date: sessionDate),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        // Month bucket should come first
+        let monthBuckets = buckets.filter { $0.bucketSize == .month }
+        let dayBuckets = buckets.filter { $0.bucketSize == .day }
+        let sessionBuckets = buckets.filter { $0.bucketSize == .session }
+
+        #expect(!monthBuckets.isEmpty)
+        #expect(!dayBuckets.isEmpty)
+        #expect(!sessionBuckets.isEmpty)
+
+        // Month buckets should precede day buckets which precede session buckets
+        if let lastMonth = monthBuckets.last, let firstDay = dayBuckets.first {
+            #expect(lastMonth.periodStart < firstDay.periodStart)
+        }
+        if let lastDay = dayBuckets.last, let firstSession = sessionBuckets.first {
+            #expect(lastDay.periodStart < firstSession.periodStart)
+        }
+    }
+
+    @Test("allGranularityBuckets does not include week buckets")
+    func multiGranularityNoWeekBuckets() async {
+        let now = Date()
+        // Data at various ages, none should produce week buckets
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, date: now.addingTimeInterval(-45 * 86400)),
+            makePitchComparisonRecord(centOffset: 12.0, date: now.addingTimeInterval(-15 * 86400)),
+            makePitchComparisonRecord(centOffset: 8.0, date: now.addingTimeInterval(-2 * 3600)),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        let weekBuckets = buckets.filter { $0.bucketSize == .week }
+        #expect(weekBuckets.isEmpty)
+    }
+
+    @Test("day and session zones only when no data older than 30 days")
+    func multiGranularityDayAndSessionOnly() async {
+        let now = Date()
+        let calendar = Calendar.current
+
+        let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
+        let sessionDate = now.addingTimeInterval(-2 * 3600)
+
+        let records = [
+            makePitchComparisonRecord(centOffset: 12.0, date: dayDate),
+            makePitchComparisonRecord(centOffset: 8.0, date: sessionDate),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
+
+        let sizes = Set(buckets.map(\.bucketSize))
+        #expect(!sizes.contains(.month))
+        #expect(sizes.contains(.day))
+        #expect(sizes.contains(.session))
+    }
+
+    @Test("existing buckets(for:) still returns identical results after adding allGranularityBuckets")
+    func existingBucketsAPIUnchanged() async {
+        let records = [
+            makePitchComparisonRecord(centOffset: 10.0, hoursAgo: 2.0),
+            makePitchComparisonRecord(centOffset: 12.0, hoursAgo: 1.9),
+            makePitchComparisonRecord(centOffset: 8.0, hoursAgo: 0.5),
+        ]
+        let timeline = ProgressTimeline(pitchComparisonRecords: records)
+        let buckets = timeline.buckets(for: .unisonPitchComparison)
+
+        // Existing behavior: session bucketing for recent records
+        #expect(buckets.count == 2)
+        let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
+        #expect(totalRecords == 3)
+    }
+
+    // MARK: - Sub-Bucket Tests
+
     @Test("sub-bucket record counts are consistent with parent bucket")
     func subBucketRecordCountConsistency() async {
         // Create records spanning weeks within a month bucket

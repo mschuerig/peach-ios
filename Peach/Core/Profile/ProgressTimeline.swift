@@ -167,6 +167,19 @@ final class ProgressTimeline {
         modeData[mode]?.ewma
     }
 
+    /// Returns concatenated multi-granularity buckets ordered chronologically.
+    ///
+    /// Data older than 30 days → `.month` buckets, 1–30 days → `.day` buckets,
+    /// <24 hours → `.session` buckets. All zones are concatenated left-to-right.
+    /// Weekly granularity is intentionally omitted.
+    func allGranularityBuckets(for mode: TrainingMode) -> [TimeBucket] {
+        guard let data = modeData[mode], !data.allMetrics.isEmpty else { return [] }
+        let now = Date()
+        let calendar = Calendar.current
+        let sessionGap = mode.config.sessionGap.timeIntervalSeconds
+        return assignMultiGranularityBuckets(data.allMetrics, now: now, calendar: calendar, sessionGap: sessionGap)
+    }
+
     /// Returns sub-buckets at finer granularity for a given parent bucket.
     ///
     /// Splits a month bucket into weeks, a week into days, or a day into sessions.
@@ -364,6 +377,71 @@ final class ProgressTimeline {
                     continue
                 }
             } else {
+                if let monthInterval = calendar.dateInterval(of: .month, for: metric.timestamp) {
+                    bucketInfo = (key: monthInterval.start, end: monthInterval.end, size: .month)
+                } else {
+                    continue
+                }
+            }
+
+            if let idx = groups.firstIndex(where: { $0.key == bucketInfo.key && $0.size == bucketInfo.size }) {
+                groups[idx].points.append(metric.value)
+            } else {
+                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.value]))
+            }
+        }
+
+        return groups.sorted { $0.key < $1.key }.map { group in
+            let mean = group.points.reduce(0.0, +) / Double(group.points.count)
+            let stddev: Double
+            if group.points.count > 1 {
+                let variance = group.points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(group.points.count)
+                stddev = sqrt(variance)
+            } else {
+                stddev = 0
+            }
+            return TimeBucket(
+                periodStart: group.key,
+                periodEnd: group.end,
+                bucketSize: group.size,
+                mean: mean,
+                stddev: stddev,
+                recordCount: group.points.count
+            )
+        }
+    }
+
+    // MARK: - Multi-Granularity Bucket Assignment
+
+    private func assignMultiGranularityBuckets(
+        _ metrics: [MetricPoint],
+        now: Date,
+        calendar: Calendar,
+        sessionGap: TimeInterval
+    ) -> [TimeBucket] {
+        var groups: [(key: Date, end: Date, size: BucketSize, points: [Double])] = []
+
+        for metric in metrics {
+            let age = now.timeIntervalSince(metric.timestamp)
+            let bucketInfo: (key: Date, end: Date, size: BucketSize)
+
+            if age < Self.recentThreshold {
+                // Session zone: merge records within sessionGap
+                if let lastGroup = groups.last,
+                   lastGroup.size == .session,
+                   metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGap {
+                    groups[groups.count - 1].points.append(metric.value)
+                    groups[groups.count - 1].end = metric.timestamp
+                    continue
+                }
+                bucketInfo = (key: metric.timestamp, end: metric.timestamp, size: .session)
+            } else if age < Self.monthThreshold {
+                // Day zone: skip week entirely
+                let dayStart = calendar.startOfDay(for: metric.timestamp)
+                let dayEnd = dayStart.addingTimeInterval(Self.secondsPerDay)
+                bucketInfo = (key: dayStart, end: dayEnd, size: .day)
+            } else {
+                // Month zone
                 if let monthInterval = calendar.dateInterval(of: .month, for: metric.timestamp) {
                     bucketInfo = (key: monthInterval.start, end: monthInterval.end, size: .month)
                 } else {
