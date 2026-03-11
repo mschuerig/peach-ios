@@ -25,7 +25,7 @@ final class HapticFeedbackManager: HapticFeedback, PitchComparisonObserver {
     ///
     /// Prepares the generator during initialization to minimize latency when feedback is triggered.
     init() {
-        self.generator = UIImpactFeedbackGenerator(style: .heavy)
+        self.generator = UIImpactFeedbackGenerator(style: .medium)
         generator.prepare()
     }
 
