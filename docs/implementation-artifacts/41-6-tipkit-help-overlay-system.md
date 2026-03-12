@@ -1,6 +1,6 @@
 # Story 41.6: TipKit Help Overlay System
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -319,7 +319,7 @@ Claude Opus 4.6
 - Configured TipKit in PeachApp.swift with `try? Tips.configure()` at end of init
 - Created ChartTips.swift with five Tip structs: ChartOverviewTip, EWMALineTip, StdDevBandTip, BaselineTip, GranularityZoneTip
 - Used all-inline approach (TipView) rather than popovers — Swift Charts marks are not SwiftUI views and cannot anchor popovers; inline TipView in the activeCard VStack achieves the sequential teaching goal cleanly
-- TipGroup(.ordered) owned as @State in ProgressChartView ensures one tip at a time in sequence
+- TipGroup(.ordered) owned as @State in ProfileScreen ensures one tip at a time in sequence, shown once above all cards (moved from ProgressChartView during review — showing tips inside each card caused unnecessary duplication across training modes)
 - TipKit persistence handles dismissed-tip memory automatically across launches
 - All 10 German translations added via batch localization
 - VoiceOver: TipView is natively accessible, no additional annotations needed
@@ -328,10 +328,12 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-03-12: Implemented TipKit help overlay system — 5 ordered tips for chart elements, inline display, English+German localization
+- 2026-03-12: Review — moved TipGroup from ProgressChartView to ProfileScreen so tips display once above all cards instead of duplicating inside each card
 
 ### File List
 
 - Peach/App/PeachApp.swift (modified — added `import TipKit`, `try? Tips.configure()`)
 - Peach/Profile/ChartTips.swift (new — five Tip struct definitions)
-- Peach/Profile/ProgressChartView.swift (modified — added `import TipKit`, `@State tipGroup`, `TipView` in activeCard)
+- Peach/Profile/ProfileScreen.swift (modified — added `import TipKit`, `@State tipGroup`, `TipView` above cards)
+- Peach/Profile/ProgressChartView.swift (modified — no TipKit code, tip display moved to ProfileScreen)
 - Peach/Resources/Localizable.xcstrings (modified — 10 new tip title/message translations)

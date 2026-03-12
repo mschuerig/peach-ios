@@ -1,11 +1,22 @@
 import SwiftUI
+import TipKit
 
 struct ProfileScreen: View {
     @Environment(\.progressTimeline) private var progressTimeline
+    @State private var tipGroup = TipGroup(.ordered) {
+        ChartOverviewTip()
+        EWMALineTip()
+        StdDevBandTip()
+        BaselineTip()
+        GranularityZoneTip()
+    }
 
     var body: some View {
         ScrollView {
             VStack(spacing: 16) {
+                if let currentTip = tipGroup.currentTip {
+                    TipView(currentTip)
+                }
                 ForEach(TrainingMode.allCases, id: \.self) { mode in
                     let state = progressTimeline.state(for: mode)
                     if state != .noData {
