@@ -158,7 +158,7 @@ def generate_timestamps(count: int) -> list[datetime]:
     today_share = count - month_share - week_share - day_share
 
     for _ in range(month_share):
-        offset = random.uniform(60, 90)
+        offset = random.uniform(60, 180)
         timestamps.append(now - timedelta(days=offset))
 
     for _ in range(week_share):
