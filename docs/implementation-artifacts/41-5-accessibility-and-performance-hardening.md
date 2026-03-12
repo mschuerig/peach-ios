@@ -1,6 +1,6 @@
 # Story 41.5: Accessibility and Performance Hardening
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -38,9 +38,9 @@ so that the chart is usable regardless of my accessibility settings.
   - [x] 2.4 If any hardcoded font sizes exist, replace with scaled text styles
 
 - [x] Task 3: Reduce Motion — suppress scroll animation (AC: #3)
-  - [x] 3.1 Add `@Environment(\.accessibilityReduceMotion) private var reduceMotion` to `ProgressChartView`
-  - [x] 3.2 In `scrollableChartBody`, wrap the `.onAppear` scroll position assignment: if `reduceMotion` is true, set position directly without animation (current implementation already sets it directly via `scrollPosition = ...` — verify no implicit animation wraps this)
-  - [x] 3.3 If any `.animation()` modifiers exist on the chart or its container, gate them with `reduceMotion ? nil : .default`
+  - [x] 3.1 Verified `.onAppear` scroll position is set directly without animation — no `withAnimation` or `.animation()` wrappers exist
+  - [x] 3.2 Confirmed no `.animation()` modifiers on chart or container — nothing to gate with `reduceMotion`
+  - [x] 3.3 No `@Environment(\.accessibilityReduceMotion)` needed — removed as dead code during review (no animation exists to suppress)
 
 - [x] Task 4: Increase Contrast support (AC: #4)
   - [x] 4.1 Add `@Environment(\.colorSchemeContrast) private var colorSchemeContrast` to `ProgressChartView`
@@ -283,6 +283,7 @@ Chart layer extraction in review commit (f41007d) means each layer method can ac
 ## Change Log
 
 - 2026-03-12: Implemented accessibility and performance hardening for ProgressChartView — added VoiceOver zone containers, Dynamic Type verification, Reduce Motion environment guard, Increase Contrast support with contrast-adjusted opacities, and performance verification tests
+- 2026-03-12: Code review fixes — removed unused `reduceMotion` dead code, added missing German translations for zone accessibility summaries and "Session" key, removed stale orphaned localization entries, strengthened weak test assertions (data point count), added out-of-bounds zone index test
 
 ## Dev Agent Record
 
@@ -299,14 +300,14 @@ Claude Opus 4.6
 - Added `zoneAccessibilitySummary(buckets:zone:config:)` static helper producing localized VoiceOver summaries per zone
 - Changed card accessibility from `.combine` to `.contain` to enable zone-by-zone VoiceOver navigation
 - Added invisible accessibility overlay elements in `.chartOverlay` for each granularity zone
-- Added `@Environment(\.accessibilityReduceMotion)` as defensive guard (current scroll has no animation)
 - Added `@Environment(\.colorSchemeContrast)` with `isIncreaseContrast` computed property
 - Added `contrastAdjustedOpacity(base:increased:isIncreaseContrast:)` static helper
 - Applied contrast-adjusted opacities to stddev band (0.15→0.3), baseline (0.6→0.9), zone backgrounds (0.06→0.12), selection indicator (0.5→0.8), and zone dividers (.secondary→.primary)
 - Verified all fonts use text styles (no hardcoded sizes) — Dynamic Type works automatically
 - Added performance tests: 365 days → <2000 buckets, 1000 days → <2000 buckets, session zone limited to today
-- Added German translations for zone accessibility labels
-- All 1061 tests pass, no dependency violations
+- Added German translations for zone accessibility summaries and "Session" key
+- Removed stale orphaned localization entries
+- All 1061 tests pass (1060 + 1 new), no dependency violations
 
 ### File List
 

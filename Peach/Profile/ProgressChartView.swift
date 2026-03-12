@@ -6,7 +6,6 @@ struct ProgressChartView: View {
 
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
     @State private var scrollPosition: Double = .infinity

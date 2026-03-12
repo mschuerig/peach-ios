@@ -445,7 +445,7 @@ struct ProgressChartViewTests {
         #expect(summary != nil)
         #expect(summary!.contains("15.2") || summary!.contains("15,2"))
         #expect(summary!.contains("11") || summary!.contains("11,0"))
-        #expect(summary!.contains("3"))
+        #expect(summary!.contains("3 data points") || summary!.contains("3 Datenpunkte"))
     }
 
     @Test("produces VoiceOver summary for daily zone")
@@ -465,7 +465,7 @@ struct ProgressChartViewTests {
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         #expect(summary != nil)
-        #expect(summary!.contains("2"))
+        #expect(summary!.contains("2 data points") || summary!.contains("2 Datenpunkte"))
     }
 
     @Test("single-zone data returns one summary")
@@ -480,13 +480,27 @@ struct ProgressChartViewTests {
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         #expect(summary != nil)
-        #expect(summary!.contains("1"))
+        #expect(summary!.contains("1 data points") || summary!.contains("1 Datenpunkte"))
     }
 
     @Test("empty zone returns nil accessibility summary")
     func zoneAccessibilitySummaryEmptyZone() async {
         let buckets: [TimeBucket] = []
         let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: -1)
+        let config = TrainingModeConfig.unisonPitchComparison
+
+        let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
+
+        #expect(summary == nil)
+    }
+
+    @Test("out-of-bounds zone endIndex returns nil accessibility summary")
+    func zoneAccessibilitySummaryOutOfBounds() async {
+        let date = Date()
+        let buckets = [
+            TimeBucket(periodStart: date, periodEnd: date.addingTimeInterval(3600), bucketSize: .month, mean: 10.0, stddev: 1.0, recordCount: 5),
+        ]
+        let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 5)
         let config = TrainingModeConfig.unisonPitchComparison
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
