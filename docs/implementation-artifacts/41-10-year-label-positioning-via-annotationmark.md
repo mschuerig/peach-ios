@@ -1,6 +1,6 @@
-# Story 41.10: Year Label Positioning via AnnotationMark
+# Story 41.10: Dynamic Year Label Positioning for Dynamic Type
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -160,20 +160,22 @@ Claude Opus 4.6
 
 ### Completion Notes List
 
-- Replaced hardcoded `yearLabelYOffset = 28` with dynamic positioning using `geometry.size.height + yearLabelBottomPadding` (8pt). The `geometry.size.height` includes the full chart height with axis labels, so when Dynamic Type increases axis label font size, the year labels automatically move down to stay below them.
-- Renamed constant from `yearLabelYOffset` to `yearLabelBottomPadding` to reflect the new semantic (padding below chart content, not offset from plot frame).
+- Replaced hardcoded `yearLabelYOffset = 28` with dynamic positioning using `geometry.size.height + yearLabelBottomPadding`. The `geometry.size.height` includes the full chart height with axis labels, so when Dynamic Type increases axis label font size, the year labels automatically move down to stay below them.
+- Both `yearLabelBottomPadding` (8pt baseline) and `yearLabelBottomSpace` (16pt baseline) use `@ScaledMetric(relativeTo: .caption2)` so they scale proportionally with Dynamic Type — year labels won't clip at accessibility sizes.
+- Renamed constant from `yearLabelYOffset` to `yearLabelBottomPadding` and converted from static constant to `@ScaledMetric` instance property.
 - No changes to `yearLabels(for:)` data logic or `YearLabel` struct — only the rendering Y-position changed.
 - Zone accessibility containers in chartOverlay preserved unchanged.
-- `.padding(.bottom, yearLabels.isEmpty ? 0 : 16)` preserved unchanged.
+- `.padding(.bottom, yearLabels.isEmpty ? 0 : yearLabelBottomSpace)` now scales with Dynamic Type (was hardcoded 16pt).
 - Edge cases: `yearLabels.isEmpty` guard ensures no year labels render when no monthly zone exists; padding conditional prevents extra space.
-- All 1063 existing tests pass (6 pre-existing flaky PitchComparisonSession async timing failures unrelated to this change).
+- All existing tests pass (4 pre-existing flaky PitchComparisonSession async timing failures unrelated to this change).
 - Build succeeds with no new warnings.
-- Dynamic Type verification: position is anchored to `geometry.size.height` which includes axis labels — taller axis labels push year labels further down automatically. Manual verification recommended at accessibility sizes.
+- Dynamic Type adaptation: Y position anchored to `geometry.size.height` (adapts to axis label growth) + `@ScaledMetric` padding (adapts to year label font growth). Both dimensions scale independently.
 
 ### File List
 
-- Peach/Profile/ProgressChartView.swift (modified — year label positioning, constant rename)
+- Peach/Profile/ProgressChartView.swift (modified — year label positioning with @ScaledMetric, constant rename)
 
 ### Change Log
 
 - 2026-03-12: Replaced hardcoded yearLabelYOffset (28pt from plot frame bottom) with dynamic positioning using geometry.size.height + 8pt padding. Year labels now adapt automatically to Dynamic Type axis label size changes.
+- 2026-03-12: [Review] Converted yearLabelBottomPadding and bottom padding to @ScaledMetric(relativeTo: .caption2) so both position offset and allocated space scale with Dynamic Type. Removed redundant comment. Updated story title to reflect actual approach (Option D, not AnnotationMark).

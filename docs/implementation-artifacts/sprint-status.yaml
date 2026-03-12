@@ -322,12 +322,12 @@ development_status:
   40-1-add-csv-format-version-metadata: done
 
   # Epic 41: Read Your Chart — Profile Screen Chart UX Redesign
-  epic-41: in-progress
+  epic-41: done
   41-1-multi-granularity-bucket-pipeline: done
   41-2-scrollable-chart-with-fixed-y-axis: done
   41-3-granularity-zone-separators: done
   41-4-tap-to-select-data-points: done
-  41-10-year-label-positioning-via-annotationmark: review
+  41-10-year-label-positioning-via-annotationmark: done
   41-5-accessibility-and-performance-hardening: done
   41-6-tipkit-help-overlay-system: done
   41-7-help-button-with-tip-reset: done

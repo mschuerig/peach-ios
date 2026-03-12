@@ -8,6 +8,9 @@ struct ProgressChartView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
+    @ScaledMetric(relativeTo: .caption2) private var yearLabelBottomPadding: CGFloat = 8
+    @ScaledMetric(relativeTo: .caption2) private var yearLabelBottomSpace: CGFloat = 16
+
     @State private var scrollPosition: Double = .infinity
     @State private var selectedBucketIndex: Int?
 
@@ -173,8 +176,7 @@ struct ProgressChartView: View {
             GeometryReader { geometry in
                 let plotFrame = geometry[proxy.plotFrame!]
 
-                // Year labels below X-axis — positioned relative to full chart height
-                // so they adapt automatically when Dynamic Type changes axis label size
+                // Year labels below X-axis
                 ForEach(Array(yearLabels.enumerated()), id: \.offset) { _, label in
                     if let xFirst = proxy.position(forX: Double(label.firstIndex)),
                        let xLast = proxy.position(forX: Double(label.lastIndex)) {
@@ -183,7 +185,7 @@ struct ProgressChartView: View {
                             .foregroundStyle(.secondary)
                             .position(
                                 x: plotFrame.origin.x + (xFirst + xLast) / 2.0,
-                                y: geometry.size.height + Self.yearLabelBottomPadding
+                                y: geometry.size.height + yearLabelBottomPadding
                             )
                     }
                 }
@@ -204,7 +206,7 @@ struct ProgressChartView: View {
                 }
             }
         }
-        .padding(.bottom, yearLabels.isEmpty ? 0 : 16)
+        .padding(.bottom, yearLabels.isEmpty ? 0 : yearLabelBottomSpace)
     }
 
     private func selectionTapGesture(bucketCount: Int) -> (ChartProxy) -> _EndedGesture<SpatialTapGesture> {
@@ -299,10 +301,6 @@ struct ProgressChartView: View {
     }
 
     // MARK: - Layout Constants
-
-    /// Padding below the chart's rendered content (including axis labels) for year label positioning.
-    /// Uses geometry.size.height as anchor, which adapts to Dynamic Type automatically.
-    private static let yearLabelBottomPadding: CGFloat = 8
 
     // MARK: - Static Helpers
 
