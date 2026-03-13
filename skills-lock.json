@@ -6,6 +6,11 @@
       "sourceType": "github",
       "computedHash": "fb91a851df4a0aabcb8eb8f9b3af98aa2fda5775c0f2ebc9aa61e8206e37d6ef"
     },
+    "swift-testing-pro": {
+      "source": "twostraws/swift-testing-agent-skill",
+      "sourceType": "github",
+      "computedHash": "90504b29146ccd7e88d8ba7244c6c4e4d2b410fb21bdd4ce578f10583b158481"
+    },
     "swiftdata-pro": {
       "source": "twostraws/swiftdata-agent-skill",
       "sourceType": "github",
