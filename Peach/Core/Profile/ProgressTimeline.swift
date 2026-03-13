@@ -126,16 +126,16 @@ final class ProgressTimeline {
     // MARK: - Bucket Age Thresholds
 
     /// Records younger than this are bucketed per training session.
-    private static let recentThreshold: TimeInterval = 24 * 3600
+    private static let recentThreshold: Duration = .seconds(24 * 3600)
 
     /// Records younger than this (but older than recentThreshold) are bucketed per day.
-    private static let weekThreshold: TimeInterval = 7 * 86400
+    private static let weekThreshold: Duration = .seconds(7 * 86400)
 
     /// Records younger than this (but older than weekThreshold) are bucketed per week.
     /// Older records are bucketed per month.
-    private static let monthThreshold: TimeInterval = 30 * 86400
+    private static let monthThreshold: Duration = .seconds(30 * 86400)
 
-    private static let secondsPerDay: TimeInterval = 86400
+    private static let secondsPerDay: Duration = .seconds(86400)
 
     /// Number of calendar days in the day zone (before today).
     private static let dayZoneDays = 7
@@ -363,7 +363,7 @@ final class ProgressTimeline {
             let age = now.timeIntervalSince(metric.timestamp)
             let bucketInfo: (key: Date, end: Date, size: BucketSize)
 
-            if age < Self.recentThreshold {
+            if age < Self.recentThreshold / .seconds(1) {
                 if let lastGroup = groups.last,
                    lastGroup.size == .session,
                    metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGap {
@@ -372,11 +372,11 @@ final class ProgressTimeline {
                     continue
                 }
                 bucketInfo = (key: metric.timestamp, end: metric.timestamp, size: .session)
-            } else if age < Self.weekThreshold {
+            } else if age < Self.weekThreshold / .seconds(1) {
                 let dayStart = calendar.startOfDay(for: metric.timestamp)
-                let dayEnd = dayStart.addingTimeInterval(Self.secondsPerDay)
+                let dayEnd = dayStart.addingTimeInterval(Self.secondsPerDay / .seconds(1))
                 bucketInfo = (key: dayStart, end: dayEnd, size: .day)
-            } else if age < Self.monthThreshold {
+            } else if age < Self.monthThreshold / .seconds(1) {
                 if let weekInterval = calendar.dateInterval(of: .weekOfYear, for: metric.timestamp) {
                     bucketInfo = (key: weekInterval.start, end: weekInterval.end, size: .week)
                 } else {
@@ -449,7 +449,7 @@ final class ProgressTimeline {
             } else if metric.timestamp >= dayStart {
                 // Day zone: 7 calendar days before today
                 let bucketDay = calendar.startOfDay(for: metric.timestamp)
-                let dayEnd = bucketDay.addingTimeInterval(Self.secondsPerDay)
+                let dayEnd = bucketDay.addingTimeInterval(Self.secondsPerDay / .seconds(1))
                 bucketInfo = (key: bucketDay, end: dayEnd, size: .day)
             } else {
                 // Month zone: truncate last monthly bucket at dayStart
@@ -514,7 +514,7 @@ final class ProgressTimeline {
                 }
             case .day:
                 let dayStart = calendar.startOfDay(for: metric.timestamp)
-                groupInfo = (key: dayStart, end: dayStart.addingTimeInterval(Self.secondsPerDay))
+                groupInfo = (key: dayStart, end: dayStart.addingTimeInterval(Self.secondsPerDay / .seconds(1)))
             case .session:
                 if let lastGroup = groups.last,
                    metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGap {

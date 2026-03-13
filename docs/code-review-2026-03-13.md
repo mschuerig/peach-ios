@@ -130,7 +130,7 @@ This is the most architecturally involved fix — read both files and their cons
 
 ---
 
-### L2: Use `Duration` instead of `TimeInterval` for constants
+### ✅ L2: Use `Duration` instead of `TimeInterval` for constants
 
 `Peach/Core/Profile/ProgressTimeline.swift:129-138` — change `recentThreshold`, `weekThreshold`, `monthThreshold`, `secondsPerDay` from `TimeInterval` to `Duration`. Convert to `TimeInterval` at point of use.
 
@@ -298,6 +298,12 @@ File contains `struct PianoKeyboardLayout`, not a View.
 ### ✅ L16: Fix flaky PitchComparisonSessionTests (same root cause as L14)
 
 2 tests in `PeachTests/PitchComparison/PitchComparisonSessionTests.swift` fail intermittently: `transitionsFromNote1ToNote2`, `stopTransitionsToIdle`.
+
+---
+
+### L17: Fix flaky PitchComparisonSessionResetTests
+
+`PeachTests/PitchComparison/PitchComparisonSessionResetTests.swift` — `resetTrainingDataStopsActiveTraining()` fails intermittently (observed during L2 fix run). Likely same polling-based root cause as L14/L16.
 
 **Root cause:** Same as L14 — these tests use `waitForPlayCallCount(f.mockPlayer, ...)` which polls with a timeout. Under load the spawned task may not reach `play()` before the timeout expires.
 
