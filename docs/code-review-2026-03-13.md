@@ -8,7 +8,7 @@ Each fix is independent. Run one per context, commit separately.
 
 ## HIGH — Must Fix
 
-### H1: Remove force unwraps (8 instances)
+### ✅ H1: Remove force unwraps (8 instances)
 
 Replace `!` with `guard let` + early return or `preconditionFailure` with message.
 
@@ -27,7 +27,7 @@ Replace `!` with `guard let` + early return or `preconditionFailure` with messag
 
 ---
 
-### H2: Return `Cents` instead of raw `Double` at API boundaries
+### ✅ H2: Return `Cents` instead of raw `Double` at API boundaries
 
 Three places return raw `Double` for cent values. Change return types to `Cents`, unwrap `.rawValue` only where arithmetic needs it.
 
@@ -39,7 +39,7 @@ Three places return raw `Double` for cent values. Change return types to `Cents`
 
 ---
 
-### H3: Move service orchestration out of SettingsScreen
+### ✅ H3: Move service orchestration out of SettingsScreen
 
 `SettingsScreen` coordinates multiple services directly. Move all coordination into closures defined in `PeachApp.swift`, injected via `@Entry` environment keys.
 
@@ -55,7 +55,7 @@ Three places return raw `Double` for cent values. Change return types to `Cents`
 
 ---
 
-### H4: Fix incomplete profile reset
+### ✅ H4: Fix incomplete profile reset
 
 `Peach/App/PeachApp.swift:117-121` — the `dataStoreResetter` closure calls `profile.resetMatching()` but never `profile.reset()`. After "Reset All Training Data," comparison profile data stays stale in memory.
 
@@ -65,7 +65,7 @@ Three places return raw `Double` for cent values. Change return types to `Cents`
 
 ---
 
-### H5: Make data replacement atomic in TrainingDataImporter
+### ✅ H5: Make data replacement atomic in TrainingDataImporter
 
 `Peach/Core/Data/TrainingDataImporter.swift:40-49` — `replaceAll()` calls `deleteAll()` then saves records one-by-one. If any save fails after delete, all data is lost.
 
@@ -77,7 +77,7 @@ Three places return raw `Double` for cent values. Change return types to `Cents`
 
 ---
 
-### H6: Add missing `async` to ~75 @Test functions
+### ✅ H6: Add missing `async` to ~75 @Test functions
 
 Project rule: every `@Test` function must be `async`. Mechanical fix — add `async` to each signature.
 
@@ -96,7 +96,7 @@ Project rule: every `@Test` function must be `async`. Mechanical fix — add `as
 
 ---
 
-### H7: Remove sleep/fixed delays in AudioSessionInterruptionMonitorTests
+### ✅ H7: Remove sleep/fixed delays in AudioSessionInterruptionMonitorTests
 
 `PeachTests/Core/Audio/AudioSessionInterruptionMonitorTests.swift` — all 10 tests use `try await Task.sleep(for: .milliseconds(50))`. Notifications deliver synchronously, so the sleep is unnecessary.
 
@@ -106,7 +106,7 @@ Project rule: every `@Test` function must be `async`. Mechanical fix — add `as
 
 ---
 
-### H8: Stop `@Model` types leaking through non-storage interfaces
+### ✅ H8: Stop `@Model` types leaking through non-storage interfaces
 
 `Peach/Core/Data/TrainingDataTransferService.swift:7` — callback `onDataChanged: ([PitchComparisonRecord], [PitchMatchingRecord]) -> Void` exposes SwiftData `@Model` classes to consumers. Also `PitchComparisonRecordStoring` protocol (lines 11-12) binds to `@Model` type.
 
@@ -120,10 +120,10 @@ This is the most architecturally involved fix — read both files and their cons
 
 ## LOW — Consider Improving
 
-### L1: Tighten access control (3 spots)
+### L1: Tighten access control (3 spots — 1 of 3 done)
 
 - `Peach/Core/Audio/SoundFontLibrary.swift:8` — `availablePresets` → `private`
-- `Peach/Core/Profile/PerceptualProfile.swift:152-174` — `PerceptualNote` properties → `private(set)` (especially `m2`)
+- ✅ `Peach/Core/Profile/PerceptualProfile.swift:152-174` — `PerceptualNote` properties → `private(set)` (done in `4191edf`)
 - `Peach/PitchMatching/PitchMatchingSession.swift:53` — `referenceFrequency` → `private`
 
 > **Agent prompt:** Read `docs/project-context.md` and this fix description. For each listed property, read the file, grep to confirm no cross-file usage, then tighten access as specified. Run `bin/test.sh` — all tests must pass. Commit with message: `Tighten access control on internal-only properties`
@@ -241,7 +241,7 @@ File contains `struct PianoKeyboardLayout`, not a View.
 
 ---
 
-### L14: Fix flaky PitchComparisonSessionLifecycleTests
+### ✅ L14: Fix flaky PitchComparisonSessionLifecycleTests
 
 *(moved — see below)*
 
@@ -281,7 +281,7 @@ File contains `struct PianoKeyboardLayout`, not a View.
 
 ---
 
-### L14: Fix flaky PitchComparisonSessionLifecycleTests
+### ✅ L14: Fix flaky PitchComparisonSessionLifecycleTests
 
 3 tests in `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift` fail intermittently: `stopCallsStopAll`, `stopTransitionsToIdleAndCancelsTraining`, `simulatedOnDisappearTriggersStop`.
 
@@ -295,7 +295,7 @@ File contains `struct PianoKeyboardLayout`, not a View.
 
 ---
 
-### L16: Fix flaky PitchComparisonSessionTests (same root cause as L14)
+### ✅ L16: Fix flaky PitchComparisonSessionTests (same root cause as L14)
 
 2 tests in `PeachTests/PitchComparison/PitchComparisonSessionTests.swift` fail intermittently: `transitionsFromNote1ToNote2`, `stopTransitionsToIdle`.
 
