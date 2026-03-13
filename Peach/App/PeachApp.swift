@@ -117,6 +117,7 @@ struct PeachApp: App {
                 .environment(\.dataStoreResetter, { [dataStore, pitchComparisonSession, profile, transferService] in
                     try dataStore.deleteAll()
                     try pitchComparisonSession.resetTrainingData()
+                    profile.reset()
                     profile.resetMatching()
                     transferService.refreshExport()
                 })
