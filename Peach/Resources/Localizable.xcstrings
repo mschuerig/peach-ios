@@ -284,12 +284,12 @@
         }
       }
     },
-    "After both notes have played, the **Higher** and **Lower** buttons become active. Tap the one that matches what you heard. You can't answer while the notes are still playing." : {
+    "Once the second note starts playing, the **Higher** and **Lower** buttons become active. Tap the one that matches what you heard." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nachdem beide Töne gespielt wurden, werden die Tasten **Höher** und **Tiefer** aktiv. Tippe auf die Taste, die zu dem passt, was du gehört hast. Während die Töne noch spielen, kannst du nicht antworten."
+            "value" : "Sobald der zweite Ton zu spielen beginnt, werden die Tasten **Höher** und **Tiefer** aktiv. Tippe auf die Taste, die zu dem passt, was du gehört hast."
           }
         }
       }
@@ -1738,24 +1738,24 @@
         }
       }
     },
-    "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress" : {
+    "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress." : {
       "comment" : "EWMA line help body\nEWMA line tip message",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die blaue Linie zeigt deinen geglätteten Durchschnitt — sie filtert zufällige Schwankungen heraus, um deinen echten Fortschritt zu zeigen"
+            "value" : "Die blaue Linie zeigt deinen geglätteten Durchschnitt — sie filtert zufällige Schwankungen heraus, um deinen echten Fortschritt zu zeigen."
           }
         }
       }
     },
-    "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right" : {
+    "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right." : {
       "comment" : "Granularity zone help body\nGranularity zone tip message",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Das Diagramm gruppiert deine Daten nach Zeit: Monate links, die letzten Tage in der Mitte und die heutigen Sitzungen rechts"
+            "value" : "Das Diagramm gruppiert deine Daten nach Zeit: Monate links, die letzten Tage in der Mitte und die heutigen Sitzungen rechts."
           }
         }
       }
@@ -1781,13 +1781,13 @@
         }
       }
     },
-    "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper" : {
+    "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper." : {
       "comment" : "Baseline help body\nBaseline tip message",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die grün gestrichelte Linie ist dein Ziel — wenn sich die Trendlinie ihr nähert, wird dein Gehör schärfer"
+            "value" : "Die grün gestrichelte Linie ist dein Ziel — wenn sich die Trendlinie ihr nähert, wird dein Gehör schärfer."
           }
         }
       }
@@ -1813,24 +1813,24 @@
         }
       }
     },
-    "The shaded area around the line shows how consistent you are — a narrower band means more reliable results" : {
+    "The shaded area around the line shows how consistent you are — a narrower band means more reliable results." : {
       "comment" : "Stddev band help body\nStddev band tip message",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Der schattierte Bereich um die Linie zeigt, wie beständig du bist — ein schmaleres Band bedeutet zuverlässigere Ergebnisse"
+            "value" : "Der schattierte Bereich um die Linie zeigt, wie beständig du bist — ein schmaleres Band bedeutet zuverlässigere Ergebnisse."
           }
         }
       }
     },
-    "This chart shows how your pitch perception is developing over time" : {
+    "This chart shows how your pitch perception is developing over time." : {
       "comment" : "Chart overview help body\nChart overview tip message",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Diagramm zeigt, wie sich deine Tonwahrnehmung im Laufe der Zeit entwickelt"
+            "value" : "Dieses Diagramm zeigt, wie sich deine Tonwahrnehmung im Laufe der Zeit entwickelt."
           }
         }
       }

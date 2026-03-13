@@ -67,31 +67,31 @@ struct ProfileScreen: View {
         HelpSection(
             title: String(localized: "Your Progress Chart",
                           comment: "Chart overview help title"),
-            body: String(localized: "This chart shows how your pitch perception is developing over time",
+            body: String(localized: "This chart shows how your pitch perception is developing over time.",
                          comment: "Chart overview help body")
         ),
         HelpSection(
             title: String(localized: "Trend Line",
                           comment: "EWMA line help title"),
-            body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress",
+            body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.",
                          comment: "EWMA line help body")
         ),
         HelpSection(
             title: String(localized: "Variability Band",
                           comment: "Stddev band help title"),
-            body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results",
+            body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results.",
                          comment: "Stddev band help body")
         ),
         HelpSection(
             title: String(localized: "Target Baseline",
                           comment: "Baseline help title"),
-            body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper",
+            body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.",
                          comment: "Baseline help body")
         ),
         HelpSection(
             title: String(localized: "Time Zones",
                           comment: "Granularity zone help title"),
-            body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right",
+            body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
                          comment: "Granularity zone help body")
         ),
     ]

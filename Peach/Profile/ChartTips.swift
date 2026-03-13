@@ -7,7 +7,7 @@ struct ChartOverviewTip: Tip {
     }
 
     var message: Text? {
-        Text("This chart shows how your pitch perception is developing over time", comment: "Chart overview tip message")
+        Text("This chart shows how your pitch perception is developing over time.", comment: "Chart overview tip message")
     }
 }
 
@@ -17,7 +17,7 @@ struct EWMALineTip: Tip {
     }
 
     var message: Text? {
-        Text("The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress", comment: "EWMA line tip message")
+        Text("The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.", comment: "EWMA line tip message")
     }
 }
 
@@ -27,7 +27,7 @@ struct StdDevBandTip: Tip {
     }
 
     var message: Text? {
-        Text("The shaded area around the line shows how consistent you are — a narrower band means more reliable results", comment: "Stddev band tip message")
+        Text("The shaded area around the line shows how consistent you are — a narrower band means more reliable results.", comment: "Stddev band tip message")
     }
 }
 
@@ -37,7 +37,7 @@ struct BaselineTip: Tip {
     }
 
     var message: Text? {
-        Text("The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper", comment: "Baseline tip message")
+        Text("The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.", comment: "Baseline tip message")
     }
 }
 
@@ -47,6 +47,6 @@ struct GranularityZoneTip: Tip {
     }
 
     var message: Text? {
-        Text("The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right", comment: "Granularity zone tip message")
+        Text("The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.", comment: "Granularity zone tip message")
     }
 }

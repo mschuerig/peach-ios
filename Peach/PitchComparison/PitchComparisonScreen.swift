@@ -31,7 +31,7 @@ struct PitchComparisonScreen: View {
         ),
         HelpSection(
             title: String(localized: "Controls"),
-            body: String(localized: "After both notes have played, the **Higher** and **Lower** buttons become active. Tap the one that matches what you heard. You can't answer while the notes are still playing.")
+            body: String(localized: "Once the second note starts playing, the **Higher** and **Lower** buttons become active. Tap the one that matches what you heard.")
         ),
         HelpSection(
             title: String(localized: "Feedback"),
