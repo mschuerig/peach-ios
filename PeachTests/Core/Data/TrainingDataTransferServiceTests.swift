@@ -14,7 +14,7 @@ struct TrainingDataTransferServiceTests {
     }
 
     private func makeService(
-        onDataChanged: @escaping ([PitchComparisonRecord], [PitchMatchingRecord]) -> Void = { _, _ in }
+        onDataChanged: @escaping () -> Void = { }
     ) throws -> (
         service: TrainingDataTransferService,
         dataStore: TrainingDataStore
@@ -130,12 +130,10 @@ struct TrainingDataTransferServiceTests {
 
     @Test("performImport calls onDataChanged callback")
     func performImportCallsOnDataChanged() async throws {
-        var callbackPitchComparisons: [PitchComparisonRecord]?
-        var callbackPitchMatchings: [PitchMatchingRecord]?
+        var callbackCalled = false
 
-        let (service, _) = try makeService { comparisons, pitchMatchings in
-            callbackPitchComparisons = comparisons
-            callbackPitchMatchings = pitchMatchings
+        let (service, _) = try makeService {
+            callbackCalled = true
         }
 
         let parseResult = CSVImportParser.ImportResult(
@@ -145,8 +143,7 @@ struct TrainingDataTransferServiceTests {
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
 
-        #expect(callbackPitchComparisons?.count == 1)
-        #expect(callbackPitchMatchings?.count == 1)
+        #expect(callbackCalled)
     }
 
     @Test("performImport refreshes export CSV after import")

@@ -53,7 +53,9 @@ struct PeachApp: App {
 
             _transferService = State(wrappedValue: TrainingDataTransferService(
                 dataStore: dataStore,
-                onDataChanged: { [profile, progressTimeline] comparisons, pitchMatchings in
+                onDataChanged: { [dataStore, profile, progressTimeline] in
+                    let comparisons = (try? dataStore.fetchAllPitchComparisons()) ?? []
+                    let pitchMatchings = (try? dataStore.fetchAllPitchMatchings()) ?? []
                     profile.reset()
                     profile.resetMatching()
                     for record in comparisons {

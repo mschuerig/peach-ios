@@ -4,14 +4,14 @@ import SwiftData
 @Observable
 final class TrainingDataTransferService {
     private let dataStore: TrainingDataStore
-    private let onDataChanged: ([PitchComparisonRecord], [PitchMatchingRecord]) -> Void
+    private let onDataChanged: () -> Void
 
     private(set) var exportCSV: String?
     private(set) var exportError: Error?
 
     init(
         dataStore: TrainingDataStore,
-        onDataChanged: @escaping ([PitchComparisonRecord], [PitchMatchingRecord]) -> Void
+        onDataChanged: @escaping () -> Void
     ) {
         self.dataStore = dataStore
         self.onDataChanged = onDataChanged
@@ -66,10 +66,7 @@ final class TrainingDataTransferService {
     ) throws -> TrainingDataImporter.ImportSummary {
         let summary = try TrainingDataImporter.importData(parseResult, mode: mode, into: dataStore)
 
-        let allComparisons = try dataStore.fetchAllPitchComparisons()
-        let allPitchMatchings = try dataStore.fetchAllPitchMatchings()
-
-        onDataChanged(allComparisons, allPitchMatchings)
+        onDataChanged()
 
         refreshExport()
         return summary
@@ -85,7 +82,7 @@ final class TrainingDataTransferService {
         let dataStore = TrainingDataStore(modelContext: container.mainContext)
         return TrainingDataTransferService(
             dataStore: dataStore,
-            onDataChanged: { _, _ in }
+            onDataChanged: { }
         )
     }
 
