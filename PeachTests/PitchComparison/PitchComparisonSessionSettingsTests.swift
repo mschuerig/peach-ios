@@ -30,7 +30,7 @@ struct PitchComparisonSessionSettingsTests {
         #expect(f.mockStrategy.callCount == 1)
 
         f.session.handleAnswer(isHigher: true)
-        try await waitForPlayCallCount(f.mockPlayer, 3)
+        await f.mockPlayer.waitForPlay(minCount: 3)
 
         #expect(f.mockStrategy.callCount == 2)
         #expect(f.mockStrategy.lastReceivedProfile === f.profile)

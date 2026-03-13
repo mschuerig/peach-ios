@@ -52,7 +52,7 @@ struct PitchComparisonSessionLoudnessTests {
         for _ in 0..<5 {
             try await waitForState(f.session, .awaitingAnswer)
             f.session.handleAnswer(isHigher: true)
-            try await waitForPlayCallCount(f.mockPlayer, f.mockPlayer.playCallCount + 2)
+            await f.mockPlayer.waitForPlay(minCount: f.mockPlayer.playCallCount + 2)
         }
 
         let targetAmplitudes = stride(from: 1, to: f.mockPlayer.playHistory.count, by: 2)

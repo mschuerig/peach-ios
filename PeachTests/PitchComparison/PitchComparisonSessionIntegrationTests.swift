@@ -104,7 +104,7 @@ struct PitchComparisonSessionIntegrationTests {
 
         #expect(f.session.state == .showingFeedback)
 
-        try await waitForPlayCallCount(f.mockPlayer, 3)
+        await f.mockPlayer.waitForPlay(minCount: 3)
 
         #expect(f.mockPlayer.playCallCount >= 3)
     }
@@ -148,7 +148,7 @@ struct PitchComparisonSessionIntegrationTests {
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: true)
-        try await waitForPlayCallCount(f.mockPlayer, 3)
+        await f.mockPlayer.waitForPlay(minCount: 3)
         try await waitForState(f.session, .awaitingAnswer)
 
         f.session.handleAnswer(isHigher: false)

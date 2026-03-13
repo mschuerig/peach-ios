@@ -58,7 +58,7 @@ struct PitchComparisonSessionAudioInterruptionTests {
         mockPlayer.simulatedPlaybackDuration = 0.01
 
         session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForPlayCallCount(mockPlayer, 2)
+        await mockPlayer.waitForPlay(minCount: 2)
         mockPlayer.simulatedPlaybackDuration = 5.0
 
         try await waitForState(session, .playingNote2)

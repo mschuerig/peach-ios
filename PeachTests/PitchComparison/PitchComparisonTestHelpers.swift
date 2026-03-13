@@ -80,15 +80,6 @@ func waitForState(_ session: PitchComparisonSession, _ expectedState: PitchCompa
     Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
 }
 
-func waitForPlayCallCount(_ mockPlayer: MockNotePlayer, _ minCount: Int, timeout: Duration = .seconds(2)) async throws {
-    let deadline = ContinuousClock.now + timeout
-    while ContinuousClock.now < deadline {
-        if mockPlayer.playCallCount >= minCount { return }
-        try await Task.sleep(for: .milliseconds(5))
-        await Task.yield()
-    }
-    Issue.record("Timeout waiting for playCallCount >= \(minCount), current: \(mockPlayer.playCallCount)")
-}
 
 func waitForFeedbackToClear(_ session: PitchComparisonSession, timeout: Duration = .seconds(2)) async throws {
     let deadline = ContinuousClock.now + timeout

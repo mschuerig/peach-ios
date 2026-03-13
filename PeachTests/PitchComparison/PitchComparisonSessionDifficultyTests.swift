@@ -89,7 +89,7 @@ struct PitchComparisonSessionDifficultyTests {
         #expect(f.session.sessionBestCentDifference == 100.0)
 
         // Wait for second comparison
-        try await waitForPlayCallCount(f.mockPlayer, 4)
+        await f.mockPlayer.waitForPlay(minCount: 4)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Second comparison: 50 cents, answer correctly
@@ -112,7 +112,7 @@ struct PitchComparisonSessionDifficultyTests {
         #expect(f.session.sessionBestCentDifference == 50.0)
 
         // Wait for second comparison
-        try await waitForPlayCallCount(f.mockPlayer, 4)
+        await f.mockPlayer.waitForPlay(minCount: 4)
         try await waitForState(f.session, .awaitingAnswer)
 
         // Second comparison: 100 cents, answer correctly — best should remain 50
