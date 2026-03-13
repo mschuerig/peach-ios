@@ -5,7 +5,7 @@ final class SoundFontLibrary {
 
     private let logger = Logger(subsystem: "com.peach.app", category: "SoundFontLibrary")
 
-    let availablePresets: [SF2Preset]
+    private(set) var availablePresets: [SF2Preset]
     private let _availableSources: [SoundSourceID]
 
     init(bundle: Bundle = .main) {

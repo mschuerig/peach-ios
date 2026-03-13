@@ -120,11 +120,11 @@ This is the most architecturally involved fix — read both files and their cons
 
 ## LOW — Consider Improving
 
-### L1: Tighten access control (3 spots — 1 of 3 done)
+### ✅ L1: Tighten access control (3 spots — 3 of 3 done)
 
-- `Peach/Core/Audio/SoundFontLibrary.swift:8` — `availablePresets` → `private`
+- ✅ `Peach/Core/Audio/SoundFontLibrary.swift:8` — `availablePresets` → `private(set)` (not fully `private` — tests read it)
 - ✅ `Peach/Core/Profile/PerceptualProfile.swift:152-174` — `PerceptualNote` properties → `private(set)` (done in `4191edf`)
-- `Peach/PitchMatching/PitchMatchingSession.swift:53` — `referenceFrequency` → `private`
+- ✅ `Peach/PitchMatching/PitchMatchingSession.swift:53` — `referenceFrequency` already `private(set)` (not fully `private` — tests read it)
 
 > **Agent prompt:** Read `docs/project-context.md` and this fix description. For each listed property, read the file, grep to confirm no cross-file usage, then tighten access as specified. Run `bin/test.sh` — all tests must pass. Commit with message: `Tighten access control on internal-only properties`
 
