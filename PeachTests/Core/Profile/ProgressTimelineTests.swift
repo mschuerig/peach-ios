@@ -610,13 +610,14 @@ struct ProgressTimelineTests {
     func multiGranularityAllZones() async {
         let calendar = Calendar.current
         let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
 
         // Data 45 days ago → month zone
         let monthDate = calendar.startOfDay(for: now.addingTimeInterval(-45 * 86400)).addingTimeInterval(12 * 3600)
         // Data 5 days ago → day zone
         let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
-        // Data 2 hours ago → session zone
-        let sessionDate = now.addingTimeInterval(-2 * 3600)
+        // Data 1 minute after midnight today → session zone (always today)
+        let sessionDate = midnightToday.addingTimeInterval(60)
 
         let records = [
             makePitchComparisonRecord(centOffset: 10.0, date: monthDate),
@@ -634,10 +635,13 @@ struct ProgressTimelineTests {
 
     @Test("single-day data produces only session buckets")
     func multiGranularitySingleDay() async {
+        let calendar = Calendar.current
         let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
+
         let records = [
-            makePitchComparisonRecord(centOffset: 10.0, date: now.addingTimeInterval(-2 * 3600)),
-            makePitchComparisonRecord(centOffset: 12.0, date: now.addingTimeInterval(-1 * 3600)),
+            makePitchComparisonRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchComparisonRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(120)),
         ]
         let timeline = ProgressTimeline(pitchComparisonRecords: records)
         let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
@@ -685,11 +689,14 @@ struct ProgressTimelineTests {
 
     @Test("session merging in allGranularityBuckets for records within sessionGap")
     func multiGranularitySessionMerging() async {
+        let calendar = Calendar.current
         let now = Date()
-        // Two records 10 minutes apart (< 30 min session gap)
+        let midnightToday = calendar.startOfDay(for: now)
+
+        // Two records 10 minutes apart (< 30 min session gap), both after midnight today
         let records = [
-            makePitchComparisonRecord(centOffset: 10.0, date: now.addingTimeInterval(-2 * 3600)),
-            makePitchComparisonRecord(centOffset: 12.0, date: now.addingTimeInterval(-2 * 3600 + 600)),
+            makePitchComparisonRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchComparisonRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(660)),
         ]
         let timeline = ProgressTimeline(pitchComparisonRecords: records)
         let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
@@ -703,10 +710,11 @@ struct ProgressTimelineTests {
     func multiGranularityChronologicalOrder() async {
         let calendar = Calendar.current
         let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
 
         let monthDate = calendar.startOfDay(for: now.addingTimeInterval(-45 * 86400)).addingTimeInterval(12 * 3600)
         let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
-        let sessionDate = now.addingTimeInterval(-2 * 3600)
+        let sessionDate = midnightToday.addingTimeInterval(60)
 
         let records = [
             makePitchComparisonRecord(centOffset: 8.0, date: sessionDate),
@@ -725,10 +733,11 @@ struct ProgressTimelineTests {
     func multiGranularityBucketSizeTags() async {
         let calendar = Calendar.current
         let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
 
         let monthDate = calendar.startOfDay(for: now.addingTimeInterval(-45 * 86400)).addingTimeInterval(12 * 3600)
         let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
-        let sessionDate = now.addingTimeInterval(-2 * 3600)
+        let sessionDate = midnightToday.addingTimeInterval(60)
 
         let records = [
             makePitchComparisonRecord(centOffset: 10.0, date: monthDate),
@@ -774,11 +783,12 @@ struct ProgressTimelineTests {
 
     @Test("day and session zones only when no data older than 30 days")
     func multiGranularityDayAndSessionOnly() async {
-        let now = Date()
         let calendar = Calendar.current
+        let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
 
         let dayDate = calendar.startOfDay(for: now.addingTimeInterval(-5 * 86400)).addingTimeInterval(12 * 3600)
-        let sessionDate = now.addingTimeInterval(-2 * 3600)
+        let sessionDate = midnightToday.addingTimeInterval(60)
 
         let records = [
             makePitchComparisonRecord(centOffset: 12.0, date: dayDate),
@@ -878,12 +888,14 @@ struct ProgressTimelineTests {
 
     @Test("new user with only today's data produces only session buckets")
     func newUserOnlySessionBuckets() async {
+        let calendar = Calendar.current
         let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
 
         let records = [
-            makePitchComparisonRecord(centOffset: 10.0, date: now.addingTimeInterval(-3600)),
-            makePitchComparisonRecord(centOffset: 12.0, date: now.addingTimeInterval(-1800)),
-            makePitchComparisonRecord(centOffset: 8.0, date: now.addingTimeInterval(-600)),
+            makePitchComparisonRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchComparisonRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(120)),
+            makePitchComparisonRecord(centOffset: 8.0, date: midnightToday.addingTimeInterval(180)),
         ]
         let timeline = ProgressTimeline(pitchComparisonRecords: records)
         let buckets = timeline.allGranularityBuckets(for: .unisonPitchComparison)
