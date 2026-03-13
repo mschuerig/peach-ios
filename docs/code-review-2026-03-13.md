@@ -292,3 +292,19 @@ File contains `struct PianoKeyboardLayout`, not a View.
 **Files:** `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift`, test helpers (`waitForPlayCallCount`)
 
 > **Agent prompt:** Read `docs/project-context.md` and this fix description. Read `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift` fully. Find the `waitForPlayCallCount` helper and all tests that use it. Replace the polling-based wait with a continuation-based synchronization: add an `async` method to the mock (e.g., `waitForPlay()`) that uses `CheckedContinuation` or `AsyncStream`, signalled from `onPlayCalled`. Update the 3 flaky tests to `await` the signal instead of polling. Ensure no test uses `Task.sleep` for synchronization. Run `bin/test.sh` — all tests must pass. Commit with message: `Fix flaky lifecycle tests: replace polling with continuation-based sync`
+
+---
+
+### L16: Fix flaky PitchComparisonSessionTests (same root cause as L14)
+
+2 tests in `PeachTests/PitchComparison/PitchComparisonSessionTests.swift` fail intermittently: `transitionsFromNote1ToNote2`, `stopTransitionsToIdle`.
+
+**Root cause:** Same as L14 — these tests use `waitForPlayCallCount(f.mockPlayer, ...)` which polls with a timeout. Under load the spawned task may not reach `play()` before the timeout expires.
+
+**Note:** L14 is already done, but its fix only covered `PitchComparisonSessionLifecycleTests`. These two tests in `PitchComparisonSessionTests` still use the old polling helper.
+
+**Fix:** Apply the same continuation-based approach from L14 to these 2 tests.
+
+**Files:** `PeachTests/PitchComparison/PitchComparisonSessionTests.swift`
+
+> **Agent prompt:** Read `docs/project-context.md` and this fix description. Read `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift` to see the continuation-based pattern applied in L14. Read `PeachTests/PitchComparison/PitchComparisonSessionTests.swift` and apply the same pattern to `transitionsFromNote1ToNote2` and `stopTransitionsToIdle`, replacing `waitForPlayCallCount` with the continuation-based sync. Run `bin/test.sh` — all tests must pass. Commit with message: `Fix flaky PitchComparisonSessionTests: use continuation-based sync`

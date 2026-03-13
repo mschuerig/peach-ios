@@ -154,11 +154,11 @@ struct PerceptualNote {
     /// Represents the easiest possible comparison -- a full semitone difference.
     static let coldStartDifficulty: Double = 100.0
 
-    var mean: Double
-    var stdDev: Double
-    var m2: Double
-    var sampleCount: Int
-    var currentDifficulty: Double
+    fileprivate(set) var mean: Double
+    fileprivate(set) var stdDev: Double
+    fileprivate(set) var m2: Double
+    fileprivate(set) var sampleCount: Int
+    fileprivate(set) var currentDifficulty: Double
 
     init(mean: Double = 0.0, stdDev: Double = 0.0, m2: Double = 0.0, sampleCount: Int = 0, currentDifficulty: Double = coldStartDifficulty) {
         self.mean = mean
