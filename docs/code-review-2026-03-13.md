@@ -243,6 +243,46 @@ File contains `struct PianoKeyboardLayout`, not a View.
 
 ### L14: Fix flaky PitchComparisonSessionLifecycleTests
 
+*(moved — see below)*
+
+---
+
+### L15: Review PerceptualProfile training-mode asymmetries
+
+`PerceptualProfile` grew unevenly as pitch matching was added alongside pitch comparison. A thorough review is needed to decide which asymmetries are intentional design choices and which are gaps to close.
+
+**Known asymmetries:**
+
+| Dimension | Pitch Comparison | Pitch Matching |
+|-----------|-----------------|----------------|
+| Data granularity | Per-note (128-slot array) | Global aggregate only (3 scalars) |
+| Stats naming | `overallMean` / `overallStdDev` | `matchingMean` / `matchingStdDev` |
+| Weak spot detection | `weakSpots(count:)` | None |
+| Difficulty tracking | `setDifficulty(note:difficulty:)` | None |
+| Correctness metric | `isCorrect` flag tracked | Not tracked |
+| Range filtering | `averageThreshold(noteRange:)` | None |
+| Reset | `reset()` clears comparison only | `resetMatching()` clears matching only |
+| Full reset | Requires **two** calls: `reset()` + `resetMatching()` — no single method |
+| Test coverage | ~300 lines, extensive edge cases | ~80 lines, 8 tests |
+
+**Reset coordination risk:** Every call site that resets "all" profile data must remember to call both methods. Currently `PeachApp.swift` (dataStoreResetter, onDataChanged) does this correctly, but there is no compile-time guard.
+
+**Possible actions (decide per item):**
+
+1. **Rename `reset()` → `resetComparison()`** and add a `resetAll()` that calls both — eliminates the misleading bare `reset()` name
+2. **Add `rebuild(from:)` method** that atomically replaces all state from persisted records (mirrors `ProgressTimeline.rebuild()`)
+3. **Add per-note matching stats** if future UX needs them (defer if not needed now)
+4. **Align stats naming** — e.g., `comparisonMean`/`matchingMean` instead of `overallMean`/`matchingMean`
+5. **Expand matching test coverage** to match comparison depth
+
+**Files:** `Peach/Core/Profile/PerceptualProfile.swift`, `Peach/Core/Profile/PitchComparisonProfile.swift`, `Peach/Core/Profile/PitchMatchingProfile.swift`, `Peach/App/PeachApp.swift`
+
+> **Agent prompt:** Read `docs/project-context.md` and this fix description. Read `Peach/Core/Profile/PerceptualProfile.swift`, `PitchComparisonProfile.swift`, and `PitchMatchingProfile.swift` fully. Read `Peach/App/PeachApp.swift` for reset coordination. For each of the 5 possible actions listed, discuss with the user whether to proceed — these are design decisions, not mechanical fixes. Implement only what is agreed upon. Run `bin/test.sh` — all tests must pass.
+
+---
+
+### L14: Fix flaky PitchComparisonSessionLifecycleTests
+
 3 tests in `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift` fail intermittently: `stopCallsStopAll`, `stopTransitionsToIdleAndCancelsTraining`, `simulatedOnDisappearTriggersStop`.
 
 **Root cause:** `start()` spawns an internal `Task` that calls `play()`. These tests call `waitForPlayCallCount(f.mockPlayer, 1)` which polls with a timeout. Under load the spawned task may not reach `play()` before the timeout expires.
