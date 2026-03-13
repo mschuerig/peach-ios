@@ -8,7 +8,7 @@ struct PitchMatchingTrainingSettings {
     var noteDuration: NoteDuration
     var varyLoudness: UnitInterval
     var maxLoudnessOffsetDB: AmplitudeDB
-    var initialCentOffsetRange: ClosedRange<Double>
+    var initialCentOffsetRange: ClosedRange<Cents>
     var velocity: MIDIVelocity
     var feedbackDuration: Duration
 
@@ -20,7 +20,7 @@ struct PitchMatchingTrainingSettings {
         noteDuration: NoteDuration = NoteDuration(0.75),
         varyLoudness: UnitInterval = UnitInterval(0.0),
         maxLoudnessOffsetDB: AmplitudeDB = AmplitudeDB(10.0),
-        initialCentOffsetRange: ClosedRange<Double> = -20.0...20.0,
+        initialCentOffsetRange: ClosedRange<Cents> = Cents(-20.0)...Cents(20.0),
         velocity: MIDIVelocity = MIDIVelocity(63),
         feedbackDuration: Duration = .milliseconds(400)
     ) {

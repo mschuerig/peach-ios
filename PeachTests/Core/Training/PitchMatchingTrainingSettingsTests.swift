@@ -17,7 +17,7 @@ struct PitchMatchingTrainingSettingsTests {
         #expect(settings.tuningSystem == .equalTemperament)
         #expect(settings.noteDuration == NoteDuration(0.75))
         #expect(settings.varyLoudness == UnitInterval(0.0))
-        #expect(settings.initialCentOffsetRange == -20.0...20.0)
+        #expect(settings.initialCentOffsetRange == Cents(-20.0)...Cents(20.0))
         #expect(settings.maxLoudnessOffsetDB == AmplitudeDB(10.0))
         #expect(settings.velocity == MIDIVelocity(63))
         #expect(settings.feedbackDuration == .milliseconds(400))
@@ -52,6 +52,6 @@ struct PitchMatchingTrainingSettingsTests {
         #expect(settings.maxLoudnessOffsetDB == AmplitudeDB(10.0))
         #expect(settings.velocity == MIDIVelocity(63))
         #expect(settings.feedbackDuration == .milliseconds(400))
-        #expect(settings.initialCentOffsetRange == -20.0...20.0)
+        #expect(settings.initialCentOffsetRange == Cents(-20.0)...Cents(20.0))
     }
 }

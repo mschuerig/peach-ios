@@ -9,25 +9,25 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     case equalTemperament
     case justIntonation
 
-    func centOffset(for interval: Interval) -> Double {
+    func centOffset(for interval: Interval) -> Cents {
         switch self {
         case .equalTemperament:
-            return Double(interval.semitones) * 100.0
+            return Cents(Double(interval.semitones) * 100.0)
         case .justIntonation:
             switch interval {
-            case .prime:        return 0.0
-            case .minorSecond:  return 111.731
-            case .majorSecond:  return 203.910
-            case .minorThird:   return 315.641
-            case .majorThird:   return 386.314
-            case .perfectFourth: return 498.045
-            case .tritone:      return 590.224
-            case .perfectFifth: return 701.955
-            case .minorSixth:   return 813.686
-            case .majorSixth:   return 884.359
-            case .minorSeventh: return 1017.596
-            case .majorSeventh: return 1088.269
-            case .octave:       return Cents.perOctave
+            case .prime:        return Cents(0.0)
+            case .minorSecond:  return Cents(111.731)
+            case .majorSecond:  return Cents(203.910)
+            case .minorThird:   return Cents(315.641)
+            case .majorThird:   return Cents(386.314)
+            case .perfectFourth: return Cents(498.045)
+            case .tritone:      return Cents(590.224)
+            case .perfectFifth: return Cents(701.955)
+            case .minorSixth:   return Cents(813.686)
+            case .majorSixth:   return Cents(884.359)
+            case .minorSeventh: return Cents(1017.596)
+            case .majorSeventh: return Cents(1088.269)
+            case .octave:       return Cents(Cents.perOctave)
             }
         }
     }
@@ -39,19 +39,19 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     /// Decomposes MIDI distance into octaves + remainder interval, then computes
     /// the total cent offset using tuning-system-specific interval sizes.
     /// Remainder is always 0–11 via Euclidean mod, so Interval(rawValue:)! is safe.
-    private func totalCentOffset(for note: DetunedMIDINote) -> Double {
+    private func totalCentOffset(for note: DetunedMIDINote) -> Cents {
         let distance = note.note.rawValue - Self.referenceMIDINote
         let remainder = ((distance % 12) + 12) % 12
         let octaves = (distance - remainder) / 12
         guard let interval = Interval(rawValue: remainder) else {
             preconditionFailure("Euclidean mod produced out-of-range remainder \(remainder)")
         }
-        return Double(octaves) * Cents.perOctave + centOffset(for: interval) + note.offset.rawValue
+        return Cents(Double(octaves) * Cents.perOctave + centOffset(for: interval).rawValue + note.offset.rawValue)
     }
 
     func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency {
         let cents = totalCentOffset(for: note)
-        return Frequency(referencePitch.rawValue * pow(2.0, cents / Cents.perOctave))
+        return Frequency(referencePitch.rawValue * pow(2.0, cents.rawValue / Cents.perOctave))
     }
 
     func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency {

@@ -124,7 +124,7 @@ final class PitchMatchingSession: TrainingSession {
 
     private func sliderFrequency(for value: Double) -> Double? {
         guard let referenceFrequency, let challenge = currentChallenge, let settings else { return nil }
-        let centOffset = challenge.initialCentOffset.rawValue + value * settings.initialCentOffsetRange.upperBound
+        let centOffset = challenge.initialCentOffset.rawValue + value * settings.initialCentOffsetRange.upperBound.rawValue
         return referenceFrequency.rawValue * pow(2.0, centOffset / Cents.perOctave)
     }
 
@@ -207,7 +207,7 @@ final class PitchMatchingSession: TrainingSession {
         }
         let note = MIDINote.random(in: minNote...maxNote)
         let targetNote = note.transposed(by: interval)
-        let offset = Cents(Double.random(in: settings.initialCentOffsetRange))
+        let offset = Cents(Double.random(in: settings.initialCentOffsetRange.lowerBound.rawValue...settings.initialCentOffsetRange.upperBound.rawValue))
         return PitchMatchingChallenge(referenceNote: note, targetNote: targetNote, initialCentOffset: offset)
     }
 

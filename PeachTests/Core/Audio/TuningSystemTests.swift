@@ -36,7 +36,7 @@ struct TuningSystemTests {
         for interval in Interval.allCases {
             let expected = expectedCents[interval]
             #expect(
-                TuningSystem.equalTemperament.centOffset(for: interval) == expected,
+                TuningSystem.equalTemperament.centOffset(for: interval).rawValue == expected,
                 "Unexpected cent offset for \(interval)"
             )
         }
@@ -54,7 +54,7 @@ struct TuningSystemTests {
             .octave: 1200.0
         ]
         for interval in Interval.allCases {
-            let actual = TuningSystem.justIntonation.centOffset(for: interval)
+            let actual = TuningSystem.justIntonation.centOffset(for: interval).rawValue
             let expected = expectedCents[interval]!
             #expect(
                 abs(actual - expected) < 0.001,
@@ -75,13 +75,13 @@ struct TuningSystemTests {
 
     @Test("justIntonation centOffset for majorThird returns 386.314")
     func justIntonationMajorThirdCentOffset() async {
-        let actual = TuningSystem.justIntonation.centOffset(for: .majorThird)
+        let actual = TuningSystem.justIntonation.centOffset(for: .majorThird).rawValue
         #expect(abs(actual - 386.314) < 0.001)
     }
 
     @Test("justIntonation centOffset for perfectFifth returns 701.955")
     func justIntonationPerfectFifthCentOffset() async {
-        let actual = TuningSystem.justIntonation.centOffset(for: .perfectFifth)
+        let actual = TuningSystem.justIntonation.centOffset(for: .perfectFifth).rawValue
         #expect(abs(actual - 701.955) < 0.001)
     }
 

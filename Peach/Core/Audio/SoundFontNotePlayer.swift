@@ -174,7 +174,7 @@ final class SoundFontNotePlayer: NotePlayer {
     private func startNote(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) -> UInt8 {
         let decomposed = Self.decompose(frequency: frequency)
         let midiNote = decomposed.note
-        let bendValue = Self.pitchBendValue(forCents: Cents(decomposed.cents))
+        let bendValue = Self.pitchBendValue(forCents: decomposed.cents)
         sampler.overallGain = Float(amplitudeDB.rawValue)
         sampler.sendPitchBend(bendValue, onChannel: Self.channel)
         sampler.startNote(midiNote, withVelocity: velocity.rawValue, onChannel: Self.channel)
@@ -212,7 +212,7 @@ final class SoundFontNotePlayer: NotePlayer {
     /// Decomposes a frequency into its nearest MIDI note and cent remainder.
     /// Always uses 12-TET at concert pitch (A4=440Hz) — this is a MIDI
     /// implementation detail, not a musical tuning choice.
-    nonisolated static func decompose(frequency: Frequency) -> (note: UInt8, cents: Double) {
+    nonisolated static func decompose(frequency: Frequency) -> (note: UInt8, cents: Cents) {
         let referenceMIDINote = 69
         let semitonesPerOctave = 12.0
         let centsPerSemitone = 100.0
@@ -224,7 +224,7 @@ final class SoundFontNotePlayer: NotePlayer {
         let roundedMidi = Int(exactMidi.rounded())
         let centsRemainder = (exactMidi - Double(roundedMidi)) * centsPerSemitone
         let clampedMidi = roundedMidi.clamped(to: midiRange)
-        return (note: UInt8(clampedMidi), cents: centsRemainder)
+        return (note: UInt8(clampedMidi), cents: Cents(centsRemainder))
     }
 
 }

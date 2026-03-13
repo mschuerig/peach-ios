@@ -15,7 +15,7 @@ struct Cents: Hashable, Comparable, Sendable {
         abs(rawValue)
     }
 
-    init(_ rawValue: Double) {
+    nonisolated init(_ rawValue: Double) {
         self.rawValue = rawValue
     }
 

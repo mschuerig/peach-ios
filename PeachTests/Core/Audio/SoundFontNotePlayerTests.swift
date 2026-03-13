@@ -314,28 +314,28 @@ struct SoundFontNotePlayerTests {
     func decomposeA4() async {
         let result = SoundFontNotePlayer.decompose(frequency: Frequency(440.0))
         #expect(result.note == 69)
-        #expect(abs(result.cents) < 0.01)
+        #expect(result.cents.magnitude < 0.01)
     }
 
     @Test("261.626 Hz decomposes to MIDI 60 (middle C), ~0 cents")
     func decomposeMiddleC() async {
         let result = SoundFontNotePlayer.decompose(frequency: Frequency(261.6255653))
         #expect(result.note == 60)
-        #expect(abs(result.cents) < 0.1)
+        #expect(result.cents.magnitude < 0.1)
     }
 
     @Test("lowest MIDI frequency (~8.176 Hz) decomposes to MIDI 0")
     func decomposeBoundaryLowest() async {
         let result = SoundFontNotePlayer.decompose(frequency: Frequency(8.17579891564))
         #expect(result.note == 0)
-        #expect(abs(result.cents) < 0.1)
+        #expect(result.cents.magnitude < 0.1)
     }
 
     @Test("highest MIDI frequency (~12543.85 Hz) decomposes to MIDI 127")
     func decomposeBoundaryHighest() async {
         let result = SoundFontNotePlayer.decompose(frequency: Frequency(12543.853951))
         #expect(result.note == 127)
-        #expect(abs(result.cents) < 0.1)
+        #expect(result.cents.magnitude < 0.1)
     }
 
     @Test("frequency below MIDI 0 clamps to MIDI 0")
@@ -355,7 +355,7 @@ struct SoundFontNotePlayerTests {
         let originalFreq = Frequency(440.0)
         let decomposed = SoundFontNotePlayer.decompose(frequency: originalFreq)
         let reconstructed = TuningSystem.equalTemperament.frequency(
-            for: DetunedMIDINote(note: MIDINote(Int(decomposed.note)), offset: Cents(decomposed.cents)),
+            for: DetunedMIDINote(note: MIDINote(Int(decomposed.note)), offset: decomposed.cents),
             referencePitch: .concert440
         )
         let centError = 1200.0 * log2(reconstructed.rawValue / originalFreq.rawValue)
@@ -368,7 +368,7 @@ struct SoundFontNotePlayerTests {
         let freq = TuningSystem.equalTemperament.frequency(for: original, referencePitch: .concert440)
         let decomposed = SoundFontNotePlayer.decompose(frequency: freq)
         let reconstructed = TuningSystem.equalTemperament.frequency(
-            for: DetunedMIDINote(note: MIDINote(Int(decomposed.note)), offset: Cents(decomposed.cents)),
+            for: DetunedMIDINote(note: MIDINote(Int(decomposed.note)), offset: decomposed.cents),
             referencePitch: .concert440
         )
         let centError = 1200.0 * log2(reconstructed.rawValue / freq.rawValue)
@@ -384,7 +384,7 @@ struct SoundFontNotePlayerTests {
                     referencePitch: .concert440
                 )
                 let result = SoundFontNotePlayer.decompose(frequency: freq)
-                #expect(result.cents >= -50.0 && result.cents <= 50.0)
+                #expect(result.cents.rawValue >= -50.0 && result.cents.rawValue <= 50.0)
             }
         }
     }
@@ -398,7 +398,7 @@ struct SoundFontNotePlayerTests {
             )
             let result = SoundFontNotePlayer.decompose(frequency: freq)
             #expect(result.note == midiValue, "MIDI note \(midiValue) failed")
-            #expect(abs(result.cents) < 0.1)
+            #expect(result.cents.magnitude < 0.1)
         }
     }
 }
