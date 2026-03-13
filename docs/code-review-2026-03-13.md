@@ -138,7 +138,7 @@ This is the most architecturally involved fix — read both files and their cons
 
 ---
 
-### L3: Replace deprecated toolbar placements
+### ✅ L3: Replace deprecated toolbar placements
 
 - `Peach/Settings/SettingsScreen.swift:85` — `.navigationBarTrailing` → `.topBarTrailing`
 - `Peach/Start/StartScreen.swift:50,58` — `.navigationBarLeading`/`.navigationBarTrailing` → `.topBarLeading`/`.topBarTrailing`
