@@ -114,10 +114,21 @@ struct PeachApp: App {
                 .environment(\.soundPreviewStop, { [notePlayer] in
                     try? await notePlayer.stopAll()
                 })
-                .environment(\.dataStoreResetter, { [dataStore, pitchComparisonSession, profile] in
+                .environment(\.dataStoreResetter, { [dataStore, pitchComparisonSession, profile, transferService] in
                     try dataStore.deleteAll()
                     try pitchComparisonSession.resetTrainingData()
                     profile.resetMatching()
+                    transferService.refreshExport()
+                })
+                .environment(\.refreshExport, { [transferService] in
+                    transferService.refreshExport()
+                    return transferService.exportError != nil
+                })
+                .environment(\.prepareImport, { [transferService] url in
+                    transferService.readFileForImport(url: url)
+                })
+                .environment(\.executeImport, { [transferService] parseResult, mode in
+                    try transferService.performImport(parseResult: parseResult, mode: mode)
                 })
                 .environment(\.trainingDataTransferService, transferService)
                 .modelContainer(modelContainer)

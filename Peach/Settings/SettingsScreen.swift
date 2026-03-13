@@ -30,6 +30,9 @@ struct SettingsScreen: View {
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.soundPreviewPlay) private var soundPreviewPlay
     @Environment(\.soundPreviewStop) private var soundPreviewStop
+    @Environment(\.refreshExport) private var refreshExport
+    @Environment(\.prepareImport) private var prepareImport
+    @Environment(\.executeImport) private var executeImport
     @Environment(\.trainingDataTransferService) private var transferService
 
     @State private var showHelpSheet = false
@@ -110,8 +113,7 @@ struct SettingsScreen: View {
             }
         }
         .onAppear {
-            transferService.refreshExport()
-            if transferService.exportError != nil {
+            if refreshExport?() == true {
                 showExportError = true
             }
         }
@@ -141,7 +143,8 @@ struct SettingsScreen: View {
         ) { result in
             switch result {
             case .success(let url):
-                switch transferService.readFileForImport(url: url) {
+                guard let prepareImport else { break }
+                switch prepareImport(url) {
                 case .success(let parseResult):
                     importParseResult = parseResult
                     showImportModeChoice = true
@@ -275,8 +278,7 @@ struct SettingsScreen: View {
     private var dataSection: some View {
         Section("Data") {
             Button {
-                transferService.refreshExport()
-                if transferService.exportError != nil {
+                if refreshExport?() == true {
                     showExportError = true
                 } else if transferService.exportCSV != nil {
                     showExporter = true
@@ -335,16 +337,15 @@ struct SettingsScreen: View {
     private func resetAllTrainingData() {
         do {
             try dataStoreResetter?()
-            transferService.refreshExport()
         } catch {
             showResetError = true
         }
     }
 
     private func completeImport(mode: TrainingDataImporter.ImportMode) {
-        guard let parseResult = importParseResult else { return }
+        guard let parseResult = importParseResult, let executeImport else { return }
         do {
-            let summary = try transferService.performImport(parseResult: parseResult, mode: mode)
+            let summary = try executeImport(parseResult, mode)
             importSummary = summary
             showImportSummary = true
         } catch {

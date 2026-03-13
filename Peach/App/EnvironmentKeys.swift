@@ -10,6 +10,9 @@ extension EnvironmentValues {
     @Entry var dataStoreResetter: (() throws -> Void)? = nil
     @Entry var soundPreviewPlay: ((Duration) async -> Void)? = nil
     @Entry var soundPreviewStop: (() async -> Void)? = nil
+    @Entry var refreshExport: (() -> Bool)? = nil
+    @Entry var prepareImport: ((URL) -> TrainingDataTransferService.FileReadResult)? = nil
+    @Entry var executeImport: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil
     @Entry var trainingDataTransferService: TrainingDataTransferService = TrainingDataTransferService.preview()
     @Entry var userSettings: any UserSettings = PreviewUserSettings()
 }
