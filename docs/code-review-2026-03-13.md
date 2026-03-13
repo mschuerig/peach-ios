@@ -238,3 +238,17 @@ File contains `struct PianoKeyboardLayout`, not a View.
 `Peach/App/PeachApp.swift:106` uses manual attosecond arithmetic. Create a small `Duration` extension producing `TimeInterval`.
 
 > **Agent prompt:** Read `docs/project-context.md` and this fix description. Read `Peach/App/PeachApp.swift` around line 106. Create a `Duration` extension (in the same file or a sensible Core/ location) with a `var timeInterval: TimeInterval` computed property. Replace the manual arithmetic. Grep for any other manual Duration→TimeInterval conversions. Run `bin/test.sh` — all tests must pass. Commit with message: `Add Duration.timeInterval extension to replace manual conversion`
+
+---
+
+### L14: Fix flaky PitchComparisonSessionLifecycleTests
+
+3 tests in `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift` fail intermittently: `stopCallsStopAll`, `stopTransitionsToIdleAndCancelsTraining`, `simulatedOnDisappearTriggersStop`.
+
+**Root cause:** `start()` spawns an internal `Task` that calls `play()`. These tests call `waitForPlayCallCount(f.mockPlayer, 1)` which polls with a timeout. Under load the spawned task may not reach `play()` before the timeout expires.
+
+**Fix:** Replace the polling-based `waitForPlayCallCount` with a continuation-based approach — have the mock signal an `AsyncStream` or resume a `CheckedContinuation` from its `onPlayCalled` callback, and have the test `await` that signal directly. This eliminates the race entirely.
+
+**Files:** `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift`, test helpers (`waitForPlayCallCount`)
+
+> **Agent prompt:** Read `docs/project-context.md` and this fix description. Read `PeachTests/PitchComparison/PitchComparisonSessionLifecycleTests.swift` fully. Find the `waitForPlayCallCount` helper and all tests that use it. Replace the polling-based wait with a continuation-based synchronization: add an `async` method to the mock (e.g., `waitForPlay()`) that uses `CheckedContinuation` or `AsyncStream`, signalled from `onPlayCalled`. Update the 3 flaky tests to `await` the signal instead of polling. Ensure no test uses `Task.sleep` for synchronization. Run `bin/test.sh` — all tests must pass. Commit with message: `Fix flaky lifecycle tests: replace polling with continuation-based sync`
