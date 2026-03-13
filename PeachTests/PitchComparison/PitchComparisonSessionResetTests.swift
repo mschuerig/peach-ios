@@ -136,7 +136,7 @@ struct PitchComparisonSessionResetTests {
 
         // Start training and wait for non-idle state
         session.start(settings: defaultTestSettings)
-        try await waitForPlayCallCount(mockPlayer, 1)
+        await mockPlayer.waitForPlay()
         #expect(session.state != .idle)
 
         // Simulate converged difficulty

@@ -301,7 +301,7 @@ File contains `struct PianoKeyboardLayout`, not a View.
 
 ---
 
-### L17: Fix flaky PitchComparisonSessionResetTests
+### ✅ L17: Fix flaky PitchComparisonSessionResetTests
 
 `PeachTests/PitchComparison/PitchComparisonSessionResetTests.swift` — `resetTrainingDataStopsActiveTraining()` fails intermittently (observed during L2 fix run). Likely same polling-based root cause as L14/L16.
 
