@@ -165,7 +165,7 @@ This is the most architecturally involved fix — read both files and their cons
 
 ---
 
-### L6: DRY — extract bucket aggregation helper
+### ✅ L6: DRY — extract bucket aggregation helper
 
 `Peach/Core/Profile/ProgressTimeline.swift:400-417,469-486,535-552` — identical mean/stddev/TimeBucket construction triplicated. Extract `private func makeBucket(...)`.
 

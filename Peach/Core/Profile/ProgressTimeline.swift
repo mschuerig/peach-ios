@@ -398,22 +398,7 @@ final class ProgressTimeline {
         }
 
         return groups.sorted { $0.key < $1.key }.map { group in
-            let mean = group.points.reduce(0.0, +) / Double(group.points.count)
-            let stddev: Double
-            if group.points.count > 1 {
-                let variance = group.points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(group.points.count)
-                stddev = sqrt(variance)
-            } else {
-                stddev = 0
-            }
-            return TimeBucket(
-                periodStart: group.key,
-                periodEnd: group.end,
-                bucketSize: group.size,
-                mean: mean,
-                stddev: stddev,
-                recordCount: group.points.count
-            )
+            Self.makeBucket(periodStart: group.key, periodEnd: group.end, bucketSize: group.size, points: group.points)
         }
     }
 
@@ -469,23 +454,29 @@ final class ProgressTimeline {
         }
 
         return groups.sorted { $0.key < $1.key }.map { group in
-            let mean = group.points.reduce(0.0, +) / Double(group.points.count)
-            let stddev: Double
-            if group.points.count > 1 {
-                let variance = group.points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(group.points.count)
-                stddev = sqrt(variance)
-            } else {
-                stddev = 0
-            }
-            return TimeBucket(
-                periodStart: group.key,
-                periodEnd: group.end,
-                bucketSize: group.size,
-                mean: mean,
-                stddev: stddev,
-                recordCount: group.points.count
-            )
+            Self.makeBucket(periodStart: group.key, periodEnd: group.end, bucketSize: group.size, points: group.points)
         }
+    }
+
+    // MARK: - Bucket Aggregation
+
+    private static func makeBucket(periodStart: Date, periodEnd: Date, bucketSize: BucketSize, points: [Double]) -> TimeBucket {
+        let mean = points.reduce(0.0, +) / Double(points.count)
+        let stddev: Double
+        if points.count > 1 {
+            let variance = points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(points.count)
+            stddev = sqrt(variance)
+        } else {
+            stddev = 0
+        }
+        return TimeBucket(
+            periodStart: periodStart,
+            periodEnd: periodEnd,
+            bucketSize: bucketSize,
+            mean: mean,
+            stddev: stddev,
+            recordCount: points.count
+        )
     }
 
     // MARK: - Sub-Bucket Assignment
@@ -535,22 +526,7 @@ final class ProgressTimeline {
         }
 
         return groups.sorted { $0.key < $1.key }.map { group in
-            let mean = group.points.reduce(0.0, +) / Double(group.points.count)
-            let stddev: Double
-            if group.points.count > 1 {
-                let variance = group.points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(group.points.count)
-                stddev = sqrt(variance)
-            } else {
-                stddev = 0
-            }
-            return TimeBucket(
-                periodStart: group.key,
-                periodEnd: group.end,
-                bucketSize: childSize,
-                mean: mean,
-                stddev: stddev,
-                recordCount: group.points.count
-            )
+            Self.makeBucket(periodStart: group.key, periodEnd: group.end, bucketSize: childSize, points: group.points)
         }
     }
 }
