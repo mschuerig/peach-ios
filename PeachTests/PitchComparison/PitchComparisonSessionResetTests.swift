@@ -25,8 +25,9 @@ struct PitchComparisonSessionResetTests {
         #expect(profile.statsForNote(60).currentDifficulty == 30.0)
         #expect(profile.statsForNote(62).currentDifficulty == 50.0)
 
-        // Reset via PitchComparisonSession's centralized method
+        // Reset session state + profile (composition root does both in production)
         try session.resetTrainingData()
+        profile.resetComparison()
 
         // Verify cold start for all notes
         for note in 0..<128 {
@@ -50,8 +51,9 @@ struct PitchComparisonSessionResetTests {
         profile.setDifficulty(note: 60, difficulty: 30.0)
         profile.update(note: 60, centOffset: 30.0, isCorrect: true)
 
-        // Reset via PitchComparisonSession
+        // Reset session state + profile (composition root does both in production)
         try session.resetTrainingData()
+        profile.resetComparison()
 
         // Cold start: nil lastPitchComparison with reset profile → should return 100.0
         let comparison = strategy.nextPitchComparison(
@@ -79,8 +81,9 @@ struct PitchComparisonSessionResetTests {
             profile.update(note: MIDINote(note), centOffset: 30.0, isCorrect: true)
         }
 
-        // Reset via PitchComparisonSession
+        // Reset session state + profile (composition root does both in production)
         try session.resetTrainingData()
+        profile.resetComparison()
 
         // With all stats cleared, bootstrap should find no trained neighbors → 100.0
         let comparison = strategy.nextPitchComparison(
@@ -142,8 +145,9 @@ struct PitchComparisonSessionResetTests {
         // Simulate converged difficulty
         profile.setDifficulty(note: 60, difficulty: 30.0)
 
-        // Reset during active training
+        // Reset during active training (composition root does both in production)
         try session.resetTrainingData()
+        profile.resetComparison()
 
         // Verify training stopped and state fully cleared
         #expect(session.state == .idle)

@@ -327,7 +327,7 @@ struct SettingsTests {
         #expect(profile.overallMean != nil)
 
         // Reset
-        profile.reset()
+        profile.resetComparison()
 
         // Verify cold start state
         #expect(profile.statsForNote(60).sampleCount == 0)

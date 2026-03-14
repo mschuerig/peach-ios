@@ -129,7 +129,6 @@ final class PitchComparisonSession: TrainingSession {
 
         lastCompletedPitchComparison = nil
         sessionBestCentDifference = nil
-        profile.reset()
         for resettable in resettables {
             try resettable.reset()
         }

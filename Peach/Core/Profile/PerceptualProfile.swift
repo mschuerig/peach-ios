@@ -103,9 +103,15 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
 
     // MARK: - Reset
 
-    func reset() {
+    func resetComparison() {
         noteStats = Array(repeating: PerceptualNote(), count: MIDINote.validRange.count)
-        logger.info("PerceptualProfile reset to cold start")
+        logger.info("PerceptualProfile comparison data reset")
+    }
+
+    func resetAll() {
+        resetComparison()
+        resetMatching()
+        logger.info("PerceptualProfile fully reset to cold start")
     }
 
     // MARK: - Regional Difficulty Management

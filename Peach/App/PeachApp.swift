@@ -56,8 +56,7 @@ struct PeachApp: App {
                 onDataChanged: { [dataStore, profile, progressTimeline] in
                     let comparisons = (try? dataStore.fetchAllPitchComparisons()) ?? []
                     let pitchMatchings = (try? dataStore.fetchAllPitchMatchings()) ?? []
-                    profile.reset()
-                    profile.resetMatching()
+                    profile.resetAll()
                     for record in comparisons {
                         profile.update(note: MIDINote(record.referenceNote), centOffset: Cents(abs(record.centOffset)), isCorrect: record.isCorrect)
                     }
@@ -118,8 +117,7 @@ struct PeachApp: App {
                 .environment(\.dataStoreResetter, { [dataStore, pitchComparisonSession, profile, transferService] in
                     try dataStore.deleteAll()
                     try pitchComparisonSession.resetTrainingData()
-                    profile.reset()
-                    profile.resetMatching()
+                    profile.resetAll()
                     transferService.refreshExport()
                 })
                 .environment(\.refreshExport, { [transferService] in

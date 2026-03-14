@@ -9,12 +9,9 @@ final class MockPitchMatchingProfile: PitchMatchingProfile {
     var matchingMean: Cents? = nil
     var matchingStdDev: Cents? = nil
     var matchingSampleCount: Int = 0
-    var resetMatchingCallCount = 0
-
     // MARK: - Test Control
 
     var onUpdateMatchingCalled: (() -> Void)?
-    var onResetMatchingCalled: (() -> Void)?
 
     // MARK: - PitchMatchingProfile Protocol
 
@@ -23,14 +20,6 @@ final class MockPitchMatchingProfile: PitchMatchingProfile {
         lastNote = note.rawValue
         lastCentError = centError
         onUpdateMatchingCalled?()
-    }
-
-    func resetMatching() {
-        resetMatchingCallCount += 1
-        matchingMean = nil
-        matchingStdDev = nil
-        matchingSampleCount = 0
-        onResetMatchingCalled?()
     }
 
     // MARK: - Test Helpers
@@ -42,8 +31,6 @@ final class MockPitchMatchingProfile: PitchMatchingProfile {
         matchingMean = nil
         matchingStdDev = nil
         matchingSampleCount = 0
-        resetMatchingCallCount = 0
         onUpdateMatchingCalled = nil
-        onResetMatchingCalled = nil
     }
 }

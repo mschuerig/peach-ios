@@ -10,8 +10,6 @@ final class MockPitchComparisonProfile: PitchComparisonProfile {
     var lastIsCorrect: Bool?
     var overallMean: Cents? = nil
     var overallStdDev: Cents? = nil
-    var resetCallCount = 0
-
     private var noteStats: [Int: PerceptualNote] = [:]
 
     // MARK: - Test Control
@@ -19,7 +17,6 @@ final class MockPitchComparisonProfile: PitchComparisonProfile {
     var shouldThrowError = false
     var errorToThrow: Error = NSError(domain: "MockPitchComparisonProfile", code: 1)
     var onUpdateCalled: (() -> Void)?
-    var onResetCalled: (() -> Void)?
 
     // MARK: - PitchComparisonProfile Protocol
 
@@ -45,14 +42,6 @@ final class MockPitchComparisonProfile: PitchComparisonProfile {
 
     func setDifficulty(note: MIDINote, difficulty: Cents) {}
 
-    func reset() {
-        resetCallCount += 1
-        noteStats = [:]
-        overallMean = nil
-        overallStdDev = nil
-        onResetCalled?()
-    }
-
     // MARK: - Test Helpers
 
     func resetMock() {
@@ -62,11 +51,9 @@ final class MockPitchComparisonProfile: PitchComparisonProfile {
         lastIsCorrect = nil
         overallMean = nil
         overallStdDev = nil
-        resetCallCount = 0
         noteStats = [:]
         shouldThrowError = false
         onUpdateCalled = nil
-        onResetCalled = nil
     }
 
     func setStats(for note: MIDINote, mean: Double, sampleCount: Int = 1) {

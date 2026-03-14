@@ -47,7 +47,7 @@ struct PitchMatchingProfileTests {
         #expect(profile.matchingSampleCount == 1)
     }
 
-    @Test("resetMatching clears matching but preserves discrimination")
+    @Test("resetMatching clears matching but preserves comparison")
     func resetMatchingIndependence() async {
         let profile = PerceptualProfile()
         profile.update(note: 60, centOffset: 50.0, isCorrect: true)
@@ -55,18 +55,29 @@ struct PitchMatchingProfileTests {
         profile.resetMatching()
         #expect(profile.matchingMean == nil)
         #expect(profile.matchingSampleCount == 0)
-        #expect(profile.statsForNote(60).sampleCount == 1) // discrimination preserved
+        #expect(profile.statsForNote(60).sampleCount == 1) // comparison preserved
     }
 
-    @Test("reset clears discrimination but preserves matching")
-    func resetDiscriminationIndependence() async {
+    @Test("resetComparison clears comparison but preserves matching")
+    func resetComparisonIndependence() async {
         let profile = PerceptualProfile()
         profile.update(note: 60, centOffset: 50.0, isCorrect: true)
         profile.updateMatching(note: 60, centError: 10.0)
-        profile.reset()
-        #expect(profile.statsForNote(60).sampleCount == 0) // discrimination cleared
+        profile.resetComparison()
+        #expect(profile.statsForNote(60).sampleCount == 0) // comparison cleared
         #expect(profile.matchingMean == 10.0) // matching preserved
         #expect(profile.matchingSampleCount == 1)
+    }
+
+    @Test("resetAll clears both comparison and matching")
+    func resetAllClearsBoth() async {
+        let profile = PerceptualProfile()
+        profile.update(note: 60, centOffset: 50.0, isCorrect: true)
+        profile.updateMatching(note: 60, centError: 10.0)
+        profile.resetAll()
+        #expect(profile.statsForNote(60).sampleCount == 0)
+        #expect(profile.matchingMean == nil)
+        #expect(profile.matchingSampleCount == 0)
     }
 
     @Test("pitchMatchingCompleted updates matching statistics")

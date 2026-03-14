@@ -6,5 +6,4 @@ protocol PitchComparisonProfile: AnyObject {
     func statsForNote(_ note: MIDINote) -> PerceptualNote
     func averageThreshold(noteRange: NoteRange) -> Cents?
     func setDifficulty(note: MIDINote, difficulty: Cents)
-    func reset()
 }
