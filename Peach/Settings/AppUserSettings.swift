@@ -18,8 +18,8 @@ final class AppUserSettings: UserSettings {
         Frequency(UserDefaults.standard.object(forKey: SettingsKeys.referencePitch) as? Double ?? SettingsKeys.defaultReferencePitch)
     }
 
-    var soundSource: SoundSourceID {
-        SoundSourceID(UserDefaults.standard.string(forKey: SettingsKeys.soundSource) ?? SettingsKeys.defaultSoundSource)
+    var soundSource: String {
+        UserDefaults.standard.string(forKey: SettingsKeys.soundSource) ?? SettingsKeys.defaultSoundSource
     }
 
     var varyLoudness: UnitInterval {

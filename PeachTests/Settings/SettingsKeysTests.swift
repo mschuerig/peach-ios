@@ -6,8 +6,8 @@ import Foundation
 struct SettingsKeysTests {
 
     private struct MockSoundSourceProvider: SoundSourceProvider {
-        var availableSources: [SoundSourceID]
-        func displayName(for source: SoundSourceID) -> String { source.rawValue }
+        var sources: [SF2Preset]
+        var availableSources: [any SoundSourceID] { sources }
     }
 
     private func makeDefaults() -> (defaults: UserDefaults, suiteName: String) {
@@ -21,7 +21,7 @@ struct SettingsKeysTests {
         let (defaults, suiteName) = makeDefaults()
         defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         defaults.set("sf2:8:80", forKey: SettingsKeys.soundSource)
-        let provider = MockSoundSourceProvider(availableSources: [SoundSourceID("sf2:8:80")])
+        let provider = MockSoundSourceProvider(sources: [SF2Preset(name: "Sine Wave", program: 80, bank: 8)])
 
         SettingsKeys.validateSoundSource(against: provider, userDefaults: defaults)
 
@@ -33,7 +33,7 @@ struct SettingsKeysTests {
         let (defaults, suiteName) = makeDefaults()
         defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
         defaults.set("sf2:99:99", forKey: SettingsKeys.soundSource)
-        let provider = MockSoundSourceProvider(availableSources: [SoundSourceID("sf2:8:80")])
+        let provider = MockSoundSourceProvider(sources: [SF2Preset(name: "Sine Wave", program: 80, bank: 8)])
 
         SettingsKeys.validateSoundSource(against: provider, userDefaults: defaults)
 
@@ -44,7 +44,7 @@ struct SettingsKeysTests {
     func missingKeySetToDefault() async throws {
         let (defaults, suiteName) = makeDefaults()
         defer { UserDefaults.standard.removePersistentDomain(forName: suiteName) }
-        let provider = MockSoundSourceProvider(availableSources: [SoundSourceID("sf2:8:80")])
+        let provider = MockSoundSourceProvider(sources: [SF2Preset(name: "Sine Wave", program: 80, bank: 8)])
 
         SettingsKeys.validateSoundSource(against: provider, userDefaults: defaults)
 

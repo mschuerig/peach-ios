@@ -27,13 +27,18 @@ struct PeachApp: App {
             let dataStore = TrainingDataStore(modelContext: container.mainContext)
             _dataStore = State(wrappedValue: dataStore)
 
-            let soundFontLibrary = SoundFontLibrary()
+            let sf2URL = Bundle.main.url(forResource: "GeneralUser-GS", withExtension: "sf2")!
+            let soundFontLibrary = SoundFontLibrary(sf2URL: sf2URL, defaultPreset: SettingsKeys.defaultSoundSource)
             _soundFontLibrary = State(wrappedValue: soundFontLibrary)
             SettingsKeys.validateSoundSource(against: soundFontLibrary)
 
             let userSettings: any UserSettings = AppUserSettings()
             _userSettings = State(wrappedValue: userSettings)
-            let notePlayer: any NotePlayer = try SoundFontNotePlayer(userSettings: userSettings, stopPropagationDelay: .zero)
+            let notePlayer: any NotePlayer = try SoundFontNotePlayer(
+                library: soundFontLibrary,
+                userSettings: userSettings,
+                stopPropagationDelay: .zero
+            )
             _notePlayer = State(wrappedValue: notePlayer)
 
             let existingRecords = try dataStore.fetchAllPitchComparisons()

@@ -201,8 +201,8 @@ struct SettingsScreen: View {
         Section {
             HStack {
                 Picker(String(localized: "Sound"), selection: $soundSource) {
-                    ForEach(soundSourceProvider.availableSources, id: \.self) { source in
-                        Text(soundSourceProvider.displayName(for: source)).tag(source.rawValue)
+                    ForEach(soundSourceProvider.availableSources, id: \.rawValue) { source in
+                        Text(source.displayName).tag(source.rawValue)
                     }
                 }
                 Button {

@@ -90,15 +90,15 @@ struct SF2PresetParserTests {
         }
     }
 
-    // MARK: - Tag Property
+    // MARK: - SoundSourceID Conformance
 
-    @Test("SF2Preset tag encodes bank and program")
-    func tagEncodesBankAndProgram() async {
+    @Test("SF2Preset rawValue encodes bank and program")
+    func rawValueEncodesBankAndProgram() async {
         let preset = SF2Preset(name: "Cello", program: 42, bank: 0)
-        #expect(preset.tag == "sf2:0:42")
+        #expect(preset.rawValue == "sf2:0:42")
 
         let variant = SF2Preset(name: "Acid Bass", program: 38, bank: 8)
-        #expect(variant.tag == "sf2:8:38")
+        #expect(variant.rawValue == "sf2:8:38")
     }
 
     // MARK: - Helpers

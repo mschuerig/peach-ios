@@ -1,11 +1,12 @@
 import Foundation
 
-struct SF2Preset: Sendable, Equatable, Hashable {
+struct SF2Preset: SoundSourceID, Equatable, Hashable {
     let name: String
     let program: Int
     let bank: Int
 
-    var tag: String { "sf2:\(bank):\(program)" }
+    var rawValue: String { "sf2:\(bank):\(program)" }
+    var displayName: String { name }
 }
 
 enum SF2ParseError: Error {

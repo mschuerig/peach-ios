@@ -3,7 +3,7 @@ import SwiftUI
 // MARK: - Core Environment Keys
 
 extension EnvironmentValues {
-    @Entry var soundSourceProvider: any SoundSourceProvider = SoundFontLibrary()
+    @Entry var soundSourceProvider: any SoundSourceProvider = PreviewSoundSourceProvider()
     @Entry var progressTimeline = ProgressTimeline()
     @Entry var activeSession: (any TrainingSession)? = nil
     @Entry var perceptualProfile = PerceptualProfile()
@@ -62,6 +62,10 @@ private final class PreviewPitchComparisonDataStore: PitchComparisonRecordStorin
     func pitchComparisonCompleted(_ completed: CompletedPitchComparison) {}
 }
 
+private struct PreviewSoundSourceProvider: SoundSourceProvider {
+    var availableSources: [any SoundSourceID] { [] }
+}
+
 private final class PreviewPitchComparisonStrategy: NextPitchComparisonStrategy {
     func nextPitchComparison(
         profile: PitchComparisonProfile,
@@ -79,7 +83,7 @@ private final class PreviewUserSettings: UserSettings {
     let noteRange = NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84))
     let noteDuration = NoteDuration(0.75)
     let referencePitch = Frequency(440.0)
-    let soundSource = SoundSourceID("sf2:8:80")
+    let soundSource = SettingsKeys.defaultSoundSource
     let varyLoudness = UnitInterval(0.0)
     let intervals: Set<DirectedInterval> = [.up(.perfectFifth)]
     let tuningSystem: TuningSystem = .equalTemperament

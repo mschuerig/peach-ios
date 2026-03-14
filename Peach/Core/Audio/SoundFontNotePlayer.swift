@@ -37,47 +37,38 @@ final class SoundFontNotePlayer: NotePlayer {
     /// fade-out entirely (notes stop immediately). 25ms covers 2+ render cycles at 44.1kHz/512.
     let stopPropagationDelay: Duration
 
-    // Default SF2 preset: Sine Wave (bank 8, program 80, tag "sf2:8:80")
-    private static let defaultPresetProgram: Int = 80
-    private static let defaultPresetBank: Int = 8
+    // MARK: - Dependencies
 
-    // MARK: - SF2 URL
-
-    private let sf2URL: URL
-
-    // MARK: - Settings
-
+    private let library: SoundFontLibrary
     private let userSettings: UserSettings
 
     // MARK: - Initialization
 
-    init(sf2Name: String = "GeneralUser-GS", userSettings: UserSettings, stopPropagationDelay: Duration = .milliseconds(25)) throws {
-        guard let sf2URL = Bundle.main.url(forResource: sf2Name, withExtension: "sf2") else {
-            throw AudioError.contextUnavailable
-        }
+    init(library: SoundFontLibrary, userSettings: UserSettings, stopPropagationDelay: Duration = .milliseconds(25)) throws {
+        let initial = library.resolve(userSettings.soundSource)
 
-        self.sf2URL = sf2URL
+        self.library = library
         self.userSettings = userSettings
         self.stopPropagationDelay = stopPropagationDelay
         self.engine = AVAudioEngine()
         self.sampler = AVAudioUnitSampler()
-        self.loadedProgram = Self.defaultPresetProgram
-        self.loadedBank = Self.defaultPresetBank
+        self.loadedProgram = initial.program
+        self.loadedBank = initial.bank
 
         engine.attach(sampler)
         engine.connect(sampler, to: engine.mainMixerNode, format: nil)
 
         try engine.start()
         try sampler.loadSoundBankInstrument(
-            at: sf2URL,
-            program: UInt8(Self.defaultPresetProgram),
+            at: library.sf2URL,
+            program: UInt8(initial.program),
             bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(Self.defaultPresetBank)
+            bankLSB: UInt8(initial.bank)
         )
 
         sendPitchBendRange()
 
-        logger.info("SoundFontNotePlayer initialized with \(sf2Name).sf2, program \(Self.defaultPresetProgram)")
+        logger.info("SoundFontNotePlayer initialized with \(library.sf2URL.lastPathComponent), preset sf2:\(initial.bank):\(initial.program)")
     }
 
     // MARK: - Preset Switching
@@ -92,7 +83,7 @@ final class SoundFontNotePlayer: NotePlayer {
         guard program != loadedProgram || bank != loadedBank else { return }
 
         try sampler.loadSoundBankInstrument(
-            at: sf2URL,
+            at: library.sf2URL,
             program: UInt8(clamping: program),
             bankMSB: Self.defaultBankMSB,
             bankLSB: UInt8(clamping: bank)
@@ -136,14 +127,12 @@ final class SoundFontNotePlayer: NotePlayer {
     // MARK: - Play Sub-operations
 
     private func ensurePresetLoaded() async throws {
-        if let preset = Self.parseSF2Tag(from: userSettings.soundSource) {
-            do {
-                try await loadPreset(program: preset.program, bank: preset.bank)
-            } catch {
-                try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
-            }
-        } else {
-            try await loadPreset(program: Self.defaultPresetProgram, bank: Self.defaultPresetBank)
+        let resolved = library.resolve(userSettings.soundSource)
+        do {
+            try await loadPreset(program: resolved.program, bank: resolved.bank)
+        } catch {
+            let fallback = library.resolve(SettingsKeys.defaultSoundSource)
+            try await loadPreset(program: fallback.program, bank: fallback.bank)
         }
     }
 
@@ -192,11 +181,6 @@ final class SoundFontNotePlayer: NotePlayer {
     }
 
     // MARK: - Static Helpers
-
-    nonisolated static func parseSF2Tag(from source: SoundSourceID) -> SF2Preset? {
-        guard let components = source.sf2Components else { return nil }
-        return SF2Preset(name: source.rawValue, program: components.program, bank: components.bank)
-    }
 
     nonisolated static func pitchBendValue(forCents cents: Cents) -> UInt16 {
         let raw = Int(Double(pitchBendCenter) + cents.rawValue * Double(pitchBendCenter) / pitchBendRangeCents)

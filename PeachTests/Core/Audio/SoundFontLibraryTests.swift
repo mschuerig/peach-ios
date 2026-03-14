@@ -5,31 +5,37 @@ import Foundation
 @Suite("SoundFontLibrary Tests")
 struct SoundFontLibraryTests {
 
+    private static let sf2URL = Bundle.main.url(forResource: "GeneralUser-GS", withExtension: "sf2")!
+
+    private func makeLibrary() -> SoundFontLibrary {
+        SoundFontLibrary(sf2URL: Self.sf2URL, defaultPreset: "sf2:8:80")
+    }
+
     // MARK: - Preset Discovery
 
-    @Test("Discovers SF2 from bundle and enumerates presets")
-    func discoversPresetsFromBundle() async {
-        let library = SoundFontLibrary()
+    @Test("Discovers presets from explicit SF2 URL")
+    func discoversPresetsFromURL() async {
+        let library = makeLibrary()
         #expect(!library.availablePresets.isEmpty)
     }
 
     @Test("Excludes drum kits (bank >= 120)")
     func noDrumKitsInAvailablePresets() async {
-        let library = SoundFontLibrary()
+        let library = makeLibrary()
         let drumPresets = library.availablePresets.filter { $0.bank >= 120 }
         #expect(drumPresets.isEmpty)
     }
 
     @Test("Excludes sound effects (program >= 120)")
     func noSoundEffectsInAvailablePresets() async {
-        let library = SoundFontLibrary()
+        let library = makeLibrary()
         let sfxPresets = library.availablePresets.filter { $0.program >= 120 }
         #expect(sfxPresets.isEmpty)
     }
 
     @Test("Presets sorted alphabetically by name")
     func presetsSortedAlphabetically() async {
-        let library = SoundFontLibrary()
+        let library = makeLibrary()
         let names = library.availablePresets.map(\.name)
         let sorted = names.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
         #expect(names == sorted)
@@ -37,7 +43,7 @@ struct SoundFontLibraryTests {
 
     @Test("Contains Grand Piano at bank 0 program 0")
     func containsPiano() async {
-        let library = SoundFontLibrary()
+        let library = makeLibrary()
         let piano = library.availablePresets.first { $0.program == 0 && $0.bank == 0 }
         #expect(piano != nil)
         #expect(piano?.name == "Grand Piano")
@@ -45,7 +51,7 @@ struct SoundFontLibraryTests {
 
     @Test("Contains Cello at bank 0 program 42")
     func containsCello() async {
-        let library = SoundFontLibrary()
+        let library = makeLibrary()
         let cello = library.availablePresets.first { $0.program == 42 && $0.bank == 0 }
         #expect(cello != nil)
         #expect(cello?.name == "Cello")
@@ -53,96 +59,88 @@ struct SoundFontLibraryTests {
 
     @Test("Contains bank variants (e.g., bank 8 program 4)")
     func containsBankVariants() async {
-        let library = SoundFontLibrary()
+        let library = makeLibrary()
         let variant = library.availablePresets.first { $0.bank == 8 && $0.program == 4 }
         #expect(variant != nil)
         #expect(variant?.name == "Chorused Tine EP")
     }
 
-    // MARK: - Tag Resolution
-
-    @Test("preset(forTag: 'sf2:0:42') returns Cello preset")
-    func resolvesCelloTag() async {
-        let library = SoundFontLibrary()
-        let preset = library.preset(forTag: "sf2:0:42")
-        #expect(preset != nil)
-        #expect(preset?.program == 42)
-        #expect(preset?.name == "Cello")
-    }
-
-    @Test("preset(forTag: 'sf2:0:0') returns Grand Piano preset")
-    func resolvesPianoTag() async {
-        let library = SoundFontLibrary()
-        let preset = library.preset(forTag: "sf2:0:0")
-        #expect(preset != nil)
-        #expect(preset?.program == 0)
-    }
-
-    @Test("preset(forTag: 'sf2:8:4') resolves bank variant")
-    func resolvesBankVariantTag() async {
-        let library = SoundFontLibrary()
-        let preset = library.preset(forTag: "sf2:8:4")
-        #expect(preset != nil)
-        #expect(preset?.name == "Chorused Tine EP")
-    }
-
-    @Test("preset(forTag: 'sf2:0:999') returns nil for nonexistent program")
-    func returnsNilForBadProgram() async {
-        let library = SoundFontLibrary()
-        let preset = library.preset(forTag: "sf2:0:999")
-        #expect(preset == nil)
-    }
-
-    @Test("preset(forTag: 'sine') returns nil (not an SF2 tag)")
-    func returnsNilForSineTag() async {
-        let library = SoundFontLibrary()
-        let preset = library.preset(forTag: "sine")
-        #expect(preset == nil)
-    }
-
-    @Test("preset(forTag: 'sf2:abc') returns nil for invalid format")
-    func returnsNilForInvalidTag() async {
-        let library = SoundFontLibrary()
-        let preset = library.preset(forTag: "sf2:abc")
-        #expect(preset == nil)
-    }
-
     // MARK: - SoundSourceProvider Conformance
 
-    @Test("availableSources count matches availablePresets count")
-    func availableSourcesMatchesPresetCount() async {
-        let library = SoundFontLibrary()
-        #expect(library.availableSources.count == library.availablePresets.count)
+    @Test("SoundFontLibrary conforms to SoundSourceProvider")
+    func conformsToSoundSourceProvider() async {
+        let library = makeLibrary()
+        #expect(library is SoundSourceProvider)
     }
 
-    @Test("availableSources contains SoundSourceID for Cello")
-    func availableSourcesContainsCello() async {
-        let library = SoundFontLibrary()
-        let celloID = SoundSourceID("sf2:0:42")
-        #expect(library.availableSources.contains(celloID))
+    @Test("availableSources via protocol matches stored presets count")
+    func protocolSourcesMatchStored() async {
+        let library = makeLibrary()
+        let provider: any SoundSourceProvider = library
+        #expect(provider.availableSources.count == library.availablePresets.count)
     }
 
-    @Test("displayName returns preset name for known source")
-    func displayNameForKnownSource() async {
-        let library = SoundFontLibrary()
-        let celloID = SoundSourceID("sf2:0:42")
-        #expect(library.displayName(for: celloID) == "Cello")
+    @Test("Cello preset has correct rawValue")
+    func celloPresetRawValue() async {
+        let library = makeLibrary()
+        let cello = library.availablePresets.first { $0.program == 42 && $0.bank == 0 }
+        #expect(cello?.rawValue == "sf2:0:42")
     }
 
-    @Test("displayName returns rawValue for unknown source")
-    func displayNameForUnknownSource() async {
-        let library = SoundFontLibrary()
-        let unknownID = SoundSourceID("sf2:99:99")
-        #expect(library.displayName(for: unknownID) == "sf2:99:99")
+    @Test("Preset displayName is accessible directly from SF2Preset")
+    func presetDisplayNameAccessible() async {
+        let library = makeLibrary()
+        let cello = library.availablePresets.first { $0.rawValue == "sf2:0:42" }
+        #expect(cello?.displayName == "Cello")
     }
 
-    // MARK: - No Duplicate Tags
+    // MARK: - No Duplicate Raw Values
 
-    @Test("All preset tags are unique")
-    func allTagsUnique() async {
-        let library = SoundFontLibrary()
-        let tags = library.availablePresets.map(\.tag)
-        let uniqueTags = Set(tags)
-        #expect(tags.count == uniqueTags.count)
+    @Test("All preset rawValues are unique")
+    func allRawValuesUnique() async {
+        let library = makeLibrary()
+        let rawValues = library.availablePresets.map(\.rawValue)
+        let uniqueRawValues = Set(rawValues)
+        #expect(rawValues.count == uniqueRawValues.count)
+    }
+
+    // MARK: - Resolve
+
+    @Test("resolve returns bank and program for valid preset")
+    func resolveValidPreset() async {
+        let library = makeLibrary()
+        let result = library.resolve("sf2:0:42")
+        #expect(result.bank == 0)
+        #expect(result.program == 42)
+    }
+
+    @Test("resolve falls back to default for unparseable string")
+    func resolveFallbackForGarbage() async {
+        let library = makeLibrary()
+        let result = library.resolve("garbage")
+        #expect(result.bank == 8)
+        #expect(result.program == 80)
+    }
+
+    @Test("resolve falls back to default for unknown preset")
+    func resolveFallbackForUnknown() async {
+        let library = makeLibrary()
+        let result = library.resolve("sf2:99:99")
+        #expect(result.bank == 8)
+        #expect(result.program == 80)
+    }
+
+    @Test("resolve falls back to default for empty string")
+    func resolveFallbackForEmpty() async {
+        let library = makeLibrary()
+        let result = library.resolve("")
+        #expect(result.bank == 8)
+        #expect(result.program == 80)
+    }
+
+    @Test("sf2URL is exposed from library")
+    func sf2URLExposed() async {
+        let library = makeLibrary()
+        #expect(library.sf2URL == Self.sf2URL)
     }
 }
