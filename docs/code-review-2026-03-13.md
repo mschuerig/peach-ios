@@ -243,7 +243,7 @@ Changed `NotePlayer.play(duration:)` from `TimeInterval` to `Duration`. Removed 
 
 ---
 
-### L15: Review PerceptualProfile training-mode asymmetries
+### ✅ L15: Review PerceptualProfile training-mode asymmetries
 
 `PerceptualProfile` grew unevenly as pitch matching was added alongside pitch comparison. A thorough review is needed to decide which asymmetries are intentional design choices and which are gaps to close.
 
