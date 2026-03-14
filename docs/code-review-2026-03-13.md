@@ -173,7 +173,7 @@ This is the most architecturally involved fix — read both files and their cons
 
 ---
 
-### L7: Extract large view bodies into subviews
+### ✅ L7: Extract large view bodies into subviews
 
 - `Peach/Settings/SettingsScreen.swift` body ~108 lines
 - `Peach/PitchComparison/PitchComparisonScreen.swift` body ~110 lines

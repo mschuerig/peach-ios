@@ -84,103 +84,85 @@ struct SettingsScreen: View {
         }
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    showHelpSheet = true
-                } label: {
-                    Label("Help", systemImage: "questionmark.circle")
-                }
-            }
-        }
-        .sheet(isPresented: $showHelpSheet) {
-            NavigationStack {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        HelpContentView(sections: Self.helpSections)
-                    }
-                    .padding()
-                }
-                .navigationTitle(String(localized: "Settings Help"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(String(localized: "Done")) {
-                            showHelpSheet = false
-                        }
-                    }
-                }
-            }
-        }
-        .onAppear {
-            if refreshExport?() == true {
-                showExportError = true
-            }
-        }
+        .toolbar { settingsToolbar }
+        .sheet(isPresented: $showHelpSheet) { helpSheetContent }
+        .onAppear { if refreshExport?() == true { showExportError = true } }
         .fileExporter(
             isPresented: $showExporter,
             document: transferService.exportCSV.map { CSVDocument(csvString: $0) },
             contentType: .commaSeparatedText,
             defaultFilename: CSVDocument.exportFileName()
-        ) { result in
-            if case .failure = result {
-                showExportError = true
-            }
-        }
-        .alert("Reset Failed", isPresented: $showResetError) {
-            Button("OK") { }
-        } message: {
-            Text("Could not delete training records. Please try again.")
-        }
-        .alert("Export Failed", isPresented: $showExportError) {
-            Button("OK") { }
-        } message: {
-            Text("Could not export training data. Please try again.")
-        }
+        ) { if case .failure = $0 { showExportError = true } }
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.commaSeparatedText]
-        ) { result in
-            switch result {
-            case .success(let url):
-                guard let prepareImport else { break }
-                switch prepareImport(url) {
-                case .success(let parseResult):
-                    importParseResult = parseResult
-                    showImportModeChoice = true
-                case .failure(let message):
-                    importErrorMessage = message
-                    showImportError = true
-                }
-            case .failure:
-                break
-            }
-        }
-        .confirmationDialog(
-            "Import Training Data",
-            isPresented: $showImportModeChoice,
-            titleVisibility: .visible
-        ) {
-            Button("Replace All Data", role: .destructive) {
-                completeImport(mode: .replace)
-            }
-            Button("Merge with Existing Data") {
-                completeImport(mode: .merge)
-            }
+        ) { handleImportFileResult($0) }
+        .confirmationDialog("Import Training Data", isPresented: $showImportModeChoice, titleVisibility: .visible) {
+            importModeButtons
         } message: {
             Text("Replace deletes all existing data first. Merge keeps existing data and skips duplicates.")
         }
+        .alert("Reset Failed", isPresented: $showResetError) {
+            Button("OK") { }
+        } message: { Text("Could not delete training records. Please try again.") }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK") { }
+        } message: { Text("Could not export training data. Please try again.") }
         .alert("Import Complete", isPresented: $showImportSummary) {
             Button("OK") { }
-        } message: {
-            if let summary = importSummary {
-                Text(transferService.formatImportSummary(summary))
-            }
-        }
+        } message: { importSummaryMessage }
         .alert("Import Failed", isPresented: $showImportError) {
             Button("OK") { }
-        } message: {
-            Text(importErrorMessage)
+        } message: { Text(importErrorMessage) }
+    }
+
+    // MARK: - Toolbar & Sheets
+
+    @ToolbarContentBuilder
+    private var settingsToolbar: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                showHelpSheet = true
+            } label: {
+                Label("Help", systemImage: "questionmark.circle")
+            }
+        }
+    }
+
+    private var helpSheetContent: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    HelpContentView(sections: Self.helpSections)
+                }
+                .padding()
+            }
+            .navigationTitle(String(localized: "Settings Help"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Done")) {
+                        showHelpSheet = false
+                    }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var importModeButtons: some View {
+        Button("Replace All Data", role: .destructive) {
+            completeImport(mode: .replace)
+        }
+        Button("Merge with Existing Data") {
+            completeImport(mode: .merge)
+        }
+    }
+
+    @ViewBuilder
+    private var importSummaryMessage: some View {
+        if let summary = importSummary {
+            Text(transferService.formatImportSummary(summary))
         }
     }
 
@@ -339,6 +321,23 @@ struct SettingsScreen: View {
             try dataStoreResetter?()
         } catch {
             showResetError = true
+        }
+    }
+
+    private func handleImportFileResult(_ result: Result<URL, any Error>) {
+        switch result {
+        case .success(let url):
+            guard let prepareImport else { break }
+            switch prepareImport(url) {
+            case .success(let parseResult):
+                importParseResult = parseResult
+                showImportModeChoice = true
+            case .failure(let message):
+                importErrorMessage = message
+                showImportError = true
+            }
+        case .failure:
+            break
         }
     }
 

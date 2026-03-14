@@ -43,37 +43,7 @@ struct PitchMatchingScreen: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading) {
-                    TrainingStatsView(
-                        latestValue: pitchMatchingSession.lastResult.map { Cents($0.userCentError.magnitude) },
-                        sessionBest: pitchMatchingSession.sessionBestCentError,
-                        trend: progressTimeline.trend(for: trainingMode)
-                    )
-
-                    if pitchMatchingSession.isIntervalMode, let interval = pitchMatchingSession.currentInterval {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(interval.displayName)
-                                .font(.title3)
-                            Text(pitchMatchingSession.sessionTuningSystem.displayName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchMatchingSession.sessionTuningSystem.displayName)"))
-                    }
-                }
-
-                Spacer()
-
-                PitchMatchingFeedbackIndicator(
-                    centError: pitchMatchingSession.lastResult?.userCentError
-                )
-                .opacity(pitchMatchingSession.state == .showingFeedback ? 1 : 0)
-                .accessibilityHidden(pitchMatchingSession.state != .showingFeedback)
-                .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
-            }
-            .padding(.horizontal)
+            statsHeader
 
             PitchSlider(
                 isHorizontal: isCompactHeight,
@@ -89,48 +59,8 @@ struct PitchMatchingScreen: View {
         }
         .navigationTitle("Tune & Match")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 20) {
-                    Button {
-                        showHelpSheet = true
-                    } label: {
-                        Label("Help", systemImage: "questionmark.circle")
-                    }
-
-                    NavigationLink(value: NavigationDestination.settings) {
-                        Image(systemName: "gearshape")
-                            .imageScale(.large)
-                    }
-                    .accessibilityLabel("Settings")
-
-                    NavigationLink(value: NavigationDestination.profile) {
-                        Image(systemName: "chart.xyaxis.line")
-                            .imageScale(.large)
-                    }
-                    .accessibilityLabel("Profile")
-                }
-            }
-        }
-        .sheet(isPresented: $showHelpSheet) {
-            NavigationStack {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        HelpContentView(sections: Self.helpSections)
-                    }
-                    .padding()
-                }
-                .navigationTitle(String(localized: "Training Help"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(String(localized: "Done")) {
-                            showHelpSheet = false
-                        }
-                    }
-                }
-            }
-        }
+        .toolbar { toolbarContent }
+        .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
                 logger.info("Help sheet shown - stopping pitch matching")
@@ -147,6 +77,87 @@ struct PitchMatchingScreen: View {
         .onDisappear {
             logger.info("PitchMatchingScreen disappeared - stopping pitch matching")
             pitchMatchingSession.stop()
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var statsHeader: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading) {
+                TrainingStatsView(
+                    latestValue: pitchMatchingSession.lastResult.map { Cents($0.userCentError.magnitude) },
+                    sessionBest: pitchMatchingSession.sessionBestCentError,
+                    trend: progressTimeline.trend(for: trainingMode)
+                )
+
+                if pitchMatchingSession.isIntervalMode, let interval = pitchMatchingSession.currentInterval {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(interval.displayName)
+                            .font(.title3)
+                        Text(pitchMatchingSession.sessionTuningSystem.displayName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchMatchingSession.sessionTuningSystem.displayName)"))
+                }
+            }
+
+            Spacer()
+
+            PitchMatchingFeedbackIndicator(
+                centError: pitchMatchingSession.lastResult?.userCentError
+            )
+            .opacity(pitchMatchingSession.state == .showingFeedback ? 1 : 0)
+            .accessibilityHidden(pitchMatchingSession.state != .showingFeedback)
+            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
+        }
+        .padding(.horizontal)
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: 20) {
+                Button {
+                    showHelpSheet = true
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+
+                NavigationLink(value: NavigationDestination.settings) {
+                    Image(systemName: "gearshape")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Settings")
+
+                NavigationLink(value: NavigationDestination.profile) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Profile")
+            }
+        }
+    }
+
+    private var helpSheetContent: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    HelpContentView(sections: Self.helpSections)
+                }
+                .padding()
+            }
+            .navigationTitle(String(localized: "Training Help"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Done")) {
+                        showHelpSheet = false
+                    }
+                }
+            }
         }
     }
 

@@ -57,97 +57,14 @@ struct PitchComparisonScreen: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading) {
-                    TrainingStatsView(
-                        latestValue: pitchComparisonSession.lastCompletedCentDifference,
-                        sessionBest: pitchComparisonSession.sessionBestCentDifference,
-                        trend: progressTimeline.trend(for: trainingMode)
-                    )
-
-                    if pitchComparisonSession.isIntervalMode, let interval = pitchComparisonSession.currentInterval {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(interval.displayName)
-                                .font(.title3)
-                            Text(pitchComparisonSession.sessionTuningSystem.displayName)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        .accessibilityElement(children: .combine)
-                        .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchComparisonSession.sessionTuningSystem.displayName)"))
-                    }
-                }
-
-                Spacer()
-
-                PitchComparisonFeedbackIndicator(
-                    isCorrect: pitchComparisonSession.isLastAnswerCorrect
-                )
-                .opacity(pitchComparisonSession.showFeedback ? 1 : 0)
-                .accessibilityHidden(!pitchComparisonSession.showFeedback)
-                .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchComparisonSession.showFeedback)
-            }
-            .padding(.horizontal)
-
-            Group {
-                if isCompactHeight {
-                    HStack(spacing: 8) {
-                        answerButton(direction: .higher)
-                        answerButton(direction: .lower)
-                    }
-                } else {
-                    VStack(spacing: 8) {
-                        answerButton(direction: .higher)
-                        answerButton(direction: .lower)
-                    }
-                }
-            }
+            statsHeader
+            answerButtonsGroup
         }
         .padding()
         .navigationTitle("Hear & Compare")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 20) {
-                    Button {
-                        showHelpSheet = true
-                    } label: {
-                        Label("Help", systemImage: "questionmark.circle")
-                    }
-
-                    NavigationLink(value: NavigationDestination.settings) {
-                        Image(systemName: "gearshape")
-                            .imageScale(.large)
-                    }
-                    .accessibilityLabel("Settings")
-
-                    NavigationLink(value: NavigationDestination.profile) {
-                        Image(systemName: "chart.xyaxis.line")
-                            .imageScale(.large)
-                    }
-                    .accessibilityLabel("Profile")
-                }
-            }
-        }
-        .sheet(isPresented: $showHelpSheet) {
-            NavigationStack {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        HelpContentView(sections: Self.helpSections)
-                    }
-                    .padding()
-                }
-                .navigationTitle(String(localized: "Training Help"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(String(localized: "Done")) {
-                            showHelpSheet = false
-                        }
-                    }
-                }
-            }
-        }
+        .toolbar { toolbarContent }
+        .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
                 logger.info("Help sheet shown - stopping training")
@@ -164,6 +81,103 @@ struct PitchComparisonScreen: View {
         .onDisappear {
             logger.info("PitchComparisonScreen disappeared - stopping training")
             pitchComparisonSession.stop()
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var statsHeader: some View {
+        HStack(alignment: .top) {
+            VStack(alignment: .leading) {
+                TrainingStatsView(
+                    latestValue: pitchComparisonSession.lastCompletedCentDifference,
+                    sessionBest: pitchComparisonSession.sessionBestCentDifference,
+                    trend: progressTimeline.trend(for: trainingMode)
+                )
+
+                if pitchComparisonSession.isIntervalMode, let interval = pitchComparisonSession.currentInterval {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(interval.displayName)
+                            .font(.title3)
+                        Text(pitchComparisonSession.sessionTuningSystem.displayName)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(String(localized: "Target interval: \(interval.displayName), \(pitchComparisonSession.sessionTuningSystem.displayName)"))
+                }
+            }
+
+            Spacer()
+
+            PitchComparisonFeedbackIndicator(
+                isCorrect: pitchComparisonSession.isLastAnswerCorrect
+            )
+            .opacity(pitchComparisonSession.showFeedback ? 1 : 0)
+            .accessibilityHidden(!pitchComparisonSession.showFeedback)
+            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchComparisonSession.showFeedback)
+        }
+        .padding(.horizontal)
+    }
+
+    private var answerButtonsGroup: some View {
+        Group {
+            if isCompactHeight {
+                HStack(spacing: 8) {
+                    answerButton(direction: .higher)
+                    answerButton(direction: .lower)
+                }
+            } else {
+                VStack(spacing: 8) {
+                    answerButton(direction: .higher)
+                    answerButton(direction: .lower)
+                }
+            }
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: 20) {
+                Button {
+                    showHelpSheet = true
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+
+                NavigationLink(value: NavigationDestination.settings) {
+                    Image(systemName: "gearshape")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Settings")
+
+                NavigationLink(value: NavigationDestination.profile) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Profile")
+            }
+        }
+    }
+
+    private var helpSheetContent: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    HelpContentView(sections: Self.helpSections)
+                }
+                .padding()
+            }
+            .navigationTitle(String(localized: "Training Help"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Done")) {
+                        showHelpSheet = false
+                    }
+                }
+            }
         }
     }
 
