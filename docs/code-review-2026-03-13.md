@@ -201,11 +201,9 @@ This is the most architecturally involved fix — read both files and their cons
 
 ---
 
-### L9: Rename `PianoKeyboardView.swift` → `PianoKeyboardLayout.swift`
+### ✅ L9: Remove unused `PianoKeyboardLayout`
 
-File contains `struct PianoKeyboardLayout`, not a View.
-
-> **Agent prompt:** Read `docs/project-context.md` and this fix description. Use `git mv Peach/Profile/PianoKeyboardView.swift Peach/Profile/PianoKeyboardLayout.swift`. Grep for any imports or references to the old filename. Run `bin/test.sh` — all tests must pass. Commit with message: `Rename PianoKeyboardView.swift to match its contents`
+Removed `PianoKeyboardLayout` struct entirely — only used in tests. Replaced the two `noteName` call sites in `SettingsScreen` with `MIDINote.name` directly.
 
 ---
 

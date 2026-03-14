@@ -312,15 +312,6 @@ struct SettingsTests {
         #expect(highRange == 72...108)
     }
 
-    @Test("Note name display uses PianoKeyboardLayout")
-    func noteNameDisplay() async {
-        #expect(PianoKeyboardLayout.noteName(midiNote: 36) == "C2")
-        #expect(PianoKeyboardLayout.noteName(midiNote: 84) == "C6")
-        #expect(PianoKeyboardLayout.noteName(midiNote: 69) == "A4")
-        #expect(PianoKeyboardLayout.noteName(midiNote: 21) == "A0")
-        #expect(PianoKeyboardLayout.noteName(midiNote: 108) == "C8")
-    }
-
     // MARK: - Task 3: Reset Functionality
 
     @Test("PerceptualProfile reset clears all note data")

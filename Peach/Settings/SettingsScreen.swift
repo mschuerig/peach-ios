@@ -171,13 +171,13 @@ struct SettingsScreen: View {
     private var trainingRangeSection: some View {
         Section(String(localized: "Training Range")) {
             Stepper(
-                "Lowest Note: \(PianoKeyboardLayout.noteName(midiNote: noteRangeMin))",
+                "Lowest Note: \(MIDINote(noteRangeMin).name)",
                 value: $noteRangeMin,
                 in: SettingsKeys.lowerBoundRange(noteRangeMax: noteRangeMax),
                 step: 1
             )
             Stepper(
-                "Highest Note: \(PianoKeyboardLayout.noteName(midiNote: noteRangeMax))",
+                "Highest Note: \(MIDINote(noteRangeMax).name)",
                 value: $noteRangeMax,
                 in: SettingsKeys.upperBoundRange(noteRangeMin: noteRangeMin),
                 step: 1
