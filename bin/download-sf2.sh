@@ -1,17 +1,21 @@
 #!/bin/bash
 #
-# download-sf2.sh — Download the GeneralUser GS SF2 SoundFont for Peach.
+# download-sf2.sh — Download all SF2 SoundFonts listed in sf2-sources.conf.
 #
 # Run this script once before your first build:
 #   ./bin/download-sf2.sh
 #
-# The SF2 file is placed at .cache/GeneralUser-GS.sf2 in the project root.
-# Xcode includes this file in the app bundle via Copy Bundle Resources.
-# If the file is missing, the Xcode build will fail with a "file not found" error.
+# SF2 files are placed in .cache/ in the project root.
+# Xcode includes .cache/GeneralUser-GS.sf2 in the app bundle via Copy Bundle Resources.
+# If that file is missing, the Xcode build will fail with a "file not found" error.
+#
+# The script is idempotent: files with correct checksums are skipped.
+# On per-file failure, the script continues downloading remaining files
+# and exits with non-zero status if any download failed.
 #
 # Dependencies: curl, shasum (stock macOS)
 
-set -euo pipefail
+set -uo pipefail
 
 # --- Configuration -----------------------------------------------------------
 
@@ -26,88 +30,141 @@ if [ ! -f "${CONFIG_FILE}" ]; then
     exit 1
 fi
 
-# Parse key=value config (ignoring comments and blank lines)
-DOWNLOAD_URL=$(grep '^url=' "${CONFIG_FILE}" | cut -d'=' -f2-)
-SF2_FILENAME=$(grep '^filename=' "${CONFIG_FILE}" | cut -d'=' -f2-)
-EXPECTED_SHA256=$(grep '^sha256=' "${CONFIG_FILE}" | cut -d'=' -f2-)
-
-if [ -z "${DOWNLOAD_URL}" ] || [ -z "${SF2_FILENAME}" ] || [ -z "${EXPECTED_SHA256}" ]; then
-    echo "error: Missing required fields in ${CONFIG_FILE}" >&2
-    echo "note: Required fields: url, filename, sha256" >&2
-    exit 1
-fi
-
-CACHED_SF2="${CACHE_DIR}/${SF2_FILENAME}"
-TEMP_FILE="${CACHE_DIR}/${SF2_FILENAME}.download"
-
-# --- Cleanup trap ------------------------------------------------------------
-
-cleanup() {
-    rm -f "${TEMP_FILE}"
-}
-trap cleanup EXIT
-
 # --- Helper functions --------------------------------------------------------
 
 verify_checksum() {
     local file="$1"
+    local expected="$2"
     local actual
     actual=$(shasum -a 256 "${file}" | awk '{print $1}')
-    if [ "${actual}" = "${EXPECTED_SHA256}" ]; then
+    if [ "${actual}" = "${expected}" ]; then
         return 0
     else
-        echo "warning: Checksum mismatch for ${file}" >&2
-        echo "  expected: ${EXPECTED_SHA256}" >&2
-        echo "  actual:   ${actual}" >&2
+        echo "  warning: Checksum mismatch for ${file}" >&2
+        echo "    expected: ${expected}" >&2
+        echo "    actual:   ${actual}" >&2
         return 1
     fi
 }
 
-download_sf2() {
-    echo "Downloading ${SF2_FILENAME}..."
-    if ! curl -L -f --retry 3 --silent --show-error -o "${TEMP_FILE}" "${DOWNLOAD_URL}"; then
-        echo "error: Download failed. Check your network connection." >&2
-        echo "note: URL: ${DOWNLOAD_URL}" >&2
-        echo "note: You can manually place the file at ${CACHED_SF2}" >&2
-        exit 1
+# Download a single SF2 entry. Returns 0 on success, 1 on failure.
+download_entry() {
+    local section="$1"
+    local url="$2"
+    local filename="$3"
+    local expected_sha256="$4"
+    local cached_file="${CACHE_DIR}/${filename}"
+    local temp_file="${CACHE_DIR}/${filename}.download"
+
+    echo "--- [${section}] ${filename} ---"
+
+    # Check if cached file exists and has correct checksum
+    if [ -f "${cached_file}" ]; then
+        if verify_checksum "${cached_file}" "${expected_sha256}"; then
+            echo "  Up to date: ${cached_file}"
+            return 0
+        else
+            echo "  Cached file has incorrect checksum. Re-downloading..."
+            rm -f "${cached_file}"
+        fi
+    else
+        echo "  No cached file found. Downloading..."
+    fi
+
+    # Download
+    if ! curl -L -f --retry 3 --silent --show-error -o "${temp_file}" "${url}"; then
+        echo "  error: Download failed for ${section}." >&2
+        echo "  note: URL: ${url}" >&2
+        echo "  note: You can manually place the file at ${cached_file}" >&2
+        rm -f "${temp_file}"
+        return 1
     fi
 
     # Verify download is not an HTML error page
-    if file "${TEMP_FILE}" | grep -qi "HTML"; then
-        rm -f "${TEMP_FILE}"
-        echo "error: Download returned an HTML page instead of an SF2 file." >&2
-        echo "note: The download URL may have changed. Check bin/sf2-sources.conf." >&2
-        exit 1
+    if file "${temp_file}" | grep -qi "HTML"; then
+        rm -f "${temp_file}"
+        echo "  error: Download returned an HTML page instead of an SF2 file." >&2
+        echo "  note: The download URL for ${section} may have changed." >&2
+        return 1
     fi
 
-    mv "${TEMP_FILE}" "${CACHED_SF2}"
-    echo "Download complete."
+    mv "${temp_file}" "${cached_file}"
+    echo "  Download complete."
+
+    # Verify checksum
+    if ! verify_checksum "${cached_file}" "${expected_sha256}"; then
+        rm -f "${cached_file}"
+        echo "  error: Downloaded file has incorrect checksum." >&2
+        echo "  note: The expected checksum for ${section} in sf2-sources.conf may need updating." >&2
+        return 1
+    fi
+
+    return 0
 }
 
-# --- Main --------------------------------------------------------------------
+# --- Parse config and download -----------------------------------------------
 
 mkdir -p "${CACHE_DIR}"
 
-# Check if cached file exists and has correct checksum
-if [ -f "${CACHED_SF2}" ]; then
-    if verify_checksum "${CACHED_SF2}"; then
-        echo "SF2 file is up to date: ${CACHED_SF2}"
-        exit 0
-    else
-        echo "Cached file has incorrect checksum. Re-downloading..."
-        rm -f "${CACHED_SF2}"
+failure_count=0
+success_count=0
+current_section=""
+url=""
+filename=""
+sha256=""
+
+process_entry() {
+    if [ -n "${current_section}" ] && [ -n "${url}" ] && [ -n "${filename}" ] && [ -n "${sha256}" ]; then
+        if download_entry "${current_section}" "${url}" "${filename}" "${sha256}"; then
+            success_count=$((success_count + 1))
+        else
+            failure_count=$((failure_count + 1))
+        fi
+    elif [ -n "${current_section}" ]; then
+        echo "warning: Incomplete entry [${current_section}] — missing url, filename, or sha256. Skipping." >&2
+        failure_count=$((failure_count + 1))
     fi
-else
-    echo "No cached SF2 found. Downloading..."
-fi
+}
 
-download_sf2
+while IFS= read -r line || [ -n "${line}" ]; do
+    # Strip leading/trailing whitespace
+    line=$(echo "${line}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
-if ! verify_checksum "${CACHED_SF2}"; then
-    rm -f "${CACHED_SF2}"
-    echo "error: Downloaded file has incorrect checksum." >&2
-    echo "note: The expected checksum in bin/sf2-sources.conf may need updating." >&2
+    # Skip empty lines and comments
+    [[ -z "${line}" || "${line}" == \#* ]] && continue
+
+    # Section header
+    if [[ "${line}" =~ ^\[([^]]+)\]$ ]]; then
+        # Process previous entry before starting new section
+        process_entry
+        current_section="${BASH_REMATCH[1]}"
+        url=""
+        filename=""
+        sha256=""
+        continue
+    fi
+
+    # Key=value pairs
+    case "${line}" in
+        url=*)      url="${line#url=}" ;;
+        filename=*) filename="${line#filename=}" ;;
+        sha256=*)   sha256="${line#sha256=}" ;;
+        # license= and attribution= are metadata only, not used by download
+    esac
+done < "${CONFIG_FILE}"
+
+# Process the last entry
+process_entry
+
+# --- Summary -----------------------------------------------------------------
+
+total=$((success_count + failure_count))
+echo ""
+echo "SF2 download complete: ${success_count}/${total} succeeded."
+
+if [ "${failure_count}" -gt 0 ]; then
+    echo "error: ${failure_count} download(s) failed." >&2
     exit 1
 fi
 
-echo "SF2 setup complete: ${CACHED_SF2}"
+exit 0

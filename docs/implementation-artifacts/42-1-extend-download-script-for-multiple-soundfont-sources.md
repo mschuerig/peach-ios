@@ -1,6 +1,6 @@
 # Story 42.1: Extend Download Script for Multiple SoundFont Sources
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -26,28 +26,28 @@ so that all source SoundFonts needed for the custom SF2 assembly are available l
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend `bin/sf2-sources.conf` to multi-entry format (AC: #2, #4)
-  - [ ] 1.1 Design and implement section-based format (e.g., `[SectionName]` INI-style blocks separated by blank lines)
-  - [ ] 1.2 Migrate existing GeneralUser GS entry to new format, preserving all comment metadata (version, commit, license)
-  - [ ] 1.3 Add FluidR3_GM entry with url, filename, sha256, license, attribution
-  - [ ] 1.4 Add JNSGM2 entry with url, filename, sha256, license, attribution
-- [ ] Task 2: Rewrite `bin/download-sf2.sh` to iterate over all config entries (AC: #1, #3)
-  - [ ] 2.1 Parse multi-entry config: loop over `[section]` blocks, extract url/filename/sha256 per entry
-  - [ ] 2.2 Download each entry to `.cache/{filename}` with existing curl+retry logic
-  - [ ] 2.3 Verify checksum per entry using existing `verify_checksum` pattern
-  - [ ] 2.4 Skip files that already exist with correct checksum (idempotent, per existing logic)
-  - [ ] 2.5 On per-file failure: log error, continue to next file, track failure count
-  - [ ] 2.6 Exit with non-zero status if any download failed; exit 0 only if all succeeded
-  - [ ] 2.7 Preserve HTML error page detection for each download
-  - [ ] 2.8 Update script header comment to reflect multi-file support
-- [ ] Task 3: Verify checksums for new SF2 files (AC: #2)
-  - [ ] 3.1 Download FluidR3_GM manually, compute SHA-256, add to config
-  - [ ] 3.2 Download JNSGM2 manually, compute SHA-256, add to config
-- [ ] Task 4: End-to-end test (AC: #1, #3)
-  - [ ] 4.1 Run script from clean state (no `.cache/`), verify all three files downloaded
-  - [ ] 4.2 Run script again, verify all three files skipped (idempotent)
-  - [ ] 4.3 Corrupt one cached file, run script, verify only that file re-downloaded
-  - [ ] 4.4 Test with an intentionally wrong URL, verify partial failure behavior
+- [x] Task 1: Extend `bin/sf2-sources.conf` to multi-entry format (AC: #2, #4)
+  - [x] 1.1 Design and implement section-based format (e.g., `[SectionName]` INI-style blocks separated by blank lines)
+  - [x] 1.2 Migrate existing GeneralUser GS entry to new format, preserving all comment metadata (version, commit, license)
+  - [x] 1.3 Add FluidR3_GM entry with url, filename, sha256, license, attribution
+  - [x] 1.4 Add JNSGM2 entry with url, filename, sha256, license, attribution
+- [x] Task 2: Rewrite `bin/download-sf2.sh` to iterate over all config entries (AC: #1, #3)
+  - [x] 2.1 Parse multi-entry config: loop over `[section]` blocks, extract url/filename/sha256 per entry
+  - [x] 2.2 Download each entry to `.cache/{filename}` with existing curl+retry logic
+  - [x] 2.3 Verify checksum per entry using existing `verify_checksum` pattern
+  - [x] 2.4 Skip files that already exist with correct checksum (idempotent, per existing logic)
+  - [x] 2.5 On per-file failure: log error, continue to next file, track failure count
+  - [x] 2.6 Exit with non-zero status if any download failed; exit 0 only if all succeeded
+  - [x] 2.7 Preserve HTML error page detection for each download
+  - [x] 2.8 Update script header comment to reflect multi-file support
+- [x] Task 3: Verify checksums for new SF2 files (AC: #2)
+  - [x] 3.1 Download FluidR3_GM manually, compute SHA-256, add to config
+  - [x] 3.2 Download JNSGM2 manually, compute SHA-256, add to config
+- [x] Task 4: End-to-end test (AC: #1, #3)
+  - [x] 4.1 Run script from clean state (no `.cache/`), verify all three files downloaded
+  - [x] 4.2 Run script again, verify all three files skipped (idempotent)
+  - [x] 4.3 Corrupt one cached file, run script, verify only that file re-downloaded
+  - [x] 4.4 Test with an intentionally wrong URL, verify partial failure behavior
 
 ## Dev Notes
 
@@ -147,8 +147,27 @@ From the epic and research document:
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+None — no issues encountered during implementation.
 
 ### Completion Notes List
 
+- Converted `bin/sf2-sources.conf` from flat key=value to INI-style `[SectionName]` blocks with url, filename, sha256, license, attribution per entry
+- Added FluidR3_GM (MIT, SourceForge URL, 148 MB) and JNSGM2 (CC0, GitHub URL, 33 MB) entries with verified SHA-256 checksums
+- Rewrote `bin/download-sf2.sh` to parse INI sections and iterate over all entries, with per-file error handling (continue on failure, accumulate failure count, non-zero exit if any failed)
+- Changed `set -euo pipefail` to `set -uo pipefail` (removed `-e` so per-file failures don't abort the script)
+- Removed global cleanup trap in favor of per-entry temp file cleanup
+- All four E2E test scenarios passed: clean download, idempotent skip, selective re-download on corruption, partial failure with wrong URL
+
+### Change Log
+
+- 2026-03-14: Implemented story 42.1 — multi-source SF2 download support
+
 ### File List
+
+- `bin/sf2-sources.conf` — converted to INI-style multi-entry format with 3 SF2 sources
+- `bin/download-sf2.sh` — rewritten to iterate over all config entries with continue-on-failure
+- `docs/implementation-artifacts/42-1-extend-download-script-for-multiple-soundfont-sources.md` — story file updated
