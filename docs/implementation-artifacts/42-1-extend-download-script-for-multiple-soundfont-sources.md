@@ -1,6 +1,6 @@
 # Story 42.1: Extend Download Script for Multiple SoundFont Sources
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -171,3 +171,4 @@ None — no issues encountered during implementation.
 - `bin/sf2-sources.conf` — converted to INI-style multi-entry format with 3 SF2 sources
 - `bin/download-sf2.sh` — rewritten to iterate over all config entries with continue-on-failure
 - `docs/implementation-artifacts/42-1-extend-download-script-for-multiple-soundfont-sources.md` — story file updated
+- `docs/implementation-artifacts/sprint-status.yaml` — story status updated to review

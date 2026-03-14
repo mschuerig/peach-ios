@@ -30,6 +30,13 @@ if [ ! -f "${CONFIG_FILE}" ]; then
     exit 1
 fi
 
+# --- Cleanup trap ------------------------------------------------------------
+
+cleanup() {
+    rm -f "${CACHE_DIR}"/*.download
+}
+trap cleanup EXIT INT TERM
+
 # --- Helper functions --------------------------------------------------------
 
 verify_checksum() {
@@ -128,7 +135,7 @@ process_entry() {
 
 while IFS= read -r line || [ -n "${line}" ]; do
     # Strip leading/trailing whitespace
-    line=$(echo "${line}" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    line=$(printf '%s\n' "${line}" | sed $'s/^[[:space:]]*//;s/[[:space:]\r]*$//')
 
     # Skip empty lines and comments
     [[ -z "${line}" || "${line}" == \#* ]] && continue

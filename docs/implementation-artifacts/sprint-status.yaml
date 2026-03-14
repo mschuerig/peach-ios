@@ -336,5 +336,5 @@ development_status:
 
   # Epic 42: Fix Your Piano — Custom SoundFont Assembly
   epic-42: in-progress
-  42-1-extend-download-script-for-multiple-soundfont-sources: review
+  42-1-extend-download-script-for-multiple-soundfont-sources: done
   42-2-clean-up-soundfontlibrary-and-soundfontnoteplayer-defaults: backlog
