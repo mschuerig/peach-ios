@@ -215,7 +215,7 @@ Removed `PianoKeyboardLayout` struct entirely — only used in tests. Replaced t
 
 ---
 
-### L11: Remove `throws` from `Resettable.reset()` if no conformer throws
+### ✅ L11: `throws` on `Resettable.reset()` is correct — `TrainingDataStore.reset()` throws
 
 `Peach/Core/Training/Resettable.swift:3` — audit all conformers first.
 
