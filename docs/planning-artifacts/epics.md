@@ -4144,3 +4144,98 @@ So that the labels remain readable regardless of Dynamic Type or screen size.
 - Preserve the `yearLabelYOffset` constant as fallback if Chart-native positioning proves insufficient
 
 ---
+
+## Epic 42 Requirements (Custom SoundFont Assembly)
+
+**Source:** [Alternative GM SoundFont Research (2026-03-14)](research/technical-alternative-gm-soundfont-sf2-research-2026-03-14.md)
+
+**Problem:** GeneralUser GS v2.0.3's piano presets crash on iPhone 17 Pro (A18 Pro) due to a bug in Apple's ARM-optimized sample interpolation code inside AVAudioUnitSampler. Device testing confirmed FluidR3_GM's piano does not crash. The solution is a custom SF2 combining FluidR3_GM piano with GeneralUser GS non-piano presets, assembled manually in Polyphone.
+
+**Functional Requirements Addressed:**
+- FR34: User can select the sound source
+- FR16/FR17: System generates tones at precise frequencies with smooth envelopes (piano preset must not crash)
+
+**Non-functional Requirements:**
+- The custom SF2 should be committed to the repository (estimated ~35-40 MB)
+- Source SF2 files should be downloadable via script for reproducibility
+- SoundFontLibrary and SoundFontNotePlayer should not depend on a specific SF2's bank structure
+
+## Epic 42: Fix Your Piano — Custom SoundFont Assembly
+
+Replace the crashing GeneralUser GS piano presets with FluidR3_GM piano presets by assembling a custom SoundFont. Clean up SoundFontLibrary and SoundFontNotePlayer to work with any single SF2 file without hardcoded bank/program defaults.
+
+### Story 42.1: Extend Download Script for Multiple SoundFont Sources
+
+As a **developer**,
+I want `bin/download-sf2.sh` to support downloading multiple SF2 files to `.cache`,
+So that all source SoundFonts needed for the custom SF2 assembly are available locally and their integrity is verified.
+
+**Acceptance Criteria:**
+
+**Given** the download script and config
+**When** `bin/download-sf2.sh` is run
+**Then** it downloads all SF2 files listed in `bin/sf2-sources.conf` to `.cache/`
+**And** each file's SHA-256 checksum is verified against the expected value in the config
+**And** files that already exist with the correct checksum are skipped (idempotent)
+
+**Given** `bin/sf2-sources.conf`
+**When** a developer reads it
+**Then** it contains entries for at least:
+- GeneralUser GS v2.0.3 (existing entry — non-piano presets source)
+- FluidR3_GM (MIT license — piano presets source)
+- JNSGM2 (CC0 — reference/comparison)
+**And** each entry includes: url, filename, sha256, license, and attribution fields
+
+**Given** a download failure for one file
+**When** the script runs
+**Then** it reports the failure clearly and continues downloading remaining files
+**And** exits with a non-zero status if any download failed
+
+**Given** the config file format
+**When** a developer needs to add a new SF2 source
+**Then** they add a new entry block to `bin/sf2-sources.conf` following the existing format
+
+**Technical hints:**
+- Extend the existing `bin/sf2-sources.conf` to support multiple entries (e.g., INI-style sections or repeated key blocks separated by blank lines)
+- The existing `bin/download-sf2.sh` handles single-file download with checksum — generalize the loop
+- FluidR3_GM download URL: `https://sourceforge.net/projects/pianobooster/files/pianobooster/1.0.0/FluidR3_GM.sf2/download` (or a GitHub mirror for stability)
+- JNSGM2 download URL: `https://github.com/wrightflyer/SF2_SoundFonts/raw/master/Jnsgm2.sf2`
+- Xcode build should continue to reference the single assembled SF2 in `.cache/`, not the source files
+
+### Story 42.2: Clean Up SoundFontLibrary and SoundFontNotePlayer Defaults
+
+As a **developer**,
+I want SoundFontLibrary to work with a single explicitly provided SF2 file and SoundFontNotePlayer to receive all configuration explicitly,
+So that the audio code does not depend on a specific SF2's bank structure or hardcoded preset defaults.
+
+**Acceptance Criteria:**
+
+**Given** `SoundFontLibrary`
+**When** initialized
+**Then** it accepts an explicit SF2 URL (no scanning for all `.sf2` files in the bundle)
+**And** it discovers presets only from that single SF2 file
+
+**Given** `SoundFontNotePlayer`
+**When** initialized
+**Then** it does not use default arguments for `sf2Name` — the caller must provide it explicitly
+**And** the default preset (program and bank) is provided explicitly at init, not hardcoded as constants
+**And** the hardcoded `defaultPresetProgram = 80` and `defaultPresetBank = 8` are removed
+
+**Given** the app's composition root (`PeachApp` or environment setup)
+**When** it creates the SoundFontNotePlayer
+**Then** it provides the SF2 filename and default preset explicitly
+**And** changing which SF2 or default preset is used requires changing only the composition root, not the library or player
+
+**Given** the existing test suite
+**When** all tests are run after the refactor
+**Then** all tests pass — behavior is unchanged, only the wiring is explicit
+
+**Technical hints:**
+- `SoundFontLibrary.init(bundle:)` → `SoundFontLibrary.init(sf2URL:)` — accept one URL, not a bundle scan
+- `SoundFontNotePlayer.init(sf2Name:userSettings:stopPropagationDelay:)` → remove default for `sf2Name`, add explicit `defaultProgram: Int` and `defaultBank: Int` parameters
+- Update `PeachApp` / `EnvironmentKeys` to wire the explicit values
+- The default preset for the custom SF2 should be configurable — likely String Ensemble (bank 0, program 48) or whatever the custom SF2 uses as a neutral default
+- `MockUserSettings` and test helpers may need updating for the new init signatures
+- No behavioral changes — this is a wiring refactor only
+
+---
