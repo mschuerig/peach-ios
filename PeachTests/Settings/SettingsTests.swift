@@ -22,7 +22,7 @@ struct SettingsTests {
         // noteDuration and soundSource are not TrainingSettings properties —
         // they are standalone settings with hardcoded defaults
         #expect(SettingsKeys.defaultNoteDuration == 1.0)
-        #expect(SettingsKeys.defaultSoundSource == "sf2:8:80")
+        #expect(SettingsKeys.defaultSoundSource == "sf2:0:0")
     }
 
     @Test("Storage keys are defined as string constants")

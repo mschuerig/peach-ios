@@ -8,7 +8,7 @@ struct SoundFontLibraryTests {
     private static let sf2URL = Bundle.main.url(forResource: "GeneralUser-GS", withExtension: "sf2")!
 
     private func makeLibrary() -> SoundFontLibrary {
-        SoundFontLibrary(sf2URL: Self.sf2URL, defaultPreset: "sf2:8:80")
+        SoundFontLibrary(sf2URL: Self.sf2URL, defaultPreset: "sf2:0:0")
     }
 
     // MARK: - Preset Discovery
@@ -118,24 +118,24 @@ struct SoundFontLibraryTests {
     func resolveFallbackForGarbage() async {
         let library = makeLibrary()
         let result = library.resolve("garbage")
-        #expect(result.bank == 8)
-        #expect(result.program == 80)
+        #expect(result.bank == 0)
+        #expect(result.program == 0)
     }
 
     @Test("resolve falls back to default for unknown preset")
     func resolveFallbackForUnknown() async {
         let library = makeLibrary()
         let result = library.resolve("sf2:99:99")
-        #expect(result.bank == 8)
-        #expect(result.program == 80)
+        #expect(result.bank == 0)
+        #expect(result.program == 0)
     }
 
     @Test("resolve falls back to default for empty string")
     func resolveFallbackForEmpty() async {
         let library = makeLibrary()
         let result = library.resolve("")
-        #expect(result.bank == 8)
-        #expect(result.program == 80)
+        #expect(result.bank == 0)
+        #expect(result.program == 0)
     }
 
     @Test("sf2URL is exposed from library")

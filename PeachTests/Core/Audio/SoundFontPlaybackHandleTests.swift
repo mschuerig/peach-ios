@@ -7,7 +7,7 @@ struct SoundFontPlaybackHandleTests {
 
     private static let testLibrary = SoundFontLibrary(
         sf2URL: Bundle.main.url(forResource: "GeneralUser-GS", withExtension: "sf2")!,
-        defaultPreset: "sf2:8:80"
+        defaultPreset: "sf2:0:0"
     )
 
     private func makePlayer() throws -> SoundFontNotePlayer {

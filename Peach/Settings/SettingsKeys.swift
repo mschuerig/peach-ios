@@ -18,7 +18,7 @@ enum SettingsKeys {
     static let defaultNoteRangeMax: Int = 84
     static let defaultNoteDuration: Double = 1.0
     static let defaultReferencePitch: Double = 440.0
-    static let defaultSoundSource: String = "sf2:8:80"
+    static let defaultSoundSource: String = "sf2:0:0"
     static let defaultVaryLoudness: Double = 0.0
     static let defaultTuningSystem: String = "equalTemperament"
 

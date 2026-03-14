@@ -7,7 +7,7 @@ struct SoundFontNotePlayerTests {
 
     private static let testLibrary = SoundFontLibrary(
         sf2URL: Bundle.main.url(forResource: "GeneralUser-GS", withExtension: "sf2")!,
-        defaultPreset: "sf2:8:80"
+        defaultPreset: "sf2:0:0"
     )
 
     private func makePlayer(userSettings: UserSettings = MockUserSettings()) throws -> SoundFontNotePlayer {
@@ -35,7 +35,7 @@ struct SoundFontNotePlayerTests {
     func failsWithMissingSF2() async {
         let badLibrary = SoundFontLibrary(
             sf2URL: URL(fileURLWithPath: "/nonexistent/NonExistent.sf2"),
-            defaultPreset: "sf2:8:80"
+            defaultPreset: "sf2:0:0"
         )
         #expect(throws: (any Error).self) {
             _ = try SoundFontNotePlayer(library: badLibrary, userSettings: MockUserSettings())

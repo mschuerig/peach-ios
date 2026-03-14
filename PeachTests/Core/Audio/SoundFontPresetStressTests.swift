@@ -28,7 +28,7 @@ struct SoundFontPresetStressTests {
 
     // MARK: - Factory
 
-    private static let testLibrary = SoundFontLibrary(sf2URL: sf2URL, defaultPreset: "sf2:8:80")
+    private static let testLibrary = SoundFontLibrary(sf2URL: sf2URL, defaultPreset: "sf2:0:0")
 
     private func makeLibrary() -> SoundFontLibrary {
         Self.testLibrary
