@@ -338,3 +338,10 @@ development_status:
   epic-42: in-progress
   42-1-extend-download-script-for-multiple-soundfont-sources: done
   42-2-clean-up-soundfontlibrary-and-soundfontnoteplayer-defaults: review
+
+  # Epic 43: Share Your Progress — Sharing
+  epic-43: in-progress
+  43-1-make-csv-export-data-transferable: ready-for-dev
+  43-2-replace-file-exporter-with-sharelink-in-settings: backlog
+  43-3-render-progress-chart-as-shareable-image: backlog
+  43-4-add-share-button-to-progress-chart-cards: backlog
