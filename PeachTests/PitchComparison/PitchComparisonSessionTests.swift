@@ -290,6 +290,52 @@ struct PitchComparisonSessionTests {
         f.session.stop()
     }
 
+    // MARK: - Note Gap Tests
+
+    @Test("plays notes without gap when noteGap is zero")
+    func playsNotesWithoutGap() async throws {
+        let f = makePitchComparisonSession()
+
+        f.session.start(settings: defaultTestSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        #expect(f.mockPlayer.playCallCount == 2)
+    }
+
+    @Test("plays both notes with positive noteGap and reaches awaitingAnswer")
+    func playsBothNotesWithPositiveGap() async throws {
+        let f = makePitchComparisonSession()
+
+        var gapSettings = defaultTestSettings
+        gapSettings.noteGap = .milliseconds(50)
+
+        f.session.start(settings: gapSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        #expect(f.mockPlayer.playCallCount == 2)
+    }
+
+    @Test("stops during note gap aborts comparison")
+    func stopsDuringNoteGapAbortsComparison() async throws {
+        let f = makePitchComparisonSession()
+        f.mockPlayer.instantPlayback = true
+
+        var gapSettings = defaultTestSettings
+        gapSettings.noteGap = .seconds(5)
+
+        f.session.start(settings: gapSettings)
+        await f.mockPlayer.waitForPlay(minCount: 1)
+
+        // Allow session task to proceed past guard into the 5s gap sleep
+        try await Task.sleep(for: .milliseconds(50))
+
+        f.session.stop()
+
+        #expect(f.session.state == .idle)
+        // Only note 1 should have played
+        #expect(f.mockPlayer.playCallCount == 1)
+    }
+
     // MARK: - Tuning System Visibility Tests (Story 30.3)
 
     @Test("sessionTuningSystem is equalTemperament by default")

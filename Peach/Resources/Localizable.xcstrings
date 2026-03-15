@@ -35,11 +35,22 @@
       }
     },
     "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "**Lautstärke variieren** verändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt."
+          }
+        }
+      }
+    },
+    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer – in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Trainingsmodi.\n\n**Pause** fügt eine Stille zwischen den beiden Tönen im Hören & Vergleichen-Training ein. Bei null werden die Töne direkt nacheinander gespielt."
           }
         }
       }
@@ -51,6 +62,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "%.1f Cent"
+          }
+        }
+      }
+    },
+    "%.1f seconds" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%.1f Sekunden"
           }
         }
       }
@@ -1203,6 +1224,27 @@
         }
       }
     },
+    "Note Gap (Hear & Compare): %.1fs" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause (Hören & Vergleichen): %.1fs"
+          }
+        }
+      }
+    },
+    "Note Gap: %.1fs" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pause: %.1fs"
+          }
+        }
+      }
+    },
     "Note Range" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1295,6 +1337,16 @@
         }
       }
     },
+    "Piano sounds from [FluidR3_GM by Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT License). All other sounds from [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php)." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pianoklänge von [FluidR3_GM von Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT-Lizenz). Alle anderen Klänge von [GeneralUser GS von S. Christian Collins](https://schristiancollins.com/generaluser.php)."
+          }
+        }
+      }
+    },
     "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals." : {
       "localizations" : {
         "de" : {
@@ -1311,6 +1363,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tonhöhenregler"
+          }
+        }
+      }
+    },
+    "Pitch Comparison" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tonhöhenvergleich"
           }
         }
       }
@@ -1550,6 +1613,28 @@
         }
       }
     },
+    "Set the pause between the two notes in Hear & Compare training. At zero, notes play back-to-back." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legt die Pause zwischen den beiden Tönen im Hören & Vergleichen-Training fest. Bei null werden die Töne direkt nacheinander gespielt."
+          }
+        }
+      }
+    },
+    "Set the pause between the two notes in pitch comparison training. At zero, notes play back-to-back." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Legt die Pause zwischen den beiden Tönen im Tonhöhenvergleich fest. Bei null werden die Töne direkt nacheinander gespielt."
+          }
+        }
+      }
+    },
     "Settings" : {
       "localizations" : {
         "de" : {
@@ -1586,16 +1671,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Klang"
-          }
-        }
-      }
-    },
-    "Piano sounds from [FluidR3_GM by Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT License). All other sounds from [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php)." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pianoklänge von [FluidR3_GM von Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT-Lizenz). Alle anderen Klänge von [GeneralUser GS von S. Christian Collins](https://schristiancollins.com/generaluser.php)."
           }
         }
       }
@@ -2119,6 +2194,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lautstärke variieren"
+          }
+        }
+      }
+    },
+    "Vary Loudness (All Modes)" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lautstärke variieren (Alle Modi)"
           }
         }
       }

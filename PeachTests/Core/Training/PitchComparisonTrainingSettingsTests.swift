@@ -21,6 +21,7 @@ struct PitchComparisonTrainingSettingsTests {
         #expect(settings.maxCentDifference == Cents(100.0))
         #expect(settings.maxLoudnessOffsetDB == AmplitudeDB(10.0))
         #expect(settings.velocity == MIDIVelocity(63))
+        #expect(settings.noteGap == .zero)
         #expect(settings.feedbackDuration == .milliseconds(400))
     }
 
@@ -32,6 +33,7 @@ struct PitchComparisonTrainingSettingsTests {
         mockSettings.noteDuration = NoteDuration(1.5)
         mockSettings.varyLoudness = UnitInterval(0.7)
         mockSettings.tuningSystem = .justIntonation
+        mockSettings.noteGap = .seconds(1.5)
 
         let intervals: Set<DirectedInterval> = [.up(.perfectFifth)]
         let settings = PitchComparisonTrainingSettings.from(mockSettings, intervals: intervals)
@@ -43,6 +45,7 @@ struct PitchComparisonTrainingSettingsTests {
         #expect(settings.tuningSystem == .justIntonation)
         #expect(settings.noteDuration == NoteDuration(1.5))
         #expect(settings.varyLoudness == UnitInterval(0.7))
+        #expect(settings.noteGap == .seconds(1.5))
     }
 
     @Test("from(userSettings) keeps constant defaults")

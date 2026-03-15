@@ -26,6 +26,9 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.tuningSystem)
     private var tuningSystemIdentifier: String = SettingsKeys.defaultTuningSystem
 
+    @AppStorage(SettingsKeys.noteGap)
+    private var noteGap: Double = SettingsKeys.defaultNoteGap
+
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.soundPreviewPlay) private var soundPreviewPlay
@@ -66,7 +69,7 @@ struct SettingsScreen: View {
         ),
         HelpSection(
             title: String(localized: "Difficulty"),
-            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.")
+            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back.")
         ),
         HelpSection(
             title: String(localized: "Data"),
@@ -218,6 +221,7 @@ struct SettingsScreen: View {
                 in: 0.3...3.0,
                 step: 0.1
             )
+            .accessibilityValue(Text("\(noteDuration, specifier: "%.1f") seconds"))
             Stepper(
                 "Concert Pitch: \(Int(referencePitch)) Hz",
                 value: $referencePitch,
@@ -245,7 +249,7 @@ struct SettingsScreen: View {
     private var difficultySection: some View {
         Section(String(localized: "Difficulty")) {
             VStack(alignment: .leading) {
-                Text("Vary Loudness")
+                Text("Vary Loudness (All Modes)")
                 Slider(value: $varyLoudness, in: 0...1) {
                     Text("Vary Loudness")
                 } minimumValueLabel: {
@@ -254,6 +258,13 @@ struct SettingsScreen: View {
                     Text("Max")
                 }
             }
+            Stepper(
+                "Note Gap (Hear & Compare): \(noteGap, specifier: "%.1f")s",
+                value: $noteGap,
+                in: 0.0...5.0,
+                step: 0.1
+            )
+            .accessibilityValue(Text("\(noteGap, specifier: "%.1f") seconds"))
         }
     }
 

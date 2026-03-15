@@ -24,6 +24,9 @@ final class MockUserSettings: UserSettings {
     var tuningSystem: TuningSystem = .equalTemperament {
         didSet { onSettingsChanged?() }
     }
+    var noteGap: Duration = .seconds(SettingsKeys.defaultNoteGap) {
+        didSet { onSettingsChanged?() }
+    }
 
     // MARK: - Test Control
 
@@ -42,6 +45,7 @@ final class MockUserSettings: UserSettings {
         varyLoudness = UnitInterval(SettingsKeys.defaultVaryLoudness)
         intervals = [DirectedInterval.prime]
         tuningSystem = .equalTemperament
+        noteGap = .seconds(SettingsKeys.defaultNoteGap)
         onSettingsChanged = nil
     }
 }

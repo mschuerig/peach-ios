@@ -34,6 +34,10 @@ final class AppUserSettings: UserSettings {
         return selection.intervals
     }
 
+    var noteGap: Duration {
+        .seconds(UserDefaults.standard.object(forKey: SettingsKeys.noteGap) as? Double ?? SettingsKeys.defaultNoteGap)
+    }
+
     var tuningSystem: TuningSystem {
         guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.tuningSystem),
               let system = TuningSystem(identifier: raw) else {

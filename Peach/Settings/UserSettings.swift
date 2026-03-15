@@ -8,4 +8,5 @@ protocol UserSettings {
     var varyLoudness: UnitInterval { get }
     var intervals: Set<DirectedInterval> { get }
     var tuningSystem: TuningSystem { get }
+    var noteGap: Duration { get }
 }

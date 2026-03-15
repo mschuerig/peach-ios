@@ -11,6 +11,7 @@ struct PitchComparisonTrainingSettings {
     var maxCentDifference: Cents
     var maxLoudnessOffsetDB: AmplitudeDB
     var velocity: MIDIVelocity
+    var noteGap: Duration
     var feedbackDuration: Duration
 
     init(
@@ -24,6 +25,7 @@ struct PitchComparisonTrainingSettings {
         maxCentDifference: Cents = Cents(100.0),
         maxLoudnessOffsetDB: AmplitudeDB = AmplitudeDB(10.0),
         velocity: MIDIVelocity = MIDIVelocity(63),
+        noteGap: Duration = .zero,
         feedbackDuration: Duration = .milliseconds(400)
     ) {
         self.noteRange = noteRange
@@ -36,6 +38,7 @@ struct PitchComparisonTrainingSettings {
         self.maxCentDifference = maxCentDifference
         self.maxLoudnessOffsetDB = maxLoudnessOffsetDB
         self.velocity = velocity
+        self.noteGap = noteGap
         self.feedbackDuration = feedbackDuration
     }
 
@@ -46,7 +49,8 @@ struct PitchComparisonTrainingSettings {
             intervals: intervals,
             tuningSystem: userSettings.tuningSystem,
             noteDuration: userSettings.noteDuration,
-            varyLoudness: userSettings.varyLoudness
+            varyLoudness: userSettings.varyLoudness,
+            noteGap: userSettings.noteGap
         )
     }
 }

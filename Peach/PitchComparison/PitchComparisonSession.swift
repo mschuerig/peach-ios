@@ -200,6 +200,8 @@ final class PitchComparisonSession: TrainingSession {
                 pitchComparison: pitchComparison,
                 amplitudeDB: amplitudeDB
             )
+        } catch is CancellationError {
+            logger.info("Training task cancelled")
         } catch let error as AudioError {
             logger.error("Audio error, stopping training: \(error.localizedDescription)")
             stop()
@@ -234,6 +236,14 @@ final class PitchComparisonSession: TrainingSession {
         guard state != .idle && !Task.isCancelled else {
             logger.info("Training stopped during note 1, aborting comparison")
             return
+        }
+
+        if settings.noteGap > .zero {
+            try await Task.sleep(for: settings.noteGap)
+            guard state != .idle && !Task.isCancelled else {
+                logger.info("Training stopped during note gap, aborting comparison")
+                return
+            }
         }
 
         state = .playingNote2

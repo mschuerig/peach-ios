@@ -87,4 +87,5 @@ private final class PreviewUserSettings: UserSettings {
     let varyLoudness = UnitInterval(0.0)
     let intervals: Set<DirectedInterval> = [.up(.perfectFifth)]
     let tuningSystem: TuningSystem = .equalTemperament
+    let noteGap: Duration = .seconds(SettingsKeys.defaultNoteGap)
 }

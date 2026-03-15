@@ -111,6 +111,33 @@ struct SettingsTests {
         #expect(mock.tuningSystem == .equalTemperament)
     }
 
+    // MARK: - Note Gap Settings
+
+    @Test("noteGap key is defined as string constant")
+    func noteGapKeyDefined() async {
+        #expect(SettingsKeys.noteGap == "noteGap")
+    }
+
+    @Test("defaultNoteGap is zero")
+    func defaultNoteGapIsZero() async {
+        #expect(SettingsKeys.defaultNoteGap == 0.0)
+    }
+
+    @Test("AppUserSettings returns default noteGap when no UserDefaults entry")
+    func appUserSettingsNoteGapDefault() async {
+        UserDefaults.standard.removeObject(forKey: SettingsKeys.noteGap)
+        let settings = AppUserSettings()
+        #expect(settings.noteGap == .zero)
+    }
+
+    @Test("AppUserSettings reads persisted noteGap from UserDefaults")
+    func appUserSettingsReadsPersistedNoteGap() async {
+        defer { UserDefaults.standard.removeObject(forKey: SettingsKeys.noteGap) }
+        UserDefaults.standard.set(2.5, forKey: SettingsKeys.noteGap)
+        let settings = AppUserSettings()
+        #expect(settings.noteGap == .seconds(2.5))
+    }
+
     // MARK: - IntervalSelection Serialization
 
     @Test("IntervalSelection round-trips single interval")
