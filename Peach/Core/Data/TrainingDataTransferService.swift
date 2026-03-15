@@ -7,6 +7,7 @@ final class TrainingDataTransferService {
     private let onDataChanged: () -> Void
 
     private(set) var exportCSV: String?
+    private(set) var exportFileURL: URL?
     private(set) var exportError: Error?
 
     init(
@@ -23,11 +24,30 @@ final class TrainingDataTransferService {
         do {
             let csv = try TrainingDataExporter.export(from: dataStore)
             let emptyExport = CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow
-            exportCSV = csv == emptyExport ? nil : csv
+            if csv == emptyExport {
+                exportCSV = nil
+                exportFileURL = nil
+            } else {
+                exportCSV = csv
+                exportFileURL = writeExportFile(csv)
+            }
             exportError = nil
         } catch {
             exportCSV = nil
+            exportFileURL = nil
             exportError = error
+        }
+    }
+
+    private func writeExportFile(_ csv: String) -> URL? {
+        let fileName = CSVDocument.exportFileName()
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        guard let data = csv.data(using: .utf8) else { return nil }
+        do {
+            try data.write(to: url)
+            return url
+        } catch {
+            return nil
         }
     }
 

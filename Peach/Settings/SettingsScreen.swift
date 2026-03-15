@@ -258,9 +258,9 @@ struct SettingsScreen: View {
 
     private var dataSection: some View {
         Section("Data") {
-            if let csvString = transferService.exportCSV {
+            if let url = transferService.exportFileURL {
                 ShareLink(
-                    item: CSVDocument(csvString: csvString),
+                    item: url,
                     preview: SharePreview("Peach Training Data")
                 ) {
                     Label("Export Training Data", systemImage: "square.and.arrow.up")

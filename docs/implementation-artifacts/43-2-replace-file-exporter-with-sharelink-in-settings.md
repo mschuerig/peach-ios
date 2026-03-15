@@ -173,15 +173,24 @@ None — clean implementation with no blockers.
 - Updated `CSVDocumentTests`: removed `conformsToFileDocument` and `readableContentTypes` tests, added `exportDateCapturedAtConstruction` and `exportDateDefaultsToCurrent` tests
 - Removed `import UniformTypeIdentifiers` from `CSVDocumentTests.swift` (no longer needed)
 - `.fileImporter()` and import functionality remain unchanged
-- All 1061 tests pass with no regressions
+- Fixed ShareLink file sharing: `FileRepresentation`+`SentTransferredFile` doesn't preserve filenames in AirDrop (produces "Text-xxx.txt"). Changed to share a temp file `URL` directly — `TrainingDataTransferService.refreshExport()` now writes the CSV to a temp file and exposes `exportFileURL: URL?`, which `SettingsScreen` passes to `ShareLink(item: url)`
+- Added 3 tests for `exportFileURL` in `TrainingDataTransferServiceTests`
+- All 1064 tests pass with no regressions
 
 ### Change Log
 
 - 2026-03-15: Implemented story 43.2 — replaced `.fileExporter()` with `ShareLink`, removed `FileDocument` conformance, stabilized export filename via `exportDate`, cleaned up `refreshExport` environment key
+- 2026-03-15: Fixed ShareLink sharing — switched from `CSVDocument` Transferable to direct file URL sharing to preserve filenames in AirDrop/Numbers
 
 ### File List
 
 - Peach/Settings/SettingsScreen.swift (modified)
+- Peach/Settings/CSVDocument.swift (modified)
+- Peach/Core/Data/TrainingDataTransferService.swift (modified)
+- Peach/App/EnvironmentKeys.swift (modified)
+- Peach/App/PeachApp.swift (modified)
+- PeachTests/Settings/CSVDocumentTests.swift (modified)
+- PeachTests/Core/Data/TrainingDataTransferServiceTests.swift (modified)
 - Peach/Settings/CSVDocument.swift (modified)
 - Peach/App/EnvironmentKeys.swift (modified)
 - Peach/App/PeachApp.swift (modified)

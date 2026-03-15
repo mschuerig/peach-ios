@@ -75,6 +75,36 @@ struct TrainingDataTransferServiceTests {
         #expect(service.exportCSV == nil)
     }
 
+    @Test("refreshExport produces file URL when records exist")
+    func refreshExportProducesFileURL() async throws {
+        let (service, dataStore) = try makeService()
+        try dataStore.save(makeComparison())
+        service.refreshExport()
+        #expect(service.exportFileURL != nil)
+        #expect(service.exportFileURL!.pathExtension == "csv")
+        #expect(FileManager.default.fileExists(atPath: service.exportFileURL!.path()))
+    }
+
+    @Test("refreshExport sets file URL to nil when store is empty")
+    func refreshExportFileURLNilWhenEmpty() async throws {
+        let (service, _) = try makeService()
+        service.refreshExport()
+        #expect(service.exportFileURL == nil)
+    }
+
+    @Test("export file URL contains CSV data matching exportCSV")
+    func exportFileURLContainsCSVData() async throws {
+        let (service, dataStore) = try makeService()
+        try dataStore.save(makeComparison())
+        service.refreshExport()
+        guard let url = service.exportFileURL else {
+            Issue.record("Expected exportFileURL to be set")
+            return
+        }
+        let fileContent = try String(contentsOf: url, encoding: .utf8)
+        #expect(fileContent == service.exportCSV)
+    }
+
     // MARK: - readFileForImport Tests
 
     // Note: readFileForImport requires security-scoped URLs (from fileImporter),
