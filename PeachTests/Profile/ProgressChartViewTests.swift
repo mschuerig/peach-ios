@@ -543,6 +543,16 @@ struct ProgressChartViewTests {
         }
     }
 
+    // MARK: - Share Button Accessibility Labels
+
+    @Test("share accessibility label includes mode display name for all training modes",
+          arguments: TrainingMode.allCases)
+    func shareAccessibilityLabel(mode: TrainingMode) async {
+        let label = String(localized: "Share \(mode.config.displayName) chart")
+        #expect(label.contains(mode.config.displayName))
+        #expect(!label.isEmpty)
+    }
+
     // MARK: - Helpers
 
     private func makeBucketArray(count: Int) -> [TimeBucket] {

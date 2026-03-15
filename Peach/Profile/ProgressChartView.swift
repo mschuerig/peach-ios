@@ -13,6 +13,7 @@ struct ProgressChartView: View {
 
     @State private var scrollPosition: Double = .infinity
     @State private var selectedBucketIndex: Int?
+    @State private var shareImageURL: URL?
 
     private var config: TrainingModeConfig { mode.config }
     private var isIncreaseContrast: Bool { colorSchemeContrast == .increased }
@@ -50,6 +51,12 @@ struct ProgressChartView: View {
             trend: trend,
             unitLabel: config.unitLabel
         ))
+        .task(id: progressTimeline.currentEWMA(for: mode)) {
+            shareImageURL = ChartImageRenderer.render(
+                mode: mode,
+                progressTimeline: progressTimeline
+            )
+        }
     }
 
     // MARK: - Headline Row
@@ -73,6 +80,18 @@ struct ProgressChartView: View {
                 Image(systemName: Self.trendSymbol(trend))
                     .foregroundStyle(Self.trendColor(trend))
                     .accessibilityLabel(Self.trendLabel(trend))
+            }
+
+            if let shareURL = shareImageURL {
+                ShareLink(
+                    item: shareURL,
+                    preview: SharePreview(config.displayName)
+                ) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.body)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityLabel(String(localized: "Share \(config.displayName) chart"))
             }
         }
     }

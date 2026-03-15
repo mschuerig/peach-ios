@@ -1647,6 +1647,16 @@
         }
       }
     },
+    "Share %@ chart" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ Chart teilen"
+          }
+        }
+      }
+    },
     "Single Notes" : {
       "localizations" : {
         "de" : {

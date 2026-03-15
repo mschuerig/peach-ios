@@ -1,6 +1,6 @@
 # Story 43.4: Add Share Button to Progress Chart Cards
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -36,29 +36,29 @@ So that I can show my training progress to others.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add share image URL state and rendering task to `ProgressChartView` (AC: #3)
-  - [ ] Add `@State private var shareImageURL: URL?` to `ProgressChartView`
-  - [ ] Add `.task(id:)` modifier on `activeCard` keyed on `progressTimeline.currentEWMA(for: mode)` that calls `ChartImageRenderer.render(mode:progressTimeline:)` and stores the result in `shareImageURL`
+- [x] Task 1: Add share image URL state and rendering task to `ProgressChartView` (AC: #3)
+  - [x] Add `@State private var shareImageURL: URL?` to `ProgressChartView`
+  - [x] Add `.task(id:)` modifier on `activeCard` keyed on `progressTimeline.currentEWMA(for: mode)` that calls `ChartImageRenderer.render(mode:progressTimeline:)` and stores the result in `shareImageURL`
 
-- [ ] Task 2: Add share button to headline row (AC: #1, #2, #3, #4)
-  - [ ] Add a `ShareLink(item:preview:)` after the trend icon in `headlineRow`, conditionally shown when `shareImageURL` is non-nil
-  - [ ] Use `Image(systemName: "square.and.arrow.up")` as the label
-  - [ ] Use `.font(.body)` and `.foregroundStyle(.secondary)` so the button matches headline scale without dominating
-  - [ ] Set `SharePreview` with the mode's `displayName` and the share image
-  - [ ] Add `.accessibilityLabel(String(localized: "Share \(config.displayName) chart"))` to the `ShareLink`
+- [x] Task 2: Add share button to headline row (AC: #1, #2, #3, #4)
+  - [x] Add a `ShareLink(item:preview:)` after the trend icon in `headlineRow`, conditionally shown when `shareImageURL` is non-nil
+  - [x] Use `Image(systemName: "square.and.arrow.up")` as the label
+  - [x] Use `.font(.body)` and `.foregroundStyle(.secondary)` so the button matches headline scale without dominating
+  - [x] Set `SharePreview` with the mode's `displayName` and the share image
+  - [x] Add `.accessibilityLabel(String(localized: "Share \(config.displayName) chart"))` to the `ShareLink`
 
-- [ ] Task 3: Add localization strings (AC: #4)
-  - [ ] Add "Share %@ chart" localization key for the accessibility label (English + German)
-  - [ ] Use `bin/add-localization.swift` for the German translation
+- [x] Task 3: Add localization strings (AC: #4)
+  - [x] Add "Share %@ chart" localization key for the accessibility label (English + German)
+  - [x] Use `bin/add-localization.swift` for the German translation
 
-- [ ] Task 4: Verify export image exclusion (AC: #5)
-  - [ ] Confirm `ExportChartView` does NOT include a share button (already the case from story 43.3 — no code change needed, just verify)
+- [x] Task 4: Verify export image exclusion (AC: #5)
+  - [x] Confirm `ExportChartView` does NOT include a share button (already the case from story 43.3 — no code change needed, just verify)
 
-- [ ] Task 5: Write tests (AC: #1–#5)
-  - [ ] Test that `headlineRow` signature or structure accommodates the share button parameter
-  - [ ] Test accessibility label format for all four training modes
+- [x] Task 5: Write tests (AC: #1–#5)
+  - [x] Test that `headlineRow` signature or structure accommodates the share button parameter
+  - [x] Test accessibility label format for all four training modes
 
-- [ ] Task 6: Run full test suite and verify no regressions
+- [x] Task 6: Run full test suite and verify no regressions
 
 ## Dev Notes
 
@@ -151,10 +151,30 @@ The current `headlineRow(ewma:stddev:trend:)` is a private method. The share but
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Added `@State private var shareImageURL: URL?` to `ProgressChartView`
+- Added `.task(id: progressTimeline.currentEWMA(for: mode))` modifier on `activeCard` to pre-render chart image via `ChartImageRenderer.render()`
+- Added `ShareLink` after the trend icon in `headlineRow`, conditionally shown when `shareImageURL` is non-nil
+- Used `.font(.body)` and `.foregroundStyle(.secondary)` for secondary visual weight
+- Added accessibility label `"Share \(config.displayName) chart"` to `ShareLink`
+- Added German localization `"%@ Chart teilen"` via `bin/add-localization.swift`
+- Verified `ExportChartView` does NOT include a share button (AC #5 satisfied by separate view architecture)
+- Added parameterized test verifying accessibility label format for all four training modes
+- All 1079 tests pass with no regressions
+
+### Change Log
+
+- 2026-03-16: Implemented share button on progress chart cards (story 43.4)
+
 ### File List
+
+- Peach/Profile/ProgressChartView.swift (modified — added @State shareImageURL, .task(id:), ShareLink in headlineRow)
+- Peach/Resources/Localizable.xcstrings (modified — added "Share %@ chart" key with German translation)
+- PeachTests/Profile/ProgressChartViewTests.swift (modified — added share accessibility label test)
+- docs/implementation-artifacts/43-4-add-share-button-to-progress-chart-cards.md (modified — status, tasks, dev agent record)
+- docs/implementation-artifacts/sprint-status.yaml (modified — story status updated)

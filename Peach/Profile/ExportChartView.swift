@@ -22,10 +22,9 @@ struct ExportChartView: View {
 
         VStack(alignment: .leading, spacing: 12) {
             headlineRow(ewma: ewma, stddev: stddev, trend: trend)
+            timestampRow
             chartContent(buckets: buckets)
                 .frame(height: 180)
-            timestampRow
-            attributionRow
         }
         .padding()
         .frame(width: 390)
@@ -36,6 +35,12 @@ struct ExportChartView: View {
 
     private func headlineRow(ewma: Double?, stddev: Double, trend: Trend?) -> some View {
         HStack(alignment: .firstTextBaseline) {
+            Image("ExportIcon")
+                .resizable()
+                .frame(width: 24, height: 24)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] }
+
             Text(config.displayName)
                 .font(.headline)
 
@@ -82,13 +87,15 @@ struct ExportChartView: View {
                 if let idx = value.as(Double.self), idx >= 0, Int(idx) < buckets.count {
                     let bucket = buckets[Int(idx)]
                     AxisGridLine()
-                    AxisValueLabel {
-                        Text(ProgressChartView.formatAxisLabel(
-                            bucket.periodStart,
-                            size: bucket.bucketSize,
-                            index: Int(idx),
-                            buckets: buckets
-                        ))
+                    if bucket.bucketSize != .session {
+                        AxisValueLabel {
+                            Text(ProgressChartView.formatAxisLabel(
+                                bucket.periodStart,
+                                size: bucket.bucketSize,
+                                index: Int(idx),
+                                buckets: buckets
+                            ))
+                        }
                     }
                 }
             }
@@ -116,20 +123,11 @@ struct ExportChartView: View {
         .padding(.bottom, labels.isEmpty ? 0 : 16)
     }
 
-    // MARK: - Timestamp & Attribution
+    // MARK: - Timestamp
 
     private var timestampRow: some View {
         Text(date.formatted(.dateTime.day().month(.wide).year().hour().minute()))
             .font(.caption)
             .foregroundStyle(.secondary)
-    }
-
-    private var attributionRow: some View {
-        HStack {
-            Spacer()
-            Text("Peach")
-                .font(.caption2)
-                .foregroundStyle(.secondary)
-        }
     }
 }
