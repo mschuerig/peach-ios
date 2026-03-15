@@ -1,3 +1,4 @@
+import CoreTransferable
 import SwiftUI
 import Testing
 import UniformTypeIdentifiers
@@ -13,15 +14,13 @@ struct CSVDocumentTests {
         #expect(doc.csvString == "header\nrow")
     }
 
-    @Test("filename follows peach-training-data-YYYY-MM-DD.csv pattern")
+    @Test("filename follows peach-training-data-YYYY-MM-DD-HHmm.csv pattern")
     func filenamePattern() async {
-        let expectedDate = Date().formatted(
-            .iso8601.year().month().day().dateSeparator(.dash).timeSeparator(.omitted)
-        )
-        let expectedName = "peach-training-data-\(expectedDate).csv"
-
         let name = CSVDocument.exportFileName()
-        #expect(name == expectedName)
+
+        let regex = /peach-training-data-\d{4}-\d{2}-\d{2}-\d{4}\.csv/
+        #expect(name.wholeMatch(of: regex) != nil,
+                "Expected minute-precision filename, got: \(name)")
     }
 
     @Test("readableContentTypes contains commaSeparatedText")
@@ -33,6 +32,12 @@ struct CSVDocumentTests {
     func conformsToFileDocument() async {
         let doc = CSVDocument(csvString: "test")
         let _: any FileDocument = doc
+    }
+
+    @Test("conforms to Transferable protocol")
+    func conformsToTransferable() async {
+        let doc = CSVDocument(csvString: "test")
+        let _: any Transferable = doc
     }
 
     @Test("CSV data round-trips through UTF-8 encoding")

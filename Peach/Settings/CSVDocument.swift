@@ -1,7 +1,8 @@
+import CoreTransferable
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct CSVDocument: FileDocument {
+struct CSVDocument: FileDocument, Transferable {
     static var readableContentTypes: [UTType] { [.commaSeparatedText] }
 
     let csvString: String
@@ -25,10 +26,23 @@ struct CSVDocument: FileDocument {
         return FileWrapper(regularFileWithContents: data)
     }
 
+    nonisolated static var transferRepresentation: some TransferRepresentation {
+        FileRepresentation(exportedContentType: .commaSeparatedText) { document in
+            let fileName = exportFileName()
+            let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+            guard let data = document.csvString.data(using: .utf8) else {
+                throw CocoaError(.fileWriteInapplicableStringEncoding)
+            }
+            try data.write(to: tempURL)
+            return SentTransferredFile(tempURL)
+        }
+    }
+
     static func exportFileName() -> String {
-        let dateString = Date().formatted(
-            .iso8601.year().month().day().dateSeparator(.dash).timeSeparator(.omitted)
-        )
-        return "peach-training-data-\(dateString).csv"
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd-HHmm"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        let timestamp = formatter.string(from: Date())
+        return "peach-training-data-\(timestamp).csv"
     }
 }
