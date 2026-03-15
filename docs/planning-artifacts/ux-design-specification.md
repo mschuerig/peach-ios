@@ -1,12 +1,14 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete', 'v0.3-complete']
-lastStep: 'v0.3-complete'
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete', 'v0.3-complete', 'v0.4-complete']
+lastStep: 'v0.4-complete'
 status: 'complete'
 completedAt: '2026-02-12'
 v02AmendmentStarted: '2026-02-25'
 v02AmendmentCompleted: '2026-02-25'
 v03AmendmentStarted: '2026-02-28'
 v03AmendmentCompleted: '2026-02-28'
+v04AmendmentStarted: '2026-03-15'
+v04AmendmentCompleted: '2026-03-15'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/glossary.md', 'docs/planning-artifacts/architecture.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 documentCounts:
   briefs: 0
@@ -1743,3 +1745,68 @@ The rest of the accessibility story is identical to unison modes — no new acce
 - Verify interval indicator is hidden in unison mode on both training screens
 - Complete an interval pitch comparison session — verify feedback patterns match unison pitch comparison
 - Complete an interval pitch matching session — verify feedback patterns match unison pitch matching
+
+---
+
+## v0.4 Amendment: Sharing
+
+**Context:** The app currently uses `.fileExporter()` for CSV export and `.fileImporter()` for CSV import, accessed from the Settings screen. The Profile Screen displays per-mode progress charts with no sharing capability. This amendment replaces the file exporter with a share sheet for CSV export, and adds chart image sharing to the Profile Screen.
+
+**Design Decisions:**
+
+1. **CSV export switches from `.fileExporter()` to `ShareLink`** — The share sheet includes "Save to Files" (covering iCloud), plus AirDrop, Messages, Mail, and third-party apps. The separate file exporter is redundant. CSV import remains via `.fileImporter()` unchanged.
+
+2. **Chart image sharing via per-chart share button** — Each `ProgressChartView` card gets a share icon in its headline row. Tapping renders the chart as a shareable image including the chart title (mode name, EWMA, stddev, trend) and a localized timestamp.
+
+3. **Filenames include minute-precision timestamps** — `peach-training-data-2026-03-15-1432.csv` for data, `peach-pitch-comparison-2026-03-15-1432.png` for chart images. Training mode name is slugified into the chart filename.
+
+### CSV Sharing — UX Specification
+
+**Settings Screen change:**
+- The existing "Export Training Data" button and `.fileExporter()` modifier are replaced with a `ShareLink` that presents the system share sheet
+- Button label remains "Export Training Data" (the interaction is sharing, but the user's mental model is "export")
+- Disabled state when no training data exists remains unchanged
+- The shared file uses `FileRepresentation` with UTType `.commaSeparatedText` to ensure AirDrop and other targets receive a proper .csv file
+- CSV import via `.fileImporter()` remains unchanged
+
+**User journey:**
+1. User taps "Export Training Data" in Settings
+2. System share sheet appears with a .csv file attachment
+3. User picks a destination (AirDrop, Files, Mail, Messages, etc.)
+4. Done — no intermediate steps, no mode selection
+
+### Chart Image Sharing — UX Specification
+
+**Profile Screen change:**
+- Each `ProgressChartView` headline row gains a share button (SF Symbol `square.and.arrow.up`, trailing position after the trend arrow)
+- The button is sized to match the headline text, not oversized — it's a secondary action
+- Tapping the share button renders the chart card as an image and presents the system share sheet
+
+**Rendered image content:**
+- Chart title row: mode display name, current EWMA value, stddev, trend arrow
+- The full chart visualization (EWMA line, stddev band, session dots, baseline, zone backgrounds)
+- Localized timestamp below the chart: formatted using the user's locale settings (e.g., "15. März 2026, 14:32" in German, "March 15, 2026, 2:32 PM" in English) — using standard `Date.FormatStyle` with locale-aware formatting
+- App attribution: small "Peach" text near the timestamp
+- Background: solid fill matching the card's material background (so the image looks complete outside the app context)
+
+**What the rendered image excludes:**
+- The share button itself
+- Interactive elements (selection indicator, tap targets)
+- Tip views
+- Navigation chrome
+
+**Rendering approach:**
+- SwiftUI `ImageRenderer` to capture the chart card as a raster image
+- The rendered view is a dedicated "export" variant of the chart card that includes the timestamp and attribution (not shown in the live UI) and excludes the share button
+- Resolution: `@2x` or device scale for sharp output
+
+### Sharing — Responsive & Accessibility
+
+- Share buttons receive appropriate accessibility labels: "Share [mode name] chart" / "Export training data"
+- VoiceOver announces the share sheet when it appears (system behavior, no custom work needed)
+- Share button scales with Dynamic Type alongside the headline row
+- No changes to existing accessibility patterns for charts or settings
+
+### Sharing — Emotional Response
+
+Chart sharing taps into the "it's working" moment — the user sees their progress and wants to show someone. The interaction should feel lightweight and natural: one tap to share, no configuration, no "are you sure." The localized timestamp gives the shared image context without the user needing to annotate it. The app attribution is subtle — Peach earns visibility through the user's enthusiasm, not branding.

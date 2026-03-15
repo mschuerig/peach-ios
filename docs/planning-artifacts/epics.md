@@ -1,5 +1,5 @@
 ---
-stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation', 'v0.2-step-01-validate-prerequisites', 'v0.2-step-02-design-epics', 'v0.2-step-03-create-stories', 'v0.2-step-04-final-validation', 'v0.3-step-01-validate-prerequisites', 'v0.3-step-02-design-epics', 'v0.3-step-03-create-stories', 'v0.3-step-04-final-validation', 'v0.4-step-01-validate-prerequisites', 'v0.4-step-02-design-epics', 'v0.4-step-03-create-stories', 'v0.4-step-04-final-validation']
+stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation', 'v0.2-step-01-validate-prerequisites', 'v0.2-step-02-design-epics', 'v0.2-step-03-create-stories', 'v0.2-step-04-final-validation', 'v0.3-step-01-validate-prerequisites', 'v0.3-step-02-design-epics', 'v0.3-step-03-create-stories', 'v0.3-step-04-final-validation', 'v0.4-step-01-validate-prerequisites', 'v0.4-step-02-design-epics', 'v0.4-step-03-create-stories', 'v0.4-step-04-final-validation', 'v0.5-sharing']
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/architecture.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/project-context.md', 'docs/planning-artifacts/research/technical-profile-screen-chart-ux-research-2026-03-11.md']
 ---
 
@@ -416,6 +416,11 @@ Users can access contextual help on the Start Screen, Settings Screen, and Train
 ### Epic 38: See Your Strengths — Perceptual Profile Visualization ✅ Done
 Users see a useful and easily understandable visualization of their perceptual profile that encourages them by showing progress and highlights weak spots where further training would give the most improvement.
 **FRs covered:** FR21 (redesign/enhancement)
+
+### Epic 43: Share Your Progress — Sharing
+Users can share training data via the system share sheet (replacing the file exporter) and share individual progress chart images from the Profile Screen.
+**FRs covered:** None (new feature, replaces Epic 33 export UI approach)
+**Depends on:** Epic 33, Epic 41
 
 ## Epic 1: Remember Every Note — Data Foundation
 
@@ -4237,5 +4242,139 @@ So that the audio code does not depend on a specific SF2's bank structure or har
 - The default preset for the custom SF2 should be configurable — likely String Ensemble (bank 0, program 48) or whatever the custom SF2 uses as a neutral default
 - `MockUserSettings` and test helpers may need updating for the new init signatures
 - No behavioral changes — this is a wiring refactor only
+
+---
+
+## Epic 43: Share Your Progress — Sharing
+
+Users can share training data via the system share sheet (replacing the file exporter) and share individual progress chart images from the Profile Screen.
+
+### Story 43.1: Make CSV Export Data Transferable
+
+As a **developer**,
+I want a `Transferable` type that provides the CSV export as a file with the correct UTType,
+So that `ShareLink` can share a properly typed .csv file that AirDrop and other targets handle correctly.
+
+**Acceptance Criteria:**
+
+**Given** a `Transferable` type for CSV export (e.g., `CSVExportFile` or conformance on an existing type)
+**When** it provides its transfer representation
+**Then** it uses `FileRepresentation` with UTType `.commaSeparatedText`
+**And** the exported file has a `.csv` extension
+
+**Given** the filename
+**When** the file is created
+**Then** it follows the pattern `peach-training-data-YYYY-MM-DD-HHmm.csv` (minute-precision timestamp)
+
+**Given** the file is shared via AirDrop to a Mac
+**When** the Mac receives it
+**Then** the file has a `.csv` extension (not `.txt`)
+
+**Given** the existing `CSVDocument` (`FileDocument` conformance)
+**When** the new `Transferable` type is introduced
+**Then** `CSVDocument` is either adapted to also conform to `Transferable` or replaced, depending on what is cleaner — the `.fileExporter()` usage in `SettingsScreen` will be removed in story 43.2
+
+**Given** unit tests
+**When** they verify the transfer representation
+**Then** the UTType is `.commaSeparatedText` and the filename includes a minute-precision timestamp
+
+### Story 43.2: Replace File Exporter with ShareLink in Settings
+
+As a **musician using Peach**,
+I want to share my training data from the Settings screen via the system share sheet,
+So that I can send it via AirDrop, save to Files, email, or use any other sharing destination.
+
+**Acceptance Criteria:**
+
+**Given** the Settings Screen data section
+**When** it is displayed
+**Then** the "Export Training Data" button is present with its existing icon (`square.and.arrow.up`)
+
+**Given** training data exists
+**When** the user taps "Export Training Data"
+**Then** the system share sheet appears with a .csv file attachment
+**And** the share sheet includes destinations like AirDrop, Files, Messages, Mail
+
+**Given** no training data exists
+**When** the export button is displayed
+**Then** it is disabled (same behavior as current implementation)
+
+**Given** the user selects "Save to Files" in the share sheet
+**When** iCloud Drive is available
+**Then** the user can save the CSV to iCloud (same capability as the current `.fileExporter()`)
+
+**Given** the current `.fileExporter()` modifier on `SettingsScreen`
+**When** this story is implemented
+**Then** the `.fileExporter()` modifier and its associated state (`showExporter`) are removed
+**And** replaced with a `ShareLink` using the `Transferable` type from story 43.1
+
+**Given** the import functionality (`.fileImporter()`)
+**When** the export is changed to `ShareLink`
+**Then** the import is unchanged — `.fileImporter()` remains as-is
+
+**Given** the `TrainingDataTransferService`
+**When** the export path changes to `ShareLink`
+**Then** any state or methods that existed solely to support `.fileExporter()` are cleaned up if no longer needed
+
+### Story 43.3: Render Progress Chart as Shareable Image
+
+As a **developer**,
+I want a view that renders a progress chart card as a static image suitable for sharing,
+So that the chart image rendering is testable and decoupled from the share interaction.
+
+**Acceptance Criteria:**
+
+**Given** a training mode with data
+**When** the export chart view is rendered
+**Then** it includes: the headline row (mode display name, current EWMA value, stddev, trend arrow), the full chart visualization (EWMA line, stddev band, session dots, baseline, zone backgrounds), a localized timestamp, and a small "Peach" attribution text
+
+**Given** the localized timestamp
+**When** rendered in German locale
+**Then** it shows a locale-appropriate format (e.g., "15. März 2026, 14:32")
+**And** in English locale it shows the English format (e.g., "March 15, 2026, 2:32 PM")
+**And** it uses standard `Date.FormatStyle` with locale-aware formatting
+
+**Given** the export chart view
+**When** compared to the live `ProgressChartView`
+**Then** it excludes: the share button, interactive elements (selection indicator, tap gesture), tip views, and navigation chrome
+
+**Given** SwiftUI `ImageRenderer`
+**When** it renders the export chart view
+**Then** it produces a raster image at `@2x` or device scale
+**And** the background is a solid fill (not transparent) so the image looks complete outside the app
+
+**Given** the rendered image filename
+**When** it is generated
+**Then** it follows the pattern `peach-{mode-slug}-{YYYY-MM-DD-HHmm}.png` where the mode slug is derived from the training mode (e.g., `pitch-comparison`, `pitch-matching`, `interval-comparison`, `interval-matching`)
+
+### Story 43.4: Add Share Button to Progress Chart Cards
+
+As a **musician using Peach**,
+I want to share a progress chart image from the Profile Screen,
+So that I can show my training progress to others.
+
+**Acceptance Criteria:**
+
+**Given** a `ProgressChartView` card on the Profile Screen
+**When** it is displayed for a training mode with data
+**Then** a share button (SF Symbol `square.and.arrow.up`) appears in the headline row, trailing after the trend arrow
+
+**Given** the share button
+**When** it is displayed
+**Then** it is sized to match the headline text (not oversized — it's a secondary action)
+**And** it scales with Dynamic Type alongside the headline row
+
+**Given** the user taps the share button
+**When** the chart has data
+**Then** the system share sheet appears with the rendered chart image (from story 43.3)
+**And** the image filename includes the training mode and a minute-precision timestamp
+
+**Given** VoiceOver is active
+**When** the share button is focused
+**Then** VoiceOver reads "Share [mode display name] chart" (e.g., "Share Pitch Comparison chart")
+
+**Given** the share button in the rendered export image
+**When** the chart is rendered for sharing (story 43.3)
+**Then** the share button is not visible in the exported image
 
 ---
