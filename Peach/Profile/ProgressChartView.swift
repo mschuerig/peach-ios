@@ -132,11 +132,11 @@ struct ProgressChartView: View {
         yearLabels: [YearLabel]
     ) -> some View {
         return Chart {
-            zoneBackgrounds(separatorData: separatorData, yDomain: yDomain)
-            zoneDividers(separatorData: separatorData)
-            stddevBand(buckets: buckets)
-            ewmaLine(buckets: buckets)
-            sessionDots(buckets: buckets)
+            Self.zoneBackgrounds(separatorData: separatorData, yDomain: yDomain, isIncreaseContrast: isIncreaseContrast)
+            Self.zoneDividers(separatorData: separatorData, isIncreaseContrast: isIncreaseContrast)
+            Self.stddevBand(buckets: buckets, isIncreaseContrast: isIncreaseContrast)
+            Self.ewmaLine(buckets: buckets)
+            Self.sessionDots(buckets: buckets)
 
             // Layer 6: Baseline
             RuleMark(y: .value("Baseline", config.optimalBaseline.rawValue))
@@ -226,7 +226,7 @@ struct ProgressChartView: View {
 
     // MARK: - Chart Content Layers
 
-    private func zoneBackgrounds(separatorData: ZoneSeparatorData, yDomain: ClosedRange<Double>) -> some ChartContent {
+    static func zoneBackgrounds(separatorData: ZoneSeparatorData, yDomain: ClosedRange<Double>, isIncreaseContrast: Bool) -> some ChartContent {
         ForEach(Array(separatorData.zones.enumerated()), id: \.offset) { _, zone in
             RectangleMark(
                 xStart: .value("ZS", Double(zone.startIndex) - 0.5),
@@ -234,11 +234,11 @@ struct ProgressChartView: View {
                 yStart: .value("Y0", yDomain.lowerBound),
                 yEnd: .value("Y1", yDomain.upperBound)
             )
-            .foregroundStyle(Self.zoneTint(for: zone.bucketSize).opacity(Self.contrastAdjustedOpacity(base: 0.06, increased: 0.12, isIncreaseContrast: isIncreaseContrast)))
+            .foregroundStyle(zoneTint(for: zone.bucketSize).opacity(contrastAdjustedOpacity(base: 0.06, increased: 0.12, isIncreaseContrast: isIncreaseContrast)))
         }
     }
 
-    private func zoneDividers(separatorData: ZoneSeparatorData) -> some ChartContent {
+    static func zoneDividers(separatorData: ZoneSeparatorData, isIncreaseContrast: Bool) -> some ChartContent {
         ForEach(separatorData.dividerIndices, id: \.self) { idx in
             RuleMark(x: .value("Div", Double(idx) - 0.5))
                 .lineStyle(StrokeStyle(lineWidth: 1))
@@ -246,19 +246,19 @@ struct ProgressChartView: View {
         }
     }
 
-    private func stddevBand(buckets: [TimeBucket]) -> some ChartContent {
-        ForEach(Self.lineDataWithSessionBridge(for: buckets), id: \.position) { point in
+    static func stddevBand(buckets: [TimeBucket], isIncreaseContrast: Bool) -> some ChartContent {
+        ForEach(lineDataWithSessionBridge(for: buckets), id: \.position) { point in
             AreaMark(
                 x: .value("Index", point.position),
                 yStart: .value("Low", max(0, point.mean - point.stddev)),
                 yEnd: .value("High", point.mean + point.stddev)
             )
-            .foregroundStyle(.blue.opacity(Self.contrastAdjustedOpacity(base: 0.15, increased: 0.3, isIncreaseContrast: isIncreaseContrast)))
+            .foregroundStyle(.blue.opacity(contrastAdjustedOpacity(base: 0.15, increased: 0.3, isIncreaseContrast: isIncreaseContrast)))
         }
     }
 
-    private func ewmaLine(buckets: [TimeBucket]) -> some ChartContent {
-        ForEach(Self.lineDataWithSessionBridge(for: buckets), id: \.position) { point in
+    static func ewmaLine(buckets: [TimeBucket]) -> some ChartContent {
+        ForEach(lineDataWithSessionBridge(for: buckets), id: \.position) { point in
             LineMark(
                 x: .value("Index", point.position),
                 y: .value("EWMA", point.mean)
@@ -267,7 +267,7 @@ struct ProgressChartView: View {
         }
     }
 
-    private func sessionDots(buckets: [TimeBucket]) -> some ChartContent {
+    static func sessionDots(buckets: [TimeBucket]) -> some ChartContent {
         ForEach(Array(buckets.enumerated()), id: \.element.periodStart) { i, bucket in
             if bucket.bucketSize == .session {
                 PointMark(

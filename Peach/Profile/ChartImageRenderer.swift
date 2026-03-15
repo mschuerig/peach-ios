@@ -1,6 +1,9 @@
 import SwiftUI
+import os
 
 enum ChartImageRenderer {
+
+    private static let logger = Logger(subsystem: "Peach", category: "ChartImageRenderer")
 
     static func render(mode: TrainingMode, progressTimeline: ProgressTimeline, date: Date = Date()) -> URL? {
         let view = ExportChartView(mode: mode, progressTimeline: progressTimeline, date: date)
@@ -15,6 +18,7 @@ enum ChartImageRenderer {
             try pngData.write(to: url)
             return url
         } catch {
+            logger.warning("Failed to write chart image: \(error.localizedDescription)")
             return nil
         }
     }
@@ -23,6 +27,7 @@ enum ChartImageRenderer {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmm"
         formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
         let timestamp = formatter.string(from: date)
         return "peach-\(mode.slug)-\(timestamp).png"
     }

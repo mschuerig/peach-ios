@@ -64,11 +64,11 @@ struct ExportChartView: View {
         let labels = ProgressChartView.yearLabels(for: buckets)
 
         return Chart {
-            zoneBackgrounds(separatorData: separatorData, yDomain: yDomain)
-            zoneDividers(separatorData: separatorData)
-            stddevBand(buckets: buckets)
-            ewmaLine(buckets: buckets)
-            sessionDots(buckets: buckets)
+            ProgressChartView.zoneBackgrounds(separatorData: separatorData, yDomain: yDomain, isIncreaseContrast: false)
+            ProgressChartView.zoneDividers(separatorData: separatorData, isIncreaseContrast: false)
+            ProgressChartView.stddevBand(buckets: buckets, isIncreaseContrast: false)
+            ProgressChartView.ewmaLine(buckets: buckets)
+            ProgressChartView.sessionDots(buckets: buckets)
 
             RuleMark(y: .value("Baseline", config.optimalBaseline.rawValue))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
@@ -114,70 +114,6 @@ struct ExportChartView: View {
             }
         }
         .padding(.bottom, labels.isEmpty ? 0 : 16)
-    }
-
-    // MARK: - Chart Content Layers
-
-    private func zoneBackgrounds(separatorData: ProgressChartView.ZoneSeparatorData, yDomain: ClosedRange<Double>) -> some ChartContent {
-        ForEach(Array(separatorData.zones.enumerated()), id: \.offset) { _, zone in
-            RectangleMark(
-                xStart: .value("ZS", Double(zone.startIndex) - 0.5),
-                xEnd: .value("ZE", Double(zone.endIndex) + 0.5),
-                yStart: .value("Y0", yDomain.lowerBound),
-                yEnd: .value("Y1", yDomain.upperBound)
-            )
-            .foregroundStyle(zoneTint(for: zone.bucketSize).opacity(0.06))
-        }
-    }
-
-    private func zoneDividers(separatorData: ProgressChartView.ZoneSeparatorData) -> some ChartContent {
-        ForEach(separatorData.dividerIndices, id: \.self) { idx in
-            RuleMark(x: .value("Div", Double(idx) - 0.5))
-                .lineStyle(StrokeStyle(lineWidth: 1))
-                .foregroundStyle(.secondary)
-        }
-    }
-
-    private func stddevBand(buckets: [TimeBucket]) -> some ChartContent {
-        ForEach(ProgressChartView.lineDataWithSessionBridge(for: buckets), id: \.position) { point in
-            AreaMark(
-                x: .value("Index", point.position),
-                yStart: .value("Low", max(0, point.mean - point.stddev)),
-                yEnd: .value("High", point.mean + point.stddev)
-            )
-            .foregroundStyle(.blue.opacity(0.15))
-        }
-    }
-
-    private func ewmaLine(buckets: [TimeBucket]) -> some ChartContent {
-        ForEach(ProgressChartView.lineDataWithSessionBridge(for: buckets), id: \.position) { point in
-            LineMark(
-                x: .value("Index", point.position),
-                y: .value("EWMA", point.mean)
-            )
-            .foregroundStyle(.blue)
-        }
-    }
-
-    private func sessionDots(buckets: [TimeBucket]) -> some ChartContent {
-        ForEach(Array(buckets.enumerated()), id: \.element.periodStart) { i, bucket in
-            if bucket.bucketSize == .session {
-                PointMark(
-                    x: .value("Index", Double(i)),
-                    y: .value("Value", bucket.mean)
-                )
-                .foregroundStyle(.blue)
-                .symbolSize(20)
-            }
-        }
-    }
-
-    private func zoneTint(for bucketSize: BucketSize) -> Color {
-        switch bucketSize {
-        case .month: Color(.systemBackground)
-        case .day: Color(.secondarySystemBackground)
-        case .session: Color(.systemBackground)
-        }
     }
 
     // MARK: - Timestamp & Attribution

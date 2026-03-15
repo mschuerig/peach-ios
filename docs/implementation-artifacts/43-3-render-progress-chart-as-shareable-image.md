@@ -1,6 +1,6 @@
 # Story 43.3: Render Progress Chart as Shareable Image
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -233,12 +233,14 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-03-16: Implemented story 43.3 — ExportChartView, ChartImageRenderer, TrainingMode.slug, and comprehensive tests
+- 2026-03-16: Code review — eliminated chart layer duplication (ExportChartView now calls ProgressChartView static methods), added error logging to ChartImageRenderer, made DateFormatter timezone explicit
 
 ### File List
 
 - Peach/Core/Profile/ProgressTimeline.swift (modified — added `TrainingMode.slug`)
 - Peach/Profile/ExportChartView.swift (new)
 - Peach/Profile/ChartImageRenderer.swift (new)
+- Peach/Profile/ProgressChartView.swift (modified — chart layer methods promoted to static for reuse)
 - PeachTests/Core/Profile/TrainingModeTests.swift (new)
 - PeachTests/Profile/ChartImageRendererTests.swift (new)
 - PeachTests/Profile/ExportChartViewTests.swift (new)
