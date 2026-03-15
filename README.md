@@ -2,7 +2,7 @@
 
 Peach is a pitch discrimination ear training app for iOS. It helps musicians improve their ability to detect fine pitch differences through rapid, reflexive two-note comparisons.
 
-**Repository:** https://github.com/mschuerig/peach
+**Repository:** https://github.com/mschuerig/peach-ios
 
 **Author:** Michael Schürig
 
