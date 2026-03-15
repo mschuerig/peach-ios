@@ -125,10 +125,6 @@ struct PeachApp: App {
                     profile.resetAll()
                     transferService.refreshExport()
                 })
-                .environment(\.refreshExport, { [transferService] in
-                    transferService.refreshExport()
-                    return transferService.exportError != nil
-                })
                 .environment(\.prepareImport, { [transferService] url in
                     transferService.readFileForImport(url: url)
                 })

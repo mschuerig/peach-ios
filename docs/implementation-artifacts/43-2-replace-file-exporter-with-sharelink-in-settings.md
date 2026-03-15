@@ -1,6 +1,6 @@
 # Story 43.2: Replace File Exporter with ShareLink in Settings
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -42,33 +42,33 @@ So that I can send it via AirDrop, save to Files, email, or use any other sharin
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Replace export button with `ShareLink` in `SettingsScreen` (AC: #1, #2, #3, #5)
-  - [ ] Remove `@State private var showExporter = false` state variable
-  - [ ] Remove `.fileExporter()` modifier (lines 93-98)
-  - [ ] Replace the export `Button` in `dataSection` with a `ShareLink` that uses `CSVDocument` as the `Transferable` item
-  - [ ] The `ShareLink` label must be `Label("Export Training Data", systemImage: "square.and.arrow.up")` (identical to current button)
-  - [ ] Disable the `ShareLink` when `transferService.exportCSV == nil`
-  - [ ] Keep the `.foregroundStyle` modifier for the disabled appearance
-- [ ] Task 2: Stabilize filename across share-sheet retries (AC: #2)
-  - [ ] Add a stored `exportDate: Date` property to `CSVDocument` (defaulting to `Date()`)
-  - [ ] Update `transferRepresentation` to use `document.exportDate` instead of generating a new date on each call
-  - [ ] This prevents the filename from changing if the user retries or shares to multiple targets
-- [ ] Task 3: Remove `FileDocument` conformance from `CSVDocument` (AC: #5, #7)
-  - [ ] Remove `FileDocument` conformance and all its associated methods (`readableContentTypes`, `init(configuration:)`, `fileWrapper(configuration:)`)
-  - [ ] Remove `import UniformTypeIdentifiers` if no longer needed (check if `Transferable` requires it — `.commaSeparatedText` comes from `UniformTypeIdentifiers`)
-  - [ ] Keep `import UniformTypeIdentifiers` since `UTType.commaSeparatedText` requires it
-- [ ] Task 4: Clean up `SettingsScreen` state and `refreshExport` environment key (AC: #5, #7)
-  - [ ] Remove `@State private var showExportError = false` and the "Export Failed" alert (system share sheet handles errors internally)
-  - [ ] Remove `@Environment(\.refreshExport) private var refreshExport`
-  - [ ] Replace `.onAppear { if refreshExport?() == true { showExportError = true } }` with `.onAppear { transferService.refreshExport() }` — the view already has `transferService` via `@Environment`, so the `refreshExport` closure (which only wraps a single-method call) is redundant
-  - [ ] Remove `@Entry var refreshExport` from `EnvironmentKeys.swift`
-  - [ ] Remove `.environment(\.refreshExport, ...)` wiring in `PeachApp.swift`
-- [ ] Task 6: Update tests (AC: #1–#7)
-  - [ ] Remove `conformsToFileDocument` test from `CSVDocumentTests.swift`
-  - [ ] Update `readableContentTypes` test (this was a `FileDocument` requirement — remove it)
-  - [ ] Add test verifying `exportDate` property is captured at construction time and used in filename
-  - [ ] Verify all existing CSVDocument tests still pass after `FileDocument` removal
-- [ ] Task 7: Run full test suite and verify no regressions
+- [x] Task 1: Replace export button with `ShareLink` in `SettingsScreen` (AC: #1, #2, #3, #5)
+  - [x] Remove `@State private var showExporter = false` state variable
+  - [x] Remove `.fileExporter()` modifier (lines 93-98)
+  - [x] Replace the export `Button` in `dataSection` with a `ShareLink` that uses `CSVDocument` as the `Transferable` item
+  - [x] The `ShareLink` label must be `Label("Export Training Data", systemImage: "square.and.arrow.up")` (identical to current button)
+  - [x] Disable the `ShareLink` when `transferService.exportCSV == nil`
+  - [x] Keep the `.foregroundStyle` modifier for the disabled appearance
+- [x] Task 2: Stabilize filename across share-sheet retries (AC: #2)
+  - [x] Add a stored `exportDate: Date` property to `CSVDocument` (defaulting to `Date()`)
+  - [x] Update `transferRepresentation` to use `document.exportDate` instead of generating a new date on each call
+  - [x] This prevents the filename from changing if the user retries or shares to multiple targets
+- [x] Task 3: Remove `FileDocument` conformance from `CSVDocument` (AC: #5, #7)
+  - [x] Remove `FileDocument` conformance and all its associated methods (`readableContentTypes`, `init(configuration:)`, `fileWrapper(configuration:)`)
+  - [x] Remove `import UniformTypeIdentifiers` if no longer needed (check if `Transferable` requires it — `.commaSeparatedText` comes from `UniformTypeIdentifiers`)
+  - [x] Keep `import UniformTypeIdentifiers` since `UTType.commaSeparatedText` requires it
+- [x] Task 4: Clean up `SettingsScreen` state and `refreshExport` environment key (AC: #5, #7)
+  - [x] Remove `@State private var showExportError = false` and the "Export Failed" alert (system share sheet handles errors internally)
+  - [x] Remove `@Environment(\.refreshExport) private var refreshExport`
+  - [x] Replace `.onAppear { if refreshExport?() == true { showExportError = true } }` with `.onAppear { transferService.refreshExport() }` — the view already has `transferService` via `@Environment`, so the `refreshExport` closure (which only wraps a single-method call) is redundant
+  - [x] Remove `@Entry var refreshExport` from `EnvironmentKeys.swift`
+  - [x] Remove `.environment(\.refreshExport, ...)` wiring in `PeachApp.swift`
+- [x] Task 6: Update tests (AC: #1–#7)
+  - [x] Remove `conformsToFileDocument` test from `CSVDocumentTests.swift`
+  - [x] Update `readableContentTypes` test (this was a `FileDocument` requirement — remove it)
+  - [x] Add test verifying `exportDate` property is captured at construction time and used in filename
+  - [x] Verify all existing CSVDocument tests still pass after `FileDocument` removal
+- [x] Task 7: Run full test suite and verify no regressions
 
 ## Dev Notes
 
@@ -156,10 +156,33 @@ With `ShareLink`, the tap-time refresh is no longer needed — `ShareLink` reads
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no blockers.
+
 ### Completion Notes List
 
+- Replaced `.fileExporter()` + export `Button` with conditional `ShareLink`/disabled `Label` pattern in `SettingsScreen.dataSection`
+- Removed `showExporter`, `showExportError` state variables and "Export Failed" alert from `SettingsScreen`
+- Removed `FileDocument` conformance from `CSVDocument` (kept `Transferable` only), including `readableContentTypes`, `init(configuration:)`, `fileWrapper(configuration:)`
+- Added `exportDate: Date` property to `CSVDocument` with `Date()` default; `transferRepresentation` uses `document.exportDate` for stable filenames across share-sheet retries
+- Removed `refreshExport` environment key: deleted `@Entry` from `EnvironmentKeys.swift`, removed `.environment(\.refreshExport, ...)` wiring from `PeachApp.swift`, replaced `.onAppear` to call `transferService.refreshExport()` directly
+- Removed `@Environment(\.refreshExport)` from `SettingsScreen`
+- Updated `CSVDocumentTests`: removed `conformsToFileDocument` and `readableContentTypes` tests, added `exportDateCapturedAtConstruction` and `exportDateDefaultsToCurrent` tests
+- Removed `import UniformTypeIdentifiers` from `CSVDocumentTests.swift` (no longer needed)
+- `.fileImporter()` and import functionality remain unchanged
+- All 1061 tests pass with no regressions
+
+### Change Log
+
+- 2026-03-15: Implemented story 43.2 — replaced `.fileExporter()` with `ShareLink`, removed `FileDocument` conformance, stabilized export filename via `exportDate`, cleaned up `refreshExport` environment key
+
 ### File List
+
+- Peach/Settings/SettingsScreen.swift (modified)
+- Peach/Settings/CSVDocument.swift (modified)
+- Peach/App/EnvironmentKeys.swift (modified)
+- Peach/App/PeachApp.swift (modified)
+- PeachTests/Settings/CSVDocumentTests.swift (modified)

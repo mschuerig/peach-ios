@@ -33,7 +33,6 @@ struct SettingsScreen: View {
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.soundPreviewPlay) private var soundPreviewPlay
     @Environment(\.soundPreviewStop) private var soundPreviewStop
-    @Environment(\.refreshExport) private var refreshExport
     @Environment(\.prepareImport) private var prepareImport
     @Environment(\.executeImport) private var executeImport
     @Environment(\.trainingDataTransferService) private var transferService
@@ -41,8 +40,6 @@ struct SettingsScreen: View {
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
-    @State private var showExporter = false
-    @State private var showExportError = false
     @State private var previewTask: Task<Void, Never>?
     @State private var showFileImporter = false
     @State private var importParseResult: CSVImportParser.ImportResult?
@@ -89,13 +86,7 @@ struct SettingsScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { settingsToolbar }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
-        .onAppear { if refreshExport?() == true { showExportError = true } }
-        .fileExporter(
-            isPresented: $showExporter,
-            document: transferService.exportCSV.map { CSVDocument(csvString: $0) },
-            contentType: .commaSeparatedText,
-            defaultFilename: CSVDocument.exportFileName()
-        ) { if case .failure = $0 { showExportError = true } }
+        .onAppear { transferService.refreshExport() }
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.commaSeparatedText]
@@ -108,9 +99,6 @@ struct SettingsScreen: View {
         .alert("Reset Failed", isPresented: $showResetError) {
             Button("OK") { }
         } message: { Text("Could not delete training records. Please try again.") }
-        .alert("Export Failed", isPresented: $showExportError) {
-            Button("OK") { }
-        } message: { Text("Could not export training data. Please try again.") }
         .alert("Import Complete", isPresented: $showImportSummary) {
             Button("OK") { }
         } message: { importSummaryMessage }
@@ -270,17 +258,17 @@ struct SettingsScreen: View {
 
     private var dataSection: some View {
         Section("Data") {
-            Button {
-                if refreshExport?() == true {
-                    showExportError = true
-                } else if transferService.exportCSV != nil {
-                    showExporter = true
+            if let csvString = transferService.exportCSV {
+                ShareLink(
+                    item: CSVDocument(csvString: csvString),
+                    preview: SharePreview("Peach Training Data")
+                ) {
+                    Label("Export Training Data", systemImage: "square.and.arrow.up")
                 }
-            } label: {
+            } else {
                 Label("Export Training Data", systemImage: "square.and.arrow.up")
+                    .foregroundStyle(.secondary)
             }
-            .disabled(transferService.exportCSV == nil)
-            .foregroundStyle(transferService.exportCSV == nil ? .secondary : .primary)
 
             Button {
                 showFileImporter = true

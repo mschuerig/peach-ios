@@ -342,6 +342,6 @@ development_status:
   # Epic 43: Share Your Progress — Sharing
   epic-43: in-progress
   43-1-make-csv-export-data-transferable: done
-  43-2-replace-file-exporter-with-sharelink-in-settings: ready-for-dev
+  43-2-replace-file-exporter-with-sharelink-in-settings: review
   43-3-render-progress-chart-as-shareable-image: backlog
   43-4-add-share-button-to-progress-chart-cards: backlog

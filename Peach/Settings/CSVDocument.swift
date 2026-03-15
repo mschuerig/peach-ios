@@ -1,33 +1,18 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct CSVDocument: FileDocument, Transferable {
-    static var readableContentTypes: [UTType] { [.commaSeparatedText] }
-
+struct CSVDocument: Transferable {
     let csvString: String
+    let exportDate: Date
 
-    init(csvString: String) {
+    init(csvString: String, exportDate: Date = Date()) {
         self.csvString = csvString
-    }
-
-    nonisolated init(configuration: ReadConfiguration) throws {
-        guard let data = configuration.file.regularFileContents,
-              let string = String(data: data, encoding: .utf8) else {
-            throw CocoaError(.fileReadCorruptFile)
-        }
-        csvString = string
-    }
-
-    nonisolated func fileWrapper(configuration: WriteConfiguration) throws -> FileWrapper {
-        guard let data = csvString.data(using: .utf8) else {
-            throw CocoaError(.fileWriteInapplicableStringEncoding)
-        }
-        return FileWrapper(regularFileWithContents: data)
+        self.exportDate = exportDate
     }
 
     nonisolated static var transferRepresentation: some TransferRepresentation {
         FileRepresentation(exportedContentType: .commaSeparatedText) { document in
-            let fileName = exportFileName()
+            let fileName = exportFileName(for: document.exportDate)
             let tempURL = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
             guard let data = document.csvString.data(using: .utf8) else {
                 throw CocoaError(.fileWriteInapplicableStringEncoding)
