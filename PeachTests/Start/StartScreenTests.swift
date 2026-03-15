@@ -25,19 +25,19 @@ struct StartScreenTests {
         #expect(mirror.children.count > 0)
     }
 
-    @Test("Comparison Screen can be instantiated with prime intervals")
-    func comparisonScreenCanBeInstantiated() async {
-        _ = PitchComparisonScreen(intervals: [.prime])
+    @Test("Comparison Screen can be instantiated for unison mode")
+    func comparisonScreenCanBeInstantiatedUnison() async {
+        _ = PitchComparisonScreen(isIntervalMode: false)
     }
 
-    @Test("Comparison Screen can be instantiated with perfectFifth intervals")
-    func comparisonScreenCanBeInstantiatedWithPerfectFifth() async {
-        _ = PitchComparisonScreen(intervals: [.up(.perfectFifth)])
+    @Test("Comparison Screen can be instantiated for interval mode")
+    func comparisonScreenCanBeInstantiatedInterval() async {
+        _ = PitchComparisonScreen(isIntervalMode: true)
     }
 
-    @Test("Pitch Matching Screen can be instantiated with perfectFifth intervals")
-    func pitchMatchingScreenCanBeInstantiatedWithPerfectFifth() async {
-        _ = PitchMatchingScreen(intervals: [.up(.perfectFifth)])
+    @Test("Pitch Matching Screen can be instantiated for interval mode")
+    func pitchMatchingScreenCanBeInstantiatedInterval() async {
+        _ = PitchMatchingScreen(isIntervalMode: true)
     }
 
     @Test("Settings Screen can be instantiated")
@@ -66,16 +66,16 @@ struct StartScreenTests {
 
     // MARK: - Navigation Destination Tests
 
-    @Test("NavigationDestination enum has comparison case with intervals")
+    @Test("NavigationDestination enum has comparison case with interval mode flag")
     func navigationDestinationHasComparison() async {
-        let destination = NavigationDestination.pitchComparison(intervals: [.prime])
-        #expect(destination == NavigationDestination.pitchComparison(intervals: [.prime]))
+        let destination = NavigationDestination.pitchComparison(isIntervalMode: false)
+        #expect(destination == NavigationDestination.pitchComparison(isIntervalMode: false))
     }
 
-    @Test("NavigationDestination enum has pitchMatching case with intervals")
+    @Test("NavigationDestination enum has pitchMatching case with interval mode flag")
     func navigationDestinationHasPitchMatching() async {
-        let destination = NavigationDestination.pitchMatching(intervals: [.prime])
-        #expect(destination == NavigationDestination.pitchMatching(intervals: [.prime]))
+        let destination = NavigationDestination.pitchMatching(isIntervalMode: false)
+        #expect(destination == NavigationDestination.pitchMatching(isIntervalMode: false))
     }
 
     @Test("NavigationDestination enum has settings case")
@@ -92,34 +92,34 @@ struct StartScreenTests {
 
     @Test("NavigationDestination enum is Hashable")
     func navigationDestinationIsHashable() async {
-        let destination1 = NavigationDestination.pitchComparison(intervals: [.prime])
-        let destination2 = NavigationDestination.pitchComparison(intervals: [.prime])
+        let destination1 = NavigationDestination.pitchComparison(isIntervalMode: false)
+        let destination2 = NavigationDestination.pitchComparison(isIntervalMode: false)
         let destination3 = NavigationDestination.settings
 
         #expect(destination1.hashValue == destination2.hashValue)
         #expect(destination1.hashValue != destination3.hashValue)
     }
 
-    @Test("NavigationDestination comparison cases with different intervals are not equal")
-    func navigationDestinationComparisonDifferentIntervals() async {
-        let unison = NavigationDestination.pitchComparison(intervals: [.prime])
-        let fifth = NavigationDestination.pitchComparison(intervals: [.up(.perfectFifth)])
-        #expect(unison != fifth)
+    @Test("NavigationDestination comparison cases with different modes are not equal")
+    func navigationDestinationComparisonDifferentModes() async {
+        let unison = NavigationDestination.pitchComparison(isIntervalMode: false)
+        let interval = NavigationDestination.pitchComparison(isIntervalMode: true)
+        #expect(unison != interval)
     }
 
-    @Test("NavigationDestination pitchMatching cases with different intervals are not equal")
-    func navigationDestinationPitchMatchingDifferentIntervals() async {
-        let unison = NavigationDestination.pitchMatching(intervals: [.prime])
-        let fifth = NavigationDestination.pitchMatching(intervals: [.up(.perfectFifth)])
-        #expect(unison != fifth)
+    @Test("NavigationDestination pitchMatching cases with different modes are not equal")
+    func navigationDestinationPitchMatchingDifferentModes() async {
+        let unison = NavigationDestination.pitchMatching(isIntervalMode: false)
+        let interval = NavigationDestination.pitchMatching(isIntervalMode: true)
+        #expect(unison != interval)
     }
 
     @Test("NavigationDestination cases are not equal when different")
     func navigationDestinationCasesAreDistinct() async {
-        #expect(NavigationDestination.pitchComparison(intervals: [.prime]) != NavigationDestination.settings)
+        #expect(NavigationDestination.pitchComparison(isIntervalMode: false) != NavigationDestination.settings)
         #expect(NavigationDestination.settings != NavigationDestination.profile)
-        #expect(NavigationDestination.pitchComparison(intervals: [.prime]) != NavigationDestination.profile)
-        #expect(NavigationDestination.pitchComparison(intervals: [.prime]) != NavigationDestination.pitchMatching(intervals: [.prime]))
+        #expect(NavigationDestination.pitchComparison(isIntervalMode: false) != NavigationDestination.profile)
+        #expect(NavigationDestination.pitchComparison(isIntervalMode: false) != NavigationDestination.pitchMatching(isIntervalMode: false))
     }
 
     // MARK: - Info Screen Content Tests
@@ -194,13 +194,10 @@ struct StartScreenTests {
 
     @Test("All navigation destinations can be created")
     func allNavigationDestinationsCanBeCreated() async {
-        // Verify that all destination screens can be instantiated
-        // This ensures the hub-and-spoke pattern has all spokes available
-
-        let comparison = PitchComparisonScreen(intervals: [.prime])
-        let intervalComparison = PitchComparisonScreen(intervals: [.up(.perfectFifth)])
-        let pitchMatching = PitchMatchingScreen(intervals: [.prime])
-        let intervalPitchMatching = PitchMatchingScreen(intervals: [.up(.perfectFifth)])
+        let comparison = PitchComparisonScreen(isIntervalMode: false)
+        let intervalComparison = PitchComparisonScreen(isIntervalMode: true)
+        let pitchMatching = PitchMatchingScreen(isIntervalMode: false)
+        let intervalPitchMatching = PitchMatchingScreen(isIntervalMode: true)
         let settings = SettingsScreen()
         let profile = ProfileScreen()
         let info = InfoScreen()

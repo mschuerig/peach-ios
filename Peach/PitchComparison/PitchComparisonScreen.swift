@@ -2,7 +2,7 @@ import SwiftUI
 import os
 
 struct PitchComparisonScreen: View {
-    let intervals: Set<DirectedInterval>
+    let isIntervalMode: Bool
 
     /// Training session injected via environment
     @Environment(\.pitchComparisonSession) private var pitchComparisonSession
@@ -47,6 +47,10 @@ struct PitchComparisonScreen: View {
         ),
     ]
 
+    private var intervals: Set<DirectedInterval> {
+        isIntervalMode ? userSettings.intervals : [.prime]
+    }
+
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
     }
@@ -75,7 +79,8 @@ struct PitchComparisonScreen: View {
             }
         }
         .onAppear {
-            logger.info("PitchComparisonScreen appeared - starting training")
+            logger.info("PitchComparisonScreen appeared - (re)starting training")
+            pitchComparisonSession.stop()
             pitchComparisonSession.start(settings: .from(userSettings, intervals: intervals))
         }
         .onDisappear {
@@ -260,6 +265,6 @@ struct PitchComparisonScreen: View {
 
 #Preview {
     NavigationStack {
-        PitchComparisonScreen(intervals: [DirectedInterval.prime])
+        PitchComparisonScreen(isIntervalMode: false)
     }
 }

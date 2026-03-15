@@ -2,7 +2,7 @@ import SwiftUI
 import os
 
 struct PitchMatchingScreen: View {
-    let intervals: Set<DirectedInterval>
+    let isIntervalMode: Bool
 
     @Environment(\.pitchMatchingSession) private var pitchMatchingSession
     @Environment(\.userSettings) private var userSettings
@@ -32,6 +32,10 @@ struct PitchMatchingScreen: View {
             body: String(localized: "In interval mode, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it.")
         ),
     ]
+
+    private var intervals: Set<DirectedInterval> {
+        isIntervalMode ? userSettings.intervals : [.prime]
+    }
 
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
@@ -71,7 +75,8 @@ struct PitchMatchingScreen: View {
             }
         }
         .onAppear {
-            logger.info("PitchMatchingScreen appeared - starting pitch matching")
+            logger.info("PitchMatchingScreen appeared - (re)starting pitch matching")
+            pitchMatchingSession.stop()
             pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
         }
         .onDisappear {
@@ -178,6 +183,6 @@ struct PitchMatchingScreen: View {
 
 #Preview {
     NavigationStack {
-        PitchMatchingScreen(intervals: [DirectedInterval.prime])
+        PitchMatchingScreen(isIntervalMode: false)
     }
 }

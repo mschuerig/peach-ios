@@ -4,9 +4,6 @@ struct StartScreen: View {
     @State private var showInfoSheet = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    @AppStorage(SettingsKeys.intervals)
-    private var intervalSelection = IntervalSelection.default
-
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
     }
@@ -69,10 +66,10 @@ struct StartScreen: View {
         }
         .navigationDestination(for: NavigationDestination.self) { destination in
             switch destination {
-            case .pitchComparison(let intervals):
-                PitchComparisonScreen(intervals: intervals)
-            case .pitchMatching(let intervals):
-                PitchMatchingScreen(intervals: intervals)
+            case .pitchComparison(let isIntervalMode):
+                PitchComparisonScreen(isIntervalMode: isIntervalMode)
+            case .pitchMatching(let isIntervalMode):
+                PitchMatchingScreen(isIntervalMode: isIntervalMode)
             case .settings:
                 SettingsScreen()
             case .profile:
@@ -92,12 +89,12 @@ struct StartScreen: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
-            NavigationLink(value: NavigationDestination.pitchComparison(intervals: [.prime])) {
+            NavigationLink(value: NavigationDestination.pitchComparison(isIntervalMode: false)) {
                 trainingCard("Hear & Compare", systemImage: "ear", mode: .unisonPitchComparison)
             }
             .buttonStyle(TrainingCardButtonStyle())
 
-            NavigationLink(value: NavigationDestination.pitchMatching(intervals: [.prime])) {
+            NavigationLink(value: NavigationDestination.pitchMatching(isIntervalMode: false)) {
                 trainingCard("Tune & Match", systemImage: "target", mode: .unisonMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())
@@ -110,12 +107,12 @@ struct StartScreen: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
-            NavigationLink(value: NavigationDestination.pitchComparison(intervals: intervalSelection.intervals)) {
+            NavigationLink(value: NavigationDestination.pitchComparison(isIntervalMode: true)) {
                 trainingCard("Hear & Compare", systemImage: "ear", mode: .intervalPitchComparison)
             }
             .buttonStyle(TrainingCardButtonStyle())
 
-            NavigationLink(value: NavigationDestination.pitchMatching(intervals: intervalSelection.intervals)) {
+            NavigationLink(value: NavigationDestination.pitchMatching(isIntervalMode: true)) {
                 trainingCard("Tune & Match", systemImage: "target", mode: .intervalMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())

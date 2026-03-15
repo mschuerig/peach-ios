@@ -3,8 +3,8 @@ import Foundation
 /// Defines the possible navigation destinations in the app's hub-and-spoke navigation pattern.
 /// Used by NavigationStack with value-based navigation for type-safe routing.
 enum NavigationDestination: Hashable {
-    case pitchComparison(intervals: Set<DirectedInterval>)
-    case pitchMatching(intervals: Set<DirectedInterval>)
+    case pitchComparison(isIntervalMode: Bool)
+    case pitchMatching(isIntervalMode: Bool)
     case settings
     case profile
 }
