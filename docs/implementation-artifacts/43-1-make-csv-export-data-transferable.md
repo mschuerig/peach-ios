@@ -1,6 +1,6 @@
 # Story 43.1: Make CSV Export Data Transferable
 
-Status: review
+Status: done
 
 ## Story
 
@@ -137,9 +137,18 @@ No issues encountered.
 - Updated `filenamePattern` test to validate minute-precision regex pattern
 - All 1060 tests pass, no regressions
 
+**Code Review Fixes (2026-03-15):**
+- Removed redundant `import CoreTransferable` from source and test files (SwiftUI re-exports it)
+- Made `exportFileName(for:)` accept injectable `Date` parameter for deterministic testing
+- Replaced regex-based filename test with exact assertion using injected date
+- Added `.csv` extension test to validate Transferable file type preservation
+- Removed force unwrap in `csvDataRoundTrips` test
+- All 1061 tests pass, no regressions
+
 ### Change Log
 
 - 2026-03-15: Implemented story 43.1 — Transferable conformance + minute-precision filename
+- 2026-03-15: Code review fixes — removed redundant imports, injectable date for testing, additional test coverage
 
 ### File List
 

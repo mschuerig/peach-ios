@@ -4278,6 +4278,8 @@ So that `ShareLink` can share a properly typed .csv file that AirDrop and other 
 **When** they verify the transfer representation
 **Then** the UTType is `.commaSeparatedText` and the filename includes a minute-precision timestamp
 
+**Design Note (from 43.1 code review):** `CSVDocument.transferRepresentation` calls `exportFileName()` at transfer time, generating a new timestamp on each invocation. When story 43.2 wires up `ShareLink`, consider capturing the export date when the `CSVDocument` is constructed (e.g., a stored `exportDate: Date` property) so the filename remains stable across share-sheet retries and multiple share targets.
+
 ### Story 43.2: Replace File Exporter with ShareLink in Settings
 
 As a **musician using Peach**,

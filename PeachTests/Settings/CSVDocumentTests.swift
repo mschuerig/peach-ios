@@ -1,4 +1,3 @@
-import CoreTransferable
 import SwiftUI
 import Testing
 import UniformTypeIdentifiers
@@ -16,11 +15,10 @@ struct CSVDocumentTests {
 
     @Test("filename follows peach-training-data-YYYY-MM-DD-HHmm.csv pattern")
     func filenamePattern() async {
-        let name = CSVDocument.exportFileName()
+        let date = createDate(year: 2026, month: 3, day: 15, hour: 14, minute: 32)
+        let name = CSVDocument.exportFileName(for: date)
 
-        let regex = /peach-training-data-\d{4}-\d{2}-\d{2}-\d{4}\.csv/
-        #expect(name.wholeMatch(of: regex) != nil,
-                "Expected minute-precision filename, got: \(name)")
+        #expect(name == "peach-training-data-2026-03-15-1432.csv")
     }
 
     @Test("readableContentTypes contains commaSeparatedText")
@@ -40,14 +38,31 @@ struct CSVDocumentTests {
         let _: any Transferable = doc
     }
 
+    @Test("export filename has .csv extension for Transferable file type preservation")
+    func exportFileNameHasCSVExtension() async {
+        let name = CSVDocument.exportFileName()
+        #expect(name.hasSuffix(".csv"))
+    }
+
     @Test("CSV data round-trips through UTF-8 encoding")
     func csvDataRoundTrips() async {
         let csvString = "col1,col2\nval1,val2\nval3,val4"
         let doc = CSVDocument(csvString: csvString)
 
-        let data = doc.csvString.data(using: .utf8)!
-        let restored = String(data: data, encoding: .utf8)
+        let data = doc.csvString.data(using: .utf8)
 
+        #expect(data != nil)
+        let restored = data.flatMap { String(data: $0, encoding: .utf8) }
         #expect(restored == csvString)
+    }
+
+    private func createDate(year: Int, month: Int, day: Int, hour: Int, minute: Int) -> Date {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = day
+        components.hour = hour
+        components.minute = minute
+        return Calendar(identifier: .gregorian).date(from: components)!
     }
 }
