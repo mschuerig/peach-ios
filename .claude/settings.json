@@ -1,5 +1,45 @@
 {
   "env": {
     "ENABLE_LSP_TOOL": "1"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "filesystem": {
+      "allowWrite": [
+        "~/Library/Developer/Xcode/DerivedData",
+        "//tmp"
+      ],
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.gnupg"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.apple.com",
+        "*.swift.org"
+      ]
+    }
+  },
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:gist.github.com)",
+      "WebFetch(domain:www.swift.org)",
+      "WebFetch(domain:forums.swift.org)",
+      "WebFetch(domain:www.hackingwithswift.com)",
+      "WebFetch(domain:swiftwithmajid.com)",
+      "WebFetch(domain:www.createwithswift.com)",
+      "WebFetch(domain:halfnotelabs.com)",
+      "WebFetch(domain:creativecommons.org)",
+      "WebFetch(domain:archive.org)",
+      "WebFetch(domain:asciiwwdc.com)",
+      "WebFetch(domain:openradar.appspot.com)",
+      "WebFetch(domain:www.polyphone.io)"
+    ]
   }
 }
