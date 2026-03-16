@@ -38,3 +38,4 @@ The `TrainingSession` protocol unifies both training modes. `PitchComparisonSess
 - **AI-assisted development workflow:** Features are specified as tech specs (implementation artifacts). AI agents implement against the architecture document and project conventions.
 - **Test-first, always:** Every feature begins with tests. The `bin/test.sh` script is the primary feedback loop.
 - **Lean documentation:** Architecture docs describe decisions and rationale. Code is the authoritative source for implementation details.
+- **Sharing via iOS share sheet:** Users can share training data (CSV) and progress chart snapshots (PNG) through native `ShareLink` integration. No custom sharing infrastructure.

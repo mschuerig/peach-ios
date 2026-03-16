@@ -9,7 +9,7 @@ graph TB
             App["Peach.app<br><i>Single process</i>"]
             DB["Application Support/<br>default.store<br><i>SwiftData (SQLite)</i>"]
             Defaults["UserDefaults<br><i>Settings plist</i>"]
-            SF2["Bundle Resources/<br>GeneralUser GS.sf2<br><i>SoundFont library</i>"]
+            SF2["Bundle Resources/<br>Samples.sf2<br><i>SoundFont library</i>"]
         end
 
         subgraph "iOS System"
@@ -37,7 +37,7 @@ graph TB
 | **Peach.app** | Single iOS application binary. No extensions, no widgets, no background processes. |
 | **SwiftData store** | SQLite database in the app's Application Support directory. Contains `PitchComparisonRecord` and `PitchMatchingRecord` tables. Automatically created on first launch. |
 | **UserDefaults** | Standard preferences plist. Stores all user settings (note range, duration, reference pitch, sound source, intervals, tuning system, loudness variation). |
-| **GeneralUser GS.sf2** | SoundFont file bundled in the app. ~30 MB. Contains instrument presets parsed at startup by `SoundFontLibrary`. |
+| **Samples.sf2** | Custom SoundFont file bundled in the app. Assembled from FluidR3_GM (piano) and GeneralUser GS (other instruments). Contains instrument presets parsed at startup by `SoundFontLibrary`. |
 | **Distribution** | App Store or TestFlight. Standard iOS distribution. No CI/CD pipeline for MVP. |
 
 There is no staging environment, no development server, and no cloud infrastructure.

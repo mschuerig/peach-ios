@@ -55,13 +55,13 @@ graph TB
 | **Start/** | Home screen with four training entry points (Pitch Comparison, Pitch Matching, Interval Pitch Comparison, Interval Pitch Matching), profile preview sparkline, and navigation to Settings/Profile/Info. |
 | **PitchComparison/** | Pitch comparison training UI: Higher/Lower buttons, feedback indicator, difficulty display. Reads `PitchComparisonSession` from environment. |
 | **PitchMatching/** | Pitch matching UI: vertical pitch slider, feedback indicator. Reads `PitchMatchingSession` from environment. |
-| **Profile/** | Perceptual profile visualization: progress chart with EWMA-smoothed accuracy over time (Swift Charts), per-note piano keyboard heatmap, summary statistics with trend indicators. |
-| **Settings/** | Configuration interface: interval selector, note range, duration, reference pitch, loudness variation, tuning system, sound source picker, reset button. All backed by `@AppStorage`. |
+| **Profile/** | Perceptual profile visualization: progress charts with EWMA-smoothed accuracy over time (Swift Charts, multi-granularity zones), summary statistics with trend indicators, contextual help via TipKit, and chart image sharing via ShareLink. |
+| **Settings/** | Configuration interface: interval selector, note range, duration, reference pitch, loudness variation, tuning system, sound source picker, reset button. All backed by `@AppStorage`. Training data export via ShareLink. |
 | **Info/** | Static about screen: app name, developer, copyright, version. |
 | **Core/Audio/** | Audio playback: `NotePlayer` protocol, `SoundFontNotePlayer` (AVAudioEngine + AVAudioUnitSampler), `PlaybackHandle` for note lifecycle, `SoundFontLibrary` for preset discovery, `AudioSessionInterruptionMonitor`. |
 | **Core/Algorithm/** | Pitch comparison selection: `NextPitchComparisonStrategy` protocol, `KazezNoteStrategy` (psychoacoustic staircase algorithm). |
-| **Core/Data/** | Persistence: `TrainingDataStore` (SwiftData CRUD), `PitchComparisonRecord` and `PitchMatchingRecord` models, `TrainingDataTransferService` (CSV export/import with merge and replace modes). |
-| **Core/Profile/** | User model: `PerceptualProfile` (per-note statistics via Welford's algorithm), `ProgressTimeline` (per-mode EWMA progress tracking with trend analysis), `TrainingModeConfig` (per-mode display and baseline configuration). |
+| **Core/Data/** | Persistence: `TrainingDataStore` (SwiftData CRUD), `PitchComparisonRecord` and `PitchMatchingRecord` models, `TrainingDataTransferService` (CSV export/import with merge and replace modes, versioned format with protocol-based parser dispatch). |
+| **Core/Profile/** | User model: `PerceptualProfile` (per-note statistics via Welford's algorithm), `ProgressTimeline` (per-mode EWMA progress tracking with trend analysis), `TrainingModeConfig` (per-mode display and baseline configuration), `ChartLayoutCalculator` (chart geometry and zone boundaries). |
 | **Core/Training/** | Domain types and session protocols: `PitchComparison`, `CompletedPitchComparison`, `CompletedPitchMatching`, observer protocols, `TrainingSession` protocol, `Resettable`. |
 
 ---
@@ -192,4 +192,4 @@ classDiagram
 
 **PerceptualProfile** is the central user model — a 128-slot array indexed by MIDI note, each holding online statistics via Welford's algorithm. It is never persisted; it is rebuilt from raw training records on every app launch and updated incrementally during training.
 
-**ProgressTimeline** tracks training progress across all four modes independently (unison/interval × comparison/matching). It uses EWMA smoothing with adaptive time bucketing (session → day → week → month granularity) and provides trend analysis (improving / stable / declining).
+**ProgressTimeline** tracks training progress across all four modes independently (unison/interval × comparison/matching). It uses EWMA smoothing with adaptive time bucketing (session → day → month granularity) and provides trend analysis (improving / stable / declining).

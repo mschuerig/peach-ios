@@ -48,13 +48,13 @@ Training data is device-local only. No mechanism to sync across devices or recov
 
 The `PerceptualProfile` is rebuilt from all stored records on every app startup. Currently fast (milliseconds for thousands of records), but performance has not been profiled for very large datasets (tens of thousands of records over months of training). A caching strategy may become necessary.
 
-### TD-3: Data Export/Import Schema Evolution
+### TD-3: ~~Data Export/Import Schema Evolution~~ (Resolved)
 
-`TrainingDataTransferService` exports and imports CSV with a fixed schema. Future model changes (new fields, renamed columns) will require migration logic in the CSV parser to maintain backward compatibility with previously exported files.
+Resolved: CSV export now includes a format version metadata line (`# peach-export-format:1`). Import uses a protocol-based versioned parser dispatch (`CSVVersionedParser`), so new format versions are additive — a new conformance plus registration, no changes to existing parsers.
 
-### TD-4: Progress Chart Drill-Down Disabled
+### TD-4: ~~Progress Chart Drill-Down~~ (Resolved)
 
-`ProgressTimeline` supports drill-down from month → week → day → session granularity, and the infrastructure is built and tested. However, interactive chart expansion is currently gated behind a feature flag (`chartExpansionEnabled = false`) pending UX evaluation.
+Resolved: The chart UX was redesigned (Epic 41) with multi-granularity zones (session → day → month) rendered inline, replacing the interactive drill-down concept.
 
 ### TD-5: PlaybackHandle Relies on Explicit Cleanup
 

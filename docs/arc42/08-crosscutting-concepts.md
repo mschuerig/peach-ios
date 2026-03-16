@@ -95,6 +95,19 @@ The app uses a consistent state management approach throughout:
 
 No `ObservableObject`, no `@Published`, no Combine. The `@Observable` macro (iOS 17+) provides automatic, granular change tracking.
 
+## Contextual User Education (TipKit)
+
+The Profile screen uses Apple's TipKit framework to provide contextual help for chart elements. Tips explain EWMA smoothing, standard deviation bands, baselines, and granularity zones. A help button opens a sheet presenting all chart tips at once.
+
+Tips are managed as a `TipGroup` at the ProfileScreen level, ensuring coordinated display and dismissal. This is the app's only onboarding mechanism — consistent with the "training, not testing" philosophy of minimal friction.
+
+## Sharing
+
+Users can share two kinds of artifacts via the iOS share sheet (`ShareLink`):
+
+- **Training data (CSV)** — exported from the Settings screen. The CSV includes a format version metadata line for forward compatibility.
+- **Progress chart snapshots (PNG)** — exported from each progress chart card. Charts are pre-rendered as @2x images using a dedicated static chart view optimized for image export (no scrolling, fixed layout).
+
 ## Localization
 
-English and German via Xcode String Catalogs (`.xcstrings`). All user-facing strings use SwiftUI's `LocalizedStringKey` through the standard `Text("key")` pattern. The `bin/add-localization.py` script manages translations programmatically.
+English and German via Xcode String Catalogs (`.xcstrings`). All user-facing strings use SwiftUI's `LocalizedStringKey` through the standard `Text("key")` pattern. The `bin/add-localization.swift` script manages translations programmatically.
