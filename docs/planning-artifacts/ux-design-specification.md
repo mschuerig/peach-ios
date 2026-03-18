@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete', 'v0.3-complete', 'v0.4-complete']
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 'v0.2-discovery', 'v0.2-core-experience', 'v0.2-emotional', 'v0.2-journeys', 'v0.2-components', 'v0.2-patterns', 'v0.2-responsive', 'v0.2-complete', 'v0.3-complete', 'sharing-complete', 'v0.4-complete']
 lastStep: 'v0.4-complete'
 status: 'complete'
 completedAt: '2026-02-12'
@@ -7,8 +7,10 @@ v02AmendmentStarted: '2026-02-25'
 v02AmendmentCompleted: '2026-02-25'
 v03AmendmentStarted: '2026-02-28'
 v03AmendmentCompleted: '2026-02-28'
-v04AmendmentStarted: '2026-03-15'
-v04AmendmentCompleted: '2026-03-15'
+sharingAmendmentStarted: '2026-03-15'
+sharingAmendmentCompleted: '2026-03-15'
+v04AmendmentStarted: '2026-03-19'
+v04AmendmentCompleted: '2026-03-19'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/glossary.md', 'docs/planning-artifacts/architecture.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 documentCounts:
   briefs: 0
@@ -1748,7 +1750,7 @@ The rest of the accessibility story is identical to unison modes — no new acce
 
 ---
 
-## v0.4 Amendment: Sharing
+## Amendment: Sharing
 
 **Context:** The app currently uses `.fileExporter()` for CSV export and `.fileImporter()` for CSV import, accessed from the Settings screen. The Profile Screen displays per-mode progress charts with no sharing capability. This amendment replaces the file exporter with a share sheet for CSV export, and adds chart image sharing to the Profile Screen.
 
@@ -1810,3 +1812,496 @@ The rest of the accessibility story is identical to unison modes — no new acce
 ### Sharing — Emotional Response
 
 Chart sharing taps into the "it's working" moment — the user sees their progress and wants to show someone. The interaction should feel lightweight and natural: one tap to share, no configuration, no "are you sure." The localized timestamp gives the shared image context without the user needing to annotate it. The app attribution is subtle — Peach earns visibility through the user's enthusiasm, not branding.
+
+## Rhythm Training — UX Design Amendment (v0.4)
+
+### Project Understanding
+
+Rhythm training introduces two new training modes that extend Peach from pitch perception into temporal perception. The user trains their ability to detect and produce precise rhythmic timing — a complementary musical skill that uses the same "training, not testing" philosophy.
+
+**Rhythm Comparison** (judgment/detection): 4 sixteenth notes play at the user's chosen tempo. The 4th note is offset early or late. The user judges "Early" or "Late." This parallels pitch comparison — binary judgment, adaptive difficulty, reflexive interaction.
+
+**Rhythm Matching** (production/accuracy): 3 sixteenth notes play. The user taps to produce the 4th at the correct moment. This parallels pitch matching — continuous accuracy measurement, no binary correct/incorrect, the user *produces* rather than *judges*.
+
+**Key difference from previous amendments:** Unlike v0.3 (interval training) which reused existing screens with a parameter change, rhythm training requires genuinely new screens, a new visualization component during training (dots), a new profile visualization (spectrogram), and a new domain type for the user-facing unit (`RhythmDeviation`).
+
+### Key Design Decisions
+
+**Non-informative dot visualization as accompaniment.** Dots light up in sequence with each note — purely as visual rhythm accompaniment. They carry no positional encoding, no target zones, no ghost dots, no color coding. The dots are a visual metronome, not a data display. This prevents the user from reading the dots for information and keeps their attention on the sounds.
+
+**Early/Late as horizontal metaphor.** Early and Late buttons are arranged side-by-side (not stacked like Higher/Lower), reinforcing the temporal left-to-right metaphor. Left arrow + "Early", right arrow + "Late".
+
+**Single giant tap target for rhythm matching.** The tap target fills the full button area — the user doesn't need to aim. The button is always enabled; the user can tap at any point during or after the lead-in and receive appropriate feedback showing their timing error.
+
+**Spectrogram for rhythm profile.** The 2D nature of rhythm data (tempo × accuracy over time) requires a new visualization that can't reuse `ProgressChartView`. A spectrogram-style display maps time to X-axis, trained tempos to Y-axis, and accuracy to cell color.
+
+**`RhythmDeviation` as the user-facing unit.** Rhythm accuracy expressed as percentage of one sixteenth note duration. Named to parallel `Cents` — both are normalized deviation units for their respective domains. The computation details (percentage of sixteenth note) live in documentation, not the type name.
+
+**Full parameterization.** All spectrogram parameters (color band count, band thresholds, BPM ranges, cell sizing, time bucket granularity) are configurable. Expect significant fine-tuning.
+
+### Design Challenges Identified
+
+1. **Different sensory domain, same philosophy** — Rhythm training works with *time*, not *frequency*. The interaction feel is more visceral and physical — tapping to a beat vs. judging pitch. The UX must make this feel like a natural extension of the same app, not a bolted-on feature.
+
+2. **Six buttons on the Start Screen** — The v0.3 amendment noted "four buttons is the maximum for this design." Six buttons require a new organizational pattern with explicit section grouping.
+
+3. **Spectrogram is a new visualization paradigm** — Musicians read spectrogram-like displays intuitively, but the interaction pattern (tap-to-detail, VoiceOver summarization) needs careful design to avoid overwhelming the user.
+
+4. **Tap timing is always valid** — Unlike pitch comparison where buttons are disabled during playback, the rhythm matching tap target is always enabled. Tapping during the lead-in produces valid (likely poor) timing data, not an error. This is philosophically correct but requires that the feedback system handles any timing error gracefully.
+
+### Rhythm Training — Core Experience
+
+**Defining Interaction — Rhythm Comparison: "Four clicks. Was the last one early or late?"**
+
+The rhythm comparison loop: 4 sharp clicks play in sequence at the user's chosen tempo. The 4th click is offset early or late by the current difficulty amount. The user taps "Early" or "Late." Feedback appears. The next pattern plays.
+
+The listening task is different from pitch — the user is attending to *timing*, not *frequency*. The perceptual faculty is temporal, not spectral. The interaction is faster and more visceral — the user is reacting to a rhythmic deviation, not analyzing a tonal relationship.
+
+**Defining Interaction — Rhythm Matching: "Three clicks. You are the fourth."**
+
+The rhythm matching loop: 3 clicks play. Silence where the 4th should be. The user taps. The feedback shows how close they were. The next pattern plays.
+
+This is production, not judgment — the user generates the timing rather than evaluating it. The parallel to pitch matching is exact: pitch matching asks "can you produce this pitch?"; rhythm matching asks "can you produce this beat?"
+
+**User Mental Model**
+
+The user's mental model is **rhythmic entrainment** — the same process a musician uses when locking into a groove. The 3 (or 4) clicks establish a pulse. The user's body begins to feel the tempo. The task is to either detect a deviation from that pulse or to produce the next beat in the sequence.
+
+Key mental model shift from pitch training: pitch training works in frequency space (up/down, sharp/flat). Rhythm training works in time space (early/late, before/after). The user is not listening to *what* they hear but *when* they hear it.
+
+**The Rhythm Comparison Loop — Step by Step:**
+
+1. **Pattern plays** — 4 sixteenth notes at the user's configured tempo. The 4th note is offset early or late by the current difficulty. Dots light up in sequence with each note. Early/Late buttons are disabled during playback.
+2. **Pattern finishes** — Early/Late buttons become enabled. The user judges: was the 4th note early or late?
+3. **User taps Early or Late** — Both buttons disable immediately. Result is recorded. Feedback appears.
+4. **Feedback** — Green checkmark (correct) or red cross (incorrect) + current difficulty as `RhythmDeviation` (e.g., "4%") in the summary stat line. Haptic tick on incorrect. Same duration as pitch comparison feedback (~400ms).
+5. **Feedback clears** — Next pattern plays. Return to step 1.
+6. **Leaving** — Same as all training modes. Navigate away, background the app. Incomplete exercises silently discarded.
+
+**The Rhythm Matching Loop — Step by Step:**
+
+1. **Lead-in plays** — 3 sixteenth notes at the user's configured tempo. Dots 1–3 light up in sequence. The tap button is always enabled — the user can tap at any moment.
+2. **Lead-in finishes** — Silence where the 4th note should be. The user taps.
+3. **User taps** — The 4th dot lights up (neutral color). Timing error is measured and recorded. Feedback appears.
+4. **Feedback** — Signed `RhythmDeviation` with directional arrow in the summary stat line: left arrow + "3% early" or right arrow + "8% late." Same arrow direction convention as the Early/Late buttons. Same feedback duration (~400ms).
+5. **Feedback clears** — Next lead-in plays. Return to step 1.
+6. **Leaving** — Same as all training modes.
+
+**Experience Principles (Rhythm-Specific):**
+
+1. **The beat is the teacher** — The repeated clicks establish the pulse. The user's body entrains. The exercise works because rhythm is visceral and embodied — more like dance than analysis.
+2. **Time has direction** — Early is left, late is right. This spatial metaphor is consistent across buttons, arrows, and feedback. The user builds a directional intuition for timing errors.
+3. **Same app, different dimension** — Rhythm training shares the same navigation, feedback timing, interruption handling, and anti-gamification philosophy. The difference is purely in what the user is listening to.
+4. **Always valid** — In rhythm matching, any tap produces valid data. There is no "too early" or "too late" — only timing error. The system measures and reports, never rejects.
+
+### Rhythm Training — Emotional Response
+
+**Primary Emotional Goals:**
+
+1. **Physical engagement** — Rhythm training is more embodied than pitch training. The user feels the beat in their body. The UX must support this physicality — large tap targets, immediate response, no cognitive overhead.
+
+2. **Honest measurement, no judgment** — Rhythm matching produces continuous data (signed timing error), not pass/fail. The same emotional contract as pitch matching: the data is just data. Over time, the numbers get tighter.
+
+3. **Asymmetry as insight** — The user discovers they're better at detecting early deviations than late ones (or vice versa). This asymmetry is actionable musical self-knowledge, presented as neutral data, not as a deficiency.
+
+**Emotional Journey — Rhythm-Specific:**
+
+| Moment | Desired Feeling | Anti-Pattern to Avoid |
+|---|---|---|
+| **First rhythm comparison** | Instant recognition — "this is like pitch comparison but with beats" | Confusion about what "early" and "late" mean |
+| **First correct answer** | Same quiet satisfaction — checkmark, move on | Celebration, streaks |
+| **Feeling the tempo** | Physical entrainment — body starts moving with the clicks | Tempo feels too slow or mechanical |
+| **First rhythm matching tap** | Embodied confidence — "I know when that beat should land" | Anxiety about timing, pressure to be precise |
+| **Seeing "+12% late"** | Neutral curiosity — "I'm consistently late, interesting" | Shame, frustration |
+| **Discovering early/late asymmetry** | Actionable insight — "I hear early better than late" | Feeling broken or unbalanced |
+| **Changing tempo** | Exploration — "let me try faster" | Intimidation by higher tempos |
+
+### Rhythm Training — User Journey Flows
+
+#### Journey 9: Rhythm Comparison
+
+```mermaid
+flowchart TD
+    A[App opens] --> B[Start Screen]
+    B -->|Tap Rhythm Comparison| C[Rhythm Comparison Screen]
+    C --> D[4 notes play - dots light up - buttons disabled]
+    D --> E[Pattern finishes - buttons enabled]
+    E --> F{User taps}
+    F -->|Early or Late| G[Feedback: checkmark/cross + difficulty %]
+    G --> H[Feedback clears]
+    H --> D
+    F -->|Settings button| I[Training stops - Settings Screen]
+    F -->|Profile button| J[Training stops - Profile Screen]
+    I --> B
+    J --> B
+    C -->|App backgrounded| K[Training stops - incomplete exercise discarded]
+    K --> B
+```
+
+#### Journey 10: Rhythm Matching
+
+```mermaid
+flowchart TD
+    A[App opens] --> B[Start Screen]
+    B -->|Tap Rhythm Matching| C[Rhythm Matching Screen]
+    C --> D[3 notes play - dots 1-3 light up]
+    D --> E{User taps}
+    E -->|Tap at any moment| F[4th dot lights up - timing error measured]
+    F --> G[Feedback: arrow + signed % in summary line]
+    G --> H[Feedback clears]
+    H --> D
+    E -->|Settings button| I[Training stops - Settings Screen]
+    E -->|Profile button| J[Training stops - Profile Screen]
+    I --> B
+    J --> B
+    C -->|App backgrounded| K[Training stops - incomplete exercise discarded]
+    K --> B
+```
+
+### Rhythm Training — Component Strategy
+
+#### New Custom Components
+
+##### Rhythm Dot View
+
+**Purpose:** Visual metronome accompaniment during rhythm training. Dots light up in sequence with each note, providing rhythmic visual feedback without conveying information about the exercise.
+
+**Visual Design:**
+- 4 dots in a horizontal row, evenly spaced, centered on screen above the action buttons
+- Dot diameter: ~16pt (visible peripherally, not dominant)
+- Spacing: ~24pt between dots (clearly separate, reads as a group)
+- Uniform size — no size variation
+
+**States:**
+- **Dim** — `.opacity(0.2)`, default/resting state
+- **Lit** — `.opacity(1.0)`, neutral system primary color, active when corresponding note plays
+
+**Animation:**
+- Instant transition from dim to lit when the note plays — no fade-in, matching percussive attack
+- Dims back when next note plays or after the sixteenth note duration elapses
+- Respects Reduce Motion: behavior is already minimal (opacity change only)
+
+**Rhythm Comparison variant:** 4 dots, all light in sequence with the 4 notes.
+
+**Rhythm Matching variant:** 3 dots light with the lead-in notes. 4th dot lights on user tap in the same neutral color.
+
+**Accessibility:** Container marked `.accessibilityHidden(true)`. The audio is the accessibility — VoiceOver users hear the notes directly. The dots add no information beyond what the audio provides.
+
+**Implementation:** SwiftUI view, driven by session state. The dot view observes which note index is currently playing and updates opacity accordingly.
+
+##### Early/Late Buttons
+
+**Purpose:** Binary judgment input for rhythm comparison — was the 4th note early or late?
+
+**Visual Design:**
+- Two buttons side-by-side, each half-width, filling the full vertical space below the dots
+- Combined area equals the space of one pitch comparison button (Higher or Lower)
+- Each button displays a directional arrow (left arrow for Early, right arrow for Late) and text label
+- Same `.borderedProminent` style as pitch comparison buttons
+- Arrow icons: SF Symbols `arrow.left` (Early) and `arrow.right` (Late)
+
+**States:**
+- **Disabled** — during `playingPattern` state. Stock SwiftUI `.disabled()` appearance
+- **Enabled** — during `awaitingAnswer` state. Both buttons active
+- **Pressed** — standard button press feedback, then both disable
+
+**Accessibility:**
+- VoiceOver labels: "Early" and "Late"
+- Standard button accessibility, no custom work needed
+
+##### Rhythm Tap Button
+
+**Purpose:** Single tap target for rhythm matching — user taps to produce the 4th beat.
+
+**Visual Design:**
+- Single full-width button filling the full vertical space below the dots
+- Same total area as the two Early/Late buttons (and same as one pitch comparison button)
+- Label: "Tap" — centered, with an appropriate icon
+- Same `.borderedProminent` style as other training buttons
+
+**States:**
+- **Always enabled** — the user can tap at any moment during or after the lead-in. Every tap produces valid timing data.
+- **Pressed** — standard button press feedback
+
+**Accessibility:**
+- VoiceOver label: "Tap"
+- VoiceOver hint: "Tap at the correct moment to match the rhythm"
+
+##### Spectrogram Profile View
+
+**Purpose:** Display the user's rhythm accuracy across tempos over time as a 2D color-coded grid.
+
+**Visual Design:**
+- X-axis: time progression — same bucketing logic as pitch progress charts (session/day/month by density)
+- Y-axis: tempos the user has actually trained at — no empty rows for unused tempos. Labeled in BPM
+- Cell color: green (precise) → yellow (moderate) → red (erratic)
+- Empty/transparent cells where no training occurred at that tempo in that time period
+- Square cells, sized to fit available width
+
+**Color scale (initial thresholds, parameterized for tuning):**
+
+| Band | RhythmDeviation range | Color |
+|---|---|---|
+| Precise | ≤ 5% | Green (system) |
+| Moderate | 5–15% | Yellow (system) |
+| Erratic | > 15% | Red (system) |
+
+Band count, threshold values, and BPM range are all parameterized — no hardcoded values. Expect significant fine-tuning.
+
+**Tap interaction (FR92):** Tapping a cell shows early/late breakdown for that tempo and time period. Minimal overlay or popover — just the split statistics (early mean/stdDev, late mean/stdDev, sample count).
+
+**Empty cells:** Transparent/no fill. Grid background shows through, making gaps visible without drawing visual attention.
+
+**Accessibility:** One VoiceOver description per time bucket (column), summarizing all tempos in that bucket. Example: "March week 2: 120 BPM precise, 100 BPM moderate, 80 BPM no data." Not per-cell — that would be overwhelming.
+
+**Implementation:** SwiftUI Canvas or Grid with parameterized layout. New component — cannot reuse `ProgressChartView`.
+
+##### Rhythm Profile Card
+
+**Purpose:** Headline card for rhythm training progress on the Profile Screen.
+
+**Visual Design:**
+- Same card structure as existing pitch profile cards
+- Headline: "Rhythm" + EWMA value as `RhythmDeviation` (e.g., "3.2%") + trend arrow (↑ → ↓) + share button
+- Below headline: the spectrogram visualization
+- Share button follows the existing pattern from the Sharing amendment
+
+**Empty state:**
+- Headline shows dashes ("—") for EWMA, no trend arrow
+- Spectrogram area shows placeholder text: "Start rhythm training to build your profile"
+
+#### Modified Components
+
+##### Start Screen — 6 Buttons with Section Labels
+
+**Updated layout (portrait):**
+
+```
+┌──────────────────────────────┐
+│                              │
+│  PITCH                       │
+│  [Pitch Comparison]          │
+│  [Pitch Matching]            │
+│                              │
+│  INTERVALS                   │
+│  [Interval Pitch Comparison] │
+│  [Interval Pitch Matching]   │
+│                              │
+│  RHYTHM                      │
+│  [Rhythm Comparison]         │
+│  [Rhythm Matching]           │
+│                              │
+│  [Profile Preview]           │
+│  [Settings] [Profile] [Info] │
+└──────────────────────────────┘
+```
+
+**Updated layout (landscape) — 3 columns:**
+
+```
+┌──────────────────────────────────────────────────────┐
+│  PITCH              INTERVALS            RHYTHM      │
+│  [Pitch Comp.]      [Int. Pitch Comp.]   [Rhythm C.] │
+│  [Pitch Match.]     [Int. Pitch Match.]  [Rhythm M.] │
+│                                                      │
+│  [Profile Preview]          [Settings] [Profile] [Info] │
+└──────────────────────────────────────────────────────┘
+```
+
+**Design rationale:**
+- Section labels ("Pitch", "Intervals", "Rhythm") group buttons by training domain
+- Portrait preserves the vertical, one-handed, thumb-friendly layout. Scrolling is available if needed on smaller devices
+- Landscape uses 3 columns — one per domain — making efficient use of horizontal space
+- Pitch Comparison retains `.borderedProminent` as the hero action
+- All other training buttons use `.bordered` style
+- Button labels use full PRD-specified names: "Pitch Comparison", "Pitch Matching", "Interval Pitch Comparison", "Interval Pitch Matching", "Rhythm Comparison", "Rhythm Matching"
+
+##### Settings Screen — Tempo Setting
+
+**New section: "Rhythm"**
+
+| Setting | Control | Default | Range |
+|---|---|---|---|
+| Tempo | `Stepper` | 80 BPM | 40–200 BPM, step 1 |
+
+- Placed below existing pitch settings sections
+- Displays current value with "BPM" unit label
+- Same auto-save via `@AppStorage` pattern as all other settings
+- Takes effect on the next rhythm exercise
+
+##### Feedback Line — Rhythm Modes
+
+The existing feedback line (below the headline, showing correctness indicator + summary stat) is reused for both rhythm modes:
+
+| Mode | Correctness indicator | Summary stat |
+|---|---|---|
+| Rhythm Comparison | Green checkmark / red cross | Current difficulty as `RhythmDeviation` (e.g., "4%") |
+| Rhythm Matching | — (no binary correct/incorrect) | Signed `RhythmDeviation` with directional arrow (e.g., "← 3% early" or "→ 8% late") |
+
+This exactly parallels:
+- Pitch comparison: checkmark/cross + current difficulty in cents
+- Pitch matching: directional arrow + signed cents
+
+Haptic feedback on incorrect rhythm comparison answers (same as pitch comparison). No haptic for rhythm matching (same as pitch matching — continuous accuracy, not binary).
+
+### Rhythm Training — UX Consistency Patterns
+
+#### Button Hierarchy — Updated
+
+| Tier | Buttons | Style |
+|---|---|---|
+| Primary | Pitch Comparison | `.borderedProminent` |
+| Secondary (pitch) | Pitch Matching | `.bordered` |
+| Secondary (interval) | Interval Pitch Comparison, Interval Pitch Matching | `.bordered` |
+| Secondary (rhythm) | Rhythm Comparison, Rhythm Matching | `.bordered` |
+
+Settings, Profile, and Info remain tertiary icon-only buttons.
+
+#### Feedback Patterns — Updated
+
+Peach now has three feedback patterns, all displayed in the same summary stat line position:
+
+| Training type | Indicator | Stat | Haptic |
+|---|---|---|---|
+| Pitch Comparison / Rhythm Comparison | Checkmark or cross | Current difficulty (`Cents` or `RhythmDeviation`) | Tick on incorrect |
+| Pitch Matching | — | Arrow + signed `Cents` | None |
+| Rhythm Matching | — | Arrow + signed `RhythmDeviation` | None |
+
+The comparison modes (pitch and rhythm) share the binary correct/incorrect pattern. The matching modes (pitch and rhythm) share the continuous accuracy pattern. Feedback duration (~400ms) is identical across all modes.
+
+#### Navigation Pattern — Extended
+
+```
+Start Screen ──► Pitch Comparison Screen (via Pitch Comparison)
+Start Screen ──► Pitch Comparison Screen with interval (via Interval Pitch Comparison)
+Start Screen ──► Pitch Matching Screen (via Pitch Matching)
+Start Screen ──► Pitch Matching Screen with interval (via Interval Pitch Matching)
+Start Screen ──► Rhythm Comparison Screen (via Rhythm Comparison)
+Start Screen ──► Rhythm Matching Screen (via Rhythm Matching)
+Start Screen ──► Profile Screen ──► Start Screen
+Start Screen ──► Settings Screen ──► Start Screen
+Start Screen ──► Info Screen ──► Start Screen
+All training screens ──► Profile Screen ──► Start Screen
+All training screens ──► Settings Screen ──► Start Screen
+App backgrounded during any training ──► Start Screen
+```
+
+Two new screens (Rhythm Comparison, Rhythm Matching) with direct navigation from Start Screen. Hub-and-spoke, one level deep — no exceptions.
+
+#### Updated Navigation Diagram
+
+```
+                    ┌──────────────────────────────┐
+                    │         Start Screen          │
+                    │                               │
+                    │ PITCH                         │
+                    │  [Pitch Comparison]            │
+                    │  [Pitch Matching]              │
+                    │ INTERVALS                     │
+                    │  [Interval Pitch Comparison]   │
+                    │  [Interval Pitch Matching]     │
+                    │ RHYTHM                        │
+                    │  [Rhythm Comparison]           │
+                    │  [Rhythm Matching]             │
+                    │                               │
+                    │ [Settings] [Profile] [Info]    │
+                    └┬──┬──┬──┬──┬──┬──┬──┬──┬──┬──┘
+                     │  │  │  │  │  │  │  │  │  │
+     Pitch Comp.─────┘  │  │  │  │  │  │  │  │  └──Info
+     Pitch Match.───────┘  │  │  │  │  │  │  └─────Profile
+     Int. Pitch Comp.──────┘  │  │  │  │  └────────Settings
+     Int. Pitch Match.────────┘  │  │  │
+     Rhythm Comp.────────────────┘  │  │
+     Rhythm Match.──────────────────┘  │
+
+┌──────────────────────────┐  ┌──────────────────────────┐
+│ Rhythm Comparison Screen │  │  Rhythm Matching Screen  │
+│                          │  │                          │
+│ [summary] [✓/✗]         │  │ [summary] [arrow+%]     │
+│     ●  ●  ●  ●          │  │     ●  ●  ●  ○          │
+│ ┌──────────┐┌──────────┐│  │ ┌────────────────────┐  │
+│ │ ← Early  ││  Late →  ││  │ │                    │  │
+│ │          ││          ││  │ │        Tap          │  │
+│ │          ││          ││  │ │                    │  │
+│ └──────────┘└──────────┘│  │ └────────────────────┘  │
+│ [Settings] [Profile]    │  │ [Settings] [Profile]    │
+└──────────────────────────┘  └──────────────────────────┘
+
+  All training screens ──► Settings/Profile ──► Start Screen
+  App backgrounded during any training ──► Start Screen
+```
+
+#### Interruption Pattern — No Change
+
+Identical to all existing training modes. Any interruption during rhythm training follows the same rule: stop audio, discard incomplete exercise, leave training screen. No rhythm-specific interruption handling.
+
+#### Empty States — Rhythm-Specific
+
+**Rhythm profile — cold start (no rhythm training data):**
+- Spectrogram area empty, placeholder text: "Start rhythm training to build your profile"
+- Profile card headline shows dashes for EWMA, no trend arrow
+- Same treatment as pitch profile empty states — the absence of data, not an error
+
+**Rhythm training screens — never empty.** The loop starts immediately, same as all training modes.
+
+### Rhythm Training — Responsive & Accessibility
+
+#### Orientation & Device
+
+**Portrait (primary):**
+- Rhythm Comparison: Early/Late buttons side-by-side, full vertical space below dots
+- Rhythm Matching: Tap button full-width, full vertical space below dots
+- Start Screen: vertical stack with section labels, scrollable if needed
+
+**Landscape:**
+- Rhythm Comparison: Early/Late buttons adapt to available space (maintain side-by-side, adjust height)
+- Rhythm Matching: Tap button adapts to available space
+- Start Screen: 3-column layout — Pitch, Intervals, Rhythm columns side-by-side
+- Spectrogram: benefits from extra horizontal space — more time buckets visible without scrolling
+
+**iPad:** Same adaptive layout via size classes. Spectrogram has more room for cells and labels.
+
+#### Accessibility
+
+| Area | Stock SwiftUI (Free) | Custom Implementation Required |
+|---|---|---|
+| Early/Late button labels | Automatic (standard `Button`) | None |
+| Tap button label + hint | Standard `.accessibilityLabel` / `.accessibilityHint` | Hint text: "Tap at the correct moment to match the rhythm" |
+| Feedback line (checkmark/cross + stat) | Same as existing pitch feedback | None — reuses existing accessible pattern |
+| Dot visualization | — | `.accessibilityHidden(true)` — audio is the accessibility |
+| Spectrogram cells | — | Per-column VoiceOver summary (not per-cell) |
+| Spectrogram tap-to-detail | — | VoiceOver activate gesture triggers detail overlay |
+| Rhythm profile card headline | Automatic (standard `Text`) | None |
+| Tempo stepper in Settings | Automatic (`Stepper`) | None |
+| Dynamic Type | Automatic for all text and controls | Spectrogram cell labels scale with type size |
+
+**VoiceOver rhythm training workflow:**
+- Rhythm Comparison: VoiceOver reads "Early" and "Late" buttons. The notes play audibly. The user hears the pattern, activates the appropriate button. Feedback is announced as "Correct, 4 percent" or "Incorrect, 4 percent."
+- Rhythm Matching: VoiceOver reads "Tap" button with hint. The notes play audibly. The user activates the button. Feedback is announced as "3 percent early" or "8 percent late."
+- Dots are hidden from VoiceOver — they add no information beyond the audible notes.
+
+**VoiceOver spectrogram workflow:**
+- Each time bucket (column) has a single VoiceOver element summarizing all tempos: "March week 2: 120 BPM precise, 100 BPM moderate, 80 BPM no data"
+- The user can swipe through columns chronologically
+- Activating a column's VoiceOver element triggers the early/late detail overlay for the most relevant cell in that column
+
+#### Testing — Rhythm Training Additions
+
+- VoiceOver walkthrough of Rhythm Comparison Screen — verify button labels, feedback announcements, dots hidden
+- VoiceOver walkthrough of Rhythm Matching Screen — verify tap button label, hint, feedback announcements
+- VoiceOver walkthrough of spectrogram — verify per-column summaries, tap-to-detail
+- Test Early/Late button layout in portrait and landscape on iPhone and iPad
+- Test Tap button layout in portrait and landscape on iPhone and iPad
+- Test 6-button Start Screen layout in portrait (vertical stack with sections)
+- Test 6-button Start Screen layout in landscape (3-column grid)
+- Test dot visualization with Reduce Motion enabled
+- Test spectrogram with Dynamic Type at accessibility sizes
+- Complete a rhythm comparison session — verify feedback pattern matches pitch comparison
+- Complete a rhythm matching session — verify feedback pattern matches pitch matching
+- Test tempo stepper at boundary values (40 BPM, 200 BPM)
+
+### Rhythm Training — Emotional Response Summary
+
+Rhythm training extends Peach's emotional contract into the temporal domain. The same principles apply: no scores, no judgment, no gamification. The data is neutral. The trend is the story. The user's relationship is with their own improving perception, not with the app's opinion of their performance.
+
+The physical embodiment of rhythm training — feeling the beat, tapping with the body — adds an emotional dimension that pitch training lacks. The UX must support this physicality by being invisible: large targets, instant response, no cognitive overhead. The user should feel the beat, not the interface.
