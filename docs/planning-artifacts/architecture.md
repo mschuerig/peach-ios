@@ -3,7 +3,7 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
 status: 'amended'
 completedAt: '2026-02-12'
-amendedAt: '2026-03-06'
+amendedAt: '2026-03-18'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 workflowType: 'architecture'
 project_name: 'Peach'
@@ -1584,3 +1584,908 @@ Each mode has a `TrainingModeConfig` with independent parameters for:
 | `TrainingModeConfig` | Per-mode configuration for progress tracking: display names, EWMA parameters, baselines |
 | `ProgressTimeline` | Progress tracking across four training modes with EWMA smoothing, adaptive bucketing, and trend analysis. Conforms to both observer protocols |
 | `DirectedInterval` | Value type combining `Interval` + `Direction` (up/down) for settings and session parameterization |
+
+## v0.4 Architecture Amendment — Rhythm Training
+
+*Amended: 2026-03-18*
+
+This amendment extends the architecture to support Rhythm Training (v0.4), which introduces two new training modes — Rhythm Comparison and Rhythm Matching — with a sample-accurate audio scheduling engine, asymmetric early/late difficulty tracking, tempo-indexed profiles, and a spectrogram visualization. It also documents prerequisite refactorings to reorganize domain types and clean up the perceptual profile.
+
+**Input documents for this amendment:**
+- PRD v0.4 additions (FR68–FR104, User Journeys 9–10)
+- Rhythm timing precision NFRs
+- Existing codebase analysis
+
+### Central Design Principles
+
+1. **No overlapping implementations.** One low-level audio engine serves all training modes. Rhythm scheduling and pitch note playback share the same `AVAudioEngine`/`AVAudioUnitSampler` infrastructure.
+2. **Simple things simple, complex things possible.** Pitch training keeps its clean `NotePlayer` interface with immediate MIDI dispatch. Rhythm training gets sample-accurate scheduling via a new `RhythmPlayer` protocol. Both delegate to a shared engine.
+3. **Stable high-level abstractions.** Future training modes add new high-level protocols; existing protocols don't change. The engine grows capabilities without breaking existing clients.
+
+### Prerequisite Refactorings
+
+#### A. Core/Audio/ → Core/Music/ + Core/Audio/ Split
+
+Musical domain value types currently live in `Core/Audio/` alongside audio infrastructure. These are distinct concerns: domain concepts (notes, intervals, frequencies) vs. audio machinery (engines, samplers, playback handles). Split them:
+
+**Moves to `Core/Music/` (domain concepts):**
+
+| File | Type |
+|---|---|
+| `MIDINote.swift` | `MIDINote` |
+| `DetunedMIDINote.swift` | `DetunedMIDINote` |
+| `Frequency.swift` | `Frequency` |
+| `Cents.swift` | `Cents` |
+| `Interval.swift` | `Interval` |
+| `DirectedInterval.swift` | `DirectedInterval` |
+| `Direction.swift` | `Direction` |
+| `TuningSystem.swift` | `TuningSystem` |
+| `MIDIVelocity.swift` | `MIDIVelocity` |
+| `AmplitudeDB.swift` | `AmplitudeDB` |
+| `NoteDuration.swift` | `NoteDuration` |
+| `NoteRange.swift` | `NoteRange` |
+| `SoundSourceID.swift` | `SoundSourceID` |
+
+**New domain types added to `Core/Music/` (see section below):**
+- `TempoBPM.swift`
+- `RhythmOffset.swift`
+- `RhythmDirection.swift`
+
+**Stays in `Core/Audio/` (audio infrastructure):**
+
+| File | Type |
+|---|---|
+| `NotePlayer.swift` | `NotePlayer` protocol |
+| `PlaybackHandle.swift` | `PlaybackHandle` protocol |
+| `SoundFontNotePlayer.swift` | `SoundFontNotePlayer` |
+| `SoundFontPlaybackHandle.swift` | `SoundFontPlaybackHandle` |
+| `SoundFontLibrary.swift` | `SoundFontLibrary` |
+| `SF2PresetParser.swift` | `SF2PresetParser` |
+| `SoundSourceProvider.swift` | `SoundSourceProvider` protocol |
+| `AudioSessionInterruptionMonitor.swift` | `AudioSessionInterruptionMonitor` |
+
+**New audio types added to `Core/Audio/` (see sections below):**
+- `SoundFontEngine.swift`
+- `RhythmPlayer.swift`
+- `RhythmPlaybackHandle.swift`
+- `SoundFontRhythmPlayer.swift`
+- `SoundFontRhythmPlaybackHandle.swift`
+
+**Rename scope:** File moves, Xcode group reorganization, test directory mirroring. No type renames — only file locations change. All import statements within the single-module app are unaffected (no `import` changes needed).
+
+#### B. PerceptualProfile Cleanup
+
+PRD mandates pre-work: remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-mode extension. This must complete before rhythm implementation.
+
+Specific cleanup:
+- Review and remove any unused per-MIDI-note tracking that doesn't serve current pitch training functionality
+- Ensure `PerceptualProfile` has clean extension points for new protocol conformances
+- Normalize internal naming to align with the protocol-first pattern (`PitchComparisonProfile`, `PitchMatchingProfile`, new `RhythmProfile`)
+
+### New Domain Types
+
+#### TempoBPM
+
+```swift
+struct TempoBPM: Hashable, Sendable, Codable, Comparable {
+    let value: Int
+
+    /// Duration of one sixteenth note at this tempo.
+    var sixteenthNoteDuration: Duration {
+        // One beat = 60/value seconds. One sixteenth = beat/4.
+        .seconds(60.0 / (Double(value) * 4.0))
+    }
+}
+```
+
+**Design notes:**
+- `Int` storage — tempos are always whole BPM in the PRD
+- `Comparable` conformance for profile ordering and range validation
+- `sixteenthNoteDuration` computed property used by sessions to build rhythm patterns and by display logic to convert offsets to percentages (FR87)
+- Minimum floor ~60 BPM enforced at the settings/session level, not in the type (FR85)
+- File location: `Core/Music/TempoBPM.swift`
+
+#### RhythmOffset
+
+```swift
+struct RhythmOffset: Hashable, Sendable, Codable, Comparable {
+    /// Signed duration — negative means early, positive means late.
+    let duration: Duration
+
+    var direction: RhythmDirection {
+        if duration < .zero { return .early }
+        if duration > .zero { return .late }
+        return .late // zero offset treated as "on the beat"
+    }
+
+    /// Offset as percentage of one sixteenth note at the given tempo (FR87).
+    func percentageOfSixteenthNote(at tempo: TempoBPM) -> Double
+}
+```
+
+**Design notes:**
+- `Duration` (Swift native) as the underlying representation — sub-millisecond precision without floating-point ambiguity
+- Sign encodes direction (FR99) — no separate early/late field needed
+- `percentageOfSixteenthNote(at:)` is the user-facing display conversion (FR87): `abs(duration / tempo.sixteenthNoteDuration) * 100`
+- `Comparable` based on absolute magnitude for difficulty comparison
+- File location: `Core/Music/RhythmOffset.swift`
+
+#### RhythmDirection
+
+```swift
+enum RhythmDirection: Hashable, Sendable, Codable {
+    case early
+    case late
+}
+```
+
+Derived from `RhythmOffset.direction`. Used by the difficulty model for asymmetric tracking (FR72, FR84).
+
+File location: `Core/Music/RhythmDirection.swift`
+
+### Audio Architecture — Three-Layer Design
+
+#### Layer 1: SoundFontEngine (New — Shared Low-Level Engine)
+
+`SoundFontEngine` is a new internal class that owns the audio hardware and provides MIDI dispatch capabilities. It consolidates ownership that currently lives in `SoundFontNotePlayer`.
+
+**Responsibilities:**
+- Owns `AVAudioEngine`, `AVAudioUnitSampler` (melodic), `AVAudioUnitSampler` (percussion, if needed), and `AVAudioSourceNode` (render-thread clock for rhythm scheduling)
+- Manages audio session configuration (buffer duration, sample rate)
+- Provides **immediate MIDI dispatch** — `startNote`/`stopNote` for pitch training (existing behavior)
+- Provides **scheduled MIDI dispatch** — `scheduleMIDIEventBlock` with sample-accurate offsets for rhythm training, driven by the `AVAudioSourceNode` render callback
+- Manages SoundFont preset loading for both melodic and percussion banks
+- Configures minimum audio buffer duration for timing-critical rhythm playback (FR96)
+
+**Internal architecture:**
+- The `AVAudioSourceNode` render block serves as the master clock on the audio thread
+- Each render cycle, the engine checks its internal schedule for events falling within the current buffer window
+- For each event, it computes the exact sample offset and dispatches via `scheduleMIDIEventBlock` with `AUEventSampleTimeImmediate + offset`
+- The `AVAudioSourceNode` outputs silence — it exists purely for its render-thread callback
+
+**Percussion sound management:**
+- ~5 user-facing percussion sounds (woodblock, metronome click, etc.) per FR95
+- How samples are actually delivered (SF2 percussion bank, separate audio files, synthesized clicks) is an implementation detail — the engine resolves a `SoundSourceID` to whatever mechanism works best with the existing `AVAudioUnitSampler` infrastructure
+- Exposed through the existing `SoundSourceProvider` protocol pattern
+
+**Not a protocol** — `SoundFontEngine` is a concrete internal class. It's the single implementation behind both `SoundFontNotePlayer` and `SoundFontRhythmPlayer`. If a future engine replacement is needed, both players change together.
+
+**File location:** `Core/Audio/SoundFontEngine.swift`
+
+#### Layer 2: SoundFontNotePlayer Refactoring
+
+`SoundFontNotePlayer` is refactored to delegate to `SoundFontEngine` instead of owning `AVAudioEngine` and `AVAudioUnitSampler` directly. Its public interface (`NotePlayer` protocol) is unchanged. It continues to use immediate MIDI dispatch — no render-thread involvement for pitch training.
+
+**Impact on existing code:**
+- `NotePlayer` protocol: unchanged
+- `PlaybackHandle` protocol: unchanged
+- `SoundFontPlaybackHandle`: updated to use engine's immediate dispatch
+- `PitchComparisonSession`, `PitchMatchingSession`: no changes — they depend on `NotePlayer`, not the engine
+
+#### Layer 3: RhythmPlayer Protocol and Implementation
+
+**RhythmPlayer** (new protocol):
+
+```swift
+protocol RhythmPlayer {
+    /// Plays a pre-computed rhythm pattern.
+    /// Returns a handle for cancellation. The handle's internal completion
+    /// can be awaited by the session to know when playback finishes.
+    func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle
+
+    /// Stops all in-progress patterns immediately.
+    func stopAll() async throws
+}
+```
+
+**RhythmPlaybackHandle** (new protocol):
+
+```swift
+protocol RhythmPlaybackHandle {
+    /// Stops this pattern's playback. First call silences audio; subsequent calls are no-ops.
+    func stop() async throws
+}
+```
+
+**Design rationale:**
+- Mirrors `NotePlayer`/`PlaybackHandle` symmetry — sessions use identical patterns for interruption cleanup
+- `play()` is `async throws` — returns after the pattern starts playing; the session `await`s completion or calls `handle.stop()` on interruption
+- `RhythmPattern` is a value type holding pre-computed timed MIDI events with absolute sample offsets from pattern start
+
+**RhythmPattern:**
+
+```swift
+struct RhythmPattern: Sendable {
+    struct Event: Sendable {
+        let sampleOffset: Int64    // absolute offset from pattern start in samples
+        let soundSourceID: SoundSourceID
+        let velocity: MIDIVelocity
+    }
+
+    let events: [Event]
+    let sampleRate: Double
+    let totalDuration: Duration   // total pattern length for completion signaling
+}
+```
+
+**Design notes:**
+- Events use absolute sample offsets from pattern start (per music domain expert recommendation) — no relative deltas, no accumulated rounding errors
+- `sampleRate` included so the pattern is self-contained and verifiable in tests
+- Sessions pre-compute `RhythmPattern` from their domain-level challenge data (`TempoBPM`, `RhythmOffset`, note count) before calling `play()`
+- The `RhythmPlayer` implementation translates pattern events to `scheduleMIDIEventBlock` calls on the render thread
+
+**SoundFontRhythmPlayer** — concrete implementation delegating to `SoundFontEngine`:
+
+```swift
+final class SoundFontRhythmPlayer: RhythmPlayer {
+    private let engine: SoundFontEngine
+
+    func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle
+    func stopAll() async throws
+}
+```
+
+**File locations:**
+- `Core/Audio/RhythmPlayer.swift` — protocol
+- `Core/Audio/RhythmPlaybackHandle.swift` — protocol
+- `Core/Audio/SoundFontRhythmPlayer.swift` — implementation
+- `Core/Audio/SoundFontRhythmPlaybackHandle.swift` — implementation
+
+### Rhythm Sessions
+
+#### RhythmComparisonSession
+
+`@Observable final class` following established session patterns: error boundary, observer injection, environment injection, `RhythmPlaybackHandle`-based interruption cleanup.
+
+**States:**
+
+```swift
+enum RhythmComparisonSessionState {
+    case idle
+    case playingPattern      // 4 sixteenth notes playing, 4th offset early or late
+    case awaitingAnswer      // pattern finished, waiting for "Early"/"Late" tap
+    case showingFeedback     // result recorded, feedback displayed (~400ms)
+}
+```
+
+**State transition flow:**
+
+```
+idle
+  ↓ start()
+playingPattern (await rhythmPlayer.play(pattern))
+  ↓ pattern completes
+awaitingAnswer
+  ↓ user taps "Early" or "Late" → result recorded, observers notified
+showingFeedback (~400ms)
+  ↓ feedback timer expires
+playingPattern (next challenge, loop)
+
+Any state → idle (via stop(), triggered by: navigate away, background, interruption)
+```
+
+**Dependencies:**
+
+```swift
+init(
+    rhythmPlayer: RhythmPlayer,
+    strategy: NextRhythmOffsetStrategy,
+    profile: RhythmProfile,
+    observers: [RhythmComparisonObserver] = [],
+    settingsOverride: TrainingSettings? = nil,
+    notificationCenter: NotificationCenter = .default
+)
+```
+
+**Challenge generation:**
+1. Session calls `strategy.nextRhythmChallenge(profile:settings:lastResult:)` to get a `RhythmChallenge` (tempo + signed offset)
+2. Session builds a `RhythmPattern` from the challenge: 4 events at sixteenth-note intervals, with the 4th event shifted by the offset
+3. Session calls `rhythmPlayer.play(pattern)` and `await`s the handle
+
+**File location:** `RhythmComparison/RhythmComparisonSession.swift`
+
+#### RhythmMatchingSession
+
+`@Observable final class` following the same patterns.
+
+**States:**
+
+```swift
+enum RhythmMatchingSessionState {
+    case idle
+    case playingLeadIn       // 3 sixteenth notes playing
+    case awaitingTap         // lead-in finished, waiting for user tap
+    case showingFeedback     // result recorded, feedback displayed (~400ms)
+}
+```
+
+**State transition flow:**
+
+```
+idle
+  ↓ start()
+playingLeadIn (await rhythmPlayer.play(pattern) — 3 notes only)
+  ↓ pattern completes
+awaitingTap
+  ↓ user taps → measure timing error, result recorded, observers notified
+showingFeedback (~400ms)
+  ↓ feedback timer expires
+playingLeadIn (next challenge, loop)
+
+Any state → idle (via stop(), triggered by: navigate away, background, interruption)
+```
+
+**Tap timing measurement:**
+- Session records tap time using `CACurrentMediaTime()` (microsecond precision)
+- Session knows the expected tap time (pattern end + one sixteenth-note duration)
+- Error = actual tap time - expected tap time → stored as `RhythmOffset`
+- This is a session responsibility — the `RhythmPlayer` is a pure output abstraction
+
+**Challenge generation:**
+- Random note within configured tempo (from `TrainingSettings`)
+- Random offset for the "expected" position is not applicable — the 4th note position is always the mathematically correct beat
+- No strategy protocol for rhythm matching (same as pitch matching in v0.2) — selection is trivial (play 3 notes at the configured tempo)
+
+**File location:** `RhythmMatching/RhythmMatchingSession.swift`
+
+### NextRhythmOffsetStrategy
+
+```swift
+protocol NextRhythmOffsetStrategy {
+    func nextRhythmChallenge(
+        profile: RhythmProfile,
+        settings: TrainingSettings,
+        lastResult: CompletedRhythmComparison?
+    ) -> RhythmChallenge
+}
+```
+
+The strategy decides **both** direction (early/late) and magnitude based on the profile's asymmetric tracking and the last completed result. This mirrors `NextPitchComparisonStrategy` receiving `lastPitchComparison`.
+
+**RhythmChallenge:**
+
+```swift
+struct RhythmChallenge {
+    let tempo: TempoBPM
+    let offset: RhythmOffset   // signed — encodes direction + magnitude
+}
+```
+
+**File locations:**
+- `Core/Algorithm/NextRhythmOffsetStrategy.swift` — protocol
+- `Core/Algorithm/AdaptiveRhythmOffsetStrategy.swift` — initial implementation (name TBD during implementation)
+
+### Observer Protocols
+
+```swift
+protocol RhythmComparisonObserver {
+    func rhythmComparisonCompleted(_ result: CompletedRhythmComparison)
+}
+
+protocol RhythmMatchingObserver {
+    func rhythmMatchingCompleted(_ result: CompletedRhythmMatching)
+}
+```
+
+**Value types:**
+
+```swift
+struct CompletedRhythmComparison {
+    let tempo: TempoBPM
+    let offset: RhythmOffset        // the offset that was presented
+    let isCorrect: Bool
+    let timestamp: Date
+}
+
+struct CompletedRhythmMatching {
+    let tempo: TempoBPM
+    let expectedOffset: RhythmOffset  // always zero (the correct beat position)
+    let userOffset: RhythmOffset      // signed timing error
+    let timestamp: Date
+}
+```
+
+**Conforming types:**
+- `TrainingDataStore` — persists `RhythmComparisonRecord` and `RhythmMatchingRecord`
+- `PerceptualProfile` — updates rhythm statistics via `RhythmProfile` protocol
+- `ProgressTimeline` — tracks rhythm training modes for trend analysis
+- `HapticFeedbackManager` — haptic on incorrect rhythm comparison answers (FR71), same as pitch comparison
+
+**File locations:**
+- `Core/Training/RhythmComparisonObserver.swift`
+- `Core/Training/RhythmMatchingObserver.swift`
+- `Core/Training/CompletedRhythmComparison.swift`
+- `Core/Training/CompletedRhythmMatching.swift`
+- `RhythmComparison/RhythmChallenge.swift`
+
+### RhythmProfile Protocol
+
+```swift
+protocol RhythmProfile {
+    /// Updates with a rhythm comparison result.
+    func updateRhythmComparison(tempo: TempoBPM, offset: RhythmOffset, isCorrect: Bool)
+
+    /// Updates with a rhythm matching result.
+    func updateRhythmMatching(tempo: TempoBPM, userOffset: RhythmOffset)
+
+    /// Per-tempo statistics split by direction.
+    func rhythmStats(tempo: TempoBPM, direction: RhythmDirection) -> RhythmTempoStats
+
+    /// All tempos that have training data.
+    var trainedTempos: [TempoBPM] { get }
+
+    /// Overall combined accuracy for EWMA headline (FR89).
+    var rhythmOverallAccuracy: Double? { get }
+
+    func resetRhythm()
+}
+
+struct RhythmTempoStats {
+    let mean: RhythmOffset
+    let stdDev: RhythmOffset
+    let sampleCount: Int
+    let currentDifficulty: RhythmOffset
+}
+```
+
+**`PerceptualProfile` conforms to `RhythmProfile`** (in addition to existing `PitchComparisonProfile` and `PitchMatchingProfile`).
+
+**v0.4 rhythm statistics:** Per-tempo aggregates split by early/late direction. Each (tempo, direction) pair tracks: mean, stdDev, sampleCount, currentDifficulty (FR86). This is a different indexing scheme from pitch (MIDI-note-indexed) — rhythm is tempo-indexed.
+
+**Loading on startup:** `PerceptualProfile` rebuilt from `RhythmComparisonRecord` and `RhythmMatchingRecord` data alongside existing pitch data on app startup.
+
+### Data Models
+
+#### RhythmComparisonRecord
+
+```swift
+@Model
+final class RhythmComparisonRecord {
+    var tempoBPM: Int               // raw Int for SwiftData boundary
+    var offsetMs: Double            // signed milliseconds — negative=early, positive=late
+    var isCorrect: Bool
+    var timestamp: Date
+}
+```
+
+**Design notes:**
+- `tempoBPM` as `Int` and `offsetMs` as `Double` at the SwiftData boundary (consistent with pitch record pattern — raw types for persistence)
+- Early/late derived from sign (FR99) — no separate direction field
+- Registered in `ModelContainer` schema in `PeachApp.swift`
+- File location: `Core/Data/RhythmComparisonRecord.swift`
+
+#### RhythmMatchingRecord
+
+```swift
+@Model
+final class RhythmMatchingRecord {
+    var tempoBPM: Int
+    var expectedOffsetMs: Double    // always 0.0 for v0.4 (the correct beat)
+    var userOffsetMs: Double        // signed — negative=early, positive=late
+    var timestamp: Date
+    // inputMethod field reserved for future (clap detection, MIDI input)
+}
+```
+
+**Design notes:**
+- `expectedOffsetMs` is always 0.0 for v0.4 but stored for future flexibility (e.g., exercises where the target is intentionally off-beat)
+- `inputMethod` reserved as a comment, not a field — add the field when the first non-tap input is implemented
+- File location: `Core/Data/RhythmMatchingRecord.swift`
+
+### TrainingDataStore Extension
+
+Extend the existing `TrainingDataStore` with rhythm CRUD. It remains the sole SwiftData accessor.
+
+**New methods:**
+- `save(_ record: RhythmComparisonRecord) throws`
+- `save(_ record: RhythmMatchingRecord) throws`
+- `fetchAllRhythmComparisons() throws -> [RhythmComparisonRecord]`
+- `fetchAllRhythmMatching() throws -> [RhythmMatchingRecord]`
+- `deleteAllRhythmComparisons() throws`
+- `deleteAllRhythmMatching() throws`
+
+**Observer conformance:** `TrainingDataStore` conforms to `RhythmComparisonObserver` and `RhythmMatchingObserver`, automatically persisting completed results.
+
+**Schema update:**
+
+```swift
+let container = try ModelContainer(for:
+    PitchComparisonRecord.self,
+    PitchMatchingRecord.self,
+    RhythmComparisonRecord.self,
+    RhythmMatchingRecord.self
+)
+```
+
+### CSV Format v2
+
+The existing chain-of-responsibility pattern (`CSVVersionedParser` protocol, `CSVImportParserV1`) is extended with a v2 parser.
+
+**Format changes:**
+- V2 adds a `trainingType` discriminator column: `pitchComparison`, `pitchMatching`, `rhythmComparison`, `rhythmMatching` (FR100–FR101)
+- Type-specific columns follow the discriminator
+- V1 records remain importable — V1 parser handles them as before; V2 parser handles all types (FR102)
+- Deduplication by timestamp + tempo + training type for rhythm records (FR103)
+
+**New files:**
+- `Core/Data/CSVImportParserV2.swift` — conforms to `CSVVersionedParser` with `supportedVersion: 2`
+- `Core/Data/CSVExportSchemaV2.swift` — export formatting for all four training types
+
+**Existing files updated:**
+- `CSVImportParser.swift` — registers V2 parser in the chain
+- `CSVRecordFormatter.swift` — handles rhythm record formatting
+- `TrainingDataExporter.swift` — exports rhythm records
+- `TrainingDataImporter.swift` — imports rhythm records with deduplication
+
+### Training Modes Extension
+
+`TrainingMode` grows from four to six cases:
+
+```swift
+enum TrainingMode: CaseIterable {
+    case unisonPitchComparison
+    case intervalPitchComparison
+    case unisonMatching
+    case intervalMatching
+    case rhythmComparison          // NEW
+    case rhythmMatching            // NEW
+}
+```
+
+Each new mode gets a `TrainingModeConfig` with:
+- Display name and unit label (percentage of sixteenth note, per FR87)
+- Optimal baseline (expert-level target for rhythm accuracy)
+- EWMA half-life for smoothing
+- Session gap for bucket grouping
+
+`ProgressTimeline` updated to track all six modes, conforming to the new rhythm observer protocols.
+
+### Visualization
+
+#### Dot Visualization (FR80–FR82)
+
+Non-informative dots during rhythm training — dots light up in sequence as accompaniment:
+- Rhythm comparison: 4 dots appear, one per note (FR81)
+- Rhythm matching: 3 dots appear with notes; 4th dot appears on user tap at the same fixed grid position with color feedback (green/yellow/red) after answer (FR82)
+- No positional encoding, no target zones, no ghost dots (FR80)
+
+**Implementation:** SwiftUI view components in the respective feature directories.
+
+**File locations:**
+- `RhythmComparison/RhythmDotView.swift`
+- `RhythmMatching/RhythmDotView.swift` (or shared if identical)
+
+#### Spectrogram Profile Visualization (FR89–FR92)
+
+New profile visualization for rhythm training:
+- X-axis: time progression (same bucketing as pitch charts)
+- Y-axis: tempos actually trained at (no empty rows for unused tempos) (FR90)
+- Cell color: green (precise) → yellow (moderate) → red (erratic) (FR90)
+- Empty/transparent cells where no training occurred (FR91)
+- Tap a cell for early/late breakdown detail (FR92)
+- EWMA headline with trend arrow for rhythm profile card (FR89)
+
+**Data flow:** Reads from `PerceptualProfile` (via `RhythmProfile` protocol) and `ProgressTimeline`.
+
+**File locations:**
+- `Profile/RhythmSpectrogramView.swift`
+- `Profile/RhythmProfileCardView.swift`
+
+### Navigation & Start Screen
+
+**NavigationDestination** gains two new cases:
+
+```swift
+enum NavigationDestination: Hashable {
+    case pitchComparison(intervals: Set<Interval>)
+    case pitchMatching(intervals: Set<Interval>)
+    case rhythmComparison      // NEW
+    case rhythmMatching        // NEW
+    case settings
+    case profile
+}
+```
+
+No parameterization for rhythm destinations — tempo is read from settings, not passed via navigation.
+
+**Start Screen** grows to 6 training buttons (FR104):
+
+```swift
+// Pitch modes
+NavigationLink(value: .pitchComparison(intervals: [.prime]))       { Text("Pitch Comparison") }
+NavigationLink(value: .pitchMatching(intervals: [.prime]))          { Text("Pitch Matching") }
+
+// Interval modes
+NavigationLink(value: .pitchComparison(intervals: [.perfectFifth])) { Text("Interval Pitch Comparison") }
+NavigationLink(value: .pitchMatching(intervals: [.perfectFifth]))   { Text("Interval Pitch Matching") }
+
+// Rhythm modes
+NavigationLink(value: .rhythmComparison)                            { Text("Rhythm Comparison") }
+NavigationLink(value: .rhythmMatching)                              { Text("Rhythm Matching") }
+```
+
+### Updated Project Structure (v0.4)
+
+```
+Peach/
+├── App/
+│   ├── PeachApp.swift                    # Updated: wire rhythm sessions, register rhythm records, SoundFontEngine
+│   ├── ContentView.swift                 # Updated: rhythm navigation destinations
+│   ├── NavigationDestination.swift       # Updated: .rhythmComparison, .rhythmMatching
+│   ├── EnvironmentKeys.swift             # Updated: RhythmPlayer, RhythmProfile entries
+│   ├── CentsFormatting.swift
+│   ├── HelpContentView.swift
+│   └── TrainingStatsView.swift
+├── Core/
+│   ├── Music/                            # NEW directory — domain value types moved from Audio/
+│   │   ├── MIDINote.swift
+│   │   ├── DetunedMIDINote.swift
+│   │   ├── Frequency.swift
+│   │   ├── Cents.swift
+│   │   ├── Interval.swift
+│   │   ├── DirectedInterval.swift
+│   │   ├── Direction.swift
+│   │   ├── TuningSystem.swift
+│   │   ├── MIDIVelocity.swift
+│   │   ├── AmplitudeDB.swift
+│   │   ├── NoteDuration.swift
+│   │   ├── NoteRange.swift
+│   │   ├── SoundSourceID.swift
+│   │   ├── TempoBPM.swift               # NEW
+│   │   ├── RhythmOffset.swift           # NEW
+│   │   └── RhythmDirection.swift        # NEW
+│   ├── Audio/
+│   │   ├── SoundFontEngine.swift        # NEW — shared low-level engine
+│   │   ├── NotePlayer.swift
+│   │   ├── PlaybackHandle.swift
+│   │   ├── RhythmPlayer.swift           # NEW — protocol
+│   │   ├── RhythmPlaybackHandle.swift   # NEW — protocol
+│   │   ├── SoundFontNotePlayer.swift    # Updated: delegates to SoundFontEngine
+│   │   ├── SoundFontPlaybackHandle.swift
+│   │   ├── SoundFontRhythmPlayer.swift       # NEW — implementation
+│   │   ├── SoundFontRhythmPlaybackHandle.swift # NEW — implementation
+│   │   ├── SoundFontLibrary.swift
+│   │   ├── SF2PresetParser.swift
+│   │   ├── SoundSourceProvider.swift
+│   │   └── AudioSessionInterruptionMonitor.swift
+│   ├── Algorithm/
+│   │   ├── NextPitchComparisonStrategy.swift
+│   │   ├── KazezNoteStrategy.swift
+│   │   ├── NextRhythmOffsetStrategy.swift     # NEW — protocol
+│   │   └── AdaptiveRhythmOffsetStrategy.swift # NEW — implementation
+│   ├── Data/
+│   │   ├── PitchComparisonRecord.swift
+│   │   ├── PitchComparisonRecordStoring.swift
+│   │   ├── PitchMatchingRecord.swift
+│   │   ├── RhythmComparisonRecord.swift  # NEW
+│   │   ├── RhythmMatchingRecord.swift    # NEW
+│   │   ├── TrainingDataStore.swift       # Updated: rhythm CRUD + observer conformance
+│   │   ├── DataStoreError.swift
+│   │   ├── CSVExportSchema.swift
+│   │   ├── CSVExportSchemaV2.swift       # NEW
+│   │   ├── CSVFormatVersionReader.swift
+│   │   ├── CSVImportError.swift
+│   │   ├── CSVImportParser.swift         # Updated: registers V2 parser
+│   │   ├── CSVImportParserV1.swift
+│   │   ├── CSVImportParserV2.swift       # NEW
+│   │   ├── CSVVersionedParser.swift
+│   │   ├── CSVRecordFormatter.swift      # Updated: rhythm record formatting
+│   │   ├── TrainingDataExporter.swift    # Updated: exports rhythm records
+│   │   ├── TrainingDataImporter.swift    # Updated: imports rhythm with dedup
+│   │   └── TrainingDataTransferService.swift
+│   ├── Profile/
+│   │   ├── PerceptualProfile.swift       # Updated: conforms to RhythmProfile, cleaned up
+│   │   ├── PitchComparisonProfile.swift
+│   │   ├── PitchMatchingProfile.swift
+│   │   ├── RhythmProfile.swift           # NEW — protocol
+│   │   ├── ProgressTimeline.swift        # Updated: 6 training modes, rhythm observers
+│   │   ├── TrainingModeConfig.swift      # Updated: rhythm mode configs
+│   │   ├── ChartLayoutCalculator.swift
+│   │   └── GranularityZoneConfig.swift
+│   ├── Training/
+│   │   ├── PitchComparison.swift
+│   │   ├── PitchComparisonObserver.swift
+│   │   ├── PitchComparisonTrainingSettings.swift
+│   │   ├── CompletedPitchMatching.swift
+│   │   ├── PitchMatchingObserver.swift
+│   │   ├── PitchMatchingTrainingSettings.swift
+│   │   ├── CompletedRhythmComparison.swift    # NEW
+│   │   ├── RhythmComparisonObserver.swift     # NEW
+│   │   ├── CompletedRhythmMatching.swift      # NEW
+│   │   ├── RhythmMatchingObserver.swift       # NEW
+│   │   └── Resettable.swift
+│   ├── TrainingSession.swift
+│   ├── Comparable+Clamped.swift
+│   └── UnitInterval.swift
+├── PitchComparison/
+│   ├── PitchComparisonSession.swift
+│   ├── PitchComparisonScreen.swift
+│   ├── PitchComparisonFeedbackIndicator.swift
+│   ├── HapticFeedbackManager.swift       # Updated: conforms to RhythmComparisonObserver
+│   └── (other existing files)
+├── PitchMatching/
+│   ├── PitchMatchingSession.swift
+│   ├── PitchMatchingScreen.swift
+│   ├── PitchMatchingChallenge.swift
+│   ├── PitchMatchingFeedbackIndicator.swift
+│   ├── PitchSlider.swift
+│   └── (other existing files)
+├── RhythmComparison/                     # NEW feature directory
+│   ├── RhythmComparisonSession.swift
+│   ├── RhythmComparisonScreen.swift
+│   ├── RhythmChallenge.swift
+│   ├── RhythmComparisonFeedbackIndicator.swift
+│   └── RhythmDotView.swift
+├── RhythmMatching/                       # NEW feature directory
+│   ├── RhythmMatchingSession.swift
+│   ├── RhythmMatchingScreen.swift
+│   ├── RhythmMatchingFeedbackIndicator.swift
+│   └── RhythmDotView.swift
+├── Profile/
+│   ├── ProfileScreen.swift               # Updated: shows rhythm profile section
+│   ├── PianoKeyboardView.swift
+│   ├── ProgressChartView.swift
+│   ├── RhythmSpectrogramView.swift       # NEW
+│   ├── RhythmProfileCardView.swift       # NEW
+│   ├── ChartImageRenderer.swift
+│   ├── ChartTips.swift
+│   └── ExportChartView.swift
+├── Start/
+│   ├── StartScreen.swift                 # Updated: 6 training buttons
+│   └── ProgressSparklineView.swift
+├── Settings/
+│   ├── SettingsScreen.swift              # Updated: tempo setting for rhythm
+│   ├── SettingsKeys.swift                # Updated: rhythm settings keys
+│   ├── AppUserSettings.swift             # Updated: tempo property
+│   ├── UserSettings.swift                # Updated: tempo property
+│   └── (other existing files)
+├── Info/
+│   └── InfoScreen.swift
+└── Resources/
+    ├── Assets.xcassets
+    └── Localizable.xcstrings             # Updated: rhythm UI strings (EN + DE)
+```
+
+**Test structure mirrors source — new and updated test files:**
+
+```
+PeachTests/
+├── Core/
+│   ├── Music/                            # NEW — tests moved from Audio/
+│   │   ├── MIDINoteTests.swift
+│   │   ├── DetunedMIDINoteTests.swift
+│   │   ├── FrequencyTests.swift
+│   │   ├── CentsTests.swift
+│   │   ├── IntervalTests.swift
+│   │   ├── DirectedIntervalTests.swift
+│   │   ├── DirectionTests.swift
+│   │   ├── TuningSystemTests.swift
+│   │   ├── MIDIVelocityTests.swift
+│   │   ├── AmplitudeDBTests.swift
+│   │   ├── NoteDurationTests.swift
+│   │   ├── NoteRangeTests.swift
+│   │   ├── SoundSourceIDTests.swift
+│   │   ├── TempoBPMTests.swift           # NEW
+│   │   ├── RhythmOffsetTests.swift       # NEW
+│   │   └── RhythmDirectionTests.swift    # NEW
+│   ├── Audio/
+│   │   ├── SoundFontEngineTests.swift    # NEW
+│   │   ├── SoundFontNotePlayerTests.swift
+│   │   ├── SoundFontPlaybackHandleTests.swift
+│   │   ├── SoundFontRhythmPlayerTests.swift     # NEW
+│   │   ├── NotePlayerConvenienceTests.swift
+│   │   ├── PlaybackHandleTests.swift
+│   │   ├── SF2PresetParserTests.swift
+│   │   ├── SoundFontLibraryTests.swift
+│   │   └── SoundFontPresetStressTests.swift
+│   ├── Algorithm/
+│   │   ├── KazezNoteStrategyTests.swift
+│   │   └── AdaptiveRhythmOffsetStrategyTests.swift  # NEW
+│   ├── Data/
+│   │   ├── TrainingDataStoreTests.swift         # Updated: rhythm CRUD
+│   │   ├── CSVImportParserV2Tests.swift         # NEW
+│   │   ├── CSVExportSchemaV2Tests.swift         # NEW
+│   │   └── (other existing test files)
+│   ├── Profile/
+│   │   ├── PerceptualProfileTests.swift         # Updated: rhythm profile tests
+│   │   ├── ProgressTimelineTests.swift          # Updated: 6 modes
+│   │   └── (other existing test files)
+│   └── Training/
+│       ├── CompletedRhythmComparisonTests.swift # NEW
+│       ├── CompletedRhythmMatchingTests.swift   # NEW
+│       └── (other existing test files)
+├── RhythmComparison/                     # NEW
+│   ├── RhythmComparisonSessionTests.swift
+│   └── RhythmChallengeTests.swift
+├── RhythmMatching/                       # NEW
+│   └── RhythmMatchingSessionTests.swift
+├── Mocks/
+│   ├── MockRhythmPlayer.swift            # NEW
+│   ├── MockRhythmPlaybackHandle.swift    # NEW
+│   ├── MockNextRhythmOffsetStrategy.swift # NEW
+│   ├── MockRhythmProfile.swift           # NEW
+│   └── (other existing mock files)
+└── (other existing test files)
+```
+
+### Updated Requirements to Structure Mapping (v0.4)
+
+| FR Category | Component(s) | Directory |
+|---|---|---|
+| Training Loop (FR1–FR8) | `PitchComparisonSession`, `PitchComparisonScreen` | `PitchComparison/` |
+| Pitch Matching (FR44–FR50a) | `PitchMatchingSession`, `PitchMatchingScreen` | `PitchMatching/` |
+| Interval Domain (FR53–FR55) | `Interval`, `TuningSystem`, `DetunedMIDINote` | `Core/Music/` |
+| Interval Pitch Comparison (FR56–FR59) | `PitchComparisonSession`, `NextPitchComparisonStrategy` | `PitchComparison/`, `Core/Algorithm/` |
+| Interval Pitch Matching (FR60–FR64) | `PitchMatchingSession`, `PitchMatchingScreen` | `PitchMatching/` |
+| Rhythm Comparison (FR68–FR73a) | `RhythmComparisonSession`, `RhythmComparisonScreen`, `RhythmDotView` | `RhythmComparison/` |
+| Rhythm Matching (FR74–FR79a) | `RhythmMatchingSession`, `RhythmMatchingScreen`, `RhythmDotView` | `RhythmMatching/` |
+| Rhythm Visualization (FR80–FR82) | `RhythmDotView` | `RhythmComparison/`, `RhythmMatching/` |
+| Rhythm Difficulty Model (FR83–FR86) | `NextRhythmOffsetStrategy`, `RhythmProfile`, `RhythmTempoStats` | `Core/Algorithm/`, `Core/Profile/` |
+| Rhythm Units (FR87–FR88) | `RhythmOffset.percentageOfSixteenthNote(at:)`, `TempoBPM` | `Core/Music/` |
+| Rhythm Perceptual Profile (FR89–FR92) | `RhythmProfile`, `RhythmSpectrogramView`, `RhythmProfileCardView` | `Core/Profile/`, `Profile/` |
+| Rhythm Audio Engine (FR93–FR96) | `SoundFontEngine`, `RhythmPlayer`, `SoundFontRhythmPlayer` | `Core/Audio/` |
+| Rhythm Data Storage (FR97–FR99) | `RhythmComparisonRecord`, `RhythmMatchingRecord`, `TrainingDataStore` | `Core/Data/` |
+| Rhythm Export/Import (FR100–FR103) | `CSVImportParserV2`, `CSVExportSchemaV2`, `TrainingDataExporter`, `TrainingDataImporter` | `Core/Data/` |
+| Rhythm Start Screen (FR104) | `StartScreen`, `NavigationDestination` | `Start/`, `App/` |
+| Adaptive Algorithm (FR9–FR15) | `NextPitchComparisonStrategy`, `KazezNoteStrategy`, `PerceptualProfile` | `Core/Algorithm/`, `Core/Profile/` |
+| Audio Engine (FR16–FR20, FR51–FR52) | `NotePlayer`, `PlaybackHandle`, `SoundFontNotePlayer` | `Core/Audio/` |
+| Profile & Statistics (FR21–FR26) | `PerceptualProfile`, `ProfileScreen` | `Core/Profile/`, `Profile/` |
+| Data Persistence (FR27–FR29, FR48, FR64) | `PitchComparisonRecord`, `PitchMatchingRecord`, `TrainingDataStore` | `Core/Data/` |
+| Settings (FR30–FR36) | `SettingsScreen`, `SoundSourceProvider`, `@AppStorage` | `Settings/`, `Core/Audio/` |
+| Localization (FR37–FR38) | `Localizable.xcstrings` | `Resources/` |
+| Device & Platform (FR39–FR42) | All screens (responsive layouts) | All feature directories |
+| Info Screen (FR43) | `InfoScreen` | `Info/` |
+| Start Screen Integration (FR65–FR66) | `StartScreen`, `NavigationDestination` | `Start/`, `App/` |
+
+### Updated Cross-Cutting Concerns (v0.4)
+
+| Concern | Affected Components | Resolution |
+|---|---|---|
+| Audio interruption (pitch) | `SoundFontNotePlayer`, `PitchComparisonSession`, `PitchMatchingSession` | PlaybackHandle reports interruption → session discards (unchanged) |
+| Audio interruption (rhythm) | `SoundFontRhythmPlayer`, `RhythmComparisonSession`, `RhythmMatchingSession` | RhythmPlaybackHandle reports interruption → session discards, transitions to idle |
+| Settings propagation | `SettingsScreen`, all sessions, `NextPitchComparisonStrategy`, `NextRhythmOffsetStrategy` | Sessions read settings when starting next challenge (same pattern as pitch) |
+| Data integrity | `TrainingDataStore` | SwiftData atomic writes; sessions write only complete results (same pattern) |
+| App lifecycle | `PeachApp`, all sessions | Backgrounding → active session stops; foregrounding → returns to Start Screen (same pattern) |
+| Note ownership (pitch) | `PitchComparisonSession`, `PitchMatchingSession` | PlaybackHandle pattern (unchanged) |
+| Pattern ownership (rhythm) | `RhythmComparisonSession`, `RhythmMatchingSession` | RhythmPlaybackHandle pattern — mirrors PlaybackHandle |
+| Shared audio engine | `SoundFontNotePlayer`, `SoundFontRhythmPlayer` | Both delegate to `SoundFontEngine`; engine manages sampler sharing and preset switching |
+| Percussion/melodic bank switching | `SoundFontEngine` | Engine handles internal bank/preset management; callers use `SoundSourceID` |
+| Timing precision (rhythm NFR) | `SoundFontEngine`, `SoundFontRhythmPlayer` | Render-thread scheduling via `AVAudioSourceNode` + `scheduleMIDIEventBlock`; jitter < 0.01ms |
+| Domain type consistency | All components | `TempoBPM`, `RhythmOffset` at all API boundaries; raw types only at SwiftData persistence boundary |
+
+### v0.4 Implementation Sequence
+
+1. **Core/Music/ directory split** — move domain value types from Core/Audio/, update Xcode groups (pure refactoring, no functional changes)
+2. **New domain types** — `TempoBPM`, `RhythmOffset`, `RhythmDirection` with full test coverage
+3. **PerceptualProfile cleanup** — pre-work mandated by PRD
+4. **SoundFontEngine** — extract audio hardware ownership from `SoundFontNotePlayer`; implement render-thread scheduling
+5. **SoundFontNotePlayer refactoring** — delegate to `SoundFontEngine`, verify existing pitch tests pass
+6. **RhythmPlayer protocol + SoundFontRhythmPlayer** — sample-accurate pattern playback
+7. **Data models** — `RhythmComparisonRecord`, `RhythmMatchingRecord`, `TrainingDataStore` extension
+8. **RhythmProfile protocol** — profile protocol, `PerceptualProfile` conformance
+9. **NextRhythmOffsetStrategy** — protocol + initial implementation
+10. **Observer protocols** — `RhythmComparisonObserver`, `RhythmMatchingObserver`, conformances on `TrainingDataStore`, `PerceptualProfile`, `ProgressTimeline`, `HapticFeedbackManager`
+11. **RhythmComparisonSession** — state machine with full test coverage
+12. **RhythmMatchingSession** — state machine with full test coverage
+13. **RhythmComparisonScreen + RhythmDotView** — UI
+14. **RhythmMatchingScreen + RhythmDotView** — UI
+15. **Start Screen + navigation** — 6 buttons, new destinations
+16. **Profile Screen + spectrogram** — `RhythmSpectrogramView`, `RhythmProfileCardView`
+17. **Settings** — tempo setting for rhythm training
+18. **CSV format v2** — `CSVImportParserV2`, `CSVExportSchemaV2`, exporter/importer updates
+19. **TrainingMode extension** — 6 modes, `TrainingModeConfig` for rhythm modes
+20. **Localization** — rhythm UI strings (English + German)
+
+### v0.4 Architecture Validation
+
+**Decision Compatibility:** All v0.4 additions use the same first-party Apple frameworks. `SoundFontEngine` consolidates existing `AVAudioEngine` ownership — no new framework dependencies. `RhythmPlayer`/`RhythmPlaybackHandle` are protocol-level additions. New domain types (`TempoBPM`, `RhythmOffset`) follow the established value type pattern.
+
+**Pattern Consistency:** Rhythm sessions follow identical patterns to pitch sessions (observable, error boundary, observer injection, handle-based interruption). `NextRhythmOffsetStrategy` mirrors `NextPitchComparisonStrategy`. `RhythmProfile` mirrors `PitchComparisonProfile`/`PitchMatchingProfile`. CSV v2 extends the existing chain-of-responsibility pattern.
+
+**Three-Layer Audio Validation:** `NotePlayer` (pitch) and `RhythmPlayer` (rhythm) are independent high-level protocols with no API overlap. Both delegate to `SoundFontEngine` which owns the hardware. Adding a future third player type (e.g., for real-time audio input processing) would follow the same pattern — new high-level protocol, new mid-level implementation, same engine.
+
+**Domain Type Consistency:** `TempoBPM` and `RhythmOffset` used at all API boundaries. Raw types only at SwiftData persistence boundary (consistent with pitch record pattern). `RhythmOffset` encodes direction via sign (FR99), eliminating redundant fields.
+
+**Requirements Coverage:** All 37 new FRs (FR68–FR104) mapped to specific components and directories. All rhythm timing precision NFRs addressed by the render-thread scheduling architecture. PerceptualProfile cleanup pre-work documented.
+
+**Gap Analysis:** No critical gaps. UX Design Specification for rhythm training does not exist yet — the architecture supports the PRD requirements, but visual design details (dot styling, spectrogram color thresholds, screen layouts) need a separate UX workflow before UI implementation.
