@@ -12,8 +12,10 @@ classification:
   complexity: low
   projectContext: greenfield
 workflowType: 'prd'
-lastEdited: '2026-02-28'
+lastEdited: '2026-03-18'
 editHistory:
+  - date: '2026-03-18'
+    changes: 'Added rhythm training (v0.4 scope): rhythm comparison, rhythm matching, 2D difficulty model (time offset × tempo), asymmetric early/late tracking, spectrogram visualization, sample-accurate audio engine, CSV format v2, percussion playback; two new user journeys (9-10); 37 new FRs (FR68-FR104); rhythm timing NFRs'
   - date: '2026-02-28'
     changes: 'Added interval training variants (v0.3 scope): interval pitch comparison, interval pitch matching, interval domain model, tuning system abstraction; two new user journeys; 15 new FRs (FR53-FR67)'
   - date: '2026-02-25'
@@ -27,7 +29,7 @@ editHistory:
 
 ## Executive Summary
 
-Peach is a pitch ear training app for iOS. It trains musicians' pitch perception through two complementary modes: **Pitch Comparison** (two notes in sequence — user answers higher or lower) and **Pitch Matching** (user tunes a note to match a reference pitch). Both modes build a perceptual profile across the user's range and relentlessly target weak spots. Each mode has an **interval variant** that generalizes from unison to any musical interval — training the user to perceive and produce precise intonation within intervals, not just between isolated pitches.
+Peach is an ear training app for iOS. It trains musicians' perception through pitch and rhythm modes. **Pitch training** offers two complementary approaches: **Pitch Comparison** (two notes in sequence — user answers higher or lower) and **Pitch Matching** (user tunes a note to match a reference pitch). Both build a perceptual profile across the user's range and relentlessly target weak spots. Each has an **interval variant** that generalizes from unison to any musical interval. **Rhythm training** adds two modes: **Rhythm Comparison** (judge whether a note is early or late) and **Rhythm Matching** (tap the beat at the correct moment) — building a tempo-indexed rhythm profile with asymmetric early/late tracking.
 
 **Target users:** Musicians (singers, string, woodwind, brass players) for whom intonation is a practical challenge.
 
@@ -45,6 +47,8 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 - Summary statistics (mean and standard deviation of detection thresholds) show a visible improving trend over time
 - Interval training shows measurable improvement in detecting intonation deviations within intervals over time
 - Interval pitch matching accuracy improves — users achieve smaller cent errors when matching target intervals
+- Rhythm comparison training shows measurable narrowing of detectable time offsets (percentage of sixteenth note) over time, tracked independently for early and late deviations
+- Rhythm matching accuracy improves — users achieve smaller timing errors with continued training at each practiced tempo
 - Users return to the app regularly because it fits into incidental moments (practice breaks, commuting, waiting)
 
 ### Business Success
@@ -60,6 +64,7 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 - No backward compatibility constraints — always target latest
 - Adaptive algorithm parameters are tunable and discoverable during development
 - Audio playback is smooth with proper envelopes (no clicks or artifacts)
+- Sample-accurate audio scheduling delivers sub-millisecond timing precision for rhythm training
 
 ### Measurable Outcomes
 
@@ -132,6 +137,40 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 - Tuning system selection beyond 12-TET
 
 **User Journeys Supported:** Journey 7 (Interval Pitch Comparison), Journey 8 (Interval Pitch Matching)
+
+### Version 0.4 Scope (Phase 4 — Rhythm Training)
+
+**Pre-work:** PerceptualProfile cleanup — remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-mode extension. Must complete before rhythm implementation.
+
+**Core addition:** Two rhythm training modes that build a tempo-indexed rhythm profile with asymmetric early/late tracking and a 2D difficulty model (time offset × tempo).
+
+**Domain concepts introduced:**
+- 2D difficulty model: adaptive time offset (axis 1) × user-selected metronome tempo (axis 2)
+- Asymmetric early/late statistics — independent difficulty tracks and exercise selection per direction
+- User-facing unit: percentage of one sixteenth note duration (e.g., "4% early")
+- Internal storage: `tempoBPM` (Int) + `offsetMs` (Double, signed: negative=early, positive=late)
+
+**Must-Have Capabilities:**
+- Rhythm Comparison (judgment/detection): 4 sixteenth notes played at user's tempo, 4th note offset early or late, user judges "Early" or "Late"
+- Rhythm Matching (production/accuracy): 3 sixteenth notes played, user taps the 4th at the correct moment
+- Non-informative dot visualization during training (dots light up in sequence — no positional encoding, no target zones)
+- Sample-accurate audio scheduling engine using render-callback-level timing for sub-millisecond precision
+- Percussion tone playback via SoundFont bank 2 presets
+- Spectrogram-style rhythm profile visualization: X-axis time progression, Y-axis trained tempos, cell color green→yellow→red for accuracy
+- EWMA headline with trend arrow for rhythm profile card
+- Per-tempo statistics: mean, stdDev, sampleCount, currentDifficulty — split by early/late
+- Start Screen integration: two new buttons ("Rhythm Comparison", "Rhythm Matching")
+- Rhythm-specific data records stored via TrainingDataStore
+- CSV export/import format version 2 with new `trainingType` discriminators and chain-of-responsibility parser
+
+**Deferred to subsequent iteration:**
+- Clap detection (audio input) and MIDI input for Rhythm Matching
+- Per-input-method latency calibration
+- Subdivisions beyond sixteenth notes (eighth, triplet)
+- Softer-attack sounds as additional difficulty lever
+- Progressive tempo suggestions based on mastery
+
+**User Journeys Supported:** Journey 9 (Rhythm Comparison), Journey 10 (Rhythm Matching)
 
 ### Future Ideas
 
@@ -267,6 +306,34 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 
 **Requirements revealed:** Interval Pitch Matching Screen, target interval display, slider tuning to interval (not unison), result recording with target interval, same slider interaction pattern, same feedback mechanisms.
 
+### Journey 9: Rhythm Comparison — "Is That On The Beat?"
+
+**Persona:** Sarah, four months into pitch training. Her pitch perception has sharpened noticeably. She wants to train a different dimension of musicianship — rhythmic precision.
+
+**Opening Scene:** She opens Peach and sees two new buttons: "Rhythm Comparison" and "Rhythm Matching." She taps "Rhythm Comparison." A tempo setting shows 100 BPM — she leaves it for now.
+
+**Rising Action:** Four sharp clicks play in sequence — sixteenth notes at her chosen tempo. She listens. The fourth click was slightly early. She taps "Early." Thumbs up. Four more clicks. The fourth is late this time. "Late." Thumbs up. She gets one wrong — haptic buzz. The exercise continues. The rhythm is different from pitch training — faster, more visceral, less cerebral. She's listening to *time*, not *frequency*.
+
+**Climax:** After a minute she notices the offsets getting smaller. The algorithm is probing her threshold — separately for early and late. She's better at catching early deviations than late ones. The algorithm knows this and serves more late exercises to close the gap.
+
+**Resolution:** She checks the rhythm profile — a spectrogram-style display showing her accuracy across tempos over time. Only one tempo row so far (100 BPM), mostly green. She bumps the tempo to 120 BPM and goes again. The data at the new tempo starts fresh.
+
+**Requirements revealed:** Rhythm Comparison Screen, early/late judgment, non-informative dot visualization, asymmetric difficulty tracking, user-selected tempo, spectrogram profile visualization, Start Screen integration.
+
+### Journey 10: Rhythm Matching — "Hit That Beat"
+
+**Persona:** Sarah, exploring the rhythm matching mode for the first time.
+
+**Opening Scene:** She taps "Rhythm Matching" on the Start Screen. Same tempo setting — 100 BPM.
+
+**Rising Action:** Three clicks play in sequence — sixteenth notes at tempo. Silence where the fourth should be. She taps the screen at what she thinks is the right moment. A fourth dot appears at the fixed grid position. It turns green — she was within 3% of a sixteenth note. Next round: three clicks. She taps. Yellow — 8% late. She adjusts her internal timing. Three more clicks. She taps. Green again.
+
+**Climax:** This mode is harder than comparison. She's not judging — she's *producing*. The separate early/late statistics reveal she consistently taps slightly late. The mean error is +4% (late), standard deviation is tight. Her timing is consistent but biased. This is actionable feedback for her playing.
+
+**Resolution:** She alternates between rhythm comparison and rhythm matching, the way she alternates between pitch comparison and pitch matching. Different skills, same philosophy: build the profile, target the weak spots, no scores, no judgment.
+
+**Requirements revealed:** Rhythm Matching Screen, tap input, 3+1 dot visualization with color feedback, separate early/late error tracking, per-tempo statistics, same interruption handling as other training modes.
+
 ### Journey Requirements Summary
 
 | Capability Area | Journeys | Priority |
@@ -295,6 +362,15 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 | Interval-based result recording (target interval + deviation) | 7, 8 | v0.3 |
 | Start Screen buttons for interval training variants | 7, 8 | v0.3 |
 | Tuning system abstraction (12-TET, extensible) | 7, 8 | v0.3 |
+| Rhythm Comparison Screen with early/late judgment | 9 | v0.4 |
+| Rhythm Matching Screen with tap input | 10 | v0.4 |
+| Non-informative dot visualization during training | 9, 10 | v0.4 |
+| Asymmetric early/late difficulty tracking | 9, 10 | v0.4 |
+| User-selected tempo with per-tempo statistics | 9, 10 | v0.4 |
+| Sample-accurate audio scheduling engine | 9, 10 | v0.4 |
+| Spectrogram-style rhythm profile visualization | 9, 10 | v0.4 |
+| CSV format v2 with rhythm training types | 9, 10 | v0.4 |
+| Start Screen buttons for rhythm training modes | 9, 10 | v0.4 |
 | Temporal progress visualization | 3 | Future |
 | Per-note detail view | 3 | Future |
 
@@ -338,6 +414,10 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 - Tuning System abstraction: maps intervals to cent offsets (12-TET initially, extensible to Just Intonation)
 - Per-interval-comparison data model: reference note, target interval, second note, correct/wrong, timestamp
 - Per-interval-pitch-matching data model: reference note, target interval, user's final pitch, error in cents relative to correct interval, timestamp
+- Sample-accurate audio scheduling engine for pre-calculated, render-callback-level note timing
+- Per-rhythm-comparison data model: tempoBPM, offsetMs (signed), isCorrect, timestamp
+- Per-rhythm-matching data model: tempoBPM, expectedOffsetMs, userOffsetMs, timestamp (inputMethod reserved for future)
+- Spectrogram-style visualization component for tempo × accuracy × time display
 
 ## Functional Requirements
 
@@ -448,12 +528,81 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 
 ### Start Screen Integration
 
-- **FR65:** Start Screen shows four training buttons: "Pitch Comparison", "Pitch Matching", "Interval Pitch Comparison", "Interval Pitch Matching"
+- **FR65:** Start Screen shows training buttons for all available training modes (pitch comparison, pitch matching, interval variants, rhythm variants — growing as modes are added per version scope)
 - **FR66:** Unison comparison and unison pitch matching behave identically to their interval variants with the interval fixed to prime (unison)
 
 ### Initial Scope Constraint
 
 - **FR67:** Initial interval training implementation uses a single fixed interval: perfect fifth up (700 cents in 12-TET)
+
+### Rhythm Comparison
+
+- **FR68:** User can start rhythm comparison training from the Start Screen via a dedicated button
+- **FR69:** System plays 4 sixteenth notes using a sharp-attack non-pitched tone at the user's chosen metronome tempo, with the 4th note offset early or late by the current difficulty amount
+- **FR70:** User judges whether the 4th note was "Early" or "Late"
+- **FR71:** System provides immediate visual feedback and haptic feedback on incorrect answers (same pattern as pitch comparison)
+- **FR72:** System tracks early and late as independent difficulty tracks with independent exercise selection per direction
+- **FR73:** System discards incomplete rhythm comparison exercises on interruption (navigation away, app backgrounding, phone call, headphone disconnect)
+- **FR73a:** System returns to the Start Screen when the app is foregrounded after being backgrounded during rhythm comparison
+
+### Rhythm Matching
+
+- **FR74:** User can start rhythm matching training from the Start Screen via a dedicated button
+- **FR75:** System plays 3 sixteenth notes at the user's chosen metronome tempo; user taps to produce the 4th note at the correct moment
+- **FR76:** System accepts tap input only (clap and MIDI reserved for future; inputMethod field reserved in data model)
+- **FR77:** System records rhythm matching results: tempoBPM, expectedOffsetMs, userOffsetMs, timestamp
+- **FR78:** System tracks separate mean and stdDev for early vs. late errors in rhythm matching
+- **FR79:** System discards incomplete rhythm matching exercises on interruption (same rules as FR73)
+- **FR79a:** System returns to the Start Screen when the app is foregrounded after being backgrounded during rhythm matching
+
+### Rhythm Training Visualization
+
+- **FR80:** System displays non-informative dots during rhythm training — dots light up in sequence as accompaniment with no positional encoding, no target zones, no ghost dots
+- **FR81:** In rhythm comparison, 4 dots appear with each note
+- **FR82:** In rhythm matching, 3 dots appear with notes; 4th dot appears on user input at the same fixed grid position with color feedback (green/yellow/red) after answer
+
+### Rhythm Difficulty Model
+
+- **FR83:** System adapts time offset difficulty independently for early and late deviations (asymmetric tracking)
+- **FR84:** User can select a fixed metronome tempo in settings; system does not change tempo between exercises
+- **FR85:** System enforces a minimum tempo floor of approximately 60 BPM
+- **FR86:** System tracks per-tempo statistics: mean, stdDev, sampleCount, currentDifficulty — split by early/late
+
+### Rhythm Units
+
+- **FR87:** System displays rhythm accuracy to users as percentage of one sixteenth note duration (e.g., "4% early", "11% late")
+- **FR88:** System stores rhythm data internally as tempoBPM (Int) + offsetMs (Double, signed: negative=early, positive=late)
+
+### Rhythm Perceptual Profile
+
+- **FR89:** User can view a rhythm profile card headline showing EWMA of the most recent time bucket's combined accuracy across all tempos, with a trend arrow (up/steady/down)
+- **FR90:** User can view a spectrogram-style rhythm detail chart: X-axis progression over time (same bucketing as pitch charts), Y-axis tempos actually trained at (no empty rows for unused tempos), cell color green (precise) → yellow (moderate) → red (erratic)
+- **FR91:** Spectrogram displays empty/transparent cells where no training occurred at a given tempo in a given period
+- **FR92:** User can tap a spectrogram cell to see early/late breakdown for that tempo and time period
+
+### Rhythm Audio Engine
+
+- **FR93:** System schedules rhythm notes with sub-millisecond precision using render-callback-level timing (sample-accurate placement)
+- **FR94:** System pre-calculates all note timing before playback with no allocations or locks on the audio thread
+- **FR95:** System plays non-pitched percussion tones via SoundFont bank 2 presets
+- **FR96:** System configures minimum audio buffer duration for timing-critical rhythm playback
+
+### Rhythm Data Storage
+
+- **FR97:** System stores rhythm comparison results as: tempoBPM, offsetMs (signed), isCorrect, timestamp — one record per exercise
+- **FR98:** System stores rhythm matching results as: tempoBPM, expectedOffsetMs, userOffsetMs, timestamp — one record per exercise (inputMethod field reserved for future)
+- **FR99:** Early/late distinction is derived from the sign of offsetMs at the statistics layer, not stored as a separate field
+
+### Rhythm Export/Import
+
+- **FR100:** System uses CSV format version 2 for export/import with a `trainingType` discriminator
+- **FR101:** Format version 2 introduces `rhythmComparison` and `rhythmMatching` as new trainingType values with type-specific columns
+- **FR102:** V1 parser remains unchanged; V2 parser handles all training types (chain-of-responsibility pattern)
+- **FR103:** Merge deduplication uses timestamp + tempoBPM + trainingType as the composite key
+
+### Rhythm Start Screen Integration
+
+- **FR104:** Start Screen shows six training buttons: "Pitch Comparison", "Pitch Matching", "Interval Pitch Comparison", "Interval Pitch Matching", "Rhythm Comparison", "Rhythm Matching"
 
 ## Non-Functional Requirements
 
@@ -472,6 +621,12 @@ Peach is a pitch ear training app for iOS. It trains musicians' pitch perception
 - Color contrast ratios meet WCAG 2.1 AA (4.5:1 for normal text, 3:1 for large text)
 - Tap targets meet minimum size guidelines (44x44 points per Apple HIG)
 - Feedback Indicator provides non-visual feedback (haptic) in addition to visual
+
+### Rhythm Timing Precision
+
+- Rhythm note scheduling jitter must not exceed 0.01ms (~0.5 samples at 44.1kHz) as measured at the render callback
+- Pre-calculated note schedules must complete before playback begins — no runtime computation on the audio thread
+- Minimum audio buffer duration: 5ms (0.005s) on supported devices
 
 ### Tuning System Precision
 
