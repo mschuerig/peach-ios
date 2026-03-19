@@ -345,3 +345,8 @@ development_status:
   43-2-replace-file-exporter-with-sharelink-in-settings: done
   43-3-render-progress-chart-as-shareable-image: done
   43-4-add-share-button-to-progress-chart-cards: done
+
+  # Epic 44: Solid Ground — Prerequisite Refactorings
+  epic-44: in-progress
+  44-1-split-core-audio-into-core-music-and-core-audio: ready-for-dev
+  44-2-clean-up-perceptualprofile-for-multi-mode-extension: backlog
