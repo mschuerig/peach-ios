@@ -1,6 +1,6 @@
 # Story 44.2: Clean Up PerceptualProfile for Multi-Mode Extension
 
-Status: review
+Status: done
 
 ## Story
 
