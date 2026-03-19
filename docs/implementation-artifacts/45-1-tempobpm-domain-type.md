@@ -1,6 +1,6 @@
 # Story 45.1: TempoBPM Domain Type
 
-Status: review
+Status: done
 
 ## Story
 
@@ -33,7 +33,7 @@ So that all rhythm APIs use a domain type instead of raw `Int` values.
   - [x] `@Suite("TempoBPM")` struct with `@Test` functions (all `async`)
   - [x] Test `sixteenthNoteDuration` at 120 BPM -> `.milliseconds(125)`
   - [x] Test `sixteenthNoteDuration` at 60 BPM -> `.milliseconds(250)`
-  - [x] Test `sixteenthNoteDuration` at 240 BPM -> `.milliseconds(62.5)` (use approximate comparison)
+  - [x] Test `sixteenthNoteDuration` at 240 BPM -> `.milliseconds(62.5)` (exact — 0.0625 is representable in binary)
   - [x] Test `Comparable` — 60 BPM < 120 BPM
   - [x] Test `Hashable` — equal values hash equally
   - [x] Test `Codable` — round-trip encode/decode
