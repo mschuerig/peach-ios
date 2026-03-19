@@ -47,24 +47,6 @@ struct RhythmOffsetTests {
         let percentage = offset.percentageOfSixteenthNote(at: TempoBPM(120))
         #expect(percentage == 10.0)
     }
-
-    // MARK: - Comparable
-
-    @Test("Smaller magnitude is less than larger magnitude regardless of sign")
-    func comparableMagnitude() async {
-        let small = RhythmOffset(.milliseconds(-20))
-        let large = RhythmOffset(.milliseconds(50))
-        #expect(small < large)
-    }
-
-    @Test("Equal magnitude offsets with opposite signs are equal in ordering")
-    func comparableEqualMagnitude() async {
-        let early = RhythmOffset(.milliseconds(-50))
-        let late = RhythmOffset(.milliseconds(50))
-        #expect(!(early < late))
-        #expect(!(late < early))
-    }
-
     // MARK: - Codable
 
     @Test("Round-trip encode and decode preserves duration")

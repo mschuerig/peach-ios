@@ -4,7 +4,7 @@ import Foundation
 ///
 /// Negative values mean the hit was early; positive or zero means late
 /// (zero is treated as on-the-beat). Direction is derived from sign (FR99).
-struct RhythmOffset: Hashable, Sendable, Codable, Comparable {
+struct RhythmOffset: Hashable, Sendable, Codable {
     /// Signed duration — negative means early, positive means late.
     let duration: Duration
 
@@ -21,13 +21,4 @@ struct RhythmOffset: Hashable, Sendable, Codable, Comparable {
     func percentageOfSixteenthNote(at tempo: TempoBPM) -> Double {
         let absDuration = duration < .zero ? .zero - duration : duration
         return (absDuration / tempo.sixteenthNoteDuration) * 100.0
-    }
-
-    // MARK: - Comparable
-
-    static func < (lhs: RhythmOffset, rhs: RhythmOffset) -> Bool {
-        let lhsAbs = lhs.duration < .zero ? .zero - lhs.duration : lhs.duration
-        let rhsAbs = rhs.duration < .zero ? .zero - rhs.duration : rhs.duration
-        return lhsAbs < rhsAbs
-    }
-}
+    }}

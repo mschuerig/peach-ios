@@ -1,6 +1,6 @@
 # Story 45.2: RhythmOffset and RhythmDirection Domain Types
 
-Status: review
+Status: done
 
 ## Story
 
@@ -18,7 +18,7 @@ So that rhythm timing data uses domain types with direction derived from sign (F
 
 4. **Given** `RhythmDirection` enum, **when** inspected, **then** it has cases `.early` and `.late` and conforms to `Hashable`, `Sendable`, `Codable`.
 
-5. **Given** `RhythmOffset`, **when** `Comparable` is applied, **then** ordering is based on absolute magnitude (for difficulty comparison).
+5. ~~**Given** `RhythmOffset`, **when** `Comparable` is applied, **then** ordering is based on absolute magnitude (for difficulty comparison).~~ **Removed during code review** — magnitude-based `Comparable` creates a semantic conflict with identity-based `Equatable` (violates strict total order contract). No consumer exists yet; add when a real use case materializes.
 
 6. **Given** file location conventions, **when** files are created, **then** `RhythmOffset.swift` and `RhythmDirection.swift` are in `Core/Music/` with corresponding tests.
 
@@ -28,13 +28,12 @@ So that rhythm timing data uses domain types with direction derived from sign (F
   - [x] Create `Peach/Core/Music/RhythmDirection.swift`
   - [x] `enum RhythmDirection: Hashable, Sendable, Codable` with cases `.early`, `.late`
   - [x] No `import SwiftUI` — Core/ is framework-free
-- [x] Task 2: Create `RhythmOffset` value type (AC: #1, #2, #5, #6)
+- [x] Task 2: Create `RhythmOffset` value type (AC: #1, #2, #6)
   - [x] Create `Peach/Core/Music/RhythmOffset.swift`
   - [x] `struct RhythmOffset` with `let duration: Duration`
-  - [x] Conform to `Hashable`, `Sendable`, `Codable`, `Comparable`
+  - [x] Conform to `Hashable`, `Sendable`, `Codable`
   - [x] `nonisolated init(_ duration: Duration)` — matches `Cents`/`TempoBPM` pattern
   - [x] Computed `var direction: RhythmDirection` — negative → `.early`, positive or zero → `.late`
-  - [x] `Comparable` via absolute magnitude: `abs(lhs) < abs(rhs)`, NOT raw duration order
 - [x] Task 3: Add `percentageOfSixteenthNote(at:)` method (AC: #3)
   - [x] `func percentageOfSixteenthNote(at tempo: TempoBPM) -> Double`
   - [x] Formula: `abs(duration / tempo.sixteenthNoteDuration) * 100`
@@ -44,7 +43,7 @@ So that rhythm timing data uses domain types with direction derived from sign (F
   - [x] `@Suite("RhythmDirection")` struct with `@Test` functions (all `async`)
   - [x] Test `Codable` — round-trip encode/decode for both cases
   - [x] Test `Hashable` — set deduplication
-- [x] Task 5: Write `RhythmOffset` tests (AC: #1, #2, #3, #5, #6)
+- [x] Task 5: Write `RhythmOffset` tests (AC: #1, #2, #3, #6)
   - [x] Create `PeachTests/Core/Music/RhythmOffsetTests.swift`
   - [x] `@Suite("RhythmOffset")` struct with `@Test` functions (all `async`)
   - [x] Test `direction` — negative duration → `.early`
@@ -53,8 +52,6 @@ So that rhythm timing data uses domain types with direction derived from sign (F
   - [x] Test `percentageOfSixteenthNote` — 12.5ms offset at 120 BPM = 10% (12.5 / 125 × 100)
   - [x] Test `percentageOfSixteenthNote` — 125ms offset at 120 BPM = 100%
   - [x] Test `percentageOfSixteenthNote` — negative offset uses absolute value
-  - [x] Test `Comparable` — smaller magnitude < larger magnitude regardless of sign
-  - [x] Test `Comparable` — equal magnitude offsets (early vs late) are equal in ordering
   - [x] Test `Codable` — round-trip encode/decode preserves duration
   - [x] Test `Hashable` — equal values hash equally
 - [x] Task 6: Build verification
@@ -194,17 +191,18 @@ Claude Opus 4.6
 ### Completion Notes List
 
 - Implemented `RhythmDirection` enum with `.early`/`.late` cases, conforming to `Hashable`, `Sendable`, `Codable`
-- Implemented `RhythmOffset` struct wrapping `Duration`, with `nonisolated init`, derived `direction` property, `percentageOfSixteenthNote(at:)` method, and `Comparable` by absolute magnitude
-- 14 tests total: 3 for `RhythmDirection` (Codable round-trip x2, Hashable), 11 for `RhythmOffset` (direction x3, percentage x3, Comparable x2, Codable, Hashable)
-- Full suite: 1110 tests pass, zero regressions
+- Implemented `RhythmOffset` struct wrapping `Duration`, with `nonisolated init`, derived `direction` property, `percentageOfSixteenthNote(at:)` method
+- 12 tests total: 3 for `RhythmDirection` (Codable round-trip x2, Hashable), 9 for `RhythmOffset` (direction x3, percentage x3, Codable, Hashable)
 
 ### Change Log
 
 - 2026-03-20: Implemented story 45.2 — RhythmOffset and RhythmDirection domain types with full test coverage
+- 2026-03-20: Code review — removed `Comparable` conformance (magnitude-based ordering conflicts with identity-based `Equatable`; no consumer yet). Added `precondition(value > 0)` to `TempoBPM.init` to prevent division by zero in `sixteenthNoteDuration`.
 
 ### File List
 
 - `Peach/Core/Music/RhythmDirection.swift` (new)
 - `Peach/Core/Music/RhythmOffset.swift` (new)
+- `Peach/Core/Music/TempoBPM.swift` (modified — added precondition)
 - `PeachTests/Core/Music/RhythmDirectionTests.swift` (new)
 - `PeachTests/Core/Music/RhythmOffsetTests.swift` (new)

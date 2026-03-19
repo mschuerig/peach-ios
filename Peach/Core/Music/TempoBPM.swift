@@ -3,8 +3,7 @@ import Foundation
 /// A tempo measured in beats per minute (BPM).
 ///
 /// Used throughout rhythm training to derive note durations and configure
-/// session parameters. Validation is enforced at the settings/session level,
-/// not at construction time.
+/// session parameters. Value must be positive.
 struct TempoBPM: Hashable, Sendable, Codable, Comparable {
     let value: Int
 
@@ -13,6 +12,7 @@ struct TempoBPM: Hashable, Sendable, Codable, Comparable {
     }
 
     nonisolated init(_ value: Int) {
+        precondition(value > 0, "TempoBPM must be positive, got \(value)")
         self.value = value
     }
 
