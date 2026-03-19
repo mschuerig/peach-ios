@@ -163,7 +163,7 @@ final class ProgressTimeline {
 
     // MARK: - Bucket Assignment
 
-    private func assignBuckets(_ metrics: [MetricPoint], now: Date, sessionGap: Duration) -> [TimeBucket] {
+    private func assignBuckets(_ metrics: [MetricPoint<Cents>], now: Date, sessionGap: Duration) -> [TimeBucket] {
         let calendar = Calendar.current
         let sessionGapSeconds = sessionGap / .seconds(1)
         var groups: [(key: Date, end: Date, size: BucketSize, points: [Double])] = []
@@ -176,7 +176,7 @@ final class ProgressTimeline {
                 if let lastGroup = groups.last,
                    lastGroup.size == .session,
                    metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGapSeconds {
-                    groups[groups.count - 1].points.append(metric.value)
+                    groups[groups.count - 1].points.append(metric.statisticalValue)
                     groups[groups.count - 1].end = metric.timestamp
                     continue
                 }
@@ -194,9 +194,9 @@ final class ProgressTimeline {
             }
 
             if let idx = groups.firstIndex(where: { $0.key == bucketInfo.key && $0.size == bucketInfo.size }) {
-                groups[idx].points.append(metric.value)
+                groups[idx].points.append(metric.statisticalValue)
             } else {
-                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.value]))
+                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.statisticalValue]))
             }
         }
 
@@ -208,7 +208,7 @@ final class ProgressTimeline {
     // MARK: - Multi-Granularity Bucket Assignment
 
     private func assignMultiGranularityBuckets(
-        _ metrics: [MetricPoint],
+        _ metrics: [MetricPoint<Cents>],
         now: Date,
         calendar: Calendar,
         sessionGap: Duration
@@ -230,7 +230,7 @@ final class ProgressTimeline {
                 if let lastGroup = groups.last,
                    lastGroup.size == .session,
                    metric.timestamp.timeIntervalSince(lastGroup.end) < sessionGapSeconds {
-                    groups[groups.count - 1].points.append(metric.value)
+                    groups[groups.count - 1].points.append(metric.statisticalValue)
                     groups[groups.count - 1].end = metric.timestamp
                     continue
                 }
@@ -251,9 +251,9 @@ final class ProgressTimeline {
             }
 
             if let idx = groups.firstIndex(where: { $0.key == bucketInfo.key && $0.size == bucketInfo.size }) {
-                groups[idx].points.append(metric.value)
+                groups[idx].points.append(metric.statisticalValue)
             } else {
-                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.value]))
+                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.statisticalValue]))
             }
         }
 
@@ -285,7 +285,7 @@ final class ProgressTimeline {
 
     // MARK: - Sub-Bucket Assignment
 
-    private func assignSubBuckets(_ metrics: [MetricPoint], parentSize: BucketSize, sessionGap: Duration) -> [TimeBucket] {
+    private func assignSubBuckets(_ metrics: [MetricPoint<Cents>], parentSize: BucketSize, sessionGap: Duration) -> [TimeBucket] {
         let calendar = Calendar.current
         let sessionGapSeconds = sessionGap / .seconds(1)
         let childSize: BucketSize
@@ -307,7 +307,7 @@ final class ProgressTimeline {
             case .session:
                 if let lastGroup = groups.last,
                    metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGapSeconds {
-                    groups[groups.count - 1].points.append(metric.value)
+                    groups[groups.count - 1].points.append(metric.statisticalValue)
                     groups[groups.count - 1].end = metric.timestamp
                     continue
                 }
@@ -317,9 +317,9 @@ final class ProgressTimeline {
             }
 
             if let idx = groups.firstIndex(where: { $0.key == groupInfo.key }) {
-                groups[idx].points.append(metric.value)
+                groups[idx].points.append(metric.statisticalValue)
             } else {
-                groups.append((key: groupInfo.key, end: groupInfo.end, points: [metric.value]))
+                groups.append((key: groupInfo.key, end: groupInfo.end, points: [metric.statisticalValue]))
             }
         }
 

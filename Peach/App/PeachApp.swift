@@ -41,13 +41,7 @@ struct PeachApp: App {
             )
             _notePlayer = State(wrappedValue: notePlayer)
 
-            let existingRecords = try dataStore.fetchAllPitchComparisons()
-            let pitchMatchingRecords = try dataStore.fetchAllPitchMatchings()
-
-            let profile = Self.loadPerceptualProfile(
-                pitchComparisonRecords: existingRecords,
-                pitchMatchingRecords: pitchMatchingRecords
-            )
+            let profile = try Self.loadPerceptualProfile(dataStore: dataStore)
             _profile = State(wrappedValue: profile)
 
             let progressTimeline = ProgressTimeline(profile: profile)
@@ -56,13 +50,9 @@ struct PeachApp: App {
             _transferService = State(wrappedValue: TrainingDataTransferService(
                 dataStore: dataStore,
                 onDataChanged: { [dataStore, profile] in
-                    let comparisons = (try? dataStore.fetchAllPitchComparisons()) ?? []
-                    let pitchMatchings = (try? dataStore.fetchAllPitchMatchings()) ?? []
-                    let metrics = MetricPointMapper.extractMetrics(
-                        pitchComparisonRecords: comparisons,
-                        pitchMatchingRecords: pitchMatchings
-                    )
-                    profile.rebuild(metrics: metrics)
+                    profile.replaceAll { builder in
+                        try? MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+                    }
                 }
             ))
 
@@ -150,19 +140,13 @@ struct PeachApp: App {
 
     // MARK: - Init Helpers
 
-    private static func loadPerceptualProfile(
-        pitchComparisonRecords: [PitchComparisonRecord],
-        pitchMatchingRecords: [PitchMatchingRecord]
-    ) -> PerceptualProfile {
-        let profile = PerceptualProfile()
-        let startTime = CFAbsoluteTimeGetCurrent()
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: pitchComparisonRecords,
-            pitchMatchingRecords: pitchMatchingRecords
-        )
-        profile.rebuild(metrics: metrics)
-        let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-        logger.info("Profile loaded from \(pitchComparisonRecords.count) comparison + \(pitchMatchingRecords.count) matching records in \(elapsed, format: .fixed(precision: 1))ms")
+    private static func loadPerceptualProfile(dataStore: TrainingDataStore) throws -> PerceptualProfile {
+        let (profile, elapsed) = try withTiming {
+            try PerceptualProfile { builder in
+                try MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+            }
+        }
+        logger.info("Profile loaded in \(elapsed)ms")
         return profile
     }
 
@@ -195,4 +179,14 @@ struct PeachApp: App {
             foregroundNotificationName: UIApplication.willEnterForegroundNotification
         )
     }
+}
+
+// MARK: - Timing
+
+private func withTiming<T>(_ body: () throws -> T) rethrows -> (result: T, milliseconds: Double) {
+    let clock = ContinuousClock()
+    let start = clock.now
+    let result = try body()
+    let elapsed = Double((clock.now - start).components.attoseconds) / 1e15
+    return (result, elapsed)
 }

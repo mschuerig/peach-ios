@@ -365,11 +365,14 @@ struct SettingsTests {
 
     @Test("ProgressTimeline reflects profile reset")
     func progressTimelineReflectsProfileReset() async {
-        let profile = PerceptualProfile()
-        let metrics = (0..<30).map { i in
-            MetricPoint(timestamp: Date().addingTimeInterval(Double(i) * 60), value: Double(i) + 1.0)
+        let profile = PerceptualProfile { builder in
+            for i in 0..<30 {
+                builder.addPoint(
+                    MetricPoint(timestamp: Date().addingTimeInterval(Double(i) * 60), value: Cents(Double(i) + 1.0)),
+                    for: .unisonPitchComparison
+                )
+            }
         }
-        profile.rebuild(metrics: [.unisonPitchComparison: metrics])
         let timeline = ProgressTimeline(profile: profile)
         #expect(timeline.state(for: .unisonPitchComparison) != .noData)
 

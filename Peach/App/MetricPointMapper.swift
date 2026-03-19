@@ -1,43 +1,35 @@
 import Foundation
 
-/// Maps storage records to domain-level metric points, keyed by training mode.
+/// Maps storage records to domain-level metric points via a profile builder.
 ///
 /// This lives in the app layer so that neither `PerceptualProfile` nor `ProgressTimeline`
 /// needs to import or reference storage record types.
 enum MetricPointMapper {
 
-    /// Extracts metric points for all training modes from storage records.
-    ///
-    /// For comparison modes, only correct answers contribute to the profile
-    /// (behavioral parity with the original PerceptualProfile).
-    static func extractMetrics(
-        pitchComparisonRecords: [PitchComparisonRecord],
-        pitchMatchingRecords: [PitchMatchingRecord]
-    ) -> [TrainingMode: [MetricPoint]] {
-        let correctComparisons = pitchComparisonRecords.filter(\.isCorrect)
-        var result: [TrainingMode: [MetricPoint]] = [:]
+    /// Feeds all training records from the data store into a profile builder.
+    static func feedAllRecords(from dataStore: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
+        feedPitchComparisons(try dataStore.fetchAllPitchComparisons(), into: builder)
+        feedPitchMatchings(try dataStore.fetchAllPitchMatchings(), into: builder)
+    }
 
-        for mode in TrainingMode.allCases {
-            switch mode {
-            case .unisonPitchComparison:
-                result[mode] = correctComparisons
-                    .filter { $0.interval == 0 }
-                    .map { MetricPoint(timestamp: $0.timestamp, value: abs($0.centOffset)) }
-            case .intervalPitchComparison:
-                result[mode] = correctComparisons
-                    .filter { $0.interval != 0 }
-                    .map { MetricPoint(timestamp: $0.timestamp, value: abs($0.centOffset)) }
-            case .unisonMatching:
-                result[mode] = pitchMatchingRecords
-                    .filter { $0.interval == 0 }
-                    .map { MetricPoint(timestamp: $0.timestamp, value: abs($0.userCentError)) }
-            case .intervalMatching:
-                result[mode] = pitchMatchingRecords
-                    .filter { $0.interval != 0 }
-                    .map { MetricPoint(timestamp: $0.timestamp, value: abs($0.userCentError)) }
-            }
+    static func feedPitchComparisons(_ records: [PitchComparisonRecord], into builder: PerceptualProfile.Builder) {
+        for record in records {
+            let mode: TrainingMode = record.interval == 0 ? .unisonPitchComparison : .intervalPitchComparison
+            builder.addPoint(
+                MetricPoint(timestamp: record.timestamp, value: Cents(abs(record.centOffset))),
+                for: mode,
+                isCorrect: record.isCorrect
+            )
         }
+    }
 
-        return result
+    static func feedPitchMatchings(_ records: [PitchMatchingRecord], into builder: PerceptualProfile.Builder) {
+        for record in records {
+            let mode: TrainingMode = record.interval == 0 ? .unisonMatching : .intervalMatching
+            builder.addPoint(
+                MetricPoint(timestamp: record.timestamp, value: Cents(abs(record.userCentError))),
+                for: mode
+            )
+        }
     }
 }

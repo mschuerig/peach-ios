@@ -167,24 +167,17 @@ struct PerceptualProfileTests {
         #expect(profile.recordCount(for: .intervalPitchComparison) == 1)
     }
 
-    // MARK: - Rebuild
+    // MARK: - Builder Init
 
-    @Test("rebuild from metric points produces correct per-mode data")
-    func rebuildFromMetrics() async {
-        let profile = PerceptualProfile()
+    @Test("init(build:) from metric points produces correct per-mode data")
+    func builderFromMetrics() async {
         let now = Date()
 
-        let metrics: [TrainingMode: [MetricPoint]] = [
-            .unisonPitchComparison: [
-                MetricPoint(timestamp: now, value: 10),
-                MetricPoint(timestamp: now.addingTimeInterval(1), value: 20),
-            ],
-            .intervalMatching: [
-                MetricPoint(timestamp: now, value: 5),
-            ],
-        ]
-
-        profile.rebuild(metrics: metrics)
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(MetricPoint(timestamp: now, value: 10), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now, value: 5), for: .intervalMatching)
+        }
 
         #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
         #expect(profile.recordCount(for: .intervalMatching) == 1)
@@ -228,5 +221,81 @@ struct PerceptualProfileTests {
         ))
 
         #expect(profile.matchingSampleCount == 3)
+    }
+
+    // MARK: - Builder-Based Init
+
+    @Test("init(build:) produces correct per-mode data")
+    func initWithBuilder() async {
+        let now = Date()
+
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(MetricPoint(timestamp: now, value: 10), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now, value: 5), for: .intervalMatching)
+        }
+
+        #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
+        #expect(profile.recordCount(for: .intervalMatching) == 1)
+        #expect(profile.recordCount(for: .intervalPitchComparison) == 0)
+        #expect(profile.recordCount(for: .unisonMatching) == 0)
+    }
+
+    @Test("init(build:) computes correct statistics for multiple points")
+    func builderComputesCorrectStatistics() async {
+        let now = Date()
+
+        let profile = PerceptualProfile { builder in
+            for i in 0..<5 {
+                builder.addPoint(
+                    MetricPoint(timestamp: now.addingTimeInterval(Double(i) * 3600), value: Cents(Double(i * 10 + 5))),
+                    for: .unisonPitchComparison
+                )
+            }
+        }
+
+        #expect(profile.recordCount(for: .unisonPitchComparison) == 5)
+        // Mean of [5, 15, 25, 35, 45] = 25.0
+        #expect(profile.comparisonMean(for: .prime) == 25.0)
+        #expect(profile.trend(for: .unisonPitchComparison) != nil)
+    }
+
+    @Test("Builder is received via closure, not constructed directly")
+    func builderViaInit() async {
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(MetricPoint(timestamp: Date(), value: 10.0), for: .unisonPitchComparison)
+        }
+        #expect(profile.recordCount(for: .unisonPitchComparison) == 1)
+    }
+
+    @Test("replaceAll updates same instance with new data")
+    func replaceAllUpdatesInstance() async {
+        let now = Date()
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(MetricPoint(timestamp: now, value: 50.0), for: .unisonPitchComparison)
+        }
+
+        #expect(profile.comparisonMean(for: .prime) == 50.0)
+
+        profile.replaceAll { builder in
+            builder.addPoint(MetricPoint(timestamp: now, value: 10.0), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20.0), for: .unisonPitchComparison)
+        }
+
+        #expect(profile.comparisonMean(for: .prime) == 15.0)
+        #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
+    }
+
+    @Test("Builder skips incorrect comparison points")
+    func builderSkipsIncorrect() async {
+        let now = Date()
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(MetricPoint(timestamp: now, value: 50.0), for: .unisonPitchComparison, isCorrect: true)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 200.0), for: .unisonPitchComparison, isCorrect: false)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(2), value: 30.0), for: .unisonPitchComparison, isCorrect: true)
+        }
+
+        #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
+        #expect(profile.comparisonMean(for: .prime) == 40.0) // (50+30)/2
     }
 }

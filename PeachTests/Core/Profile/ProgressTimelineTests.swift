@@ -14,12 +14,10 @@ struct ProgressTimelineTests {
         pitchComparisonRecords: [PitchComparisonRecord] = [],
         pitchMatchingRecords: [PitchMatchingRecord] = []
     ) -> ProgressTimeline {
-        let profile = PerceptualProfile()
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: pitchComparisonRecords,
-            pitchMatchingRecords: pitchMatchingRecords
-        )
-        profile.rebuild(metrics: metrics)
+        let profile = PerceptualProfile { builder in
+            MetricPointMapper.feedPitchComparisons(pitchComparisonRecords, into: builder)
+            MetricPointMapper.feedPitchMatchings(pitchMatchingRecords, into: builder)
+        }
         return ProgressTimeline(profile: profile)
     }
 
@@ -431,12 +429,9 @@ struct ProgressTimelineTests {
             records.append(makePitchComparisonRecord(centOffset: 8.0, hoursAgo: Double(12 - i)))
         }
 
-        let profile = PerceptualProfile()
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: records,
-            pitchMatchingRecords: []
-        )
-        profile.rebuild(metrics: metrics)
+        let profile = PerceptualProfile { builder in
+            MetricPointMapper.feedPitchComparisons(records, into: builder)
+        }
         let timeline = ProgressTimeline(profile: profile)
 
         // Add a high centOffset via profile observer

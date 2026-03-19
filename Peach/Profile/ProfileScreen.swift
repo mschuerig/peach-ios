@@ -112,17 +112,16 @@ struct ProfileScreen: View {
     NavigationStack {
         ProfileScreen()
             .environment(\.progressTimeline, {
-                let profile = PerceptualProfile()
-                var metrics: [MetricPoint] = []
-                for i in 0..<50 {
-                    let baseOffset = 50.0 - Double(i) * 0.5
-                    let noise = Double.random(in: -10...10)
-                    metrics.append(MetricPoint(
-                        timestamp: Date().addingTimeInterval(Double(i - 50) * 3600),
-                        value: abs(baseOffset + noise)
-                    ))
+                let profile = PerceptualProfile { builder in
+                    for i in 0..<50 {
+                        let baseOffset = 50.0 - Double(i) * 0.5
+                        let noise = Double.random(in: -10...10)
+                        builder.addPoint(MetricPoint(
+                            timestamp: Date().addingTimeInterval(Double(i - 50) * 3600),
+                            value: Cents(abs(baseOffset + noise))
+                        ), for: .unisonPitchComparison)
+                    }
                 }
-                profile.rebuild(metrics: [.unisonPitchComparison: metrics])
                 return ProgressTimeline(profile: profile)
             }())
     }

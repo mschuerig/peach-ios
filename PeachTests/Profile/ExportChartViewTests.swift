@@ -7,12 +7,9 @@ import SwiftUI
 struct ExportChartViewTests {
 
     private func makeTimeline(records: [PitchComparisonRecord]) -> ProgressTimeline {
-        let profile = PerceptualProfile()
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: records,
-            pitchMatchingRecords: []
-        )
-        profile.rebuild(metrics: metrics)
+        let profile = PerceptualProfile { builder in
+            MetricPointMapper.feedPitchComparisons(records, into: builder)
+        }
         return ProgressTimeline(profile: profile)
     }
 

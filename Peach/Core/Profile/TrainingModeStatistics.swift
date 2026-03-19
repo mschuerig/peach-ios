@@ -2,15 +2,15 @@ import Foundation
 
 /// Per-mode statistical state: Welford accumulator, EWMA, trend, and time-ordered metrics.
 struct TrainingModeStatistics {
-    private(set) var welford = WelfordAccumulator()
+    private(set) var welford = WelfordAccumulator<Cents>()
     private(set) var ewma: Double?
     private(set) var trend: Trend?
-    private(set) var metrics: [MetricPoint] = []
+    private(set) var metrics: [MetricPoint<Cents>] = []
 
     var recordCount: Int { welford.count }
 
     /// Appends a new data point, updating Welford, EWMA, and trend.
-    mutating func addPoint(_ point: MetricPoint, config: TrainingModeConfig) {
+    mutating func addPoint(_ point: MetricPoint<Cents>, config: TrainingModeConfig) {
         welford.update(point.value)
         metrics.append(point)
         recomputeEWMA(config: config)
@@ -18,8 +18,8 @@ struct TrainingModeStatistics {
     }
 
     /// Rebuilds statistics from a sorted array of metric points.
-    mutating func rebuild(from sortedMetrics: [MetricPoint], config: TrainingModeConfig) {
-        welford = WelfordAccumulator()
+    mutating func rebuild(from sortedMetrics: [MetricPoint<Cents>], config: TrainingModeConfig) {
+        welford = WelfordAccumulator<Cents>()
         metrics = sortedMetrics
         for metric in sortedMetrics {
             welford.update(metric.value)
@@ -59,7 +59,7 @@ struct TrainingModeStatistics {
                 currentCount = 0
                 sessionStart = metric.timestamp
             }
-            currentSum += metric.value
+            currentSum += metric.statisticalValue
             currentCount += 1
         }
         // Final session
@@ -86,7 +86,7 @@ struct TrainingModeStatistics {
             return
         }
 
-        let value = latest.value
+        let value = latest.statisticalValue
         if value > welford.mean + stddev {
             trend = .declining
         } else if value >= ewma {

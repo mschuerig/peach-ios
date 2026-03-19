@@ -9,14 +9,14 @@ struct ProfileScreenLayoutTests {
 
     @Test("Accessibility summary lists active modes")
     func accessibilitySummaryWithData() async throws {
-        let profile = PerceptualProfile()
-        let metrics = (0..<25).map { i in
-            MetricPoint(
-                timestamp: Date().addingTimeInterval(Double(i - 25) * 3600),
-                value: Double(30 + i)
-            )
+        let profile = PerceptualProfile { builder in
+            for i in 0..<25 {
+                builder.addPoint(
+                    MetricPoint(timestamp: Date().addingTimeInterval(Double(i - 25) * 3600), value: Cents(Double(30 + i))),
+                    for: .unisonPitchComparison
+                )
+            }
         }
-        profile.rebuild(metrics: [.unisonPitchComparison: metrics])
         let timeline = ProgressTimeline(profile: profile)
 
         let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)

@@ -8,6 +8,24 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
 
     private let logger = Logger(subsystem: "com.peach.app", category: "PerceptualProfile")
 
+    // MARK: - Builder
+
+    final class Builder {
+        fileprivate var points: [TrainingMode: [MetricPoint<Cents>]] = [:]
+
+        fileprivate init() {}
+
+        /// Adds a metric point for the given training mode.
+        ///
+        /// Points where `isCorrect` is false are silently skipped — only correct
+        /// answers contribute to the profile. Matching modes always pass `true`
+        /// (the default); comparison modes pass the record's correctness.
+        func addPoint(_ point: MetricPoint<Cents>, for mode: TrainingMode, isCorrect: Bool = true) {
+            guard isCorrect else { return }
+            points[mode, default: []].append(point)
+        }
+    }
+
     // MARK: - Initialization
 
     init() {
@@ -15,6 +33,13 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
             modes[mode] = TrainingModeStatistics()
         }
         logger.info("PerceptualProfile initialized (cold start)")
+    }
+
+    init(build: (Builder) throws -> Void) rethrows {
+        let builder = Builder()
+        try build(builder)
+        finalize(from: builder)
+        logger.info("PerceptualProfile initialized via builder")
     }
 
     // MARK: - Per-Mode Query API
@@ -77,14 +102,14 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
             if combinedCount == 0 {
                 combinedCount = n
                 combinedMean = mean
-                if let stdDev = stats.welford.centsStdDev {
+                if let stdDev = stats.welford.typedStdDev {
                     combinedM2 = stdDev.rawValue * stdDev.rawValue * Double(n - 1)
                 }
             } else {
                 let delta = mean - combinedMean
                 let newTotal = combinedCount + n
                 let newMean = (combinedMean * Double(combinedCount) + mean * Double(n)) / Double(newTotal)
-                if let stdDev = stats.welford.centsStdDev {
+                if let stdDev = stats.welford.typedStdDev {
                     let m2B = stdDev.rawValue * stdDev.rawValue * Double(n - 1)
                     combinedM2 += m2B + delta * delta * Double(combinedCount) * Double(n) / Double(newTotal)
                 } else {
@@ -104,18 +129,13 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
         (modes[.intervalMatching]?.recordCount ?? 0)
     }
 
-    // MARK: - Rebuild
+    // MARK: - Replace
 
-    func rebuild(metrics: [TrainingMode: [MetricPoint]]) {
-        for mode in TrainingMode.allCases {
-            var stats = TrainingModeStatistics()
-            if let points = metrics[mode], !points.isEmpty {
-                let sorted = points.sorted { $0.timestamp < $1.timestamp }
-                stats.rebuild(from: sorted, config: mode.config)
-            }
-            modes[mode] = stats
-        }
-        logger.info("PerceptualProfile rebuilt from metric points")
+    func replaceAll(build: (Builder) throws -> Void) rethrows {
+        let builder = Builder()
+        try build(builder)
+        finalize(from: builder)
+        logger.info("PerceptualProfile replaced via builder")
     }
 
     // MARK: - Reset
@@ -125,6 +145,19 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
             modes[mode] = TrainingModeStatistics()
         }
         logger.info("PerceptualProfile fully reset to cold start")
+    }
+
+    // MARK: - Private
+
+    private func finalize(from builder: Builder) {
+        for mode in TrainingMode.allCases {
+            var stats = TrainingModeStatistics()
+            if let points = builder.points[mode], !points.isEmpty {
+                let sorted = points.sorted { $0.timestamp < $1.timestamp }
+                stats.rebuild(from: sorted, config: mode.config)
+            }
+            modes[mode] = stats
+        }
     }
 }
 
@@ -141,7 +174,7 @@ extension PerceptualProfile: PitchComparisonObserver {
 
         let point = MetricPoint(
             timestamp: completed.timestamp,
-            value: pc.targetNote.offset.magnitude
+            value: Cents(pc.targetNote.offset.magnitude)
         )
         modes[mode]?.addPoint(point, config: mode.config)
     }
@@ -157,7 +190,7 @@ extension PerceptualProfile: PitchMatchingObserver {
 
         let point = MetricPoint(
             timestamp: result.timestamp,
-            value: result.userCentError.magnitude
+            value: Cents(result.userCentError.magnitude)
         )
         modes[mode]?.addPoint(point, config: mode.config)
     }

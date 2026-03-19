@@ -181,18 +181,15 @@ struct PitchComparisonSessionIntegrationTests {
 
     @Test("Profile loaded from pre-populated data store reflects stored records")
     func profileLoadedFromDataStore() async {
-        let profile = PerceptualProfile()
         let records = [
             PitchComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: Date()),
             PitchComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 30.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: Date()),
             PitchComparisonRecord(referenceNote: 62, targetNote: 62, centOffset: -40.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: Date())
         ]
 
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: records,
-            pitchMatchingRecords: []
-        )
-        profile.rebuild(metrics: metrics)
+        let profile = PerceptualProfile { builder in
+            MetricPointMapper.feedPitchComparisons(records, into: builder)
+        }
 
         // Only correct answers contribute: mean of [50, 30] = 40.0
         #expect(profile.comparisonMean(for: .prime) == 40.0)

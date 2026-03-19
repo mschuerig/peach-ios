@@ -1,6 +1,6 @@
 # Story 44.4: Typed Metrics, Generic Accumulator, and Incremental Profile Init
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -24,52 +24,52 @@ So that domain typing is preserved through the statistical pipeline, the accumul
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `WelfordMeasurement` protocol and make `WelfordAccumulator` generic (AC: #2)
-  - [ ] Create `WelfordMeasurement` protocol in `Core/Profile/WelfordAccumulator.swift` with `var statisticalValue: Double { get }` and `init(statisticalValue: Double)`, conforming to `Sendable`
-  - [ ] Add `WelfordMeasurement` conformance for `Cents` via extension in `Core/Profile/WelfordAccumulator.swift` — map `rawValue` ↔ `statisticalValue`
-  - [ ] Make `WelfordAccumulator` generic: `struct WelfordAccumulator<Measurement: WelfordMeasurement>`
-  - [ ] `update(_ value: Measurement)` — extracts `.statisticalValue` for internal math
-  - [ ] Replace `centsMean` / `centsStdDev` with `var typedMean: Measurement?` and `var typedStdDev: Measurement?` that wrap via `Measurement(statisticalValue:)`
-  - [ ] Keep raw accessors: `mean: Double` (read-only), `count: Int`, `populationStdDev: Double?`
-  - [ ] Update `WelfordAccumulatorTests` for generic API — test with `Cents` measurement type
-  - [ ] Run `bin/test.sh` to confirm
+- [x] Task 1: Create `WelfordMeasurement` protocol and make `WelfordAccumulator` generic (AC: #2)
+  - [x] Create `WelfordMeasurement` protocol in `Core/Profile/WelfordAccumulator.swift` with `var statisticalValue: Double { get }` and `init(statisticalValue: Double)`, conforming to `Sendable`
+  - [x] Add `WelfordMeasurement` conformance for `Cents` via extension in `Core/Profile/WelfordAccumulator.swift` — map `rawValue` ↔ `statisticalValue`
+  - [x] Make `WelfordAccumulator` generic: `struct WelfordAccumulator<Measurement: WelfordMeasurement>`
+  - [x] `update(_ value: Measurement)` — extracts `.statisticalValue` for internal math
+  - [x] Replace `centsMean` / `centsStdDev` with `var typedMean: Measurement?` and `var typedStdDev: Measurement?` that wrap via `Measurement(statisticalValue:)`
+  - [x] Keep raw accessors: `mean: Double` (read-only), `count: Int`, `populationStdDev: Double?`
+  - [x] Update `WelfordAccumulatorTests` for generic API — test with `Cents` measurement type
+  - [x] Run `bin/test.sh` to confirm
 
-- [ ] Task 2: Make `MetricPoint` generic (AC: #1)
-  - [ ] Change to `struct MetricPoint<Measurement: WelfordMeasurement>` with `let value: Measurement`
-  - [ ] Add `var statisticalValue: Double { value.statisticalValue }` convenience
-  - [ ] Update all call sites that construct `MetricPoint` to use `Cents` type parameter
-  - [ ] Run `bin/test.sh` to confirm
+- [x] Task 2: Make `MetricPoint` generic (AC: #1)
+  - [x] Change to `struct MetricPoint<Measurement: WelfordMeasurement>` with `let value: Measurement`
+  - [x] Add `var statisticalValue: Double { value.statisticalValue }` convenience
+  - [x] Update all call sites that construct `MetricPoint` to use `Cents` type parameter
+  - [x] Run `bin/test.sh` to confirm
 
-- [ ] Task 3: Update `TrainingModeStatistics` for concrete generic types (AC: #1, #2)
-  - [ ] Change field types to `WelfordAccumulator<Cents>` and `[MetricPoint<Cents>]`
-  - [ ] Update `addPoint` signature to accept `MetricPoint<Cents>`
-  - [ ] Update `rebuild(from:config:)` to accept `[MetricPoint<Cents>]`
-  - [ ] EWMA computation: use `metric.statisticalValue` instead of `metric.value`
-  - [ ] Trend computation: use `latest.statisticalValue` instead of `latest.value`
-  - [ ] Update `TrainingModeStatisticsTests` (`ModeStatisticsTests.swift`)
-  - [ ] Run `bin/test.sh` to confirm
+- [x] Task 3: Update `TrainingModeStatistics` for concrete generic types (AC: #1, #2)
+  - [x] Change field types to `WelfordAccumulator<Cents>` and `[MetricPoint<Cents>]`
+  - [x] Update `addPoint` signature to accept `MetricPoint<Cents>`
+  - [x] Update `rebuild(from:config:)` to accept `[MetricPoint<Cents>]`
+  - [x] EWMA computation: use `metric.statisticalValue` instead of `metric.value`
+  - [x] Trend computation: use `latest.statisticalValue` instead of `latest.value`
+  - [x] Update `TrainingModeStatisticsTests` (`ModeStatisticsTests.swift`)
+  - [x] Run `bin/test.sh` to confirm
 
-- [ ] Task 4: Create closure-based `PerceptualProfile` initializer with `Builder` proxy (AC: #3, #5)
-  - [ ] Create nested `struct Builder` inside `PerceptualProfile` with:
-    - `func addPoint(_ point: MetricPoint<Cents>, for mode: TrainingMode)` — appends to internal `[TrainingMode: [MetricPoint<Cents>]]` and updates `WelfordAccumulator<Cents>` per mode (no EWMA/trend)
-  - [ ] Add `init(build: (Builder) -> Void)` — creates Builder, calls closure, then finalizes: sorts metrics by timestamp per mode, computes EWMA + trend once per mode
-  - [ ] Add `func replaceAll(from builder: Builder)` for in-place profile refresh (used by `onDataChanged` after import — must keep same `@Observable` instance)
-  - [ ] Remove `rebuild(metrics:)` method
-  - [ ] Keep `init()` for empty cold-start (observer-incremental usage, test setup)
-  - [ ] Run `bin/test.sh` to confirm
+- [x] Task 4: Create closure-based `PerceptualProfile` initializer with `Builder` proxy (AC: #3, #5)
+  - [x] Create nested `class Builder` inside `PerceptualProfile` with `fileprivate init()`:
+    - `func addPoint(_ point: MetricPoint<Cents>, for mode: TrainingMode, isCorrect: Bool = true)` — filters incorrect answers (business logic), appends to internal `[TrainingMode: [MetricPoint<Cents>]]`
+  - [x] Add `init(build: (Builder) throws -> Void) rethrows` — creates Builder, calls closure, then finalizes: sorts metrics by timestamp per mode, computes EWMA + trend once per mode
+  - [x] Add `func replaceAll(build: (Builder) throws -> Void) rethrows` — mirrors init closure shape for in-place profile refresh (keeps same `@Observable` instance for SwiftUI reactivity)
+  - [x] Remove `rebuild(metrics:)` method (completed in Task 6)
+  - [x] Keep `init()` for empty cold-start (observer-incremental usage, test setup)
+  - [x] Run `bin/test.sh` to confirm
 
-- [ ] Task 5: Update `MetricPointMapper` and `PeachApp` for streaming init (AC: #4)
-  - [ ] Add streaming methods to `MetricPointMapper`:
-    - `static func feedPitchComparisons(_ records: [PitchComparisonRecord], into builder: PerceptualProfile.Builder)`
-    - `static func feedPitchMatchings(_ records: [PitchMatchingRecord], into builder: PerceptualProfile.Builder)`
-  - [ ] Update `PeachApp.loadPerceptualProfile` to use `PerceptualProfile(build:)`
-  - [ ] Update `onDataChanged` closure in `TrainingDataTransferService` init to use `PerceptualProfile.Builder` + `profile.replaceAll(from:)`
-  - [ ] Remove `extractMetrics` if fully replaced, or keep if any caller still needs it
-  - [ ] Run `bin/test.sh` to confirm
+- [x] Task 5: Update `MetricPointMapper` and `PeachApp` for streaming init (AC: #4)
+  - [x] Add `MetricPointMapper.feedAllRecords(from:into:) throws` — consolidates fetch+feed, eliminates duplication between startup and onDataChanged
+  - [x] Keep `feedPitchComparisons`/`feedPitchMatchings` as internal helpers (tests use them directly)
+  - [x] `MetricPointMapper` passes `isCorrect: record.isCorrect` to builder — mechanics only, no policy decisions
+  - [x] Update `PeachApp.loadPerceptualProfile` to use `PerceptualProfile { builder in try MetricPointMapper.feedAllRecords(...) }`
+  - [x] Update `onDataChanged` closure to use `profile.replaceAll { builder in try? MetricPointMapper.feedAllRecords(...) }`
+  - [x] Add `withTiming` utility using `ContinuousClock` for profile load timing
+  - [x] Run `bin/test.sh` to confirm
 
-- [ ] Task 6: Migrate all remaining callers and final verification (AC: #6)
-  - [ ] Update `ProfileScreen.swift` preview to use `PerceptualProfile(build:)`
-  - [ ] Update all test files that call `profile.rebuild(metrics:)` — replace with `PerceptualProfile(build:)`:
+- [x] Task 6: Migrate all remaining callers and final verification (AC: #6)
+  - [x] Update `ProfileScreen.swift` preview to use `PerceptualProfile(build:)`
+  - [x] Update all test files that call `profile.rebuild(metrics:)` — replace with `PerceptualProfile(build:)`:
     - `PerceptualProfileTests.swift`
     - `ProgressTimelineTests.swift`
     - `ExportChartViewTests.swift`
@@ -79,8 +79,8 @@ So that domain typing is preserved through the statistical pipeline, the accumul
     - `PitchComparisonSessionIntegrationTests.swift`
     - `TrainingDataImportActionTests.swift`
     - `SettingsTests.swift`
-  - [ ] Run `bin/build.sh` — zero errors, zero warnings
-  - [ ] Run `bin/test.sh` — all tests pass
+  - [x] Run `bin/build.sh` — zero errors, zero warnings
+  - [x] Run `bin/test.sh` — all tests pass
 
 ## Dev Notes
 
@@ -106,16 +106,18 @@ protocol WelfordMeasurement: Sendable {
 
 **TrainingModeStatistics stays non-generic** — all 4 current modes measure in `Cents`. Making it generic would force type erasure in `PerceptualProfile.modes` dictionary (all values must be same type). Instead, use concrete `WelfordAccumulator<Cents>` and `[MetricPoint<Cents>]`. When rhythm modes arrive, they will use their own statistics type with `WelfordAccumulator<RhythmOffset>`.
 
-**Builder proxy** — accumulates raw data during the closure: Welford updates + metric point storage per mode. EWMA and trend are NOT computed during accumulation — they run once after the closure returns. This is both more efficient (no redundant recomputation per point) and semantically correct (profile is not yet fully initialized during the closure).
+**Builder proxy — closure-only, never constructed externally** — `Builder` has `fileprivate init()`, callers always receive it via closure parameter. Both `init(build:)` and `replaceAll(build:)` accept the same `(Builder) throws -> Void` closure shape. Builder accumulates raw data (metric points per mode). EWMA and trend are NOT computed during accumulation — they run once after the closure returns via `finalize(from:)`. The `isCorrect` filter lives in `Builder.addPoint(isCorrect:)` as business logic — `MetricPointMapper` only handles mechanics.
 
-**`replaceAll(from:)` for import** — `onDataChanged` in `TrainingDataTransferService` must update the same `@Observable` instance so SwiftUI views react. It cannot replace the profile reference. The pattern:
+**`replaceAll(build:)` for import** — `onDataChanged` in `TrainingDataTransferService` must update the same `@Observable` instance so SwiftUI views react. The pattern mirrors init:
 ```swift
-let builder = PerceptualProfile.Builder()
-MetricPointMapper.feedPitchComparisons(comparisons, into: builder)
-MetricPointMapper.feedPitchMatchings(matchings, into: builder)
-profile.replaceAll(from: builder)
+profile.replaceAll { builder in
+    try MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+}
 ```
-`replaceAll` finalizes the builder (sort, EWMA, trend) then replaces internal `modes` dictionary.
+
+**`MetricPointMapper.feedAllRecords` consolidation** — a single entry point eliminates duplication between startup and onDataChanged. Individual `feedPitchComparisons`/`feedPitchMatchings` are internal helpers used by tests.
+
+**`withTiming` utility** — generic `ContinuousClock`-based timing that wraps any throwing closure, returning `(result, milliseconds)`. Lives as a private function in PeachApp.swift.
 
 ### WelfordAccumulator raw accessor preservation
 
@@ -164,7 +166,9 @@ Story 44.3 re-architected PerceptualProfile as the single source of truth for pe
 - **Do NOT make `PerceptualProfile` generic** — concrete class, concrete mode storage
 - **Do NOT remove `init()` (empty cold start)** — needed for observer-incremental usage and tests
 - **Do NOT compute EWMA/trend inside Builder** — computed once after closure returns
-- **Do NOT replace the profile instance in `onDataChanged`** — must keep same `@Observable` reference for SwiftUI reactivity; use `replaceAll(from:)` instead
+- **Do NOT replace the profile instance in `onDataChanged`** — must keep same `@Observable` reference for SwiftUI reactivity; use `replaceAll(build:)` instead
+- **Do NOT construct Builder externally** — `fileprivate init()`, callers always receive via closure parameter
+- **Do NOT put isCorrect filtering in MetricPointMapper** — that's business logic belonging in `Builder.addPoint`
 
 ### Project Structure Notes
 
@@ -193,10 +197,47 @@ All files stay in current locations — no new files, no new directories:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation, no blocking issues.
+
 ### Completion Notes List
 
+- Task 1: Created `WelfordMeasurement` protocol with `statisticalValue: Double` bridge. Made `WelfordAccumulator` generic over `Measurement: WelfordMeasurement`. Added `Cents` conformance. Replaced `centsMean`/`centsStdDev` with `typedMean`/`typedStdDev`. Created `WelfordAccumulatorTests.swift` with 7 tests.
+- Task 2: Made `MetricPoint` generic with `value: Measurement` and `statisticalValue` convenience. Updated all call sites (production + tests) to use `Cents` type parameter.
+- Task 3: Updated `TrainingModeStatistics` to use `WelfordAccumulator<Cents>` and `[MetricPoint<Cents>]`. Changed EWMA/trend computations to use `.statisticalValue`.
+- Task 4: Added `PerceptualProfile.Builder` with `fileprivate init()` and `addPoint(_:for:isCorrect:)` — isCorrect filtering is business logic in the builder. Added `init(build:)` and `replaceAll(build:)` both using `(Builder) throws -> Void` closure pattern. Builder accumulates raw data; EWMA/trend computed once after closure returns.
+- Task 5: Added `MetricPointMapper.feedAllRecords(from:into:) throws` to consolidate fetch+feed. MetricPointMapper passes `isCorrect` through to builder (mechanics only). Updated `PeachApp` startup and `onDataChanged` to both use same `feedAllRecords` call. Added `withTiming` utility.
+- Task 6: Migrated all remaining callers to closure-based builder pattern. Removed `rebuild(metrics:)` and `extractMetrics`. Zero errors, zero warnings, all 1090 tests pass.
+
+### Change Log
+
+- 2026-03-19: Implemented story 44.4 — typed metrics, generic accumulator, incremental profile init
+- 2026-03-19: Architectural revision — closure-based Builder (fileprivate init), replaceAll(build:), feedAllRecords consolidation, isCorrect policy in Builder, withTiming utility
+
 ### File List
+
+**Modified:**
+- Peach/Core/Profile/WelfordAccumulator.swift — added `WelfordMeasurement` protocol, made `WelfordAccumulator` generic, added `Cents` conformance
+- Peach/Core/Profile/MetricPoint.swift — made generic over `Measurement: WelfordMeasurement`
+- Peach/Core/Profile/TrainingModeStatistics.swift — concrete `WelfordAccumulator<Cents>` and `[MetricPoint<Cents>]`
+- Peach/Core/Profile/PerceptualProfile.swift — added `Builder` (fileprivate init, isCorrect filter), `init(build:)`, `replaceAll(build:)`, removed `rebuild(metrics:)` and `replaceAll(from:)`
+- Peach/Core/Profile/ProgressTimeline.swift — updated `[MetricPoint]` → `[MetricPoint<Cents>]`, `.value` → `.statisticalValue`
+- Peach/App/MetricPointMapper.swift — replaced `extractMetrics` with `feedAllRecords(from:into:)` + internal `feedPitchComparisons`/`feedPitchMatchings`; passes `isCorrect` through to builder
+- Peach/App/PeachApp.swift — uses closure-based `PerceptualProfile { builder in }`, `replaceAll { builder in }`, added `withTiming` utility
+- Peach/Profile/ProfileScreen.swift — preview uses `PerceptualProfile(build:)`
+- PeachTests/Core/Profile/TrainingModeStatisticsTests.swift — updated for generic `MetricPoint<Cents>`
+- PeachTests/Core/Profile/PerceptualProfileTests.swift — migrated rebuild tests to builder, added builder-specific tests
+- PeachTests/Core/Profile/ProgressTimelineTests.swift — migrated to builder pattern
+- PeachTests/Profile/ExportChartViewTests.swift — migrated to `feedPitchComparisons`
+- PeachTests/Profile/ProfileScreenLayoutTests.swift — migrated to builder pattern
+- PeachTests/Profile/ProgressChartViewTests.swift — migrated to builder pattern
+- PeachTests/PitchComparison/PitchComparisonSessionResetTests.swift — migrated to builder pattern
+- PeachTests/PitchComparison/PitchComparisonSessionIntegrationTests.swift — migrated to builder pattern
+- PeachTests/Settings/TrainingDataImportActionTests.swift — migrated to `replaceAll { builder in }` closure pattern
+- PeachTests/Settings/SettingsTests.swift — migrated to builder pattern
+
+**New:**
+- PeachTests/Core/Profile/WelfordAccumulatorTests.swift — 7 tests for generic accumulator

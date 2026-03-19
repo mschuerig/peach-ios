@@ -26,13 +26,9 @@ struct TrainingDataImportActionTests {
         profile: PerceptualProfile
     ) throws -> TrainingDataImporter.ImportSummary {
         let summary = try TrainingDataImporter.importData(parseResult, mode: mode, into: dataStore)
-        let allComparisons = try dataStore.fetchAllPitchComparisons()
-        let allPitchMatchings = try dataStore.fetchAllPitchMatchings()
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: allComparisons,
-            pitchMatchingRecords: allPitchMatchings
-        )
-        profile.rebuild(metrics: metrics)
+        try profile.replaceAll { builder in
+            try MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+        }
         return summary
     }
 
@@ -132,11 +128,9 @@ struct TrainingDataImportActionTests {
             )
         }
 
-        let metrics = MetricPointMapper.extractMetrics(
-            pitchComparisonRecords: records,
-            pitchMatchingRecords: []
-        )
-        profile.rebuild(metrics: metrics)
+        profile.replaceAll { builder in
+            MetricPointMapper.feedPitchComparisons(records, into: builder)
+        }
 
         #expect(timeline.state(for: .unisonPitchComparison) == .active)
     }
