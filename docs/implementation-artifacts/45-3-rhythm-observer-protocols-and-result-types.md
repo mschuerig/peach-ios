@@ -1,6 +1,6 @@
 # Story 45.3: Rhythm Observer Protocols and Result Types
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,35 +22,35 @@ So that rhythm sessions can notify observers using the same pattern as pitch tra
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `CompletedRhythmComparison` value type (AC: #2, #5)
-  - [ ] Create `Peach/Core/Training/CompletedRhythmComparison.swift`
-  - [ ] `struct CompletedRhythmComparison: Sendable` with `let tempo: TempoBPM`, `let offset: RhythmOffset`, `let isCorrect: Bool`, `let timestamp: Date`
-  - [ ] `nonisolated init` with `timestamp: Date = Date()` default
-- [ ] Task 2: Create `RhythmComparisonObserver` protocol (AC: #1, #5)
-  - [ ] Create `Peach/Core/Training/RhythmComparisonObserver.swift`
-  - [ ] `protocol RhythmComparisonObserver` with `func rhythmComparisonCompleted(_ result: CompletedRhythmComparison)`
-- [ ] Task 3: Create `CompletedRhythmMatching` value type (AC: #4, #5)
-  - [ ] Create `Peach/Core/Training/CompletedRhythmMatching.swift`
-  - [ ] `struct CompletedRhythmMatching: Sendable` with `let tempo: TempoBPM`, `let expectedOffset: RhythmOffset`, `let userOffset: RhythmOffset`, `let timestamp: Date`
-  - [ ] `nonisolated init` with `timestamp: Date = Date()` default
-- [ ] Task 4: Create `RhythmMatchingObserver` protocol (AC: #3, #5)
-  - [ ] Create `Peach/Core/Training/RhythmMatchingObserver.swift`
-  - [ ] `protocol RhythmMatchingObserver` with `func rhythmMatchingCompleted(_ result: CompletedRhythmMatching)`
-- [ ] Task 5: Write `CompletedRhythmComparison` tests (AC: #2)
-  - [ ] Create `PeachTests/Core/Training/CompletedRhythmComparisonTests.swift`
-  - [ ] `@Suite("CompletedRhythmComparison")` struct with `@Test` functions (all `async`)
-  - [ ] Test stored properties are accessible and correct
-  - [ ] Test default timestamp is populated
-  - [ ] Test `Sendable` conformance (compiles with `nonisolated(unsafe)` not needed)
-- [ ] Task 6: Write `CompletedRhythmMatching` tests (AC: #4)
-  - [ ] Create `PeachTests/Core/Training/CompletedRhythmMatchingTests.swift`
-  - [ ] `@Suite("CompletedRhythmMatching")` struct with `@Test` functions (all `async`)
-  - [ ] Test stored properties are accessible and correct
-  - [ ] Test `expectedOffset` and `userOffset` are independent values
-  - [ ] Test default timestamp is populated
-- [ ] Task 7: Build verification
-  - [ ] Run `bin/build.sh` — zero errors, zero warnings
-  - [ ] Run `bin/test.sh` — full suite passes, zero regressions
+- [x] Task 1: Create `CompletedRhythmComparison` value type (AC: #2, #5)
+  - [x] Create `Peach/Core/Training/CompletedRhythmComparison.swift`
+  - [x] `struct CompletedRhythmComparison: Sendable` with `let tempo: TempoBPM`, `let offset: RhythmOffset`, `let isCorrect: Bool`, `let timestamp: Date`
+  - [x] `nonisolated init` with `timestamp: Date = Date()` default
+- [x] Task 2: Create `RhythmComparisonObserver` protocol (AC: #1, #5)
+  - [x] Create `Peach/Core/Training/RhythmComparisonObserver.swift`
+  - [x] `protocol RhythmComparisonObserver` with `func rhythmComparisonCompleted(_ result: CompletedRhythmComparison)`
+- [x] Task 3: Create `CompletedRhythmMatching` value type (AC: #4, #5)
+  - [x] Create `Peach/Core/Training/CompletedRhythmMatching.swift`
+  - [x] `struct CompletedRhythmMatching: Sendable` with `let tempo: TempoBPM`, `let expectedOffset: RhythmOffset`, `let userOffset: RhythmOffset`, `let timestamp: Date`
+  - [x] `nonisolated init` with `timestamp: Date = Date()` default
+- [x] Task 4: Create `RhythmMatchingObserver` protocol (AC: #3, #5)
+  - [x] Create `Peach/Core/Training/RhythmMatchingObserver.swift`
+  - [x] `protocol RhythmMatchingObserver` with `func rhythmMatchingCompleted(_ result: CompletedRhythmMatching)`
+- [x] Task 5: Write `CompletedRhythmComparison` tests (AC: #2)
+  - [x] Create `PeachTests/Core/Training/CompletedRhythmComparisonTests.swift`
+  - [x] `@Suite("CompletedRhythmComparison")` struct with `@Test` functions (all `async`)
+  - [x] Test stored properties are accessible and correct
+  - [x] Test default timestamp is populated
+  - [x] Test `Sendable` conformance (compiles with `nonisolated(unsafe)` not needed)
+- [x] Task 6: Write `CompletedRhythmMatching` tests (AC: #4)
+  - [x] Create `PeachTests/Core/Training/CompletedRhythmMatchingTests.swift`
+  - [x] `@Suite("CompletedRhythmMatching")` struct with `@Test` functions (all `async`)
+  - [x] Test stored properties are accessible and correct
+  - [x] Test `expectedOffset` and `userOffset` are independent values
+  - [x] Test default timestamp is populated
+- [x] Task 7: Build verification
+  - [x] Run `bin/build.sh` — zero errors, zero warnings
+  - [x] Run `bin/test.sh` — full suite passes, zero regressions
 
 ## Dev Notes
 
@@ -166,10 +166,28 @@ Existing Core/Training/ directory contains: `PitchComparisonObserver.swift`, `Pi
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- All 4 source files created in `Core/Training/` following pitch observer patterns
+- Both value types declare explicit `Sendable` conformance per AC
+- `nonisolated init` with `timestamp: Date = Date()` default on both value types
+- Protocols are minimal — single method each, no doc comments listing future conforming types (per anti-patterns)
+- 8 tests across 2 test suites: stored property access, default timestamp, Sendable conformance, independent offsets
+- Build succeeds (zero errors), full test suite passes (1116 tests, zero regressions)
+
+### Change Log
+
+- 2026-03-20: Implemented story 45.3 — created 4 source files and 2 test files
+
 ### File List
+
+- `Peach/Core/Training/CompletedRhythmComparison.swift` — new
+- `Peach/Core/Training/CompletedRhythmMatching.swift` — new
+- `Peach/Core/Training/RhythmComparisonObserver.swift` — new
+- `Peach/Core/Training/RhythmMatchingObserver.swift` — new
+- `PeachTests/Core/Training/CompletedRhythmComparisonTests.swift` — new
+- `PeachTests/Core/Training/CompletedRhythmMatchingTests.swift` — new
