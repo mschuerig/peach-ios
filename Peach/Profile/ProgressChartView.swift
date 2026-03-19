@@ -1,13 +1,6 @@
 import SwiftUI
 import Charts
 
-// MARK: Design Decisions
-// - No zone caption labels (Monthly/Daily/Sessions) — tints and separators are sufficient
-// - Session data points are disconnected dots (PointMark only) — no LineMark or AreaMark;
-//   connecting individual sessions with lines misrepresents the data
-// - Session buckets have no X-axis label (no timestamps)
-// - German abbreviations have no trailing dot ("Dez" not "Dez.", "Mo" not "Mo.")
-
 struct ProgressChartView: View {
     let mode: TrainingMode
 

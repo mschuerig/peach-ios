@@ -23,8 +23,9 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
     // MARK: - PitchComparisonProfile
 
     func updateComparison(note: MIDINote, centOffset: Cents, isCorrect: Bool) {
-        pitchComparison.update(centOffset.rawValue)
-        logger.debug("Updated comparison: mean=\(self.pitchComparison.mean), count=\(self.pitchComparison.count), correct=\(isCorrect)")
+        guard isCorrect else { return }
+        pitchComparison.update(centOffset.magnitude)
+        logger.debug("Updated comparison: mean=\(self.pitchComparison.mean), count=\(self.pitchComparison.count)")
     }
 
     var comparisonMean: Cents? {
@@ -106,7 +107,7 @@ extension PerceptualProfile: PitchComparisonObserver {
 
         updateComparison(
             note: pitchComparison.referenceNote,
-            centOffset: Cents(pitchComparison.targetNote.offset.magnitude),
+            centOffset: pitchComparison.targetNote.offset,
             isCorrect: completed.isCorrect
         )
     }

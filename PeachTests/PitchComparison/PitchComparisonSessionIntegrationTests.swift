@@ -156,8 +156,8 @@ struct PitchComparisonSessionIntegrationTests {
         #expect(f.profile.comparisonMean != nil)
     }
 
-    @Test("Profile updates for all answers (both correct and incorrect)")
-    func profileUpdatesForAllAnswers() async throws {
+    @Test("Incorrect answer is recorded but does not update profile statistics")
+    func incorrectAnswerDoesNotUpdateProfile() async throws {
         let f = makePitchComparisonSession()
 
         f.session.start(settings: defaultTestSettings)
@@ -168,7 +168,7 @@ struct PitchComparisonSessionIntegrationTests {
 
         try #require(f.mockDataStore.lastSavedRecord != nil, "No comparison was recorded")
 
-        #expect(f.profile.comparisonMean != nil, "Profile should update for all answers, not just correct ones")
+        #expect(f.profile.comparisonMean == nil, "Incorrect answers should not contribute to profile statistics")
     }
 
     // MARK: - Profile Loading from DataStore (Story 4.3 AC#2)
@@ -182,12 +182,11 @@ struct PitchComparisonSessionIntegrationTests {
             PitchComparisonRecord(referenceNote: 62, targetNote: 62, centOffset: -40.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: Date())
         ]
 
-        // Loading uses abs() on stored signed centOffset for unsigned threshold
         for record in records {
-            profile.updateComparison(note: MIDINote(record.referenceNote), centOffset: Cents(abs(record.centOffset)), isCorrect: record.isCorrect)
+            profile.updateComparison(note: MIDINote(record.referenceNote), centOffset: Cents(record.centOffset), isCorrect: record.isCorrect)
         }
 
-        // Mean of [50, 30, 40] = 40.0
+        // Only correct answers contribute: mean of [50, 30] = 40.0
         #expect(profile.comparisonMean == 40.0)
     }
 

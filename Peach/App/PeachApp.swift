@@ -63,7 +63,7 @@ struct PeachApp: App {
                     let pitchMatchings = (try? dataStore.fetchAllPitchMatchings()) ?? []
                     profile.resetAll()
                     for record in comparisons {
-                        profile.updateComparison(note: MIDINote(record.referenceNote), centOffset: Cents(abs(record.centOffset)), isCorrect: record.isCorrect)
+                        profile.updateComparison(note: MIDINote(record.referenceNote), centOffset: Cents(record.centOffset), isCorrect: record.isCorrect)
                     }
                     for record in pitchMatchings {
                         profile.updateMatching(note: MIDINote(record.referenceNote), centError: Cents(record.userCentError))
@@ -167,7 +167,7 @@ struct PeachApp: App {
         for record in pitchComparisonRecords {
             profile.updateComparison(
                 note: MIDINote(record.referenceNote),
-                centOffset: Cents(abs(record.centOffset)),
+                centOffset: Cents(record.centOffset),
                 isCorrect: record.isCorrect
             )
         }

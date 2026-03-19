@@ -350,7 +350,6 @@ struct SettingsTests {
         profile.updateComparison(note: 60, centOffset: 3.0, isCorrect: true)
         profile.updateComparison(note: 72, centOffset: -2.0, isCorrect: false)
         #expect(profile.comparisonMean != nil)
-        #expect(profile.comparisonMean != nil)
 
         // Reset
         profile.resetComparison()

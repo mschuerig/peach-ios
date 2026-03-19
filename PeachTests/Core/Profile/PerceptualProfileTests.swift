@@ -47,17 +47,15 @@ struct PerceptualProfileTests {
         #expect(profile.comparisonMean == 40.0) // (50+30+40)/3
     }
 
-    @Test("Includes all answers (both correct and incorrect)")
-    func includesAllAnswers() async {
+    @Test("Only correct answers contribute to comparison mean")
+    func onlyCorrectAnswersContribute() async {
         let profile = PerceptualProfile()
 
         profile.updateComparison(note: 60, centOffset: 50, isCorrect: true)
         profile.updateComparison(note: 60, centOffset: 200, isCorrect: false)
         profile.updateComparison(note: 60, centOffset: 60, isCorrect: true)
 
-        let expectedMean = (50.0 + 200.0 + 60.0) / 3.0
-        let mean = try! profile.comparisonMean!
-        #expect(abs(mean.rawValue - expectedMean) < 0.01)
+        #expect(profile.comparisonMean == 55.0) // (50+60)/2, incorrect answer excluded
     }
 
     @Test("Standard deviation with identical values is zero")
@@ -80,7 +78,7 @@ struct PerceptualProfileTests {
         profile.updateComparison(note: 60, centOffset: 60, isCorrect: true)
 
         // Sample stdDev = sqrt(((40-50)^2 + (50-50)^2 + (60-50)^2) / 2) = sqrt(100) = 10.0
-        let stdDev = try! profile.comparisonStdDev!
+        let stdDev = profile.comparisonStdDev!
         #expect(abs(stdDev.rawValue - 10.0) < 0.01)
     }
 

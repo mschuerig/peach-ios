@@ -246,7 +246,7 @@ struct KazezNoteStrategyTests {
         let strategy = KazezNoteStrategy()
         let profile = PerceptualProfile()
         // Train with large offsets
-        profile.updateComparison(note: 60, centOffset: 200.0, isCorrect: false)
+        profile.updateComparison(note: 60, centOffset: 200.0, isCorrect: true)
 
         let settings = PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime], maxCentDifference: Cents(100.0))
 
