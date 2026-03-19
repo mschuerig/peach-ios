@@ -81,7 +81,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`SoundFontLibrary`** — `@MainActor` service created once at startup; discovers SF2 files in bundle, parses presets via `SF2PresetParser`, filters unpitched (bank >= 120, program >= 120), sorts alphabetically; conforms to `SoundSourceProvider`; injected via `@Environment(\.soundSourceProvider)` for `SettingsScreen`. Read-only at runtime
 - **`soundSource` tag format** — `@AppStorage` stores `"sf2:{bank}:{program}"` (SF2 bank and MIDI program number, e.g., `"sf2:0:0"` = Grand Piano, `"sf2:0:42"` = Cello, `"sf2:8:80"` = Sine Wave). Default: `"sf2:0:0"`
 - **Protocol boundary: `NotePlayer`** — knows only frequencies (Hz), durations, envelopes; no concept of MIDI notes, comparisons, or training
-- **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents`) and physical world (`Frequency`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontNotePlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
+- **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents` in `Core/Music/`) and physical world (`Frequency` in `Core/Music/`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontNotePlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
 
 **State Management:**
 - **`PitchComparisonSession` state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
@@ -117,7 +117,7 @@ Never run only specific test files — always the complete suite.
 - **Behavioral test descriptions** — `@Test("plays note 1 after starting")`, not `@Test("test playNote1 method")`
 
 **Test Organization:**
-- **Mirror source structure** — `PeachTests/Core/Audio/` mirrors `Peach/Core/Audio/`
+- **Mirror source structure** — test directories mirror source (e.g., `PeachTests/Core/Audio/` mirrors `Peach/Core/Audio/`, `PeachTests/Core/Music/` mirrors `Peach/Core/Music/`)
 - **One test file per source file** — `SoundFontNotePlayer.swift` → `SoundFontNotePlayerTests.swift`
 - **Mock files live in test target** — `MockNotePlayer.swift`, `MockTrainingDataStore.swift`, etc.
 - **Fresh mocks per test** — create via factory method in each test; never share mocks across tests (parallel execution)
@@ -157,7 +157,7 @@ Never run only specific test files — always the complete suite.
 **File Placement (decision tree):**
 - Protocol or service used across features → `Core/{subdomain}/`
 - Shared training domain types (PitchComparison, observers, Resettable) → `Core/Training/`
-- Audio domain value types (SoundSourceID, NoteDuration, etc.) → `Core/Audio/`
+- Musical domain value types (MIDINote, Frequency, Interval, NoteDuration, etc.) → `Core/Music/`
 - New `@Entry` environment key → `App/EnvironmentKeys.swift` (not co-located with domain types)
 - Screen the user navigates to → `{Feature}/{Feature}Screen.swift`
 - Subview used by one screen → same feature directory as the screen
