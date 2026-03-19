@@ -348,5 +348,5 @@ development_status:
 
   # Epic 44: Solid Ground — Prerequisite Refactorings
   epic-44: in-progress
-  44-1-split-core-audio-into-core-music-and-core-audio: ready-for-dev
+  44-1-split-core-audio-into-core-music-and-core-audio: review
   44-2-clean-up-perceptualprofile-for-multi-mode-extension: backlog

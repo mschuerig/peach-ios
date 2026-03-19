@@ -905,11 +905,13 @@ struct ProgressTimelineTests {
 
     @Test("sub-bucket record counts are consistent with parent bucket")
     func subBucketRecordCountConsistency() async {
-        // Create records spanning days within a month bucket
+        // Create records spanning days within a single month bucket.
+        // Anchor 90 days back so all records are well past the 30-day
+        // monthThreshold and land in month buckets, not day buckets.
         let calendar = Calendar.current
-        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now.addingTimeInterval(-45 * 86400)))!
+        let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now.addingTimeInterval(-90 * 86400)))!
         let records = (0..<15).map { i in
-            let dayOffset = Double(i * 2)  // Every 2 days
+            let dayOffset = Double(i)  // Every day (stays within one calendar month)
             let timestamp = monthStart.addingTimeInterval(dayOffset * 86400 + Double(i) * 60)
             return PitchComparisonRecord(
                 referenceNote: 60,

@@ -32,6 +32,7 @@
 				Core/Algorithm/.gitkeep,
 				Core/Audio/.gitkeep,
 				Core/Data/.gitkeep,
+				Core/Music/.gitkeep,
 				Core/Profile/.gitkeep,
 				Info/.gitkeep,
 				Profile/.gitkeep,
