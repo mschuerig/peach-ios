@@ -355,7 +355,7 @@ development_status:
 
   # Epic 45: Rhythm Domain — Types and Contracts
   epic-45: in-progress
-  45-1-tempobpm-domain-type: ready-for-dev
+  45-1-tempobpm-domain-type: review
   45-2-rhythmoffset-and-rhythmdirection-domain-types: backlog
   45-3-rhythm-observer-protocols-and-result-types: backlog
   45-4-rhythmprofile-protocol: backlog

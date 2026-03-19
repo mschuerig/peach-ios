@@ -1,6 +1,6 @@
 # Story 45.1: TempoBPM Domain Type
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,30 +18,30 @@ So that all rhythm APIs use a domain type instead of raw `Int` values.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `TempoBPM` value type (AC: #1, #3)
-  - [ ] Create `Peach/Core/Music/TempoBPM.swift`
-  - [ ] `struct TempoBPM` with `let value: Int`
-  - [ ] Conform to `Hashable`, `Sendable`, `Codable`, `Comparable`
-  - [ ] `Comparable` via `value` — `lhs.value < rhs.value`
-  - [ ] `nonisolated init(_ value: Int)` — matches `Cents` pattern
-  - [ ] Add `ExpressibleByIntegerLiteral` conformance for ergonomic construction
-- [ ] Task 2: Add `sixteenthNoteDuration` computed property (AC: #2)
-  - [ ] Compute `Duration.seconds(60.0 / (Double(value) * 4.0))`
-  - [ ] Formula: one beat = 60/BPM seconds, one sixteenth = beat / 4
-- [ ] Task 3: Write tests (AC: #2, #3)
-  - [ ] Create `PeachTests/Core/Music/TempoBPMTests.swift`
-  - [ ] `@Suite("TempoBPM")` struct with `@Test` functions (all `async`)
-  - [ ] Test `sixteenthNoteDuration` at 120 BPM -> `.milliseconds(125)`
-  - [ ] Test `sixteenthNoteDuration` at 60 BPM -> `.milliseconds(250)`
-  - [ ] Test `sixteenthNoteDuration` at 240 BPM -> `.milliseconds(62.5)` (use approximate comparison)
-  - [ ] Test `Comparable` — 60 BPM < 120 BPM
-  - [ ] Test `Hashable` — equal values hash equally
-  - [ ] Test `Codable` — round-trip encode/decode
-  - [ ] Test `ExpressibleByIntegerLiteral` — `let tempo: TempoBPM = 120`
-  - [ ] Run `bin/test.sh` — all tests pass
-- [ ] Task 4: Build verification (AC: #1)
-  - [ ] Run `bin/build.sh` — zero errors, zero warnings
-  - [ ] Run `bin/test.sh` — full suite passes
+- [x] Task 1: Create `TempoBPM` value type (AC: #1, #3)
+  - [x] Create `Peach/Core/Music/TempoBPM.swift`
+  - [x] `struct TempoBPM` with `let value: Int`
+  - [x] Conform to `Hashable`, `Sendable`, `Codable`, `Comparable`
+  - [x] `Comparable` via `value` — `lhs.value < rhs.value`
+  - [x] `nonisolated init(_ value: Int)` — matches `Cents` pattern
+  - [x] Add `ExpressibleByIntegerLiteral` conformance for ergonomic construction
+- [x] Task 2: Add `sixteenthNoteDuration` computed property (AC: #2)
+  - [x] Compute `Duration.seconds(60.0 / (Double(value) * 4.0))`
+  - [x] Formula: one beat = 60/BPM seconds, one sixteenth = beat / 4
+- [x] Task 3: Write tests (AC: #2, #3)
+  - [x] Create `PeachTests/Core/Music/TempoBPMTests.swift`
+  - [x] `@Suite("TempoBPM")` struct with `@Test` functions (all `async`)
+  - [x] Test `sixteenthNoteDuration` at 120 BPM -> `.milliseconds(125)`
+  - [x] Test `sixteenthNoteDuration` at 60 BPM -> `.milliseconds(250)`
+  - [x] Test `sixteenthNoteDuration` at 240 BPM -> `.milliseconds(62.5)` (use approximate comparison)
+  - [x] Test `Comparable` — 60 BPM < 120 BPM
+  - [x] Test `Hashable` — equal values hash equally
+  - [x] Test `Codable` — round-trip encode/decode
+  - [x] Test `ExpressibleByIntegerLiteral` — `let tempo: TempoBPM = 120`
+  - [x] Run `bin/test.sh` — all tests pass
+- [x] Task 4: Build verification (AC: #1)
+  - [x] Run `bin/build.sh` — zero errors, zero warnings
+  - [x] Run `bin/test.sh` — full suite passes
 
 ## Dev Notes
 
@@ -116,10 +116,24 @@ Aligns with existing Core/Music/ directory containing: `Cents.swift`, `Frequency
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Implemented `TempoBPM` value type following the `Cents.swift` pattern exactly
+- Conforms to `Hashable`, `Sendable`, `Codable`, `Comparable`, `ExpressibleByIntegerLiteral`
+- `sixteenthNoteDuration` computed property returns `Duration.seconds(60.0 / (Double(value) * 4.0))`
+- No validation/clamping in init — min tempo enforced at settings/session level per architecture spec
+- 7 tests covering all ACs: Comparable, Hashable, Codable, ExpressibleByIntegerLiteral, sixteenthNoteDuration at 60/120/240 BPM
+- Full suite: 1097 tests pass, zero regressions
+
+### Change Log
+
+- 2026-03-19: Implemented story 45.1 — TempoBPM domain type with all conformances and tests
+
 ### File List
+
+- `Peach/Core/Music/TempoBPM.swift` (new)
+- `PeachTests/Core/Music/TempoBPMTests.swift` (new)

@@ -1,0 +1,27 @@
+import Foundation
+
+struct TempoBPM: Hashable, Sendable, Codable, Comparable {
+    let value: Int
+
+    var sixteenthNoteDuration: Duration {
+        .seconds(60.0 / (Double(value) * 4.0))
+    }
+
+    nonisolated init(_ value: Int) {
+        self.value = value
+    }
+
+    // MARK: - Comparable
+
+    static func < (lhs: TempoBPM, rhs: TempoBPM) -> Bool {
+        lhs.value < rhs.value
+    }
+}
+
+// MARK: - ExpressibleByIntegerLiteral
+
+extension TempoBPM: ExpressibleByIntegerLiteral {
+    init(integerLiteral value: Int) {
+        self.init(value)
+    }
+}
