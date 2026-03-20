@@ -1,6 +1,6 @@
 # Story 46.5: On-Device Rhythm Timing POC
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,100 +26,46 @@ So that I can verify on real hardware that the three-layer audio architecture de
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Expose engine sample rate (AC: #3)
-  - [ ] Add `var sampleRate: SampleRate` computed property to `SoundFontEngine` that returns `SampleRate(engine.outputNode.outputFormat(forBus: 0).sampleRate)`
-  - [ ] This is needed so the POC (and future rhythm sessions) can build `RhythmPattern` with the correct `sampleRate` matching the audio engine's output
+- [x] Task 1: Expose engine sample rate (AC: #3)
+  - [x] Add `var sampleRate: SampleRate` computed property to `SoundFontEngine` that returns `SampleRate(engine.outputNode.outputFormat(forBus: 0).sampleRate)`
+  - [x] This is needed so the POC (and future rhythm sessions) can build `RhythmPattern` with the correct `sampleRate` matching the audio engine's output
 
-- [ ] Task 2: Create percussion `SoundFontPlayer` instance in `PeachApp.swift` (AC: #3)
-  - [ ] Create channel 1 on the existing `SoundFontEngine`: `soundFontEngine.createChannel(SoundFontEngine.ChannelID(1))`
-  - [ ] Create a second `SoundFontPlayer` instance for percussion:
-    ```swift
-    let percussionPlayer: any RhythmPlayer = SoundFontPlayer(
-        engine: soundFontEngine,
-        preset: soundFontLibrary.percussionPresets.first ?? SF2Preset(name: "", program: 0, bank: SF2Preset.percussionBank),
-        channel: SoundFontEngine.ChannelID(1)
-    )
-    ```
-  - [ ] Store as `@State private var rhythmPlayer: any RhythmPlayer`
-  - [ ] Inject into environment: add `@Entry var rhythmPlayer: (any RhythmPlayer)?` in `EnvironmentKeys.swift`, set `.environment(\.rhythmPlayer, rhythmPlayer)` in `PeachApp.body`
+- [x] Task 2: Create percussion `SoundFontPlayer` instance in `PeachApp.swift` (AC: #3)
+  - [x] Create channel 1 on the existing `SoundFontEngine`: `soundFontEngine.createChannel(SoundFontEngine.ChannelID(1))`
+  - [x] Create a second `SoundFontPlayer` instance for percussion
+  - [x] Store as `@State private var rhythmPlayer: any RhythmPlayer`
+  - [x] Inject into environment: add `@Entry var rhythmPlayer: (any RhythmPlayer)?` in `EnvironmentKeys.swift`, set `.environment(\.rhythmPlayer, rhythmPlayer)` in `PeachApp.body`
 
-- [ ] Task 3: Add `rhythmPOC` navigation destination (AC: #1)
-  - [ ] Add `case rhythmPOC` to `NavigationDestination` enum in `App/NavigationDestination.swift`
-  - [ ] Add routing in `StartScreen.swift`: `.navigationDestination` switch case for `.rhythmPOC` → `RhythmPOCScreen()`
+- [x] Task 3: Add `rhythmPOC` navigation destination (AC: #1)
+  - [x] Add `case rhythmPOC` to `NavigationDestination` enum in `App/NavigationDestination.swift`
+  - [x] Add routing in `StartScreen.swift`: `.navigationDestination` switch case for `.rhythmPOC` → `RhythmPOCScreen()`
 
-- [ ] Task 4: Add "Rhythm POC" button to Start Screen (AC: #1)
-  - [ ] Add a `NavigationLink(value: NavigationDestination.rhythmPOC)` below the existing sections
-  - [ ] Style it distinctly (e.g., `.tint(.orange)` or similar) to make it obvious this is temporary
-  - [ ] Label: "Rhythm POC" with a `metronome` SF Symbol (or `waveform.path` if metronome unavailable)
+- [x] Task 4: Add "Rhythm POC" button to Start Screen (AC: #1)
+  - [x] Add a `NavigationLink(value: NavigationDestination.rhythmPOC)` below the existing sections
+  - [x] Style it distinctly (orange background with border) to make it obvious this is temporary
+  - [x] Label: "Rhythm POC" with a `metronome` SF Symbol
 
-- [ ] Task 5: Create `RhythmPOCScreen` (AC: #2, #3, #4, #5)
-  - [ ] Create `Peach/RhythmPOC/RhythmPOCScreen.swift`
-  - [ ] UI elements:
-    - Navigation title: "Rhythm POC"
-    - Tempo display showing current BPM
-    - Tempo stepper or picker: 80 / 120 / 160 BPM (use `TempoBPM` domain type)
-    - "Play Pattern" button
-    - Status text showing "Playing..." / "Stopped"
-  - [ ] State:
-    - `@State private var tempo: TempoBPM = TempoBPM(120)`
-    - `@State private var playbackHandle: RhythmPlaybackHandle?`
-    - `@State private var isPlaying = false`
-  - [ ] Dependencies:
-    - `@Environment(\.rhythmPlayer) private var rhythmPlayer`
-    - `@Environment(\.soundFontEngine) private var soundFontEngine` (for `sampleRate`)
-  - [ ] Play logic:
-    ```swift
-    // Stop previous if still playing
-    try? await playbackHandle?.stop()
+- [x] Task 5: Create `RhythmPOCScreen` (AC: #2, #3, #4, #5)
+  - [x] Create `Peach/RhythmPOC/RhythmPOCScreen.swift`
+  - [x] UI elements: navigation title, tempo display, segmented picker (80/120/160 BPM), play button, status text
+  - [x] State: `tempo`, `playbackHandle`, `isPlaying`
+  - [x] Dependencies: `@Environment(\.rhythmPlayer)`, `@Environment(\.audioSampleRate)`
+  - [x] Play logic: builds 4-click RhythmPattern with sample-accurate offsets, plays via RhythmPlayer
+  - [x] Handle "Play" while already playing: stop previous handle first (AC #4)
 
-    // Build pattern: 4 clicks at sixteenth-note intervals
-    let sampleRate = soundFontEngine.sampleRate
-    let sixteenthDuration = tempo.sixteenthNoteDuration
-    let samplesPerSixteenth = Int64(sampleRate.rawValue * sixteenthDuration.timeInterval)
+- [x] Task 6: Inject `SoundFontEngine` into environment for sample rate access (AC: #3)
+  - [x] **Preferred approach used**: Inject `audioSampleRate` only, not the engine. Views don't have direct engine access (architectural boundary)
+  - [x] Added `@Entry var audioSampleRate: SampleRate = .standard48000` in `EnvironmentKeys.swift`
+  - [x] Set from `soundFontEngine.sampleRate` in `PeachApp.body`
 
-    let clickNote = MIDINote(76)  // Hi Wood Block (GM percussion)
-    let velocity = MIDIVelocity(100)
+- [x] Task 7: Localization (AC: #2)
+  - [x] Added English + German strings: "Rhythm POC", "Play Pattern", "Playing...", "Stopped", "Tempo"
+  - [x] Used `bin/add-localization.swift` for German translations
 
-    let events = (0..<4).map { i in
-        RhythmPattern.Event(
-            sampleOffset: Int64(i) * samplesPerSixteenth,
-            midiNote: clickNote,
-            velocity: velocity
-        )
-    }
-
-    let totalSamples = Int64(3) * samplesPerSixteenth + samplesPerSixteenth
-    let pattern = RhythmPattern(
-        events: events,
-        sampleRate: sampleRate,
-        totalDuration: sixteenthDuration * 4
-    )
-
-    playbackHandle = try await rhythmPlayer?.play(pattern)
-    isPlaying = true
-
-    // Auto-stop after pattern completes
-    try? await Task.sleep(for: pattern.totalDuration)
-    isPlaying = false
-    ```
-  - [ ] Handle "Play" while already playing: stop previous handle first (AC #4)
-
-- [ ] Task 6: Inject `SoundFontEngine` into environment for sample rate access (AC: #3)
-  - [ ] Add `@Entry var soundFontEngine: SoundFontEngine` in `EnvironmentKeys.swift` — needs a dummy default for previews; consider using a lightweight approach
-  - [ ] Alternative: Instead of injecting the engine, inject only the sample rate: `@Entry var audioSampleRate: SampleRate = .standard48000`. Set it from `soundFontEngine.sampleRate` in `PeachApp.body`. This is cleaner — the view doesn't need the engine, just the sample rate
-  - [ ] **Preferred approach**: Inject `audioSampleRate` only, not the engine. Views should not have direct engine access (architectural boundary)
-
-- [ ] Task 7: Localization (AC: #2)
-  - [ ] Add English + German strings for:
-    - "Rhythm POC" (screen title and button label)
-    - "Play Pattern" button
-    - "%d BPM" tempo label
-  - [ ] Use `bin/add-localization.swift` for German translations
-
-- [ ] Task 8: Build and test (AC: #7)
-  - [ ] `bin/build.sh` — zero errors, zero warnings
-  - [ ] `bin/test.sh` — full suite passes, no regressions
-  - [ ] No new tests required (POC is a throwaway screen for on-device verification)
+- [x] Task 8: Build and test (AC: #7)
+  - [x] `bin/build.sh` — zero errors, zero warnings (only pre-existing AppIntents warning)
+  - [x] `bin/test.sh` — full suite passes (1173 tests), no regressions
+  - [x] No new tests required (POC is a throwaway screen for on-device verification)
 
 ## Dev Notes
 
@@ -210,8 +156,48 @@ From story 46.4:
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+- **Growing MIDI latency bug**: `AUScheduleMIDIEventBlock` with absolute `hostSampleTime` caused stale events to accumulate in the sampler's internal queue. Source node and sampler render in engine-determined order — when the source node fires after the sampler in a cycle, events targeting the current buffer's sample time are "past" for the sampler and queue up indefinitely.
+- **Fix**: Switched to `AUEventSampleTimeImmediate + intraBufferOffset` (relative "now" timestamps) and added `auAudioUnit.reset()` before each schedule to flush stale events.
+- **IO buffer toggling removed**: Per-play `configureForRhythmScheduling`/`restoreDefaultBufferDuration` calls were disrupting the render pipeline. Set 5ms buffer once in `SoundFontEngine.init` instead.
 
 ### Completion Notes List
 
+- Added `sampleRate` computed property to `SoundFontEngine` for audio engine sample rate access
+- Promoted `Duration.timeInterval` extension from private (in SoundFontPlayer) to internal shared extension in `Core/Music/Duration+TimeInterval.swift` — needed by POC and future rhythm sessions
+- Created percussion `SoundFontPlayer` on channel 1 in `PeachApp.init`, typed as `any RhythmPlayer`
+- Injected `rhythmPlayer` and `audioSampleRate` into SwiftUI environment (preferred approach: sample rate only, not engine)
+- Added `rhythmPOC` navigation destination and orange-styled temporary button on Start Screen
+- Created `RhythmPOCScreen` with segmented tempo picker (80/120/160 BPM), play button, and status indicator
+- Pattern construction: 4 Hi Wood Block (MIDI 76) clicks at sixteenth-note intervals using sample-accurate offsets
+- Previous playback is stopped before starting new pattern (AC #4)
+- Added 5 German translations via `bin/add-localization.swift`
+- Fixed render-thread MIDI scheduling: `AUEventSampleTimeImmediate` + sampler reset eliminates accumulated latency
+- Removed per-play IO buffer toggling; set 5ms low-latency buffer once at engine init
+- Removed dead `configureForRhythmScheduling`/`restoreDefaultBufferDuration` methods from engine
+- Updated SF2 preset count test (149 → 150) for new percussion preset
+- Build: zero errors. Tests: 1173 passed, zero failures. On-device timing verified: no audible jitter.
+
+### Change Log
+
+- 2026-03-20: Implemented story 46.5 — On-Device Rhythm Timing POC
+- 2026-03-20: Fixed render-thread MIDI scheduling latency (AUEventSampleTimeImmediate + sampler reset)
+
 ### File List
+
+- `Peach/Core/Audio/SoundFontEngine.swift` — added `sampleRate`, fixed MIDI dispatch to use `AUEventSampleTimeImmediate`, added sampler reset in `scheduleEvents`, set 5ms buffer at init, removed `configureForRhythmScheduling`/`restoreDefaultBufferDuration`
+- `Peach/Core/Audio/SoundFontPlayer.swift` — removed private `Duration.timeInterval` extension, removed buffer duration calls from `play`/`stopAll`
+- `Peach/Core/Audio/SoundFontRhythmPlaybackHandle.swift` — removed `restoreDefaultBufferDuration` from `stop()`
+- `Peach/Core/Audio/RhythmPlayer.swift` — protocol (unchanged from story 46.4)
+- `Peach/Core/Music/Duration+TimeInterval.swift` — **new** shared `Duration.timeInterval` extension
+- `Peach/RhythmPOC/RhythmPOCScreen.swift` — **new** temporary POC screen
+- `Peach/App/NavigationDestination.swift` — added `rhythmPOC` case
+- `Peach/App/EnvironmentKeys.swift` — added `rhythmPlayer` and `audioSampleRate` entries
+- `Peach/App/PeachApp.swift` — created percussion player on channel 1, injected environment values
+- `Peach/Start/StartScreen.swift` — added Rhythm POC button and navigation destination handler
+- `Peach/Resources/Localizable.xcstrings` — added 5 German translations
+- `PeachTests/Core/Audio/SF2PresetParserTests.swift` — updated preset count (149 → 150)
+- `PeachTests/Mocks/MockRhythmPlayer.swift` — kept in sync with protocol

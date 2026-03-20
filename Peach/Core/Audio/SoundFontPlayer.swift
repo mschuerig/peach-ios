@@ -61,8 +61,6 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle {
         try soundFontEngine.ensureAudioSessionConfigured()
         try soundFontEngine.ensureEngineRunning()
-
-        // Load percussion preset
         try await soundFontEngine.loadPreset(preset, channel: channel)
 
         // Convert pattern events to scheduled MIDI events
@@ -104,7 +102,6 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
 
         scheduledEvents.sort { $0.sampleOffset < $1.sampleOffset }
 
-        try soundFontEngine.configureForRhythmScheduling()
         soundFontEngine.scheduleEvents(scheduledEvents)
 
         return SoundFontRhythmPlaybackHandle(engine: soundFontEngine, channel: channel)
@@ -115,7 +112,6 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     func stopAll() async throws {
         soundFontEngine.clearSchedule()
         await soundFontEngine.stopNotes(channel: channel, stopPropagationDelay: stopPropagationDelay)
-        try? soundFontEngine.restoreDefaultBufferDuration()
     }
 
     // MARK: - Melodic Play Sub-operations
@@ -166,11 +162,3 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
 
 }
 
-// MARK: - Duration Extension
-
-private extension Duration {
-    var timeInterval: Double {
-        let components = self.components
-        return Double(components.seconds) + Double(components.attoseconds) / 1e18
-    }
-}

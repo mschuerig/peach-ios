@@ -14,12 +14,12 @@ struct SF2PresetParserTests {
         #expect(!presets.isEmpty)
     }
 
-    @Test("Preset count matches expected total (149 presets)")
+    @Test("Preset count matches expected total (150 presets)")
     func presetCountMatchesExpected() async throws {
         let url = try sf2URL()
         let presets = try SF2PresetParser.parsePresets(from: url)
-        // Custom Samples.sf2: 149 pitched presets (FluidR3_GM piano + GeneralUser GS non-piano)
-        #expect(presets.count == 149)
+        // Custom Samples.sf2: 149 pitched + 1 percussion preset
+        #expect(presets.count == 150)
     }
 
     @Test("Yamaha Grand Piano found at bank 0, program 0")

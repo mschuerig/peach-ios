@@ -14,6 +14,8 @@ extension EnvironmentValues {
     @Entry var executeImport: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil
     @Entry var trainingDataTransferService: TrainingDataTransferService = TrainingDataTransferService.preview()
     @Entry var userSettings: any UserSettings = PreviewUserSettings()
+    @Entry var rhythmPlayer: (any RhythmPlayer)? = nil
+    @Entry var audioSampleRate: SampleRate = .standard48000
 }
 
 // MARK: - Session Environment Keys

@@ -23,15 +23,19 @@ struct StartScreen: View {
     var body: some View {
         Group {
             if isCompactHeight {
-                HStack(spacing: Self.sectionSpacing(isCompact: true)) {
-                    singleNotesSection
-                    intervalsSection
+                VStack {
+                    HStack(spacing: Self.sectionSpacing(isCompact: true)) {
+                        singleNotesSection
+                        intervalsSection
+                    }
+                    rhythmPOCButton
                 }
             } else {
                 VStack(spacing: Self.sectionSpacing(isCompact: false)) {
                     Spacer()
                     singleNotesSection
                     intervalsSection
+                    rhythmPOCButton
                     Spacer()
                 }
             }
@@ -74,6 +78,8 @@ struct StartScreen: View {
                 SettingsScreen()
             case .profile:
                 ProfileScreen()
+            case .rhythmPOC:
+                RhythmPOCScreen()
             }
         }
         .sheet(isPresented: $showInfoSheet) {
@@ -117,6 +123,24 @@ struct StartScreen: View {
             }
             .buttonStyle(TrainingCardButtonStyle())
         }
+    }
+
+    // MARK: - Rhythm POC
+
+    private var rhythmPOCButton: some View {
+        NavigationLink(value: NavigationDestination.rhythmPOC) {
+            Label("Rhythm POC", systemImage: "metronome")
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 16)
+                .foregroundStyle(.primary)
+                .background(
+                    RoundedRectangle(cornerRadius: Self.cardCornerRadius)
+                        .fill(.orange.opacity(0.15))
+                        .strokeBorder(.orange, lineWidth: 1)
+                )
+        }
+        .buttonStyle(TrainingCardButtonStyle())
     }
 
     // MARK: - Card View

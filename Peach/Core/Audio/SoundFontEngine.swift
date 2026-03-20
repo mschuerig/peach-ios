@@ -109,6 +109,7 @@ final class SoundFontEngine {
         channels[channel0] = sampler0
 
         try Self.configureAudioSession()
+        try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.005)
         try engine.start()
 
         // Register MIDI block for channel 0 (available after engine start)
@@ -131,9 +132,6 @@ final class SoundFontEngine {
                 }
             }
 
-            // Read sample time before entering lock to avoid capturing non-Sendable pointer
-            let hostSampleTime = AUEventSampleTime(timestamp.pointee.mSampleTime)
-
             // Try-lock: if the main thread is updating the schedule, skip this frame
             // rather than blocking the audio render thread.
             _ = lockState.withLockIfAvailable { data in
@@ -151,12 +149,15 @@ final class SoundFontEngine {
                             data.nextIndex += 1
                             continue
                         }
+                        // Use AUEventSampleTimeImmediate + offset so the sampler
+                        // always interprets events relative to "now" rather than
+                        // as absolute timestamps that may already be past.
                         let intraBufferOffset = event.sampleOffset - windowStart
-                        let absoluteSampleTime = hostSampleTime
+                        let eventTime = AUEventSampleTimeImmediate
                             + AUEventSampleTime(intraBufferOffset)
                         var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
                         withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                            midiBlock(absoluteSampleTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                            midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
                         }
                     }
                     data.nextIndex += 1
@@ -180,6 +181,12 @@ final class SoundFontEngine {
     isolated deinit {
         engine.stop()
         scheduleBuffer.deallocate()
+    }
+
+    // MARK: - Sample Rate
+
+    var sampleRate: SampleRate {
+        SampleRate(engine.outputNode.outputFormat(forBus: 0).sampleRate)
     }
 
     // MARK: - Channel Management
@@ -318,6 +325,11 @@ final class SoundFontEngine {
             logger.warning("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity), truncating")
             assertionFailure("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity)")
         }
+        // Reset all samplers to flush any stale MIDI events queued internally
+        // by previous scheduleMIDIEventBlock calls.
+        for sampler in channels.values {
+            sampler.auAudioUnit.reset()
+        }
         scheduleLockState.withLock { data in
             let count = min(events.count, data.capacity)
             for i in 0..<count {
@@ -339,16 +351,6 @@ final class SoundFontEngine {
 
     var scheduledEventCount: Int {
         scheduleLockState.withLock { data in data.count }
-    }
-
-    // MARK: - Audio Buffer Configuration
-
-    func configureForRhythmScheduling() throws {
-        try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0.005)
-    }
-
-    func restoreDefaultBufferDuration() throws {
-        try AVAudioSession.sharedInstance().setPreferredIOBufferDuration(0)
     }
 
     // MARK: - Schedule Scanning (testable pure function)

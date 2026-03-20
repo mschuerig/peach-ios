@@ -15,6 +15,7 @@ struct PeachApp: App {
     @State private var soundFontEngine: SoundFontEngine
     @State private var transferService: TrainingDataTransferService
     @State private var notePlayer: any NotePlayer
+    @State private var rhythmPlayer: any RhythmPlayer
     @State private var activeSession: (any TrainingSession)?
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
 
@@ -43,6 +44,16 @@ struct PeachApp: App {
                 stopPropagationDelay: .zero
             )
             _notePlayer = State(wrappedValue: notePlayer)
+
+            try soundFontEngine.createChannel(SoundFontEngine.ChannelID(1))
+            let percussionPreset = soundFontLibrary.percussionPresets.first
+                ?? SF2Preset(name: "", program: 0, bank: SF2Preset.percussionBank)
+            let rhythmPlayer: any RhythmPlayer = SoundFontPlayer(
+                engine: soundFontEngine,
+                preset: percussionPreset,
+                channel: SoundFontEngine.ChannelID(1)
+            )
+            _rhythmPlayer = State(wrappedValue: rhythmPlayer)
 
             let profile = try Self.loadPerceptualProfile(dataStore: dataStore)
             _profile = State(wrappedValue: profile)
@@ -117,6 +128,8 @@ struct PeachApp: App {
                     try transferService.performImport(parseResult: parseResult, mode: mode)
                 })
                 .environment(\.trainingDataTransferService, transferService)
+                .environment(\.rhythmPlayer, rhythmPlayer)
+                .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
                     let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))

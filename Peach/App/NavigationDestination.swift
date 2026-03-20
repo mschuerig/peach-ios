@@ -7,4 +7,5 @@ enum NavigationDestination: Hashable {
     case pitchMatching(isIntervalMode: Bool)
     case settings
     case profile
+    case rhythmPOC
 }

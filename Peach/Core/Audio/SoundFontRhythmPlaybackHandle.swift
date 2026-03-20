@@ -14,6 +14,5 @@ final class SoundFontRhythmPlaybackHandle: RhythmPlaybackHandle {
         hasStopped = true
         engine.clearSchedule()
         await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
-        try? engine.restoreDefaultBufferDuration()
     }
 }
