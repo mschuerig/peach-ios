@@ -20,7 +20,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **iOS 26.0** deployment target — use latest APIs freely, no backward compatibility
 - **SwiftUI** — declarative UI with SwiftUI lifecycle; **no UIKit in views** (UIKit only through protocol abstractions like `HapticFeedback`)
 - **SwiftData** — `@Model` for persistence; **only `TrainingDataStore` accesses SwiftData** — no direct `ModelContext` usage elsewhere
-- **AVAudioEngine** — `SoundFontNotePlayer` is the sole `NotePlayer` implementation; owns a single `AVAudioEngine` with `AVAudioUnitSampler` for SF2 playback
+- **AVAudioEngine** — `SoundFontPlayer` is the sole `NotePlayer` implementation; owns a single `AVAudioEngine` with `AVAudioUnitSampler` for SF2 playback
 - **Swift Testing** — `@Test`, `@Suite`, `#expect()` for all tests; **never use XCTest** (`XCTAssertEqual`, `XCTestCase`, `setUp/tearDown` are all wrong)
 - **@Observable** — modern observation macro; **never use `ObservableObject`/`@Published`**
 - **@AppStorage** — user preferences; keys centralized in `SettingsKeys.swift`
@@ -75,13 +75,13 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`ModelContainer` initialized once in `PeachApp.swift`** — passed via SwiftUI environment; new models must be registered in the schema there
 
 **AVAudioEngine:**
-- **`SoundFontNotePlayer`** — sole `NotePlayer` implementation; owns one `AVAudioEngine` with `AVAudioUnitSampler`; reads `userSettings.soundSource` (via `UserSettings` protocol) on each `play()` call to select the correct SF2 preset via `loadPreset(program:bank:)`
+- **`SoundFontPlayer`** — sole `NotePlayer` implementation; owns one `AVAudioEngine` with `AVAudioUnitSampler`; reads `userSettings.soundSource` (via `UserSettings` protocol) on each `play()` call to select the correct SF2 preset via `loadPreset(program:bank:)`
 - **`SF2PresetParser`** — lightweight `enum` with static `parsePresets(from:)` that reads PHDR metadata from an SF2 RIFF file; returns `[SF2Preset]` (name, program, bank); pure function, no state
 - **`SoundSourceProvider`** — protocol abstracting sound source discovery (`availableSources: [SoundSourceID]`, `displayName(for:) -> String`); defined in `Core/Audio/`; `SettingsScreen` depends on this protocol via `@Environment(\.soundSourceProvider)` instead of the concrete `SoundFontLibrary`
 - **`SoundFontLibrary`** — `@MainActor` service created once at startup; discovers SF2 files in bundle, parses presets via `SF2PresetParser`, filters unpitched (bank >= 120, program >= 120), sorts alphabetically; conforms to `SoundSourceProvider`; injected via `@Environment(\.soundSourceProvider)` for `SettingsScreen`. Read-only at runtime
 - **`soundSource` tag format** — `@AppStorage` stores `"sf2:{bank}:{program}"` (SF2 bank and MIDI program number, e.g., `"sf2:0:0"` = Grand Piano, `"sf2:0:42"` = Cello, `"sf2:8:80"` = Sine Wave). Default: `"sf2:0:0"`
 - **Protocol boundary: `NotePlayer`** — knows only frequencies (Hz), durations, envelopes; no concept of MIDI notes, comparisons, or training
-- **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents` in `Core/Music/`) and physical world (`Frequency` in `Core/Music/`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontNotePlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
+- **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents` in `Core/Music/`) and physical world (`Frequency` in `Core/Music/`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontPlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
 
 **State Management:**
 - **`PitchComparisonSession` state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
@@ -90,7 +90,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **State transitions are guarded** — preconditions enforced; never skip states
 - **Observer pattern** — `PitchComparisonObserver` and `PitchMatchingObserver` protocols; observers injected as arrays into their respective sessions. Both `TrainingDataStore`, `PerceptualProfile`, and `ProgressTimeline` conform to both observer protocols
 - **Session-specific settings types** — `PitchComparisonTrainingSettings` and `PitchMatchingTrainingSettings` are value-type snapshots created at `start()` time via `from(userSettings, intervals:)` factory methods. Each contains all tunable parameters with sensible defaults. Sessions receive these as parameters to `start(settings:)` and are decoupled from `UserSettings`
-- **Settings flow** — Views read `@Environment(\.userSettings)`, construct the appropriate settings type via factory method, and pass it to `session.start(settings:)`. `SoundFontNotePlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
+- **Settings flow** — Views read `@Environment(\.userSettings)`, construct the appropriate settings type via factory method, and pass it to `session.start(settings:)`. `SoundFontPlayer` reads `soundSource` on each `play()` call. `AppUserSettings` reads `UserDefaults.standard` under the hood, staying in sync with `@AppStorage` writes from `SettingsScreen`
 
 **Composition Root (`PeachApp.swift`):**
 - **All service instantiation happens in `PeachApp.swift`** — this is the single dependency graph source of truth
@@ -118,7 +118,7 @@ Never run only specific test files — always the complete suite.
 
 **Test Organization:**
 - **Mirror source structure** — test directories mirror source (e.g., `PeachTests/Core/Audio/` mirrors `Peach/Core/Audio/`, `PeachTests/Core/Music/` mirrors `Peach/Core/Music/`)
-- **One test file per source file** — `SoundFontNotePlayer.swift` → `SoundFontNotePlayerTests.swift`
+- **One test file per source file** — `SoundFontPlayer.swift` → `SoundFontPlayerTests.swift`
 - **Mock files live in test target** — `MockNotePlayer.swift`, `MockTrainingDataStore.swift`, etc.
 - **Fresh mocks per test** — create via factory method in each test; never share mocks across tests (parallel execution)
 
@@ -146,7 +146,7 @@ Never run only specific test files — always the complete suite.
 
 **Project-Specific Naming (non-obvious conventions):**
 - **Protocols:** nouns for roles (`NotePlayer`, `NextPitchComparisonStrategy`, `TrainingSession`), `-able`/`-ible` for capabilities (`Resettable`, `Sendable`) per [Swift API Design Guidelines](https://www.swift.org/documentation/api-design-guidelines/) (not `-Protocol` suffix)
-- **Protocol implementations:** descriptive prefix — `SoundFontNotePlayer`, `KazezNoteStrategy`
+- **Protocol implementations:** descriptive prefix — `SoundFontPlayer`, `KazezNoteStrategy`
 - **Screens:** `{Name}Screen.swift` — not `{Name}View` or `{Name}ViewController`
 - **Subviews:** `{Name}View.swift` — `PianoKeyboardView.swift`, `PitchComparisonFeedbackIndicator.swift`
 - **Mocks:** `Mock{Name}.swift` — not `{Name}Mock`, `Fake{Name}`, or `Stub{Name}`
@@ -243,7 +243,7 @@ Never run only specific test files — always the complete suite.
 - `nonisolated(unsafe)` → should never be needed with default MainActor isolation
 - `import XCTest` → use `import Testing`
 - Combine (`PassthroughSubject`, `sink`) → use `async/await`
-- Second `AVAudioEngine` instance → `SoundFontNotePlayer` is the sole `NotePlayer` and owns the only engine
+- Second `AVAudioEngine` instance → `SoundFontPlayer` is the sole `NotePlayer` and owns the only engine
 - Direct `ModelContext` queries → go through `TrainingDataStore`
 - Sleep/fixed delays in tests → use `instantPlayback` mocks and `waitForState`
 - `@testable import` to test private methods → test through protocol interfaces

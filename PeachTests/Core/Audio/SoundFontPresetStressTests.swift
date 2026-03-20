@@ -38,9 +38,9 @@ struct SoundFontPresetStressTests {
         Self.testLibrary
     }
 
-    private func makePlayer(userSettings: MockUserSettings = MockUserSettings()) throws -> (player: SoundFontNotePlayer, settings: MockUserSettings) {
-        let engine = try SoundFontEngine(library: Self.testLibrary, soundSource: userSettings.soundSource)
-        let player = SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
+    private func makePlayer(userSettings: MockUserSettings = MockUserSettings()) throws -> (player: SoundFontPlayer, settings: MockUserSettings) {
+        let engine = try SoundFontEngine(sf2URL: TestSoundFont.url)
+        let player = SoundFontPlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
         return (player, userSettings)
     }
 
@@ -48,7 +48,7 @@ struct SoundFontPresetStressTests {
 
     @Test("Every preset loads and plays a note without crash")
     func presetSmoke() async throws {
-        let allPresets = makeLibrary().availablePresets
+        let allPresets = makeLibrary().melodicPresets
         #expect(!allPresets.isEmpty, "SoundFontLibrary discovered no presets")
 
         for preset in allPresets {
@@ -70,7 +70,7 @@ struct SoundFontPresetStressTests {
 
     @Test("Representative presets play across MIDI note range without crash")
     func midiNoteRangeSweep() async throws {
-        let presets = makeLibrary().availablePresets.filter {
+        let presets = makeLibrary().melodicPresets.filter {
             Self.representativeRawValues.contains($0.rawValue)
         }
         #expect(!presets.isEmpty, "No representative presets found")
@@ -103,7 +103,7 @@ struct SoundFontPresetStressTests {
 
     @Test("Varied durations do not crash for focus presets")
     func durationVariation() async throws {
-        let presets = makeLibrary().availablePresets.filter {
+        let presets = makeLibrary().melodicPresets.filter {
             Self.focusRawValues.contains($0.rawValue)
         }
         let durations: [Duration] = [.milliseconds(10), .milliseconds(100), .milliseconds(500)]
@@ -130,7 +130,7 @@ struct SoundFontPresetStressTests {
 
     @Test("Varied velocities do not crash for focus presets")
     func velocityVariation() async throws {
-        let presets = makeLibrary().availablePresets.filter {
+        let presets = makeLibrary().melodicPresets.filter {
             Self.focusRawValues.contains($0.rawValue)
         }
         let velocities: [MIDIVelocity] = [1, 63, 127]
@@ -160,7 +160,7 @@ struct SoundFontPresetStressTests {
     @Test("Rapid preset switching via settings does not crash")
     func rapidPresetSwitching() async throws {
         let (player, settings) = try makePlayer()
-        let presets = Array(makeLibrary().availablePresets.prefix(15))
+        let presets = Array(makeLibrary().melodicPresets.prefix(15))
 
         for preset in presets {
             settings.soundSource = SoundSourceTag(rawValue: preset.rawValue)

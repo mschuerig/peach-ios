@@ -365,4 +365,4 @@ development_status:
   46-1-extract-soundfontengine-from-soundfontnoteplayer: done
   46-2-refactor-soundfontnoteplayer-to-delegate-to-soundfontengine: done
   46-3-add-render-thread-scheduling-to-soundfontengine: done
-  46-4-rhythmplayer-protocol-and-soundfontrhythmplayer: ready-for-dev
+  46-4-unified-soundfontplayer-with-generalized-sampler-channels: review

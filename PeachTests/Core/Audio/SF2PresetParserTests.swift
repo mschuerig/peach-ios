@@ -101,6 +101,47 @@ struct SF2PresetParserTests {
         #expect(variant.rawValue == "sf2:8:38")
     }
 
+    // MARK: - MIDI Constants
+
+    @Test("percussionBank is 128")
+    func percussionBankConstant() async {
+        #expect(SF2Preset.percussionBank == 128)
+    }
+
+    @Test("melodicBankMSB is 0x79")
+    func melodicBankMSBConstant() async {
+        #expect(SF2Preset.melodicBankMSB == 0x79)
+    }
+
+    @Test("percussionBankMSB is 0x78")
+    func percussionBankMSBConstant() async {
+        #expect(SF2Preset.percussionBankMSB == 0x78)
+    }
+
+    @Test("isPercussion returns true for bank 128")
+    func isPercussionBank128() async {
+        let preset = SF2Preset(name: "Standard Drums", program: 0, bank: 128)
+        #expect(preset.isPercussion)
+    }
+
+    @Test("isPercussion returns false for bank 0")
+    func isNotPercussionBank0() async {
+        let preset = SF2Preset(name: "Piano", program: 0, bank: 0)
+        #expect(!preset.isPercussion)
+    }
+
+    @Test("bankMSB returns percussionBankMSB for percussion preset")
+    func bankMSBPercussion() async {
+        let preset = SF2Preset(name: "Standard Drums", program: 0, bank: 128)
+        #expect(preset.bankMSB == SF2Preset.percussionBankMSB)
+    }
+
+    @Test("bankMSB returns melodicBankMSB for melodic preset")
+    func bankMSBMelodic() async {
+        let preset = SF2Preset(name: "Piano", program: 0, bank: 0)
+        #expect(preset.bankMSB == SF2Preset.melodicBankMSB)
+    }
+
     // MARK: - Helpers
 
     private func sf2URL() throws -> URL {

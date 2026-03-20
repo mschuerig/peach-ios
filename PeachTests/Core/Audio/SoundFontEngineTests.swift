@@ -5,11 +5,8 @@ import Testing
 @Suite("SoundFontEngine")
 struct SoundFontEngineTests {
 
-    private static let testLibrary = TestSoundFont.makeLibrary()
-    private static let defaultSoundSource = SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource)
-
-    private func makeEngine(soundSource: any SoundSourceID = defaultSoundSource) throws -> SoundFontEngine {
-        try SoundFontEngine(library: Self.testLibrary, soundSource: soundSource)
+    private func makeEngine() throws -> SoundFontEngine {
+        try SoundFontEngine(sf2URL: TestSoundFont.url)
     }
 
     // MARK: - Initialization
@@ -29,14 +26,12 @@ struct SoundFontEngineTests {
         }
     }
 
-    @Test("fails with missing SF2 file")
-    func failsWithMissingSF2() async {
-        let badLibrary = SoundFontLibrary(
-            sf2URL: URL(fileURLWithPath: "/nonexistent/NonExistent.sf2"),
-            defaultPreset: "sf2:0:0"
-        )
-        #expect(throws: (any Error).self) {
-            _ = try SoundFontEngine(library: badLibrary, soundSource: SoundSourceTag(rawValue: "sf2:0:0"))
+    @Test("initializes even without loading a preset")
+    func initializesWithoutPreset() async throws {
+        let engine = try makeEngine()
+        // Engine is usable — channels exist but no preset loaded yet
+        #expect(throws: Never.self) {
+            try engine.ensureEngineRunning()
         }
     }
 
@@ -233,6 +228,55 @@ struct SoundFontEngineTests {
         engine.scheduleEvents(events)
         try await Task.sleep(for: .milliseconds(100))
         engine.clearSchedule()
+    }
+
+    // MARK: - Multi-Channel
+
+    @Test("createChannel adds a second channel without crash")
+    func createChannelNoCrash() async throws {
+        let engine = try makeEngine()
+        try engine.createChannel(SoundFontEngine.ChannelID(1))
+    }
+
+    @Test("loadPreset on specific channel succeeds")
+    func loadPresetOnChannel() async throws {
+        let engine = try makeEngine()
+        try engine.createChannel(SoundFontEngine.ChannelID(1))
+        let preset = SF2Preset(name: "Cello", program: 42, bank: 0)
+        try await engine.loadPreset(preset, channel: SoundFontEngine.ChannelID(1))
+    }
+
+    @Test("startNote on specific channel does not crash")
+    func startNoteOnChannel() async throws {
+        let engine = try makeEngine()
+        let channel = SoundFontEngine.ChannelID(0)
+        engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: channel)
+        engine.stopNote(MIDINote(69), channel: channel)
+    }
+
+    @Test("stopNotes on channel does not crash")
+    func stopNotesOnChannel() async throws {
+        let engine = try makeEngine()
+        let channel = SoundFontEngine.ChannelID(0)
+        engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: channel)
+        await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
+    }
+
+    @Test("sendPitchBend on channel does not crash")
+    func sendPitchBendOnChannel() async throws {
+        let engine = try makeEngine()
+        engine.sendPitchBend(.center, channel: SoundFontEngine.ChannelID(0))
+    }
+
+    @Test("muteForFade and restoreAfterFade affect all channels")
+    func muteAndRestoreAllChannels() async throws {
+        let engine = try makeEngine()
+        try engine.createChannel(SoundFontEngine.ChannelID(1))
+        engine.muteForFade()
+        engine.restoreAfterFade()
+        // If this doesn't crash and subsequent play works, volumes were restored
+        engine.startNote(MIDINote(60), velocity: MIDIVelocity(100), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: SoundFontEngine.ChannelID(0))
+        engine.stopNote(MIDINote(60), channel: SoundFontEngine.ChannelID(0))
     }
 
 }

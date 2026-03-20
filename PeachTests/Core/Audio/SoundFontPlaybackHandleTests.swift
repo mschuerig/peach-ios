@@ -7,13 +7,13 @@ struct SoundFontPlaybackHandleTests {
 
     private static let testLibrary = TestSoundFont.makeLibrary()
 
-    private func makePlayer() throws -> SoundFontNotePlayer {
+    private func makePlayer() throws -> SoundFontPlayer {
         let userSettings = MockUserSettings()
-        let engine = try SoundFontEngine(library: Self.testLibrary, soundSource: userSettings.soundSource)
-        return SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
+        let engine = try SoundFontEngine(sf2URL: TestSoundFont.url)
+        return SoundFontPlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
     }
 
-    // MARK: - Stop Behavior via SoundFontNotePlayer
+    // MARK: - Stop Behavior via SoundFontPlayer
 
     @Test("Handle stop after play silences the note")
     func handleStopAfterPlay() async throws {

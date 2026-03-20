@@ -1,6 +1,6 @@
 # Story 46.4: Unified SoundFontPlayer with Generalized Sampler Channels
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -76,12 +76,12 @@ Two instances of `SoundFontPlayer` — one on a melodic channel, one on a percus
 - [x] Task 0: Revert uncommitted 46.4 changes and clean up (prerequisite) — DONE during story creation
   - [x] Discarded all uncommitted changes from the previous 46.4 implementation
   - [x] Removed untracked files: `RhythmPlayer.swift`, `RhythmPlaybackHandle.swift`, `SoundFontRhythmPlayer.swift`, `SoundFontRhythmPlaybackHandle.swift`, `SoundFontRhythmPlayerTests.swift`, `MockRhythmPlayer.swift`, `MockRhythmPlaybackHandle.swift`
-  - [ ] Delete `docs/implementation-artifacts/46-4-rhythmplayer-protocol-and-soundfontrhythmplayer.md`
-  - [ ] Update sprint-status.yaml: rename key `46-4-rhythmplayer-protocol-and-soundfontrhythmplayer` to `46-4-unified-soundfontplayer-with-generalized-sampler-channels` and set status to `in-progress`
-  - [ ] Verify clean state: `bin/build.sh` zero errors, `bin/test.sh` all pass
+  - [x] Delete `docs/implementation-artifacts/46-4-rhythmplayer-protocol-and-soundfontrhythmplayer.md`
+  - [x] Update sprint-status.yaml: rename key `46-4-rhythmplayer-protocol-and-soundfontrhythmplayer` to `46-4-unified-soundfontplayer-with-generalized-sampler-channels` and set status to `in-progress`
+  - [x] Verify clean state: `bin/build.sh` zero errors, `bin/test.sh` all pass
 
-- [ ] Task 1: Add `SF2Preset` MIDI constants and `SoundFontLibrary` percussion resolution (AC: #2)
-  - [ ] Add named constants to `SF2Preset` in `SF2PresetParser.swift`:
+- [x] Task 1: Add `SF2Preset` MIDI constants and `SoundFontLibrary` percussion resolution (AC: #2)
+  - [x] Add named constants to `SF2Preset` in `SF2PresetParser.swift`:
     ```swift
     /// General MIDI percussion bank number (bank 128).
     nonisolated static let percussionBank = 128
@@ -92,43 +92,43 @@ Two instances of `SoundFontPlayer` — one on a melodic channel, one on a percus
     /// Bank MSB for percussion presets (`kAUSampler_DefaultPercussionBankMSB`).
     nonisolated static let percussionBankMSB: UInt8 = 0x78
     ```
-  - [ ] Add computed properties to `SF2Preset`:
+  - [x] Add computed properties to `SF2Preset`:
     ```swift
     var isPercussion: Bool { bank == Self.percussionBank }
     var bankMSB: UInt8 { isPercussion ? Self.percussionBankMSB : Self.melodicBankMSB }
     ```
-  - [ ] Update `SoundFontLibrary.init`: replace `$0.bank < 120 && $0.program < 120` filter with `!$0.isPercussion`
-  - [ ] Rename `availablePresets` to `melodicPresets`
-  - [ ] Add `percussionPresets: [SF2Preset]` property
-  - [ ] Add `resolvePercussion(_ id: any SoundSourceID) -> SF2Preset?` method
-  - [ ] Update tests
+  - [x] Update `SoundFontLibrary.init`: replace `$0.bank < 120 && $0.program < 120` filter with `!$0.isPercussion`
+  - [x] Rename `availablePresets` to `melodicPresets`
+  - [x] Add `percussionPresets: [SF2Preset]` property
+  - [x] Add `resolvePercussion(_ id: any SoundSourceID) -> SF2Preset?` method
+  - [x] Update tests
 
-- [ ] Task 2: Generalize `SoundFontEngine` with channel registry (AC: #1, #3, #4)
-  - [ ] Define `SoundFontEngine.ChannelID` as `UInt8` wrapper (`Hashable`, `Sendable`)
-  - [ ] Replace the single `sampler` property with `channels: [ChannelID: AVAudioUnitSampler]`
-  - [ ] Add `createChannel(_ id: ChannelID)` that creates, attaches, connects an `AVAudioUnitSampler` and registers its MIDI block in `ScheduleData`
-  - [ ] Update `ScheduleData`: replace `melodicMIDIBlock` with `midiBlocks: [UInt8: AUScheduleMIDIEventBlock]`
-  - [ ] Update render callback: `let midiBlock = data.midiBlocks[channel]` (channel-indexed lookup)
-  - [ ] Replace `loadPreset(_ preset:)` with `loadPreset(_:channel:)` that uses `preset.bankMSB` (no raw hex in the engine — bank MSB constants live on `SF2Preset`)
-  - [ ] Track loaded preset per channel: `loadedPresets: [ChannelID: SF2Preset]`
-  - [ ] Send pitch bend range RPN only for non-percussion presets (`!preset.isPercussion`)
-  - [ ] Parameterize immediate dispatch with channel: `startNote(_:velocity:amplitudeDB:pitchBend:channel:)`, `stopNote(_:channel:)`, `sendPitchBend(_:channel:)`
-  - [ ] Add channel-scoped stop: `stopNotes(channel:stopPropagationDelay:)` — sends all-notes-off + pitch bend reset on one channel only
-  - [ ] `muteForFade()` / `restoreAfterFade()` iterate all channels
-  - [ ] Pre-create channel 0 in `init` for backward compatibility
-  - [ ] Remove `soundSource` parameter from `init` — the engine no longer loads an initial preset; that's the player's job. Init becomes `init(sf2URL: URL)` (SF2 URL needed for preset loading)
-  - [ ] Remove `defaultBankMSB` / `percussionBankMSB` private constants from engine (now on `SF2Preset`)
-  - [ ] Keep `noteOnBase`, `noteOffBase`, `channelMask`, `pitchBendRangeSemitones`, `pitchBendRangeCents` as static constants (MIDI protocol values used by players for event construction)
+- [x] Task 2: Generalize `SoundFontEngine` with channel registry (AC: #1, #3, #4)
+  - [x] Define `SoundFontEngine.ChannelID` as `UInt8` wrapper (`Hashable`, `Sendable`)
+  - [x] Replace the single `sampler` property with `channels: [ChannelID: AVAudioUnitSampler]`
+  - [x] Add `createChannel(_ id: ChannelID)` that creates, attaches, connects an `AVAudioUnitSampler` and registers its MIDI block in `ScheduleData`
+  - [x] Update `ScheduleData`: replace `melodicMIDIBlock` with `midiBlocks: [UInt8: AUScheduleMIDIEventBlock]`
+  - [x] Update render callback: `let midiBlock = data.midiBlocks[channel]` (channel-indexed lookup)
+  - [x] Replace `loadPreset(_ preset:)` with `loadPreset(_:channel:)` that uses `preset.bankMSB` (no raw hex in the engine — bank MSB constants live on `SF2Preset`)
+  - [x] Track loaded preset per channel: `loadedPresets: [ChannelID: SF2Preset]`
+  - [x] Send pitch bend range RPN only for non-percussion presets (`!preset.isPercussion`)
+  - [x] Parameterize immediate dispatch with channel: `startNote(_:velocity:amplitudeDB:pitchBend:channel:)`, `stopNote(_:channel:)`, `sendPitchBend(_:channel:)`
+  - [x] Add channel-scoped stop: `stopNotes(channel:stopPropagationDelay:)` — sends all-notes-off + pitch bend reset on one channel only
+  - [x] `muteForFade()` / `restoreAfterFade()` iterate all channels
+  - [x] Pre-create channel 0 in `init` for backward compatibility
+  - [x] Remove `soundSource` parameter from `init` — the engine no longer loads an initial preset; that's the player's job. Init becomes `init(sf2URL: URL)` (SF2 URL needed for preset loading)
+  - [x] Remove `defaultBankMSB` / `percussionBankMSB` private constants from engine (now on `SF2Preset`)
+  - [x] Keep `noteOnBase`, `noteOffBase`, `channelMask`, `pitchBendRangeSemitones`, `pitchBendRangeCents` as static constants (MIDI protocol values used by players for event construction)
 
-- [ ] Task 3: Create `RhythmPlaybackHandle` protocol and `RhythmPattern` value type (AC: #11, #12)
-  - [ ] `RhythmPlaybackHandle` protocol at `Core/Audio/RhythmPlaybackHandle.swift`: `func stop() async throws`
-  - [ ] `RhythmPattern` struct at `Core/Audio/RhythmPlayer.swift` (co-located with protocol):
+- [x] Task 3: Create `RhythmPlaybackHandle` protocol and `RhythmPattern` value type (AC: #11, #12)
+  - [x] `RhythmPlaybackHandle` protocol at `Core/Audio/RhythmPlaybackHandle.swift`: `func stop() async throws`
+  - [x] `RhythmPattern` struct at `Core/Audio/RhythmPlayer.swift` (co-located with protocol):
     - Nested `Event` struct: `sampleOffset: Int64`, `soundSourceID: any SoundSourceID`, `velocity: MIDIVelocity`
     - Top-level: `events: [Event]`, `sampleRate: Double`, `totalDuration: Duration`
     - Both `Sendable`
 
-- [ ] Task 4: Create `RhythmPlayer` protocol (AC: #10)
-  - [ ] Define at `Core/Audio/RhythmPlayer.swift`:
+- [x] Task 4: Create `RhythmPlayer` protocol (AC: #10)
+  - [x] Define at `Core/Audio/RhythmPlayer.swift`:
     ```swift
     protocol RhythmPlayer {
         func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle
@@ -136,43 +136,43 @@ Two instances of `SoundFontPlayer` — one on a melodic channel, one on a percus
     }
     ```
 
-- [ ] Task 5: Rename `SoundFontNotePlayer` to `SoundFontPlayer` and add `RhythmPlayer` conformance (AC: #5, #6, #7, #8, #9)
-  - [ ] Rename file: `SoundFontNotePlayer.swift` → `SoundFontPlayer.swift`
-  - [ ] Rename class: `SoundFontNotePlayer` → `SoundFontPlayer`
-  - [ ] Accept `ChannelID` in init, pass to all engine calls
-  - [ ] Existing `NotePlayer` conformance unchanged (immediate dispatch via channel)
-  - [ ] Add `RhythmPlayer` conformance:
+- [x] Task 5: Rename `SoundFontNotePlayer` to `SoundFontPlayer` and add `RhythmPlayer` conformance (AC: #5, #6, #7, #8, #9)
+  - [x] Rename file: `SoundFontNotePlayer.swift` → `SoundFontPlayer.swift`
+  - [x] Rename class: `SoundFontNotePlayer` → `SoundFontPlayer`
+  - [x] Accept `ChannelID` in init, pass to all engine calls
+  - [x] Existing `NotePlayer` conformance unchanged (immediate dispatch via channel)
+  - [x] Add `RhythmPlayer` conformance:
     - `play(_ pattern: RhythmPattern)` converts each `RhythmPattern.Event` to a `ScheduledMIDIEvent` pair (note-on + note-off after `Self.percussionNoteOffDuration`), resolves `SoundSourceID` via library, loads percussion preset if needed, calls `engine.scheduleEvents()`, returns `SoundFontRhythmPlaybackHandle`
     - `stopAll()` is channel-scoped: clears schedule, restores buffer duration, sends all-notes-off on this player's channel only. One implementation satisfies both `NotePlayer.stopAll()` and `RhythmPlayer.stopAll()`
-  - [ ] Define named constant for note-off delay:
+  - [x] Define named constant for note-off delay:
     ```swift
     /// Delay between note-on and note-off for percussion hits.
     /// Percussion samples have natural decay; this just ensures the MIDI note-off
     /// doesn't cut the sample short while still releasing the voice promptly.
     private nonisolated static let percussionNoteOffDuration: Duration = .milliseconds(50)
     ```
-  - [ ] Create `SoundFontRhythmPlaybackHandle` at `Core/Audio/SoundFontRhythmPlaybackHandle.swift` (same pattern as `SoundFontPlaybackHandle`: engine reference, channel, `hasStopped` guard, clears schedule + stops notes on channel)
-  - [ ] Update `SoundFontPlaybackHandle` to accept and use `ChannelID`
-  - [ ] Update all references: `PeachApp.swift` (rename type + update engine init — remove `soundSource` parameter, player loads initial preset after creation), `EnvironmentKeys.swift` (`PreviewNotePlayer` stays as-is — conforms to protocol not concrete class), `project-context.md` references to `SoundFontNotePlayer`
-  - [ ] The `decompose(frequency:)` and `pitchBendValue(forCents:)` static helpers stay on `SoundFontPlayer` (used by `SoundFontPlaybackHandle.adjustFrequency`)
+  - [x] Create `SoundFontRhythmPlaybackHandle` at `Core/Audio/SoundFontRhythmPlaybackHandle.swift` (same pattern as `SoundFontPlaybackHandle`: engine reference, channel, `hasStopped` guard, clears schedule + stops notes on channel)
+  - [x] Update `SoundFontPlaybackHandle` to accept and use `ChannelID`
+  - [x] Update all references: `PeachApp.swift` (rename type + update engine init — remove `soundSource` parameter, player loads initial preset after creation), `EnvironmentKeys.swift` (`PreviewNotePlayer` stays as-is — conforms to protocol not concrete class), `project-context.md` references to `SoundFontNotePlayer`
+  - [x] The `decompose(frequency:)` and `pitchBendValue(forCents:)` static helpers stay on `SoundFontPlayer` (used by `SoundFontPlaybackHandle.adjustFrequency`)
 
-- [ ] Task 6: Create `MockRhythmPlayer` and `MockRhythmPlaybackHandle` (AC: #15)
-  - [ ] `MockRhythmPlaybackHandle` at `PeachTests/Mocks/MockRhythmPlaybackHandle.swift` — call counts, error injection, callbacks, reset
-  - [ ] `MockRhythmPlayer` at `PeachTests/Mocks/MockRhythmPlayer.swift` — playCallCount, stopAllCallCount, lastPattern, shouldThrowError, instantPlayback, continuation-based waits, reset
+- [x] Task 6: Create `MockRhythmPlayer` and `MockRhythmPlaybackHandle` (AC: #15)
+  - [x] `MockRhythmPlaybackHandle` at `PeachTests/Mocks/MockRhythmPlaybackHandle.swift` — call counts, error injection, callbacks, reset
+  - [x] `MockRhythmPlayer` at `PeachTests/Mocks/MockRhythmPlayer.swift` — playCallCount, stopAllCallCount, lastPattern, shouldThrowError, instantPlayback, continuation-based waits, reset
 
-- [ ] Task 7: Write tests (AC: all)
-  - [ ] Engine tests: multi-channel creation, per-channel preset loading, channel-isolated dispatch, channel-scoped stop, muteForFade across all channels
-  - [ ] `SoundFontPlayer` as `NotePlayer`: existing behavior preserved (immediate dispatch, pitch bend, handle lifecycle)
-  - [ ] `SoundFontPlayer` as `RhythmPlayer`: pattern→MIDI conversion, scheduled dispatch, handle stop idempotency
-  - [ ] `SoundFontPlayer.stopAll()` only affects its own channel
-  - [ ] `RhythmPattern` construction and event ordering
-  - [ ] Mock contract tests for `MockRhythmPlayer` and `MockRhythmPlaybackHandle`
-  - [ ] `SF2Preset.isPercussion`, `bankMSB`, `melodicBankMSB`, `percussionBankMSB` tests
+- [x] Task 7: Write tests (AC: all)
+  - [x] Engine tests: multi-channel creation, per-channel preset loading, channel-isolated dispatch, channel-scoped stop, muteForFade across all channels
+  - [x] `SoundFontPlayer` as `NotePlayer`: existing behavior preserved (immediate dispatch, pitch bend, handle lifecycle)
+  - [x] `SoundFontPlayer` as `RhythmPlayer`: pattern→MIDI conversion, scheduled dispatch, handle stop idempotency
+  - [x] `SoundFontPlayer.stopAll()` only affects its own channel
+  - [x] `RhythmPattern` construction and event ordering
+  - [x] Mock contract tests for `MockRhythmPlayer` and `MockRhythmPlaybackHandle`
+  - [x] `SF2Preset.isPercussion`, `bankMSB`, `melodicBankMSB`, `percussionBankMSB` tests
 
-- [ ] Task 8: Verify no regressions (AC: #13, #14)
-  - [ ] `bin/build.sh` — zero errors, zero warnings
-  - [ ] `bin/test.sh` — full suite passes, zero regressions
-  - [ ] All existing pitch comparison, pitch matching, and preset stress tests pass
+- [x] Task 8: Verify no regressions (AC: #13, #14)
+  - [x] `bin/build.sh` — zero errors, zero warnings
+  - [x] `bin/test.sh` — full suite passes, zero regressions
+  - [x] All existing pitch comparison, pitch matching, and preset stress tests pass
 
 ## Dev Notes
 
@@ -384,10 +384,53 @@ Modified files:
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+- Engine init crash: reordered sampler attach/connect before engine.start() — audio graph must be wired before starting
+- Percussion bankLSB: AVAudioUnitSampler expects bankLSB=0 for percussion (bankMSB=0x78 selects the bank), not the SF2 bank number (128) which overflows UInt8
 
 ### Completion Notes List
 
+- **Task 0**: Deleted old 46-4 story file, renamed sprint-status key, verified clean build (1135 tests)
+- **Task 1**: Added `SF2Preset` MIDI constants (percussionBank, melodicBankMSB, percussionBankMSB, isPercussion, bankMSB). Updated `SoundFontLibrary` to split melodic/percussion presets and added `resolvePercussion()`. Renamed `availablePresets` → `melodicPresets`. +11 tests
+- **Task 2**: Generalized `SoundFontEngine` with `ChannelID` wrapper, channel registry (`channels: [ChannelID: AVAudioUnitSampler]`), channel-indexed MIDI dispatch in render callback, per-channel preset loading with `bankMSB` from `SF2Preset`, channel-scoped stop, multi-channel mute/restore. Init simplified to `init(sf2URL:)`. Backward-compatible channel-0 wrappers preserved. +6 tests
+- **Task 3-4**: Created `RhythmPlaybackHandle` protocol, `RhythmPattern` value type with nested `Event` struct, `RhythmPlayer` protocol
+- **Task 5**: Renamed `SoundFontNotePlayer` → `SoundFontPlayer`, added `RhythmPlayer` conformance (pattern→MIDI conversion with channel-encoded status bytes), channel-scoped `stopAll()`, `SoundFontRhythmPlaybackHandle`. Updated `SoundFontPlaybackHandle` for ChannelID. Updated all references in PeachApp, project-context.md, tests
+- **Task 6**: Created `MockRhythmPlayer` and `MockRhythmPlaybackHandle` following established mock contract
+- **Task 7-8**: Added 35 new tests total (mock contracts, RhythmPattern, engine multi-channel, player conformance). Full suite: 1170 tests, 0 failures, 0 regressions
+
 ### Change Log
 
+- 2026-03-20: Implemented unified SoundFontPlayer with generalized sampler channels (all 8 tasks complete)
+
 ### File List
+
+New:
+- Peach/Core/Audio/SoundFontPlayer.swift
+- Peach/Core/Audio/RhythmPlayer.swift
+- Peach/Core/Audio/RhythmPlaybackHandle.swift
+- Peach/Core/Audio/SoundFontRhythmPlaybackHandle.swift
+- PeachTests/Mocks/MockRhythmPlayer.swift
+- PeachTests/Mocks/MockRhythmPlaybackHandle.swift
+- PeachTests/Mocks/MockRhythmPlayerTests.swift
+
+Deleted:
+- Peach/Core/Audio/SoundFontNotePlayer.swift
+- docs/implementation-artifacts/46-4-rhythmplayer-protocol-and-soundfontrhythmplayer.md
+
+Modified:
+- Peach/Core/Audio/SoundFontEngine.swift
+- Peach/Core/Audio/SF2PresetParser.swift
+- Peach/Core/Audio/SoundFontLibrary.swift
+- Peach/Core/Audio/SoundFontPlaybackHandle.swift
+- Peach/App/PeachApp.swift
+- docs/project-context.md
+- docs/implementation-artifacts/sprint-status.yaml
+- PeachTests/Core/Audio/SoundFontEngineTests.swift
+- PeachTests/Core/Audio/SoundFontLibraryTests.swift
+- PeachTests/Core/Audio/SF2PresetParserTests.swift
+- PeachTests/Core/Audio/SoundFontPlaybackHandleTests.swift
+- PeachTests/Core/Audio/SoundFontPresetStressTests.swift
+- PeachTests/Core/Audio/SoundFontNotePlayerTests.swift → PeachTests/Core/Audio/SoundFontPlayerTests.swift

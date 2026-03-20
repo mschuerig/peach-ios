@@ -6,14 +6,16 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     // MARK: - State
 
     private let engine: SoundFontEngine
+    private let channel: SoundFontEngine.ChannelID
     private let midiNote: MIDINote
     private let stopPropagationDelay: Duration
     private var hasStopped = false
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, midiNote: MIDINote, stopPropagationDelay: Duration) {
+    init(engine: SoundFontEngine, channel: SoundFontEngine.ChannelID, midiNote: MIDINote, stopPropagationDelay: Duration) {
         self.engine = engine
+        self.channel = channel
         self.midiNote = midiNote
         self.stopPropagationDelay = stopPropagationDelay
     }
@@ -27,8 +29,8 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
             engine.muteForFade()
             try? await Task.sleep(for: stopPropagationDelay)
         }
-        engine.stopNote(midiNote)
-        engine.sendPitchBend(.center)
+        engine.stopNote(midiNote, channel: channel)
+        engine.sendPitchBend(.center, channel: channel)
         if stopPropagationDelay > .zero {
             engine.restoreAfterFade()
         }
@@ -39,13 +41,13 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
 
         let freq = frequency.rawValue
 
-        guard SoundFontNotePlayer.validFrequencyRange.contains(freq) else {
+        guard SoundFontPlayer.validFrequencyRange.contains(freq) else {
             throw AudioError.invalidFrequency(
-                "Frequency \(freq) Hz is outside valid range \(SoundFontNotePlayer.validFrequencyRange)"
+                "Frequency \(freq) Hz is outside valid range \(SoundFontPlayer.validFrequencyRange)"
             )
         }
 
-        let decomposed = SoundFontNotePlayer.decompose(frequency: frequency)
+        let decomposed = SoundFontPlayer.decompose(frequency: frequency)
         let targetMidi = Double(decomposed.note) + decomposed.cents.rawValue / 100.0
         let baseMidi = Double(midiNote.rawValue)
         let centDifference = (targetMidi - baseMidi) * 100.0
@@ -56,7 +58,7 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
             )
         }
 
-        let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: Cents(centDifference))
-        engine.sendPitchBend(bendValue)
+        let bendValue = SoundFontPlayer.pitchBendValue(forCents: Cents(centDifference))
+        engine.sendPitchBend(bendValue, channel: channel)
     }
 }

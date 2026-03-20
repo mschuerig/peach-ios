@@ -5,8 +5,20 @@ struct SF2Preset: SoundSourceID, Equatable, Hashable {
     let program: Int
     let bank: Int
 
+    /// General MIDI percussion bank number (bank 128).
+    nonisolated static let percussionBank = 128
+
+    /// Bank MSB for melodic presets (`kAUSampler_DefaultMelodicBankMSB`).
+    nonisolated static let melodicBankMSB: UInt8 = 0x79
+
+    /// Bank MSB for percussion presets (`kAUSampler_DefaultPercussionBankMSB`).
+    nonisolated static let percussionBankMSB: UInt8 = 0x78
+
     var rawValue: String { "sf2:\(bank):\(program)" }
     var displayName: String { name }
+
+    var isPercussion: Bool { bank == Self.percussionBank }
+    var bankMSB: UInt8 { isPercussion ? Self.percussionBankMSB : Self.melodicBankMSB }
 
     nonisolated static func == (lhs: SF2Preset, rhs: SF2Preset) -> Bool {
         lhs.program == rhs.program && lhs.bank == rhs.bank

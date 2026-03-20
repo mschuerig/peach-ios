@@ -14,27 +14,27 @@ struct SoundFontLibraryTests {
     @Test("Discovers presets from explicit SF2 URL")
     func discoversPresetsFromURL() async {
         let library = makeLibrary()
-        #expect(!library.availablePresets.isEmpty)
+        #expect(!library.melodicPresets.isEmpty)
     }
 
     @Test("Excludes drum kits (bank >= 120)")
     func noDrumKitsInAvailablePresets() async {
         let library = makeLibrary()
-        let drumPresets = library.availablePresets.filter { $0.bank >= 120 }
+        let drumPresets = library.melodicPresets.filter { $0.bank >= 120 }
         #expect(drumPresets.isEmpty)
     }
 
     @Test("Excludes sound effects (program >= 120)")
     func noSoundEffectsInAvailablePresets() async {
         let library = makeLibrary()
-        let sfxPresets = library.availablePresets.filter { $0.program >= 120 }
+        let sfxPresets = library.melodicPresets.filter { $0.program >= 120 }
         #expect(sfxPresets.isEmpty)
     }
 
     @Test("Presets sorted alphabetically by name")
     func presetsSortedAlphabetically() async {
         let library = makeLibrary()
-        let names = library.availablePresets.map(\.name)
+        let names = library.melodicPresets.map(\.name)
         let sorted = names.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
         #expect(names == sorted)
     }
@@ -42,7 +42,7 @@ struct SoundFontLibraryTests {
     @Test("Contains Yamaha Grand Piano at bank 0 program 0")
     func containsPiano() async {
         let library = makeLibrary()
-        let piano = library.availablePresets.first { $0.program == 0 && $0.bank == 0 }
+        let piano = library.melodicPresets.first { $0.program == 0 && $0.bank == 0 }
         #expect(piano != nil)
         #expect(piano?.name == "Yamaha Grand Piano")
     }
@@ -50,7 +50,7 @@ struct SoundFontLibraryTests {
     @Test("Contains Cello at bank 0 program 42")
     func containsCello() async {
         let library = makeLibrary()
-        let cello = library.availablePresets.first { $0.program == 42 && $0.bank == 0 }
+        let cello = library.melodicPresets.first { $0.program == 42 && $0.bank == 0 }
         #expect(cello != nil)
         #expect(cello?.name == "Cello")
     }
@@ -58,7 +58,7 @@ struct SoundFontLibraryTests {
     @Test("Contains bank variants (e.g., bank 8 program 6)")
     func containsBankVariants() async {
         let library = makeLibrary()
-        let variant = library.availablePresets.first { $0.bank == 8 && $0.program == 6 }
+        let variant = library.melodicPresets.first { $0.bank == 8 && $0.program == 6 }
         #expect(variant != nil)
         #expect(variant?.name == "Coupled Harpsichord")
     }
@@ -75,20 +75,20 @@ struct SoundFontLibraryTests {
     func protocolSourcesMatchStored() async {
         let library = makeLibrary()
         let provider: any SoundSourceProvider = library
-        #expect(provider.availableSources.count == library.availablePresets.count)
+        #expect(provider.availableSources.count == library.melodicPresets.count)
     }
 
     @Test("Cello preset has correct rawValue")
     func celloPresetRawValue() async {
         let library = makeLibrary()
-        let cello = library.availablePresets.first { $0.program == 42 && $0.bank == 0 }
+        let cello = library.melodicPresets.first { $0.program == 42 && $0.bank == 0 }
         #expect(cello?.rawValue == "sf2:0:42")
     }
 
     @Test("Preset displayName is accessible directly from SF2Preset")
     func presetDisplayNameAccessible() async {
         let library = makeLibrary()
-        let cello = library.availablePresets.first { $0.rawValue == "sf2:0:42" }
+        let cello = library.melodicPresets.first { $0.rawValue == "sf2:0:42" }
         #expect(cello?.displayName == "Cello")
     }
 
@@ -97,7 +97,7 @@ struct SoundFontLibraryTests {
     @Test("All preset rawValues are unique")
     func allRawValuesUnique() async {
         let library = makeLibrary()
-        let rawValues = library.availablePresets.map(\.rawValue)
+        let rawValues = library.melodicPresets.map(\.rawValue)
         let uniqueRawValues = Set(rawValues)
         #expect(rawValues.count == uniqueRawValues.count)
     }
@@ -141,5 +141,39 @@ struct SoundFontLibraryTests {
     func sf2URLExposed() async {
         let library = makeLibrary()
         #expect(library.sf2URL == TestSoundFont.url)
+    }
+
+    // MARK: - melodicPresets
+
+    @Test("melodicPresets contains no percussion presets")
+    func melodicPresetsExcludesPercussion() async {
+        let library = makeLibrary()
+        let percussion = library.melodicPresets.filter { $0.isPercussion }
+        #expect(percussion.isEmpty)
+    }
+
+    @Test("melodicPresets equals availableSources count")
+    func melodicPresetsMatchesAvailableSources() async {
+        let library = makeLibrary()
+        #expect(library.melodicPresets.count == library.availableSources.count)
+    }
+
+    // MARK: - percussionPresets
+
+    @Test("percussionPresets contains only percussion bank presets")
+    func percussionPresetsOnlyPercussion() async {
+        let library = makeLibrary()
+        for preset in library.percussionPresets {
+            #expect(preset.isPercussion, "Expected percussion preset, got bank \(preset.bank)")
+        }
+    }
+
+    // MARK: - resolvePercussion
+
+    @Test("resolvePercussion returns nil for unknown soundSource")
+    func resolvePercussionUnknown() async {
+        let library = makeLibrary()
+        let result = library.resolvePercussion(SoundSourceTag(rawValue: "sf2:128:99"))
+        #expect(result == nil)
     }
 }

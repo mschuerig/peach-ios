@@ -34,11 +34,8 @@ struct PeachApp: App {
 
             let userSettings: any UserSettings = AppUserSettings()
             _userSettings = State(wrappedValue: userSettings)
-            let soundFontEngine = try SoundFontEngine(
-                library: soundFontLibrary,
-                soundSource: userSettings.soundSource
-            )
-            let notePlayer: any NotePlayer = SoundFontNotePlayer(
+            let soundFontEngine = try SoundFontEngine(sf2URL: sf2URL)
+            let notePlayer: any NotePlayer = SoundFontPlayer(
                 engine: soundFontEngine,
                 library: soundFontLibrary,
                 userSettings: userSettings,

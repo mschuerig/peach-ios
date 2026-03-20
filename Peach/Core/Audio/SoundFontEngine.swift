@@ -21,10 +21,17 @@ nonisolated private struct ScheduleData: @unchecked Sendable {
     var count: Int = 0
     var nextIndex: Int = 0
     var samplePosition: Int64 = 0
-    var midiBlock: AUScheduleMIDIEventBlock?
+    var midiBlocks: [UInt8: AUScheduleMIDIEventBlock] = [:]
 }
 
 final class SoundFontEngine {
+
+    // MARK: - ChannelID
+
+    struct ChannelID: Hashable, Sendable {
+        let rawValue: UInt8
+        init(_ rawValue: UInt8) { self.rawValue = rawValue }
+    }
 
     // MARK: - Logger
 
@@ -33,18 +40,19 @@ final class SoundFontEngine {
     // MARK: - Audio Components
 
     private let engine: AVAudioEngine
-    private let sampler: AVAudioUnitSampler
+    private var channels: [ChannelID: AVAudioUnitSampler] = [:]
     private let sourceNode: AVAudioSourceNode
 
     // MARK: - State
 
-    private var loadedPreset: SF2Preset
+    private var loadedPresets: [ChannelID: SF2Preset] = [:]
     private var activeMuteCount = 0
 
-    // MARK: - Constants
+    // MARK: - MIDI Constants
 
-    private nonisolated static let channel: UInt8 = 0
-    private nonisolated static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
+    nonisolated static let noteOnBase: UInt8 = 0x90
+    nonisolated static let noteOffBase: UInt8 = 0x80
+    private nonisolated static let channelMask: UInt8 = 0x0F
 
     /// Pitch bend range in semitones, set via MIDI RPN in `sendPitchBendRange()`.
     /// All pitch bend calculations derive their cent limits from this value.
@@ -71,15 +79,11 @@ final class SoundFontEngine {
 
     // MARK: - Initialization
 
-    init(library: SoundFontLibrary, soundSource: any SoundSourceID) throws {
-        let preset = library.resolve(soundSource)
-        self.sf2URL = library.sf2URL
-        self.loadedPreset = preset
+    init(sf2URL: URL) throws {
+        self.sf2URL = sf2URL
 
         let engine = AVAudioEngine()
-        let sampler = AVAudioUnitSampler()
         self.engine = engine
-        self.sampler = sampler
 
         // Pre-allocate event buffer — deallocate on throw since deinit won't run
         let scheduleBuffer = UnsafeMutablePointer<ScheduledMIDIEvent>.allocate(capacity: Self.scheduleCapacity)
@@ -87,26 +91,27 @@ final class SoundFontEngine {
         var didFinishInit = false
         defer { if !didFinishInit { scheduleBuffer.deallocate() } }
 
-        // Attach and connect sampler
-        engine.attach(sampler)
-        engine.connect(sampler, to: engine.mainMixerNode, format: nil)
+        // Create lock state (no MIDI blocks yet — added when channels are created)
+        let lockState = OSAllocatedUnfairLock(initialState: ScheduleData(
+            buffer: scheduleBuffer,
+            capacity: Self.scheduleCapacity
+        ))
+        self.scheduleLockState = lockState
+
+        // Pre-create channel 0 for backward compatibility
+        let channel0 = ChannelID(0)
+        let sampler0 = AVAudioUnitSampler()
+        engine.attach(sampler0)
+        engine.connect(sampler0, to: engine.mainMixerNode, format: nil)
+        channels[channel0] = sampler0
 
         try Self.configureAudioSession()
         try engine.start()
-        try sampler.loadSoundBankInstrument(
-            at: library.sf2URL,
-            program: UInt8(preset.program),
-            bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(preset.bank)
-        )
 
-        // Create lock state with MIDI event block (available after engine start)
-        let lockState = OSAllocatedUnfairLock(initialState: ScheduleData(
-            buffer: scheduleBuffer,
-            capacity: Self.scheduleCapacity,
-            midiBlock: sampler.auAudioUnit.scheduleMIDIEventBlock
-        ))
-        self.scheduleLockState = lockState
+        // Register MIDI block for channel 0 (available after engine start)
+        lockState.withLock { data in
+            data.midiBlocks[channel0.rawValue] = sampler0.auAudioUnit.scheduleMIDIEventBlock
+        }
 
         // Create source node (outputs silence, serves as render-thread clock)
         let sampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
@@ -129,7 +134,7 @@ final class SoundFontEngine {
             // Try-lock: if the main thread is updating the schedule, skip this frame
             // rather than blocking the audio render thread.
             _ = lockState.withLockIfAvailable { data in
-                guard let midiBlock = data.midiBlock, data.count > 0 else { return }
+                guard data.count > 0 else { return }
 
                 let windowStart = data.samplePosition
                 let windowEnd = windowStart + Int64(frameCount)
@@ -138,6 +143,11 @@ final class SoundFontEngine {
                     let event = data.buffer[data.nextIndex]
                     if event.sampleOffset >= windowEnd { break }
                     if event.sampleOffset >= windowStart {
+                        let channel = event.midiStatus & Self.channelMask
+                        guard let midiBlock = data.midiBlocks[channel] else {
+                            data.nextIndex += 1
+                            continue
+                        }
                         let intraBufferOffset = event.sampleOffset - windowStart
                         let absoluteSampleTime = hostSampleTime
                             + AUEventSampleTime(intraBufferOffset)
@@ -159,15 +169,31 @@ final class SoundFontEngine {
         engine.attach(sourceNode)
         engine.connect(sourceNode, to: engine.mainMixerNode, format: sourceFormat)
 
-        sendPitchBendRange()
         didFinishInit = true
 
-        logger.info("SoundFontEngine initialized with \(library.sf2URL.lastPathComponent), preset \(preset.rawValue)")
+        logger.info("SoundFontEngine initialized with \(sf2URL.lastPathComponent)")
     }
 
     isolated deinit {
         engine.stop()
         scheduleBuffer.deallocate()
+    }
+
+    // MARK: - Channel Management
+
+    func createChannel(_ id: ChannelID) throws {
+        guard channels[id] == nil else { return }
+
+        let sampler = AVAudioUnitSampler()
+        engine.attach(sampler)
+        engine.connect(sampler, to: engine.mainMixerNode, format: nil)
+        channels[id] = sampler
+
+        scheduleLockState.withLock { data in
+            data.midiBlocks[id.rawValue] = sampler.auAudioUnit.scheduleMIDIEventBlock
+        }
+
+        logger.info("Created channel \(id.rawValue)")
     }
 
     // MARK: - Audio Session & Engine Lifecycle
@@ -184,73 +210,117 @@ final class SoundFontEngine {
 
     // MARK: - Preset Loading
 
-    func loadPreset(_ preset: SF2Preset) async throws {
+    func loadPreset(_ preset: SF2Preset, channel: ChannelID) async throws {
+        guard let sampler = channels[channel] else {
+            throw AudioError.invalidPreset("Channel \(channel.rawValue) does not exist")
+        }
         guard (0...127).contains(preset.program) else {
             throw AudioError.invalidPreset("Program \(preset.program) outside valid MIDI range 0-127")
         }
-        guard (0...127).contains(preset.bank) else {
-            throw AudioError.invalidPreset("Bank \(preset.bank) outside valid range 0-127")
+        if preset.isPercussion {
+            guard preset.bank == SF2Preset.percussionBank else {
+                throw AudioError.invalidPreset("Bank \(preset.bank) outside valid range")
+            }
+        } else {
+            guard (0...127).contains(preset.bank) else {
+                throw AudioError.invalidPreset("Bank \(preset.bank) outside valid range 0-127")
+            }
         }
-        guard preset != loadedPreset else { return }
+        guard preset != loadedPresets[channel] else { return }
 
+        let bankLSB: UInt8 = preset.isPercussion ? 0 : UInt8(clamping: preset.bank)
         try sampler.loadSoundBankInstrument(
             at: sf2URL,
             program: UInt8(clamping: preset.program),
-            bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(clamping: preset.bank)
+            bankMSB: preset.bankMSB,
+            bankLSB: bankLSB
         )
 
-        loadedPreset = preset
+        loadedPresets[channel] = preset
 
-        sendPitchBendRange()
+        if !preset.isPercussion {
+            sendPitchBendRange(channel: channel)
+        }
 
         // Allow audio graph to settle after instrument load — without this delay
         // the first MIDI note-on after a preset switch produces no sound.
         try await Task.sleep(for: .milliseconds(20))
 
-        logger.info("Loaded preset \(preset.rawValue)")
+        logger.info("Loaded preset \(preset.rawValue) on channel \(channel.rawValue)")
+    }
+
+    // MARK: - Backward-Compatible Preset Loading (channel 0)
+
+    func loadPreset(_ preset: SF2Preset) async throws {
+        try await loadPreset(preset, channel: ChannelID(0))
     }
 
     // MARK: - Immediate MIDI Dispatch
 
-    func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue) {
-        sampler.sendPitchBend(pitchBend.rawValue, onChannel: Self.channel)
+    func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue, channel: ChannelID) {
+        guard let sampler = channels[channel] else { return }
+        sampler.sendPitchBend(pitchBend.rawValue, onChannel: channel.rawValue)
         sampler.overallGain = Float(amplitudeDB.rawValue)
-        sampler.startNote(UInt8(midiNote.rawValue), withVelocity: velocity.rawValue, onChannel: Self.channel)
+        sampler.startNote(UInt8(midiNote.rawValue), withVelocity: velocity.rawValue, onChannel: channel.rawValue)
     }
 
-    func stopNote(_ midiNote: MIDINote) {
-        sampler.stopNote(UInt8(midiNote.rawValue), onChannel: Self.channel)
+    func stopNote(_ midiNote: MIDINote, channel: ChannelID) {
+        guard let sampler = channels[channel] else { return }
+        sampler.stopNote(UInt8(midiNote.rawValue), onChannel: channel.rawValue)
     }
 
-    func stopAllNotes(stopPropagationDelay: Duration) async {
+    func stopNotes(channel: ChannelID, stopPropagationDelay: Duration) async {
+        guard let sampler = channels[channel] else { return }
         if stopPropagationDelay > .zero {
             muteForFade()
             try? await Task.sleep(for: stopPropagationDelay)
         }
-        sampler.sendController(123, withValue: 0, onChannel: Self.channel)
-        sampler.sendPitchBend(PitchBendValue.center.rawValue, onChannel: Self.channel)
+        sampler.sendController(123, withValue: 0, onChannel: channel.rawValue)
+        sampler.sendPitchBend(PitchBendValue.center.rawValue, onChannel: channel.rawValue)
         if stopPropagationDelay > .zero {
             restoreAfterFade()
         }
     }
 
+    func sendPitchBend(_ value: PitchBendValue, channel: ChannelID) {
+        guard let sampler = channels[channel] else { return }
+        sampler.sendPitchBend(value.rawValue, onChannel: channel.rawValue)
+    }
+
+    // MARK: - Backward-Compatible Immediate Dispatch (channel 0)
+
+    func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue) {
+        startNote(midiNote, velocity: velocity, amplitudeDB: amplitudeDB, pitchBend: pitchBend, channel: ChannelID(0))
+    }
+
+    func stopNote(_ midiNote: MIDINote) {
+        stopNote(midiNote, channel: ChannelID(0))
+    }
+
+    func stopAllNotes(stopPropagationDelay: Duration) async {
+        await stopNotes(channel: ChannelID(0), stopPropagationDelay: stopPropagationDelay)
+    }
+
     func sendPitchBend(_ value: PitchBendValue) {
-        sampler.sendPitchBend(value.rawValue, onChannel: Self.channel)
+        sendPitchBend(value, channel: ChannelID(0))
     }
 
     // MARK: - Volume Fade
 
     func muteForFade() {
         activeMuteCount += 1
-        sampler.volume = 0
+        for sampler in channels.values {
+            sampler.volume = 0
+        }
     }
 
     func restoreAfterFade() {
         activeMuteCount -= 1
         if activeMuteCount <= 0 {
             activeMuteCount = 0
-            sampler.volume = 1.0
+            for sampler in channels.values {
+                sampler.volume = 1.0
+            }
         }
     }
 
@@ -321,11 +391,12 @@ final class SoundFontEngine {
 
     // MARK: - MIDI Helpers
 
-    private func sendPitchBendRange() {
+    private func sendPitchBendRange(channel: ChannelID) {
+        guard let sampler = channels[channel] else { return }
         // MIDI RPN 0x0000 (Pitch Bend Sensitivity): set range to ±pitchBendRangeSemitones
-        sampler.sendController(101, withValue: 0, onChannel: Self.channel)   // RPN MSB
-        sampler.sendController(100, withValue: 0, onChannel: Self.channel)   // RPN LSB
-        sampler.sendController(6, withValue: UInt8(Self.pitchBendRangeSemitones), onChannel: Self.channel)  // Data Entry MSB (semitones)
-        sampler.sendController(38, withValue: 0, onChannel: Self.channel)    // Data Entry LSB (cents)
+        sampler.sendController(101, withValue: 0, onChannel: channel.rawValue)   // RPN MSB
+        sampler.sendController(100, withValue: 0, onChannel: channel.rawValue)   // RPN LSB
+        sampler.sendController(6, withValue: UInt8(Self.pitchBendRangeSemitones), onChannel: channel.rawValue)  // Data Entry MSB (semitones)
+        sampler.sendController(38, withValue: 0, onChannel: channel.rawValue)    // Data Entry LSB (cents)
     }
 }
