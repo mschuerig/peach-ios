@@ -1,6 +1,6 @@
 # Story 46.5: On-Device Rhythm Timing POC
 
-Status: review
+Status: done
 
 ## Story
 

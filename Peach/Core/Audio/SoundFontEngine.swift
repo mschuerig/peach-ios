@@ -325,10 +325,16 @@ final class SoundFontEngine {
             logger.warning("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity), truncating")
             assertionFailure("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity)")
         }
-        // Reset all samplers to flush any stale MIDI events queued internally
-        // by previous scheduleMIDIEventBlock calls.
-        for sampler in channels.values {
-            sampler.auAudioUnit.reset()
+        // Reset only samplers on channels referenced by the new events to flush
+        // stale MIDI events without disrupting other active channels.
+        var affectedChannels: Set<UInt8> = []
+        for event in events {
+            affectedChannels.insert(event.midiStatus & Self.channelMask)
+        }
+        for channelID in affectedChannels {
+            if let sampler = channels[ChannelID(channelID)] {
+                sampler.auAudioUnit.reset()
+            }
         }
         scheduleLockState.withLock { data in
             let count = min(events.count, data.capacity)

@@ -6,6 +6,7 @@ struct RhythmPOCScreen: View {
 
     @State private var tempo: TempoBPM = TempoBPM(120)
     @State private var playbackHandle: (any RhythmPlaybackHandle)?
+    @State private var playTask: Task<Void, Never>?
     @State private var isPlaying = false
 
     private let tempoOptions: [TempoBPM] = [TempoBPM(80), TempoBPM(120), TempoBPM(160)]
@@ -26,6 +27,11 @@ struct RhythmPOCScreen: View {
         }
         .padding()
         .navigationTitle("Rhythm POC")
+        .onDisappear {
+            playTask?.cancel()
+            playTask = nil
+            Task { try? await playbackHandle?.stop() }
+        }
     }
 
     private var tempoPicker: some View {
@@ -45,7 +51,8 @@ struct RhythmPOCScreen: View {
 
     private var playButton: some View {
         Button {
-            Task {
+            playTask?.cancel()
+            playTask = Task {
                 await playPattern()
             }
         } label: {
@@ -89,10 +96,14 @@ struct RhythmPOCScreen: View {
             playbackHandle = handle
             isPlaying = true
 
-            try? await Task.sleep(for: pattern.totalDuration)
-            isPlaying = false
+            try await Task.sleep(for: pattern.totalDuration)
+            if !Task.isCancelled {
+                isPlaying = false
+            }
         } catch {
-            isPlaying = false
+            if !Task.isCancelled {
+                isPlaying = false
+            }
         }
     }
 }
