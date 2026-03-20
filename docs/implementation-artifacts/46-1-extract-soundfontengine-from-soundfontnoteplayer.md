@@ -1,6 +1,6 @@
 # Story 46.1: Extract SoundFontEngine from SoundFontNotePlayer
 
-Status: review
+Status: done
 
 ## Story
 
@@ -225,6 +225,7 @@ Claude Opus 4.6
 
 - 2026-03-20: Implemented story 46.1 — created SoundFontEngine with audio graph ownership, MIDI dispatch, preset loading, and tests
 - 2026-03-20: Code review fix — replaced all raw types with domain types (MIDINote, MIDIVelocity, PitchBendValue, SF2Preset), created PitchBendValue domain type, made MIDI channel a private internal detail
+- 2026-03-20: Code review fix — configure audio session before engine start, remove isSessionConfigured flag (idempotent calls recover after interruptions), add isolated deinit
 
 ### File List
 
