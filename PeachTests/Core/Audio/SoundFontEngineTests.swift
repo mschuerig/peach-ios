@@ -51,7 +51,7 @@ struct SoundFontEngineTests {
     @Test("loadPreset skips reload when same preset is already loaded")
     func loadPresetSkipsSame() async throws {
         let engine = try makeEngine()
-        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0))
+        try await engine.loadPreset(SF2Preset(name: "Yamaha Grand Piano", program: 0, bank: 0))
     }
 
     @Test("loadPreset loads different preset")
@@ -105,12 +105,4 @@ struct SoundFontEngineTests {
         await engine.stopAllNotes(stopPropagationDelay: .zero)
     }
 
-    // MARK: - Sampler Access
-
-    @Test("sampler is accessible as read-only property")
-    func samplerIsAccessible() async throws {
-        let engine = try makeEngine()
-        let sampler = engine.sampler
-        #expect(sampler === engine.sampler)
-    }
 }

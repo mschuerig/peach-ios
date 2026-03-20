@@ -10,11 +10,12 @@ final class SoundFontEngine {
     // MARK: - Audio Components
 
     private let engine: AVAudioEngine
-    let sampler: AVAudioUnitSampler
+    private let sampler: AVAudioUnitSampler
 
     // MARK: - State
 
     private var loadedPreset: SF2Preset
+    private var activeMuteCount = 0
 
     // MARK: - Constants
 
@@ -117,18 +118,33 @@ final class SoundFontEngine {
 
     func stopAllNotes(stopPropagationDelay: Duration) async {
         if stopPropagationDelay > .zero {
-            sampler.volume = 0
+            muteForFade()
             try? await Task.sleep(for: stopPropagationDelay)
         }
         sampler.sendController(123, withValue: 0, onChannel: Self.channel)
         sampler.sendPitchBend(PitchBendValue.center.rawValue, onChannel: Self.channel)
         if stopPropagationDelay > .zero {
-            sampler.volume = 1.0
+            restoreAfterFade()
         }
     }
 
     func sendPitchBend(_ value: PitchBendValue) {
         sampler.sendPitchBend(value.rawValue, onChannel: Self.channel)
+    }
+
+    // MARK: - Volume Fade
+
+    func muteForFade() {
+        activeMuteCount += 1
+        sampler.volume = 0
+    }
+
+    func restoreAfterFade() {
+        activeMuteCount -= 1
+        if activeMuteCount <= 0 {
+            activeMuteCount = 0
+            sampler.volume = 1.0
+        }
     }
 
     // MARK: - Audio Session

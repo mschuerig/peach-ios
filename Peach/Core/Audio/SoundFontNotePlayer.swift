@@ -37,12 +37,6 @@ final class SoundFontNotePlayer: NotePlayer {
         logger.info("SoundFontNotePlayer initialized with delegated SoundFontEngine")
     }
 
-    // MARK: - Preset Switching
-
-    func loadPreset(program: Int, bank: Int = 0) async throws {
-        try await soundFontEngine.loadPreset(SF2Preset(name: "", program: program, bank: bank))
-    }
-
     // MARK: - NotePlayer Protocol
 
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {

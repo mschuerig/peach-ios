@@ -24,13 +24,13 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         guard !hasStopped else { return }
         hasStopped = true
         if stopPropagationDelay > .zero {
-            engine.sampler.volume = 0
+            engine.muteForFade()
             try? await Task.sleep(for: stopPropagationDelay)
         }
         engine.stopNote(midiNote)
         engine.sendPitchBend(.center)
         if stopPropagationDelay > .zero {
-            engine.sampler.volume = 1.0
+            engine.restoreAfterFade()
         }
     }
 

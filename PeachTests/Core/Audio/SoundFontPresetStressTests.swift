@@ -38,10 +38,10 @@ struct SoundFontPresetStressTests {
         Self.testLibrary
     }
 
-    private func makePlayer() throws -> SoundFontNotePlayer {
-        let userSettings = MockUserSettings()
+    private func makePlayer(userSettings: MockUserSettings = MockUserSettings()) throws -> (player: SoundFontNotePlayer, settings: MockUserSettings) {
         let engine = try SoundFontEngine(library: Self.testLibrary, soundSource: userSettings.soundSource)
-        return SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
+        let player = SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
+        return (player, userSettings)
     }
 
     // MARK: - Task 2: Per-Preset Smoke Test
@@ -52,9 +52,9 @@ struct SoundFontPresetStressTests {
         #expect(!allPresets.isEmpty, "SoundFontLibrary discovered no presets")
 
         for preset in allPresets {
-            let player = try makePlayer()
+            let (player, settings) = try makePlayer()
             do {
-                try await player.loadPreset(program: preset.program, bank: preset.bank)
+                settings.soundSource = SoundSourceTag(rawValue: preset.rawValue)
                 let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
                 try await Task.sleep(for: .milliseconds(100))
                 try await handle.stop()
@@ -76,8 +76,8 @@ struct SoundFontPresetStressTests {
         #expect(!presets.isEmpty, "No representative presets found")
 
         for preset in presets {
-            let player = try makePlayer()
-            try await player.loadPreset(program: preset.program, bank: preset.bank)
+            let (player, settings) = try makePlayer()
+            settings.soundSource = SoundSourceTag(rawValue: preset.rawValue)
 
             for midiNote in Self.midiNoteValues {
                 let frequency = TuningSystem.equalTemperament.frequency(
@@ -109,8 +109,8 @@ struct SoundFontPresetStressTests {
         let durations: [Duration] = [.milliseconds(10), .milliseconds(100), .milliseconds(500)]
 
         for preset in presets {
-            let player = try makePlayer()
-            try await player.loadPreset(program: preset.program, bank: preset.bank)
+            let (player, settings) = try makePlayer()
+            settings.soundSource = SoundSourceTag(rawValue: preset.rawValue)
 
             for duration in durations {
                 do {
@@ -136,8 +136,8 @@ struct SoundFontPresetStressTests {
         let velocities: [MIDIVelocity] = [1, 63, 127]
 
         for preset in presets {
-            let player = try makePlayer()
-            try await player.loadPreset(program: preset.program, bank: preset.bank)
+            let (player, settings) = try makePlayer()
+            settings.soundSource = SoundSourceTag(rawValue: preset.rawValue)
 
             for velocity in velocities {
                 do {
@@ -157,23 +157,13 @@ struct SoundFontPresetStressTests {
 
     // MARK: - Task 6: Rapid Preset Switching
 
-    @Test("Rapid preset loading without play does not crash")
-    func rapidPresetLoadOnly() async throws {
-        let player = try makePlayer()
+    @Test("Rapid preset switching via settings does not crash")
+    func rapidPresetSwitching() async throws {
+        let (player, settings) = try makePlayer()
         let presets = Array(makeLibrary().availablePresets.prefix(15))
 
         for preset in presets {
-            try await player.loadPreset(program: preset.program, bank: preset.bank)
-        }
-    }
-
-    @Test("Load-play-stop-switch cycle does not crash")
-    func loadPlayStopSwitchCycle() async throws {
-        let player = try makePlayer()
-        let presets = Array(makeLibrary().availablePresets.prefix(8))
-
-        for preset in presets {
-            try await player.loadPreset(program: preset.program, bank: preset.bank)
+            settings.soundSource = SoundSourceTag(rawValue: preset.rawValue)
             let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
             try await Task.sleep(for: .milliseconds(50))
             try await handle.stop()

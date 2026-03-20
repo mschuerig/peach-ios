@@ -158,66 +158,6 @@ struct SoundFontNotePlayerTests {
     // Note: Out-of-range amplitude values (-91.0, 13.0) are now silently clamped
     // by the AmplitudeDB value object. See AmplitudeDBTests for coverage.
 
-    // MARK: - Preset Switching
-
-    @Test("loadPreset to program 0 (piano) succeeds")
-    func loadPresetPiano() async throws {
-        let player = try makePlayer()
-        try await player.loadPreset(program: 0)
-    }
-
-    @Test("loadPreset to program 42 (cello) succeeds")
-    func loadPresetCello() async throws {
-        let player = try makePlayer()
-        // Player starts with program 42, so load something else first, then back
-        try await player.loadPreset(program: 0)
-        try await player.loadPreset(program: 42)
-    }
-
-    @Test("loadPreset with bank parameter loads bank variant")
-    func loadPresetBankVariant() async throws {
-        let player = try makePlayer()
-        try await player.loadPreset(program: 6, bank: 8) // Coupled Harpsichord
-    }
-
-    @Test("Loading same preset twice is a no-op (no error)")
-    func loadSamePresetTwice() async throws {
-        let player = try makePlayer()
-        try await player.loadPreset(program: 0)
-        try await player.loadPreset(program: 0) // should be skipped, no error
-    }
-
-    @Test("Play works after preset switch")
-    func playAfterPresetSwitch() async throws {
-        let player = try makePlayer()
-        try await player.loadPreset(program: 0) // switch to piano
-        try await player.play(frequency: 440.0, duration: .milliseconds(100), velocity: 63, amplitudeDB: 0.0)
-    }
-
-    @Test("loadPreset throws for out-of-range program")
-    func loadPresetInvalidProgram() async throws {
-        let player = try makePlayer()
-        await #expect(throws: AudioError.self) {
-            try await player.loadPreset(program: 999)
-        }
-    }
-
-    @Test("loadPreset throws for negative program")
-    func loadPresetNegativeProgram() async throws {
-        let player = try makePlayer()
-        await #expect(throws: AudioError.self) {
-            try await player.loadPreset(program: -1)
-        }
-    }
-
-    @Test("loadPreset throws for out-of-range bank")
-    func loadPresetInvalidBank() async throws {
-        let player = try makePlayer()
-        await #expect(throws: AudioError.self) {
-            try await player.loadPreset(program: 0, bank: 200)
-        }
-    }
-
     // MARK: - stopAll
 
     @Test("stopAll does not crash when no notes are playing")

@@ -7,6 +7,15 @@ struct SF2Preset: SoundSourceID, Equatable, Hashable {
 
     var rawValue: String { "sf2:\(bank):\(program)" }
     var displayName: String { name }
+
+    nonisolated static func == (lhs: SF2Preset, rhs: SF2Preset) -> Bool {
+        lhs.program == rhs.program && lhs.bank == rhs.bank
+    }
+
+    nonisolated func hash(into hasher: inout Hasher) {
+        hasher.combine(program)
+        hasher.combine(bank)
+    }
 }
 
 enum SF2ParseError: Error {
