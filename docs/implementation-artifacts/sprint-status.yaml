@@ -358,4 +358,4 @@ development_status:
   45-1-tempobpm-domain-type: done
   45-2-rhythmoffset-and-rhythmdirection-domain-types: done
   45-3-rhythm-observer-protocols-and-result-types: done
-  45-4-rhythmprofile-protocol: backlog
+  45-4-rhythmprofile-protocol: ready-for-dev
