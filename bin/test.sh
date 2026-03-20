@@ -99,7 +99,8 @@ if $RAW; then
 fi
 
 # --- Run tests, capture output ---
-TMPFILE=$(mktemp /tmp/peach-test-XXXXXX)
+mkdir -p "${TMPDIR:-/tmp}"
+TMPFILE=$(mktemp "${TMPDIR:-/tmp}/peach-test-XXXXXX")
 trap 'rm -f "$TMPFILE"; restore_scheme' EXIT INT TERM
 
 if $VERBOSE; then

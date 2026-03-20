@@ -43,7 +43,8 @@ if $RAW; then
 fi
 
 # --- Run build ---
-TMPFILE=$(mktemp /tmp/peach-build-XXXXXX)
+mkdir -p "${TMPDIR:-/tmp}"
+TMPFILE=$(mktemp "${TMPDIR:-/tmp}/peach-build-XXXXXX")
 trap 'rm -f "$TMPFILE"' EXIT
 
 if $VERBOSE; then
