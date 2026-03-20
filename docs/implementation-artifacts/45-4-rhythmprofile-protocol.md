@@ -1,6 +1,6 @@
 # Story 45.4: RhythmProfile Protocol
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,26 +18,26 @@ So that sessions and views can depend on the protocol while PerceptualProfile pr
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmTempoStats` value type (AC: #2, #3)
-  - [ ] Define `struct RhythmTempoStats: Sendable` in `Peach/Core/Profile/RhythmProfile.swift`
-  - [ ] Properties: `let mean: RhythmOffset`, `let stdDev: RhythmOffset`, `let sampleCount: Int`, `let currentDifficulty: RhythmOffset`
-  - [ ] `nonisolated init` with all four parameters (no defaults)
-- [ ] Task 2: Create `RhythmProfile` protocol (AC: #1, #3)
-  - [ ] Define `protocol RhythmProfile: AnyObject` in same file
-  - [ ] `func updateRhythmComparison(tempo: TempoBPM, offset: RhythmOffset, isCorrect: Bool)`
-  - [ ] `func updateRhythmMatching(tempo: TempoBPM, userOffset: RhythmOffset)`
-  - [ ] `func rhythmStats(tempo: TempoBPM, direction: RhythmDirection) -> RhythmTempoStats`
-  - [ ] `var trainedTempos: [TempoBPM] { get }`
-  - [ ] `var rhythmOverallAccuracy: Double? { get }`
-  - [ ] `func resetRhythm()`
-- [ ] Task 3: Write `RhythmTempoStats` tests (AC: #2, #3)
-  - [ ] Create `PeachTests/Core/Profile/RhythmTempoStatsTests.swift`
-  - [ ] `@Suite("RhythmTempoStats")` struct with `@Test` functions (all `async`)
-  - [ ] Test stored properties are accessible and correct
-  - [ ] Test `Sendable` conformance compiles
-- [ ] Task 4: Build verification
-  - [ ] Run `bin/build.sh` — zero errors, zero warnings
-  - [ ] Run `bin/test.sh` — full suite passes, zero regressions
+- [x] Task 1: Create `RhythmTempoStats` value type (AC: #2, #3)
+  - [x] Define `struct RhythmTempoStats: Sendable` in `Peach/Core/Profile/RhythmProfile.swift`
+  - [x] Properties: `let mean: RhythmOffset`, `let stdDev: RhythmOffset`, `let sampleCount: Int`, `let currentDifficulty: RhythmOffset`
+  - [x] `nonisolated init` with all four parameters (no defaults)
+- [x] Task 2: Create `RhythmProfile` protocol (AC: #1, #3)
+  - [x] Define `protocol RhythmProfile: AnyObject` in same file
+  - [x] `func updateRhythmComparison(tempo: TempoBPM, offset: RhythmOffset, isCorrect: Bool)`
+  - [x] `func updateRhythmMatching(tempo: TempoBPM, userOffset: RhythmOffset)`
+  - [x] `func rhythmStats(tempo: TempoBPM, direction: RhythmDirection) -> RhythmTempoStats`
+  - [x] `var trainedTempos: [TempoBPM] { get }`
+  - [x] `var rhythmOverallAccuracy: Double? { get }`
+  - [x] `func resetRhythm()`
+- [x] Task 3: Write `RhythmTempoStats` tests (AC: #2, #3)
+  - [x] Create `PeachTests/Core/Profile/RhythmTempoStatsTests.swift`
+  - [x] `@Suite("RhythmTempoStats")` struct with `@Test` functions (all `async`)
+  - [x] Test stored properties are accessible and correct
+  - [x] Test `Sendable` conformance compiles
+- [x] Task 4: Build verification
+  - [x] Run `bin/build.sh` — zero errors, zero warnings
+  - [x] Run `bin/test.sh` — full suite passes, zero regressions
 
 ## Dev Notes
 
@@ -156,10 +156,24 @@ Existing `Core/Profile/` directory contains: `PitchComparisonProfile.swift`, `Pi
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `RhythmTempoStats` struct with `Sendable` conformance, `nonisolated init`, four required properties (`mean`, `stdDev`, `sampleCount`, `currentDifficulty`)
+- Created `RhythmProfile` protocol with `: AnyObject` constraint, 3 methods (`updateRhythmComparison`, `updateRhythmMatching`, `rhythmStats`) and 3 properties (`trainedTempos`, `rhythmOverallAccuracy`, `resetRhythm`)
+- Tests verify stored property access and `Sendable` conformance
+- Build: zero errors; Tests: 1118 passed (including 2 new), zero regressions
+
+### Change Log
+
+- 2026-03-20: Implemented RhythmTempoStats value type and RhythmProfile protocol with unit tests
+
 ### File List
+
+- `Peach/Core/Profile/RhythmProfile.swift` (new)
+- `PeachTests/Core/Profile/RhythmTempoStatsTests.swift` (new)
+- `docs/implementation-artifacts/45-4-rhythmprofile-protocol.md` (modified)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified)
