@@ -5475,6 +5475,8 @@ So that users can import rhythm data and existing pitch exports remain importabl
 **When** they verify V2 import
 **Then** all four training types parse correctly, V1 backward compatibility is confirmed, and deduplication works
 
+> **Note (from 47.2 review):** `replaceAllRecords` currently deletes all four record types but only re-inserts pitch records. When this story adds rhythm import support, `replaceAllRecords` must be updated to accept and re-insert rhythm record arrays too — otherwise a "replace" import silently destroys rhythm training data.
+
 ## Epic 53: Rhythm in Every Language — Localization
 
 English + German UI strings for all rhythm training screens, Start Screen section labels, Settings tempo section, Profile rhythm cards, feedback text, and spectrogram accessibility descriptions.

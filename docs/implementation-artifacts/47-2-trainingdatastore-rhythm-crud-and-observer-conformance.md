@@ -1,6 +1,6 @@
 # Story 47.2: TrainingDataStore Rhythm CRUD and Observer Conformance
 
-Status: review
+Status: done
 
 ## Story
 

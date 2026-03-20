@@ -18,9 +18,10 @@ final class TrainingDataStore {
     /// - Parameter record: The PitchComparisonRecord to save
     /// - Throws: DataStoreError.saveFailed if save operation fails
     func save(_ record: PitchComparisonRecord) throws {
-        modelContext.insert(record)
         do {
-            try modelContext.save()
+            try modelContext.transaction {
+                modelContext.insert(record)
+            }
         } catch {
             throw DataStoreError.saveFailed("Failed to save PitchComparisonRecord: \(error.localizedDescription)")
         }
@@ -47,9 +48,10 @@ final class TrainingDataStore {
     /// - Parameter record: The PitchComparisonRecord to delete
     /// - Throws: DataStoreError.deleteFailed if delete operation fails
     func delete(_ record: PitchComparisonRecord) throws {
-        modelContext.delete(record)
         do {
-            try modelContext.save()
+            try modelContext.transaction {
+                modelContext.delete(record)
+            }
         } catch {
             throw DataStoreError.deleteFailed("Failed to delete record: \(error.localizedDescription)")
         }
@@ -102,9 +104,10 @@ final class TrainingDataStore {
     // MARK: - Rhythm Comparison CRUD
 
     func save(_ record: RhythmComparisonRecord) throws {
-        modelContext.insert(record)
         do {
-            try modelContext.save()
+            try modelContext.transaction {
+                modelContext.insert(record)
+            }
         } catch {
             throw DataStoreError.saveFailed("Failed to save RhythmComparisonRecord: \(error.localizedDescription)")
         }
@@ -134,9 +137,10 @@ final class TrainingDataStore {
     // MARK: - Rhythm Matching CRUD
 
     func save(_ record: RhythmMatchingRecord) throws {
-        modelContext.insert(record)
         do {
-            try modelContext.save()
+            try modelContext.transaction {
+                modelContext.insert(record)
+            }
         } catch {
             throw DataStoreError.saveFailed("Failed to save RhythmMatchingRecord: \(error.localizedDescription)")
         }
@@ -169,9 +173,10 @@ final class TrainingDataStore {
     /// - Parameter record: The PitchMatchingRecord to save
     /// - Throws: DataStoreError.saveFailed if save operation fails
     func save(_ record: PitchMatchingRecord) throws {
-        modelContext.insert(record)
         do {
-            try modelContext.save()
+            try modelContext.transaction {
+                modelContext.insert(record)
+            }
         } catch {
             throw DataStoreError.saveFailed("Failed to save PitchMatchingRecord: \(error.localizedDescription)")
         }

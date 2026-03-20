@@ -371,6 +371,6 @@ development_status:
   # Epic 47: Remember Every Beat — Rhythm Data Layer
   epic-47: in-progress
   47-1-rhythm-swiftdata-records: done
-  47-2-trainingdatastore-rhythm-crud-and-observer-conformance: review
+  47-2-trainingdatastore-rhythm-crud-and-observer-conformance: done
   47-3-perceptualprofile-rhythmprofile-conformance: backlog
   47-4-progresstimeline-extension-to-six-training-modes: backlog
