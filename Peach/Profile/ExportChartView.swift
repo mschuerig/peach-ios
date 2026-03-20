@@ -75,7 +75,7 @@ struct ExportChartView: View {
             ProgressChartView.ewmaLine(buckets: buckets)
             ProgressChartView.sessionDots(buckets: buckets)
 
-            RuleMark(y: .value("Baseline", config.optimalBaseline.rawValue))
+            RuleMark(y: .value("Baseline", config.optimalBaseline))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                 .foregroundStyle(.green.opacity(0.6))
         }

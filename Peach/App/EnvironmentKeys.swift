@@ -69,7 +69,7 @@ private struct PreviewSoundSourceProvider: SoundSourceProvider {
 
 private final class PreviewPitchComparisonStrategy: NextPitchComparisonStrategy {
     func nextPitchComparison(
-        profile: PitchComparisonProfile,
+        profile: TrainingProfile,
         settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval

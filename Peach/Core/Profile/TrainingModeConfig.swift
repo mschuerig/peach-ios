@@ -1,5 +1,19 @@
 import Foundation
 
+/// Statistical parameters shared by all training modes (pitch and rhythm).
+struct StatisticsConfig: Sendable {
+    /// Half-life for exponentially weighted moving average smoothing.
+    let ewmaHalflife: Duration
+
+    /// Maximum gap between consecutive records that still counts as the same training session.
+    let sessionGap: Duration
+
+    static let `default` = StatisticsConfig(
+        ewmaHalflife: .seconds(7 * 86400),
+        sessionGap: .seconds(1800)
+    )
+}
+
 /// Configuration for a training mode's progress tracking behavior.
 ///
 /// Each training mode (unison/interval x comparison/matching) has its own
@@ -13,51 +27,55 @@ struct TrainingModeConfig {
     let unitLabel: String
 
     /// Expert-level accuracy target shown as dashed baseline on charts.
-    let optimalBaseline: Cents
+    let optimalBaseline: Double
 
-    /// Half-life for exponentially weighted moving average smoothing.
-    let ewmaHalflife: Duration
+    /// Statistical parameters for EWMA and session bucketing.
+    let statistics: StatisticsConfig
 
-    /// Maximum gap between consecutive records that still counts as the same training session.
-    let sessionGap: Duration
+    var ewmaHalflife: Duration { statistics.ewmaHalflife }
+    var sessionGap: Duration { statistics.sessionGap }
 }
 
 extension TrainingModeConfig {
-    /// EWMA half-life shared across all training modes (7 days).
-    private static let defaultEWMAHalflife: Duration = .seconds(7 * 86400)
-
-    /// Maximum gap between consecutive records within one session (30 minutes).
-    private static let defaultSessionGap: Duration = .seconds(1800)
-
     static let unisonPitchComparison = TrainingModeConfig(
         displayName: String(localized: "Hear & Compare – Single Notes"),
         unitLabel: String(localized: "cents"),
-        optimalBaseline: Cents(8.0),
-        ewmaHalflife: defaultEWMAHalflife,
-        sessionGap: defaultSessionGap
+        optimalBaseline: 8.0,
+        statistics: .default
     )
 
     static let intervalPitchComparison = TrainingModeConfig(
         displayName: String(localized: "Hear & Compare – Intervals"),
         unitLabel: String(localized: "cents"),
-        optimalBaseline: Cents(12.0),
-        ewmaHalflife: defaultEWMAHalflife,
-        sessionGap: defaultSessionGap
+        optimalBaseline: 12.0,
+        statistics: .default
     )
 
     static let unisonMatching = TrainingModeConfig(
         displayName: String(localized: "Tune & Match – Single Notes"),
         unitLabel: String(localized: "cents"),
-        optimalBaseline: Cents(5.0),
-        ewmaHalflife: defaultEWMAHalflife,
-        sessionGap: defaultSessionGap
+        optimalBaseline: 5.0,
+        statistics: .default
     )
 
     static let intervalMatching = TrainingModeConfig(
         displayName: String(localized: "Tune & Match – Intervals"),
         unitLabel: String(localized: "cents"),
-        optimalBaseline: Cents(8.0),
-        ewmaHalflife: defaultEWMAHalflife,
-        sessionGap: defaultSessionGap
+        optimalBaseline: 8.0,
+        statistics: .default
+    )
+
+    static let rhythmComparison = TrainingModeConfig(
+        displayName: String(localized: "Hear & Compare – Rhythm"),
+        unitLabel: String(localized: "ms"),
+        optimalBaseline: 15.0,
+        statistics: .default
+    )
+
+    static let rhythmMatching = TrainingModeConfig(
+        displayName: String(localized: "Tap & Match – Rhythm"),
+        unitLabel: String(localized: "ms"),
+        optimalBaseline: 20.0,
+        statistics: .default
     )
 }

@@ -12,8 +12,8 @@ struct ProfileScreenLayoutTests {
         let profile = PerceptualProfile { builder in
             for i in 0..<25 {
                 builder.addPoint(
-                    MetricPoint(timestamp: Date().addingTimeInterval(Double(i - 25) * 3600), value: Cents(Double(30 + i))),
-                    for: .unisonPitchComparison
+                    MetricPoint(timestamp: Date().addingTimeInterval(Double(i - 25) * 3600), value: Double(30 + i)),
+                    for: .pitch(.unisonPitchComparison)
                 )
             }
         }

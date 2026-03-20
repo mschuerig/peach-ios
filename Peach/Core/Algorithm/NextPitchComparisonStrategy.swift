@@ -7,11 +7,11 @@ import Foundation
 ///
 /// # Architecture Boundary
 ///
-/// NextPitchComparisonStrategy reads from PitchComparisonProfile and PitchComparisonTrainingSettings,
+/// NextPitchComparisonStrategy reads from TrainingProfile and PitchComparisonTrainingSettings,
 /// and returns a PitchComparison value type. It has no concept of:
 /// - Audio playback (NotePlayer's responsibility)
 /// - Data persistence (TrainingDataStore's responsibility)
-/// - Profile updates (PitchComparisonProfile's responsibility)
+/// - Profile updates (TrainingProfile's responsibility)
 /// - UI rendering (SwiftUI's responsibility)
 ///
 /// # Usage
@@ -36,7 +36,7 @@ protocol NextPitchComparisonStrategy {
     ///     by the interval's semitone count via `MIDINote.transposed(by:)`.
     /// - Returns: A PitchComparison ready to be played by NotePlayer
     func nextPitchComparison(
-        profile: PitchComparisonProfile,
+        profile: TrainingProfile,
         settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval

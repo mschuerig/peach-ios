@@ -41,9 +41,9 @@ func makePitchMatchingSession(
     notificationCenter: NotificationCenter = .default,
     backgroundNotificationName: Notification.Name? = UIApplication.didEnterBackgroundNotification,
     foregroundNotificationName: Notification.Name? = UIApplication.willEnterForegroundNotification
-) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockPitchMatchingProfile, observer: MockPitchMatchingObserver) {
+) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver) {
     let notePlayer = MockNotePlayer()
-    let profile = MockPitchMatchingProfile()
+    let profile = MockTrainingProfile()
     let observer = MockPitchMatchingObserver()
     let session = PitchMatchingSession(
         notePlayer: notePlayer,

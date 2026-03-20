@@ -1,13 +1,13 @@
 import Testing
 @testable import Peach
 
-@Suite("PitchComparisonProfile")
-struct PitchComparisonProfileTests {
+@Suite("TrainingProfile")
+struct TrainingProfileTests {
 
-    @Test("PerceptualProfile conforms to PitchComparisonProfile")
-    func conformsToPitchComparisonProfile() async {
+    @Test("PerceptualProfile conforms to TrainingProfile")
+    func conformsToTrainingProfile() async {
         let profile = PerceptualProfile()
-        let _: PitchComparisonProfile = profile
-        #expect(profile is PitchComparisonProfile)
+        let _: TrainingProfile = profile
+        #expect(profile is TrainingProfile)
     }
 }

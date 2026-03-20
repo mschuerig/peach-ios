@@ -25,4 +25,14 @@ struct TrainingModeTests {
     func slugIntervalMatching() async {
         #expect(TrainingMode.intervalMatching.slug == "interval-matching")
     }
+
+    @Test("slug returns rhythm-comparison for rhythm comparison")
+    func slugRhythmComparison() async {
+        #expect(TrainingMode.rhythmComparison.slug == "rhythm-comparison")
+    }
+
+    @Test("slug returns rhythm-matching for rhythm matching")
+    func slugRhythmMatching() async {
+        #expect(TrainingMode.rhythmMatching.slug == "rhythm-matching")
+    }
 }

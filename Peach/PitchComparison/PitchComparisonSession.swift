@@ -28,7 +28,7 @@ final class PitchComparisonSession: TrainingSession {
 
     private let notePlayer: NotePlayer
     private let strategy: NextPitchComparisonStrategy
-    private let profile: PitchComparisonProfile
+    private let profile: TrainingProfile
     private let resettables: [Resettable]
     private let observers: [PitchComparisonObserver]
     private var interruptionMonitor: AudioSessionInterruptionMonitor?
@@ -50,7 +50,7 @@ final class PitchComparisonSession: TrainingSession {
     init(
         notePlayer: NotePlayer,
         strategy: NextPitchComparisonStrategy,
-        profile: PitchComparisonProfile,
+        profile: TrainingProfile,
         resettables: [Resettable] = [],
         observers: [PitchComparisonObserver] = [],
         notificationCenter: NotificationCenter = .default

@@ -7,7 +7,7 @@ final class MockNextPitchComparisonStrategy: NextPitchComparisonStrategy {
     var comparisons: [PitchComparison]
     var currentIndex = 0
     var callCount = 0
-    var lastReceivedProfile: PitchComparisonProfile?
+    var lastReceivedProfile: TrainingProfile?
     var lastReceivedSettings: PitchComparisonTrainingSettings?
     var lastReceivedLastComparison: CompletedPitchComparison?
     var lastReceivedInterval: DirectedInterval?
@@ -27,7 +27,7 @@ final class MockNextPitchComparisonStrategy: NextPitchComparisonStrategy {
     // MARK: - NextPitchComparisonStrategy Protocol
 
     func nextPitchComparison(
-        profile: PitchComparisonProfile,
+        profile: TrainingProfile,
         settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval

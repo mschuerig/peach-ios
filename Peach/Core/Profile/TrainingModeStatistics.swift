@@ -1,16 +1,16 @@
 import Foundation
 
 /// Per-mode statistical state: Welford accumulator, EWMA, trend, and time-ordered metrics.
-struct TrainingModeStatistics {
-    private(set) var welford = WelfordAccumulator<Cents>()
+struct TrainingModeStatistics: Sendable {
+    private(set) var welford = WelfordAccumulator()
     private(set) var ewma: Double?
     private(set) var trend: Trend?
-    private(set) var metrics: [MetricPoint<Cents>] = []
+    private(set) var metrics: [MetricPoint] = []
 
     var recordCount: Int { welford.count }
 
     /// Appends a new data point, updating Welford, EWMA, and trend.
-    mutating func addPoint(_ point: MetricPoint<Cents>, config: TrainingModeConfig) {
+    mutating func addPoint(_ point: MetricPoint, config: StatisticsConfig) {
         welford.update(point.value)
         metrics.append(point)
         recomputeEWMA(config: config)
@@ -18,8 +18,8 @@ struct TrainingModeStatistics {
     }
 
     /// Rebuilds statistics from a sorted array of metric points.
-    mutating func rebuild(from sortedMetrics: [MetricPoint<Cents>], config: TrainingModeConfig) {
-        welford = WelfordAccumulator<Cents>()
+    mutating func rebuild(from sortedMetrics: [MetricPoint], config: StatisticsConfig) {
+        welford = WelfordAccumulator()
         metrics = sortedMetrics
         for metric in sortedMetrics {
             welford.update(metric.value)
@@ -35,7 +35,7 @@ struct TrainingModeStatistics {
     /// The EWMA is computed over session-level groupings (not raw metrics)
     /// to match ProgressTimeline's existing behavior where each session bucket
     /// contributes one data point to the smoothing.
-    private mutating func recomputeEWMA(config: TrainingModeConfig) {
+    private mutating func recomputeEWMA(config: StatisticsConfig) {
         guard !metrics.isEmpty else {
             ewma = nil
             return
@@ -59,7 +59,7 @@ struct TrainingModeStatistics {
                 currentCount = 0
                 sessionStart = metric.timestamp
             }
-            currentSum += metric.statisticalValue
+            currentSum += metric.value
             currentCount += 1
         }
         // Final session
@@ -86,7 +86,7 @@ struct TrainingModeStatistics {
             return
         }
 
-        let value = latest.statisticalValue
+        let value = latest.value
         if value > welford.mean + stddev {
             trend = .declining
         } else if value >= ewma {

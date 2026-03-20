@@ -1,15 +1,8 @@
 import Testing
 @testable import Peach
 
-@Suite("PitchMatchingProfile")
+@Suite("PitchMatchingProfile Legacy API")
 struct PitchMatchingProfileTests {
-
-    @Test("PerceptualProfile conforms to PitchMatchingProfile")
-    func conformsToPitchMatchingProfile() async {
-        let profile = PerceptualProfile()
-        let _: PitchMatchingProfile = profile
-        #expect(profile is PitchMatchingProfile)
-    }
 
     @Test("cold start returns nil mean and stdDev, zero sample count")
     func coldStart() async {

@@ -1,14 +1,27 @@
 import Foundation
 @testable import Peach
 
-final class MockPitchComparisonProfile: PitchComparisonProfile {
+final class MockTrainingProfile: TrainingProfile {
     // MARK: - Test State
 
-    var stubbedComparisonMean: Cents? = nil
+    private var stubbedStatistics: [StatisticsKey: TrainingModeStatistics] = [:]
 
-    // MARK: - PitchComparisonProfile Protocol
+    // MARK: - TrainingProfile Protocol
 
-    func comparisonMean(for interval: DirectedInterval) -> Cents? {
-        stubbedComparisonMean
+    func statistics(for key: StatisticsKey) -> TrainingModeStatistics? {
+        stubbedStatistics[key]
+    }
+
+    // MARK: - Test Helpers
+
+    func stub(_ key: StatisticsKey, mean: Double, count: Int = 1) {
+        var stats = TrainingModeStatistics()
+        for i in 0..<count {
+            stats.addPoint(
+                MetricPoint(timestamp: Date().addingTimeInterval(Double(i)), value: mean),
+                config: key.statisticsConfig
+            )
+        }
+        stubbedStatistics[key] = stats
     }
 }

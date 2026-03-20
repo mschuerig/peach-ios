@@ -158,7 +158,7 @@ struct ProgressChartView: View {
             Self.sessionDots(buckets: buckets)
 
             // Layer 6: Baseline
-            RuleMark(y: .value("Baseline", config.optimalBaseline.rawValue))
+            RuleMark(y: .value("Baseline", config.optimalBaseline))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                 .foregroundStyle(.green.opacity(Self.contrastAdjustedOpacity(base: 0.6, increased: 0.9, isIncreaseContrast: isIncreaseContrast)))
 

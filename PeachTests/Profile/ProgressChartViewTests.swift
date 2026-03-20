@@ -583,8 +583,8 @@ struct ProgressChartViewTests {
                 for record in 0..<recordsPerDay {
                     let timestamp = now.addingTimeInterval(Double(-day) * 86400 + Double(record) * 60)
                     builder.addPoint(
-                        MetricPoint(timestamp: timestamp, value: Cents(Double.random(in: 5...25))),
-                        for: .unisonPitchComparison
+                        MetricPoint(timestamp: timestamp, value: Double.random(in: 5...25)),
+                        for: .pitch(.unisonPitchComparison)
                     )
                 }
             }

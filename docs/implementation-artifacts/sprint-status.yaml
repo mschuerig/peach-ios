@@ -368,9 +368,10 @@ development_status:
   46-4-unified-soundfontplayer-with-generalized-sampler-channels: done
   46-5-on-device-rhythm-timing-poc: done
 
+
   # Epic 47: Remember Every Beat — Rhythm Data Layer
   epic-47: in-progress
   47-1-rhythm-swiftdata-records: done
   47-2-trainingdatastore-rhythm-crud-and-observer-conformance: done
-  47-3-perceptualprofile-rhythmprofile-conformance: ready-for-dev
+  47-3-perceptualprofile-rhythmprofile-conformance: done
   47-4-progresstimeline-extension-to-six-training-modes: backlog

@@ -118,8 +118,8 @@ struct ProfileScreen: View {
                         let noise = Double.random(in: -10...10)
                         builder.addPoint(MetricPoint(
                             timestamp: Date().addingTimeInterval(Double(i - 50) * 3600),
-                            value: Cents(abs(baseOffset + noise))
-                        ), for: .unisonPitchComparison)
+                            value: abs(baseOffset + noise)
+                        ), for: .pitch(.unisonPitchComparison))
                     }
                 }
                 return ProgressTimeline(profile: profile)

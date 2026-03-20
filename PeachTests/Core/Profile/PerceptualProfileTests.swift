@@ -141,7 +141,7 @@ struct PerceptualProfileTests {
     @Test("hasData returns false for empty modes")
     func hasDataEmptyProfile() async {
         let profile = PerceptualProfile()
-        for mode in TrainingMode.allCases {
+        for mode in [TrainingMode.unisonPitchComparison, .intervalPitchComparison, .unisonMatching, .intervalMatching] {
             #expect(!profile.hasData(for: mode))
         }
     }
@@ -174,9 +174,9 @@ struct PerceptualProfileTests {
         let now = Date()
 
         let profile = PerceptualProfile { builder in
-            builder.addPoint(MetricPoint(timestamp: now, value: 10), for: .unisonPitchComparison)
-            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20), for: .unisonPitchComparison)
-            builder.addPoint(MetricPoint(timestamp: now, value: 5), for: .intervalMatching)
+            builder.addPoint(MetricPoint(timestamp: now, value: 10), for: .pitch(.unisonPitchComparison))
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20), for: .pitch(.unisonPitchComparison))
+            builder.addPoint(MetricPoint(timestamp: now, value: 5), for: .pitch(.intervalMatching))
         }
 
         #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
@@ -196,7 +196,7 @@ struct PerceptualProfileTests {
 
         profile.resetAll()
 
-        for mode in TrainingMode.allCases {
+        for mode in [TrainingMode.unisonPitchComparison, .intervalPitchComparison, .unisonMatching, .intervalMatching] {
             #expect(!profile.hasData(for: mode))
         }
         #expect(profile.comparisonMean(for: .prime) == nil)
@@ -230,9 +230,9 @@ struct PerceptualProfileTests {
         let now = Date()
 
         let profile = PerceptualProfile { builder in
-            builder.addPoint(MetricPoint(timestamp: now, value: 10), for: .unisonPitchComparison)
-            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20), for: .unisonPitchComparison)
-            builder.addPoint(MetricPoint(timestamp: now, value: 5), for: .intervalMatching)
+            builder.addPoint(MetricPoint(timestamp: now, value: 10), for: .pitch(.unisonPitchComparison))
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20), for: .pitch(.unisonPitchComparison))
+            builder.addPoint(MetricPoint(timestamp: now, value: 5), for: .pitch(.intervalMatching))
         }
 
         #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
@@ -248,8 +248,8 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile { builder in
             for i in 0..<5 {
                 builder.addPoint(
-                    MetricPoint(timestamp: now.addingTimeInterval(Double(i) * 3600), value: Cents(Double(i * 10 + 5))),
-                    for: .unisonPitchComparison
+                    MetricPoint(timestamp: now.addingTimeInterval(Double(i) * 3600), value: Double(i * 10 + 5)),
+                    for: .pitch(.unisonPitchComparison)
                 )
             }
         }
@@ -263,7 +263,7 @@ struct PerceptualProfileTests {
     @Test("Builder is received via closure, not constructed directly")
     func builderViaInit() async {
         let profile = PerceptualProfile { builder in
-            builder.addPoint(MetricPoint(timestamp: Date(), value: 10.0), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: Date(), value: 10.0), for: .pitch(.unisonPitchComparison))
         }
         #expect(profile.recordCount(for: .unisonPitchComparison) == 1)
     }
@@ -272,14 +272,14 @@ struct PerceptualProfileTests {
     func replaceAllUpdatesInstance() async {
         let now = Date()
         let profile = PerceptualProfile { builder in
-            builder.addPoint(MetricPoint(timestamp: now, value: 50.0), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now, value: 50.0), for: .pitch(.unisonPitchComparison))
         }
 
         #expect(profile.comparisonMean(for: .prime) == 50.0)
 
         profile.replaceAll { builder in
-            builder.addPoint(MetricPoint(timestamp: now, value: 10.0), for: .unisonPitchComparison)
-            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20.0), for: .unisonPitchComparison)
+            builder.addPoint(MetricPoint(timestamp: now, value: 10.0), for: .pitch(.unisonPitchComparison))
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 20.0), for: .pitch(.unisonPitchComparison))
         }
 
         #expect(profile.comparisonMean(for: .prime) == 15.0)
@@ -290,12 +290,198 @@ struct PerceptualProfileTests {
     func builderSkipsIncorrect() async {
         let now = Date()
         let profile = PerceptualProfile { builder in
-            builder.addPoint(MetricPoint(timestamp: now, value: 50.0), for: .unisonPitchComparison, isCorrect: true)
-            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 200.0), for: .unisonPitchComparison, isCorrect: false)
-            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(2), value: 30.0), for: .unisonPitchComparison, isCorrect: true)
+            builder.addPoint(MetricPoint(timestamp: now, value: 50.0), for: .pitch(.unisonPitchComparison), isCorrect: true)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(1), value: 200.0), for: .pitch(.unisonPitchComparison), isCorrect: false)
+            builder.addPoint(MetricPoint(timestamp: now.addingTimeInterval(2), value: 30.0), for: .pitch(.unisonPitchComparison), isCorrect: true)
         }
 
         #expect(profile.recordCount(for: .unisonPitchComparison) == 2)
         #expect(profile.comparisonMean(for: .prime) == 40.0) // (50+30)/2
+    }
+
+    // MARK: - Rhythm Comparison via Observer
+
+    @Test("RhythmComparisonObserver routes to correct key")
+    func rhythmComparisonObserverDelegates() async {
+        let profile = PerceptualProfile()
+
+        let result = CompletedRhythmComparison(
+            tempo: TempoBPM(120),
+            offset: RhythmOffset(.milliseconds(-20)),
+            isCorrect: true
+        )
+        profile.rhythmComparisonCompleted(result)
+
+        let stats = profile.statistics(for: .rhythm(.rhythmComparison, .fast, .early))
+        #expect(stats?.recordCount == 1)
+        #expect(abs((stats?.welford.mean ?? 0) - 20.0) < 0.01)
+    }
+
+    @Test("RhythmComparisonObserver skips incorrect results")
+    func rhythmComparisonObserverSkipsIncorrect() async {
+        let profile = PerceptualProfile()
+
+        let result = CompletedRhythmComparison(
+            tempo: TempoBPM(120),
+            offset: RhythmOffset(.milliseconds(-20)),
+            isCorrect: false
+        )
+        profile.rhythmComparisonCompleted(result)
+
+        #expect(profile.statistics(for: .rhythm(.rhythmComparison, .fast, .early)) == nil)
+    }
+
+    // MARK: - Rhythm Matching via Observer
+
+    @Test("RhythmMatchingObserver routes to correct key")
+    func rhythmMatchingObserverDelegates() async {
+        let profile = PerceptualProfile()
+
+        let result = CompletedRhythmMatching(
+            tempo: TempoBPM(100),
+            expectedOffset: RhythmOffset(.milliseconds(0)),
+            userOffset: RhythmOffset(.milliseconds(12))
+        )
+        profile.rhythmMatchingCompleted(result)
+
+        let stats = profile.statistics(for: .rhythm(.rhythmMatching, .medium, .late))
+        #expect(stats?.recordCount == 1)
+        #expect(abs((stats?.welford.mean ?? 0) - 12.0) < 0.01)
+    }
+
+    // MARK: - Rhythm Builder
+
+    @Test("Builder initialization with rhythm comparison records rebuilds correctly")
+    func builderWithRhythmComparisonRecords() async {
+        let now = Date()
+
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(
+                MetricPoint(timestamp: now, value: 15.0),
+                for: .rhythm(.rhythmComparison, .fast, .early),
+                isCorrect: true
+            )
+            builder.addPoint(
+                MetricPoint(timestamp: now.addingTimeInterval(1), value: 25.0),
+                for: .rhythm(.rhythmComparison, .fast, .early),
+                isCorrect: true
+            )
+        }
+
+        let stats = profile.statistics(for: .rhythm(.rhythmComparison, .fast, .early))
+        #expect(stats?.recordCount == 2)
+        #expect(abs((stats?.welford.mean ?? 0) - 20.0) < 0.01) // (15+25)/2
+    }
+
+    @Test("Builder initialization with rhythm matching records rebuilds correctly")
+    func builderWithRhythmMatchingRecords() async {
+        let now = Date()
+
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(
+                MetricPoint(timestamp: now, value: 10.0),
+                for: .rhythm(.rhythmMatching, .medium, .late)
+            )
+        }
+
+        let stats = profile.statistics(for: .rhythm(.rhythmMatching, .medium, .late))
+        #expect(stats?.recordCount == 1)
+        #expect(abs((stats?.welford.mean ?? 0) - 10.0) < 0.01)
+    }
+
+    @Test("Builder skips incorrect rhythm comparison points")
+    func builderSkipsIncorrectRhythm() async {
+        let now = Date()
+
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(
+                MetricPoint(timestamp: now, value: 15.0),
+                for: .rhythm(.rhythmComparison, .fast, .early),
+                isCorrect: true
+            )
+            builder.addPoint(
+                MetricPoint(timestamp: now.addingTimeInterval(1), value: 100.0),
+                for: .rhythm(.rhythmComparison, .fast, .early),
+                isCorrect: false
+            )
+        }
+
+        let stats = profile.statistics(for: .rhythm(.rhythmComparison, .fast, .early))
+        #expect(stats?.recordCount == 1)
+    }
+
+    // MARK: - Trained Tempo Ranges
+
+    @Test("trainedTempoRanges returns correct set")
+    func trainedTempoRangesReturnsCorrectSet() async {
+        let profile = PerceptualProfile()
+
+        let fast = CompletedRhythmComparison(
+            tempo: TempoBPM(120),
+            offset: RhythmOffset(.milliseconds(-10)),
+            isCorrect: true
+        )
+        profile.rhythmComparisonCompleted(fast)
+
+        let medium = CompletedRhythmMatching(
+            tempo: TempoBPM(90),
+            expectedOffset: RhythmOffset(.milliseconds(0)),
+            userOffset: RhythmOffset(.milliseconds(5))
+        )
+        profile.rhythmMatchingCompleted(medium)
+
+        let ranges = profile.trainedTempoRanges
+        #expect(Set(ranges) == Set([TempoRange.fast, TempoRange.medium]))
+    }
+
+    // MARK: - Rhythm Overall Accuracy
+
+    @Test("rhythmOverallAccuracy computes combined accuracy")
+    func rhythmOverallAccuracyComputesCombined() async {
+        let profile = PerceptualProfile()
+
+        // 2 samples at tempo 120 early, mean offset 20ms
+        profile.rhythmComparisonCompleted(CompletedRhythmComparison(
+            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-15)), isCorrect: true
+        ))
+        profile.rhythmComparisonCompleted(CompletedRhythmComparison(
+            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-25)), isCorrect: true
+        ))
+
+        // 1 sample at tempo 90 late, mean offset 10ms
+        profile.rhythmMatchingCompleted(CompletedRhythmMatching(
+            tempo: TempoBPM(90),
+            expectedOffset: RhythmOffset(.milliseconds(0)),
+            userOffset: RhythmOffset(.milliseconds(10))
+        ))
+
+        let accuracy = profile.rhythmOverallAccuracy
+        // weighted mean: (20*2 + 10*1) / 3 = 50/3 ≈ 16.67
+        #expect(accuracy != nil)
+        #expect(abs(accuracy! - 50.0 / 3.0) < 0.01)
+    }
+
+    @Test("rhythmOverallAccuracy returns nil with no data")
+    func rhythmOverallAccuracyNilWhenEmpty() async {
+        let profile = PerceptualProfile()
+        #expect(profile.rhythmOverallAccuracy == nil)
+    }
+
+    // MARK: - Reset
+
+    @Test("resetAll clears everything including rhythm")
+    func resetAllClearsEverythingIncludingRhythm() async {
+        let profile = PerceptualProfile()
+
+        profile.pitchComparisonCompleted(makeComparisonCompleted(centOffset: 50))
+        profile.rhythmComparisonCompleted(CompletedRhythmComparison(
+            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-10)), isCorrect: true
+        ))
+
+        profile.resetAll()
+
+        #expect(profile.comparisonMean(for: .prime) == nil)
+        #expect(profile.trainedTempoRanges.isEmpty)
+        #expect(profile.rhythmOverallAccuracy == nil)
     }
 }

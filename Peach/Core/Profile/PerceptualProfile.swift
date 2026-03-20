@@ -2,36 +2,33 @@ import Foundation
 import OSLog
 
 @Observable
-final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
+final class PerceptualProfile: TrainingProfile {
 
-    private var modes: [TrainingMode: TrainingModeStatistics] = [:]
+    private var statisticsStore: [StatisticsKey: TrainingModeStatistics] = [:]
 
     private let logger = Logger(subsystem: "com.peach.app", category: "PerceptualProfile")
 
     // MARK: - Builder
 
     final class Builder {
-        fileprivate var points: [TrainingMode: [MetricPoint<Cents>]] = [:]
+        fileprivate var points: [StatisticsKey: [MetricPoint]] = [:]
 
         fileprivate init() {}
 
-        /// Adds a metric point for the given training mode.
+        /// Adds a metric point for the given statistics key.
         ///
         /// Points where `isCorrect` is false are silently skipped — only correct
         /// answers contribute to the profile. Matching modes always pass `true`
         /// (the default); comparison modes pass the record's correctness.
-        func addPoint(_ point: MetricPoint<Cents>, for mode: TrainingMode, isCorrect: Bool = true) {
+        func addPoint(_ point: MetricPoint, for key: StatisticsKey, isCorrect: Bool = true) {
             guard isCorrect else { return }
-            points[mode, default: []].append(point)
+            points[key, default: []].append(point)
         }
     }
 
     // MARK: - Initialization
 
     init() {
-        for mode in TrainingMode.allCases {
-            modes[mode] = TrainingModeStatistics()
-        }
         logger.info("PerceptualProfile initialized (cold start)")
     }
 
@@ -42,51 +39,74 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
         logger.info("PerceptualProfile initialized via builder")
     }
 
-    // MARK: - Per-Mode Query API
+    // MARK: - Unified Query API
+
+    func statistics(for key: StatisticsKey) -> TrainingModeStatistics? {
+        let stats = statisticsStore[key]
+        return (stats?.recordCount ?? 0) > 0 ? stats : nil
+    }
+
+    func hasData(for key: StatisticsKey) -> Bool {
+        (statisticsStore[key]?.recordCount ?? 0) > 0
+    }
+
+    func trend(for key: StatisticsKey) -> Trend? {
+        statisticsStore[key]?.trend
+    }
+
+    func currentEWMA(for key: StatisticsKey) -> Double? {
+        statisticsStore[key]?.ewma
+    }
+
+    func recordCount(for key: StatisticsKey) -> Int {
+        statisticsStore[key]?.recordCount ?? 0
+    }
+
+    // MARK: - Pitch Convenience (TrainingMode-based)
 
     func statistics(for mode: TrainingMode) -> TrainingModeStatistics? {
-        modes[mode]
+        statistics(for: .pitch(mode))
     }
 
     func hasData(for mode: TrainingMode) -> Bool {
-        (modes[mode]?.recordCount ?? 0) > 0
+        hasData(for: .pitch(mode))
     }
 
     func trend(for mode: TrainingMode) -> Trend? {
-        modes[mode]?.trend
+        trend(for: .pitch(mode))
     }
 
     func currentEWMA(for mode: TrainingMode) -> Double? {
-        modes[mode]?.ewma
+        currentEWMA(for: .pitch(mode))
     }
 
     func recordCount(for mode: TrainingMode) -> Int {
-        modes[mode]?.recordCount ?? 0
+        recordCount(for: .pitch(mode))
     }
 
-    // MARK: - PitchComparisonProfile
+    // MARK: - PitchComparisonProfile Legacy API
 
     func comparisonMean(for interval: DirectedInterval) -> Cents? {
         let mode: TrainingMode = interval == .prime ? .unisonPitchComparison : .intervalPitchComparison
-        guard let stats = modes[mode], stats.recordCount > 0 else { return nil }
+        guard let stats = statistics(for: mode) else { return nil }
         return Cents(stats.welford.mean)
     }
 
-    // MARK: - PitchMatchingProfile
+    // MARK: - PitchMatchingProfile Legacy API
 
     var matchingMean: Cents? {
-        let unisonCount = modes[.unisonMatching]?.recordCount ?? 0
-        let intervalCount = modes[.intervalMatching]?.recordCount ?? 0
+        let unisonCount = recordCount(for: .unisonMatching)
+        let intervalCount = recordCount(for: .intervalMatching)
         let total = unisonCount + intervalCount
         guard total > 0 else { return nil }
-        let sum = (modes[.unisonMatching]?.welford.mean ?? 0) * Double(unisonCount)
-            + (modes[.intervalMatching]?.welford.mean ?? 0) * Double(intervalCount)
+        let sum = (statisticsStore[.pitch(.unisonMatching)]?.welford.mean ?? 0) * Double(unisonCount)
+            + (statisticsStore[.pitch(.intervalMatching)]?.welford.mean ?? 0) * Double(intervalCount)
         return Cents(sum / Double(total))
     }
 
     var matchingStdDev: Cents? {
-        let unisonCount = modes[.unisonMatching]?.recordCount ?? 0
-        let intervalCount = modes[.intervalMatching]?.recordCount ?? 0
+        let unisonCount = recordCount(for: .unisonMatching)
+        let intervalCount = recordCount(for: .intervalMatching)
         let total = unisonCount + intervalCount
         guard total >= 2 else { return nil }
 
@@ -95,22 +115,22 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
         var combinedCount = 0
 
         for mode in [TrainingMode.unisonMatching, .intervalMatching] {
-            guard let stats = modes[mode], stats.recordCount > 0 else { continue }
+            guard let stats = statisticsStore[.pitch(mode)], stats.recordCount > 0 else { continue }
             let n = stats.recordCount
             let mean = stats.welford.mean
 
             if combinedCount == 0 {
                 combinedCount = n
                 combinedMean = mean
-                if let stdDev = stats.welford.typedStdDev {
-                    combinedM2 = stdDev.rawValue * stdDev.rawValue * Double(n - 1)
+                if let stdDev = stats.welford.sampleStdDev {
+                    combinedM2 = stdDev * stdDev * Double(n - 1)
                 }
             } else {
                 let delta = mean - combinedMean
                 let newTotal = combinedCount + n
                 let newMean = (combinedMean * Double(combinedCount) + mean * Double(n)) / Double(newTotal)
-                if let stdDev = stats.welford.typedStdDev {
-                    let m2B = stdDev.rawValue * stdDev.rawValue * Double(n - 1)
+                if let stdDev = stats.welford.sampleStdDev {
+                    let m2B = stdDev * stdDev * Double(n - 1)
                     combinedM2 += m2B + delta * delta * Double(combinedCount) * Double(n) / Double(newTotal)
                 } else {
                     combinedM2 += delta * delta * Double(combinedCount) * Double(n) / Double(newTotal)
@@ -125,8 +145,33 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
     }
 
     var matchingSampleCount: Int {
-        (modes[.unisonMatching]?.recordCount ?? 0) +
-        (modes[.intervalMatching]?.recordCount ?? 0)
+        recordCount(for: .unisonMatching) + recordCount(for: .intervalMatching)
+    }
+
+    // MARK: - Rhythm Aggregate Queries
+
+    var trainedTempoRanges: [TempoRange] {
+        var ranges = Set<TempoRange>()
+        for key in statisticsStore.keys {
+            if case .rhythm(_, let range, _) = key,
+               (statisticsStore[key]?.recordCount ?? 0) > 0 {
+                ranges.insert(range)
+            }
+        }
+        return Array(ranges)
+    }
+
+    var rhythmOverallAccuracy: Double? {
+        var totalCount = 0
+        var weightedSum = 0.0
+        for (key, stats) in statisticsStore {
+            if case .rhythm = key, stats.recordCount > 0 {
+                totalCount += stats.recordCount
+                weightedSum += stats.welford.mean * Double(stats.recordCount)
+            }
+        }
+        guard totalCount > 0 else { return nil }
+        return weightedSum / Double(totalCount)
     }
 
     // MARK: - Replace
@@ -141,22 +186,24 @@ final class PerceptualProfile: PitchComparisonProfile, PitchMatchingProfile {
     // MARK: - Reset
 
     func resetAll() {
-        for mode in TrainingMode.allCases {
-            modes[mode] = TrainingModeStatistics()
-        }
+        statisticsStore.removeAll()
         logger.info("PerceptualProfile fully reset to cold start")
     }
 
     // MARK: - Private
 
+    private func update(_ key: StatisticsKey, timestamp: Date, value: Double) {
+        let point = MetricPoint(timestamp: timestamp, value: value)
+        statisticsStore[key, default: TrainingModeStatistics()]
+            .addPoint(point, config: key.statisticsConfig)
+    }
+
     private func finalize(from builder: Builder) {
-        for mode in TrainingMode.allCases {
+        statisticsStore.removeAll()
+        for (key, points) in builder.points where !points.isEmpty {
             var stats = TrainingModeStatistics()
-            if let points = builder.points[mode], !points.isEmpty {
-                let sorted = points.sorted { $0.timestamp < $1.timestamp }
-                stats.rebuild(from: sorted, config: mode.config)
-            }
-            modes[mode] = stats
+            stats.rebuild(from: points.sorted { $0.timestamp < $1.timestamp }, config: key.statisticsConfig)
+            statisticsStore[key] = stats
         }
     }
 }
@@ -172,11 +219,7 @@ extension PerceptualProfile: PitchComparisonObserver {
 
         guard completed.isCorrect else { return }
 
-        let point = MetricPoint(
-            timestamp: completed.timestamp,
-            value: Cents(pc.targetNote.offset.magnitude)
-        )
-        modes[mode]?.addPoint(point, config: mode.config)
+        update(.pitch(mode), timestamp: completed.timestamp, value: pc.targetNote.offset.magnitude)
     }
 }
 
@@ -188,10 +231,29 @@ extension PerceptualProfile: PitchMatchingObserver {
         let isUnison = interval == 0
         let mode: TrainingMode = isUnison ? .unisonMatching : .intervalMatching
 
-        let point = MetricPoint(
-            timestamp: result.timestamp,
-            value: Cents(result.userCentError.magnitude)
-        )
-        modes[mode]?.addPoint(point, config: mode.config)
+        update(.pitch(mode), timestamp: result.timestamp, value: result.userCentError.magnitude)
+    }
+}
+
+// MARK: - RhythmComparisonObserver
+
+extension PerceptualProfile: RhythmComparisonObserver {
+    func rhythmComparisonCompleted(_ result: CompletedRhythmComparison) {
+        guard result.isCorrect else { return }
+        guard let range = TempoRange.range(for: result.tempo) else { return }
+        update(.rhythm(.rhythmComparison, range, result.offset.direction),
+               timestamp: result.timestamp,
+               value: abs(result.offset.statisticalValue))
+    }
+}
+
+// MARK: - RhythmMatchingObserver
+
+extension PerceptualProfile: RhythmMatchingObserver {
+    func rhythmMatchingCompleted(_ result: CompletedRhythmMatching) {
+        guard let range = TempoRange.range(for: result.tempo) else { return }
+        update(.rhythm(.rhythmMatching, range, result.userOffset.direction),
+               timestamp: result.timestamp,
+               value: abs(result.userOffset.statisticalValue))
     }
 }

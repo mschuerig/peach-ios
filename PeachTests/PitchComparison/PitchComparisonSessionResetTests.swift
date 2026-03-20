@@ -105,8 +105,8 @@ struct PitchComparisonSessionResetTests {
         let profile = PerceptualProfile { builder in
             for i in 0..<30 {
                 builder.addPoint(
-                    MetricPoint(timestamp: Date().addingTimeInterval(Double(i) * 60), value: Cents(Double(i) + 1.0)),
-                    for: .unisonPitchComparison
+                    MetricPoint(timestamp: Date().addingTimeInterval(Double(i) * 60), value: Double(i) + 1.0),
+                    for: .pitch(.unisonPitchComparison)
                 )
             }
         }

@@ -27,7 +27,7 @@ final class PitchMatchingSession: TrainingSession {
     // MARK: - Dependencies
 
     private let notePlayer: NotePlayer
-    private let profile: PitchMatchingProfile
+    private let profile: TrainingProfile
     private let observers: [PitchMatchingObserver]
     private var interruptionMonitor: AudioSessionInterruptionMonitor?
 
@@ -60,7 +60,7 @@ final class PitchMatchingSession: TrainingSession {
 
     init(
         notePlayer: NotePlayer,
-        profile: PitchMatchingProfile,
+        profile: TrainingProfile,
         observers: [PitchMatchingObserver] = [],
         notificationCenter: NotificationCenter = .default,
         backgroundNotificationName: Notification.Name? = nil,

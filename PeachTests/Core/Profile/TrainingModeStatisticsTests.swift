@@ -5,7 +5,7 @@ import Foundation
 @Suite("TrainingModeStatistics Tests")
 struct TrainingModeStatisticsTests {
 
-    private let config = TrainingModeConfig.unisonPitchComparison
+    private let config = TrainingModeConfig.unisonPitchComparison.statistics
 
     // MARK: - Welford Correctness
 
@@ -124,7 +124,7 @@ struct TrainingModeStatisticsTests {
     func rebuildMatchesIncremental() async {
         let now = Date()
         let points = (0..<5).map { i in
-            MetricPoint(timestamp: now.addingTimeInterval(Double(i) * 3600), value: Cents(Double(i * 10 + 5)))
+            MetricPoint(timestamp: now.addingTimeInterval(Double(i) * 3600), value: Double(i * 10 + 5))
         }
 
         var incremental = TrainingModeStatistics()
@@ -147,7 +147,7 @@ struct TrainingModeStatisticsTests {
     func rebuildPreservesMetrics() async {
         let now = Date()
         let points = (0..<3).map { i in
-            MetricPoint(timestamp: now.addingTimeInterval(Double(i)), value: Cents(Double(i + 1)))
+            MetricPoint(timestamp: now.addingTimeInterval(Double(i)), value: Double(i + 1))
         }
 
         var stats = TrainingModeStatistics()

@@ -37,7 +37,7 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
     // MARK: - NextPitchComparisonStrategy Protocol
 
     func nextPitchComparison(
-        profile: PitchComparisonProfile,
+        profile: TrainingProfile,
         settings: PitchComparisonTrainingSettings,
         lastPitchComparison: CompletedPitchComparison?,
         interval: DirectedInterval
@@ -51,8 +51,8 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
             magnitude = last.isCorrect
                 ? kazezNarrow(p: p).clamped(to: difficultyRange)
                 : kazezWiden(p: p).clamped(to: difficultyRange)
-        } else if let profileMean = profile.comparisonMean(for: interval) {
-            magnitude = profileMean.rawValue.clamped(to: difficultyRange)
+        } else if let stats = profile.statistics(for: .pitch(interval == .prime ? .unisonPitchComparison : .intervalPitchComparison)) {
+            magnitude = stats.welford.mean.clamped(to: difficultyRange)
         } else {
             magnitude = settings.maxCentDifference.rawValue
         }

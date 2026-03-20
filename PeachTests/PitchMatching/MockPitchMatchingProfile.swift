@@ -1,9 +1,5 @@
 @testable import Peach
 
-final class MockPitchMatchingProfile: PitchMatchingProfile {
-    // MARK: - Test State
-
-    var matchingMean: Cents? = nil
-    var matchingStdDev: Cents? = nil
-    var matchingSampleCount: Int = 0
-}
+// MockTrainingProfile in MockPitchComparisonProfile.swift replaces both
+// MockPitchComparisonProfile and MockPitchMatchingProfile.
+// This file is kept to avoid Xcode project file issues. It is intentionally empty.
