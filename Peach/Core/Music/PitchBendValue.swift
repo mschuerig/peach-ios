@@ -1,4 +1,4 @@
-struct PitchBendValue: Hashable, Comparable, Sendable {
+nonisolated struct PitchBendValue: Hashable, Comparable, Sendable {
     static let validRange: ClosedRange<UInt16> = 0...16383
     static let center = PitchBendValue(8192)
 

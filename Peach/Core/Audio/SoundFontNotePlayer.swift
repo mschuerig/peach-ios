@@ -10,28 +10,12 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - Audio Components
 
-    private let engine: AVAudioEngine
-    private let sampler: AVAudioUnitSampler
-
-    // MARK: - State
-
-    private var isSessionConfigured = false
-    private var loadedProgram: Int
-    private var loadedBank: Int
+    private let soundFontEngine: SoundFontEngine
 
     // MARK: - Constants
 
-    nonisolated static let channel: UInt8 = 0
-    private nonisolated static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
-    nonisolated static let pitchBendCenter: UInt16 = 8192
     nonisolated static let validFrequencyRange = 20.0...20000.0
 
-    /// Pitch bend range in semitones, set via MIDI RPN in `sendPitchBendRange()`.
-    /// All pitch bend calculations derive their cent limits from this value.
-    nonisolated static let pitchBendRangeSemitones: Int = 2
-
-    /// Maximum pitch bend displacement in cents, derived from `pitchBendRangeSemitones`.
-    nonisolated static let pitchBendRangeCents: Double = Double(pitchBendRangeSemitones) * 100.0
     /// Duration to mute `sampler.volume` before stopping a note, allowing the audio render
     /// thread to propagate silence and avoid click/pop artifacts. Set to `.zero` to skip the
     /// fade-out entirely (notes stop immediately). 25ms covers 2+ render cycles at 44.1kHz/512.
@@ -44,61 +28,19 @@ final class SoundFontNotePlayer: NotePlayer {
 
     // MARK: - Initialization
 
-    init(library: SoundFontLibrary, userSettings: UserSettings, stopPropagationDelay: Duration = .milliseconds(25)) throws {
-        let initial = library.resolve(userSettings.soundSource)
-
+    init(engine: SoundFontEngine, library: SoundFontLibrary, userSettings: UserSettings, stopPropagationDelay: Duration = .milliseconds(25)) {
+        self.soundFontEngine = engine
         self.library = library
         self.userSettings = userSettings
         self.stopPropagationDelay = stopPropagationDelay
-        self.engine = AVAudioEngine()
-        self.sampler = AVAudioUnitSampler()
-        self.loadedProgram = initial.program
-        self.loadedBank = initial.bank
 
-        engine.attach(sampler)
-        engine.connect(sampler, to: engine.mainMixerNode, format: nil)
-
-        try engine.start()
-        try sampler.loadSoundBankInstrument(
-            at: library.sf2URL,
-            program: UInt8(initial.program),
-            bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(initial.bank)
-        )
-
-        sendPitchBendRange()
-
-        logger.info("SoundFontNotePlayer initialized with \(library.sf2URL.lastPathComponent), preset sf2:\(initial.bank):\(initial.program)")
+        logger.info("SoundFontNotePlayer initialized with delegated SoundFontEngine")
     }
 
     // MARK: - Preset Switching
 
     func loadPreset(program: Int, bank: Int = 0) async throws {
-        guard (0...127).contains(program) else {
-            throw AudioError.invalidPreset("Program \(program) outside valid MIDI range 0-127")
-        }
-        guard (0...127).contains(bank) else {
-            throw AudioError.invalidPreset("Bank \(bank) outside valid range 0-127")
-        }
-        guard program != loadedProgram || bank != loadedBank else { return }
-
-        try sampler.loadSoundBankInstrument(
-            at: library.sf2URL,
-            program: UInt8(clamping: program),
-            bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(clamping: bank)
-        )
-
-        loadedProgram = program
-        loadedBank = bank
-
-        sendPitchBendRange()
-
-        // Allow audio graph to settle after instrument load — without this delay
-        // the first MIDI note-on after a preset switch produces no sound.
-        try await Task.sleep(for: .milliseconds(20))
-
-        logger.info("Loaded preset bank \(bank) program \(program)")
+        try await soundFontEngine.loadPreset(SF2Preset(name: "", program: program, bank: bank))
     }
 
     // MARK: - NotePlayer Protocol
@@ -106,22 +48,14 @@ final class SoundFontNotePlayer: NotePlayer {
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         try await ensurePresetLoaded()
         try validateFrequency(frequency)
-        try ensureAudioSessionConfigured()
-        try ensureEngineRunning()
+        try soundFontEngine.ensureAudioSessionConfigured()
+        try soundFontEngine.ensureEngineRunning()
         let midiNote = startNote(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
-        return SoundFontPlaybackHandle(sampler: sampler, midiNote: midiNote, channel: Self.channel, stopPropagationDelay: stopPropagationDelay)
+        return SoundFontPlaybackHandle(engine: soundFontEngine, midiNote: midiNote, stopPropagationDelay: stopPropagationDelay)
     }
 
     func stopAll() async throws {
-        if stopPropagationDelay > .zero {
-            sampler.volume = 0
-            try? await Task.sleep(for: stopPropagationDelay)
-        }
-        sampler.sendController(123, withValue: 0, onChannel: Self.channel)
-        sampler.sendPitchBend(Self.pitchBendCenter, onChannel: Self.channel)
-        if stopPropagationDelay > .zero {
-            sampler.volume = 1.0
-        }
+        await soundFontEngine.stopAllNotes(stopPropagationDelay: stopPropagationDelay)
     }
 
     // MARK: - Play Sub-operations
@@ -129,10 +63,10 @@ final class SoundFontNotePlayer: NotePlayer {
     private func ensurePresetLoaded() async throws {
         let resolved = library.resolve(userSettings.soundSource)
         do {
-            try await loadPreset(program: resolved.program, bank: resolved.bank)
+            try await soundFontEngine.loadPreset(resolved)
         } catch {
-            let fallback = library.resolve(SettingsKeys.defaultSoundSource)
-            try await loadPreset(program: fallback.program, bank: fallback.bank)
+            let fallback = library.resolve(SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource))
+            try await soundFontEngine.loadPreset(fallback)
         }
     }
 
@@ -145,47 +79,21 @@ final class SoundFontNotePlayer: NotePlayer {
         }
     }
 
-    private func ensureAudioSessionConfigured() throws {
-        if !isSessionConfigured {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.playback, mode: .default, options: [])
-            try session.setActive(true)
-            isSessionConfigured = true
-        }
-    }
-
-    private func ensureEngineRunning() throws {
-        if !engine.isRunning {
-            try engine.start()
-        }
-    }
-
-    private func startNote(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) -> UInt8 {
+    private func startNote(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) -> MIDINote {
         let decomposed = Self.decompose(frequency: frequency)
-        let midiNote = decomposed.note
+        let midiNote = MIDINote(Int(decomposed.note))
         let bendValue = Self.pitchBendValue(forCents: decomposed.cents)
-        sampler.overallGain = Float(amplitudeDB.rawValue)
-        sampler.sendPitchBend(bendValue, onChannel: Self.channel)
-        sampler.startNote(midiNote, withVelocity: velocity.rawValue, onChannel: Self.channel)
+        soundFontEngine.startNote(midiNote, velocity: velocity, amplitudeDB: amplitudeDB, pitchBend: bendValue)
         return midiNote
-    }
-
-    // MARK: - MIDI Helpers
-
-    private func sendPitchBendRange() {
-        // MIDI RPN 0x0000 (Pitch Bend Sensitivity): set range to ±pitchBendRangeSemitones
-        sampler.sendController(101, withValue: 0, onChannel: Self.channel)   // RPN MSB
-        sampler.sendController(100, withValue: 0, onChannel: Self.channel)   // RPN LSB
-        sampler.sendController(6, withValue: UInt8(Self.pitchBendRangeSemitones), onChannel: Self.channel)  // Data Entry MSB (semitones)
-        sampler.sendController(38, withValue: 0, onChannel: Self.channel)    // Data Entry LSB (cents)
     }
 
     // MARK: - Static Helpers
 
-    nonisolated static func pitchBendValue(forCents cents: Cents) -> UInt16 {
-        let raw = Int(Double(pitchBendCenter) + cents.rawValue * Double(pitchBendCenter) / pitchBendRangeCents)
+    nonisolated static func pitchBendValue(forCents cents: Cents) -> PitchBendValue {
+        let center = Double(PitchBendValue.center.rawValue)
+        let raw = Int(center + cents.rawValue * center / SoundFontEngine.pitchBendRangeCents)
         let clamped = Swift.min(16383, Swift.max(0, raw))
-        return UInt16(clamped)
+        return PitchBendValue(UInt16(clamped))
     }
 
     /// Decomposes a frequency into its nearest MIDI note and cent remainder.

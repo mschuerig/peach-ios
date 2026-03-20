@@ -7,8 +7,7 @@ final class SoundFontLibrary: SoundSourceProvider {
 
     let sf2URL: URL
     private(set) var availablePresets: [SF2Preset]
-    private let defaultBank: Int
-    private let defaultProgram: Int
+    private let defaultPreset: SF2Preset
 
     var availableSources: [any SoundSourceID] { availablePresets }
 
@@ -27,29 +26,25 @@ final class SoundFontLibrary: SoundSourceProvider {
 
         presets.sort { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
         self.availablePresets = presets
-
-        if let components = Self.parseSF2Components(defaultPreset) {
-            self.defaultBank = components.bank
-            self.defaultProgram = components.program
-        } else {
-            self.defaultBank = 0
-            self.defaultProgram = 0
-        }
+        self.defaultPreset = Self.findPreset(rawValue: defaultPreset, in: presets)
+            ?? presets.first
+            ?? SF2Preset(name: "", program: 0, bank: 0)
 
         logger.info("SoundFontLibrary initialized with \(presets.count) pitched presets")
     }
 
     // MARK: - Preset Resolution
 
-    func resolve(_ rawValue: String) -> (bank: Int, program: Int) {
-        if let components = Self.parseSF2Components(rawValue),
-           availablePresets.contains(where: { $0.bank == components.bank && $0.program == components.program }) {
-            return components
-        }
-        return (bank: defaultBank, program: defaultProgram)
+    func resolve(_ soundSource: any SoundSourceID) -> SF2Preset {
+        Self.findPreset(rawValue: soundSource.rawValue, in: availablePresets) ?? defaultPreset
     }
 
     // MARK: - Private
+
+    private static func findPreset(rawValue: String, in presets: [SF2Preset]) -> SF2Preset? {
+        guard let components = parseSF2Components(rawValue) else { return nil }
+        return presets.first(where: { $0.bank == components.bank && $0.program == components.program })
+    }
 
     private static func parseSF2Components(_ rawValue: String) -> (bank: Int, program: Int)? {
         guard rawValue.hasPrefix("sf2:") else { return nil }

@@ -34,7 +34,12 @@ struct PeachApp: App {
 
             let userSettings: any UserSettings = AppUserSettings()
             _userSettings = State(wrappedValue: userSettings)
-            let notePlayer: any NotePlayer = try SoundFontNotePlayer(
+            let soundFontEngine = try SoundFontEngine(
+                library: soundFontLibrary,
+                soundSource: userSettings.soundSource
+            )
+            let notePlayer: any NotePlayer = SoundFontNotePlayer(
+                engine: soundFontEngine,
                 library: soundFontLibrary,
                 userSettings: userSettings,
                 stopPropagationDelay: .zero

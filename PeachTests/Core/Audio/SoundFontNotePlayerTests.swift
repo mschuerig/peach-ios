@@ -8,7 +8,8 @@ struct SoundFontNotePlayerTests {
     private static let testLibrary = TestSoundFont.makeLibrary()
 
     private func makePlayer(userSettings: UserSettings = MockUserSettings()) throws -> SoundFontNotePlayer {
-        try SoundFontNotePlayer(library: Self.testLibrary, userSettings: userSettings)
+        let engine = try SoundFontEngine(library: Self.testLibrary, soundSource: userSettings.soundSource)
+        return SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
     }
 
     // MARK: - Protocol Conformance
@@ -35,7 +36,9 @@ struct SoundFontNotePlayerTests {
             defaultPreset: "sf2:0:0"
         )
         #expect(throws: (any Error).self) {
-            _ = try SoundFontNotePlayer(library: badLibrary, userSettings: MockUserSettings())
+            let settings = MockUserSettings()
+            let engine = try SoundFontEngine(library: badLibrary, soundSource: settings.soundSource)
+            _ = SoundFontNotePlayer(engine: engine, library: badLibrary, userSettings: settings)
         }
     }
 
@@ -254,7 +257,7 @@ struct SoundFontNotePlayerTests {
     @Test("play reads soundSource from UserSettings and uses the selected preset")
     func playReadsSoundSource() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.soundSource = "sf2:0:0"
+        mockSettings.soundSource = SoundSourceTag(rawValue: "sf2:0:0")
 
         let player = try makePlayer(userSettings: mockSettings)
         try await player.play(frequency: 440.0, duration: .milliseconds(100), velocity: 63, amplitudeDB: 0.0)
@@ -263,7 +266,7 @@ struct SoundFontNotePlayerTests {
     @Test("play falls back to default preset for unparseable soundSource")
     func playFallsBackForUnparseableSource() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.soundSource = "garbage"
+        mockSettings.soundSource = SoundSourceTag(rawValue: "garbage")
         let player = try makePlayer(userSettings: mockSettings)
         try await player.play(frequency: 440.0, duration: .milliseconds(100), velocity: 63, amplitudeDB: 0.0)
     }
@@ -271,7 +274,7 @@ struct SoundFontNotePlayerTests {
     @Test("play falls back to default preset when loadPreset fails for invalid program")
     func playFallsBackOnLoadFailure() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.soundSource = "sf2:0:999"
+        mockSettings.soundSource = SoundSourceTag(rawValue: "sf2:0:999")
         let player = try makePlayer(userSettings: mockSettings)
         try await player.play(frequency: 440.0, duration: .milliseconds(100), velocity: 63, amplitudeDB: 0.0)
     }
@@ -279,7 +282,7 @@ struct SoundFontNotePlayerTests {
     @Test("play falls back to default preset for legacy 'cello' tag")
     func playFallsBackForLegacyCelloTag() async throws {
         let mockSettings = MockUserSettings()
-        mockSettings.soundSource = "cello"
+        mockSettings.soundSource = SoundSourceTag(rawValue: "cello")
         let player = try makePlayer(userSettings: mockSettings)
         try await player.play(frequency: 440.0, duration: .milliseconds(100), velocity: 63, amplitudeDB: 0.0)
     }

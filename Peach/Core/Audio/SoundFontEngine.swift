@@ -34,7 +34,8 @@ final class SoundFontEngine {
 
     // MARK: - Initialization
 
-    init(library: SoundFontLibrary, preset: SF2Preset) throws {
+    init(library: SoundFontLibrary, soundSource: any SoundSourceID) throws {
+        let preset = library.resolve(soundSource)
         self.sf2URL = library.sf2URL
         self.engine = AVAudioEngine()
         self.sampler = AVAudioUnitSampler()

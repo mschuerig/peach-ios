@@ -5,18 +5,16 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
 
     // MARK: - State
 
-    private let sampler: AVAudioUnitSampler
-    private let midiNote: UInt8
-    private let channel: UInt8
+    private let engine: SoundFontEngine
+    private let midiNote: MIDINote
     private let stopPropagationDelay: Duration
     private var hasStopped = false
 
     // MARK: - Initialization
 
-    init(sampler: AVAudioUnitSampler, midiNote: UInt8, channel: UInt8, stopPropagationDelay: Duration) {
-        self.sampler = sampler
+    init(engine: SoundFontEngine, midiNote: MIDINote, stopPropagationDelay: Duration) {
+        self.engine = engine
         self.midiNote = midiNote
-        self.channel = channel
         self.stopPropagationDelay = stopPropagationDelay
     }
 
@@ -26,13 +24,13 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         guard !hasStopped else { return }
         hasStopped = true
         if stopPropagationDelay > .zero {
-            sampler.volume = 0
+            engine.sampler.volume = 0
             try? await Task.sleep(for: stopPropagationDelay)
         }
-        sampler.stopNote(midiNote, onChannel: channel)
-        sampler.sendPitchBend(SoundFontNotePlayer.pitchBendCenter, onChannel: channel)
+        engine.stopNote(midiNote)
+        engine.sendPitchBend(.center)
         if stopPropagationDelay > .zero {
-            sampler.volume = 1.0
+            engine.sampler.volume = 1.0
         }
     }
 
@@ -49,16 +47,16 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
 
         let decomposed = SoundFontNotePlayer.decompose(frequency: frequency)
         let targetMidi = Double(decomposed.note) + decomposed.cents.rawValue / 100.0
-        let baseMidi = Double(midiNote)
+        let baseMidi = Double(midiNote.rawValue)
         let centDifference = (targetMidi - baseMidi) * 100.0
 
-        guard abs(centDifference) <= SoundFontNotePlayer.pitchBendRangeCents else {
+        guard abs(centDifference) <= SoundFontEngine.pitchBendRangeCents else {
             throw AudioError.invalidFrequency(
-                "Target frequency \(freq) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote), exceeding ±\(Int(SoundFontNotePlayer.pitchBendRangeCents)) cent pitch bend range"
+                "Target frequency \(freq) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote.rawValue), exceeding ±\(Int(SoundFontEngine.pitchBendRangeCents)) cent pitch bend range"
             )
         }
 
         let bendValue = SoundFontNotePlayer.pitchBendValue(forCents: Cents(centDifference))
-        sampler.sendPitchBend(bendValue, onChannel: channel)
+        engine.sendPitchBend(bendValue)
     }
 }

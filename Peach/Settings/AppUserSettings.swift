@@ -24,8 +24,9 @@ final class AppUserSettings: UserSettings {
         return Frequency(raw)
     }
 
-    var soundSource: String {
-        UserDefaults.standard.string(forKey: SettingsKeys.soundSource) ?? SettingsKeys.defaultSoundSource
+    var soundSource: any SoundSourceID {
+        let raw = UserDefaults.standard.string(forKey: SettingsKeys.soundSource) ?? SettingsKeys.defaultSoundSource
+        return SoundSourceTag(rawValue: raw)
     }
 
     var varyLoudness: UnitInterval {

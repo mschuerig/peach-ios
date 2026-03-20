@@ -11,7 +11,7 @@ final class MockUserSettings: UserSettings {
     var referencePitch: Frequency = SettingsKeys.defaultReferencePitch {
         didSet { onSettingsChanged?() }
     }
-    var soundSource: String = SettingsKeys.defaultSoundSource {
+    var soundSource: any SoundSourceID = SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource) {
         didSet { onSettingsChanged?() }
     }
     var varyLoudness: UnitInterval = SettingsKeys.defaultVaryLoudness {
@@ -37,7 +37,7 @@ final class MockUserSettings: UserSettings {
         noteRange = SettingsKeys.defaultNoteRange
         noteDuration = SettingsKeys.defaultNoteDuration
         referencePitch = SettingsKeys.defaultReferencePitch
-        soundSource = SettingsKeys.defaultSoundSource
+        soundSource = SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource)
         varyLoudness = SettingsKeys.defaultVaryLoudness
         intervals = [DirectedInterval.prime]
         tuningSystem = SettingsKeys.defaultTuningSystem

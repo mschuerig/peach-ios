@@ -104,18 +104,19 @@ struct SoundFontLibraryTests {
 
     // MARK: - Resolve
 
-    @Test("resolve returns bank and program for valid preset")
+    @Test("resolve returns SF2Preset for valid preset")
     func resolveValidPreset() async {
         let library = makeLibrary()
-        let result = library.resolve("sf2:0:42")
+        let result = library.resolve(SoundSourceTag(rawValue: "sf2:0:42"))
         #expect(result.bank == 0)
         #expect(result.program == 42)
+        #expect(result.name == "Cello")
     }
 
     @Test("resolve falls back to default for unparseable string")
     func resolveFallbackForGarbage() async {
         let library = makeLibrary()
-        let result = library.resolve("garbage")
+        let result = library.resolve(SoundSourceTag(rawValue: "garbage"))
         #expect(result.bank == 0)
         #expect(result.program == 0)
     }
@@ -123,7 +124,7 @@ struct SoundFontLibraryTests {
     @Test("resolve falls back to default for unknown preset")
     func resolveFallbackForUnknown() async {
         let library = makeLibrary()
-        let result = library.resolve("sf2:99:99")
+        let result = library.resolve(SoundSourceTag(rawValue: "sf2:99:99"))
         #expect(result.bank == 0)
         #expect(result.program == 0)
     }
@@ -131,7 +132,7 @@ struct SoundFontLibraryTests {
     @Test("resolve falls back to default for empty string")
     func resolveFallbackForEmpty() async {
         let library = makeLibrary()
-        let result = library.resolve("")
+        let result = library.resolve(SoundSourceTag(rawValue: ""))
         #expect(result.bank == 0)
         #expect(result.program == 0)
     }

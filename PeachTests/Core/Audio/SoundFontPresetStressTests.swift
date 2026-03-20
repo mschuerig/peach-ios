@@ -39,7 +39,9 @@ struct SoundFontPresetStressTests {
     }
 
     private func makePlayer() throws -> SoundFontNotePlayer {
-        try SoundFontNotePlayer(library: Self.testLibrary, userSettings: MockUserSettings())
+        let userSettings = MockUserSettings()
+        let engine = try SoundFontEngine(library: Self.testLibrary, soundSource: userSettings.soundSource)
+        return SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
     }
 
     // MARK: - Task 2: Per-Preset Smoke Test

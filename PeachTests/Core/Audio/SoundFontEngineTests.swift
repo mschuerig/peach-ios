@@ -6,10 +6,10 @@ import Testing
 struct SoundFontEngineTests {
 
     private static let testLibrary = TestSoundFont.makeLibrary()
-    private static let defaultPreset = SF2Preset(name: "Default", program: 0, bank: 0)
+    private static let defaultSoundSource = SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource)
 
-    private func makeEngine(preset: SF2Preset = defaultPreset) throws -> SoundFontEngine {
-        try SoundFontEngine(library: Self.testLibrary, preset: preset)
+    private func makeEngine(soundSource: any SoundSourceID = defaultSoundSource) throws -> SoundFontEngine {
+        try SoundFontEngine(library: Self.testLibrary, soundSource: soundSource)
     }
 
     // MARK: - Initialization
@@ -36,7 +36,7 @@ struct SoundFontEngineTests {
             defaultPreset: "sf2:0:0"
         )
         #expect(throws: (any Error).self) {
-            _ = try SoundFontEngine(library: badLibrary, preset: SF2Preset(name: "Bad", program: 0, bank: 0))
+            _ = try SoundFontEngine(library: badLibrary, soundSource: SoundSourceTag(rawValue: "sf2:0:0"))
         }
     }
 
@@ -51,7 +51,7 @@ struct SoundFontEngineTests {
     @Test("loadPreset skips reload when same preset is already loaded")
     func loadPresetSkipsSame() async throws {
         let engine = try makeEngine()
-        try await engine.loadPreset(Self.defaultPreset)
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0))
     }
 
     @Test("loadPreset loads different preset")

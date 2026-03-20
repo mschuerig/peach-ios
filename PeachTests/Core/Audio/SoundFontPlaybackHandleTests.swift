@@ -8,7 +8,9 @@ struct SoundFontPlaybackHandleTests {
     private static let testLibrary = TestSoundFont.makeLibrary()
 
     private func makePlayer() throws -> SoundFontNotePlayer {
-        try SoundFontNotePlayer(library: Self.testLibrary, userSettings: MockUserSettings())
+        let userSettings = MockUserSettings()
+        let engine = try SoundFontEngine(library: Self.testLibrary, soundSource: userSettings.soundSource)
+        return SoundFontNotePlayer(engine: engine, library: Self.testLibrary, userSettings: userSettings)
     }
 
     // MARK: - Stop Behavior via SoundFontNotePlayer
