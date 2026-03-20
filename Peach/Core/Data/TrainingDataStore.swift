@@ -99,6 +99,70 @@ final class TrainingDataStore {
         }
     }
 
+    // MARK: - Rhythm Comparison CRUD
+
+    func save(_ record: RhythmComparisonRecord) throws {
+        modelContext.insert(record)
+        do {
+            try modelContext.save()
+        } catch {
+            throw DataStoreError.saveFailed("Failed to save RhythmComparisonRecord: \(error.localizedDescription)")
+        }
+    }
+
+    func fetchAllRhythmComparisons() throws -> [RhythmComparisonRecord] {
+        let descriptor = FetchDescriptor<RhythmComparisonRecord>(
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+        do {
+            return try modelContext.fetch(descriptor)
+        } catch {
+            throw DataStoreError.fetchFailed("Failed to fetch rhythm comparison records: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteAllRhythmComparisons() throws {
+        do {
+            try modelContext.transaction {
+                try modelContext.delete(model: RhythmComparisonRecord.self)
+            }
+        } catch {
+            throw DataStoreError.deleteFailed("Failed to delete all rhythm comparison records: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Rhythm Matching CRUD
+
+    func save(_ record: RhythmMatchingRecord) throws {
+        modelContext.insert(record)
+        do {
+            try modelContext.save()
+        } catch {
+            throw DataStoreError.saveFailed("Failed to save RhythmMatchingRecord: \(error.localizedDescription)")
+        }
+    }
+
+    func fetchAllRhythmMatchings() throws -> [RhythmMatchingRecord] {
+        let descriptor = FetchDescriptor<RhythmMatchingRecord>(
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+        do {
+            return try modelContext.fetch(descriptor)
+        } catch {
+            throw DataStoreError.fetchFailed("Failed to fetch rhythm matching records: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteAllRhythmMatchings() throws {
+        do {
+            try modelContext.transaction {
+                try modelContext.delete(model: RhythmMatchingRecord.self)
+            }
+        } catch {
+            throw DataStoreError.deleteFailed("Failed to delete all rhythm matching records: \(error.localizedDescription)")
+        }
+    }
+
     // MARK: - Pitch Matching CRUD
 
     /// Saves a pitch matching record to persistent storage
@@ -133,6 +197,45 @@ final class TrainingDataStore {
 extension TrainingDataStore: Resettable {
     func reset() throws {
         try deleteAll()
+    }
+}
+
+// MARK: - RhythmComparisonObserver Conformance
+
+extension TrainingDataStore: RhythmComparisonObserver {
+    func rhythmComparisonCompleted(_ result: CompletedRhythmComparison) {
+        let record = RhythmComparisonRecord(
+            tempoBPM: result.tempo.value,
+            offsetMs: result.offset.duration / .milliseconds(1),
+            isCorrect: result.isCorrect,
+            timestamp: result.timestamp
+        )
+        do {
+            try save(record)
+        } catch let error as DataStoreError {
+            Self.logger.warning("Rhythm comparison save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Rhythm comparison unexpected error: \(error.localizedDescription)")
+        }
+    }
+}
+
+// MARK: - RhythmMatchingObserver Conformance
+
+extension TrainingDataStore: RhythmMatchingObserver {
+    func rhythmMatchingCompleted(_ result: CompletedRhythmMatching) {
+        let record = RhythmMatchingRecord(
+            tempoBPM: result.tempo.value,
+            userOffsetMs: result.userOffset.duration / .milliseconds(1),
+            timestamp: result.timestamp
+        )
+        do {
+            try save(record)
+        } catch let error as DataStoreError {
+            Self.logger.warning("Rhythm matching save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Rhythm matching unexpected error: \(error.localizedDescription)")
+        }
     }
 }
 

@@ -454,4 +454,196 @@ struct TrainingDataStoreTests {
         #expect(fetched[0].initialCentOffset == 10.0)
         #expect(fetched[0].userCentError == 5.0)
     }
+
+    // MARK: - Rhythm Comparison CRUD Tests
+
+    @Test("Save and retrieve a single rhythm comparison record")
+    func saveAndRetrieveRhythmComparisonRecord() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let timestamp = Date()
+        let record = RhythmComparisonRecord(tempoBPM: 120, offsetMs: -15.5, isCorrect: true, timestamp: timestamp)
+
+        try store.save(record)
+
+        let fetched = try store.fetchAllRhythmComparisons()
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].tempoBPM == 120)
+        #expect(fetched[0].offsetMs == -15.5)
+        #expect(fetched[0].isCorrect == true)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+    }
+
+    @Test("Save and retrieve a single rhythm matching record")
+    func saveAndRetrieveRhythmMatchingRecord() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let timestamp = Date()
+        let record = RhythmMatchingRecord(tempoBPM: 90, userOffsetMs: 8.3, timestamp: timestamp)
+
+        try store.save(record)
+
+        let fetched = try store.fetchAllRhythmMatchings()
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].tempoBPM == 90)
+        #expect(fetched[0].userOffsetMs == 8.3)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+    }
+
+    @Test("FetchAllRhythmComparisons returns records in timestamp order")
+    func fetchRhythmComparisonsInOrder() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let now = Date()
+        let record1 = RhythmComparisonRecord(tempoBPM: 100, offsetMs: -10.0, isCorrect: true, timestamp: now.addingTimeInterval(-60))
+        let record2 = RhythmComparisonRecord(tempoBPM: 120, offsetMs: 5.0, isCorrect: false, timestamp: now.addingTimeInterval(-30))
+        let record3 = RhythmComparisonRecord(tempoBPM: 140, offsetMs: -3.0, isCorrect: true, timestamp: now)
+
+        try store.save(record1)
+        try store.save(record2)
+        try store.save(record3)
+
+        let fetched = try store.fetchAllRhythmComparisons()
+
+        #expect(fetched.count == 3)
+        #expect(fetched[0].tempoBPM == 100)
+        #expect(fetched[1].tempoBPM == 120)
+        #expect(fetched[2].tempoBPM == 140)
+    }
+
+    @Test("FetchAllRhythmMatchings returns records in timestamp order")
+    func fetchRhythmMatchingsInOrder() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let now = Date()
+        let record1 = RhythmMatchingRecord(tempoBPM: 80, userOffsetMs: -5.0, timestamp: now.addingTimeInterval(-60))
+        let record2 = RhythmMatchingRecord(tempoBPM: 100, userOffsetMs: 2.0, timestamp: now.addingTimeInterval(-30))
+        let record3 = RhythmMatchingRecord(tempoBPM: 120, userOffsetMs: 0.5, timestamp: now)
+
+        try store.save(record1)
+        try store.save(record2)
+        try store.save(record3)
+
+        let fetched = try store.fetchAllRhythmMatchings()
+
+        #expect(fetched.count == 3)
+        #expect(fetched[0].tempoBPM == 80)
+        #expect(fetched[1].tempoBPM == 100)
+        #expect(fetched[2].tempoBPM == 120)
+    }
+
+    @Test("deleteAllRhythmComparisons deletes only rhythm comparison records")
+    func deleteAllRhythmComparisonsOnly() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let pitchRecord = PitchComparisonRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        try store.save(pitchRecord)
+
+        let rhythmCompRecord = RhythmComparisonRecord(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
+        try store.save(rhythmCompRecord)
+
+        let rhythmMatchRecord = RhythmMatchingRecord(tempoBPM: 100, userOffsetMs: 3.0)
+        try store.save(rhythmMatchRecord)
+
+        try store.deleteAllRhythmComparisons()
+
+        let rhythmComps = try store.fetchAllRhythmComparisons()
+        #expect(rhythmComps.isEmpty)
+
+        let pitchComps = try store.fetchAllPitchComparisons()
+        #expect(pitchComps.count == 1)
+
+        let rhythmMatchings = try store.fetchAllRhythmMatchings()
+        #expect(rhythmMatchings.count == 1)
+    }
+
+    @Test("deleteAllRhythmMatchings deletes only rhythm matching records")
+    func deleteAllRhythmMatchingsOnly() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let pitchRecord = PitchMatchingRecord(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
+        try store.save(pitchRecord)
+
+        let rhythmCompRecord = RhythmComparisonRecord(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
+        try store.save(rhythmCompRecord)
+
+        let rhythmMatchRecord = RhythmMatchingRecord(tempoBPM: 100, userOffsetMs: 3.0)
+        try store.save(rhythmMatchRecord)
+
+        try store.deleteAllRhythmMatchings()
+
+        let rhythmMatchings = try store.fetchAllRhythmMatchings()
+        #expect(rhythmMatchings.isEmpty)
+
+        let pitchMatchings = try store.fetchAllPitchMatchings()
+        #expect(pitchMatchings.count == 1)
+
+        let rhythmComps = try store.fetchAllRhythmComparisons()
+        #expect(rhythmComps.count == 1)
+    }
+
+    // MARK: - Rhythm Observer Conformance Tests
+
+    @Test("RhythmComparisonObserver conformance saves record with correct fields")
+    func rhythmComparisonObserverSaves() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let timestamp = Date()
+        let completed = CompletedRhythmComparison(
+            tempo: TempoBPM(120),
+            offset: RhythmOffset(.milliseconds(-15)),
+            isCorrect: true,
+            timestamp: timestamp
+        )
+
+        store.rhythmComparisonCompleted(completed)
+
+        let fetched = try store.fetchAllRhythmComparisons()
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].tempoBPM == 120)
+        #expect(fetched[0].offsetMs == -15.0)
+        #expect(fetched[0].isCorrect == true)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+    }
+
+    @Test("RhythmMatchingObserver conformance saves record with correct fields")
+    func rhythmMatchingObserverSaves() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let timestamp = Date()
+        let completed = CompletedRhythmMatching(
+            tempo: TempoBPM(90),
+            expectedOffset: RhythmOffset(.milliseconds(10)),
+            userOffset: RhythmOffset(.milliseconds(8)),
+            timestamp: timestamp
+        )
+
+        store.rhythmMatchingCompleted(completed)
+
+        let fetched = try store.fetchAllRhythmMatchings()
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].tempoBPM == 90)
+        #expect(fetched[0].userOffsetMs == 8.0)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+    }
 }

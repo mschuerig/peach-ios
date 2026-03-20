@@ -1,6 +1,6 @@
 # Story 47.2: TrainingDataStore Rhythm CRUD and Observer Conformance
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,35 +22,35 @@ So that rhythm results are automatically persisted when sessions notify observer
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add rhythm CRUD methods to `TrainingDataStore` (AC: #1)
-  - [ ] `save(_ record: RhythmComparisonRecord) throws`
-  - [ ] `save(_ record: RhythmMatchingRecord) throws`
-  - [ ] `fetchAllRhythmComparisons() throws -> [RhythmComparisonRecord]`
-  - [ ] `fetchAllRhythmMatchings() throws -> [RhythmMatchingRecord]`
-  - [ ] `deleteAllRhythmComparisons() throws`
-  - [ ] `deleteAllRhythmMatchings() throws`
+- [x] Task 1: Add rhythm CRUD methods to `TrainingDataStore` (AC: #1)
+  - [x] `save(_ record: RhythmComparisonRecord) throws`
+  - [x] `save(_ record: RhythmMatchingRecord) throws`
+  - [x] `fetchAllRhythmComparisons() throws -> [RhythmComparisonRecord]`
+  - [x] `fetchAllRhythmMatchings() throws -> [RhythmMatchingRecord]`
+  - [x] `deleteAllRhythmComparisons() throws`
+  - [x] `deleteAllRhythmMatchings() throws`
 
-- [ ] Task 2: Add `RhythmComparisonObserver` conformance (AC: #2, #4)
-  - [ ] Extension on `TrainingDataStore` conforming to `RhythmComparisonObserver`
-  - [ ] Convert `CompletedRhythmComparison` → `RhythmComparisonRecord` and save
-  - [ ] Log errors at `.warning` level, do not propagate
+- [x] Task 2: Add `RhythmComparisonObserver` conformance (AC: #2, #4)
+  - [x] Extension on `TrainingDataStore` conforming to `RhythmComparisonObserver`
+  - [x] Convert `CompletedRhythmComparison` → `RhythmComparisonRecord` and save
+  - [x] Log errors at `.warning` level, do not propagate
 
-- [ ] Task 3: Add `RhythmMatchingObserver` conformance (AC: #3, #4)
-  - [ ] Extension on `TrainingDataStore` conforming to `RhythmMatchingObserver`
-  - [ ] Convert `CompletedRhythmMatching` → `RhythmMatchingRecord` and save
-  - [ ] Log errors at `.warning` level, do not propagate
+- [x] Task 3: Add `RhythmMatchingObserver` conformance (AC: #3, #4)
+  - [x] Extension on `TrainingDataStore` conforming to `RhythmMatchingObserver`
+  - [x] Convert `CompletedRhythmMatching` → `RhythmMatchingRecord` and save
+  - [x] Log errors at `.warning` level, do not propagate
 
-- [ ] Task 4: Write tests for rhythm CRUD and observer conformances (AC: #5)
-  - [ ] Test save and fetch for `RhythmComparisonRecord`
-  - [ ] Test save and fetch for `RhythmMatchingRecord`
-  - [ ] Test `deleteAllRhythmComparisons` deletes only rhythm comparison records
-  - [ ] Test `deleteAllRhythmMatchings` deletes only rhythm matching records
-  - [ ] Test `rhythmComparisonCompleted` creates and persists correct record
-  - [ ] Test `rhythmMatchingCompleted` creates and persists correct record
-  - [ ] Test fetch returns records sorted by timestamp (oldest first)
+- [x] Task 4: Write tests for rhythm CRUD and observer conformances (AC: #5)
+  - [x] Test save and fetch for `RhythmComparisonRecord`
+  - [x] Test save and fetch for `RhythmMatchingRecord`
+  - [x] Test `deleteAllRhythmComparisons` deletes only rhythm comparison records
+  - [x] Test `deleteAllRhythmMatchings` deletes only rhythm matching records
+  - [x] Test `rhythmComparisonCompleted` creates and persists correct record
+  - [x] Test `rhythmMatchingCompleted` creates and persists correct record
+  - [x] Test fetch returns records sorted by timestamp (oldest first)
 
-- [ ] Task 5: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 5: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions (1190 passed)
 
 ## Dev Notes
 
@@ -209,10 +209,24 @@ All four model types must be in the schema — SwiftData requires the full schem
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- All six CRUD methods added following existing pitch CRUD pattern: save, fetchAll, deleteAll for both RhythmComparisonRecord and RhythmMatchingRecord
+- RhythmComparisonObserver conformance converts TempoBPM → Int via `.value`, RhythmOffset → Double ms via `duration / .milliseconds(1)`
+- RhythmMatchingObserver conformance persists only `userOffset` (not `expectedOffset`) per story spec
+- Both observer conformances log errors at `.warning` level without propagating, matching pitch observer pattern
+- 8 new tests added covering save/fetch, timestamp ordering, selective deletion, and observer conformances
+- Full test suite: 1190 tests passed, no regressions
+
+### Change Log
+
+- 2026-03-20: Implemented rhythm CRUD methods and observer conformances in TrainingDataStore; added 8 tests
+
 ### File List
+
+- Peach/Core/Data/TrainingDataStore.swift (modified — added rhythm CRUD + observer conformances)
+- PeachTests/Core/Data/TrainingDataStoreTests.swift (modified — added 8 rhythm tests)
