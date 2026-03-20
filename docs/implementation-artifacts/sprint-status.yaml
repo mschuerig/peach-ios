@@ -363,4 +363,4 @@ development_status:
   # Epic 46: One Engine — Audio Architecture Redesign
   epic-46: in-progress
   46-1-extract-soundfontengine-from-soundfontnoteplayer: done
-  46-2-refactor-soundfontnoteplayer-to-delegate-to-soundfontengine: review
+  46-2-refactor-soundfontnoteplayer-to-delegate-to-soundfontengine: done
