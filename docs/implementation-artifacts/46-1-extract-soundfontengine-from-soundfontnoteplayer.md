@@ -23,21 +23,21 @@ So that audio hardware ownership is consolidated in one place before adding rhyt
 - [x] Task 1: Create `SoundFontEngine` class with audio graph ownership (AC: #1, #4)
   - [x] Create `Peach/Core/Audio/SoundFontEngine.swift`
   - [x] Move `AVAudioEngine` and `AVAudioUnitSampler` ownership from `SoundFontNotePlayer` into `SoundFontEngine`
-  - [x] Move `isSessionConfigured`, `loadedProgram`, `loadedBank` state into `SoundFontEngine`
+  - [x] Move `isSessionConfigured` and loaded preset state into `SoundFontEngine`
   - [x] Move audio session configuration (`ensureAudioSessionConfigured()`) into `SoundFontEngine`
   - [x] Move engine lifecycle (`ensureEngineRunning()`) into `SoundFontEngine`
   - [x] Move pitch bend range RPN setup (`sendPitchBendRange()`) into `SoundFontEngine`
-  - [x] `init(library: SoundFontLibrary, initialProgram: Int, initialBank: Int) throws` — creates engine, attaches sampler, loads initial preset, starts engine
+  - [x] `init(library: SoundFontLibrary, preset: SF2Preset) throws` — creates engine, attaches sampler, loads initial preset, starts engine
 
 - [x] Task 2: Add immediate MIDI dispatch methods (AC: #2)
-  - [x] `func startNote(_ midiNote: UInt8, velocity: UInt8, amplitudeDB: AmplitudeDB, pitchBend: UInt16, channel: UInt8)` — sends pitch bend, sets gain, starts MIDI note
-  - [x] `func stopNote(_ midiNote: UInt8, channel: UInt8)` — stops a single MIDI note
-  - [x] `func stopAllNotes(channel: UInt8, stopPropagationDelay: Duration)` — fade volume, CC 123 All Notes Off, reset pitch bend, restore volume
-  - [x] `func sendPitchBend(_ value: UInt16, channel: UInt8)` — pitch bend for frequency adjustment
+  - [x] `func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue)` — sends pitch bend, sets gain, starts MIDI note
+  - [x] `func stopNote(_ midiNote: MIDINote)` — stops a single MIDI note
+  - [x] `func stopAllNotes(stopPropagationDelay: Duration)` — fade volume, CC 123 All Notes Off, reset pitch bend, restore volume
+  - [x] `func sendPitchBend(_ value: PitchBendValue)` — pitch bend for frequency adjustment
   - [x] Expose `sampler` as read-only for `SoundFontPlaybackHandle` (or provide methods it needs)
 
 - [x] Task 3: Add preset loading (AC: #3)
-  - [x] `func loadPreset(program: Int, bank: Int) async throws` — validates range, skips if already loaded, calls `sampler.loadSoundBankInstrument(at:program:bankMSB:bankLSB:)`, logs change
+  - [x] `func loadPreset(_ preset: SF2Preset) async throws` — validates range, skips if already loaded, calls `sampler.loadSoundBankInstrument(at:program:bankMSB:bankLSB:)`, logs change
   - [x] Move `sf2URL` storage from `SoundFontNotePlayer` into `SoundFontEngine` (engine receives it from `SoundFontLibrary`)
 
 - [x] Task 4: Write `SoundFontEngine` tests (AC: #4)
@@ -211,22 +211,26 @@ Claude Opus 4.6
 ### Completion Notes List
 
 - Created `SoundFontEngine` as a standalone `final class` extracting audio graph ownership (AVAudioEngine, AVAudioUnitSampler), audio session config, engine lifecycle, pitch bend range RPN, and preset loading from `SoundFontNotePlayer`
-- Engine init takes `SoundFontLibrary`, `initialProgram`, `initialBank` — creates audio graph, attaches sampler, loads initial preset, starts engine
-- Immediate MIDI dispatch: `startNote`, `stopNote`, `stopAllNotes`, `sendPitchBend` — all parameterized by channel
-- Preset loading with validation, skip-if-same optimization, and 20ms settle delay
+- Engine init takes `SoundFontLibrary` and `SF2Preset` — creates audio graph, attaches sampler, loads initial preset, starts engine
+- Immediate MIDI dispatch: `startNote`, `stopNote`, `stopAllNotes`, `sendPitchBend` — all using domain types (`MIDINote`, `MIDIVelocity`, `AmplitudeDB`, `PitchBendValue`); MIDI channel is an internal detail (private constant)
+- Preset loading via `SF2Preset` with validation, skip-if-same optimization, and 20ms settle delay
 - `sampler` exposed as read-only `let` for `SoundFontPlaybackHandle` access (Option 2 from Dev Notes)
-- Constants (`channel`, `pitchBendCenter`, `pitchBendRangeSemitones`, `pitchBendRangeCents`) moved to `SoundFontEngine` as `nonisolated static`
-- 16 new tests covering init, preset loading (valid/invalid/skip-same/bank), MIDI dispatch, stopAllNotes, sampler access
-- All 1134 tests pass (0 regressions), build succeeds with 0 errors
+- Constants: `channel` as `private`, `pitchBendRangeSemitones`, `pitchBendRangeCents` moved to `SoundFontEngine` as `nonisolated static`
+- Created `PitchBendValue` domain type (UInt16, 0-16383) with `.center` constant (8192)
+- 14 new SoundFontEngine tests + 4 PitchBendValue tests
+- All 1135 tests pass (0 regressions), build succeeds with 0 errors
 - `SoundFontNotePlayer` unchanged — both coexist until story 46.2 connects them
 
 ### Change Log
 
 - 2026-03-20: Implemented story 46.1 — created SoundFontEngine with audio graph ownership, MIDI dispatch, preset loading, and tests
+- 2026-03-20: Code review fix — replaced all raw types with domain types (MIDINote, MIDIVelocity, PitchBendValue, SF2Preset), created PitchBendValue domain type, made MIDI channel a private internal detail
 
 ### File List
 
 - Peach/Core/Audio/SoundFontEngine.swift (new)
+- Peach/Core/Music/PitchBendValue.swift (new)
 - PeachTests/Core/Audio/SoundFontEngineTests.swift (new)
+- PeachTests/Core/Music/PitchBendValueTests.swift (new)
 - docs/implementation-artifacts/sprint-status.yaml (modified)
 - docs/implementation-artifacts/46-1-extract-soundfontengine-from-soundfontnoteplayer.md (modified)

@@ -15,14 +15,12 @@ final class SoundFontEngine {
     // MARK: - State
 
     private var isSessionConfigured = false
-    private var loadedProgram: Int
-    private var loadedBank: Int
+    private var loadedPreset: SF2Preset
 
     // MARK: - Constants
 
-    nonisolated static let channel: UInt8 = 0
+    private nonisolated static let channel: UInt8 = 0
     private nonisolated static let defaultBankMSB: UInt8 = 0x79 // kAUSampler_DefaultMelodicBankMSB
-    nonisolated static let pitchBendCenter: UInt16 = 8192
 
     /// Pitch bend range in semitones, set via MIDI RPN in `sendPitchBendRange()`.
     /// All pitch bend calculations derive their cent limits from this value.
@@ -37,12 +35,11 @@ final class SoundFontEngine {
 
     // MARK: - Initialization
 
-    init(library: SoundFontLibrary, initialProgram: Int, initialBank: Int) throws {
+    init(library: SoundFontLibrary, preset: SF2Preset) throws {
         self.sf2URL = library.sf2URL
         self.engine = AVAudioEngine()
         self.sampler = AVAudioUnitSampler()
-        self.loadedProgram = initialProgram
-        self.loadedBank = initialBank
+        self.loadedPreset = preset
 
         engine.attach(sampler)
         engine.connect(sampler, to: engine.mainMixerNode, format: nil)
@@ -50,14 +47,14 @@ final class SoundFontEngine {
         try engine.start()
         try sampler.loadSoundBankInstrument(
             at: sf2URL,
-            program: UInt8(initialProgram),
+            program: UInt8(preset.program),
             bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(initialBank)
+            bankLSB: UInt8(preset.bank)
         )
 
         sendPitchBendRange()
 
-        logger.info("SoundFontEngine initialized with \(library.sf2URL.lastPathComponent), preset sf2:\(initialBank):\(initialProgram)")
+        logger.info("SoundFontEngine initialized with \(library.sf2URL.lastPathComponent), preset \(preset.rawValue)")
     }
 
     // MARK: - Audio Session & Engine Lifecycle
@@ -79,24 +76,23 @@ final class SoundFontEngine {
 
     // MARK: - Preset Loading
 
-    func loadPreset(program: Int, bank: Int = 0) async throws {
-        guard (0...127).contains(program) else {
-            throw AudioError.invalidPreset("Program \(program) outside valid MIDI range 0-127")
+    func loadPreset(_ preset: SF2Preset) async throws {
+        guard (0...127).contains(preset.program) else {
+            throw AudioError.invalidPreset("Program \(preset.program) outside valid MIDI range 0-127")
         }
-        guard (0...127).contains(bank) else {
-            throw AudioError.invalidPreset("Bank \(bank) outside valid range 0-127")
+        guard (0...127).contains(preset.bank) else {
+            throw AudioError.invalidPreset("Bank \(preset.bank) outside valid range 0-127")
         }
-        guard program != loadedProgram || bank != loadedBank else { return }
+        guard preset != loadedPreset else { return }
 
         try sampler.loadSoundBankInstrument(
             at: sf2URL,
-            program: UInt8(clamping: program),
+            program: UInt8(clamping: preset.program),
             bankMSB: Self.defaultBankMSB,
-            bankLSB: UInt8(clamping: bank)
+            bankLSB: UInt8(clamping: preset.bank)
         )
 
-        loadedProgram = program
-        loadedBank = bank
+        loadedPreset = preset
 
         sendPitchBendRange()
 
@@ -104,35 +100,35 @@ final class SoundFontEngine {
         // the first MIDI note-on after a preset switch produces no sound.
         try await Task.sleep(for: .milliseconds(20))
 
-        logger.info("Loaded preset bank \(bank) program \(program)")
+        logger.info("Loaded preset \(preset.rawValue)")
     }
 
     // MARK: - Immediate MIDI Dispatch
 
-    func startNote(_ midiNote: UInt8, velocity: UInt8, amplitudeDB: AmplitudeDB, pitchBend: UInt16, channel: UInt8) {
-        sampler.sendPitchBend(pitchBend, onChannel: channel)
+    func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue) {
+        sampler.sendPitchBend(pitchBend.rawValue, onChannel: Self.channel)
         sampler.overallGain = Float(amplitudeDB.rawValue)
-        sampler.startNote(midiNote, withVelocity: velocity, onChannel: channel)
+        sampler.startNote(UInt8(midiNote.rawValue), withVelocity: velocity.rawValue, onChannel: Self.channel)
     }
 
-    func stopNote(_ midiNote: UInt8, channel: UInt8) {
-        sampler.stopNote(midiNote, onChannel: channel)
+    func stopNote(_ midiNote: MIDINote) {
+        sampler.stopNote(UInt8(midiNote.rawValue), onChannel: Self.channel)
     }
 
-    func stopAllNotes(channel: UInt8, stopPropagationDelay: Duration) async {
+    func stopAllNotes(stopPropagationDelay: Duration) async {
         if stopPropagationDelay > .zero {
             sampler.volume = 0
             try? await Task.sleep(for: stopPropagationDelay)
         }
-        sampler.sendController(123, withValue: 0, onChannel: channel)
-        sampler.sendPitchBend(Self.pitchBendCenter, onChannel: channel)
+        sampler.sendController(123, withValue: 0, onChannel: Self.channel)
+        sampler.sendPitchBend(PitchBendValue.center.rawValue, onChannel: Self.channel)
         if stopPropagationDelay > .zero {
             sampler.volume = 1.0
         }
     }
 
-    func sendPitchBend(_ value: UInt16, channel: UInt8) {
-        sampler.sendPitchBend(value, onChannel: channel)
+    func sendPitchBend(_ value: PitchBendValue) {
+        sampler.sendPitchBend(value.rawValue, onChannel: Self.channel)
     }
 
     // MARK: - MIDI Helpers
