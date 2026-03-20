@@ -372,5 +372,5 @@ development_status:
   epic-47: in-progress
   47-1-rhythm-swiftdata-records: done
   47-2-trainingdatastore-rhythm-crud-and-observer-conformance: done
-  47-3-perceptualprofile-rhythmprofile-conformance: backlog
+  47-3-perceptualprofile-rhythmprofile-conformance: ready-for-dev
   47-4-progresstimeline-extension-to-six-training-modes: backlog
