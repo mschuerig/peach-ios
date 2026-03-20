@@ -1,6 +1,6 @@
 # Story 47.1: Rhythm SwiftData Records
 
-Status: review
+Status: done
 
 ## Story
 
