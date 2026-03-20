@@ -10,7 +10,7 @@ struct TrainingDataTransferServiceTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, RhythmComparisonRecord.self, RhythmMatchingRecord.self, configurations: config)
     }
 
     private func makeService(

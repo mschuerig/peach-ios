@@ -384,7 +384,7 @@ struct SettingsTests {
     @Test("Reset deletes all records from SwiftData")
     func resetDeletesAllRecords() async throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, configurations: config)
+        let container = try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, RhythmComparisonRecord.self, RhythmMatchingRecord.self, configurations: config)
         let context = container.mainContext
 
         // Insert comparison records

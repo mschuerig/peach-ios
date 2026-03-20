@@ -11,13 +11,13 @@ struct TrainingDataStoreTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, RhythmComparisonRecord.self, RhythmMatchingRecord.self, configurations: config)
     }
 
     private func makeFileBasedContainer() throws -> ModelContainer {
         let tempDir = FileManager.default.temporaryDirectory
         let config = ModelConfiguration(url: tempDir.appendingPathComponent("test-\(UUID().uuidString).store"))
-        return try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchComparisonRecord.self, PitchMatchingRecord.self, RhythmComparisonRecord.self, RhythmMatchingRecord.self, configurations: config)
     }
 
     // MARK: - Save and Fetch Tests

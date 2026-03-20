@@ -55,7 +55,7 @@ final class TrainingDataStore {
         }
     }
 
-    /// Deletes all records (comparisons and pitch matchings) from persistent storage
+    /// Deletes all records from persistent storage
     /// Used by Settings "Reset All Training Data" action
     /// - Throws: DataStoreError.deleteFailed if batch delete fails; rolls back on partial failure
     func deleteAll() throws {
@@ -63,6 +63,8 @@ final class TrainingDataStore {
             try modelContext.transaction {
                 try modelContext.delete(model: PitchComparisonRecord.self)
                 try modelContext.delete(model: PitchMatchingRecord.self)
+                try modelContext.delete(model: RhythmComparisonRecord.self)
+                try modelContext.delete(model: RhythmMatchingRecord.self)
             }
         } catch {
             throw DataStoreError.deleteFailed("Failed to delete all records: \(error.localizedDescription)")
@@ -83,6 +85,8 @@ final class TrainingDataStore {
             try modelContext.transaction {
                 try modelContext.delete(model: PitchComparisonRecord.self)
                 try modelContext.delete(model: PitchMatchingRecord.self)
+                try modelContext.delete(model: RhythmComparisonRecord.self)
+                try modelContext.delete(model: RhythmMatchingRecord.self)
                 for record in pitchComparisons {
                     modelContext.insert(record)
                 }

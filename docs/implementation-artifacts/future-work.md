@@ -33,6 +33,28 @@ Peach plays the two comparison tones seamlessly (back-to-back without a gap), wh
 
 ---
 
+## Data & Infrastructure
+
+### Add SwiftData VersionedSchema and SchemaMigrationPlan
+
+**Priority:** Medium
+**Category:** Data Infrastructure
+**Date Added:** 2026-03-20
+
+**Issue:**
+The project has no `VersionedSchema` or `SchemaMigrationPlan`. All schema changes so far have been purely additive (new models), which SwiftData handles via lightweight migration. However, any future change that modifies or removes a field on an existing model will cause a runtime crash on existing installs with no recovery path.
+
+**Impact:**
+- Adding, renaming, or removing a property on any `@Model` class will fail without a migration plan
+- No safety net for schema evolution — the first non-additive change will be a crash discovered at runtime
+
+**Action:**
+- Introduce `VersionedSchema` conformances for the current schema (v1)
+- Add a `SchemaMigrationPlan` with lightweight migration stages
+- Do this before any story that modifies existing model properties
+
+---
+
 ## UX & Onboarding
 
 ### No First-Run Onboarding Experience
