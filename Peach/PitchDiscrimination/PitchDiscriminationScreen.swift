@@ -65,7 +65,6 @@ struct PitchDiscriminationScreen: View {
             answerButtonsGroup
         }
         .padding()
-        .navigationTitle(isIntervalMode ? "Intervals \u{2013} Compare" : "Pitch \u{2013} Compare")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
@@ -143,6 +142,16 @@ struct PitchDiscriminationScreen: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            HStack(spacing: 6) {
+                Image(systemName: "ear")
+                Text(isIntervalMode ? String(localized: "Intervals") : String(localized: "Pitch"))
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isIntervalMode
+                ? String(localized: "Intervals \u{2013} Compare")
+                : String(localized: "Pitch \u{2013} Compare"))
+        }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 20) {
                 Button {

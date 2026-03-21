@@ -26,7 +26,7 @@ so that the app provides a consistent localized experience across all training m
 
 8. **Given** German abbreviation conventions, **when** translations are reviewed, **then** no trailing dots on German abbreviations (consistent with existing localization conventions).
 
-9. **Given** all six training screens, **when** their navigation titles are checked, **then** each uses the pattern "Section – Action" (en-dash) matching the Start Screen context: "Pitch – Compare", "Pitch – Match", "Intervals – Compare", "Intervals – Match", "Rhythm – Compare", "Rhythm – Match", with German translations.
+9. **Given** all six training screens, **when** their navigation titles are checked, **then** each displays a custom principal toolbar item with an SF Symbol icon (matching the Start Screen card) and a short localized section name ("Pitch", "Intervals", "Rhythm"). VoiceOver reads the full localized "Section – Action" title (e.g., "Tonhöhe – Vergleichen") via `.accessibilityLabel`.
 
 ## Tasks / Subtasks
 
@@ -35,11 +35,11 @@ so that the app provides a consistent localized experience across all training m
   - [x] 1.2 Categorize missing keys by screen/feature area
 
 - [x] Task 2: Unify training screen navigation titles (AC: 9)
-  - [x] 2.1 `PitchDiscriminationScreen.swift`: change `.navigationTitle("Hear & Compare")` to use `isIntervalMode` — `"Pitch – Compare"` when `false`, `"Intervals – Compare"` when `true`
-  - [x] 2.2 `PitchMatchingScreen.swift`: change `.navigationTitle("Tune & Match")` to use `isIntervalMode` — `"Pitch – Match"` when `false`, `"Intervals – Match"` when `true`
-  - [x] 2.3 `RhythmOffsetDetectionScreen.swift`: change `.navigationTitle("Rhythm")` to `"Rhythm – Compare"`
-  - [x] 2.4 `RhythmMatchingScreen.swift`: change `.navigationTitle("Rhythm")` to `"Rhythm – Match"`
-  - [x] 2.5 Remove stale xcstrings entries for old titles (`"Hear & Compare"`, `"Tune & Match"`) if no longer referenced
+  - [x] 2.1 `PitchDiscriminationScreen.swift`: replace `.navigationTitle("Hear & Compare")` with custom `.principal` toolbar item — `[ear] Pitch` / `[ear] Intervals` based on `isIntervalMode`, VoiceOver label "Pitch – Compare" / "Intervals – Compare"
+  - [x] 2.2 `PitchMatchingScreen.swift`: replace `.navigationTitle("Tune & Match")` with custom `.principal` toolbar item — `[target] Pitch` / `[target] Intervals` based on `isIntervalMode`, VoiceOver label "Pitch – Match" / "Intervals – Match"
+  - [x] 2.3 `RhythmOffsetDetectionScreen.swift`: replace `.navigationTitle("Rhythm")` with custom `.principal` toolbar item — `[metronome] Rhythm`, VoiceOver label "Rhythm – Compare"
+  - [x] 2.4 `RhythmMatchingScreen.swift`: replace `.navigationTitle("Rhythm")` with custom `.principal` toolbar item — `[hand.tap] Rhythm`, VoiceOver label "Rhythm – Match"
+  - [x] 2.5 Old standalone xcstrings keys (`"Hear & Compare"`, `"Tune & Match"`) retained — still referenced by TrainingDisciplineConfig, InfoScreen, and SettingsScreen; German translations added
 
 - [x] Task 3: Wrap hardcoded rhythm strings in `String(localized:)` (AC: 2, 3, 4, 5, 6, 7)
   - [x] 3.1 `RhythmMatchingScreen.swift`: wrap `Text("Tap")` (line ~102) and `.accessibilityLabel("Tap")` (line ~112)
@@ -61,34 +61,20 @@ so that the app provides a consistent localized experience across all training m
 
 ### Navigation Title Redesign
 
-All six training screens currently have inconsistent navigation titles. They must be unified to the pattern **"Section – Action"** (en-dash `–`, not hyphen `-`), matching the Start Screen's section labels and button labels:
+All six training screens previously had inconsistent navigation titles. The original plan was to unify them to "Section – Action" text titles (e.g., "Pitch – Compare"), but longer German translations (e.g., "Intervalle – Vergleichen") truncated in the inline navigation bar alongside three trailing toolbar buttons.
 
-| Screen | Old Title | New Title |
-|--------|-----------|-----------|
-| PitchDiscriminationScreen (unison) | `"Hear & Compare"` | `"Pitch – Compare"` |
-| PitchDiscriminationScreen (interval) | `"Hear & Compare"` | `"Intervals – Compare"` |
-| PitchMatchingScreen (unison) | `"Tune & Match"` | `"Pitch – Match"` |
-| PitchMatchingScreen (interval) | `"Tune & Match"` | `"Intervals – Match"` |
-| RhythmOffsetDetectionScreen | `"Rhythm"` | `"Rhythm – Compare"` |
-| RhythmMatchingScreen | `"Rhythm"` | `"Rhythm – Match"` |
+**Final design:** Custom `.principal` toolbar items with an SF Symbol icon + short section name. The icon conveys the action (Compare vs Match) using the same symbols as the Start Screen cards. VoiceOver reads the full localized "Section – Action" title.
 
-**Implementation:** The pitch screens already have an `isIntervalMode: Bool` property. Use it to select the title:
-```swift
-.navigationTitle(isIntervalMode ? "Intervals – Compare" : "Pitch – Compare")
-```
+| Screen | Icon | Visual Title | VoiceOver (en) | VoiceOver (de) |
+|--------|------|-------------|----------------|----------------|
+| PitchDiscriminationScreen (unison) | ear | Pitch | Pitch – Compare | Tonhöhe – Vergleichen |
+| PitchDiscriminationScreen (interval) | ear | Intervals | Intervals – Compare | Intervalle – Vergleichen |
+| PitchMatchingScreen (unison) | target | Pitch | Pitch – Match | Tonhöhe – Treffen |
+| PitchMatchingScreen (interval) | target | Intervals | Intervals – Match | Intervalle – Treffen |
+| RhythmOffsetDetectionScreen | metronome | Rhythm | Rhythm – Compare | Rhythmus – Vergleichen |
+| RhythmMatchingScreen | hand.tap | Rhythm | Rhythm – Match | Rhythmus – Treffen |
 
-The rhythm screens have a fixed title each — no conditional needed.
-
-**German translations for new titles:**
-
-| English | German |
-|---------|--------|
-| Pitch – Compare | Tonhöhe – Vergleichen |
-| Pitch – Match | Tonhöhe – Treffen |
-| Intervals – Compare | Intervalle – Vergleichen |
-| Intervals – Match | Intervalle – Treffen |
-| Rhythm – Compare | Rhythmus – Vergleichen |
-| Rhythm – Match | Rhythmus – Treffen |
+**Implementation:** Each screen uses `ToolbarItem(placement: .principal)` with an `HStack(spacing: 6)` containing `Image(systemName:)` and `Text(String(localized:))`. The HStack is collapsed into a single accessibility element via `.accessibilityElement(children: .ignore)` with `.accessibilityLabel(String(localized:))` for the full title.
 
 ### Localization Approach
 
@@ -163,7 +149,7 @@ Claude Opus 4.6
 ### Completion Notes List
 
 - Audited localization state: 39 keys initially missing German translations, categorized by screen/feature area (nav titles, rhythm help text, profile/chart labels, accessibility, chart internals)
-- Unified all 6 training screen navigation titles to "Section – Action" pattern using en-dash: PitchDiscriminationScreen uses `isIntervalMode` conditional, PitchMatchingScreen uses `isIntervalMode` conditional, rhythm screens use fixed titles
+- Replaced all 6 training screen navigation titles with custom `.principal` toolbar items: SF Symbol icon + short localized section name. Icons match Start Screen cards (ear=Compare, target=Match, metronome=Rhythm Compare, hand.tap=Rhythm Match). VoiceOver reads the full localized "Section – Action" title via `.accessibilityLabel(String(localized:))`
 - Task 3 strings (Text("Tap"), Label("Help",...), accessibility labels, StartScreen headers, RhythmStatsView, SettingsScreen) already use `LocalizedStringKey` implicitly through SwiftUI — no code wrapping needed, just German translations
 - Added 39 German translations via batch JSON file + 6 individual additions for discipline display names
 - "Hear & Compare" and "Tune & Match" standalone keys retained in xcstrings — still referenced by TrainingDisciplineConfig, InfoScreen, and SettingsScreen help text; added German translations for those keys
@@ -171,7 +157,7 @@ Claude Opus 4.6
 
 ### Change Log
 
-- 2026-03-22: Implemented story 53.1 — unified navigation titles and added all missing German translations
+- 2026-03-22: Implemented story 53.1 — icon-based navigation titles with localized VoiceOver labels, and added all missing German translations
 
 ### File List
 

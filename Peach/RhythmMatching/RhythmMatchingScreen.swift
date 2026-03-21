@@ -46,7 +46,6 @@ struct RhythmMatchingScreen: View {
             tapButton
         }
         .padding()
-        .navigationTitle("Rhythm \u{2013} Match")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
@@ -115,6 +114,14 @@ struct RhythmMatchingScreen: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            HStack(spacing: 6) {
+                Image(systemName: "hand.tap")
+                Text("Rhythm")
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(String(localized: "Rhythm \u{2013} Match"))
+        }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 20) {
                 Button {

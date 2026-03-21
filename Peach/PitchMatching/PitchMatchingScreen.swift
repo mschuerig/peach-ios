@@ -61,7 +61,6 @@ struct PitchMatchingScreen: View {
             )
             .padding()
         }
-        .navigationTitle(isIntervalMode ? "Intervals \u{2013} Match" : "Pitch \u{2013} Match")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
@@ -123,6 +122,16 @@ struct PitchMatchingScreen: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            HStack(spacing: 6) {
+                Image(systemName: "target")
+                Text(isIntervalMode ? String(localized: "Intervals") : String(localized: "Pitch"))
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isIntervalMode
+                ? String(localized: "Intervals \u{2013} Match")
+                : String(localized: "Pitch \u{2013} Match"))
+        }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 20) {
                 Button {

@@ -43,7 +43,6 @@ struct RhythmOffsetDetectionScreen: View {
             answerButtonsGroup
         }
         .padding()
-        .navigationTitle("Rhythm \u{2013} Compare")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
@@ -101,6 +100,14 @@ struct RhythmOffsetDetectionScreen: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .principal) {
+            HStack(spacing: 6) {
+                Image(systemName: "metronome")
+                Text("Rhythm")
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(String(localized: "Rhythm \u{2013} Compare"))
+        }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 20) {
                 Button {
