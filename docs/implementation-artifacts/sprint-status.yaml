@@ -377,7 +377,12 @@ development_status:
   47-4-progresstimeline-extension-to-six-training-modes: done
 
   # Epic 48: Four Clicks — Rhythm Offset Detection Training
-  epic-48: in-progress
+  epic-48: done
   48-1-nextrhythmoffsetdetectionstrategy-protocol-and-initial-implementation: done
   48-2-rhythmoffsetdetectionsession-state-machine: done
   48-3-rhythmoffsetdetectionscreen-with-dot-visualization: done
+
+  # Epic 49: Hit That Beat — Rhythm Matching Training
+  epic-49: in-progress
+  49-1-rhythmmatchingsession-state-machine: ready-for-dev
+  49-2-rhythmmatchingscreen-with-tap-button-and-color-feedback: backlog
