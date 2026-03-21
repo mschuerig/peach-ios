@@ -18,6 +18,7 @@ struct PeachApp: App {
     @State private var rhythmPlayer: any RhythmPlayer
     @State private var activeSession: (any TrainingSession)?
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
+    private let userSettings = AppUserSettings()
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
@@ -42,7 +43,7 @@ struct PeachApp: App {
             let soundFontEngine = try SoundFontEngine(sf2URL: sf2URL)
             _soundFontEngine = State(wrappedValue: soundFontEngine)
 
-            let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource))
+            let preset = soundFontLibrary.resolve(userSettings.soundSource)
             let notePlayer: any NotePlayer = SoundFontPlayer(
                 engine: soundFontEngine,
                 preset: preset,
@@ -104,11 +105,11 @@ struct PeachApp: App {
                 .environment(\.perceptualProfile, profile)
                 .environment(\.progressTimeline, progressTimeline)
                 .environment(\.soundSourceProvider, soundFontLibrary)
-                .environment(\.userSettings, AppUserSettings())
+                .environment(\.userSettings, userSettings)
                 .environment(\.soundPreviewPlay, { [notePlayer] (duration: Duration) in
                     let frequency = TuningSystem.equalTemperament.frequency(
                         for: MIDINote(69),
-                        referencePitch: AppUserSettings().referencePitch
+                        referencePitch: userSettings.referencePitch
                     )
                     try? await notePlayer.play(
                         frequency: frequency,

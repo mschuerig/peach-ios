@@ -2,7 +2,7 @@
 title: 'Fix sound source reverting to default on app startup'
 slug: 'fix-sound-source-startup-default'
 created: '2026-03-21'
-status: 'ready-for-dev'
+status: 'done'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: [SwiftUI, AppStorage/UserDefaults, AVAudioUnitSampler, SoundFontEngine]
 files_to_modify: [Peach/App/PeachApp.swift]
@@ -66,7 +66,7 @@ Replace the hardcoded `SettingsKeys.defaultSoundSource` with the actual persiste
 
 ### Tasks
 
-- [ ] Task 1: Fix preset resolution in `PeachApp.init()`
+- [x] Task 1: Fix preset resolution in `PeachApp.init()`
   - File: `Peach/App/PeachApp.swift`
   - Action: On line 45, replace:
     ```swift
@@ -81,9 +81,9 @@ Replace the hardcoded `SettingsKeys.defaultSoundSource` with the actual persiste
 
 ### Acceptance Criteria
 
-- [ ] AC 1: Given a user has previously selected a non-default sound source (e.g., `"sf2:0:42"` Cello), when the app is launched, then the `notePlayer` plays using the saved sound source — not the default `"sf2:0:0"`.
-- [ ] AC 2: Given a fresh install with no saved preference, when the app is launched, then the `notePlayer` uses the default `"sf2:0:0"` (Grand Piano).
-- [ ] AC 3: Given a user has a saved sound source that was invalidated by `validateSoundSource()` (e.g., removed preset), when the app is launched, then the player uses the default `"sf2:0:0"` because validation already reset UserDefaults.
+- [x] AC 1: Given a user has previously selected a non-default sound source (e.g., `"sf2:0:42"` Cello), when the app is launched, then the `notePlayer` plays using the saved sound source — not the default `"sf2:0:0"`.
+- [x] AC 2: Given a fresh install with no saved preference, when the app is launched, then the `notePlayer` uses the default `"sf2:0:0"` (Grand Piano).
+- [x] AC 3: Given a user has a saved sound source that was invalidated by `validateSoundSource()` (e.g., removed preset), when the app is launched, then the player uses the default `"sf2:0:0"` because validation already reset UserDefaults.
 
 ## Additional Context
 
