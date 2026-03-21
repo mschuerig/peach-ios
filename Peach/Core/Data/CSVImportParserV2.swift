@@ -148,7 +148,7 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             let centOffsetStr = fields[8]
             let isCorrectStr = fields[9]
 
-            guard let centOffset = Double(centOffsetStr) else {
+            guard let centOffset = Double(centOffsetStr), centOffset.isFinite else {
                 return .error(.invalidRowData(row: rowNumber, column: "centOffset", value: centOffsetStr, reason: "not a valid number"))
             }
 
@@ -201,11 +201,11 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             let initialCentOffsetStr = fields[10]
             let userCentErrorStr = fields[11]
 
-            guard let initialCentOffset = Double(initialCentOffsetStr) else {
+            guard let initialCentOffset = Double(initialCentOffsetStr), initialCentOffset.isFinite else {
                 return .error(.invalidRowData(row: rowNumber, column: "initialCentOffset", value: initialCentOffsetStr, reason: "not a valid number"))
             }
 
-            guard let userCentError = Double(userCentErrorStr) else {
+            guard let userCentError = Double(userCentErrorStr), userCentError.isFinite else {
                 return .error(.invalidRowData(row: rowNumber, column: "userCentError", value: userCentErrorStr, reason: "not a valid number"))
             }
 
@@ -230,14 +230,15 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             return error
         }
 
-        // Validate pitch-matching-only columns are empty
+        // Validate pitch-discrimination/matching-only columns are empty
+        let centOffsetStr = fields[8]
         let initialCentOffsetStr = fields[10]
         let userCentErrorStr = fields[11]
-        guard initialCentOffsetStr.isEmpty && userCentErrorStr.isEmpty else {
+        guard centOffsetStr.isEmpty && initialCentOffsetStr.isEmpty && userCentErrorStr.isEmpty else {
             return .error(.invalidRowData(
                 row: rowNumber,
-                column: "initialCentOffset/userCentError",
-                value: "\(initialCentOffsetStr),\(userCentErrorStr)",
+                column: "centOffset/initialCentOffset/userCentError",
+                value: "\(centOffsetStr),\(initialCentOffsetStr),\(userCentErrorStr)",
                 reason: "must be empty for rhythmOffsetDetection rows"
             ))
         }
@@ -264,12 +265,12 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
         }
 
         let tempoBPMStr = fields[12]
-        guard let tempoBPM = Int(tempoBPMStr) else {
-            return .error(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a valid integer"))
+        guard let tempoBPM = Int(tempoBPMStr), tempoBPM > 0 else {
+            return .error(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a positive integer"))
         }
 
         let offsetMsStr = fields[13]
-        guard let offsetMs = Double(offsetMsStr) else {
+        guard let offsetMs = Double(offsetMsStr), offsetMs.isFinite else {
             return .error(.invalidRowData(row: rowNumber, column: "offsetMs", value: offsetMsStr, reason: "not a valid number"))
         }
 
@@ -321,12 +322,12 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
         }
 
         let tempoBPMStr = fields[12]
-        guard let tempoBPM = Int(tempoBPMStr) else {
-            return .error(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a valid integer"))
+        guard let tempoBPM = Int(tempoBPMStr), tempoBPM > 0 else {
+            return .error(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a positive integer"))
         }
 
         let userOffsetMsStr = fields[14]
-        guard let userOffsetMs = Double(userOffsetMsStr) else {
+        guard let userOffsetMs = Double(userOffsetMsStr), userOffsetMs.isFinite else {
             return .error(.invalidRowData(row: rowNumber, column: "userOffsetMs", value: userOffsetMsStr, reason: "not a valid number"))
         }
 
