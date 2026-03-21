@@ -1,6 +1,6 @@
 # Story 48.1: NextRhythmOffsetDetectionStrategy Protocol and Initial Implementation
 
-Status: review
+Status: done
 
 ## Story
 

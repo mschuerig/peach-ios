@@ -1,6 +1,6 @@
 import Foundation
 
-struct RhythmOffsetDetectionSettings {
+struct RhythmOffsetDetectionSettings: Sendable {
     var tempo: TempoBPM
     var feedbackDuration: Duration
     var maxOffsetPercentage: Double
@@ -12,6 +12,7 @@ struct RhythmOffsetDetectionSettings {
         maxOffsetPercentage: Double = 20.0,
         minOffsetPercentage: Double = 1.0
     ) {
+        precondition(minOffsetPercentage <= maxOffsetPercentage, "minOffsetPercentage must be <= maxOffsetPercentage")
         self.tempo = tempo
         self.feedbackDuration = feedbackDuration
         self.maxOffsetPercentage = maxOffsetPercentage
