@@ -1,6 +1,6 @@
 # Story 53.1: Rhythm Training Localization
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,32 +30,32 @@ so that the app provides a consistent localized experience across all training m
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Audit current localization state (AC: 1)
-  - [ ] 1.1 Run `bin/add-localization.swift --missing` to identify all keys missing German translations
-  - [ ] 1.2 Categorize missing keys by screen/feature area
+- [x] Task 1: Audit current localization state (AC: 1)
+  - [x] 1.1 Run `bin/add-localization.swift --missing` to identify all keys missing German translations
+  - [x] 1.2 Categorize missing keys by screen/feature area
 
-- [ ] Task 2: Unify training screen navigation titles (AC: 9)
-  - [ ] 2.1 `PitchDiscriminationScreen.swift`: change `.navigationTitle("Hear & Compare")` to use `isIntervalMode` — `"Pitch – Compare"` when `false`, `"Intervals – Compare"` when `true`
-  - [ ] 2.2 `PitchMatchingScreen.swift`: change `.navigationTitle("Tune & Match")` to use `isIntervalMode` — `"Pitch – Match"` when `false`, `"Intervals – Match"` when `true`
-  - [ ] 2.3 `RhythmOffsetDetectionScreen.swift`: change `.navigationTitle("Rhythm")` to `"Rhythm – Compare"`
-  - [ ] 2.4 `RhythmMatchingScreen.swift`: change `.navigationTitle("Rhythm")` to `"Rhythm – Match"`
-  - [ ] 2.5 Remove stale xcstrings entries for old titles (`"Hear & Compare"`, `"Tune & Match"`) if no longer referenced
+- [x] Task 2: Unify training screen navigation titles (AC: 9)
+  - [x] 2.1 `PitchDiscriminationScreen.swift`: change `.navigationTitle("Hear & Compare")` to use `isIntervalMode` — `"Pitch – Compare"` when `false`, `"Intervals – Compare"` when `true`
+  - [x] 2.2 `PitchMatchingScreen.swift`: change `.navigationTitle("Tune & Match")` to use `isIntervalMode` — `"Pitch – Match"` when `false`, `"Intervals – Match"` when `true`
+  - [x] 2.3 `RhythmOffsetDetectionScreen.swift`: change `.navigationTitle("Rhythm")` to `"Rhythm – Compare"`
+  - [x] 2.4 `RhythmMatchingScreen.swift`: change `.navigationTitle("Rhythm")` to `"Rhythm – Match"`
+  - [x] 2.5 Remove stale xcstrings entries for old titles (`"Hear & Compare"`, `"Tune & Match"`) if no longer referenced
 
-- [ ] Task 3: Wrap hardcoded rhythm strings in `String(localized:)` (AC: 2, 3, 4, 5, 6, 7)
-  - [ ] 3.1 `RhythmMatchingScreen.swift`: wrap `Text("Tap")` (line ~102) and `.accessibilityLabel("Tap")` (line ~112)
-  - [ ] 3.2 `RhythmOffsetDetectionScreen.swift` and `RhythmMatchingScreen.swift`: wrap `Label("Help", ...)`, `.accessibilityLabel("Settings")`, `.accessibilityLabel("Profile")`
-  - [ ] 3.3 `StartScreen.swift`: wrap section headers `Text("Pitch")`, `Text("Intervals")`, `Text("Rhythm")`
-  - [ ] 3.4 Review `RhythmStatsView.swift` for any hardcoded labels (e.g., "Latest:", "Best:")
-  - [ ] 3.5 Review `SettingsScreen.swift` for rhythm-related hardcoded strings in the tempo section
+- [x] Task 3: Wrap hardcoded rhythm strings in `String(localized:)` (AC: 2, 3, 4, 5, 6, 7)
+  - [x] 3.1 `RhythmMatchingScreen.swift`: wrap `Text("Tap")` (line ~102) and `.accessibilityLabel("Tap")` (line ~112)
+  - [x] 3.2 `RhythmOffsetDetectionScreen.swift` and `RhythmMatchingScreen.swift`: wrap `Label("Help", ...)`, `.accessibilityLabel("Settings")`, `.accessibilityLabel("Profile")`
+  - [x] 3.3 `StartScreen.swift`: wrap section headers `Text("Pitch")`, `Text("Intervals")`, `Text("Rhythm")`
+  - [x] 3.4 Review `RhythmStatsView.swift` for any hardcoded labels (e.g., "Latest:", "Best:")
+  - [x] 3.5 Review `SettingsScreen.swift` for rhythm-related hardcoded strings in the tempo section
 
-- [ ] Task 4: Add German translations for all strings (AC: 1–9)
-  - [ ] 4.1 Prepare a JSON batch file with all translations including new navigation titles
-  - [ ] 4.2 Run `bin/add-localization.swift --batch translations.json` to apply
-  - [ ] 4.3 Run `bin/add-localization.swift --missing` to confirm zero missing translations
+- [x] Task 4: Add German translations for all strings (AC: 1–9)
+  - [x] 4.1 Prepare a JSON batch file with all translations including new navigation titles
+  - [x] 4.2 Run `bin/add-localization.swift --batch translations.json` to apply
+  - [x] 4.3 Run `bin/add-localization.swift --missing` to confirm zero missing translations
 
-- [ ] Task 5: Build and test (AC: 1–9)
-  - [ ] 5.1 Run `bin/build.sh` — zero errors, zero warnings from localization
-  - [ ] 5.2 Run `bin/test.sh` — zero regressions
+- [x] Task 5: Build and test (AC: 1–9)
+  - [x] 5.1 Run `bin/build.sh` — zero errors, zero warnings from localization
+  - [x] 5.2 Run `bin/test.sh` — zero regressions
 
 ## Dev Notes
 
@@ -156,8 +156,29 @@ Many rhythm strings are **already properly localized** with German translations:
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
 
 ### Completion Notes List
 
+- Audited localization state: 39 keys initially missing German translations, categorized by screen/feature area (nav titles, rhythm help text, profile/chart labels, accessibility, chart internals)
+- Unified all 6 training screen navigation titles to "Section – Action" pattern using en-dash: PitchDiscriminationScreen uses `isIntervalMode` conditional, PitchMatchingScreen uses `isIntervalMode` conditional, rhythm screens use fixed titles
+- Task 3 strings (Text("Tap"), Label("Help",...), accessibility labels, StartScreen headers, RhythmStatsView, SettingsScreen) already use `LocalizedStringKey` implicitly through SwiftUI — no code wrapping needed, just German translations
+- Added 39 German translations via batch JSON file + 6 individual additions for discipline display names
+- "Hear & Compare" and "Tune & Match" standalone keys retained in xcstrings — still referenced by TrainingDisciplineConfig, InfoScreen, and SettingsScreen help text; added German translations for those keys
+- Final verification: 0 keys missing German translation, build succeeded (0 localization warnings), 1449 tests pass with 0 regressions
+
+### Change Log
+
+- 2026-03-22: Implemented story 53.1 — unified navigation titles and added all missing German translations
+
 ### File List
+
+- Peach/PitchDiscrimination/PitchDiscriminationScreen.swift (modified — navigation title)
+- Peach/PitchMatching/PitchMatchingScreen.swift (modified — navigation title)
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionScreen.swift (modified — navigation title)
+- Peach/RhythmMatching/RhythmMatchingScreen.swift (modified — navigation title)
+- Peach/Resources/Localizable.xcstrings (modified — 39+ German translations added)
+- docs/implementation-artifacts/53-1-rhythm-training-localization.md (modified — task tracking)
+- docs/implementation-artifacts/sprint-status.yaml (modified — status update)

@@ -46,7 +46,7 @@ struct RhythmMatchingScreen: View {
             tapButton
         }
         .padding()
-        .navigationTitle("Rhythm")
+        .navigationTitle("Rhythm \u{2013} Match")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }

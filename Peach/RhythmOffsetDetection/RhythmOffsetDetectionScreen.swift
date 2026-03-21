@@ -43,7 +43,7 @@ struct RhythmOffsetDetectionScreen: View {
             answerButtonsGroup
         }
         .padding()
-        .navigationTitle("Rhythm")
+        .navigationTitle("Rhythm \u{2013} Compare")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }

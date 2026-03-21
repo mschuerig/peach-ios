@@ -65,7 +65,7 @@ struct PitchDiscriminationScreen: View {
             answerButtonsGroup
         }
         .padding()
-        .navigationTitle("Hear & Compare")
+        .navigationTitle(isIntervalMode ? "Intervals \u{2013} Compare" : "Pitch \u{2013} Compare")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }

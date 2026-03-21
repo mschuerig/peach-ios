@@ -61,7 +61,7 @@ struct PitchMatchingScreen: View {
             )
             .padding()
         }
-        .navigationTitle("Tune & Match")
+        .navigationTitle(isIntervalMode ? "Intervals \u{2013} Match" : "Pitch \u{2013} Match")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
