@@ -110,14 +110,16 @@ struct StartScreen: View {
                 .foregroundStyle(.secondary)
 
             NavigationLink(value: NavigationDestination.pitchDiscrimination(isIntervalMode: false)) {
-                trainingCard("Hear & Compare", systemImage: "ear", mode: .unisonPitchDiscrimination, isHero: true)
+                trainingCard("Compare", systemImage: "ear", mode: .unisonPitchDiscrimination, isHero: true)
             }
             .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Compare Pitch")
 
             NavigationLink(value: NavigationDestination.pitchMatching(isIntervalMode: false)) {
-                trainingCard("Tune & Match", systemImage: "target", mode: .unisonPitchMatching)
+                trainingCard("Match", systemImage: "target", mode: .unisonPitchMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Match Pitch")
         }
     }
 
@@ -128,14 +130,16 @@ struct StartScreen: View {
                 .foregroundStyle(.secondary)
 
             NavigationLink(value: NavigationDestination.pitchDiscrimination(isIntervalMode: true)) {
-                trainingCard("Hear & Compare", systemImage: "ear", mode: .intervalPitchDiscrimination)
+                trainingCard("Compare", systemImage: "ear", mode: .intervalPitchDiscrimination)
             }
             .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Compare Intervals")
 
             NavigationLink(value: NavigationDestination.pitchMatching(isIntervalMode: true)) {
-                trainingCard("Tune & Match", systemImage: "target", mode: .intervalPitchMatching)
+                trainingCard("Match", systemImage: "target", mode: .intervalPitchMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Match Interval")
         }
     }
 
@@ -146,14 +150,16 @@ struct StartScreen: View {
                 .foregroundStyle(.secondary)
 
             NavigationLink(value: NavigationDestination.rhythmOffsetDetection) {
-                trainingCard("Rhythm Comparison", systemImage: "metronome", mode: .rhythmOffsetDetection)
+                trainingCard("Compare", systemImage: "metronome", mode: .rhythmOffsetDetection)
             }
             .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Compare Timing")
 
             NavigationLink(value: NavigationDestination.rhythmMatching) {
-                trainingCard("Rhythm Matching", systemImage: "hand.tap", mode: .rhythmMatching)
+                trainingCard("Match", systemImage: "hand.tap", mode: .rhythmMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Match Rhythm")
         }
     }
 
