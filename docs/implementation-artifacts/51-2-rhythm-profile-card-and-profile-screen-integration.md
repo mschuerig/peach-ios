@@ -1,6 +1,6 @@
 # Story 51.2: RhythmProfileCardView and Profile Screen Integration
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,36 +20,36 @@ so that I can track my rhythm training progress alongside my pitch progress.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmProfileCardView` (AC: #1, #2)
-  - [ ] Create `Peach/Profile/RhythmProfileCardView.swift`
-  - [ ] Headline row: "Rhythm" label + EWMA value (ms) + ±stddev + trend arrow + share button
-  - [ ] Embed `RhythmSpectrogramView` below headline (pass same `mode`)
-  - [ ] Empty state: dashes for EWMA, placeholder text, no spectrogram
-  - [ ] Share button: render card to image via `ChartImageRenderer` pattern
-  - [ ] Match `.regularMaterial` card background with rounded corners (12pt)
+- [x] Task 1: Create `RhythmProfileCardView` (AC: #1, #2)
+  - [x] Create `Peach/Profile/RhythmProfileCardView.swift`
+  - [x] Headline row: "Rhythm" label + EWMA value (ms) + ±stddev + trend arrow + share button
+  - [x] Embed `RhythmSpectrogramView` below headline (pass same `mode`)
+  - [x] Empty state: dashes for EWMA, placeholder text, no spectrogram
+  - [x] Share button: render card to image via `ChartImageRenderer` pattern
+  - [x] Match `.regularMaterial` card background with rounded corners (12pt)
 
-- [ ] Task 2: Update `ProfileScreen` to use `RhythmProfileCardView` for rhythm modes (AC: #3, #4)
-  - [ ] In `ForEach(TrainingDiscipline.allCases)`, branch on rhythm modes to render `RhythmProfileCardView` instead of `ProgressChartView`
-  - [ ] Ensure both rhythm disciplines (`.rhythmOffsetDetection`, `.rhythmMatching`) each get their own card
-  - [ ] Maintain existing pitch card rendering (no changes to `ProgressChartView`)
+- [x] Task 2: Update `ProfileScreen` to use `RhythmProfileCardView` for rhythm modes (AC: #3, #4)
+  - [x] In `ForEach(TrainingDiscipline.allCases)`, branch on rhythm modes to render `RhythmProfileCardView` instead of `ProgressChartView`
+  - [x] Ensure both rhythm disciplines (`.rhythmOffsetDetection`, `.rhythmMatching`) each get their own card
+  - [x] Maintain existing pitch card rendering (no changes to `ProgressChartView`)
 
-- [ ] Task 3: Adapt `RhythmSpectrogramView` for embedding (AC: #1)
-  - [ ] Remove the outer `.padding()` and `.background(.regularMaterial)` card chrome from `RhythmSpectrogramView` — that wrapper is now `RhythmProfileCardView`'s responsibility
-  - [ ] Remove the simple "Timing Accuracy" headline — the card provides the full headline
-  - [ ] Keep state handling: when `.noData`, return `EmptyView()` (card handles its own empty state separately)
-  - [ ] Ensure the spectrogram grid + legend still render correctly when embedded
+- [x] Task 3: Adapt `RhythmSpectrogramView` for embedding (AC: #1)
+  - [x] Remove the outer `.padding()` and `.background(.regularMaterial)` card chrome from `RhythmSpectrogramView` — that wrapper is now `RhythmProfileCardView`'s responsibility
+  - [x] Remove the simple "Timing Accuracy" headline — the card provides the full headline
+  - [x] Keep state handling: when `.noData`, return `EmptyView()` (card handles its own empty state separately)
+  - [x] Ensure the spectrogram grid + legend still render correctly when embedded
 
-- [ ] Task 4: Format EWMA and stddev for rhythm (ms units) (AC: #1, #2)
-  - [ ] EWMA format: value in ms with 1 decimal, e.g., "12.3 ms" — do NOT use `Cents().formatted()` (that's pitch-specific)
-  - [ ] StdDev format: "±4.1 ms"
-  - [ ] Empty state: "— ms" with no stddev or trend
+- [x] Task 4: Format EWMA and stddev for rhythm (ms units) (AC: #1, #2)
+  - [x] EWMA format: value in ms with 1 decimal, e.g., "12.3 ms" — do NOT use `Cents().formatted()` (that's pitch-specific)
+  - [x] StdDev format: "±4.1 ms"
+  - [x] Empty state: "— ms" with no stddev or trend
 
-- [ ] Task 5: Add German localizations (AC: all)
-  - [ ] Use `bin/add-localization.swift --missing` to check for missing keys
-  - [ ] Add translations for new strings: "Rhythm", empty state placeholder text, share label, accessibility labels
+- [x] Task 5: Add German localizations (AC: all)
+  - [x] Use `bin/add-localization.swift --missing` to check for missing keys
+  - [x] Add translations for new strings: "Rhythm", empty state placeholder text, share label, accessibility labels
 
-- [ ] Task 6: Run full test suite
-  - [ ] `bin/test.sh` — zero regressions
+- [x] Task 6: Run full test suite
+  - [x] `bin/test.sh` — zero regressions
 
 ## Dev Notes
 
@@ -228,10 +228,30 @@ Peach/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `RhythmProfileCardView` mirroring `ProgressChartView` structure: headline row with config.displayName, EWMA (ms), stddev, trend arrow, and share button; embedded `RhythmSpectrogramView` below
+- Empty state shows "—" dash with placeholder text per UX-DR5 (departure from pitch cards which use `EmptyView()`)
+- Adapted `RhythmSpectrogramView` to be a pure content component: removed `.padding()`, `.background(.regularMaterial)` card chrome, and "Timing Accuracy" headline; retained `.noData → EmptyView()` guard
+- ms formatting via `formatRhythmEWMA`/`formatRhythmStdDev` static methods (not `Cents().formatted()`)
+- Share image rendered via `ImageRenderer` on a private `RhythmProfileCardExportView` (spectrogram is not a Charts chart, so `ChartImageRenderer.render` doesn't apply)
+- `ProfileScreen` branches on `.rhythmOffsetDetection`/`.rhythmMatching` to render `RhythmProfileCardView`; rhythm cards render unconditionally (handle own empty state); pitch cards unchanged
+- Added German translations for 2 new localization keys
+- All 1380 tests pass, zero regressions
+
 ### File List
+
+- Peach/Profile/RhythmProfileCardView.swift (NEW)
+- Peach/Profile/RhythmSpectrogramView.swift (MODIFIED)
+- Peach/Profile/ProfileScreen.swift (MODIFIED)
+- Peach/Resources/Localizable.xcstrings (MODIFIED)
+- docs/implementation-artifacts/51-2-rhythm-profile-card-and-profile-screen-integration.md (MODIFIED)
+- docs/implementation-artifacts/sprint-status.yaml (MODIFIED)
+
+### Change Log
+
+- 2026-03-21: Implemented story 51.2 — RhythmProfileCardView and Profile Screen Integration

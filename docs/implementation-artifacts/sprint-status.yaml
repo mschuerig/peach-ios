@@ -397,4 +397,5 @@ development_status:
   # Epic 51: See Your Rhythm — Profile Visualization
   epic-51: in-progress
   51-1-rhythm-spectrogram-view: done
-  51-2-rhythm-profile-card-and-profile-screen-integration: ready-for-dev
+  51-2-rhythm-profile-card-and-profile-screen-integration: review
+  51-3-spectrogram-accuracy-thresholds: ready-for-dev

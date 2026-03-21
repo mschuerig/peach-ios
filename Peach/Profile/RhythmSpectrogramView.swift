@@ -26,24 +26,16 @@ struct RhythmSpectrogramView: View {
         let buckets = progressTimeline.allGranularityBuckets(for: mode)
         let data = SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
 
-        return VStack(alignment: .leading, spacing: 12) {
-            headlineRow
+        return Group {
             if !data.trainedRanges.isEmpty {
-                spectrogramGrid(data: data, buckets: buckets)
-                legend
+                VStack(alignment: .leading, spacing: 12) {
+                    spectrogramGrid(data: data, buckets: buckets)
+                    legend
+                }
             }
         }
-        .padding()
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(String(localized: "Rhythm spectrogram for \(mode.config.displayName)"))
-    }
-
-    // MARK: - Headline
-
-    private var headlineRow: some View {
-        Text(String(localized: "Timing Accuracy"))
-            .font(.headline)
     }
 
     // MARK: - Grid

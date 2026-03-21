@@ -19,9 +19,14 @@ struct ProfileScreen: View {
                     TipView(currentTip)
                 }
                 ForEach(TrainingDiscipline.allCases, id: \.self) { mode in
-                    let state = progressTimeline.state(for: mode)
-                    if state != .noData {
-                        ProgressChartView(mode: mode)
+                    switch mode {
+                    case .rhythmOffsetDetection, .rhythmMatching:
+                        RhythmProfileCardView(mode: mode)
+                    default:
+                        let state = progressTimeline.state(for: mode)
+                        if state != .noData {
+                            ProgressChartView(mode: mode)
+                        }
                     }
                 }
             }
