@@ -17,8 +17,15 @@ struct RhythmOffset: Hashable, Sendable, Codable {
         duration < .zero ? .early : .late
     }
 
+    /// Absolute offset in milliseconds, ignoring direction.
+    var absoluteMilliseconds: Double {
+        let absDuration = duration < .zero ? .zero - duration : duration
+        return absDuration.timeInterval * 1000.0
+    }
+
     /// Offset as percentage of one sixteenth note at the given tempo (FR87).
     func percentageOfSixteenthNote(at tempo: TempoBPM) -> Double {
         let absDuration = duration < .zero ? .zero - duration : duration
         return (absDuration / tempo.sixteenthNoteDuration) * 100.0
-    }}
+    }
+}

@@ -45,9 +45,7 @@ final class RhythmMatchingSession: TrainingSession {
     }
 
     var lastUserOffsetMs: Double? {
-        guard let trial = lastCompletedTrial else { return nil }
-        let absDuration = trial.userOffset.duration < .zero ? .zero - trial.userOffset.duration : trial.userOffset.duration
-        return Double(absDuration.components.attoseconds) / 1e15
+        lastCompletedTrial?.userOffset.absoluteMilliseconds
     }
 
     // MARK: - Initialization

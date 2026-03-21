@@ -11,6 +11,23 @@ struct RhythmStatsViewTests {
         #expect(RhythmStatsView.percentageText(0.7) == "1%")
     }
 
+    @Test("percentageText includes ms when provided")
+    func percentageTextWithMs() async {
+        #expect(RhythmStatsView.percentageText(8.0, ms: 12.0) == "8% (12 ms)")
+    }
+
+    @Test("percentageText omits ms when nil")
+    func percentageTextWithoutMs() async {
+        #expect(RhythmStatsView.percentageText(8.0, ms: nil) == "8%")
+    }
+
+    @Test("msText rounds and appends unit")
+    func msTextFormatting() async {
+        #expect(RhythmStatsView.msText(12.4) == "12 ms")
+        #expect(RhythmStatsView.msText(12.6) == "13 ms")
+        #expect(RhythmStatsView.msText(0.0) == "0 ms")
+    }
+
     @Test("trend symbols match expected SF Symbols")
     func trendSymbols() async {
         #expect(RhythmStatsView.trendSymbol(.improving) == "arrow.down.right")

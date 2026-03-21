@@ -53,9 +53,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     }
 
     var lastCompletedOffsetMs: Double? {
-        guard let trial = lastCompletedTrial else { return nil }
-        let absDuration = trial.offset.duration < .zero ? .zero - trial.offset.duration : trial.offset.duration
-        return Double(absDuration.components.attoseconds) / 1e15
+        lastCompletedTrial?.offset.absoluteMilliseconds
     }
 
     // MARK: - Initialization
@@ -121,8 +119,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
         if isCorrect {
             let pct = trial.offset.percentageOfSixteenthNote(at: trial.tempo)
-            let absDuration = trial.offset.duration < .zero ? .zero - trial.offset.duration : trial.offset.duration
-            let ms = Double(absDuration.components.attoseconds) / 1e15
+            let ms = trial.offset.absoluteMilliseconds
             if let best = sessionBestOffsetPercentage {
                 if pct < best {
                     sessionBestOffsetPercentage = pct

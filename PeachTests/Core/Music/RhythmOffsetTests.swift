@@ -47,6 +47,32 @@ struct RhythmOffsetTests {
         let percentage = offset.percentageOfSixteenthNote(at: TempoBPM(120))
         #expect(percentage == 10.0)
     }
+    // MARK: - absoluteMilliseconds
+
+    @Test("absoluteMilliseconds returns positive value for positive offset")
+    func absoluteMillisecondsPositive() async {
+        let offset = RhythmOffset(.milliseconds(42))
+        #expect(offset.absoluteMilliseconds == 42.0)
+    }
+
+    @Test("absoluteMilliseconds returns positive value for negative offset")
+    func absoluteMillisecondsNegative() async {
+        let offset = RhythmOffset(.milliseconds(-42))
+        #expect(offset.absoluteMilliseconds == 42.0)
+    }
+
+    @Test("absoluteMilliseconds handles durations exceeding one second")
+    func absoluteMillisecondsOverOneSecond() async {
+        let offset = RhythmOffset(.milliseconds(1200))
+        #expect(offset.absoluteMilliseconds == 1200.0)
+    }
+
+    @Test("absoluteMilliseconds is zero for zero offset")
+    func absoluteMillisecondsZero() async {
+        let offset = RhythmOffset(.zero)
+        #expect(offset.absoluteMilliseconds == 0.0)
+    }
+
     // MARK: - Codable
 
     @Test("Round-trip encode and decode preserves duration")

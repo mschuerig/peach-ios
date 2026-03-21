@@ -1,6 +1,6 @@
 # Story 50.3: Settings Screen Tempo Stepper
 
-Status: review
+Status: done
 
 ## Story
 
