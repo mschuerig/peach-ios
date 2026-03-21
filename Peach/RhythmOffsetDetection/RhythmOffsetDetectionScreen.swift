@@ -1,0 +1,227 @@
+import SwiftUI
+import os
+
+struct RhythmOffsetDetectionScreen: View {
+    @Environment(\.rhythmOffsetDetectionSession) private var session
+    @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
+
+    @State private var showHelpSheet = false
+
+    private let logger = Logger(subsystem: "com.peach.app", category: "RhythmOffsetDetectionScreen")
+
+    static let helpSections: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Goal"),
+            body: String(localized: "You'll hear four clicks — a short rhythmic pattern. The last click may arrive slightly **early** or **late**. Your job is to decide which one it was.")
+        ),
+        HelpSection(
+            title: String(localized: "Controls"),
+            body: String(localized: "Once the pattern finishes, the **Early** and **Late** buttons become active. Tap the one that matches what you heard.")
+        ),
+        HelpSection(
+            title: String(localized: "Feedback"),
+            body: String(localized: "After each answer you'll see a **checkmark** (correct) or **X** (incorrect), along with the current difficulty as a percentage.")
+        ),
+        HelpSection(
+            title: String(localized: "Difficulty"),
+            body: String(localized: "The percentage shows how far off-beat the last click was — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
+        ),
+    ]
+
+    private var isCompactHeight: Bool {
+        verticalSizeClass == .compact
+    }
+
+    var body: some View {
+        VStack(spacing: 8) {
+            statsHeader
+            RhythmDotView(litCount: session.litDotCount)
+                .padding(.vertical, 8)
+            answerButtonsGroup
+        }
+        .padding()
+        .navigationTitle("Rhythm")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar { toolbarContent }
+        .sheet(isPresented: $showHelpSheet) { helpSheetContent }
+        .onChange(of: showHelpSheet) { _, isShowing in
+            if isShowing {
+                logger.info("Help sheet shown - stopping training")
+                session.stop()
+            } else {
+                logger.info("Help sheet dismissed - restarting training")
+                session.start(settings: RhythmOffsetDetectionSettings())
+            }
+        }
+        .onAppear {
+            logger.info("RhythmOffsetDetectionScreen appeared - (re)starting training")
+            session.stop()
+            session.start(settings: RhythmOffsetDetectionSettings())
+        }
+        .onDisappear {
+            logger.info("RhythmOffsetDetectionScreen disappeared - stopping training")
+            session.stop()
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var statsHeader: some View {
+        HStack(alignment: .top) {
+            RhythmStatsView(
+                latestValue: session.lastCompletedOffsetPercentage,
+                sessionBest: session.sessionBestOffsetPercentage,
+                trend: progressTimeline.trend(for: .rhythmOffsetDetection)
+            )
+
+            Spacer()
+
+            RhythmOffsetDetectionFeedbackView(
+                isCorrect: session.isLastAnswerCorrect,
+                offsetPercentage: session.lastCompletedOffsetPercentage
+            )
+            .opacity(session.showFeedback ? 1 : 0)
+            .accessibilityHidden(!session.showFeedback)
+            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: session.showFeedback)
+        }
+        .padding(.horizontal)
+    }
+
+    private var answerButtonsGroup: some View {
+        HStack(spacing: 8) {
+            answerButton(direction: .early)
+            answerButton(direction: .late)
+        }
+    }
+
+    @ToolbarContentBuilder
+    private var toolbarContent: some ToolbarContent {
+        ToolbarItem(placement: .navigationBarTrailing) {
+            HStack(spacing: 20) {
+                Button {
+                    showHelpSheet = true
+                } label: {
+                    Label("Help", systemImage: "questionmark.circle")
+                }
+
+                NavigationLink(value: NavigationDestination.settings) {
+                    Image(systemName: "gearshape")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Settings")
+
+                NavigationLink(value: NavigationDestination.profile) {
+                    Image(systemName: "chart.xyaxis.line")
+                        .imageScale(.large)
+                }
+                .accessibilityLabel("Profile")
+            }
+        }
+    }
+
+    private var helpSheetContent: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: 24) {
+                    HelpContentView(sections: Self.helpSections)
+                }
+                .padding()
+            }
+            .navigationTitle(String(localized: "Training Help"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "Done")) {
+                        showHelpSheet = false
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Button Views
+
+    private enum AnswerDirection {
+        case early, late
+
+        var rhythmDirection: RhythmDirection {
+            switch self {
+            case .early: .early
+            case .late: .late
+            }
+        }
+
+        var iconName: String {
+            switch self {
+            case .early: "arrow.left"
+            case .late: "arrow.right"
+            }
+        }
+
+        var label: LocalizedStringKey {
+            switch self {
+            case .early: "Early"
+            case .late: "Late"
+            }
+        }
+    }
+
+    private func answerButton(direction: AnswerDirection) -> some View {
+        Button {
+            session.handleAnswer(direction: direction.rhythmDirection)
+        } label: {
+            VStack(spacing: 12) {
+                Image(systemName: direction.iconName)
+                    .font(.system(size: Self.buttonIconSize(isCompact: isCompactHeight)))
+                Text(direction.label)
+                    .font(Self.buttonTextFont(isCompact: isCompactHeight))
+                    .fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(minHeight: Self.buttonMinHeight(isCompact: isCompactHeight))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.borderedProminent)
+        .buttonBorderShape(.roundedRectangle(radius: 12))
+        .disabled(!buttonsEnabled)
+        .accessibilityLabel(direction.label)
+    }
+
+    // MARK: - Layout Parameters (extracted for testability)
+
+    static func buttonIconSize(isCompact: Bool) -> CGFloat {
+        isCompact ? 60 : 80
+    }
+
+    static func buttonMinHeight(isCompact: Bool) -> CGFloat {
+        isCompact ? 120 : 200
+    }
+
+    static func buttonTextFont(isCompact: Bool) -> Font {
+        isCompact ? .title2 : .title
+    }
+
+    // MARK: - Helpers
+
+    private var buttonsEnabled: Bool {
+        session.state == .awaitingAnswer
+    }
+
+    static func feedbackAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.2)
+    }
+
+    static func buttonsEnabled(state: RhythmOffsetDetectionSessionState) -> Bool {
+        state == .awaitingAnswer
+    }
+}
+
+// MARK: - Previews
+
+#Preview {
+    NavigationStack {
+        RhythmOffsetDetectionScreen()
+    }
+}

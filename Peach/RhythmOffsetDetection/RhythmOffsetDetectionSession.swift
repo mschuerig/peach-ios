@@ -20,6 +20,8 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     private(set) var state: RhythmOffsetDetectionSessionState = .idle
     private(set) var showFeedback: Bool = false
     private(set) var isLastAnswerCorrect: Bool? = nil
+    private(set) var litDotCount: Int = 0
+    private(set) var sessionBestOffsetPercentage: Double? = nil
 
     // MARK: - Dependencies
 
@@ -41,6 +43,11 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
     var currentOffsetPercentage: Double? {
         guard let trial = currentTrial else { return nil }
+        return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
+    }
+
+    var lastCompletedOffsetPercentage: Double? {
+        guard let trial = lastCompletedTrial else { return nil }
         return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
     }
 
@@ -104,6 +111,16 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         )
 
         lastCompletedTrial = completed
+
+        if isCorrect {
+            let pct = trial.offset.percentageOfSixteenthNote(at: trial.tempo)
+            if let best = sessionBestOffsetPercentage {
+                sessionBestOffsetPercentage = min(best, pct)
+            } else {
+                sessionBestOffsetPercentage = pct
+            }
+        }
+
         recordTrial(completed)
         transitionToFeedback(settings: settings)
     }
@@ -134,6 +151,8 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
         showFeedback = false
         isLastAnswerCorrect = nil
+        litDotCount = 0
+        sessionBestOffsetPercentage = nil
     }
 
     // MARK: - Private Implementation
@@ -164,6 +183,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
         do {
             state = .playingPattern
+            litDotCount = 0
             let handle = try await rhythmPlayer.play(pattern)
             currentHandle = handle
 
@@ -172,7 +192,17 @@ final class RhythmOffsetDetectionSession: TrainingSession {
                 return
             }
 
-            try await Task.sleep(for: pattern.totalDuration)
+            // Animate dots at note onset times
+            let sixteenthDuration = settings.tempo.sixteenthNoteDuration
+            for i in 0..<4 {
+                guard state != .idle && !Task.isCancelled else { return }
+                litDotCount = i + 1
+                if i < 3 {
+                    try await Task.sleep(for: sixteenthDuration)
+                }
+            }
+            // Wait remaining time for 4th note to ring
+            try await Task.sleep(for: sixteenthDuration)
 
             guard state != .idle && !Task.isCancelled else {
                 logger.info("Training stopped after pattern completed, aborting")

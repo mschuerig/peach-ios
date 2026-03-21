@@ -287,4 +287,152 @@ struct RhythmOffsetDetectionSessionTests {
 
         #expect(f.session.currentOffsetPercentage == nil)
     }
+
+    // MARK: - litDotCount Tests
+
+    @Test("litDotCount starts at 0")
+    func litDotCountStartsAtZero() {
+        let f = makeSession()
+        #expect(f.session.litDotCount == 0)
+    }
+
+    @Test("litDotCount increments during pattern playback")
+    func litDotCountIncrementsDuringPlayback() async throws {
+        let f = makeSession()
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        // After pattern completes, litDotCount should be 4
+        #expect(f.session.litDotCount == 4)
+    }
+
+    @Test("litDotCount resets on stop")
+    func litDotCountResetsOnStop() async throws {
+        let f = makeSession()
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.stop()
+        #expect(f.session.litDotCount == 0)
+    }
+
+    @Test("litDotCount resets at start of new trial")
+    func litDotCountResetsAtNewTrial() async throws {
+        let f = makeSession()
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        #expect(f.session.litDotCount == 4)
+
+        // Answer to trigger next trial
+        f.session.handleAnswer(direction: .late)
+        await f.mockPlayer.waitForPlay(minCount: 2)
+
+        // After second trial completes, litDotCount should be 4 again
+        // (it was reset to 0 before the new trial started, then incremented back to 4)
+        try await waitForState(f.session, .awaitingAnswer)
+        #expect(f.session.litDotCount == 4)
+    }
+
+    // MARK: - lastCompletedOffsetPercentage Tests
+
+    @Test("lastCompletedOffsetPercentage is nil initially")
+    func lastCompletedOffsetPercentageNilInitially() {
+        let f = makeSession()
+        #expect(f.session.lastCompletedOffsetPercentage == nil)
+    }
+
+    @Test("lastCompletedOffsetPercentage returns value after answer")
+    func lastCompletedOffsetPercentageAfterAnswer() async throws {
+        let trial = RhythmOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: RhythmOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial)
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.handleAnswer(direction: .late)
+
+        let percentage = f.session.lastCompletedOffsetPercentage
+        #expect(percentage != nil)
+        #expect(percentage! > 0)
+    }
+
+    @Test("lastCompletedOffsetPercentage resets on stop")
+    func lastCompletedOffsetPercentageResetsOnStop() async throws {
+        let f = makeSession()
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.handleAnswer(direction: .late)
+        #expect(f.session.lastCompletedOffsetPercentage != nil)
+
+        f.session.stop()
+        #expect(f.session.lastCompletedOffsetPercentage == nil)
+    }
+
+    // MARK: - sessionBestOffsetPercentage Tests
+
+    @Test("sessionBestOffsetPercentage is nil initially")
+    func sessionBestNilInitially() {
+        let f = makeSession()
+        #expect(f.session.sessionBestOffsetPercentage == nil)
+    }
+
+    @Test("sessionBestOffsetPercentage updates on correct answer")
+    func sessionBestUpdatesOnCorrectAnswer() async throws {
+        let trial = RhythmOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: RhythmOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial)
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.handleAnswer(direction: .late) // correct answer
+
+        #expect(f.session.sessionBestOffsetPercentage != nil)
+        #expect(f.session.sessionBestOffsetPercentage! > 0)
+    }
+
+    @Test("sessionBestOffsetPercentage does not update on incorrect answer")
+    func sessionBestDoesNotUpdateOnIncorrect() async throws {
+        let trial = RhythmOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: RhythmOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial)
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.handleAnswer(direction: .early) // wrong answer
+
+        #expect(f.session.sessionBestOffsetPercentage == nil)
+    }
+
+    @Test("sessionBestOffsetPercentage resets on stop")
+    func sessionBestResetsOnStop() async throws {
+        let trial = RhythmOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: RhythmOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial)
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.handleAnswer(direction: .late)
+        #expect(f.session.sessionBestOffsetPercentage != nil)
+
+        f.session.stop()
+        #expect(f.session.sessionBestOffsetPercentage == nil)
+    }
 }

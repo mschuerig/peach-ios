@@ -380,4 +380,4 @@ development_status:
   epic-48: in-progress
   48-1-nextrhythmoffsetdetectionstrategy-protocol-and-initial-implementation: done
   48-2-rhythmoffsetdetectionsession-state-machine: done
-  48-3-rhythmoffsetdetectionscreen-with-dot-visualization: ready-for-dev
+  48-3-rhythmoffsetdetectionscreen-with-dot-visualization: review

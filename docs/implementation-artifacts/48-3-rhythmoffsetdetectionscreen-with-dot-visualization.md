@@ -1,6 +1,6 @@
 # Story 48.3: RhythmOffsetDetectionScreen with Dot Visualization
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,73 +26,73 @@ so that I can train my ability to detect timing deviations.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add observable properties to `RhythmOffsetDetectionSession` (AC: #2, #5)
-  - [ ] Add `private(set) var litDotCount: Int = 0` — incremented at each note onset during `playingPattern`
-  - [ ] Make `lastCompletedTrial` accessible: add `var lastCompletedOffsetPercentage: Double?` computed property
-  - [ ] Add `private(set) var sessionBestOffsetPercentage: Double?` — smallest percentage answered correctly
-  - [ ] Update `playNextTrial()` to animate `litDotCount`: reset to 0 before play, increment at each sixteenth-note interval using `Task.sleep(for:)` between increments
-  - [ ] Reset `litDotCount` to 0 in `stop()` and when starting new trial
-  - [ ] Update `sessionBestOffsetPercentage` in `handleAnswer()` when answer is correct
+- [x] Task 1: Add observable properties to `RhythmOffsetDetectionSession` (AC: #2, #5)
+  - [x] Add `private(set) var litDotCount: Int = 0` — incremented at each note onset during `playingPattern`
+  - [x] Make `lastCompletedTrial` accessible: add `var lastCompletedOffsetPercentage: Double?` computed property
+  - [x] Add `private(set) var sessionBestOffsetPercentage: Double?` — smallest percentage answered correctly
+  - [x] Update `playNextTrial()` to animate `litDotCount`: reset to 0 before play, increment at each sixteenth-note interval using `Task.sleep(for:)` between increments
+  - [x] Reset `litDotCount` to 0 in `stop()` and when starting new trial
+  - [x] Update `sessionBestOffsetPercentage` in `handleAnswer()` when answer is correct
 
-- [ ] Task 2: Create `RhythmDotView` subview (AC: #1, #2)
-  - [ ] Create `Peach/RhythmOffsetDetection/RhythmDotView.swift`
-  - [ ] `struct RhythmDotView: View` with `let litCount: Int` parameter (0-4)
-  - [ ] 4 horizontal circles, ~16pt diameter, ~24pt spacing
-  - [ ] Each dot: opacity 1.0 if index < litCount, else opacity 0.2
-  - [ ] No animation (instant transition matching percussive attack)
-  - [ ] `.accessibilityHidden(true)` on the entire view
+- [x] Task 2: Create `RhythmDotView` subview (AC: #1, #2)
+  - [x] Create `Peach/RhythmOffsetDetection/RhythmDotView.swift`
+  - [x] `struct RhythmDotView: View` with `let litCount: Int` parameter (0-4)
+  - [x] 4 horizontal circles, ~16pt diameter, ~24pt spacing
+  - [x] Each dot: opacity 1.0 if index < litCount, else opacity 0.2
+  - [x] No animation (instant transition matching percussive attack)
+  - [x] `.accessibilityHidden(true)` on the entire view
 
-- [ ] Task 3: Create `RhythmOffsetDetectionFeedbackView` subview (AC: #5, #6)
-  - [ ] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionFeedbackView.swift`
-  - [ ] Shows checkmark/cross icon + difficulty percentage text (e.g., "4%")
-  - [ ] Parameters: `isCorrect: Bool?`, `offsetPercentage: Double?`
-  - [ ] VoiceOver: announces "Correct, 4 percent" or "Incorrect, 4 percent"
-  - [ ] Hidden placeholder when `isCorrect == nil` (same pattern as `PitchDiscriminationFeedbackIndicator`)
+- [x] Task 3: Create `RhythmOffsetDetectionFeedbackView` subview (AC: #5, #6)
+  - [x] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionFeedbackView.swift`
+  - [x] Shows checkmark/cross icon + difficulty percentage text (e.g., "4%")
+  - [x] Parameters: `isCorrect: Bool?`, `offsetPercentage: Double?`
+  - [x] VoiceOver: announces "Correct, 4 percent" or "Incorrect, 4 percent"
+  - [x] Hidden placeholder when `isCorrect == nil` (same pattern as `PitchDiscriminationFeedbackIndicator`)
 
-- [ ] Task 4: Create `RhythmOffsetDetectionScreen` (AC: #1, #3, #4, #6, #7)
-  - [ ] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionScreen.swift`
-  - [ ] `@Environment(\.rhythmOffsetDetectionSession)` — already wired in PeachApp
-  - [ ] `@Environment(\.progressTimeline)` — for trend display
-  - [ ] `@Environment(\.accessibilityReduceMotion)` — for feedback animation
-  - [ ] `@Environment(\.verticalSizeClass)` — for landscape adaptation
-  - [ ] `@State private var showHelpSheet = false`
-  - [ ] Layout: `VStack` with stats header + dots + answer buttons
-  - [ ] Stats header: `HStack` with summary stats (latest %, session best %, trend) + feedback indicator
-  - [ ] Answer buttons: side-by-side `HStack`, each `.borderedProminent`, half width
-  - [ ] Buttons: SF Symbols `arrow.left` ("Early") and `arrow.right` ("Late")
-  - [ ] Buttons disabled unless `session.state == .awaitingAnswer`
-  - [ ] Button action: `session.handleAnswer(direction: .early/.late)`
-  - [ ] Lifecycle: `onAppear` → stop + start, `onDisappear` → stop
-  - [ ] Help sheet: stops/restarts training on show/dismiss
-  - [ ] Toolbar: help button + settings + profile navigation links
-  - [ ] Landscape: buttons side-by-side (same in both orientations since they're already side-by-side)
+- [x] Task 4: Create `RhythmOffsetDetectionScreen` (AC: #1, #3, #4, #6, #7)
+  - [x] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionScreen.swift`
+  - [x] `@Environment(\.rhythmOffsetDetectionSession)` — already wired in PeachApp
+  - [x] `@Environment(\.progressTimeline)` — for trend display
+  - [x] `@Environment(\.accessibilityReduceMotion)` — for feedback animation
+  - [x] `@Environment(\.verticalSizeClass)` — for landscape adaptation
+  - [x] `@State private var showHelpSheet = false`
+  - [x] Layout: `VStack` with stats header + dots + answer buttons
+  - [x] Stats header: `HStack` with summary stats (latest %, session best %, trend) + feedback indicator
+  - [x] Answer buttons: side-by-side `HStack`, each `.borderedProminent`, half width
+  - [x] Buttons: SF Symbols `arrow.left` ("Early") and `arrow.right` ("Late")
+  - [x] Buttons disabled unless `session.state == .awaitingAnswer`
+  - [x] Button action: `session.handleAnswer(direction: .early/.late)`
+  - [x] Lifecycle: `onAppear` → stop + start, `onDisappear` → stop
+  - [x] Help sheet: stops/restarts training on show/dismiss
+  - [x] Toolbar: help button + settings + profile navigation links
+  - [x] Landscape: buttons side-by-side (same in both orientations since they're already side-by-side)
 
-- [ ] Task 5: Create rhythm-specific summary stat view (AC: #1)
-  - [ ] Create `Peach/RhythmOffsetDetection/RhythmStatsView.swift` (or adapt inline in screen)
-  - [ ] Display latest offset percentage and session best as "X%" format
-  - [ ] Include trend arrow from `progressTimeline.trend(for: .rhythmOffsetDetection)`
-  - [ ] Accessibility: "Latest result: 4 percent" / "Best result: 2 percent"
-  - [ ] Hidden when no data yet (same opacity pattern as `TrainingStatsView`)
+- [x] Task 5: Create rhythm-specific summary stat view (AC: #1)
+  - [x] Create `Peach/RhythmOffsetDetection/RhythmStatsView.swift` (or adapt inline in screen)
+  - [x] Display latest offset percentage and session best as "X%" format
+  - [x] Include trend arrow from `progressTimeline.trend(for: .rhythmOffsetDetection)`
+  - [x] Accessibility: "Latest result: 4 percent" / "Best result: 2 percent"
+  - [x] Hidden when no data yet (same opacity pattern as `TrainingStatsView`)
 
-- [ ] Task 6: Add `NavigationDestination.rhythmOffsetDetection` (AC: #1)
-  - [ ] Add `case rhythmOffsetDetection` to `NavigationDestination` enum
-  - [ ] Add routing in `StartScreen.swift` `.navigationDestination(for:)` switch: `case .rhythmOffsetDetection: RhythmOffsetDetectionScreen()`
-  - [ ] Do NOT add Start Screen button yet (that's Epic 50)
+- [x] Task 6: Add `NavigationDestination.rhythmOffsetDetection` (AC: #1)
+  - [x] Add `case rhythmOffsetDetection` to `NavigationDestination` enum
+  - [x] Add routing in `StartScreen.swift` `.navigationDestination(for:)` switch: `case .rhythmOffsetDetection: RhythmOffsetDetectionScreen()`
+  - [x] Do NOT add Start Screen button yet (that's Epic 50)
 
-- [ ] Task 7: Add help sections for rhythm training (AC: #1)
-  - [ ] Define `static let helpSections: [HelpSection]` on `RhythmOffsetDetectionScreen`
-  - [ ] Sections: Goal, Controls, Feedback, Difficulty — adapted for rhythm context
+- [x] Task 7: Add help sections for rhythm training (AC: #1)
+  - [x] Define `static let helpSections: [HelpSection]` on `RhythmOffsetDetectionScreen`
+  - [x] Sections: Goal, Controls, Feedback, Difficulty — adapted for rhythm context
 
-- [ ] Task 8: Write tests (AC: all)
-  - [ ] Test `RhythmDotView` layout parameters (static methods)
-  - [ ] Test `RhythmOffsetDetectionFeedbackView` accessibility labels (static methods)
-  - [ ] Test session `litDotCount` increments during pattern playback
-  - [ ] Test session `sessionBestOffsetPercentage` updates on correct answer
-  - [ ] Test session `lastCompletedOffsetPercentage` returns correct value
-  - [ ] Test buttons enabled/disabled based on session state (static helper)
+- [x] Task 8: Write tests (AC: all)
+  - [x] Test `RhythmDotView` layout parameters (static methods)
+  - [x] Test `RhythmOffsetDetectionFeedbackView` accessibility labels (static methods)
+  - [x] Test session `litDotCount` increments during pattern playback
+  - [x] Test session `sessionBestOffsetPercentage` updates on correct answer
+  - [x] Test session `lastCompletedOffsetPercentage` returns correct value
+  - [x] Test buttons enabled/disabled based on session state (static helper)
 
-- [ ] Task 9: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 9: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions (1294 passed)
 
 ## Dev Notes
 
@@ -285,10 +285,40 @@ PeachTests/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Task 1: Added `litDotCount`, `lastCompletedOffsetPercentage`, `sessionBestOffsetPercentage` to session. Updated `playNextTrial()` with incremental dot animation using `Task.sleep(for:)` between sixteenth-note intervals. Reset properties in `stop()`. Updated `handleAnswer()` to track session best on correct answers.
+- Task 2: Created `RhythmDotView` with 4 horizontal circles (16pt diameter, 24pt spacing), opacity-based lit state, accessibilityHidden.
+- Task 3: Created `RhythmOffsetDetectionFeedbackView` with checkmark/cross icon + percentage text. VoiceOver announces "Correct/Incorrect, X percent". Hidden placeholder when no feedback.
+- Task 4: Created `RhythmOffsetDetectionScreen` mirroring `PitchDiscriminationScreen` structure. VStack layout with stats header, dots, and side-by-side Early/Late buttons. Buttons disabled unless awaitingAnswer. Full lifecycle management and help sheet support.
+- Task 5: Created `RhythmStatsView` displaying latest/best offset percentages with trend arrow. Same opacity pattern as `TrainingStatsView`.
+- Task 6: Added `case rhythmOffsetDetection` to `NavigationDestination` and routing in `StartScreen`.
+- Task 7: Help sections (Goal, Controls, Feedback, Difficulty) defined as static property on screen.
+- Task 8: Created test files for RhythmDotView, RhythmOffsetDetectionFeedbackView, RhythmStatsView, and screen layout. Added session tests for litDotCount, lastCompletedOffsetPercentage, sessionBestOffsetPercentage.
+- Task 9: Full test suite passes — 1294 tests, 0 failures.
+
+### Change Log
+
+- 2026-03-21: Implemented story 48.3 — RhythmOffsetDetectionScreen with dot visualization, feedback, stats, and navigation routing
+
 ### File List
+
+New files:
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionScreen.swift
+- Peach/RhythmOffsetDetection/RhythmDotView.swift
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionFeedbackView.swift
+- Peach/RhythmOffsetDetection/RhythmStatsView.swift
+- PeachTests/RhythmOffsetDetection/RhythmDotViewTests.swift
+- PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionFeedbackViewTests.swift
+- PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionScreenLayoutTests.swift
+- PeachTests/RhythmOffsetDetection/RhythmStatsViewTests.swift
+
+Modified files:
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionSession.swift
+- Peach/App/NavigationDestination.swift
+- Peach/Start/StartScreen.swift
+- PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionSessionTests.swift
