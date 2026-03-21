@@ -1,6 +1,6 @@
 # Story 48.3: RhythmOffsetDetectionScreen with Dot Visualization
 
-Status: review
+Status: done
 
 ## Story
 
