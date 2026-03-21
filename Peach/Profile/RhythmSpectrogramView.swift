@@ -71,6 +71,26 @@ struct RhythmSpectrogramView: View {
                     }
                 }
 
+                // VoiceOver: per-column accessibility elements (spatially aligned with grid columns)
+                HStack(spacing: 0) {
+                    Color.clear.frame(width: 48)
+                    ForEach(Array(data.columns.enumerated()), id: \.offset) { columnIndex, column in
+                        Color.clear
+                            .frame(width: cellSize, height: 1)
+                            .accessibilityElement()
+                            .accessibilityLabel(Self.columnAccessibilityLabel(
+                                column: column,
+                                buckets: buckets,
+                                columnIndex: columnIndex,
+                                thresholds: thresholds
+                            ))
+                            .accessibilityAddTraits(.isButton)
+                            .accessibilityAction {
+                                selectedCell = SelectedCell(tempoRange: column.cells.first?.tempoRange ?? .slow, columnIndex: columnIndex)
+                            }
+                    }
+                }
+
                 // X-axis labels
                 HStack(spacing: 0) {
                     Color.clear.frame(width: 48)
@@ -84,23 +104,6 @@ struct RhythmSpectrogramView: View {
                 }
                 .foregroundStyle(.secondary)
                 .padding(.top, 2)
-
-                // VoiceOver: per-column accessibility elements
-                ForEach(Array(data.columns.enumerated()), id: \.offset) { columnIndex, column in
-                    Color.clear
-                        .frame(width: 1, height: 1)
-                        .accessibilityElement()
-                        .accessibilityLabel(Self.columnAccessibilityLabel(
-                            column: column,
-                            buckets: buckets,
-                            columnIndex: columnIndex,
-                            thresholds: thresholds
-                        ))
-                        .accessibilityAddTraits(.isButton)
-                        .accessibilityAction {
-                            selectedCell = SelectedCell(tempoRange: column.cells.first?.tempoRange ?? .slow, columnIndex: columnIndex)
-                        }
-                }
             }
         }
         .overlay {
@@ -132,12 +135,14 @@ struct RhythmSpectrogramView: View {
     // MARK: - Detail Overlay
 
     private func detailOverlay(selected: SelectedCell, data: SpectrogramData, buckets: [TimeBucket]) -> some View {
-        let cell = data.columns[selected.columnIndex].cells.first { $0.tempoRange == selected.tempoRange }
+        let column = data.columns.indices.contains(selected.columnIndex) ? data.columns[selected.columnIndex] : nil
+        let cell = column?.cells.first { $0.tempoRange == selected.tempoRange }
+        let bucket = buckets.indices.contains(selected.columnIndex) ? buckets[selected.columnIndex] : nil
 
         return Group {
-            if let cell, cell.meanAccuracyPercent != nil {
+            if let cell, cell.meanAccuracyPercent != nil, let bucket {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(selected.tempoRange.displayName) – \(Self.columnDateLabel(buckets[selected.columnIndex]))")
+                    Text("\(selected.tempoRange.displayName) – \(Self.columnDateLabel(bucket))")
                         .font(.caption.bold())
 
                     if let early = cell.earlyStats {
@@ -234,7 +239,7 @@ struct RhythmSpectrogramView: View {
     }
 
     static func formatPercent(_ value: Double) -> String {
-        String(format: "%.1f%%", value)
+        (value / 100.0).formatted(.percent.precision(.fractionLength(1)))
     }
 }
 

@@ -95,8 +95,8 @@ struct SpectrogramDataTests {
         #expect(data.trainedRanges == [.slow, .fast])
     }
 
-    @Test("cells with no data have nil accuracy")
-    func emptyCellsHaveNilAccuracy() async {
+    @Test("untrained ranges are excluded from trainedRanges")
+    func untrainedRangesExcluded() async {
         let profile = makeProfileWithSlowAndFastData()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
@@ -104,11 +104,10 @@ struct SpectrogramDataTests {
             profile: profile,
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
-        // medium range has no data — all its cells should be nil
+        // medium range has no data — must not appear in trainedRanges or any cell
+        #expect(!data.trainedRanges.contains(.medium))
         for column in data.columns {
-            if let mediumCell = column.cells.first(where: { $0.tempoRange == .medium }) {
-                #expect(mediumCell.meanAccuracyPercent == nil)
-            }
+            #expect(!column.cells.contains(where: { $0.tempoRange == .medium }))
         }
     }
 

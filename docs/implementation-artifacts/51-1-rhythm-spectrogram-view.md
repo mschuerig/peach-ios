@@ -1,6 +1,6 @@
 # Story 51.1: RhythmSpectrogramView
 
-Status: review
+Status: done
 
 ## Story
 
