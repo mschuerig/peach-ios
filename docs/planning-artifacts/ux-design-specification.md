@@ -2038,15 +2038,27 @@ flowchart TD
 - Empty/transparent cells where no training occurred at that tempo in that time period
 - Square cells, sized to fit available width
 
-**Color scale (initial thresholds, parameterized for tuning):**
+**Color scale (calibrated thresholds, parameterized for tuning):**
 
-| Band | RhythmDeviation range | Color |
+Thresholds use a hybrid model: base percentages of the sixteenth note duration, clamped to absolute floor/ceiling values in milliseconds. This ensures thresholds remain musically meaningful and physically achievable across 40–200 BPM. At fast tempos, absolute floors prevent thresholds from dropping below iOS touch latency (~10–12 ms) or human motor resolution. At slow tempos, absolute ceilings prevent overly generous thresholds.
+
+| Parameter | Precise | Moderate |
 |---|---|---|
-| Precise | ≤ 5% | Green (system) |
-| Moderate | 5–15% | Yellow (system) |
-| Erratic | > 15% | Red (system) |
+| Base (% of sixteenth note) | 8% | 20% |
+| Floor (ms) | 12 | 25 |
+| Ceiling (ms) | 30 | 50 |
 
-Band count, threshold values, and BPM range are all parameterized — no hardcoded values. Expect significant fine-tuning.
+Formula: `thresholdMs = clamp(sixteenthMs × basePercent / 100, floor, ceiling)`
+
+| Band | Effective range (varies by tempo) | Color |
+|---|---|---|
+| Precise | ≤ threshold (12–30 ms depending on tempo) | Green (system) |
+| Moderate | between precise and moderate thresholds | Yellow (system) |
+| Erratic | > moderate threshold (25–50 ms depending on tempo) | Red (system) |
+
+**Calibration rationale (story 51.3):** Thresholds are informed by sensorimotor synchronization research — perception JND (~10–25 ms, Madison & Merker 2004), professional drummer steady-state SD (~10–20 ms, Butterfield 2010), and iOS touchscreen latency (~8–16 ms). Both rhythm training modes (offset detection and rhythm matching) share the same thresholds; the distinction between perception and production is captured by separate `TrainingDiscipline` values, not by different color scales.
+
+Band count, threshold values, and BPM range are all parameterized — no hardcoded values.
 
 **Tap interaction (FR92):** Tapping a cell shows early/late breakdown for that tempo and time period. Minimal overlay or popover — just the split statistics (early mean/stdDev, late mean/stdDev, sample count).
 

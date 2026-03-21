@@ -7,35 +7,80 @@ struct SpectrogramDataTests {
 
     // MARK: - Thresholds
 
-    @Test("default thresholds are 5% and 15%")
+    @Test("default thresholds have expected base percentages and clamp values")
     func defaultThresholds() async {
         let thresholds = SpectrogramThresholds.default
-        #expect(thresholds.preciseUpperBound == 5.0)
-        #expect(thresholds.moderateUpperBound == 15.0)
-    }
-
-    @Test("accuracy level returns precise for value at upper bound")
-    func accuracyLevelPrecise() async {
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 5.0)
-        #expect(level == .precise)
-    }
-
-    @Test("accuracy level returns moderate for value between bounds")
-    func accuracyLevelModerate() async {
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 10.0)
-        #expect(level == .moderate)
-    }
-
-    @Test("accuracy level returns erratic for value above moderate bound")
-    func accuracyLevelErratic() async {
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 20.0)
-        #expect(level == .erratic)
+        #expect(thresholds.preciseBasePercent == 8.0)
+        #expect(thresholds.moderateBasePercent == 20.0)
+        #expect(thresholds.preciseFloorMs == 12.0)
+        #expect(thresholds.moderateFloorMs == 25.0)
+        #expect(thresholds.preciseCeilingMs == 30.0)
+        #expect(thresholds.moderateCeilingMs == 50.0)
     }
 
     @Test("accuracy level returns nil for nil input")
     func accuracyLevelNil() async {
-        let level = SpectrogramThresholds.default.accuracyLevel(for: nil)
+        let level = SpectrogramThresholds.default.accuracyLevel(for: nil, tempoRange: .medium)
         #expect(level == nil)
+    }
+
+    @Test("at medium tempo, base percentages apply directly — 7% is precise")
+    func preciseAtMediumTempo() async {
+        // Medium midpoint = 100 BPM, sixteenth = 150ms
+        // precise threshold = clamp(150 * 0.08, 12, 30) = 12ms → 8.0%
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 7.0, tempoRange: .medium)
+        #expect(level == .precise)
+    }
+
+    @Test("at medium tempo, 15% is moderate")
+    func moderateAtMediumTempo() async {
+        // moderate threshold = clamp(150 * 0.20, 25, 50) = 30ms → 20.0%
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 15.0, tempoRange: .medium)
+        #expect(level == .moderate)
+    }
+
+    @Test("at medium tempo, 25% is erratic")
+    func erraticAtMediumTempo() async {
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 25.0, tempoRange: .medium)
+        #expect(level == .erratic)
+    }
+
+    @Test("at fast tempo, floor clamps precise threshold upward")
+    func floorClampsAtFastTempo() async {
+        // Fast midpoint = 160 BPM, sixteenth = 93.75ms
+        // precise threshold = clamp(93.75 * 0.08, 12, 30) = clamp(7.5, 12, 30) = 12ms → 12.8%
+        // 10% of 93.75ms = 9.375ms < 12ms floor, so 10% should still be precise
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 10.0, tempoRange: .fast)
+        #expect(level == .precise)
+    }
+
+    @Test("at fast tempo, moderate floor clamps upward")
+    func moderateFloorClampsAtFastTempo() async {
+        // moderate threshold = clamp(93.75 * 0.20, 25, 50) = clamp(18.75, 25, 50) = 25ms → 26.7%
+        // 22% of 93.75ms = 20.625ms < 25ms floor, so 22% should be moderate
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 22.0, tempoRange: .fast)
+        #expect(level == .moderate)
+    }
+
+    @Test("at slow tempo, ceiling clamps moderate threshold downward")
+    func ceilingClampsAtSlowTempo() async {
+        // Slow midpoint = 60 BPM, sixteenth = 250ms
+        // moderate threshold = clamp(250 * 0.20, 25, 50) = clamp(50, 25, 50) = 50ms → 20.0%
+        // At 40 BPM: sixteenth = 375ms, moderate = clamp(75, 25, 50) = 50ms → 13.3%
+        // So 15% at slow range should be erratic if midpoint is 60 BPM → moderate ceiling = 50/250*100 = 20% → 15% < 20% → moderate
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 15.0, tempoRange: .slow)
+        #expect(level == .moderate)
+    }
+
+    @Test("at fast tempo, floor widens precise band beyond base 8%")
+    func floorWidensPreciseBand() async {
+        // Fast midpoint = 160 BPM, sixteenth = 93.75ms
+        // Without floor: precise < 8.0%, moderate < 20.0%
+        // With floor: precise = 12ms → 12.8%, moderate = 25ms → 26.7%
+        // 12% is above the base 8% but below the floor-adjusted 12.8% → still precise
+        let thresholds = SpectrogramThresholds.default
+        let level = thresholds.accuracyLevel(for: 12.0, tempoRange: .fast)
+        #expect(level == .precise)
     }
 
     // MARK: - TempoRange midpointTempo

@@ -106,7 +106,7 @@ struct RhythmSpectrogramView: View {
     }
 
     private func cellView(cell: SpectrogramCell, size: CGFloat) -> some View {
-        let level = thresholds.accuracyLevel(for: cell.meanAccuracyPercent)
+        let level = thresholds.accuracyLevel(for: cell.meanAccuracyPercent, tempoRange: cell.tempoRange)
         let hasData = cell.meanAccuracyPercent != nil
 
         return Rectangle()
@@ -185,7 +185,7 @@ struct RhythmSpectrogramView: View {
     ) -> String {
         let dateLabel = columnDateLabel(buckets[columnIndex])
         let descriptions = column.cells.compactMap { cell -> String? in
-            guard let level = thresholds.accuracyLevel(for: cell.meanAccuracyPercent) else {
+            guard let level = thresholds.accuracyLevel(for: cell.meanAccuracyPercent, tempoRange: cell.tempoRange) else {
                 return "\(cell.tempoRange.displayName) \(String(localized: "no data"))"
             }
             let levelName = accuracyLevelName(level)

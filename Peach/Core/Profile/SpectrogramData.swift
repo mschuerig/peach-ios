@@ -4,17 +4,42 @@ import Foundation
 
 /// Parameterized color thresholds for spectrogram cells (UX-DR4).
 ///
-/// Values are percentages of one sixteenth note at the cell's tempo.
+/// Uses a hybrid model: base percentages of the sixteenth note duration,
+/// clamped to absolute floor/ceiling values in milliseconds. This ensures
+/// thresholds remain musically meaningful and physically achievable across
+/// the full 40–200 BPM range.
 struct SpectrogramThresholds: Sendable {
-    let preciseUpperBound: Double
-    let moderateUpperBound: Double
+    /// Base percentage of sixteenth note duration for "precise" boundary.
+    let preciseBasePercent: Double
+    /// Base percentage of sixteenth note duration for "moderate" boundary.
+    let moderateBasePercent: Double
+    /// Absolute floor in ms — precise threshold never goes below this.
+    let preciseFloorMs: Double
+    /// Absolute floor in ms — moderate threshold never goes below this.
+    let moderateFloorMs: Double
+    /// Absolute ceiling in ms — precise threshold never exceeds this.
+    let preciseCeilingMs: Double
+    /// Absolute ceiling in ms — moderate threshold never exceeds this.
+    let moderateCeilingMs: Double
 
-    static let `default` = SpectrogramThresholds(preciseUpperBound: 5.0, moderateUpperBound: 15.0)
+    static let `default` = SpectrogramThresholds(
+        preciseBasePercent: 8.0,
+        moderateBasePercent: 20.0,
+        preciseFloorMs: 12.0,
+        moderateFloorMs: 25.0,
+        preciseCeilingMs: 30.0,
+        moderateCeilingMs: 50.0
+    )
 
-    func accuracyLevel(for percentage: Double?) -> SpectrogramAccuracyLevel? {
+    func accuracyLevel(for percentage: Double?, tempoRange: TempoRange) -> SpectrogramAccuracyLevel? {
         guard let percentage else { return nil }
-        if percentage <= preciseUpperBound { return .precise }
-        if percentage <= moderateUpperBound { return .moderate }
+        let sixteenthMs = tempoRange.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
+        let preciseMs = min(max(sixteenthMs * preciseBasePercent / 100.0, preciseFloorMs), preciseCeilingMs)
+        let moderateMs = min(max(sixteenthMs * moderateBasePercent / 100.0, moderateFloorMs), moderateCeilingMs)
+        let effectivePrecisePercent = (preciseMs / sixteenthMs) * 100.0
+        let effectiveModeratePercent = (moderateMs / sixteenthMs) * 100.0
+        if percentage <= effectivePrecisePercent { return .precise }
+        if percentage <= effectiveModeratePercent { return .moderate }
         return .erratic
     }
 }
