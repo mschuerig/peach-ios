@@ -22,6 +22,21 @@ struct TempoRange: Hashable, Sendable, Comparable {
         lhs.lowerBound < rhs.lowerBound
     }
 
+    /// The BPM value at the center of this range, used for approximate conversions.
+    var midpointTempo: TempoBPM {
+        TempoBPM((lowerBound.value + upperBound.value + 1) / 2)
+    }
+
+    /// Localized display name for this tempo range.
+    var displayName: String {
+        switch self {
+        case .slow: String(localized: "Slow")
+        case .medium: String(localized: "Medium")
+        case .fast: String(localized: "Fast")
+        default: "\(lowerBound.value)–\(upperBound.value)"
+        }
+    }
+
     // MARK: - Default Ranges
 
     static let slow   = TempoRange(lowerBound: TempoBPM(40),  upperBound: TempoBPM(79))

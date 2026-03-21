@@ -1,6 +1,6 @@
 # Story 51.1: RhythmSpectrogramView
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,40 +22,40 @@ so that I can see how my timing precision evolves and identify which tempos need
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Design the spectrogram data model (AC: #1, #2, #3)
-  - [ ] Create `SpectrogramCell` value type: `tempo: TempoBPM`, `timeBucketIndex: Int`, `meanAccuracy: Double?` (nil = no data), `earlyStats: (mean: Double, stdDev: Double, count: Int)?`, `lateStats: (mean: Double, stdDev: Double, count: Int)?`
-  - [ ] Create `SpectrogramColumn` grouping cells by time bucket with a `date: Date` and `bucketSize: BucketSize`
-  - [ ] Create `SpectrogramData` type with methods: `columns: [SpectrogramColumn]`, `trainedTempos: [TempoBPM]`, computed from `ProgressTimeline` + `RhythmProfile`
-  - [ ] Define color threshold struct: `SpectrogramThresholds` with `preciseUpperBound: Double = 5.0`, `moderateUpperBound: Double = 15.0` (parameterized)
-  - [ ] Write tests for `SpectrogramData` computation: correct tempo filtering, cell accuracy mapping, empty cell handling
+- [x] Task 1: Design the spectrogram data model (AC: #1, #2, #3)
+  - [x] Create `SpectrogramCell` value type: `tempoRange: TempoRange`, `columnIndex: Int`, `meanAccuracyPercent: Double?` (nil = no data), `earlyStats: SpectrogramCellStats?`, `lateStats: SpectrogramCellStats?`
+  - [x] Create `SpectrogramColumn` grouping cells by time bucket with a `date: Date` and `bucketSize: BucketSize`
+  - [x] Create `SpectrogramData` type with `columns: [SpectrogramColumn]`, `trainedRanges: [TempoRange]`, computed from `TrainingProfile` + `ProgressTimeline`
+  - [x] Define `SpectrogramThresholds` with `preciseUpperBound: Double = 5.0`, `moderateUpperBound: Double = 15.0` (parameterized)
+  - [x] Write tests for `SpectrogramData` computation: correct tempo range filtering, cell accuracy mapping, empty cell handling
 
-- [ ] Task 2: Build `RhythmSpectrogramView` grid (AC: #1, #2, #3)
-  - [ ] Create `Peach/Profile/RhythmSpectrogramView.swift`
-  - [ ] Render as a SwiftUI `Grid` or `Canvas` — NOT `Charts` framework (this is a heat map, not a line chart)
-  - [ ] X-axis: time columns from `ProgressTimeline` bucketing (reuse same `allGranularityBuckets` logic, but merge rhythm keys)
-  - [ ] Y-axis: only tempos with data (from `RhythmProfile.trainedTempos`)
-  - [ ] Cell color: `.green` / `.yellow` / `.red` from system colors based on thresholds; nil accuracy = transparent (`.clear`)
-  - [ ] Square cells, sized to fit available width
-  - [ ] Tempo labels on Y-axis (BPM values), time labels on X-axis (reuse `GranularityZoneConfig` formatting)
+- [x] Task 2: Build `RhythmSpectrogramView` grid (AC: #1, #2, #3)
+  - [x] Create `Peach/Profile/RhythmSpectrogramView.swift`
+  - [x] Render as SwiftUI `HStack`/`VStack` grid — NOT `Charts` framework (this is a heat map)
+  - [x] X-axis: time columns from `ProgressTimeline` bucketing (reuse `allGranularityBuckets`)
+  - [x] Y-axis: only TempoRanges with data (adapted from per-TempoBPM to per-TempoRange — see Dev Agent Record)
+  - [x] Cell color: `.green` / `.yellow` / `.red` based on thresholds; nil accuracy = `.clear`
+  - [x] Square cells, horizontally scrollable
+  - [x] BPM range labels on Y-axis, time labels on X-axis (reuses `ProgressChartView.formatAxisLabel`)
 
-- [ ] Task 3: Implement tap-to-detail interaction (AC: #4)
-  - [ ] Track `@State private var selectedCell: (tempo: TempoBPM, columnIndex: Int)?`
-  - [ ] On cell tap, show a minimal popover/overlay with early/late breakdown: early mean, early stdDev, late mean, late stdDev, sample counts
-  - [ ] Dismiss on tap elsewhere
-  - [ ] Skip interaction for empty cells (no data)
+- [x] Task 3: Implement tap-to-detail interaction (AC: #4)
+  - [x] Track `@State private var selectedCell: SelectedCell?`
+  - [x] On cell tap, show overlay with early/late breakdown: mean%, stdDev%, sample counts
+  - [x] Dismiss on tap elsewhere or tap same cell
+  - [x] Skip interaction for empty cells (no data)
 
-- [ ] Task 4: VoiceOver accessibility (AC: #5)
-  - [ ] Per-column accessibility element: summary of all tempos in that column (e.g., "March week 2: 120 BPM precise, 100 BPM moderate, 80 BPM no data")
-  - [ ] Use `.accessibilityElement(children: .ignore)` on individual cells, group per column
-  - [ ] Activating a column announces the detail (same data as tap overlay)
-  - [ ] Localize all VoiceOver strings
+- [x] Task 4: VoiceOver accessibility (AC: #5)
+  - [x] Per-column accessibility element: summary of all tempo ranges in that column
+  - [x] Individual cells hidden from VoiceOver (`.accessibilityHidden(true)`)
+  - [x] Activating a column triggers detail overlay via accessibility action
+  - [x] All VoiceOver strings localized
 
-- [ ] Task 5: Add German localizations
-  - [ ] Run `bin/add-localization.swift` for new strings: threshold labels ("precise", "moderate", "erratic"), detail overlay labels, VoiceOver templates
-  - [ ] Check `--missing` first
+- [x] Task 5: Add German localizations
+  - [x] Checked `--missing` first (46 keys missing, 12 rhythm-related)
+  - [x] Added 11 new spectrogram strings + updated 12 pre-existing rhythm strings
 
-- [ ] Task 6: Run full test suite
-  - [ ] `bin/test.sh` — all tests must pass
+- [x] Task 6: Run full test suite
+  - [x] `bin/test.sh` — 1380 tests passed, zero regressions
 
 ## Dev Notes
 
@@ -182,8 +182,33 @@ Peach/
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+None — no HALTs or debugging sessions required (initial HALT for infrastructure mismatch was resolved by user decision).
 
 ### Completion Notes List
 
+- **Infrastructure adaptation**: The story's original design assumed a `RhythmProfile` protocol with per-TempoBPM data access. This protocol was deleted in commit `4271964` during the StatisticsKey unification refactoring. Adapted the spectrogram to use **TempoRange** (slow/medium/fast) on the Y-axis instead of individual TempoBPM values, per user decision — there are too few data points per individual tempo and the spectrogram's limited resolution requires grouping anyway.
+- **Data model**: `SpectrogramData` computes a grid from `TrainingProfile` statistics + `ProgressTimeline` time buckets. Cell accuracy is expressed as percentage of one sixteenth note at the tempo range's midpoint tempo. This preserves the UX-DR4 threshold semantics (5%/15%) while working with the TempoRange-based storage.
+- **Session bucket filtering**: Fixed inclusive-end filtering for session buckets where `periodStart == periodEnd` (single-metric sessions).
+- **TempoRange extensions**: Added `midpointTempo` (with rounding for integer division) and `displayName` to `TempoRange`.
+- **Boy Scout**: Added 12 missing German translations for pre-existing rhythm training strings.
+- **1380 tests pass**, zero regressions, dependency check clean (1 pre-existing documented violation).
+
+### Change Log
+
+- 2026-03-21: Implemented story 51.1 — RhythmSpectrogramView with TempoRange Y-axis adaptation
+
 ### File List
+
+New files:
+- `Peach/Core/Profile/SpectrogramData.swift` — Data model types and computation
+- `Peach/Profile/RhythmSpectrogramView.swift` — Spectrogram grid view component
+- `PeachTests/Core/Profile/SpectrogramDataTests.swift` — Data model tests (17 tests)
+
+Modified files:
+- `Peach/Core/Music/TempoRange.swift` — Added `midpointTempo` and `displayName`
+- `Peach/Resources/Localizable.xcstrings` — German translations for spectrogram + rhythm strings
+- `docs/implementation-artifacts/sprint-status.yaml` — Story status tracking
