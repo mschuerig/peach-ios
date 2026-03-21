@@ -82,6 +82,8 @@ struct StartScreen: View {
                 RhythmPOCScreen()
             case .rhythmOffsetDetection:
                 RhythmOffsetDetectionScreen()
+            case .rhythmMatching:
+                RhythmMatchingScreen()
             }
         }
         .sheet(isPresented: $showInfoSheet) {

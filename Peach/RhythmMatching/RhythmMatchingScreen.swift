@@ -4,6 +4,7 @@ import os
 struct RhythmMatchingScreen: View {
     @Environment(\.rhythmMatchingSession) private var session
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.userSettings) private var userSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -55,13 +56,13 @@ struct RhythmMatchingScreen: View {
                 session.stop()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
-                session.start(settings: RhythmMatchingSettings())
+                session.start(settings: .from(userSettings))
             }
         }
         .onAppear {
             logger.info("RhythmMatchingScreen appeared - (re)starting training")
             session.stop()
-            session.start(settings: RhythmMatchingSettings())
+            session.start(settings: .from(userSettings))
         }
         .onDisappear {
             logger.info("RhythmMatchingScreen disappeared - stopping training")

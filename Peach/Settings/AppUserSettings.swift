@@ -51,6 +51,12 @@ final class AppUserSettings: UserSettings {
         return .seconds(raw)
     }
 
+    var tempoBPM: TempoBPM {
+        let raw = UserDefaults.standard.integer(forKey: SettingsKeys.tempoBPM)
+        guard raw > 0 else { return SettingsKeys.defaultTempoBPM }
+        return max(SettingsKeys.minimumTempoBPM, TempoBPM(raw))
+    }
+
     var tuningSystem: TuningSystem {
         guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.tuningSystem),
               let system = TuningSystem(identifier: raw) else {

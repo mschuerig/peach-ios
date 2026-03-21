@@ -18,4 +18,8 @@ struct RhythmOffsetDetectionSettings: Sendable {
         self.maxOffsetPercentage = maxOffsetPercentage
         self.minOffsetPercentage = minOffsetPercentage
     }
+
+    static func from(_ userSettings: UserSettings) -> RhythmOffsetDetectionSettings {
+        RhythmOffsetDetectionSettings(tempo: userSettings.tempoBPM)
+    }
 }

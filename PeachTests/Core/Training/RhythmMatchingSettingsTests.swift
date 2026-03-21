@@ -27,4 +27,24 @@ struct RhythmMatchingSettingsTests {
         let settings = RhythmMatchingSettings()
         let _: any Sendable = settings
     }
+
+    @Test("from(userSettings) maps tempoBPM correctly")
+    func fromUserSettings() async {
+        let mockSettings = MockUserSettings()
+        mockSettings.tempoBPM = TempoBPM(120)
+
+        let settings = RhythmMatchingSettings.from(mockSettings)
+
+        #expect(settings.tempo == TempoBPM(120))
+    }
+
+    @Test("from(userSettings) keeps feedbackDuration at default")
+    func fromUserSettingsKeepsDefaults() async {
+        let mockSettings = MockUserSettings()
+        mockSettings.tempoBPM = TempoBPM(100)
+
+        let settings = RhythmMatchingSettings.from(mockSettings)
+
+        #expect(settings.feedbackDuration == .milliseconds(400))
+    }
 }

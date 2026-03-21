@@ -8,4 +8,8 @@ struct RhythmMatchingSettings: Sendable {
         self.tempo = tempo
         self.feedbackDuration = feedbackDuration
     }
+
+    static func from(_ userSettings: UserSettings) -> RhythmMatchingSettings {
+        RhythmMatchingSettings(tempo: userSettings.tempoBPM)
+    }
 }

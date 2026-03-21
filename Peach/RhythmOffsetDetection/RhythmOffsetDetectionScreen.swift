@@ -4,6 +4,7 @@ import os
 struct RhythmOffsetDetectionScreen: View {
     @Environment(\.rhythmOffsetDetectionSession) private var session
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.userSettings) private var userSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -52,13 +53,13 @@ struct RhythmOffsetDetectionScreen: View {
                 session.stop()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
-                session.start(settings: RhythmOffsetDetectionSettings())
+                session.start(settings: .from(userSettings))
             }
         }
         .onAppear {
             logger.info("RhythmOffsetDetectionScreen appeared - (re)starting training")
             session.stop()
-            session.start(settings: RhythmOffsetDetectionSettings())
+            session.start(settings: .from(userSettings))
         }
         .onDisappear {
             logger.info("RhythmOffsetDetectionScreen disappeared - stopping training")

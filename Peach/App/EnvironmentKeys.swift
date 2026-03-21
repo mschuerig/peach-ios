@@ -127,4 +127,5 @@ private final class PreviewUserSettings: UserSettings {
     let intervals: Set<DirectedInterval> = [.up(.perfectFifth)]
     let tuningSystem: TuningSystem = .equalTemperament
     let noteGap: Duration = SettingsKeys.defaultNoteGap
+    let tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM
 }

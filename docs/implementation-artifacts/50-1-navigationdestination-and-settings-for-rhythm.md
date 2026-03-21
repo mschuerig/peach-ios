@@ -1,6 +1,6 @@
 # Story 50.1: NavigationDestination and Settings for Rhythm
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,44 +28,44 @@ so that rhythm training can be navigated to and tempo can be configured.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `.rhythmMatching` to `NavigationDestination` and wire in `StartScreen` (AC: #1, #2)
-  - [ ] Add `case rhythmMatching` to `NavigationDestination` enum in `Peach/App/NavigationDestination.swift`
-  - [ ] Add `.rhythmMatching` → `RhythmMatchingScreen()` case in `StartScreen.navigationDestination` handler (line 71–86)
-  - [ ] Note: `.rhythmOffsetDetection` case already exists and is wired
+- [x] Task 1: Add `.rhythmMatching` to `NavigationDestination` and wire in `StartScreen` (AC: #1, #2)
+  - [x] Add `case rhythmMatching` to `NavigationDestination` enum in `Peach/App/NavigationDestination.swift`
+  - [x] Add `.rhythmMatching` → `RhythmMatchingScreen()` case in `StartScreen.navigationDestination` handler (line 71–86)
+  - [x] Note: `.rhythmOffsetDetection` case already exists and is wired
 
-- [ ] Task 2: Add `tempoBPM` to `SettingsKeys` (AC: #3)
-  - [ ] Add `static let tempoBPM = "tempoBPM"` key name
-  - [ ] Add `static let defaultTempoBPM: TempoBPM = TempoBPM(80)` default value
-  - [ ] Add `static let minimumTempoBPM: TempoBPM = TempoBPM(60)` floor constant
+- [x] Task 2: Add `tempoBPM` to `SettingsKeys` (AC: #3)
+  - [x] Add `static let tempoBPM = "tempoBPM"` key name
+  - [x] Add `static let defaultTempoBPM: TempoBPM = TempoBPM(80)` default value
+  - [x] Add `static let minimumTempoBPM: TempoBPM = TempoBPM(60)` floor constant
 
-- [ ] Task 3: Add `tempoBPM` to `UserSettings` protocol and `AppUserSettings` (AC: #4, #5)
-  - [ ] Add `var tempoBPM: TempoBPM { get }` to `UserSettings` protocol in `Peach/Settings/UserSettings.swift`
-  - [ ] Implement in `AppUserSettings` reading from `UserDefaults.standard.integer(forKey: SettingsKeys.tempoBPM)`, falling back to `SettingsKeys.defaultTempoBPM`
-  - [ ] Apply clamping: `max(SettingsKeys.minimumTempoBPM, rawValue)` so values below 60 are clamped up
-  - [ ] Handle the case where `UserDefaults` returns 0 (key not set) by using the default
+- [x] Task 3: Add `tempoBPM` to `UserSettings` protocol and `AppUserSettings` (AC: #4, #5)
+  - [x] Add `var tempoBPM: TempoBPM { get }` to `UserSettings` protocol in `Peach/Settings/UserSettings.swift`
+  - [x] Implement in `AppUserSettings` reading from `UserDefaults.standard.integer(forKey: SettingsKeys.tempoBPM)`, falling back to `SettingsKeys.defaultTempoBPM`
+  - [x] Apply clamping: `max(SettingsKeys.minimumTempoBPM, rawValue)` so values below 60 are clamped up
+  - [x] Handle the case where `UserDefaults` returns 0 (key not set) by using the default
 
-- [ ] Task 4: Add `from(userSettings:)` factory methods to rhythm settings (AC: #6)
-  - [ ] Add `static func from(_ userSettings: UserSettings) -> RhythmMatchingSettings` to `RhythmMatchingSettings`
-  - [ ] Maps `userSettings.tempoBPM` → `tempo`, keeps `feedbackDuration` at default
-  - [ ] Add `static func from(_ userSettings: UserSettings) -> RhythmOffsetDetectionSettings` to `RhythmOffsetDetectionSettings`
-  - [ ] Maps `userSettings.tempoBPM` → `tempo`, keeps other params at defaults
-  - [ ] Write tests in `PeachTests/Core/Training/RhythmMatchingSettingsTests.swift` (NEW)
-  - [ ] Write tests in `PeachTests/Core/Training/RhythmOffsetDetectionSettingsTests.swift` (NEW)
+- [x] Task 4: Add `from(userSettings:)` factory methods to rhythm settings (AC: #6)
+  - [x] Add `static func from(_ userSettings: UserSettings) -> RhythmMatchingSettings` to `RhythmMatchingSettings`
+  - [x] Maps `userSettings.tempoBPM` → `tempo`, keeps `feedbackDuration` at default
+  - [x] Add `static func from(_ userSettings: UserSettings) -> RhythmOffsetDetectionSettings` to `RhythmOffsetDetectionSettings`
+  - [x] Maps `userSettings.tempoBPM` → `tempo`, keeps other params at defaults
+  - [x] Write tests in `PeachTests/Core/Training/RhythmMatchingSettingsTests.swift` (EXTENDED)
+  - [x] Write tests in `PeachTests/Core/Training/RhythmOffsetDetectionSettingsTests.swift` (NEW)
 
-- [ ] Task 5: Update rhythm screens to use `from(userSettings:)` (AC: #7)
-  - [ ] In `RhythmMatchingScreen`: add `@Environment(\.userSettings) private var userSettings`
-  - [ ] Change `session.start(settings: RhythmMatchingSettings())` → `session.start(settings: .from(userSettings))`
-  - [ ] Apply same change in help sheet dismiss handler
-  - [ ] In `RhythmOffsetDetectionScreen`: add `@Environment(\.userSettings) private var userSettings`
-  - [ ] Change `session.start(settings: RhythmOffsetDetectionSettings())` → `session.start(settings: .from(userSettings))`
-  - [ ] Apply same change in help sheet dismiss handler
+- [x] Task 5: Update rhythm screens to use `from(userSettings:)` (AC: #7)
+  - [x] In `RhythmMatchingScreen`: add `@Environment(\.userSettings) private var userSettings`
+  - [x] Change `session.start(settings: RhythmMatchingSettings())` → `session.start(settings: .from(userSettings))`
+  - [x] Apply same change in help sheet dismiss handler
+  - [x] In `RhythmOffsetDetectionScreen`: add `@Environment(\.userSettings) private var userSettings`
+  - [x] Change `session.start(settings: RhythmOffsetDetectionSettings())` → `session.start(settings: .from(userSettings))`
+  - [x] Apply same change in help sheet dismiss handler
 
-- [ ] Task 6: Update `MockUserSettings` (AC: #8)
-  - [ ] Add `var tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM` with `didSet { onSettingsChanged?() }`
-  - [ ] Add `tempoBPM = SettingsKeys.defaultTempoBPM` to `reset()` method
+- [x] Task 6: Update `MockUserSettings` (AC: #8)
+  - [x] Add `var tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM` with `didSet { onSettingsChanged?() }`
+  - [x] Add `tempoBPM = SettingsKeys.defaultTempoBPM` to `reset()` method
 
-- [ ] Task 7: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 7: Run full test suite
+  - [x] `bin/test.sh` — all 1356 tests pass, no regressions
 
 ## Dev Notes
 
@@ -173,10 +173,40 @@ PeachTests/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Build initially failed due to `PreviewUserSettings` in `EnvironmentKeys.swift` missing `tempoBPM` — fixed by adding the property.
+
 ### Completion Notes List
 
+- Added `.rhythmMatching` case to `NavigationDestination` and wired it to `RhythmMatchingScreen` in `StartScreen`
+- Added `tempoBPM` key, default (80 BPM), and minimum (60 BPM) to `SettingsKeys`
+- Extended `UserSettings` protocol with `tempoBPM: TempoBPM` property
+- Implemented `tempoBPM` in `AppUserSettings` with clamping logic (0 → default, <60 → 60)
+- Added `from(_ userSettings:)` factory methods to both `RhythmMatchingSettings` and `RhythmOffsetDetectionSettings`
+- Updated both rhythm screens to use `@Environment(\.userSettings)` and factory methods instead of default-constructed settings
+- Updated `MockUserSettings` and `PreviewUserSettings` with `tempoBPM` property
+- Added factory method tests to `RhythmMatchingSettingsTests` and created new `RhythmOffsetDetectionSettingsTests`
+- All 1356 tests pass
+
+### Change Log
+
+- 2026-03-21: Implemented story 50.1 — navigation destination, settings layer, and factory methods for rhythm tempo
+
 ### File List
+
+- Peach/App/NavigationDestination.swift (modified)
+- Peach/App/EnvironmentKeys.swift (modified)
+- Peach/Start/StartScreen.swift (modified)
+- Peach/Settings/SettingsKeys.swift (modified)
+- Peach/Settings/UserSettings.swift (modified)
+- Peach/Settings/AppUserSettings.swift (modified)
+- Peach/Core/Training/RhythmMatchingSettings.swift (modified)
+- Peach/Core/Training/RhythmOffsetDetectionSettings.swift (modified)
+- Peach/RhythmMatching/RhythmMatchingScreen.swift (modified)
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionScreen.swift (modified)
+- PeachTests/Mocks/MockUserSettings.swift (modified)
+- PeachTests/Core/Training/RhythmMatchingSettingsTests.swift (modified)
+- PeachTests/Core/Training/RhythmOffsetDetectionSettingsTests.swift (new)

@@ -26,6 +26,9 @@ final class MockUserSettings: UserSettings {
     var noteGap: Duration = SettingsKeys.defaultNoteGap {
         didSet { onSettingsChanged?() }
     }
+    var tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM {
+        didSet { onSettingsChanged?() }
+    }
 
     // MARK: - Test Control
 
@@ -42,6 +45,7 @@ final class MockUserSettings: UserSettings {
         intervals = [DirectedInterval.prime]
         tuningSystem = SettingsKeys.defaultTuningSystem
         noteGap = SettingsKeys.defaultNoteGap
+        tempoBPM = SettingsKeys.defaultTempoBPM
         onSettingsChanged = nil
     }
 }

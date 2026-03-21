@@ -12,6 +12,7 @@ enum SettingsKeys {
     static let intervals = "intervals"
     static let tuningSystem = "tuningSystem"
     static let noteGap = "noteGap"
+    static let tempoBPM = "tempoBPM"
 
     // MARK: - Default Values (matching TrainingSettings defaults)
 
@@ -23,6 +24,8 @@ enum SettingsKeys {
     static let defaultVaryLoudness: UnitInterval = 0.0
     static let defaultTuningSystem: TuningSystem = .equalTemperament
     static let defaultNoteGap: Duration = .zero
+    static let defaultTempoBPM: TempoBPM = TempoBPM(80)
+    static let minimumTempoBPM: TempoBPM = TempoBPM(60)
 
     // MARK: - Note Range Constants
 

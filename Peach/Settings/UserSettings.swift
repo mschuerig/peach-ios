@@ -9,4 +9,5 @@ protocol UserSettings {
     var intervals: Set<DirectedInterval> { get }
     var tuningSystem: TuningSystem { get }
     var noteGap: Duration { get }
+    var tempoBPM: TempoBPM { get }
 }
