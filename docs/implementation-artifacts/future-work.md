@@ -33,6 +33,32 @@ Peach plays the two comparison tones seamlessly (back-to-back without a gap), wh
 
 ---
 
+### Tap Latency Measurement and Compensation for Rhythm Matching
+
+**Priority:** Low
+**Category:** Algorithm Design / Calibration
+**Date Added:** 2026-03-21
+
+**Observation:**
+In rhythm matching mode, the measured timing error includes a systematic late bias from touch input latency (~8–16 ms depending on device and refresh rate). The user entrains to reference clicks (which all share the same audio output latency, so the pulse is consistent), but their tap is registered late relative to when their finger physically struck the screen.
+
+Rhythm offset detection is unaffected — all clicks traverse the same audio path, preserving relative timing, and the user's judgment is binary.
+
+**Impact:**
+- **Trends are unaffected** — a consistent bias shifts all values equally, so improvement tracking works correctly
+- **Absolute values have a late bias** — a user perfectly on the beat would see ~8–16 ms late instead of 0 ms, which could erode trust in the feedback
+- **Threshold classification is slightly unfair** — the bias eats into the "precise" band (12 ms floor), meaning some genuinely precise taps are classified as moderate
+
+**Potential Approaches:**
+1. **Simple:** subtract `AVAudioSession.outputLatency` (available API) from measured timing — partial correction, no user action required
+2. **Better:** optional calibration tap sequence — user taps along to 8–16 clicks, system measures the systematic offset and stores it as a per-device correction
+3. **Apply in `RhythmMatchingSession`** — subtract the calibrated offset before recording the timing error
+
+**Why not now:**
+The primary value of rhythm training is trend tracking (improvement over time), which is unaffected by a constant bias. The spectrogram thresholds (story 51.3) already account for device latency by setting a 12 ms floor for the "precise" band. Compensation becomes more important if Peach ever displays absolute timing values prominently or compares across devices.
+
+---
+
 ## Data & Infrastructure
 
 ### Add SwiftData VersionedSchema and SchemaMigrationPlan
