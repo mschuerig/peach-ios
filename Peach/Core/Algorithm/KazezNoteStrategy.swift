@@ -38,7 +38,7 @@ final class KazezNoteStrategy: NextPitchDiscriminationStrategy {
 
     func nextPitchDiscriminationTrial(
         profile: TrainingProfile,
-        settings: PitchComparisonTrainingSettings,
+        settings: PitchDiscriminationSettings,
         lastTrial: CompletedPitchDiscriminationTrial?,
         interval: DirectedInterval
     ) -> PitchDiscriminationTrial {

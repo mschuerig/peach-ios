@@ -8,7 +8,7 @@ final class MockNextPitchDiscriminationStrategy: NextPitchDiscriminationStrategy
     var currentIndex = 0
     var callCount = 0
     var lastReceivedProfile: TrainingProfile?
-    var lastReceivedSettings: PitchComparisonTrainingSettings?
+    var lastReceivedSettings: PitchDiscriminationSettings?
     var lastReceivedLastComparison: CompletedPitchDiscriminationTrial?
     var lastReceivedInterval: DirectedInterval?
 
@@ -28,7 +28,7 @@ final class MockNextPitchDiscriminationStrategy: NextPitchDiscriminationStrategy
 
     func nextPitchDiscriminationTrial(
         profile: TrainingProfile,
-        settings: PitchComparisonTrainingSettings,
+        settings: PitchDiscriminationSettings,
         lastTrial: CompletedPitchDiscriminationTrial?,
         interval: DirectedInterval
     ) -> PitchDiscriminationTrial {

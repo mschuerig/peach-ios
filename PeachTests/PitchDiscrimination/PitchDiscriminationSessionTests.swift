@@ -156,7 +156,7 @@ struct PitchDiscriminationSessionTests {
             ]
         )
 
-        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
+        f.session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.mockStrategy.lastReceivedInterval == .up(.perfectFifth))
@@ -186,7 +186,7 @@ struct PitchDiscriminationSessionTests {
             ]
         )
 
-        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
+        f.session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentInterval == .up(.perfectFifth))
@@ -210,7 +210,7 @@ struct PitchDiscriminationSessionTests {
             ]
         )
 
-        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
+        f.session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.isIntervalMode)
@@ -256,7 +256,7 @@ struct PitchDiscriminationSessionTests {
             observers: [mockDataStore, profile]
         )
 
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(session, .awaitingAnswer)
 
         session.handleAnswer(isHigher: true)
@@ -270,7 +270,7 @@ struct PitchDiscriminationSessionTests {
     @Test("start with perfectFifth sets currentInterval to perfectFifth")
     func startWithPerfectFifthSetsCurrentInterval() async throws {
         let f = makePitchDiscriminationSession()
-        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
+        f.session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))
         try await waitForState(f.session, .awaitingAnswer)
 
         #expect(f.session.currentInterval == .up(.perfectFifth))
@@ -282,7 +282,7 @@ struct PitchDiscriminationSessionTests {
     func startWithMultipleIntervals() async throws {
         let f = makePitchDiscriminationSession()
         let intervals: Set<DirectedInterval> = [.prime, .up(.perfectFifth)]
-        f.session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: intervals))
+        f.session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: intervals))
         try await waitForState(f.session, .awaitingAnswer)
 
         let interval = try #require(f.session.currentInterval)
@@ -348,7 +348,7 @@ struct PitchDiscriminationSessionTests {
     func sessionTuningSystemFromSettings() async {
         let f = makePitchDiscriminationSession()
         f.mockPlayer.instantPlayback = true
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             tuningSystem: .justIntonation
@@ -363,7 +363,7 @@ struct PitchDiscriminationSessionTests {
     func sessionTuningSystemResetsOnStop() async {
         let f = makePitchDiscriminationSession()
         f.mockPlayer.instantPlayback = true
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             tuningSystem: .justIntonation

@@ -70,7 +70,7 @@ private struct PreviewSoundSourceProvider: SoundSourceProvider {
 private final class PreviewPitchDiscriminationStrategy: NextPitchDiscriminationStrategy {
     func nextPitchDiscriminationTrial(
         profile: TrainingProfile,
-        settings: PitchComparisonTrainingSettings,
+        settings: PitchDiscriminationSettings,
         lastTrial: CompletedPitchDiscriminationTrial?,
         interval: DirectedInterval
     ) -> PitchDiscriminationTrial {

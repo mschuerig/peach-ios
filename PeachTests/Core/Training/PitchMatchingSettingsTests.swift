@@ -1,12 +1,12 @@
 import Testing
 @testable import Peach
 
-@Suite("PitchComparisonTrainingSettings Tests")
-struct PitchComparisonTrainingSettingsTests {
+@Suite("PitchMatchingSettings Tests")
+struct PitchMatchingSettingsTests {
 
     @Test("default values are correct")
     func defaultValues() async {
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime]
         )
@@ -17,11 +17,9 @@ struct PitchComparisonTrainingSettingsTests {
         #expect(settings.tuningSystem == .equalTemperament)
         #expect(settings.noteDuration == NoteDuration(0.75))
         #expect(settings.varyLoudness == UnitInterval(0.0))
-        #expect(settings.minCentDifference == Cents(0.1))
-        #expect(settings.maxCentDifference == Cents(100.0))
+        #expect(settings.initialCentOffsetRange == Cents(-20.0)...Cents(20.0))
         #expect(settings.maxLoudnessOffsetDB == AmplitudeDB(10.0))
         #expect(settings.velocity == MIDIVelocity(63))
-        #expect(settings.noteGap == .zero)
         #expect(settings.feedbackDuration == .milliseconds(400))
     }
 
@@ -33,10 +31,9 @@ struct PitchComparisonTrainingSettingsTests {
         mockSettings.noteDuration = NoteDuration(1.5)
         mockSettings.varyLoudness = UnitInterval(0.7)
         mockSettings.tuningSystem = .justIntonation
-        mockSettings.noteGap = .seconds(1.5)
 
         let intervals: Set<DirectedInterval> = [.up(.perfectFifth)]
-        let settings = PitchComparisonTrainingSettings.from(mockSettings, intervals: intervals)
+        let settings = PitchMatchingSettings.from(mockSettings, intervals: intervals)
 
         #expect(settings.noteRange.lowerBound == MIDINote(48))
         #expect(settings.noteRange.upperBound == MIDINote(72))
@@ -45,18 +42,16 @@ struct PitchComparisonTrainingSettingsTests {
         #expect(settings.tuningSystem == .justIntonation)
         #expect(settings.noteDuration == NoteDuration(1.5))
         #expect(settings.varyLoudness == UnitInterval(0.7))
-        #expect(settings.noteGap == .seconds(1.5))
     }
 
     @Test("from(userSettings) keeps constant defaults")
     func fromUserSettingsKeepsDefaults() async {
         let mockSettings = MockUserSettings()
-        let settings = PitchComparisonTrainingSettings.from(mockSettings, intervals: [.prime])
+        let settings = PitchMatchingSettings.from(mockSettings, intervals: [.prime])
 
         #expect(settings.maxLoudnessOffsetDB == AmplitudeDB(10.0))
         #expect(settings.velocity == MIDIVelocity(63))
         #expect(settings.feedbackDuration == .milliseconds(400))
-        #expect(settings.minCentDifference == Cents(0.1))
-        #expect(settings.maxCentDifference == Cents(100.0))
+        #expect(settings.initialCentOffsetRange == Cents(-20.0)...Cents(20.0))
     }
 }

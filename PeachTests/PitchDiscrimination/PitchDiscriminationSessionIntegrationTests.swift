@@ -204,7 +204,7 @@ struct PitchDiscriminationSessionIntegrationTests {
 
         let comparison = strategy.nextPitchDiscriminationTrial(
             profile: profile,
-            settings: PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime]),
+            settings: PitchDiscriminationSettings(referencePitch: .concert440, intervals: [.prime]),
             lastTrial: nil,
             interval: .prime,
         )

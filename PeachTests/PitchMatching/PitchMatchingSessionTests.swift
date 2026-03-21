@@ -31,7 +31,7 @@ func transitionToPlayingTunable(_ session: PitchMatchingSession) async throws {
 
 // MARK: - Factory
 
-let defaultPitchMatchingTestSettings = PitchMatchingTrainingSettings(
+let defaultPitchMatchingTestSettings = PitchMatchingSettings(
     referencePitch: Frequency(440.0),
     intervals: [.prime],
     noteDuration: NoteDuration(0.3)
@@ -84,7 +84,7 @@ struct PitchMatchingSessionTests {
     @Test("trial has note within configured range")
     func trialNoteWithinRange() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -125,7 +125,7 @@ struct PitchMatchingSessionTests {
     @Test("reference note played at correct frequency")
     func referenceNoteFrequency() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -181,7 +181,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch from awaitingSliderTouch produces result with initial offset error")
     func commitPitchFromAwaitingSliderTouchProducesResult() async throws {
         let (session, notePlayer, _, observer) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -217,7 +217,7 @@ struct PitchMatchingSessionTests {
     @Test("tunable note played at offset frequency")
     func tunableNoteAtOffsetFrequency() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -254,7 +254,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch at correcting slider value produces zero cent error")
     func commitPitchAtCenterProducesZeroCentError() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -276,7 +276,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch sharp produces positive cent error")
     func commitPitchSharpCentError() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -366,7 +366,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch flat produces negative cent error")
     func commitPitchFlatCentError() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -492,7 +492,7 @@ struct PitchMatchingSessionTests {
     @Test("adjustPitch converts value to frequency and delegates to handle")
     func adjustPitchDelegatesToHandle() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -518,7 +518,7 @@ struct PitchMatchingSessionTests {
     @Test("adjustPitch with +1.0 produces frequency (initialCentOffset + 20) cents above reference")
     func adjustPitchPositiveOne() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -543,7 +543,7 @@ struct PitchMatchingSessionTests {
     @Test("adjustPitch at correcting value adjusts to target note frequency for intervals")
     func adjustPitchCenterTargetFrequencyForInterval() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
@@ -568,7 +568,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch at correcting value commits result with zero cent error")
     func commitPitchCommitsResult() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -590,7 +590,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch produces 10 cent sharp error at correct slider value")
     func commitPitchHalfPositive() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -648,7 +648,7 @@ struct PitchMatchingSessionTests {
     @Test("currentInterval is perfectFifth with interval set")
     func currentIntervalPerfectFifth() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
             noteDuration: NoteDuration(0.3)
@@ -662,7 +662,7 @@ struct PitchMatchingSessionTests {
     @Test("stop clears interval state")
     func stopClearsIntervalState() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
             noteDuration: NoteDuration(0.3)
@@ -680,7 +680,7 @@ struct PitchMatchingSessionTests {
     @Test("generateTrial with prime produces targetNote equal to referenceNote")
     func generateTrialPrimeTargetEqualsReference() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.prime],
@@ -696,7 +696,7 @@ struct PitchMatchingSessionTests {
     @Test("generateTrial with perfectFifth produces target 7 semitones above reference")
     func generateTrialPerfectFifthTarget() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
@@ -711,7 +711,7 @@ struct PitchMatchingSessionTests {
     @Test("generateTrial constrains reference note range for interval")
     func generateTrialConstrainsRangeForInterval() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(125)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
@@ -728,7 +728,7 @@ struct PitchMatchingSessionTests {
     @Test("generateTrial with downward perfectFifth produces target 7 semitones below reference")
     func generateTrialDownwardPerfectFifthTarget() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.down(.perfectFifth)],
@@ -743,7 +743,7 @@ struct PitchMatchingSessionTests {
     @Test("generateTrial constrains reference note minimum for downward interval")
     func generateTrialConstrainsRangeForDownwardInterval() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(0), upperBound: MIDINote(84)),
             referencePitch: Frequency(440.0),
             intervals: [.down(.perfectFifth)],
@@ -762,7 +762,7 @@ struct PitchMatchingSessionTests {
     @Test("referenceFrequency anchor is target note frequency for intervals")
     func referenceFrequencyAnchorIsTargetFrequency() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
@@ -782,7 +782,7 @@ struct PitchMatchingSessionTests {
     @Test("tunable note is detuned from target note for intervals")
     func tunableNoteDetunedFromTargetForInterval() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
@@ -806,7 +806,7 @@ struct PitchMatchingSessionTests {
     @Test("commitPitch at correcting value produces zero cent error for interval")
     func commitPitchAtCenterZeroCentErrorForInterval() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
@@ -840,7 +840,7 @@ struct PitchMatchingSessionTests {
     @Test("start uses intervals parameter for session")
     func startUsesIntervalsParameter() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.up(.majorThird), .up(.perfectFifth)],
             noteDuration: NoteDuration(0.3)
@@ -854,7 +854,7 @@ struct PitchMatchingSessionTests {
     @Test("start with perfectFifth sets currentInterval to perfectFifth")
     func startWithPerfectFifthSetsCurrentInterval() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
             noteDuration: NoteDuration(0.3)
@@ -870,7 +870,7 @@ struct PitchMatchingSessionTests {
     func startWithMultipleIntervals() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
         let intervals: Set<DirectedInterval> = [.prime, .up(.perfectFifth)]
-        session.start(settings: PitchMatchingTrainingSettings(
+        session.start(settings: PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: intervals,
             noteDuration: NoteDuration(0.3)
@@ -925,7 +925,7 @@ struct PitchMatchingSessionTests {
     func sessionTuningSystemFromSettings() async {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
         notePlayer.instantPlayback = true
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             tuningSystem: .justIntonation,
@@ -941,7 +941,7 @@ struct PitchMatchingSessionTests {
     func sessionTuningSystemResetsOnStop() async {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
         notePlayer.instantPlayback = true
-        let settings = PitchMatchingTrainingSettings(
+        let settings = PitchMatchingSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             tuningSystem: .justIntonation,

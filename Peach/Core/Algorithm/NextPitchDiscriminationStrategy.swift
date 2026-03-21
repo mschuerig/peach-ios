@@ -7,7 +7,7 @@ import Foundation
 ///
 /// # Architecture Boundary
 ///
-/// NextPitchDiscriminationStrategy reads from TrainingProfile and PitchComparisonTrainingSettings,
+/// NextPitchDiscriminationStrategy reads from TrainingProfile and PitchDiscriminationSettings,
 /// and returns a PitchDiscriminationTrial value type. It has no concept of:
 /// - Audio playback (NotePlayer's responsibility)
 /// - Data persistence (TrainingDataStore's responsibility)
@@ -37,7 +37,7 @@ protocol NextPitchDiscriminationStrategy {
     /// - Returns: A PitchDiscriminationTrial ready to be played by NotePlayer
     func nextPitchDiscriminationTrial(
         profile: TrainingProfile,
-        settings: PitchComparisonTrainingSettings,
+        settings: PitchDiscriminationSettings,
         lastTrial: CompletedPitchDiscriminationTrial?,
         interval: DirectedInterval
     ) -> PitchDiscriminationTrial

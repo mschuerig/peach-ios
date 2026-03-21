@@ -9,7 +9,7 @@ struct PitchDiscriminationSessionUserDefaultsTests {
     func settingsValuesPassedToStrategy() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             noteRange: NoteRange(lowerBound: MIDINote(50), upperBound: MIDINote(70)),
             referencePitch: Frequency(432.0),
             intervals: [.prime]
@@ -28,7 +28,7 @@ struct PitchDiscriminationSessionUserDefaultsTests {
     func noteDurationPassedToPlayer() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             noteDuration: NoteDuration(2.5)
@@ -57,7 +57,7 @@ struct PitchDiscriminationSessionUserDefaultsTests {
             observers: [mockDataStore, profile]
         )
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(432.0),
             intervals: [.prime]
         )

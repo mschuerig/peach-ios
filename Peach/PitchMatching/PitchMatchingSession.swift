@@ -33,7 +33,7 @@ final class PitchMatchingSession: TrainingSession {
 
     // MARK: - Settings
 
-    private var settings: PitchMatchingTrainingSettings?
+    private var settings: PitchMatchingSettings?
 
     var sessionTuningSystem: TuningSystem {
         settings?.tuningSystem ?? .equalTemperament
@@ -83,7 +83,7 @@ final class PitchMatchingSession: TrainingSession {
 
     var isIdle: Bool { state == .idle }
 
-    func start(settings: PitchMatchingTrainingSettings) {
+    func start(settings: PitchMatchingSettings) {
         guard state == .idle else {
             logger.warning("start() called but state is \(String(describing: self.state)), not idle")
             return
@@ -195,7 +195,7 @@ final class PitchMatchingSession: TrainingSession {
 
     // MARK: - Trial Generation
 
-    private func generateTrial(settings: PitchMatchingTrainingSettings, interval: DirectedInterval) -> PitchMatchingTrial {
+    private func generateTrial(settings: PitchMatchingSettings, interval: DirectedInterval) -> PitchMatchingTrial {
         let minNote: MIDINote
         let maxNote: MIDINote
         if interval.direction == .up {

@@ -8,9 +8,9 @@ struct SettingsTests {
 
     // MARK: - Task 1: @AppStorage Keys and Defaults
 
-    @Test("Algorithm defaults match PitchComparisonTrainingSettings defaults")
+    @Test("Algorithm defaults match PitchDiscriminationSettings defaults")
     func algorithmDefaultsMatchTrainingSettings() async {
-        let trainingDefaults = PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime])
+        let trainingDefaults = PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime])
 
         #expect(SettingsKeys.defaultNoteRangeMin == trainingDefaults.noteRange.lowerBound)
         #expect(SettingsKeys.defaultNoteRangeMax == trainingDefaults.noteRange.upperBound)

@@ -35,7 +35,7 @@ final class PitchDiscriminationSession: TrainingSession {
 
     // MARK: - Training State
 
-    private var settings: PitchComparisonTrainingSettings?
+    private var settings: PitchDiscriminationSettings?
     private var currentTrial: PitchDiscriminationTrial?
     private var lastCompletedTrial: CompletedPitchDiscriminationTrial?
     private var trainingTask: Task<Void, Never>?
@@ -84,7 +84,7 @@ final class PitchDiscriminationSession: TrainingSession {
         lastCompletedTrial.map { Cents($0.trial.targetNote.offset.magnitude) }
     }
 
-    func start(settings: PitchComparisonTrainingSettings) {
+    func start(settings: PitchDiscriminationSettings) {
         guard state == .idle else {
             logger.warning("start() called but state is \(String(describing: self.state)), not idle")
             return

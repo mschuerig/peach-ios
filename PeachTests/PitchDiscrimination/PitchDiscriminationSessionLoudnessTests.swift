@@ -20,7 +20,7 @@ struct PitchDiscriminationSessionLoudnessTests {
     func fullVariationTargetHasOffset() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             varyLoudness: UnitInterval(1.0)
@@ -43,7 +43,7 @@ struct PitchDiscriminationSessionLoudnessTests {
         }
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             varyLoudness: UnitInterval(1.0)
@@ -72,7 +72,7 @@ struct PitchDiscriminationSessionLoudnessTests {
     func midSliderHalvesRange() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             varyLoudness: UnitInterval(0.5)
@@ -92,7 +92,7 @@ struct PitchDiscriminationSessionLoudnessTests {
     func offsetClampedToValidRange() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             varyLoudness: UnitInterval(1.0)

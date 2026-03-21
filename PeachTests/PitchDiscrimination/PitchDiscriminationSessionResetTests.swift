@@ -59,7 +59,7 @@ struct PitchDiscriminationSessionResetTests {
         // Cold start: nil lastTrial with reset profile → should return 100.0
         let comparison = strategy.nextPitchDiscriminationTrial(
             profile: profile,
-            settings: PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime]),
+            settings: PitchDiscriminationSettings(referencePitch: .concert440, intervals: [.prime]),
             lastTrial: nil,
             interval: .prime,
         )
@@ -91,7 +91,7 @@ struct PitchDiscriminationSessionResetTests {
         // With all stats cleared, bootstrap should find no data → 100.0
         let comparison = strategy.nextPitchDiscriminationTrial(
             profile: profile,
-            settings: PitchComparisonTrainingSettings(referencePitch: .concert440, intervals: [.prime]),
+            settings: PitchDiscriminationSettings(referencePitch: .concert440, intervals: [.prime]),
             lastTrial: nil,
             interval: .prime,
         )

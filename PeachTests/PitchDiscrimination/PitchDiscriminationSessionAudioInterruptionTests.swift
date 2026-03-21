@@ -13,7 +13,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -35,7 +35,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = .seconds(5)
 
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .playingNote1)
 
         nc.post(
@@ -57,7 +57,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         mockPlayer.instantPlayback = false
         mockPlayer.simulatedPlaybackDuration = .milliseconds(10)
 
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         await mockPlayer.waitForPlay(minCount: 2)
         mockPlayer.simulatedPlaybackDuration = .seconds(5)
 
@@ -78,7 +78,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -104,7 +104,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -143,7 +143,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -168,7 +168,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
             let nc = NotificationCenter()
             let f = makePitchDiscriminationSession(notificationCenter: nc)
             let session = f.session
-            session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+            session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
             try await waitForState(session, .awaitingAnswer)
 
             let userInfo: [AnyHashable: Any]? = reason.map { [AVAudioSessionRouteChangeReasonKey: $0] }
@@ -210,7 +210,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -220,7 +220,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         )
         try await waitForState(session, .idle)
 
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
         #expect(session.state == .awaitingAnswer)
     }
@@ -230,7 +230,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
         nc.post(
@@ -240,7 +240,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         )
         try await waitForState(session, .idle)
 
-        session.start(settings: PitchComparisonTrainingSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
+        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
         #expect(session.state == .awaitingAnswer)
     }

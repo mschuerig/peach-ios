@@ -1,6 +1,6 @@
 import Foundation
 
-struct PitchComparisonTrainingSettings {
+struct PitchDiscriminationSettings {
     var noteRange: NoteRange
     var referencePitch: Frequency
     var intervals: Set<DirectedInterval>
@@ -42,8 +42,8 @@ struct PitchComparisonTrainingSettings {
         self.feedbackDuration = feedbackDuration
     }
 
-    static func from(_ userSettings: UserSettings, intervals: Set<DirectedInterval>) -> PitchComparisonTrainingSettings {
-        PitchComparisonTrainingSettings(
+    static func from(_ userSettings: UserSettings, intervals: Set<DirectedInterval>) -> PitchDiscriminationSettings {
+        PitchDiscriminationSettings(
             noteRange: userSettings.noteRange,
             referencePitch: userSettings.referencePitch,
             intervals: intervals,

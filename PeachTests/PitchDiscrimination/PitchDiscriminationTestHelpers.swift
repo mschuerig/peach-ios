@@ -4,7 +4,7 @@ import Foundation
 
 // MARK: - Default Test Settings
 
-let defaultTestSettings = PitchComparisonTrainingSettings(
+let defaultTestSettings = PitchDiscriminationSettings(
     referencePitch: Frequency(440.0),
     intervals: [.prime],
     noteDuration: NoteDuration(1.0)

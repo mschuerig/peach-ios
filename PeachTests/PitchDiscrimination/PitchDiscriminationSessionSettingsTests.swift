@@ -8,7 +8,7 @@ struct PitchDiscriminationSessionSettingsTests {
     func strategyReceivesCorrectSettings() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             noteRange: NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.prime]
@@ -42,7 +42,7 @@ struct PitchDiscriminationSessionSettingsTests {
     func customSettingsUsesValues() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             noteRange: NoteRange(lowerBound: MIDINote(48), upperBound: MIDINote(72)),
             referencePitch: Frequency(432.0),
             intervals: [.prime]
@@ -59,7 +59,7 @@ struct PitchDiscriminationSessionSettingsTests {
     func noteDurationFromSettingsTakesEffect() async throws {
         let f = makePitchDiscriminationSession()
 
-        let settings = PitchComparisonTrainingSettings(
+        let settings = PitchDiscriminationSettings(
             referencePitch: Frequency(440.0),
             intervals: [.prime],
             noteDuration: NoteDuration(0.5)
