@@ -1,6 +1,6 @@
 # Story 49.2: RhythmMatchingScreen with Tap Button and Color Feedback
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,58 +26,58 @@ so that I can train my ability to produce accurate timing.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmMatchingFeedbackView` — signed-offset feedback indicator (AC: #5, #6)
-  - [ ] Create `Peach/RhythmMatching/RhythmMatchingFeedbackView.swift`
-  - [ ] Input: `offsetPercentage: Double?` (signed: negative = early, positive = late)
-  - [ ] Display: arrow + signed percentage text — "← 3% early" or "→ 8% late" or "On the beat"
-  - [ ] Arrow symbol: `arrow.left` (early/negative), `arrow.right` (late/positive), `circle.fill` (zero)
-  - [ ] Color bands: green (≤5%), yellow (5–15%), red (>15%) — matching spectrogram thresholds
-  - [ ] Static helper methods for testability: `feedbackText()`, `arrowSymbolName()`, `feedbackColor()`, `band()`, `accessibilityLabel()`
-  - [ ] Accessibility: combined element reading "3 percent early" or "8 percent late" or "On the beat"
-  - [ ] Nil state: hidden placeholder preserving layout (same pattern as `PitchMatchingFeedbackIndicator`)
-  - [ ] Write tests in `PeachTests/RhythmMatching/RhythmMatchingFeedbackViewTests.swift`
+- [x] Task 1: Create `RhythmMatchingFeedbackView` — signed-offset feedback indicator (AC: #5, #6)
+  - [x] Create `Peach/RhythmMatching/RhythmMatchingFeedbackView.swift`
+  - [x] Input: `offsetPercentage: Double?` (signed: negative = early, positive = late)
+  - [x] Display: arrow + signed percentage text — "← 3% early" or "→ 8% late" or "On the beat"
+  - [x] Arrow symbol: `arrow.left` (early/negative), `arrow.right` (late/positive), `circle.fill` (zero)
+  - [x] Color bands: green (≤5%), yellow (5–15%), red (>15%) — matching spectrogram thresholds
+  - [x] Static helper methods for testability: `feedbackText()`, `arrowSymbolName()`, `feedbackColor()`, `band()`, `accessibilityLabel()`
+  - [x] Accessibility: combined element reading "3 percent early" or "8 percent late" or "On the beat"
+  - [x] Nil state: hidden placeholder preserving layout (same pattern as `PitchMatchingFeedbackIndicator`)
+  - [x] Write tests in `PeachTests/RhythmMatching/RhythmMatchingFeedbackViewTests.swift`
 
-- [ ] Task 2: Create `RhythmMatchingDotView` — 4-dot visualization with color feedback on 4th dot (AC: #2, #3)
-  - [ ] Create `Peach/RhythmMatching/RhythmMatchingDotView.swift`
-  - [ ] Input: `litCount: Int` (0–4), `fourthDotColor: Color?` (nil = default `.primary`, set after feedback)
-  - [ ] Dots 1–3: same as `RhythmDotView` — dim (0.2 opacity) when unlit, full opacity when lit, `.primary` color
-  - [ ] Dot 4: same dim/lit behavior, but when `fourthDotColor` is non-nil, fill with that color instead of `.primary`
-  - [ ] Color mapping: green (precise ≤5%), yellow (moderate 5–15%), red (erratic >15%) — use static method
-  - [ ] Static layout constants: `dotDiameter = 16`, `dotSpacing = 24` (matching `RhythmDotView`)
-  - [ ] `accessibilityHidden(true)` — dots are non-informative accompaniment
-  - [ ] Write tests in `PeachTests/RhythmMatching/RhythmMatchingDotViewTests.swift`
+- [x] Task 2: Create `RhythmMatchingDotView` — 4-dot visualization with color feedback on 4th dot (AC: #2, #3)
+  - [x] Create `Peach/RhythmMatching/RhythmMatchingDotView.swift`
+  - [x] Input: `litCount: Int` (0–4), `fourthDotColor: Color?` (nil = default `.primary`, set after feedback)
+  - [x] Dots 1–3: same as `RhythmDotView` — dim (0.2 opacity) when unlit, full opacity when lit, `.primary` color
+  - [x] Dot 4: same dim/lit behavior, but when `fourthDotColor` is non-nil, fill with that color instead of `.primary`
+  - [x] Color mapping: green (precise ≤5%), yellow (moderate 5–15%), red (erratic >15%) — use static method
+  - [x] Static layout constants: `dotDiameter = 16`, `dotSpacing = 24` (matching `RhythmDotView`)
+  - [x] `accessibilityHidden(true)` — dots are non-informative accompaniment
+  - [x] Write tests in `PeachTests/RhythmMatching/RhythmMatchingDotViewTests.swift`
 
-- [ ] Task 3: Create `RhythmMatchingScreen` — main screen assembly (AC: #1, #4, #7)
-  - [ ] Create `Peach/RhythmMatching/RhythmMatchingScreen.swift`
-  - [ ] `@Environment(\.rhythmMatchingSession)` for session access
-  - [ ] `@Environment(\.progressTimeline)` for trend data
-  - [ ] `@Environment(\.accessibilityReduceMotion)` for animation control
-  - [ ] `@Environment(\.verticalSizeClass)` for compact height adaptation
-  - [ ] Layout: `VStack` with `statsHeader` → `RhythmMatchingDotView` → Tap button
-  - [ ] Stats header: `RhythmStatsView` (reuse from RhythmOffsetDetection) with `latestValue: abs(session.lastUserOffsetPercentage)`, `sessionBest: nil` (no session best for matching), `trend: progressTimeline.trend(for: .rhythmMatching)`
-  - [ ] Feedback indicator: `RhythmMatchingFeedbackView(offsetPercentage: session.lastUserOffsetPercentage)` with opacity tied to `session.showFeedback`
-  - [ ] Tap button: full-width, `.borderedProminent`, label "Tap", **always enabled** (UX-DR3)
-  - [ ] Tap action: `session.handleTap()`
-  - [ ] Tap button VoiceOver: label "Tap", hint "Tap at the correct moment to match the rhythm"
-  - [ ] `onAppear`: `session.stop()` then `session.start(settings: RhythmMatchingSettings())`
-  - [ ] `onDisappear`: `session.stop()`
-  - [ ] Help sheet with `HelpContentView` — stop session on show, restart on dismiss
-  - [ ] Toolbar: Help, Settings, Profile icons (mirror `RhythmOffsetDetectionScreen`)
-  - [ ] Navigation title: "Rhythm" with `.inline` display mode
-  - [ ] Compact height adaptation: button icon size, min height, text font (static methods for testability)
+- [x] Task 3: Create `RhythmMatchingScreen` — main screen assembly (AC: #1, #4, #7)
+  - [x] Create `Peach/RhythmMatching/RhythmMatchingScreen.swift`
+  - [x] `@Environment(\.rhythmMatchingSession)` for session access
+  - [x] `@Environment(\.progressTimeline)` for trend data
+  - [x] `@Environment(\.accessibilityReduceMotion)` for animation control
+  - [x] `@Environment(\.verticalSizeClass)` for compact height adaptation
+  - [x] Layout: `VStack` with `statsHeader` → `RhythmMatchingDotView` → Tap button
+  - [x] Stats header: `RhythmStatsView` (reuse from RhythmOffsetDetection) with `latestValue: abs(session.lastUserOffsetPercentage)`, `sessionBest: nil` (no session best for matching), `trend: progressTimeline.trend(for: .rhythmMatching)`
+  - [x] Feedback indicator: `RhythmMatchingFeedbackView(offsetPercentage: session.lastUserOffsetPercentage)` with opacity tied to `session.showFeedback`
+  - [x] Tap button: full-width, `.borderedProminent`, label "Tap", **always enabled** (UX-DR3)
+  - [x] Tap action: `session.handleTap()`
+  - [x] Tap button VoiceOver: label "Tap", hint "Tap at the correct moment to match the rhythm"
+  - [x] `onAppear`: `session.stop()` then `session.start(settings: RhythmMatchingSettings())`
+  - [x] `onDisappear`: `session.stop()`
+  - [x] Help sheet with `HelpContentView` — stop session on show, restart on dismiss
+  - [x] Toolbar: Help, Settings, Profile icons (mirror `RhythmOffsetDetectionScreen`)
+  - [x] Navigation title: "Rhythm" with `.inline` display mode
+  - [x] Compact height adaptation: button icon size, min height, text font (static methods for testability)
 
-- [ ] Task 4: Compute `fourthDotColor` from session state (AC: #3)
-  - [ ] In `RhythmMatchingScreen`, derive `fourthDotColor` from `session.lastUserOffsetPercentage` when `session.showFeedback` is true
-  - [ ] Use `RhythmMatchingDotView.dotColor(forPercentage:)` static method
-  - [ ] Pass `nil` when not showing feedback (4th dot uses default color on tap, then color on feedback)
+- [x] Task 4: Compute `fourthDotColor` from session state (AC: #3)
+  - [x] In `RhythmMatchingScreen`, derive `fourthDotColor` from `session.lastUserOffsetPercentage` when `session.showFeedback` is true
+  - [x] Use `RhythmMatchingDotView.dotColor(forPercentage:)` static method
+  - [x] Pass `nil` when not showing feedback (4th dot uses default color on tap, then color on feedback)
 
-- [ ] Task 5: Write help content sections (AC: #1)
-  - [ ] Static `helpSections: [HelpSection]` on `RhythmMatchingScreen`
-  - [ ] Sections: Goal ("3 clicks play, you tap the 4th"), Controls ("Tap button is always active"), Feedback ("Arrow and percentage show how close you were")
-  - [ ] Localized strings using `String(localized:)`
+- [x] Task 5: Write help content sections (AC: #1)
+  - [x] Static `helpSections: [HelpSection]` on `RhythmMatchingScreen`
+  - [x] Sections: Goal ("3 clicks play, you tap the 4th"), Controls ("Tap button is always active"), Feedback ("Arrow and percentage show how close you were")
+  - [x] Localized strings using `String(localized:)`
 
-- [ ] Task 6: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 6: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions
 
 ## Dev Notes
 
@@ -198,10 +198,28 @@ No existing files modified — this story is purely additive.
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `RhythmMatchingFeedbackView` with signed-offset display (arrow + percentage), 3-band color coding (green/yellow/red), and full accessibility support
+- Created `RhythmMatchingDotView` with 4th-dot color feedback, matching `RhythmDotView` layout constants
+- Created `RhythmMatchingScreen` mirroring `RhythmOffsetDetectionScreen` with key differences: single always-enabled Tap button, no sessionBest, continuous signed offset feedback
+- fourthDotColor computed from session state using `RhythmMatchingDotView.dotColor(forPercentage:)` static method, nil when not showing feedback
+- 3 help sections with localized content (Goal, Controls, Feedback)
+- 29 new tests across 2 test files (20 for FeedbackView, 9 for DotView)
+- All 1348 tests pass, no regressions
+
 ### File List
+
+- Peach/RhythmMatching/RhythmMatchingFeedbackView.swift (NEW)
+- Peach/RhythmMatching/RhythmMatchingDotView.swift (NEW)
+- Peach/RhythmMatching/RhythmMatchingScreen.swift (NEW)
+- PeachTests/RhythmMatching/RhythmMatchingFeedbackViewTests.swift (NEW)
+- PeachTests/RhythmMatching/RhythmMatchingDotViewTests.swift (NEW)
+
+## Change Log
+
+- 2026-03-21: Implemented story 49.2 — RhythmMatchingScreen with tap button, dot visualization with 4th-dot color feedback, signed-offset feedback view, and help content
