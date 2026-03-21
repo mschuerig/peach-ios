@@ -31,14 +31,9 @@ struct RhythmMatchingDotView: View {
     // MARK: - Color Mapping
 
     static func dotColor(forPercentage percentage: Double) -> Color {
-        let absolute = abs(percentage)
-        if absolute <= 5 {
-            return .green
-        } else if absolute <= 15 {
-            return .yellow
-        } else {
-            return .red
-        }
+        RhythmMatchingFeedbackView.feedbackColor(
+            band: RhythmMatchingFeedbackView.band(offsetPercentage: percentage)
+        )
     }
 }
 

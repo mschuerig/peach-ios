@@ -137,4 +137,24 @@ struct RhythmMatchingFeedbackViewTests {
         let label = RhythmMatchingFeedbackView.accessibilityLabel(offsetPercentage: 4.7)
         #expect(label == "5 " + String(localized: "percent late"))
     }
+
+    // MARK: - Clamping Tests
+
+    @Test("feedbackText clamps extreme late value to 100%")
+    func feedbackTextClampsExtremeLate() async {
+        let text = RhythmMatchingFeedbackView.feedbackText(offsetPercentage: 1600)
+        #expect(text == "100% " + String(localized: "late"))
+    }
+
+    @Test("feedbackText clamps extreme early value to 100%")
+    func feedbackTextClampsExtremeEarly() async {
+        let text = RhythmMatchingFeedbackView.feedbackText(offsetPercentage: -1600)
+        #expect(text == "100% " + String(localized: "early"))
+    }
+
+    @Test("accessibilityLabel clamps extreme value to 100")
+    func accessibilityLabelClampsExtreme() async {
+        let label = RhythmMatchingFeedbackView.accessibilityLabel(offsetPercentage: 5000)
+        #expect(label == "100 " + String(localized: "percent late"))
+    }
 }

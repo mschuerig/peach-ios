@@ -65,7 +65,7 @@ struct RhythmMatchingFeedbackView: View {
     }
 
     static func feedbackText(offsetPercentage: Double) -> String {
-        let rounded = Int(offsetPercentage.rounded())
+        let rounded = Int(offsetPercentage.clamped(to: -100...100).rounded())
         if rounded < 0 {
             return "\(abs(rounded))% " + String(localized: "early")
         } else if rounded > 0 {
@@ -76,7 +76,7 @@ struct RhythmMatchingFeedbackView: View {
     }
 
     static func accessibilityLabel(offsetPercentage: Double) -> String {
-        let rounded = Int(offsetPercentage.rounded())
+        let rounded = Int(offsetPercentage.clamped(to: -100...100).rounded())
         if rounded < 0 {
             return "\(abs(rounded)) " + String(localized: "percent early")
         } else if rounded > 0 {

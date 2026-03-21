@@ -1,6 +1,6 @@
 # Story 49.2: RhythmMatchingScreen with Tap Button and Color Feedback
 
-Status: review
+Status: done
 
 ## Story
 
