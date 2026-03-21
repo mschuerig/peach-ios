@@ -34,6 +34,20 @@ enum TrainingMode: CaseIterable {
         }
     }
 
+    var statisticsKeys: [StatisticsKey] {
+        switch self {
+        case .unisonPitchComparison, .intervalPitchComparison,
+             .unisonMatching, .intervalMatching:
+            [.pitch(self)]
+        case .rhythmComparison, .rhythmMatching:
+            TempoRange.defaultRanges.flatMap { range in
+                RhythmDirection.allCases.map { direction in
+                    .rhythm(self, range, direction)
+                }
+            }
+        }
+    }
+
     var slug: String {
         switch self {
         case .unisonPitchComparison: "pitch-comparison"
@@ -109,31 +123,32 @@ final class ProgressTimeline {
 
     /// Returns the display state for a training mode (no data or active).
     func state(for mode: TrainingMode) -> TrainingModeState {
-        profile.hasData(for: mode) ? .active : .noData
+        profile.mergedStatistics(for: mode.statisticsKeys) != nil ? .active : .noData
     }
 
     /// Returns the current EWMA value for a mode, or nil if no data.
     func currentEWMA(for mode: TrainingMode) -> Double? {
-        profile.currentEWMA(for: mode)
+        profile.mergedStatistics(for: mode.statisticsKeys)?.ewma
     }
 
     /// Returns the total number of records ingested for a mode.
     func recordCount(for mode: TrainingMode) -> Int {
-        profile.recordCount(for: mode)
+        profile.mergedStatistics(for: mode.statisticsKeys)?.recordCount ?? 0
     }
 
     /// Returns the trend direction for a mode, or nil if insufficient data.
     func trend(for mode: TrainingMode) -> Trend? {
-        profile.trend(for: mode)
+        profile.mergedStatistics(for: mode.statisticsKeys)?.trend
     }
 
     // MARK: - Bucketing (presentation-only)
 
     /// Returns the adaptive time buckets for charting a mode's progress.
     func buckets(for mode: TrainingMode) -> [TimeBucket] {
-        guard let stats = profile.statistics(for: mode), !stats.metrics.isEmpty else { return [] }
+        guard let summary = profile.mergedStatistics(for: mode.statisticsKeys),
+              !summary.metrics.isEmpty else { return [] }
         let now = Date()
-        return assignBuckets(stats.metrics, now: now, sessionGap: mode.config.sessionGap)
+        return assignBuckets(summary.metrics, now: now, sessionGap: mode.config.sessionGap)
     }
 
     /// Returns concatenated multi-granularity buckets ordered chronologically.
@@ -145,10 +160,11 @@ final class ProgressTimeline {
     ///
     /// Only three granularity tiers are used: month, day, and session.
     func allGranularityBuckets(for mode: TrainingMode) -> [TimeBucket] {
-        guard let stats = profile.statistics(for: mode), !stats.metrics.isEmpty else { return [] }
+        guard let summary = profile.mergedStatistics(for: mode.statisticsKeys),
+              !summary.metrics.isEmpty else { return [] }
         let now = Date()
         let calendar = Calendar.current
-        return assignMultiGranularityBuckets(stats.metrics, now: now, calendar: calendar, sessionGap: mode.config.sessionGap)
+        return assignMultiGranularityBuckets(summary.metrics, now: now, calendar: calendar, sessionGap: mode.config.sessionGap)
     }
 
     /// Returns sub-buckets at finer granularity for a given parent bucket.
@@ -157,9 +173,9 @@ final class ProgressTimeline {
     /// Returns an empty array for session buckets (finest granularity).
     func subBuckets(for mode: TrainingMode, expanding bucket: TimeBucket) -> [TimeBucket] {
         guard bucket.bucketSize != .session else { return [] }
-        guard let stats = profile.statistics(for: mode) else { return [] }
+        guard let summary = profile.mergedStatistics(for: mode.statisticsKeys) else { return [] }
 
-        let metrics = stats.metrics.filter {
+        let metrics = summary.metrics.filter {
             $0.timestamp >= bucket.periodStart && $0.timestamp < bucket.periodEnd
         }
         guard !metrics.isEmpty else { return [] }

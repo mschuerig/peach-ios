@@ -8,8 +8,9 @@ final class MockTrainingProfile: TrainingProfile {
 
     // MARK: - TrainingProfile Protocol
 
-    func statistics(for key: StatisticsKey) -> TrainingModeStatistics? {
-        stubbedStatistics[key]
+    func statistics(for key: StatisticsKey) -> StatisticalSummary? {
+        guard let stats = stubbedStatistics[key], stats.recordCount > 0 else { return nil }
+        return .continuous(stats)
     }
 
     // MARK: - Test Helpers

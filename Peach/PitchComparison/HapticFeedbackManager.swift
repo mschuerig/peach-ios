@@ -55,3 +55,13 @@ final class HapticFeedbackManager: HapticFeedback, PitchComparisonObserver {
         }
     }
 }
+
+// MARK: - RhythmComparisonObserver
+
+extension HapticFeedbackManager: RhythmComparisonObserver {
+    func rhythmComparisonCompleted(_ result: CompletedRhythmComparison) {
+        if !result.isCorrect {
+            playIncorrectFeedback()
+        }
+    }
+}

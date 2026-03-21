@@ -2451,6 +2451,121 @@ PeachTests/
 | Timing precision (rhythm NFR) | `SoundFontEngine`, `SoundFontRhythmPlayer` | Render-thread scheduling via `AVAudioSourceNode` + `scheduleMIDIEventBlock`; jitter < 0.01ms |
 | Domain type consistency | All components | `TempoBPM`, `RhythmOffset` at all API boundaries; raw types only at SwiftData persistence boundary |
 
+### Profile Architecture Redesign — StatisticalSummary and Key Expansion
+
+*Supersedes: "Profile Protocol Split" (v0.2), "RhythmProfile Protocol" (v0.4 above), and "Training Modes Extension / ProgressTimeline" descriptions above.*
+
+**Problem:** `PerceptualProfile` accumulated domain-specific convenience methods with each training domain — pitch legacy accessors (`comparisonMean`, `matchingMean`, `matchingStdDev`, `matchingSampleCount`), rhythm aggregation helpers (`trainedTempoRanges`, `rhythmOverallAccuracy`), and TrainingMode-based shortcuts that silently routed through `.pitch(mode)` keys. Adding rhythm modes required new convenience methods rather than working through the existing generic API. This violates the open-closed principle and creates an ever-growing surface area.
+
+**Solution:** Three design moves that make PerceptualProfile a domain-agnostic measurement store:
+
+#### 1. StatisticalSummary Sum Type
+
+The return type from profile queries becomes a sum type. Each variant wraps measurement-appropriate statistics:
+
+```swift
+enum StatisticalSummary: Sendable {
+    case continuous(TrainingModeStatistics)
+    // Future: case ordinal(OrdinalStatistics)
+    // Future: case spatial(SpatialStatistics)
+
+    // Common computed properties — most consumers never switch
+    var recordCount: Int { ... }
+    var trend: Trend? { ... }
+    var ewma: Double? { ... }
+    var metrics: [MetricPoint] { ... }
+}
+```
+
+`TrainingModeStatistics` (Welford + EWMA + trend + time-ordered metrics) becomes the payload of the `.continuous` case rather than the raw return type. Most consumers use the common computed properties and never need to `switch`. Only consumers that need continuous-specific data (e.g., `welford.mean` for adaptive difficulty) pattern-match on `.continuous(let stats)`.
+
+**Future extension:** When a training mode produces non-continuous measurements (ordinal, 2D), add a new `StatisticalSummary` case with its own statistics type. `PerceptualProfile`'s storage and `TrainingProfile`'s API don't change — the new variant flows through the existing infrastructure. At that point, `MetricPoint.value: Double` should also become a sum type (`MeasuredValue`) — see deferred design note.
+
+#### 2. TrainingMode Key Expansion
+
+Each `TrainingMode` knows how to expand itself into the set of `StatisticsKey`s that contribute to its aggregate view:
+
+```swift
+extension TrainingMode {
+    var statisticsKeys: [StatisticsKey] {
+        switch self {
+        case .unisonPitchComparison: [.pitch(.unisonPitchComparison)]
+        case .intervalPitchComparison: [.pitch(.intervalPitchComparison)]
+        case .unisonMatching: [.pitch(.unisonMatching)]
+        case .intervalMatching: [.pitch(.intervalMatching)]
+        case .rhythmComparison:
+            TempoRange.allRanges.flatMap { range in
+                RhythmDirection.allCases.map { .rhythm(.rhythmComparison, range, $0) }
+            }
+        case .rhythmMatching:
+            TempoRange.allRanges.flatMap { range in
+                RhythmDirection.allCases.map { .rhythm(.rhythmMatching, range, $0) }
+            }
+        }
+    }
+}
+```
+
+Pitch modes expand 1:1 (one key each). Rhythm modes expand across tempoRange × direction (currently 3 × 2 = 6 keys each). The expansion is training-mode knowledge that belongs with `TrainingMode`, not with `PerceptualProfile`.
+
+#### 3. Generic Merge on TrainingProfile
+
+The `TrainingProfile` protocol gains a default-implemented merge method:
+
+```swift
+protocol TrainingProfile: AnyObject {
+    func statistics(for key: StatisticsKey) -> StatisticalSummary?
+}
+
+extension TrainingProfile {
+    func mergedStatistics(for keys: [StatisticsKey]) -> StatisticalSummary? {
+        let allMetrics = keys.compactMap { statistics(for: $0) }
+            .flatMap { $0.metrics }
+            .sorted { $0.timestamp < $1.timestamp }
+        guard !allMetrics.isEmpty,
+              let config = keys.first?.statisticsConfig else { return nil }
+        var stats = TrainingModeStatistics()
+        stats.rebuild(from: allMetrics, config: config)
+        return .continuous(stats)
+    }
+}
+```
+
+This collects metrics from multiple keys, merges them chronologically, and rebuilds a `StatisticalSummary`. It is generic — no training-mode-specific knowledge. For single-key pitch modes, `mergedStatistics(for: mode.statisticsKeys)` is equivalent to `statistics(for: .pitch(mode))`. For multi-key rhythm modes, it aggregates across all tempo ranges and directions.
+
+#### Resulting Architecture
+
+**PerceptualProfile** — typed key-value store for measurement series. Stores `[StatisticsKey: TrainingModeStatistics]`. Returns `StatisticalSummary.continuous(stats)` from `statistics(for:)`. Observer conformances remain as thin routing (domain event → `StatisticsKey` + value → store). All legacy convenience methods removed.
+
+**ProgressTimeline** — pure presentation layer, uniform for all modes:
+
+```swift
+func state(for mode: TrainingMode) -> TrainingModeState {
+    profile.mergedStatistics(for: mode.statisticsKeys) != nil ? .active : .noData
+}
+
+func currentEWMA(for mode: TrainingMode) -> Double? {
+    profile.mergedStatistics(for: mode.statisticsKeys)?.ewma
+}
+
+func buckets(for mode: TrainingMode) -> [TimeBucket] {
+    guard let summary = profile.mergedStatistics(for: mode.statisticsKeys) else { return [] }
+    return assignBuckets(summary.metrics, now: Date(), sessionGap: mode.config.sessionGap)
+}
+```
+
+No rhythm special cases. No pitch special cases. One code path for all modes.
+
+**Consumers of removed APIs:**
+- `comparisonMean`, `matchingMean/StdDev/SampleCount`, `trainedTempoRanges`, `rhythmOverallAccuracy` — all dead code (zero production consumers), deleted
+- `KazezNoteStrategy` — already uses `profile.statistics(for: .pitch(mode))` (the `StatisticsKey`-based API); updated to pattern-match on `.continuous(let stats)` to access `stats.welford.mean`
+- ProgressTimeline — updated to use `mode.statisticsKeys` + `mergedStatistics(for:)`
+- Views — unchanged (they call ProgressTimeline, not PerceptualProfile directly)
+
+#### Deferred: MetricPoint → MeasuredValue
+
+`MetricPoint.value` remains `Double` for now. When a non-continuous measurement type is introduced, convert to a sum type (`MeasuredValue`) carrying typed values per measurement kind. The `StatisticalSummary` enum already anticipates this — its variants would align with `MeasuredValue` variants.
+
 ### v0.4 Implementation Sequence
 
 1. **Core/Music/ directory split** — move domain value types from Core/Audio/, update Xcode groups (pure refactoring, no functional changes)

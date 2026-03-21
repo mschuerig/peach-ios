@@ -314,7 +314,7 @@ struct PerceptualProfileTests {
 
         let stats = profile.statistics(for: .rhythm(.rhythmComparison, .fast, .early))
         #expect(stats?.recordCount == 1)
-        #expect(abs((stats?.welford.mean ?? 0) - 20.0) < 0.01)
+        #expect(abs((stats?.welfordMean ?? 0) - 20.0) < 0.01)
     }
 
     @Test("RhythmComparisonObserver skips incorrect results")
@@ -346,7 +346,7 @@ struct PerceptualProfileTests {
 
         let stats = profile.statistics(for: .rhythm(.rhythmMatching, .medium, .late))
         #expect(stats?.recordCount == 1)
-        #expect(abs((stats?.welford.mean ?? 0) - 12.0) < 0.01)
+        #expect(abs((stats?.welfordMean ?? 0) - 12.0) < 0.01)
     }
 
     // MARK: - Rhythm Builder
@@ -370,7 +370,7 @@ struct PerceptualProfileTests {
 
         let stats = profile.statistics(for: .rhythm(.rhythmComparison, .fast, .early))
         #expect(stats?.recordCount == 2)
-        #expect(abs((stats?.welford.mean ?? 0) - 20.0) < 0.01) // (15+25)/2
+        #expect(abs((stats?.welfordMean ?? 0) - 20.0) < 0.01) // (15+25)/2
     }
 
     @Test("Builder initialization with rhythm matching records rebuilds correctly")
@@ -386,7 +386,7 @@ struct PerceptualProfileTests {
 
         let stats = profile.statistics(for: .rhythm(.rhythmMatching, .medium, .late))
         #expect(stats?.recordCount == 1)
-        #expect(abs((stats?.welford.mean ?? 0) - 10.0) < 0.01)
+        #expect(abs((stats?.welfordMean ?? 0) - 10.0) < 0.01)
     }
 
     @Test("Builder skips incorrect rhythm comparison points")

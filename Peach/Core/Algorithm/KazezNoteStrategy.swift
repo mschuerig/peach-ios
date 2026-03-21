@@ -51,7 +51,7 @@ final class KazezNoteStrategy: NextPitchComparisonStrategy {
             magnitude = last.isCorrect
                 ? kazezNarrow(p: p).clamped(to: difficultyRange)
                 : kazezWiden(p: p).clamped(to: difficultyRange)
-        } else if let stats = profile.statistics(for: .pitch(interval == .prime ? .unisonPitchComparison : .intervalPitchComparison)) {
+        } else if case .continuous(let stats) = profile.statistics(for: .pitch(interval == .prime ? .unisonPitchComparison : .intervalPitchComparison)) {
             magnitude = stats.welford.mean.clamped(to: difficultyRange)
         } else {
             magnitude = settings.maxCentDifference.rawValue
