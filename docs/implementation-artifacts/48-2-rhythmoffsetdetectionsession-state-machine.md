@@ -1,6 +1,6 @@
 # Story 48.2: RhythmOffsetDetectionSession State Machine
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,75 +26,75 @@ So that the rhythm offset detection training loop works end-to-end with proper s
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmOffsetDetectionSession` with state enum (AC: #1, #6)
-  - [ ] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionSession.swift`
-  - [ ] Define `RhythmOffsetDetectionSessionState` enum: `idle`, `playingPattern`, `awaitingAnswer`, `showingFeedback`
-  - [ ] `@Observable final class RhythmOffsetDetectionSession: TrainingSession`
-  - [ ] Observable state: `state`, `showFeedback`, `isLastAnswerCorrect`, `currentOffsetPercentage`
-  - [ ] Dependencies: `rhythmPlayer`, `strategy`, `profile`, `observers`, `interruptionMonitor`, `sampleRate`
+- [x] Task 1: Create `RhythmOffsetDetectionSession` with state enum (AC: #1, #6)
+  - [x] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionSession.swift`
+  - [x] Define `RhythmOffsetDetectionSessionState` enum: `idle`, `playingPattern`, `awaitingAnswer`, `showingFeedback`
+  - [x] `@Observable final class RhythmOffsetDetectionSession: TrainingSession`
+  - [x] Observable state: `state`, `showFeedback`, `isLastAnswerCorrect`, `currentOffsetPercentage`
+  - [x] Dependencies: `rhythmPlayer`, `strategy`, `profile`, `observers`, `interruptionMonitor`, `sampleRate`
 
-- [ ] Task 2: Implement `start(settings:)` and training loop (AC: #2)
-  - [ ] Guard on `state == .idle` before starting
-  - [ ] Store settings snapshot
-  - [ ] Spawn training task via `Task { await runTrainingLoop() }`
-  - [ ] `playNextTrial()`: call strategy, build `RhythmPattern`, call `rhythmPlayer.play(pattern)`, store handle
-  - [ ] Transition to `playingPattern`, then `awaitingAnswer` after pattern completes
+- [x] Task 2: Implement `start(settings:)` and training loop (AC: #2)
+  - [x] Guard on `state == .idle` before starting
+  - [x] Store settings snapshot
+  - [x] Spawn training task via `Task { await runTrainingLoop() }`
+  - [x] `playNextTrial()`: call strategy, build `RhythmPattern`, call `rhythmPlayer.play(pattern)`, store handle
+  - [x] Transition to `playingPattern`, then `awaitingAnswer` after pattern completes
 
-- [ ] Task 3: Implement pattern building (AC: #2)
-  - [ ] Build `RhythmPattern` with 4 events at sixteenth-note intervals
-  - [ ] 4th event shifted by `trial.offset` (converted to sample offset)
-  - [ ] Use `sampleRate` for sample offset calculation: `Int64(sampleRate.rawValue * duration.timeInterval)`
-  - [ ] Use percussion MIDI note (e.g., `MIDINote(76)` — hi-hat, matching POC) and standard velocity
+- [x] Task 3: Implement pattern building (AC: #2)
+  - [x] Build `RhythmPattern` with 4 events at sixteenth-note intervals
+  - [x] 4th event shifted by `trial.offset` (converted to sample offset)
+  - [x] Use `sampleRate` for sample offset calculation: `Int64(sampleRate.rawValue * duration.timeInterval)`
+  - [x] Use percussion MIDI note (e.g., `MIDINote(76)` — hi-hat, matching POC) and standard velocity
 
-- [ ] Task 4: Implement `handleAnswer(direction:)` (AC: #4)
-  - [ ] Guard on `state == .awaitingAnswer`
-  - [ ] Determine correctness: `direction == trial.offset.direction`
-  - [ ] Create `CompletedRhythmOffsetDetectionTrial(tempo:offset:isCorrect:)`
-  - [ ] Notify observers via `observers.forEach { $0.rhythmOffsetDetectionCompleted(completed) }`
-  - [ ] Transition to `showingFeedback`
+- [x] Task 4: Implement `handleAnswer(direction:)` (AC: #4)
+  - [x] Guard on `state == .awaitingAnswer`
+  - [x] Determine correctness: `direction == trial.offset.direction`
+  - [x] Create `CompletedRhythmOffsetDetectionTrial(tempo:offset:isCorrect:)`
+  - [x] Notify observers via `observers.forEach { $0.rhythmOffsetDetectionCompleted(completed) }`
+  - [x] Transition to `showingFeedback`
 
-- [ ] Task 5: Implement feedback and loop (AC: #4)
-  - [ ] `transitionToFeedback()`: set `isLastAnswerCorrect`, `showFeedback = true`, state = `.showingFeedback`
-  - [ ] `feedbackTask`: sleep for `settings.feedbackDuration`, then `showFeedback = false`, call `playNextTrial()`
-  - [ ] Cancel feedback task on stop
+- [x] Task 5: Implement feedback and loop (AC: #4)
+  - [x] `transitionToFeedback()`: set `isLastAnswerCorrect`, `showFeedback = true`, state = `.showingFeedback`
+  - [x] `feedbackTask`: sleep for `settings.feedbackDuration`, then `showFeedback = false`, call `playNextTrial()`
+  - [x] Cancel feedback task on stop
 
-- [ ] Task 6: Implement `stop()` and interruption handling (AC: #5, #6)
-  - [ ] Guard: return if already idle
-  - [ ] Stop rhythm playback handle: `try? await currentHandle?.stop()`
-  - [ ] Cancel training task and feedback task
-  - [ ] Reset all state to idle defaults
-  - [ ] Wire `AudioSessionInterruptionMonitor` in init with `onStopRequired: { [weak self] in self?.stop() }`
+- [x] Task 6: Implement `stop()` and interruption handling (AC: #5, #6)
+  - [x] Guard: return if already idle
+  - [x] Stop rhythm playback handle: `try? await currentHandle?.stop()`
+  - [x] Cancel training task and feedback task
+  - [x] Reset all state to idle defaults
+  - [x] Wire `AudioSessionInterruptionMonitor` in init with `onStopRequired: { [weak self] in self?.stop() }`
 
-- [ ] Task 7: Wire into composition root (AC: #1)
-  - [ ] Add `@Entry var rhythmOffsetDetectionSession` to `EnvironmentKeys.swift` with preview default
-  - [ ] Add `@State private var rhythmOffsetDetectionSession` to `PeachApp`
-  - [ ] Create `createRhythmOffsetDetectionSession()` helper in `PeachApp`
-  - [ ] Pass `rhythmPlayer`, `AdaptiveRhythmOffsetDetectionStrategy()`, `profile`, observers (`[dataStore, profile, hapticManager]`)
-  - [ ] Inject via `.environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)`
-  - [ ] Add `onChange(of: rhythmOffsetDetectionSession.isIdle)` for active session tracking
+- [x] Task 7: Wire into composition root (AC: #1)
+  - [x] Add `@Entry var rhythmOffsetDetectionSession` to `EnvironmentKeys.swift` with preview default
+  - [x] Add `@State private var rhythmOffsetDetectionSession` to `PeachApp`
+  - [x] Create `createRhythmOffsetDetectionSession()` helper in `PeachApp`
+  - [x] Pass `rhythmPlayer`, `AdaptiveRhythmOffsetDetectionStrategy()`, `profile`, observers (`[dataStore, profile, hapticManager]`)
+  - [x] Inject via `.environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)`
+  - [x] Add `onChange(of: rhythmOffsetDetectionSession.isIdle)` for active session tracking
 
-- [ ] Task 8: Write tests (AC: #7)
-  - [ ] Create `PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionSessionTests.swift`
-  - [ ] Factory method returning `(session:, mockPlayer:, mockStrategy:, mockObserver:)` tuple
-  - [ ] Test starts in idle state
-  - [ ] Test `start()` transitions to `playingPattern` and calls strategy + rhythm player
-  - [ ] Test pattern has 4 events with correct sample offsets (3 regular + 1 offset)
-  - [ ] Test transitions to `awaitingAnswer` after pattern completes
-  - [ ] Test `handleAnswer(direction:)` records correct/incorrect result and notifies observers
-  - [ ] Test feedback phase transitions and auto-advances to next trial
-  - [ ] Test `stop()` transitions to idle and cancels tasks
-  - [ ] Test `stop()` when already idle is a no-op
-  - [ ] Test error handling: audio error stops session gracefully
-  - [ ] Test `handleAnswer` ignored when not in `awaitingAnswer` state
-  - [ ] Test `start()` ignored when not idle
+- [x] Task 8: Write tests (AC: #7)
+  - [x] Create `PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionSessionTests.swift`
+  - [x] Factory method returning `(session:, mockPlayer:, mockStrategy:, mockObserver:)` tuple
+  - [x] Test starts in idle state
+  - [x] Test `start()` transitions to `playingPattern` and calls strategy + rhythm player
+  - [x] Test pattern has 4 events with correct sample offsets (3 regular + 1 offset)
+  - [x] Test transitions to `awaitingAnswer` after pattern completes
+  - [x] Test `handleAnswer(direction:)` records correct/incorrect result and notifies observers
+  - [x] Test feedback phase transitions and auto-advances to next trial
+  - [x] Test `stop()` transitions to idle and cancels tasks
+  - [x] Test `stop()` when already idle is a no-op
+  - [x] Test error handling: audio error stops session gracefully
+  - [x] Test `handleAnswer` ignored when not in `awaitingAnswer` state
+  - [x] Test `start()` ignored when not idle
 
-- [ ] Task 9: Create `MockRhythmOffsetDetectionObserver` (AC: #7)
-  - [ ] Create `PeachTests/Mocks/MockRhythmOffsetDetectionObserver.swift`
-  - [ ] Track `completedCallCount`, `lastResult: CompletedRhythmOffsetDetectionTrial?`, `results: [CompletedRhythmOffsetDetectionTrial]`
-  - [ ] `reset()` method
+- [x] Task 9: Create `MockRhythmOffsetDetectionObserver` (AC: #7)
+  - [x] Create `PeachTests/Mocks/MockRhythmOffsetDetectionObserver.swift`
+  - [x] Track `completedCallCount`, `lastResult: CompletedRhythmOffsetDetectionTrial?`, `results: [CompletedRhythmOffsetDetectionTrial]`
+  - [x] `reset()` method
 
-- [ ] Task 10: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 10: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions
 
 ## Dev Notes
 
@@ -307,10 +307,29 @@ PeachTests/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Implemented `RhythmOffsetDetectionSession` as `@Observable final class` conforming to `TrainingSession`, mirroring `PitchDiscriminationSession` structure
+- State machine: `idle -> playingPattern -> awaitingAnswer -> showingFeedback -> loop`
+- Pattern building constructs 4-event `RhythmPattern` with events 1-3 at regular sixteenth-note intervals and event 4 shifted by trial offset
+- `handleAnswer(direction:)` compares user answer against `trial.offset.direction` for correctness
+- `stop()` cancels all tasks, stops playback handle, resets state; `AudioSessionInterruptionMonitor` wired for headphone disconnect/backgrounding
+- Composition root: factory method `createRhythmOffsetDetectionSession()`, `@Entry` with preview stubs, `onChange` for active session mutual exclusion
+- 13 tests covering all state transitions, pattern correctness, observer notification, feedback auto-advance, error handling, and guard conditions
+- All 1258 tests pass (no regressions)
+
+### Change Log
+
+- 2026-03-21: Implemented story 48.2 — RhythmOffsetDetectionSession state machine with full test coverage
+
 ### File List
+
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionSession.swift (NEW)
+- Peach/App/EnvironmentKeys.swift (MODIFIED — added @Entry + preview stubs for rhythm offset detection session)
+- Peach/App/PeachApp.swift (MODIFIED — wired session creation, environment injection, active session tracking)
+- PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionSessionTests.swift (NEW)
+- PeachTests/Mocks/MockRhythmOffsetDetectionObserver.swift (NEW)

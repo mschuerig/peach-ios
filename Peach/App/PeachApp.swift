@@ -9,6 +9,7 @@ struct PeachApp: App {
     @State private var dataStore: TrainingDataStore
     @State private var pitchDiscriminationSession: PitchDiscriminationSession
     @State private var pitchMatchingSession: PitchMatchingSession
+    @State private var rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
     @State private var profile: PerceptualProfile
     @State private var progressTimeline: ProgressTimeline
     @State private var soundFontLibrary: SoundFontLibrary
@@ -90,6 +91,13 @@ struct PeachApp: App {
                 profile: profile,
                 dataStore: dataStore
             ))
+
+            _rhythmOffsetDetectionSession = State(wrappedValue: Self.createRhythmOffsetDetectionSession(
+                rhythmPlayer: rhythmPlayer,
+                profile: profile,
+                dataStore: dataStore,
+                sampleRate: soundFontEngine.sampleRate
+            ))
             try? Tips.configure()
         } catch {
             fatalError("Failed to initialize app: \(error)")
@@ -136,6 +144,7 @@ struct PeachApp: App {
                 .environment(\.trainingDataTransferService, transferService)
                 .environment(\.rhythmPlayer, rhythmPlayer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
+                .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
                     let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
@@ -179,6 +188,16 @@ struct PeachApp: App {
                         activeSession = nil
                     }
                 }
+                .onChange(of: rhythmOffsetDetectionSession.isIdle) { _, isIdle in
+                    if !isIdle {
+                        if activeSession !== rhythmOffsetDetectionSession {
+                            activeSession?.stop()
+                        }
+                        activeSession = rhythmOffsetDetectionSession
+                    } else if activeSession === rhythmOffsetDetectionSession {
+                        activeSession = nil
+                    }
+                }
         }
     }
 
@@ -207,6 +226,23 @@ struct PeachApp: App {
             strategy: strategy,
             profile: profile,
             observers: observers
+        )
+    }
+
+    private static func createRhythmOffsetDetectionSession(
+        rhythmPlayer: RhythmPlayer,
+        profile: PerceptualProfile,
+        dataStore: TrainingDataStore,
+        sampleRate: SampleRate
+    ) -> RhythmOffsetDetectionSession {
+        let hapticManager = HapticFeedbackManager()
+        let observers: [RhythmOffsetDetectionObserver] = [dataStore, profile, hapticManager]
+        return RhythmOffsetDetectionSession(
+            rhythmPlayer: rhythmPlayer,
+            strategy: AdaptiveRhythmOffsetDetectionStrategy(),
+            profile: profile,
+            observers: observers,
+            sampleRate: sampleRate
         )
     }
 

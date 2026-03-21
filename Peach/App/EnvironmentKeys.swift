@@ -40,6 +40,15 @@ extension EnvironmentValues {
             profile: PerceptualProfile()
         )
     }()
+
+    @Entry var rhythmOffsetDetectionSession: RhythmOffsetDetectionSession = {
+        RhythmOffsetDetectionSession(
+            rhythmPlayer: PreviewRhythmPlayer(),
+            strategy: PreviewRhythmOffsetDetectionStrategy(),
+            profile: PerceptualProfile(),
+            sampleRate: .standard48000
+        )
+    }()
 }
 
 // MARK: - Preview Stubs
@@ -77,6 +86,28 @@ private final class PreviewPitchDiscriminationStrategy: NextPitchDiscriminationS
         let referenceNote = MIDINote(60)
         let targetBaseNote = referenceNote.transposed(by: interval)
         return PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: DetunedMIDINote(note: targetBaseNote, offset: Cents(50.0)))
+    }
+}
+
+private final class PreviewRhythmPlayer: RhythmPlayer {
+    func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle {
+        PreviewRhythmPlaybackHandle()
+    }
+
+    func stopAll() async throws {}
+}
+
+private final class PreviewRhythmPlaybackHandle: RhythmPlaybackHandle {
+    func stop() async throws {}
+}
+
+private final class PreviewRhythmOffsetDetectionStrategy: NextRhythmOffsetDetectionStrategy {
+    func nextRhythmOffsetDetectionTrial(
+        profile: TrainingProfile,
+        settings: RhythmOffsetDetectionSettings,
+        lastResult: CompletedRhythmOffsetDetectionTrial?
+    ) -> RhythmOffsetDetectionTrial {
+        RhythmOffsetDetectionTrial(tempo: TempoBPM(80), offset: RhythmOffset(.milliseconds(50)))
     }
 }
 
