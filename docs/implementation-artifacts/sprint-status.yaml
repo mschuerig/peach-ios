@@ -384,5 +384,5 @@ development_status:
 
   # Epic 49: Hit That Beat — Rhythm Matching Training
   epic-49: in-progress
-  49-1-rhythmmatchingsession-state-machine: ready-for-dev
+  49-1-rhythmmatchingsession-state-machine: review
   49-2-rhythmmatchingscreen-with-tap-button-and-color-feedback: backlog

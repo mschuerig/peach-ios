@@ -49,6 +49,13 @@ extension EnvironmentValues {
             sampleRate: .standard48000
         )
     }()
+
+    @Entry var rhythmMatchingSession: RhythmMatchingSession = {
+        RhythmMatchingSession(
+            rhythmPlayer: PreviewRhythmPlayer(),
+            sampleRate: .standard48000
+        )
+    }()
 }
 
 // MARK: - Preview Stubs

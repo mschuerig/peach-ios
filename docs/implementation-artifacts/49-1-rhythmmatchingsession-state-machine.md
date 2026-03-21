@@ -1,6 +1,6 @@
 # Story 49.1: RhythmMatchingSession State Machine
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,71 +28,71 @@ so that the rhythm matching training loop works end-to-end with proper state man
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmMatchingSettings` value type (AC: #2, #5)
-  - [ ] Create `Peach/Core/Training/RhythmMatchingSettings.swift`
-  - [ ] Properties: `tempo: TempoBPM`, `feedbackDuration: Duration = .milliseconds(400)`
-  - [ ] Conform to `Sendable`
-  - [ ] Write tests in `PeachTests/Core/Training/RhythmMatchingSettingsTests.swift`
+- [x] Task 1: Create `RhythmMatchingSettings` value type (AC: #2, #5)
+  - [x]Create `Peach/Core/Training/RhythmMatchingSettings.swift`
+  - [x]Properties: `tempo: TempoBPM`, `feedbackDuration: Duration = .milliseconds(400)`
+  - [x]Conform to `Sendable`
+  - [x]Write tests in `PeachTests/Core/Training/RhythmMatchingSettingsTests.swift`
 
-- [ ] Task 2: Create `RhythmMatchingSession` with state machine (AC: #1, #2, #3, #4, #5, #6)
-  - [ ] Create `Peach/RhythmMatching/RhythmMatchingSession.swift`
-  - [ ] Define `RhythmMatchingSessionState` enum: `idle`, `playingLeadIn`, `awaitingTap`, `showingFeedback`
-  - [ ] `@Observable final class RhythmMatchingSession: TrainingSession`
-  - [ ] Dependencies: `rhythmPlayer: RhythmPlayer`, `observers: [RhythmMatchingObserver]`, `sampleRate: SampleRate`, `notificationCenter: NotificationCenter`
-  - [ ] Observable state: `state`, `showFeedback: Bool`, `litDotCount: Int`, `lastUserOffsetPercentage: Double?`
-  - [ ] `start(settings: RhythmMatchingSettings)` — guards idle, stores settings, starts training loop
-  - [ ] `handleTap()` — guards `awaitingTap`, records `CACurrentMediaTime()`, computes `RhythmOffset`, notifies observers, transitions to feedback
-  - [ ] `stop()` — cancels tasks, stops player, resets all state to idle
-  - [ ] Private: `runTrainingLoop()`, `playNextTrial()`, `buildPattern(settings:)`, `transitionToFeedback(settings:)`
-  - [ ] `AudioSessionInterruptionMonitor` for interruption handling (same as RhythmOffsetDetectionSession)
+- [x] Task 2: Create `RhythmMatchingSession` with state machine (AC: #1, #2, #3, #4, #5, #6)
+  - [x]Create `Peach/RhythmMatching/RhythmMatchingSession.swift`
+  - [x]Define `RhythmMatchingSessionState` enum: `idle`, `playingLeadIn`, `awaitingTap`, `showingFeedback`
+  - [x]`@Observable final class RhythmMatchingSession: TrainingSession`
+  - [x]Dependencies: `rhythmPlayer: RhythmPlayer`, `observers: [RhythmMatchingObserver]`, `sampleRate: SampleRate`, `notificationCenter: NotificationCenter`
+  - [x]Observable state: `state`, `showFeedback: Bool`, `litDotCount: Int`, `lastUserOffsetPercentage: Double?`
+  - [x]`start(settings: RhythmMatchingSettings)` — guards idle, stores settings, starts training loop
+  - [x]`handleTap()` — guards `awaitingTap`, records `CACurrentMediaTime()`, computes `RhythmOffset`, notifies observers, transitions to feedback
+  - [x]`stop()` — cancels tasks, stops player, resets all state to idle
+  - [x]Private: `runTrainingLoop()`, `playNextTrial()`, `buildPattern(settings:)`, `transitionToFeedback(settings:)`
+  - [x]`AudioSessionInterruptionMonitor` for interruption handling (same as RhythmOffsetDetectionSession)
 
-- [ ] Task 3: Implement `buildPattern` — 3-note lead-in only (AC: #2, #7)
-  - [ ] Build `RhythmPattern` with exactly 3 events (note indices 0, 1, 2) at sixteenth-note intervals
-  - [ ] No 4th note — the user provides the 4th beat by tapping
-  - [ ] `totalDuration = sixteenthDuration * 3` (3 notes, not 4)
-  - [ ] Use same click note (`MIDINote(76)`) and velocity (`MIDIVelocity(100)`) as RhythmOffsetDetectionSession
+- [x] Task 3: Implement `buildPattern` — 3-note lead-in only (AC: #2, #7)
+  - [x]Build `RhythmPattern` with exactly 3 events (note indices 0, 1, 2) at sixteenth-note intervals
+  - [x]No 4th note — the user provides the 4th beat by tapping
+  - [x]`totalDuration = sixteenthDuration * 3` (3 notes, not 4)
+  - [x]Use same click note (`MIDINote(76)`) and velocity (`MIDIVelocity(100)`) as RhythmOffsetDetectionSession
 
-- [ ] Task 4: Implement dot animation and expected tap time (AC: #3)
-  - [ ] In `playNextTrial()`: animate `litDotCount` 1, 2, 3 at sixteenth-note intervals during `playingLeadIn`
-  - [ ] After 3rd dot + one sixteenth-note wait: record `expectedTapTime = CACurrentMediaTime()` (the moment the 4th beat should fall)
-  - [ ] Transition to `awaitingTap`
+- [x] Task 4: Implement dot animation and expected tap time (AC: #3)
+  - [x]In `playNextTrial()`: animate `litDotCount` 1, 2, 3 at sixteenth-note intervals during `playingLeadIn`
+  - [x]After 3rd dot + one sixteenth-note wait: record `expectedTapTime = CACurrentMediaTime()` (the moment the 4th beat should fall)
+  - [x]Transition to `awaitingTap`
 
-- [ ] Task 5: Implement `handleTap()` with microsecond precision (AC: #4)
-  - [ ] Record `actualTapTime = CACurrentMediaTime()` immediately
-  - [ ] Compute `userOffset = RhythmOffset(duration: .seconds(actualTapTime - expectedTapTime))`
-  - [ ] Light 4th dot: `litDotCount = 4`
-  - [ ] Create `CompletedRhythmMatchingTrial(tempo:expectedOffset:userOffset:timestamp:)`
-  - [ ] `expectedOffset` is always `.zero` (4th note should fall exactly on the beat)
-  - [ ] Notify all observers
-  - [ ] Transition to feedback
+- [x] Task 5: Implement `handleTap()` with microsecond precision (AC: #4)
+  - [x]Record `actualTapTime = CACurrentMediaTime()` immediately
+  - [x]Compute `userOffset = RhythmOffset(duration: .seconds(actualTapTime - expectedTapTime))`
+  - [x]Light 4th dot: `litDotCount = 4`
+  - [x]Create `CompletedRhythmMatchingTrial(tempo:expectedOffset:userOffset:timestamp:)`
+  - [x]`expectedOffset` is always `.zero` (4th note should fall exactly on the beat)
+  - [x]Notify all observers
+  - [x]Transition to feedback
 
-- [ ] Task 6: Wire into `PeachApp.swift` (AC: #1)
-  - [ ] Add `@State private var rhythmMatchingSession: RhythmMatchingSession`
-  - [ ] Create `createRhythmMatchingSession()` private method (mirror `createRhythmOffsetDetectionSession()`)
-  - [ ] Inject via `.environment(\.rhythmMatchingSession, rhythmMatchingSession)`
-  - [ ] Add `onChange(of: rhythmMatchingSession.isIdle)` monitoring for active session tracking
-  - [ ] Add `@Entry var rhythmMatchingSession` in `EnvironmentKeys.swift`
+- [x] Task 6: Wire into `PeachApp.swift` (AC: #1)
+  - [x]Add `@State private var rhythmMatchingSession: RhythmMatchingSession`
+  - [x]Create `createRhythmMatchingSession()` private method (mirror `createRhythmOffsetDetectionSession()`)
+  - [x]Inject via `.environment(\.rhythmMatchingSession, rhythmMatchingSession)`
+  - [x]Add `onChange(of: rhythmMatchingSession.isIdle)` monitoring for active session tracking
+  - [x]Add `@Entry var rhythmMatchingSession` in `EnvironmentKeys.swift`
 
-- [ ] Task 7: Write comprehensive tests (AC: #8)
-  - [ ] Create `PeachTests/RhythmMatching/RhythmMatchingSessionTests.swift`
-  - [ ] Test initial state is `idle`
-  - [ ] Test `start()` transitions to `playingLeadIn`
-  - [ ] Test `start()` when not idle is ignored
-  - [ ] Test pattern has exactly 3 events (no 4th note)
-  - [ ] Test transition from `playingLeadIn` to `awaitingTap`
-  - [ ] Test `handleTap()` transitions to `showingFeedback` and notifies observers
-  - [ ] Test `handleTap()` when not `awaitingTap` is ignored
-  - [ ] Test feedback auto-starts next lead-in after duration
-  - [ ] Test `stop()` transitions to idle and cancels playback
-  - [ ] Test `stop()` when idle is no-op
-  - [ ] Test interruption stops session
-  - [ ] Test `litDotCount` increments 1, 2, 3 during lead-in and 4 on tap
-  - [ ] Test `lastUserOffsetPercentage` updates after tap
-  - [ ] Test observer receives `CompletedRhythmMatchingTrial` with correct tempo and offsets
-  - [ ] Create `PeachTests/Core/Training/RhythmMatchingSettingsTests.swift`
+- [x] Task 7: Write comprehensive tests (AC: #8)
+  - [x]Create `PeachTests/RhythmMatching/RhythmMatchingSessionTests.swift`
+  - [x]Test initial state is `idle`
+  - [x]Test `start()` transitions to `playingLeadIn`
+  - [x]Test `start()` when not idle is ignored
+  - [x]Test pattern has exactly 3 events (no 4th note)
+  - [x]Test transition from `playingLeadIn` to `awaitingTap`
+  - [x]Test `handleTap()` transitions to `showingFeedback` and notifies observers
+  - [x]Test `handleTap()` when not `awaitingTap` is ignored
+  - [x]Test feedback auto-starts next lead-in after duration
+  - [x]Test `stop()` transitions to idle and cancels playback
+  - [x]Test `stop()` when idle is no-op
+  - [x]Test interruption stops session
+  - [x]Test `litDotCount` increments 1, 2, 3 during lead-in and 4 on tap
+  - [x]Test `lastUserOffsetPercentage` updates after tap
+  - [x]Test observer receives `CompletedRhythmMatchingTrial` with correct tempo and offsets
+  - [x]Create `PeachTests/Core/Training/RhythmMatchingSettingsTests.swift`
 
-- [ ] Task 8: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 8: Run full test suite
+  - [x]`bin/test.sh` — all tests pass, no regressions
 
 ## Dev Notes
 
@@ -301,10 +301,39 @@ PeachTests/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None required.
+
 ### Completion Notes List
 
+- Created `RhythmMatchingSettings` value type with `tempo` and `feedbackDuration` properties, conforming to `Sendable`
+- Created `RhythmMatchingSession` as `@Observable final class` conforming to `TrainingSession`, mirroring `RhythmOffsetDetectionSession` patterns with key differences: 3-note lead-in (not 4), `handleTap()` instead of `handleAnswer(direction:)`, continuous signed offset measurement via `CACurrentMediaTime()`
+- State machine: `idle -> playingLeadIn -> awaitingTap -> showingFeedback -> loop`
+- `buildPattern()` creates exactly 3 events at sixteenth-note intervals (no 4th note — user taps the 4th beat)
+- Dot animation: `litDotCount` increments 1, 2, 3 during lead-in, set to 4 on tap
+- `expectedTapTime` recorded via `CACurrentMediaTime()` after 3 sixteenth-note sleeps
+- `handleTap()` computes `userOffset = RhythmOffset(.seconds(actualTapTime - expectedTapTime))`
+- `lastUserOffsetPercentage` computed property provides signed percentage for future screen
+- No strategy protocol needed — always plays 3 notes at configured tempo
+- No haptic feedback — rhythm matching has no binary correct/incorrect
+- Observers: `[dataStore, profile]` (not hapticManager, not progressTimeline since it doesn't conform to `RhythmMatchingObserver`)
+- Wired into `PeachApp.swift` with factory method, environment key, and `onChange` for active session tracking
+- Full test suite: 20 tests covering all state transitions, pattern construction, tap handling, dot animation, feedback auto-advance, interruption, and observer notification
+- All 1316 tests pass with zero regressions
+
+### Change Log
+
+- 2026-03-21: Implemented story 49.1 — RhythmMatchingSession state machine with full test coverage
+
 ### File List
+
+- Peach/Core/Training/RhythmMatchingSettings.swift (NEW)
+- Peach/RhythmMatching/RhythmMatchingSession.swift (NEW)
+- Peach/App/PeachApp.swift (MODIFIED — added session state, factory method, environment injection, onChange)
+- Peach/App/EnvironmentKeys.swift (MODIFIED — added @Entry for rhythmMatchingSession)
+- PeachTests/Core/Training/RhythmMatchingSettingsTests.swift (NEW)
+- PeachTests/RhythmMatching/RhythmMatchingSessionTests.swift (NEW)
+- PeachTests/Mocks/MockRhythmMatchingObserver.swift (NEW)
