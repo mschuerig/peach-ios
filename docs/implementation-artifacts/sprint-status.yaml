@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-21 # story 52.2 created
+# last_updated: 2026-03-22 # story 53.1 created
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -404,3 +404,7 @@ development_status:
   epic-52: in-progress
   52-1-csv-export-schema-v2: done
   52-2-csv-import-parser-v2-with-backward-compatibility: done
+
+  # Epic 53: Rhythm in Every Language — Localization
+  epic-53: in-progress
+  53-1-rhythm-training-localization: ready-for-dev
