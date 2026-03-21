@@ -36,8 +36,9 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
             if line.isEmpty { continue }
             let rowNumber = index + 1
             switch parseRow(line, rowNumber: rowNumber) {
-            case .pitchComparison(let record):
+            case .pitchDiscrimination(let record):
                 pitchDiscriminations.append(record)
+
             case .pitchMatching(let record):
                 pitchMatchings.append(record)
             case .error(let error):
@@ -118,9 +119,17 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
     // MARK: - Row Parsing
 
     private enum RowResult {
-        case pitchComparison(PitchDiscriminationRecord)
+        case pitchDiscrimination(PitchDiscriminationRecord)
         case pitchMatching(PitchMatchingRecord)
         case error(CSVImportError)
+    }
+
+    /// Normalizes legacy training type values from older CSV exports.
+    private static func normalizeTrainingType(_ value: String) -> String {
+        switch value {
+        case "pitchComparison": CSVExportSchema.TrainingType.pitchDiscrimination.csvValue
+        default: value
+        }
     }
 
     private func parseRow(_ line: String, rowNumber: Int) -> RowResult {
@@ -167,10 +176,11 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
             return .error(.invalidRowData(row: rowNumber, column: "tuningSystem", value: tuningSystemStr, reason: "not a valid tuning system"))
         }
 
-        switch trainingType {
-        case CSVExportSchema.TrainingType.pitchComparison.csvValue:
+        let normalizedType = Self.normalizeTrainingType(trainingType)
+        switch normalizedType {
+        case CSVExportSchema.TrainingType.pitchDiscrimination.csvValue:
             guard initialCentOffsetStr.isEmpty && userCentErrorStr.isEmpty else {
-                return .error(.invalidRowData(row: rowNumber, column: "initialCentOffset/userCentError", value: "\(initialCentOffsetStr),\(userCentErrorStr)", reason: "must be empty for pitchComparison rows"))
+                return .error(.invalidRowData(row: rowNumber, column: "initialCentOffset/userCentError", value: "\(initialCentOffsetStr),\(userCentErrorStr)", reason: "must be empty for pitchDiscrimination rows"))
             }
 
             guard let centOffset = Double(centOffsetStr) else {
@@ -192,7 +202,7 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
                 tuningSystem: tuningSystemStr,
                 timestamp: timestamp
             )
-            return .pitchComparison(record)
+            return .pitchDiscrimination(record)
 
         case CSVExportSchema.TrainingType.pitchMatching.csvValue:
             guard centOffsetStr.isEmpty && isCorrectStr.isEmpty else {
@@ -219,7 +229,7 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
             return .pitchMatching(record)
 
         default:
-            return .error(.invalidRowData(row: rowNumber, column: "trainingType", value: trainingType, reason: "must be 'pitchComparison' or 'pitchMatching'"))
+            return .error(.invalidRowData(row: rowNumber, column: "trainingType", value: trainingType, reason: "must be 'pitchDiscrimination' or 'pitchMatching'"))
         }
     }
 

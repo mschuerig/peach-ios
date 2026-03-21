@@ -86,7 +86,7 @@ struct CSVFormatVersionReaderTests {
     @Test("preserves data lines after metadata line")
     func preservesDataLines() async {
         let header = CSVExportSchema.headerRow
-        let dataRow = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let dataRow = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
         let content = "# peach-export-format:1\n\(header)\n\(dataRow)"
         let result = CSVFormatVersionReader.readVersion(from: content)
 

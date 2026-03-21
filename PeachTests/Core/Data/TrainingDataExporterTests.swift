@@ -62,7 +62,7 @@ struct TrainingDataExporterTests {
 
         // Verify comparison row (later timestamp — second data row)
         let compFields = lines[3].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-        #expect(compFields[0] == "pitchComparison")
+        #expect(compFields[0] == "pitchDiscrimination")
         #expect(compFields[2] == "60")
         #expect(compFields[3] == "C4")
         #expect(compFields[8] == "15.5")
@@ -87,7 +87,7 @@ struct TrainingDataExporterTests {
         #expect(lines.count == 3)
         #expect(lines[0] == CSVExportSchema.metadataLine)
         #expect(lines[1] == CSVExportSchema.headerRow)
-        #expect(lines[2].hasPrefix("pitchComparison"))
+        #expect(lines[2].hasPrefix("pitchDiscrimination"))
     }
 
     // MARK: - Pitch Matching Only Tests
@@ -155,9 +155,9 @@ struct TrainingDataExporterTests {
 
         #expect(lines.count == 6)
         #expect(lines[2].hasPrefix("pitchMatching"))
-        #expect(lines[3].hasPrefix("pitchComparison"))
+        #expect(lines[3].hasPrefix("pitchDiscrimination"))
         #expect(lines[4].hasPrefix("pitchMatching"))
-        #expect(lines[5].hasPrefix("pitchComparison"))
+        #expect(lines[5].hasPrefix("pitchDiscrimination"))
     }
 
     // MARK: - Stable Sort Tests
@@ -182,7 +182,7 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(lines.count == 4)
-        #expect(lines[2].hasPrefix("pitchComparison"))
+        #expect(lines[2].hasPrefix("pitchDiscrimination"))
         #expect(lines[3].hasPrefix("pitchMatching"))
     }
 

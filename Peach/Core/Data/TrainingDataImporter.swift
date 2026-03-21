@@ -66,7 +66,7 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 referenceNote: record.referenceNote,
                 targetNote: record.targetNote,
-                trainingType: TrainingType.pitchComparison
+                trainingType: TrainingType.pitchDiscrimination
             ))
         }
         for record in existingPitchMatchings {
@@ -85,7 +85,7 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 referenceNote: record.referenceNote,
                 targetNote: record.targetNote,
-                trainingType: TrainingType.pitchComparison
+                trainingType: TrainingType.pitchDiscrimination
             )
             if existingKeys.contains(key) {
                 pitchDiscriminationsSkipped += 1
@@ -126,7 +126,7 @@ enum TrainingDataImporter {
     // MARK: - Duplicate Key
 
     private enum TrainingType {
-        static let pitchComparison = "pitchComparison"
+        static let pitchDiscrimination = "pitchDiscrimination"
         static let pitchMatching = "pitchMatching"
     }
 

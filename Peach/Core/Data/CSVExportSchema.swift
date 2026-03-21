@@ -24,12 +24,12 @@ nonisolated enum CSVExportSchema {
     // MARK: - Training Type
 
     enum TrainingType: Sendable {
-        case pitchComparison
+        case pitchDiscrimination
         case pitchMatching
 
         var csvValue: String {
             switch self {
-            case .pitchComparison: "pitchComparison"
+            case .pitchDiscrimination: "pitchDiscrimination"
             case .pitchMatching: "pitchMatching"
             }
         }
@@ -67,7 +67,7 @@ nonisolated enum CSVExportSchema {
         columnTuningSystem,
     ]
 
-    static let pitchComparisonColumns: [String] = [
+    static let pitchDiscriminationColumns: [String] = [
         columnCentOffset,
         columnIsCorrect,
     ]

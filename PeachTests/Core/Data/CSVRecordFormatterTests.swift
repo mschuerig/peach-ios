@@ -31,7 +31,7 @@ struct CSVRecordFormatterTests {
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields[0] == "pitchComparison")
+        #expect(fields[0] == "pitchDiscrimination")
         #expect(fields[1] == "2026-03-03T14:30:00Z")
         #expect(fields[2] == "60")
         #expect(fields[3] == "C4")
@@ -284,7 +284,7 @@ struct CSVRecordFormatterTests {
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields[0] == "pitchComparison")
+        #expect(fields[0] == "pitchDiscrimination")
         #expect(fields[7] == "justIntonation")
         #expect(fields[8] == "-8.3")
         #expect(fields[9] == "false")

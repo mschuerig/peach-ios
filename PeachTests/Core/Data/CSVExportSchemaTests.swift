@@ -31,7 +31,7 @@ struct CSVExportSchemaTests {
 
     @Test("TrainingType comparison has csvValue 'comparison'")
     func comparisonCsvValue() async {
-        #expect(CSVExportSchema.TrainingType.pitchComparison.csvValue == "pitchComparison")
+        #expect(CSVExportSchema.TrainingType.pitchDiscrimination.csvValue == "pitchDiscrimination")
     }
 
     @Test("TrainingType pitchMatching has csvValue 'pitchMatching'")
@@ -55,9 +55,9 @@ struct CSVExportSchemaTests {
         #expect(common.contains("tuningSystem"))
     }
 
-    @Test("pitchComparisonColumns lists comparison-specific columns")
-    func pitchComparisonColumns() async {
-        let columns = CSVExportSchema.pitchComparisonColumns
+    @Test("pitchDiscriminationColumns lists comparison-specific columns")
+    func pitchDiscriminationColumns() async {
+        let columns = CSVExportSchema.pitchDiscriminationColumns
         #expect(columns.count == 2)
         #expect(columns.contains("centOffset"))
         #expect(columns.contains("isCorrect"))

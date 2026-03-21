@@ -19,7 +19,7 @@ struct CSVImportParserTests {
     }
 
     private var validComparisonRow: String {
-        "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
     }
 
     private var validPitchMatchingRow: String {
@@ -163,7 +163,7 @@ struct CSVImportParserTests {
 
     @Test("handles quoted field with comma in note name column")
     func handlesQuotedFieldWithComma() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,\"C,4\",64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,\"C,4\",64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -172,7 +172,7 @@ struct CSVImportParserTests {
 
     @Test("handles quoted field with embedded quotes in note name column")
     func handlesQuotedFieldWithEmbeddedQuotes() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,\"C\"\"4\",64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,\"C\"\"4\",64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -198,7 +198,7 @@ struct CSVImportParserTests {
         let expectedRawValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
         let rows = abbreviations.map { abbr in
-            "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,\(abbr),equalTemperament,15.5,true,,"
+            "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,\(abbr),equalTemperament,15.5,true,,"
         }
         let csv = makeCSV(rows)
         let result = CSVImportParser.parse(csv)
@@ -211,7 +211,7 @@ struct CSVImportParserTests {
 
     @Test("invalid interval abbreviation produces error")
     func invalidIntervalAbbreviationProducesError() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,P6,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,P6,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -220,7 +220,7 @@ struct CSVImportParserTests {
 
     @Test("timestamp with fractional seconds parses successfully")
     func timestampWithFractionalSeconds() async {
-        let row = "pitchComparison,2026-03-03T14:30:00.000Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00.000Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -265,7 +265,7 @@ struct CSVImportParserTests {
 
     @Test("row with wrong column count produces error")
     func rowWithWrongColumnCountProducesError() async {
-        let csv = makeCSV(["pitchComparison,2026-03-03T14:30:00Z,60"])
+        let csv = makeCSV(["pitchDiscrimination,2026-03-03T14:30:00Z,60"])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
         #expect(result.errors.count == 1)
@@ -273,7 +273,7 @@ struct CSVImportParserTests {
 
     @Test("row with invalid field produces error")
     func rowWithInvalidFieldProducesError() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,abc,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,abc,C4,64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -282,7 +282,7 @@ struct CSVImportParserTests {
 
     @Test("comparison row with non-empty pitch matching fields produces error")
     func comparisonRowWithNonEmptyPitchMatchingFieldsProducesError() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,25.0,3.2"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,25.0,3.2"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -329,7 +329,7 @@ struct CSVImportParserTests {
 
     @Test("CSV with mix of valid and invalid rows parses valid rows")
     func mixOfValidAndInvalidRows() async {
-        let invalidRow = "pitchComparison,2026-03-03T14:30:00Z,999,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let invalidRow = "pitchDiscrimination,2026-03-03T14:30:00Z,999,C4,64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([validComparisonRow, invalidRow, validPitchMatchingRow])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -350,7 +350,7 @@ struct CSVImportParserTests {
 
     @Test("MIDI note 0 is valid")
     func midiNote0IsValid() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,0,C-1,0,C-1,P1,equalTemperament,5.0,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,0,C-1,0,C-1,P1,equalTemperament,5.0,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -359,7 +359,7 @@ struct CSVImportParserTests {
 
     @Test("MIDI note 127 is valid")
     func midiNote127IsValid() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,127,G9,127,G9,P1,equalTemperament,5.0,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,127,G9,127,G9,P1,equalTemperament,5.0,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -368,7 +368,7 @@ struct CSVImportParserTests {
 
     @Test("MIDI note 128 is invalid")
     func midiNote128IsInvalid() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,128,X,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,128,X,64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -377,7 +377,7 @@ struct CSVImportParserTests {
 
     @Test("negative MIDI note is invalid")
     func negativeMidiNoteIsInvalid() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,-1,X,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,-1,X,64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -395,7 +395,7 @@ struct CSVImportParserTests {
 
     @Test("invalid timestamp produces error")
     func invalidTimestampProducesError() async {
-        let row = "pitchComparison,not-a-date,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,not-a-date,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -404,7 +404,7 @@ struct CSVImportParserTests {
 
     @Test("invalid tuning system produces error")
     func invalidTuningSystemProducesError() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,pythagorean,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,pythagorean,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -413,7 +413,7 @@ struct CSVImportParserTests {
 
     @Test("invalid isCorrect value produces error")
     func invalidIsCorrectProducesError() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,True,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,True,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -422,7 +422,7 @@ struct CSVImportParserTests {
 
     @Test("non-numeric cent offset produces error")
     func nonNumericCentOffsetProducesError() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,abc,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,abc,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -431,7 +431,7 @@ struct CSVImportParserTests {
 
     @Test("negative cent offset is valid for comparison")
     func negativeCentOffsetIsValid() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,-8.3,false,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,-8.3,false,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)
@@ -440,7 +440,7 @@ struct CSVImportParserTests {
 
     @Test("justIntonation tuning system is valid")
     func justIntonationIsValid() async {
-        let row = "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,justIntonation,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,justIntonation,15.5,true,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
         #expect(result.pitchDiscriminations.count == 1)

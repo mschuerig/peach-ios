@@ -6,7 +6,7 @@ nonisolated enum CSVRecordFormatter {
 
     static func format(_ record: PitchDiscriminationRecord) -> String {
         let fields: [String] = [
-            CSVExportSchema.TrainingType.pitchComparison.csvValue,
+            CSVExportSchema.TrainingType.pitchDiscrimination.csvValue,
             formatTimestamp(record.timestamp),
             "\(record.referenceNote)",
             formatNoteName(record.referenceNote),
