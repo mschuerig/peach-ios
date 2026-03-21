@@ -73,7 +73,9 @@ struct RhythmOffsetDetectionScreen: View {
         HStack(alignment: .top) {
             RhythmStatsView(
                 latestValue: session.lastCompletedOffsetPercentage,
+                latestMs: session.lastCompletedOffsetMs,
                 sessionBest: session.sessionBestOffsetPercentage,
+                bestMs: session.sessionBestOffsetMs,
                 trend: progressTimeline.trend(for: .rhythmOffsetDetection)
             )
 

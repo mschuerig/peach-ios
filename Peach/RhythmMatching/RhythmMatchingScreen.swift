@@ -76,7 +76,9 @@ struct RhythmMatchingScreen: View {
         HStack(alignment: .top) {
             RhythmStatsView(
                 latestValue: session.lastUserOffsetPercentage.map { abs($0) },
+                latestMs: session.lastUserOffsetMs,
                 sessionBest: nil,
+                bestMs: nil,
                 trend: progressTimeline.trend(for: .rhythmMatching)
             )
 

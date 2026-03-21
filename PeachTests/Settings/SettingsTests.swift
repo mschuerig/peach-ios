@@ -264,9 +264,9 @@ struct SettingsTests {
 
     // MARK: - Settings Help Sections
 
-    @Test("helpSections returns five sections matching settings groups")
+    @Test("helpSections returns six sections matching settings groups")
     func helpSectionsCount() async {
-        #expect(SettingsScreen.helpSections.count == 5)
+        #expect(SettingsScreen.helpSections.count == 6)
     }
 
     @Test("help section titles match settings groups in order")
@@ -276,6 +276,7 @@ struct SettingsTests {
             String(localized: "Intervals"),
             String(localized: "Sound"),
             String(localized: "Difficulty"),
+            String(localized: "Rhythm"),
             String(localized: "Data"),
         ]
         let actualTitles = SettingsScreen.helpSections.map(\.title)

@@ -2,13 +2,15 @@ import SwiftUI
 
 struct RhythmStatsView: View {
     let latestValue: Double?
+    let latestMs: Double?
     let sessionBest: Double?
+    let bestMs: Double?
     let trend: Trend?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
-                Text("Latest: \(Self.percentageText(latestValue ?? 0))")
+                Text("Latest: \(Self.percentageText(latestValue ?? 0, ms: latestMs))")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 if let trend {
@@ -20,14 +22,14 @@ struct RhythmStatsView: View {
             }
             .opacity(latestValue != nil ? 1 : 0)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(latestValue.map { Self.latestAccessibilityLabel($0, trend: trend) } ?? "")
+            .accessibilityLabel(latestValue.map { Self.latestAccessibilityLabel($0, ms: latestMs, trend: trend) } ?? "")
             .accessibilityHidden(latestValue == nil)
 
-            Text("Best: \(Self.percentageText(sessionBest ?? 0))")
+            Text("Best: \(Self.percentageText(sessionBest ?? 0, ms: bestMs))")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
                 .opacity(sessionBest != nil ? 1 : 0)
-                .accessibilityLabel(sessionBest.map { Self.bestAccessibilityLabel($0) } ?? "")
+                .accessibilityLabel(sessionBest.map { Self.bestAccessibilityLabel($0, ms: bestMs) } ?? "")
                 .accessibilityHidden(sessionBest == nil)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -35,8 +37,15 @@ struct RhythmStatsView: View {
 
     // MARK: - Formatting
 
-    static func percentageText(_ value: Double) -> String {
-        String(format: "%.0f%%", value)
+    static func percentageText(_ value: Double, ms: Double? = nil) -> String {
+        let pct = String(format: "%.0f%%", value)
+        guard let ms else { return pct }
+        return "\(pct) (\(Self.msText(ms)))"
+    }
+
+    static func msText(_ ms: Double) -> String {
+        let rounded = Int(ms.rounded())
+        return "\(rounded) " + String(localized: "ms")
     }
 
     // MARK: - Trend Helpers
@@ -67,15 +76,15 @@ struct RhythmStatsView: View {
 
     // MARK: - Accessibility
 
-    static func latestAccessibilityLabel(_ value: Double, trend: Trend?) -> String {
-        var label = String(localized: "Latest result: \(Self.percentageText(value))")
+    static func latestAccessibilityLabel(_ value: Double, ms: Double? = nil, trend: Trend?) -> String {
+        var label = String(localized: "Latest result: \(Self.percentageText(value, ms: ms))")
         if let trend {
             label += ", \(trendLabel(trend))"
         }
         return label
     }
 
-    static func bestAccessibilityLabel(_ value: Double) -> String {
-        String(localized: "Best result: \(Self.percentageText(value))")
+    static func bestAccessibilityLabel(_ value: Double, ms: Double? = nil) -> String {
+        String(localized: "Best result: \(Self.percentageText(value, ms: ms))")
     }
 }

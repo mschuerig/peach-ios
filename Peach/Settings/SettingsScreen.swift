@@ -29,6 +29,9 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.noteGap)
     private var noteGap: Double = 0.0
 
+    @AppStorage(SettingsKeys.tempoBPM)
+    private var tempoBPM: Int = SettingsKeys.defaultTempoBPM.value
+
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.soundPreviewPlay) private var soundPreviewPlay
@@ -69,6 +72,10 @@ struct SettingsScreen: View {
             body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back.")
         ),
         HelpSection(
+            title: String(localized: "Rhythm"),
+            body: String(localized: "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.")
+        ),
+        HelpSection(
             title: String(localized: "Data"),
             body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
         ),
@@ -80,6 +87,7 @@ struct SettingsScreen: View {
             intervalSection
             soundSection
             difficultySection
+            rhythmSection
             dataSection
         }
         .navigationTitle("Settings")
@@ -253,6 +261,18 @@ struct SettingsScreen: View {
                 step: 0.1
             )
             .accessibilityValue(Text("\(noteGap, specifier: "%.1f") seconds"))
+        }
+    }
+
+    private var rhythmSection: some View {
+        Section(String(localized: "Rhythm")) {
+            Stepper(
+                "Tempo: \(tempoBPM) BPM",
+                value: $tempoBPM,
+                in: 40...200,
+                step: 1
+            )
+            .accessibilityValue(Text("\(tempoBPM) beats per minute"))
         }
     }
 

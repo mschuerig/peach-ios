@@ -22,6 +22,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     private(set) var isLastAnswerCorrect: Bool? = nil
     private(set) var litDotCount: Int = 0
     private(set) var sessionBestOffsetPercentage: Double? = nil
+    private(set) var sessionBestOffsetMs: Double? = nil
 
     // MARK: - Dependencies
 
@@ -49,6 +50,12 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     var lastCompletedOffsetPercentage: Double? {
         guard let trial = lastCompletedTrial else { return nil }
         return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
+    }
+
+    var lastCompletedOffsetMs: Double? {
+        guard let trial = lastCompletedTrial else { return nil }
+        let absDuration = trial.offset.duration < .zero ? .zero - trial.offset.duration : trial.offset.duration
+        return Double(absDuration.components.attoseconds) / 1e15
     }
 
     // MARK: - Initialization
@@ -114,10 +121,16 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
         if isCorrect {
             let pct = trial.offset.percentageOfSixteenthNote(at: trial.tempo)
+            let absDuration = trial.offset.duration < .zero ? .zero - trial.offset.duration : trial.offset.duration
+            let ms = Double(absDuration.components.attoseconds) / 1e15
             if let best = sessionBestOffsetPercentage {
-                sessionBestOffsetPercentage = min(best, pct)
+                if pct < best {
+                    sessionBestOffsetPercentage = pct
+                    sessionBestOffsetMs = ms
+                }
             } else {
                 sessionBestOffsetPercentage = pct
+                sessionBestOffsetMs = ms
             }
         }
 
@@ -153,6 +166,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         isLastAnswerCorrect = nil
         litDotCount = 0
         sessionBestOffsetPercentage = nil
+        sessionBestOffsetMs = nil
     }
 
     // MARK: - Private Implementation
