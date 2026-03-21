@@ -15,7 +15,7 @@ struct RhythmOffsetDetectionSettingsTests {
     }
 
     @Test("from(userSettings) maps tempoBPM correctly")
-    func fromUserSettings() async {
+    func fromUserSettings() {
         let mockSettings = MockUserSettings()
         mockSettings.tempoBPM = TempoBPM(120)
 
@@ -25,7 +25,7 @@ struct RhythmOffsetDetectionSettingsTests {
     }
 
     @Test("from(userSettings) keeps other parameters at defaults")
-    func fromUserSettingsKeepsDefaults() async {
+    func fromUserSettingsKeepsDefaults() {
         let mockSettings = MockUserSettings()
         mockSettings.tempoBPM = TempoBPM(100)
 

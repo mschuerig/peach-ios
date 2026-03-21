@@ -1,6 +1,6 @@
 # Story 50.1: NavigationDestination and Settings for Rhythm
 
-Status: review
+Status: done
 
 ## Story
 
@@ -16,11 +16,11 @@ so that rhythm training can be navigated to and tempo can be configured.
 
 3. **Given** `SettingsKeys`, **when** extended, **then** it includes a `tempoBPM` key with default `TempoBPM(80)`.
 
-4. **Given** `UserSettings` protocol and `AppUserSettings`, **when** extended, **then** they include a `tempoBPM: TempoBPM` property backed by `@AppStorage`.
+4. **Given** `UserSettings` protocol and `AppUserSettings`, **when** extended, **then** they include a `tempoBPM: TempoBPM` property backed by `UserDefaults.standard`.
 
-5. **Given** the tempo value, **when** set below the minimum floor, **then** it is clamped to `TempoBPM(60)` (FR85).
+5. **Given** the tempo value, **when** set below the minimum floor or above the maximum ceiling, **then** it is clamped to the range `TempoBPM(20)...TempoBPM(300)` (FR85).
 
-6. **Given** `RhythmMatchingSettings` and `RhythmOffsetDetectionSettings`, **when** both get `from(userSettings:)` factory methods, **then** they read `tempoBPM` from `UserSettings` instead of hardcoding the default.
+6. **Given** `RhythmMatchingSettings` and `RhythmOffsetDetectionSettings`, **when** both get `from(_:)` factory methods, **then** they read `tempoBPM` from `UserSettings` instead of hardcoding the default.
 
 7. **Given** `RhythmMatchingScreen` and `RhythmOffsetDetectionScreen`, **when** they start sessions, **then** they use the factory method with `@Environment(\.userSettings)` instead of default-constructed settings.
 
