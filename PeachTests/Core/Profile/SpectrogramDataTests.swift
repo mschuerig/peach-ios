@@ -24,10 +24,11 @@ struct SpectrogramDataTests {
         #expect(level == nil)
     }
 
-    @Test("at medium tempo, base percentages apply directly — 7% is precise")
+    @Test("at medium tempo, 7% is precise (floor binds at 12 ms)")
     func preciseAtMediumTempo() async {
         // Medium midpoint = 100 BPM, sixteenth = 150ms
-        // precise threshold = clamp(150 * 0.08, 12, 30) = 12ms → 8.0%
+        // precise threshold = clamp(150 * 0.08, 12, 30) = clamp(12, 12, 30) = 12ms → 8.0%
+        // Floor binds exactly (raw 12ms = floor 12ms), effective threshold = 8.0%
         let level = SpectrogramThresholds.default.accuracyLevel(for: 7.0, tempoRange: .medium)
         #expect(level == .precise)
     }
@@ -62,12 +63,12 @@ struct SpectrogramDataTests {
         #expect(level == .moderate)
     }
 
-    @Test("at slow tempo, ceiling clamps moderate threshold downward")
-    func ceilingClampsAtSlowTempo() async {
+    @Test("at slow tempo, ceiling binds at moderate boundary (raw = ceiling)")
+    func ceilingBindsAtSlowTempo() async {
         // Slow midpoint = 60 BPM, sixteenth = 250ms
         // moderate threshold = clamp(250 * 0.20, 25, 50) = clamp(50, 25, 50) = 50ms → 20.0%
-        // At 40 BPM: sixteenth = 375ms, moderate = clamp(75, 25, 50) = 50ms → 13.3%
-        // So 15% at slow range should be erratic if midpoint is 60 BPM → moderate ceiling = 50/250*100 = 20% → 15% < 20% → moderate
+        // Raw value (50ms) exactly equals ceiling — ceiling is binding at boundary
+        // 15% of 250ms = 37.5ms < 50ms ceiling → moderate
         let level = SpectrogramThresholds.default.accuracyLevel(for: 15.0, tempoRange: .slow)
         #expect(level == .moderate)
     }
