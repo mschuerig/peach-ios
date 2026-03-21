@@ -1,6 +1,6 @@
 # Story 52.2: CSV Import Parser v2 with Backward Compatibility
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,55 +26,55 @@ so that users can import rhythm data and existing pitch exports remain importabl
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `CSVImportParserV2` (AC: 1, 2)
-  - [ ] Create `Peach/Core/Data/CSVImportParserV2.swift` as `nonisolated struct CSVImportParserV2: CSVVersionedParser`
-  - [ ] Set `supportedVersion = 2`
-  - [ ] Validate header against `CSVExportSchemaV2.allColumns` (15 columns)
-  - [ ] Parse rows by `trainingType` discriminator (column 0): dispatch to pitch or rhythm parsing
-  - [ ] Pitch rows: parse columns 2–11 identically to V1 (reuse `parseISO8601`, `abbreviationToRawValue` — extract shared helpers if needed)
-  - [ ] Rhythm offset detection rows: parse `tempoBPM` (col 12, Int), `offsetMs` (col 13, Double), `isCorrect` (col 9, Bool), `timestamp` (col 1)
-  - [ ] Rhythm matching rows: parse `tempoBPM` (col 12, Int), `userOffsetMs` (col 14, Double), `timestamp` (col 1)
-  - [ ] Validate that pitch-specific columns are empty for rhythm rows and vice versa
-  - [ ] Write tests first in `PeachTests/Core/Data/CSVImportParserV2Tests.swift`
+- [x] Task 1: Create `CSVImportParserV2` (AC: 1, 2)
+  - [x]Create `Peach/Core/Data/CSVImportParserV2.swift` as `nonisolated struct CSVImportParserV2: CSVVersionedParser`
+  - [x]Set `supportedVersion = 2`
+  - [x]Validate header against `CSVExportSchemaV2.allColumns` (15 columns)
+  - [x]Parse rows by `trainingType` discriminator (column 0): dispatch to pitch or rhythm parsing
+  - [x]Pitch rows: parse columns 2–11 identically to V1 (reuse `parseISO8601`, `abbreviationToRawValue` — extract shared helpers if needed)
+  - [x]Rhythm offset detection rows: parse `tempoBPM` (col 12, Int), `offsetMs` (col 13, Double), `isCorrect` (col 9, Bool), `timestamp` (col 1)
+  - [x]Rhythm matching rows: parse `tempoBPM` (col 12, Int), `userOffsetMs` (col 14, Double), `timestamp` (col 1)
+  - [x]Validate that pitch-specific columns are empty for rhythm rows and vice versa
+  - [x]Write tests first in `PeachTests/Core/Data/CSVImportParserV2Tests.swift`
 
-- [ ] Task 2: Extend `CSVImportParser.ImportResult` for rhythm records (AC: 2, 6)
-  - [ ] Add `rhythmOffsetDetections: [RhythmOffsetDetectionRecord]` to `ImportResult`
-  - [ ] Add `rhythmMatchings: [RhythmMatchingRecord]` to `ImportResult`
-  - [ ] Update all existing `ImportResult` construction sites (V1 parser, `CSVImportParser.parse()` error paths) to pass empty arrays for new fields
+- [x] Task 2: Extend `CSVImportParser.ImportResult` for rhythm records (AC: 2, 6)
+  - [x]Add `rhythmOffsetDetections: [RhythmOffsetDetectionRecord]` to `ImportResult`
+  - [x]Add `rhythmMatchings: [RhythmMatchingRecord]` to `ImportResult`
+  - [x]Update all existing `ImportResult` construction sites (V1 parser, `CSVImportParser.parse()` error paths) to pass empty arrays for new fields
 
-- [ ] Task 3: Register V2 parser in `CSVImportParser` (AC: 3, 4)
-  - [ ] Add `CSVImportParserV2()` to `CSVImportParser.parsers` array
-  - [ ] Verify V1 files still route to `CSVImportParserV1` (version dispatch is already correct)
+- [x] Task 3: Register V2 parser in `CSVImportParser` (AC: 3, 4)
+  - [x]Add `CSVImportParserV2()` to `CSVImportParser.parsers` array
+  - [x]Verify V1 files still route to `CSVImportParserV1` (version dispatch is already correct)
 
-- [ ] Task 4: Extend `TrainingDataImporter` for rhythm records (AC: 5, 6)
-  - [ ] Add `rhythmOffsetDetectionsImported`, `rhythmOffsetDetectionsSkipped`, `rhythmMatchingsImported`, `rhythmMatchingsSkipped` to `ImportSummary`
-  - [ ] Update `totalImported` and `totalSkipped` computed properties
-  - [ ] **Replace mode:** Update `replaceAll` to pass rhythm records to `store.replaceAllRecords()` — extend the method signature to accept rhythm arrays
-  - [ ] **Merge mode:** Fetch existing rhythm records, build `DuplicateKey` entries using `timestamp + tempoBPM + trainingType`, deduplicate and save new records
-  - [ ] Add `rhythmOffsetDetection` and `rhythmMatching` cases to `TrainingType` constants
+- [x] Task 4: Extend `TrainingDataImporter` for rhythm records (AC: 5, 6)
+  - [x]Add `rhythmOffsetDetectionsImported`, `rhythmOffsetDetectionsSkipped`, `rhythmMatchingsImported`, `rhythmMatchingsSkipped` to `ImportSummary`
+  - [x]Update `totalImported` and `totalSkipped` computed properties
+  - [x]**Replace mode:** Update `replaceAll` to pass rhythm records to `store.replaceAllRecords()` — extend the method signature to accept rhythm arrays
+  - [x]**Merge mode:** Fetch existing rhythm records, build `DuplicateKey` entries using `timestamp + tempoBPM + trainingType`, deduplicate and save new records
+  - [x]Add `rhythmOffsetDetection` and `rhythmMatching` cases to `TrainingType` constants
 
-- [ ] Task 5: Update `TrainingDataStore.replaceAllRecords` signature (AC: 6)
-  - [ ] Add `rhythmOffsetDetections` and `rhythmMatchings` parameters (default to empty arrays for backward compatibility)
-  - [ ] Insert rhythm records in the transaction alongside pitch records
+- [x] Task 5: Update `TrainingDataStore.replaceAllRecords` signature (AC: 6)
+  - [x]Add `rhythmOffsetDetections` and `rhythmMatchings` parameters (default to empty arrays for backward compatibility)
+  - [x]Insert rhythm records in the transaction alongside pitch records
 
-- [ ] Task 6: Update `TrainingDataTransferService` for rhythm-aware import (AC: 2)
-  - [ ] Update `readFileForImport` empty-check to also consider rhythm records (currently only checks pitch)
-  - [ ] Update `formatImportSummary` to include rhythm record counts
+- [x] Task 6: Update `TrainingDataTransferService` for rhythm-aware import (AC: 2)
+  - [x]Update `readFileForImport` empty-check to also consider rhythm records (currently only checks pitch)
+  - [x]Update `formatImportSummary` to include rhythm record counts
 
-- [ ] Task 7: Write comprehensive tests (AC: 7)
-  - [ ] V2 parser: all four training types parse correctly from well-formed CSV
-  - [ ] V2 parser: invalid rhythm fields produce appropriate errors
-  - [ ] V2 parser: pitch-specific columns must be empty for rhythm rows (and vice versa)
-  - [ ] V2 parser: empty rows are skipped
-  - [ ] V1 backward compatibility: V1 files still import via V1 parser
-  - [ ] V2 parser rejects V1 headers (column count mismatch)
-  - [ ] Merge deduplication: rhythm records with same timestamp+tempo+type are skipped
-  - [ ] Replace mode: rhythm records are inserted alongside pitch records
-  - [ ] Round-trip: export V2 then import V2 produces identical records
-  - [ ] Integration: `TrainingDataTransferService.readFileForImport` recognizes rhythm-only files as valid
+- [x] Task 7: Write comprehensive tests (AC: 7)
+  - [x]V2 parser: all four training types parse correctly from well-formed CSV
+  - [x]V2 parser: invalid rhythm fields produce appropriate errors
+  - [x]V2 parser: pitch-specific columns must be empty for rhythm rows (and vice versa)
+  - [x]V2 parser: empty rows are skipped
+  - [x]V1 backward compatibility: V1 files still import via V1 parser
+  - [x]V2 parser rejects V1 headers (column count mismatch)
+  - [x]Merge deduplication: rhythm records with same timestamp+tempo+type are skipped
+  - [x]Replace mode: rhythm records are inserted alongside pitch records
+  - [x]Round-trip: export V2 then import V2 produces identical records
+  - [x]Integration: `TrainingDataTransferService.readFileForImport` recognizes rhythm-only files as valid
 
-- [ ] Task 8: Run full test suite
-  - [ ] `bin/test.sh` — zero regressions
+- [x] Task 8: Run full test suite
+  - [x]`bin/test.sh` — zero regressions
 
 ## Dev Notes
 
@@ -240,10 +240,44 @@ Follow existing conventions in `CSVImportParserV1Tests.swift` and `TrainingDataI
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Extracted shared CSV parsing helpers (`parseCSVLine`, `parseISO8601`, `abbreviationToRawValue`) from V1 parser into `CSVParserHelpers.swift` to avoid code duplication between V1 and V2 parsers
+- Extended `ImportResult` with `rhythmOffsetDetections` and `rhythmMatchings` arrays (no default values, all call sites explicit)
+- Created `CSVImportParserV2` conforming to `CSVVersionedParser` with `supportedVersion = 2`, parsing all four training types with cross-type column validation
+- Registered V2 parser in `CSVImportParser.parsers` array alongside V1
+- Extended `TrainingDataImporter.ImportSummary` with rhythm import/skip counts and updated `totalImported`/`totalSkipped` computed properties
+- Implemented `RhythmDuplicateKey` (timestamp + tempoBPM + trainingType) separate from `PitchDuplicateKey` for rhythm deduplication
+- Extended `TrainingDataStore.replaceAllRecords` to accept and insert rhythm arrays (no default values)
+- Updated `TrainingDataTransferService.readFileForImport` empty-check to also consider rhythm arrays
+- Updated pre-existing test (`v2ExportNotImportableByV1Parser` → `v2ExportImportableByV2Parser`) since V2 parser now handles V2 format
+- All 1449 tests pass (46 new tests added)
+
+### Change Log
+
+- 2026-03-21: Implemented CSV Import Parser V2 with backward compatibility and rhythm support
+
 ### File List
+
+New files:
+- Peach/Core/Data/CSVParserHelpers.swift
+- Peach/Core/Data/CSVImportParserV2.swift
+- PeachTests/Core/Data/CSVImportParserV2Tests.swift
+
+Modified files:
+- Peach/Core/Data/CSVImportParser.swift
+- Peach/Core/Data/CSVImportParserV1.swift
+- Peach/Core/Data/TrainingDataImporter.swift
+- Peach/Core/Data/TrainingDataStore.swift
+- Peach/Core/Data/TrainingDataTransferService.swift
+- PeachTests/Core/Data/CSVImportParserTests.swift
+- PeachTests/Core/Data/TrainingDataImporterTests.swift
+- PeachTests/Core/Data/TrainingDataTransferServiceTests.swift
+- PeachTests/Core/Data/TrainingDataStoreEdgeCaseTests.swift
+- PeachTests/Core/Data/TrainingDataExporterTests.swift
+- PeachTests/Settings/TrainingDataImportActionTests.swift
+- docs/implementation-artifacts/sprint-status.yaml

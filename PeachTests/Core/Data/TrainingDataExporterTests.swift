@@ -319,8 +319,8 @@ struct TrainingDataExporterTests {
 
     // MARK: - Round-Trip Test
 
-    @Test("V2 export is not importable by V1 parser (import V2 is story 52.2)")
-    func v2ExportNotImportableByV1Parser() async throws {
+    @Test("V2 export is importable by V2 parser")
+    func v2ExportImportableByV2Parser() async throws {
         let store = try makeStore()
 
         let comparison = PitchDiscriminationRecord(
@@ -332,8 +332,8 @@ struct TrainingDataExporterTests {
         let csv = try TrainingDataExporter.export(from: store)
         let result = CSVImportParser.parse(csv)
 
-        // V1 importer does not support format version 2
-        #expect(!result.errors.isEmpty)
+        #expect(result.errors.isEmpty)
+        #expect(result.pitchDiscriminations.count == 1)
     }
 
     // MARK: - V2 Comprehensive Tests

@@ -30,8 +30,12 @@ struct TrainingDataImporterTests {
         let summary = TrainingDataImporter.ImportSummary(
             pitchDiscriminationsImported: 5,
             pitchMatchingsImported: 3,
+            rhythmOffsetDetectionsImported: 0,
+            rhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 2,
             pitchMatchingsSkipped: 1,
+            rhythmOffsetDetectionsSkipped: 0,
+            rhythmMatchingsSkipped: 0,
             parseErrorCount: 4
         )
         #expect(summary.pitchDiscriminationsImported == 5)
@@ -46,8 +50,12 @@ struct TrainingDataImporterTests {
         let summary = TrainingDataImporter.ImportSummary(
             pitchDiscriminationsImported: 5,
             pitchMatchingsImported: 3,
+            rhythmOffsetDetectionsImported: 0,
+            rhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 0,
             pitchMatchingsSkipped: 0,
+            rhythmOffsetDetectionsSkipped: 0,
+            rhythmMatchingsSkipped: 0,
             parseErrorCount: 0
         )
         #expect(summary.totalImported == 8)
@@ -58,8 +66,12 @@ struct TrainingDataImporterTests {
         let summary = TrainingDataImporter.ImportSummary(
             pitchDiscriminationsImported: 0,
             pitchMatchingsImported: 0,
+            rhythmOffsetDetectionsImported: 0,
+            rhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 2,
             pitchMatchingsSkipped: 1,
+            rhythmOffsetDetectionsSkipped: 0,
+            rhythmMatchingsSkipped: 0,
             parseErrorCount: 0
         )
         #expect(summary.totalSkipped == 3)
@@ -70,11 +82,15 @@ struct TrainingDataImporterTests {
     private func makeImportResult(
         pitchDiscriminations: [PitchDiscriminationRecord] = [],
         pitchMatchings: [PitchMatchingRecord] = [],
+        rhythmOffsetDetections: [RhythmOffsetDetectionRecord] = [],
+        rhythmMatchings: [RhythmMatchingRecord] = [],
         errors: [CSVImportError] = []
     ) -> CSVImportParser.ImportResult {
         CSVImportParser.ImportResult(
             pitchDiscriminations: pitchDiscriminations,
             pitchMatchings: pitchMatchings,
+            rhythmOffsetDetections: rhythmOffsetDetections,
+            rhythmMatchings: rhythmMatchings,
             errors: errors
         )
     }
@@ -463,5 +479,198 @@ struct TrainingDataImporterTests {
         #expect(summary.pitchDiscriminationsImported == 0)
         #expect(summary.pitchDiscriminationsSkipped == 1)
         #expect(try store.fetchAllPitchDiscriminations().count == 1)
+    }
+
+    // MARK: - Rhythm Record Helpers
+
+    private func makeRhythmOffsetDetection(minutesOffset: Double = 0, tempoBPM: Int = 120) -> RhythmOffsetDetectionRecord {
+        RhythmOffsetDetectionRecord(
+            tempoBPM: tempoBPM,
+            offsetMs: 5.3,
+            isCorrect: true,
+            timestamp: fixedDate(minutesOffset: minutesOffset)
+        )
+    }
+
+    private func makeRhythmMatching(minutesOffset: Double = 0, tempoBPM: Int = 120) -> RhythmMatchingRecord {
+        RhythmMatchingRecord(
+            tempoBPM: tempoBPM,
+            userOffsetMs: 7.1,
+            timestamp: fixedDate(minutesOffset: minutesOffset)
+        )
+    }
+
+    // MARK: - Rhythm Replace Mode
+
+    @Test("replace mode inserts rhythm records alongside pitch records")
+    func replaceModeInsertsRhythmRecords() async throws {
+        let store = try makeStore()
+
+        let importResult = makeImportResult(
+            pitchDiscriminations: [makeComparison(minutesOffset: 0)],
+            rhythmOffsetDetections: [makeRhythmOffsetDetection(minutesOffset: 1)],
+            rhythmMatchings: [makeRhythmMatching(minutesOffset: 2)]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
+
+        #expect(summary.pitchDiscriminationsImported == 1)
+        #expect(summary.rhythmOffsetDetectionsImported == 1)
+        #expect(summary.rhythmMatchingsImported == 1)
+        #expect(try store.fetchAllPitchDiscriminations().count == 1)
+        #expect(try store.fetchAllRhythmOffsetDetections().count == 1)
+        #expect(try store.fetchAllRhythmMatchings().count == 1)
+    }
+
+    @Test("replace mode replaces existing rhythm records")
+    func replaceModeReplacesExistingRhythm() async throws {
+        let store = try makeStore()
+
+        try store.save(makeRhythmOffsetDetection(minutesOffset: 0))
+        try store.save(makeRhythmMatching(minutesOffset: 1))
+
+        let importResult = makeImportResult(
+            rhythmOffsetDetections: [makeRhythmOffsetDetection(minutesOffset: 10), makeRhythmOffsetDetection(minutesOffset: 11)],
+            rhythmMatchings: [makeRhythmMatching(minutesOffset: 12)]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
+
+        #expect(summary.rhythmOffsetDetectionsImported == 2)
+        #expect(summary.rhythmMatchingsImported == 1)
+        #expect(try store.fetchAllRhythmOffsetDetections().count == 2)
+        #expect(try store.fetchAllRhythmMatchings().count == 1)
+    }
+
+    // MARK: - Rhythm Merge Mode
+
+    @Test("merge inserts only non-duplicate rhythm offset detections")
+    func mergeInsertNonDuplicateRhythmOffset() async throws {
+        let store = try makeStore()
+
+        try store.save(makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 120))
+
+        let importResult = makeImportResult(
+            rhythmOffsetDetections: [
+                makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 120),
+                makeRhythmOffsetDetection(minutesOffset: 5, tempoBPM: 120),
+            ]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.rhythmOffsetDetectionsImported == 1)
+        #expect(summary.rhythmOffsetDetectionsSkipped == 1)
+        #expect(try store.fetchAllRhythmOffsetDetections().count == 2)
+    }
+
+    @Test("merge inserts only non-duplicate rhythm matchings")
+    func mergeInsertNonDuplicateRhythmMatching() async throws {
+        let store = try makeStore()
+
+        try store.save(makeRhythmMatching(minutesOffset: 0, tempoBPM: 120))
+
+        let importResult = makeImportResult(
+            rhythmMatchings: [
+                makeRhythmMatching(minutesOffset: 0, tempoBPM: 120),
+                makeRhythmMatching(minutesOffset: 5, tempoBPM: 120),
+            ]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.rhythmMatchingsImported == 1)
+        #expect(summary.rhythmMatchingsSkipped == 1)
+        #expect(try store.fetchAllRhythmMatchings().count == 2)
+    }
+
+    @Test("rhythm records with same timestamp but different tempo are not duplicates")
+    func sameTimestampDifferentTempoNotDuplicate() async throws {
+        let store = try makeStore()
+
+        try store.save(makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 120))
+
+        let importResult = makeImportResult(
+            rhythmOffsetDetections: [makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 90)]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.rhythmOffsetDetectionsImported == 1)
+        #expect(summary.rhythmOffsetDetectionsSkipped == 0)
+    }
+
+    @Test("rhythm records with same timestamp and tempo but different training type are not duplicates")
+    func sameTimestampAndTempoDifferentRhythmType() async throws {
+        let store = try makeStore()
+
+        try store.save(makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 120))
+
+        let importResult = makeImportResult(
+            rhythmMatchings: [makeRhythmMatching(minutesOffset: 0, tempoBPM: 120)]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.rhythmMatchingsImported == 1)
+        #expect(summary.rhythmMatchingsSkipped == 0)
+    }
+
+    @Test("merge deduplicates identical rhythm records within the same import file")
+    func mergeDeduplicatesRhythmWithinFile() async throws {
+        let store = try makeStore()
+
+        let importResult = makeImportResult(
+            rhythmOffsetDetections: [
+                makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 120),
+                makeRhythmOffsetDetection(minutesOffset: 0, tempoBPM: 120),
+            ],
+            rhythmMatchings: [
+                makeRhythmMatching(minutesOffset: 1, tempoBPM: 90),
+                makeRhythmMatching(minutesOffset: 1, tempoBPM: 90),
+            ]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.rhythmOffsetDetectionsImported == 1)
+        #expect(summary.rhythmOffsetDetectionsSkipped == 1)
+        #expect(summary.rhythmMatchingsImported == 1)
+        #expect(summary.rhythmMatchingsSkipped == 1)
+    }
+
+    // MARK: - ImportSummary Totals with Rhythm
+
+    @Test("totalImported includes rhythm records")
+    func totalImportedIncludesRhythm() async throws {
+        let store = try makeStore()
+
+        let importResult = makeImportResult(
+            pitchDiscriminations: [makeComparison(minutesOffset: 0)],
+            rhythmOffsetDetections: [makeRhythmOffsetDetection(minutesOffset: 1)],
+            rhythmMatchings: [makeRhythmMatching(minutesOffset: 2)]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
+
+        #expect(summary.totalImported == 3)
+    }
+
+    @Test("totalSkipped includes rhythm records")
+    func totalSkippedIncludesRhythm() async throws {
+        let store = try makeStore()
+
+        try store.save(makeRhythmOffsetDetection(minutesOffset: 0))
+        try store.save(makeRhythmMatching(minutesOffset: 1))
+
+        let importResult = makeImportResult(
+            rhythmOffsetDetections: [makeRhythmOffsetDetection(minutesOffset: 0)],
+            rhythmMatchings: [makeRhythmMatching(minutesOffset: 1)]
+        )
+
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.totalSkipped == 2)
+        #expect(summary.totalImported == 0)
     }
 }

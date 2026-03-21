@@ -81,7 +81,9 @@ final class TrainingDataStore {
     /// - Throws: DataStoreError.saveFailed if the transaction fails
     func replaceAllRecords(
         pitchDiscriminations: [PitchDiscriminationRecord],
-        pitchMatchings: [PitchMatchingRecord]
+        pitchMatchings: [PitchMatchingRecord],
+        rhythmOffsetDetections: [RhythmOffsetDetectionRecord],
+        rhythmMatchings: [RhythmMatchingRecord]
     ) throws {
         do {
             try modelContext.transaction {
@@ -93,6 +95,12 @@ final class TrainingDataStore {
                     modelContext.insert(record)
                 }
                 for record in pitchMatchings {
+                    modelContext.insert(record)
+                }
+                for record in rhythmOffsetDetections {
+                    modelContext.insert(record)
+                }
+                for record in rhythmMatchings {
                     modelContext.insert(record)
                 }
             }
