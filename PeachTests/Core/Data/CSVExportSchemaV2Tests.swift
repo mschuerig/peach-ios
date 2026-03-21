@@ -67,14 +67,8 @@ struct CSVExportSchemaV2Tests {
         }
     }
 
-    // MARK: - Column Groupings
-
-    @Test("rhythmColumns lists rhythm-specific columns")
-    func rhythmColumns() async {
-        let columns = CSVExportSchemaV2.rhythmColumns
-        #expect(columns.count == 3)
-        #expect(columns.contains("tempoBPM"))
-        #expect(columns.contains("offsetMs"))
-        #expect(columns.contains("userOffsetMs"))
+    @Test("V1 schema has exactly 12 columns")
+    func v1SchemaHas12Columns() async {
+        #expect(CSVExportSchema.allColumns.count == 12)
     }
 }

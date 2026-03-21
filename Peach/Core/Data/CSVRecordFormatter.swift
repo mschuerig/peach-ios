@@ -22,7 +22,7 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             "", // userOffsetMs
         ]
-        return fields.map { escapeField($0) }.joined(separator: ",")
+        return buildRow(fields)
     }
 
     // MARK: - PitchMatching Record Formatting
@@ -45,7 +45,7 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             "", // userOffsetMs
         ]
-        return fields.map { escapeField($0) }.joined(separator: ",")
+        return buildRow(fields)
     }
 
     // MARK: - RhythmOffsetDetection Record Formatting
@@ -68,7 +68,7 @@ nonisolated enum CSVRecordFormatter {
             formatDouble(record.offsetMs),
             "", // userOffsetMs
         ]
-        return fields.map { escapeField($0) }.joined(separator: ",")
+        return buildRow(fields)
     }
 
     // MARK: - RhythmMatching Record Formatting
@@ -91,7 +91,7 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             formatDouble(record.userOffsetMs),
         ]
-        return fields.map { escapeField($0) }.joined(separator: ",")
+        return buildRow(fields)
     }
 
     // MARK: - Field Formatters
@@ -109,11 +109,20 @@ nonisolated enum CSVRecordFormatter {
     }
 
     private static func formatDouble(_ value: Double) -> String {
+        guard value.isFinite else { return "" }
         let formatted = String(value)
         if formatted.contains(".") {
             return formatted
         }
         return formatted + ".0"
+    }
+
+    // MARK: - Row Builder
+
+    private static func buildRow(_ fields: [String]) -> String {
+        assert(fields.count == CSVExportSchemaV2.allColumns.count,
+               "Expected \(CSVExportSchemaV2.allColumns.count) fields, got \(fields.count)")
+        return fields.map { escapeField($0) }.joined(separator: ",")
     }
 
     // MARK: - RFC 4180 Escaping

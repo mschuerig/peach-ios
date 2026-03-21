@@ -428,4 +428,35 @@ struct CSVRecordFormatterTests {
         #expect(fields[12] == "140")
         #expect(fields[14] == "12.0")
     }
+
+    // MARK: - Non-Finite Double Handling
+
+    @Test("non-finite Double values produce empty fields")
+    func nonFiniteDoubleProducesEmptyField() async {
+        let record = RhythmOffsetDetectionRecord(
+            tempoBPM: 120,
+            offsetMs: Double.infinity,
+            isCorrect: true,
+            timestamp: fixedDate()
+        )
+
+        let row = CSVRecordFormatter.format(record)
+        let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+
+        #expect(fields[13] == "")
+    }
+
+    @Test("NaN Double value produces empty field")
+    func nanDoubleProducesEmptyField() async {
+        let record = RhythmMatchingRecord(
+            tempoBPM: 100,
+            userOffsetMs: Double.nan,
+            timestamp: fixedDate()
+        )
+
+        let row = CSVRecordFormatter.format(record)
+        let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
+
+        #expect(fields[14] == "")
+    }
 }

@@ -40,11 +40,4 @@ nonisolated enum CSVExportSchemaV2 {
 
     static let headerRow: String = allColumns.joined(separator: ",")
 
-    // MARK: - Column Groupings
-
-    static let rhythmColumns: [String] = [
-        columnTempoBPM,
-        columnOffsetMs,
-        columnUserOffsetMs,
-    ]
 }

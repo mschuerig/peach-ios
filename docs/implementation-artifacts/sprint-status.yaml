@@ -402,5 +402,5 @@ development_status:
 
   # Epic 52: Version Your Exports — CSV Format v2
   epic-52: in-progress
-  52-1-csv-export-schema-v2: review
+  52-1-csv-export-schema-v2: done
   52-2-csv-import-parser-v2-with-backward-compatibility: backlog
