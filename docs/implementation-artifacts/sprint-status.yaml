@@ -375,3 +375,9 @@ development_status:
   47-2-trainingdatastore-rhythm-crud-and-observer-conformance: done
   47-3-perceptualprofile-rhythmprofile-conformance: done
   47-4-progresstimeline-extension-to-six-training-modes: done
+
+  # Epic 48: Four Clicks — Rhythm Comparison Training
+  epic-48: in-progress
+  48-1-nextrhythmcomparisonstrategy-protocol-and-initial-implementation: ready-for-dev
+  48-2-rhythmcomparisonsession-state-machine: backlog
+  48-3-rhythmcomparisonscreen-with-dot-visualization: backlog
