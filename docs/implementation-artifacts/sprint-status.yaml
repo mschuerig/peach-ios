@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-21 # story 52.1 implemented
+# last_updated: 2026-03-21 # story 52.2 created
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -403,4 +403,4 @@ development_status:
   # Epic 52: Version Your Exports — CSV Format v2
   epic-52: in-progress
   52-1-csv-export-schema-v2: done
-  52-2-csv-import-parser-v2-with-backward-compatibility: backlog
+  52-2-csv-import-parser-v2-with-backward-compatibility: ready-for-dev
