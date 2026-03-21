@@ -1,6 +1,6 @@
 # Story 48.1: NextRhythmOffsetDetectionStrategy Protocol and Initial Implementation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,45 +24,45 @@ So that rhythm offset detection difficulty adapts independently per direction (F
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmOffsetDetectionTrial` value type (AC: #2)
-  - [ ] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionTrial.swift`
-  - [ ] `struct RhythmOffsetDetectionTrial: Sendable` with `tempo: TempoBPM` and `offset: RhythmOffset`
-  - [ ] Write tests in `PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionTrialTests.swift`
+- [x] Task 1: Create `RhythmOffsetDetectionTrial` value type (AC: #2)
+  - [x] Create `Peach/RhythmOffsetDetection/RhythmOffsetDetectionTrial.swift`
+  - [x] `struct RhythmOffsetDetectionTrial: Sendable` with `tempo: TempoBPM` and `offset: RhythmOffset`
+  - [x] Write tests in `PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionTrialTests.swift`
 
-- [ ] Task 2: Define `RhythmOffsetDetectionSettings` (AC: #1, #3)
-  - [ ] Create `Peach/Core/Training/RhythmOffsetDetectionSettings.swift`
-  - [ ] Include `tempo: TempoBPM`, `feedbackDuration: Duration`, `maxOffsetPercentage: Double`, `minOffsetPercentage: Double`
-  - [ ] Follow `PitchDiscriminationSettings` pattern — value type snapshot with sensible defaults
+- [x] Task 2: Define `RhythmOffsetDetectionSettings` (AC: #1, #3)
+  - [x] Create `Peach/Core/Training/RhythmOffsetDetectionSettings.swift`
+  - [x] Include `tempo: TempoBPM`, `feedbackDuration: Duration`, `maxOffsetPercentage: Double`, `minOffsetPercentage: Double`
+  - [x] Follow `PitchDiscriminationSettings` pattern — value type snapshot with sensible defaults
 
-- [ ] Task 3: Define `NextRhythmOffsetDetectionStrategy` protocol (AC: #1)
-  - [ ] Create `Peach/Core/Algorithm/NextRhythmOffsetDetectionStrategy.swift`
-  - [ ] Single method: `func nextRhythmOffsetDetectionTrial(profile: TrainingProfile, settings: RhythmOffsetDetectionSettings, lastResult: CompletedRhythmOffsetDetectionTrial?) -> RhythmOffsetDetectionTrial`
-  - [ ] Use `TrainingProfile` (not `RhythmProfile` — that protocol was removed in 47.3/47.4; the profile is now queried via `StatisticsKey`)
+- [x] Task 3: Define `NextRhythmOffsetDetectionStrategy` protocol (AC: #1)
+  - [x] Create `Peach/Core/Algorithm/NextRhythmOffsetDetectionStrategy.swift`
+  - [x] Single method: `func nextRhythmOffsetDetectionTrial(profile: TrainingProfile, settings: RhythmOffsetDetectionSettings, lastResult: CompletedRhythmOffsetDetectionTrial?) -> RhythmOffsetDetectionTrial`
+  - [x] Use `TrainingProfile` (not `RhythmProfile` — that protocol was removed in 47.3/47.4; the profile is now queried via `StatisticsKey`)
 
-- [ ] Task 4: Implement `AdaptiveRhythmOffsetDetectionStrategy` (AC: #3, #4)
-  - [ ] Create `Peach/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategy.swift`
-  - [ ] `final class AdaptiveRhythmOffsetDetectionStrategy: NextRhythmOffsetDetectionStrategy`
-  - [ ] Kazez-style adjustment: narrower on correct, wider on wrong
-  - [ ] Asymmetric: query profile separately for early and late via `StatisticsKey.rhythm(.rhythmOffsetDetection, tempoRange, .early/.late)`
-  - [ ] Cold start: use `maxOffsetPercentage` from settings (analogous to `maxCentDifference` = 100 cents)
-  - [ ] Direction selection: random, or weighted toward weaker direction based on profile
-  - [ ] Magnitude in percentage of sixteenth note — convert to `RhythmOffset` using `TempoBPM.sixteenthNoteDuration`
+- [x] Task 4: Implement `AdaptiveRhythmOffsetDetectionStrategy` (AC: #3, #4)
+  - [x] Create `Peach/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategy.swift`
+  - [x] `final class AdaptiveRhythmOffsetDetectionStrategy: NextRhythmOffsetDetectionStrategy`
+  - [x] Kazez-style adjustment: narrower on correct, wider on wrong
+  - [x] Asymmetric: query profile separately for early and late via `StatisticsKey.rhythm(.rhythmOffsetDetection, tempoRange, .early/.late)`
+  - [x] Cold start: use `maxOffsetPercentage` from settings (analogous to `maxCentDifference` = 100 cents)
+  - [x] Direction selection: random, or weighted toward weaker direction based on profile
+  - [x] Magnitude in percentage of sixteenth note — convert to `RhythmOffset` using `TempoBPM.sixteenthNoteDuration`
 
-- [ ] Task 5: Create `MockNextRhythmOffsetDetectionStrategy` (AC: #5)
-  - [ ] Create `PeachTests/Mocks/MockNextRhythmOffsetDetectionStrategy.swift`
-  - [ ] Follow existing mock contract: call count, captured parameters, configurable return value
+- [x] Task 5: Create `MockNextRhythmOffsetDetectionStrategy` (AC: #5)
+  - [x] Create `PeachTests/Mocks/MockNextRhythmOffsetDetectionStrategy.swift`
+  - [x] Follow existing mock contract: call count, captured parameters, configurable return value
 
-- [ ] Task 6: Write `AdaptiveRhythmOffsetDetectionStrategy` tests (AC: #3, #4, #5)
-  - [ ] Create `PeachTests/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategyTests.swift`
-  - [ ] Test cold start returns max difficulty offset
-  - [ ] Test narrowing after correct answer
-  - [ ] Test widening after incorrect answer
-  - [ ] Test asymmetric direction: early and late tracked independently
-  - [ ] Test offset stays within min/max bounds
-  - [ ] Test tempo from settings is passed through to trial
+- [x] Task 6: Write `AdaptiveRhythmOffsetDetectionStrategy` tests (AC: #3, #4, #5)
+  - [x] Create `PeachTests/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategyTests.swift`
+  - [x] Test cold start returns max difficulty offset
+  - [x] Test narrowing after correct answer
+  - [x] Test widening after incorrect answer
+  - [x] Test asymmetric direction: early and late tracked independently
+  - [x] Test offset stays within min/max bounds
+  - [x] Test tempo from settings is passed through to trial
 
-- [ ] Task 7: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 7: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions
 
 ## Dev Notes
 
@@ -205,10 +205,33 @@ All paths align with existing conventions: algorithms in `Core/Algorithm/`, trai
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `RhythmOffsetDetectionTrial` as a minimal `Sendable` value type with `tempo: TempoBPM` and `offset: RhythmOffset`
+- Created `RhythmOffsetDetectionSettings` following `PitchDiscriminationSettings` pattern with tempo, feedbackDuration, maxOffsetPercentage (20.0), minOffsetPercentage (1.0)
+- Defined `NextRhythmOffsetDetectionStrategy` protocol with single method accepting `TrainingProfile`, settings, and optional last result
+- Implemented `AdaptiveRhythmOffsetDetectionStrategy` with Kazez formula (narrowing=0.05, widening=0.09) operating on percentage of sixteenth note
+- Direction selection biases toward weaker direction (less data in profile); random when equal or no data
+- Cold start from profile converts welford mean (ms) to percentage of sixteenth note at current tempo
+- Created mock with call count, captured parameters, configurable return, and reset()
+- 12 new tests covering cold start, narrowing, widening, clamping, asymmetric direction tracking, profile mean cold start, and convergence
+- All 1245 tests pass with no regressions
+
+### Change Log
+
+- 2026-03-21: Implemented story 48.1 — protocol, strategy, settings, trial, mock, and tests
+
 ### File List
+
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionTrial.swift (NEW)
+- Peach/Core/Training/RhythmOffsetDetectionSettings.swift (NEW)
+- Peach/Core/Algorithm/NextRhythmOffsetDetectionStrategy.swift (NEW)
+- Peach/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategy.swift (NEW)
+- PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionTrialTests.swift (NEW)
+- PeachTests/Mocks/MockNextRhythmOffsetDetectionStrategy.swift (NEW)
+- PeachTests/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategyTests.swift (NEW)
+- docs/implementation-artifacts/sprint-status.yaml (MODIFIED)
