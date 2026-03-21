@@ -23,21 +23,9 @@ struct StartScreen: View {
     var body: some View {
         Group {
             if isCompactHeight {
-                VStack {
-                    HStack(spacing: Self.sectionSpacing(isCompact: true)) {
-                        singleNotesSection
-                        intervalsSection
-                    }
-                    rhythmPOCButton
-                }
+                landscapeLayout
             } else {
-                VStack(spacing: Self.sectionSpacing(isCompact: false)) {
-                    Spacer()
-                    singleNotesSection
-                    intervalsSection
-                    rhythmPOCButton
-                    Spacer()
-                }
+                portraitLayout
             }
         }
         .padding()
@@ -78,8 +66,6 @@ struct StartScreen: View {
                 SettingsScreen()
             case .profile:
                 ProfileScreen()
-            case .rhythmPOC:
-                RhythmPOCScreen()
             case .rhythmOffsetDetection:
                 RhythmOffsetDetectionScreen()
             case .rhythmMatching:
@@ -91,16 +77,40 @@ struct StartScreen: View {
         }
     }
 
+    // MARK: - Layouts
+
+    private var portraitLayout: some View {
+        ScrollView(.vertical) {
+            VStack(spacing: Self.sectionSpacing(isCompact: false)) {
+                pitchSection
+                intervalsSection
+                rhythmSection
+            }
+            .padding(.vertical)
+        }
+    }
+
+    private var landscapeLayout: some View {
+        HStack(alignment: .top, spacing: Self.sectionSpacing(isCompact: true)) {
+            pitchSection
+                .frame(maxWidth: .infinity)
+            intervalsSection
+                .frame(maxWidth: .infinity)
+            rhythmSection
+                .frame(maxWidth: .infinity)
+        }
+    }
+
     // MARK: - Sections
 
-    private var singleNotesSection: some View {
+    private var pitchSection: some View {
         VStack(spacing: Self.cardSpacing(isCompact: isCompactHeight)) {
-            Text("Single Notes")
+            Text("Pitch")
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
             NavigationLink(value: NavigationDestination.pitchDiscrimination(isIntervalMode: false)) {
-                trainingCard("Hear & Compare", systemImage: "ear", mode: .unisonPitchDiscrimination)
+                trainingCard("Hear & Compare", systemImage: "ear", mode: .unisonPitchDiscrimination, isHero: true)
             }
             .buttonStyle(TrainingCardButtonStyle())
 
@@ -129,22 +139,22 @@ struct StartScreen: View {
         }
     }
 
-    // MARK: - Rhythm POC
+    private var rhythmSection: some View {
+        VStack(spacing: Self.cardSpacing(isCompact: isCompactHeight)) {
+            Text("Rhythm")
+                .font(.title3)
+                .foregroundStyle(.secondary)
 
-    private var rhythmPOCButton: some View {
-        NavigationLink(value: NavigationDestination.rhythmPOC) {
-            Label("Rhythm POC", systemImage: "metronome")
-                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 16)
-                .foregroundStyle(.primary)
-                .background(
-                    RoundedRectangle(cornerRadius: Self.cardCornerRadius)
-                        .fill(.orange.opacity(0.15))
-                        .strokeBorder(.orange, lineWidth: 1)
-                )
+            NavigationLink(value: NavigationDestination.rhythmOffsetDetection) {
+                trainingCard("Rhythm Comparison", systemImage: "metronome", mode: .rhythmOffsetDetection)
+            }
+            .buttonStyle(TrainingCardButtonStyle())
+
+            NavigationLink(value: NavigationDestination.rhythmMatching) {
+                trainingCard("Rhythm Matching", systemImage: "hand.tap", mode: .rhythmMatching)
+            }
+            .buttonStyle(TrainingCardButtonStyle())
         }
-        .buttonStyle(TrainingCardButtonStyle())
     }
 
     // MARK: - Card View
@@ -152,7 +162,8 @@ struct StartScreen: View {
     private func trainingCard(
         _ title: LocalizedStringKey,
         systemImage: String,
-        mode: TrainingDiscipline
+        mode: TrainingDiscipline,
+        isHero: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Label(title, systemImage: systemImage)
@@ -164,8 +175,14 @@ struct StartScreen: View {
         .foregroundStyle(.primary)
         .background(
             RoundedRectangle(cornerRadius: Self.cardCornerRadius)
-                .fill(.regularMaterial)
+                .fill(isHero ? .thinMaterial : .regularMaterial)
         )
+        .overlay {
+            if isHero {
+                RoundedRectangle(cornerRadius: Self.cardCornerRadius)
+                    .strokeBorder(.tint.opacity(0.3), lineWidth: 1)
+            }
+        }
     }
 }
 

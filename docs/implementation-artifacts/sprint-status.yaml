@@ -391,5 +391,5 @@ development_status:
   # Epic 50: Six Modes, One App — Start Screen & Settings
   epic-50: in-progress
   50-1-navigationdestination-and-settings-for-rhythm: done
-  50-2-start-screen-six-button-layout-with-section-labels: ready-for-dev
+  50-2-start-screen-six-button-layout-with-section-labels: review
   50-3-settings-screen-tempo-stepper: backlog

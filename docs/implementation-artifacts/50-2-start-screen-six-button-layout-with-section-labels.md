@@ -1,6 +1,6 @@
 # Story 50.2: Start Screen Six-Button Layout with Section Labels
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,43 +26,43 @@ so that I can easily find and start any training mode (FR104).
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Rename "Single Notes" section label to "Pitch" (AC: #1)
-  - [ ] Change `Text("Single Notes")` to `Text("Pitch")` in `singleNotesSection` (rename the computed property to `pitchSection`)
-  - [ ] Verify German localization for "Pitch" exists in `Localizable.xcstrings` (add via `bin/add-localization.swift` if missing)
+- [x] Task 1: Rename "Single Notes" section label to "Pitch" (AC: #1)
+  - [x] Change `Text("Single Notes")` to `Text("Pitch")` in `singleNotesSection` (rename the computed property to `pitchSection`)
+  - [x] Verify German localization for "Pitch" exists in `Localizable.xcstrings` (add via `bin/add-localization.swift` if missing)
 
-- [ ] Task 2: Add Rhythm section with two training cards (AC: #1, #3, #7)
-  - [ ] Create `rhythmSection` computed property following the pattern of `pitchSection` / `intervalsSection`
-  - [ ] "Rhythm Comparison" button navigates to `.rhythmOffsetDetection`, uses `.rhythmOffsetDetection` for sparkline
-  - [ ] "Rhythm Matching" button navigates to `.rhythmMatching`, uses `.rhythmMatching` for sparkline
-  - [ ] Choose appropriate SF Symbols (e.g., `"metronome"` for comparison, `"hand.tap"` for matching)
-  - [ ] Add German localizations for "Rhythm", "Rhythm Comparison", "Rhythm Matching"
+- [x] Task 2: Add Rhythm section with two training cards (AC: #1, #3, #7)
+  - [x] Create `rhythmSection` computed property following the pattern of `pitchSection` / `intervalsSection`
+  - [x] "Rhythm Comparison" button navigates to `.rhythmOffsetDetection`, uses `.rhythmOffsetDetection` for sparkline
+  - [x] "Rhythm Matching" button navigates to `.rhythmMatching`, uses `.rhythmMatching` for sparkline
+  - [x] Choose appropriate SF Symbols (e.g., `"metronome"` for comparison, `"hand.tap"` for matching)
+  - [x] Add German localizations for "Rhythm", "Rhythm Comparison", "Rhythm Matching"
 
-- [ ] Task 3: Apply hero styling to Pitch Comparison button (AC: #2)
-  - [ ] The first button in the Pitch section ("Hear & Compare", unison pitch discrimination) should be visually more prominent than all other buttons
-  - [ ] Consider using `.tint(.accentColor)` or a bolder background fill for the hero card while keeping `.regularMaterial` for others
-  - [ ] Subtle differentiation is fine — this is the most common starting point for new users
+- [x] Task 3: Apply hero styling to Pitch Comparison button (AC: #2)
+  - [x] The first button in the Pitch section ("Hear & Compare", unison pitch discrimination) should be visually more prominent than all other buttons
+  - [x] Consider using `.tint(.accentColor)` or a bolder background fill for the hero card while keeping `.regularMaterial` for others
+  - [x] Subtle differentiation is fine — this is the most common starting point for new users
 
-- [ ] Task 4: Update portrait layout to scrollable vertical stack (AC: #1)
-  - [ ] Wrap the VStack in a `ScrollView(.vertical)` so all 6 cards + section labels fit smaller screens
-  - [ ] Keep the existing spacing logic from `sectionSpacing` and `cardSpacing` static methods
-  - [ ] Remove the `Spacer()` calls that were centering content (scrollable content fills naturally)
+- [x] Task 4: Update portrait layout to scrollable vertical stack (AC: #1)
+  - [x] Wrap the VStack in a `ScrollView(.vertical)` so all 6 cards + section labels fit smaller screens
+  - [x] Keep the existing spacing logic from `sectionSpacing` and `cardSpacing` static methods
+  - [x] Remove the `Spacer()` calls that were centering content (scrollable content fills naturally)
 
-- [ ] Task 5: Update landscape layout to 3-column grid (AC: #4, #5)
-  - [ ] Replace the current `HStack` (which only shows 2 sections side-by-side) with a 3-column layout
-  - [ ] Each column contains one section (Pitch, Intervals, Rhythm) with its label and 2 cards
-  - [ ] Use `HStack(spacing:)` with equal-width columns, or `LazyVGrid` with 3 flexible columns
-  - [ ] On iPad landscape, the wider form factor should naturally accommodate the 3-column layout
+- [x] Task 5: Update landscape layout to 3-column grid (AC: #4, #5)
+  - [x] Replace the current `HStack` (which only shows 2 sections side-by-side) with a 3-column layout
+  - [x] Each column contains one section (Pitch, Intervals, Rhythm) with its label and 2 cards
+  - [x] Use `HStack(spacing:)` with equal-width columns, or `LazyVGrid` with 3 flexible columns
+  - [x] On iPad landscape, the wider form factor should naturally accommodate the 3-column layout
 
-- [ ] Task 6: Remove `.rhythmPOC` navigation case and `RhythmPOCScreen` (AC: #6)
-  - [ ] Remove `case rhythmPOC` from `NavigationDestination` enum
-  - [ ] Remove the `.rhythmPOC` case from the `navigationDestination` switch in `StartScreen`
-  - [ ] Remove the `rhythmPOCButton` computed property from `StartScreen`
-  - [ ] Remove all references to `rhythmPOCButton` from the body layout
-  - [ ] Delete `Peach/RhythmPOC/RhythmPOCScreen.swift` (confirm no other references first)
-  - [ ] Remove `RhythmPOC/` directory if empty after deletion
+- [x] Task 6: Remove `.rhythmPOC` navigation case and `RhythmPOCScreen` (AC: #6)
+  - [x] Remove `case rhythmPOC` from `NavigationDestination` enum
+  - [x] Remove the `.rhythmPOC` case from the `navigationDestination` switch in `StartScreen`
+  - [x] Remove the `rhythmPOCButton` computed property from `StartScreen`
+  - [x] Remove all references to `rhythmPOCButton` from the body layout
+  - [x] Delete `Peach/RhythmPOC/RhythmPOCScreen.swift` (confirm no other references first)
+  - [x] Remove `RhythmPOC/` directory if empty after deletion
 
-- [ ] Task 7: Run full test suite
-  - [ ] `bin/test.sh` — all tests must pass
+- [x] Task 7: Run full test suite
+  - [x] `bin/test.sh` — all tests must pass
 
 ## Dev Notes
 
@@ -172,10 +172,31 @@ Peach/
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None
+
 ### Completion Notes List
 
+- Renamed "Single Notes" section to "Pitch" with `pitchSection` computed property
+- Added `rhythmSection` with "Rhythm Comparison" (`metronome` icon, `.rhythmOffsetDetection`) and "Rhythm Matching" (`hand.tap` icon, `.rhythmMatching`)
+- Hero styling: Pitch Comparison card uses `.thinMaterial` background + subtle accent-colored stroke border; all others use `.regularMaterial`
+- Portrait layout: `ScrollView(.vertical)` wrapping `VStack` with 3 sections, no `Spacer()` centering
+- Landscape layout: `HStack` with 3 equal-width columns (Pitch, Intervals, Rhythm)
+- Removed `case rhythmPOC` from `NavigationDestination` enum
+- Deleted `Peach/RhythmPOC/RhythmPOCScreen.swift` and `RhythmPOC/` directory
+- Added German localizations: "Pitch" → "Tonhöhe", "Rhythm" → "Rhythmus", "Rhythm Comparison" → "Rhythmusvergleich", "Rhythm Matching" → "Rhythmusanpassung"
+- All 1356 tests pass, no regressions
+
+### Change Log
+
+- 2026-03-21: Implemented six-button layout with section labels, hero styling, scroll/grid layouts, removed RhythmPOC
+
 ### File List
+
+- `Peach/Start/StartScreen.swift` (modified)
+- `Peach/App/NavigationDestination.swift` (modified)
+- `Peach/RhythmPOC/RhythmPOCScreen.swift` (deleted)
+- `Peach/Resources/Localizable.xcstrings` (modified)
