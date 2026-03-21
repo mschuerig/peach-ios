@@ -393,3 +393,8 @@ development_status:
   50-1-navigationdestination-and-settings-for-rhythm: done
   50-2-start-screen-six-button-layout-with-section-labels: done
   50-3-settings-screen-tempo-stepper: done
+
+  # Epic 51: See Your Rhythm — Profile Visualization
+  epic-51: in-progress
+  51-1-rhythm-spectrogram-view: ready-for-dev
+  51-2-rhythm-profile-card-and-profile-screen-integration: backlog
