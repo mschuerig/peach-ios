@@ -1,6 +1,6 @@
 # Story 52.1: CSV Export Schema v2
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,34 +22,34 @@ so that rhythm training data can be exported alongside pitch data (FR100, FR101)
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `CSVExportSchemaV2` (AC: 1, 2, 3)
-  - [ ] Define `CSVExportSchemaV2` enum in `Peach/Core/Data/CSVExportSchemaV2.swift`
-  - [ ] Set `formatVersion = 2`, reuse `metadataPrefix` from existing schema
-  - [ ] Add `TrainingType` enum with four cases: `.pitchDiscrimination`, `.pitchMatching`, `.rhythmOffsetDetection`, `.rhythmMatching`
-  - [ ] Define column layout: common columns + pitch-specific (empty for rhythm) + rhythm-specific (empty for pitch)
-  - [ ] Write tests first in `PeachTests/Core/Data/CSVExportSchemaV2Tests.swift`
+- [x] Task 1: Create `CSVExportSchemaV2` (AC: 1, 2, 3)
+  - [x] Define `CSVExportSchemaV2` enum in `Peach/Core/Data/CSVExportSchemaV2.swift`
+  - [x] Set `formatVersion = 2`, reuse `metadataPrefix` from existing schema
+  - [x] Add `TrainingType` enum with four cases: `.pitchDiscrimination`, `.pitchMatching`, `.rhythmOffsetDetection`, `.rhythmMatching`
+  - [x] Define column layout: common columns + pitch-specific (empty for rhythm) + rhythm-specific (empty for pitch)
+  - [x] Write tests first in `PeachTests/Core/Data/CSVExportSchemaV2Tests.swift`
 
-- [ ] Task 2: Extend `CSVRecordFormatter` with rhythm formatting (AC: 2, 3)
-  - [ ] Add `static func format(_ record: RhythmOffsetDetectionRecord) -> String` using v2 column layout
-  - [ ] Add `static func format(_ record: RhythmMatchingRecord) -> String` using v2 column layout
-  - [ ] Pitch-specific columns are empty for rhythm rows; rhythm-specific columns are empty for pitch rows
-  - [ ] Write tests first in `CSVRecordFormatterTests.swift`
+- [x] Task 2: Extend `CSVRecordFormatter` with rhythm formatting (AC: 2, 3)
+  - [x] Add `static func format(_ record: RhythmOffsetDetectionRecord) -> String` using v2 column layout
+  - [x] Add `static func format(_ record: RhythmMatchingRecord) -> String` using v2 column layout
+  - [x] Pitch-specific columns are empty for rhythm rows; rhythm-specific columns are empty for pitch rows
+  - [x] Write tests first in `CSVRecordFormatterTests.swift`
 
-- [ ] Task 3: Update `TrainingDataExporter` to export all four types (AC: 4)
-  - [ ] Fetch `RhythmOffsetDetectionRecord` and `RhythmMatchingRecord` from store
-  - [ ] Merge all four record type arrays into timestamp-sorted output
-  - [ ] Use `CSVExportSchemaV2` metadata and header
-  - [ ] Write tests first in `TrainingDataExporterTests.swift`
+- [x] Task 3: Update `TrainingDataExporter` to export all four types (AC: 4)
+  - [x] Fetch `RhythmOffsetDetectionRecord` and `RhythmMatchingRecord` from store
+  - [x] Merge all four record type arrays into timestamp-sorted output
+  - [x] Use `CSVExportSchemaV2` metadata and header
+  - [x] Write tests first in `TrainingDataExporterTests.swift`
 
-- [ ] Task 4: Write comprehensive tests (AC: 5)
-  - [ ] Test v2 header contains all columns (common + pitch-specific + rhythm-specific)
-  - [ ] Test mixed export: pitch + rhythm records interleaved by timestamp
-  - [ ] Test rhythm-only export
-  - [ ] Test empty export (header only)
-  - [ ] Test round-trip: export produces valid CSV with correct discriminators
+- [x] Task 4: Write comprehensive tests (AC: 5)
+  - [x] Test v2 header contains all columns (common + pitch-specific + rhythm-specific)
+  - [x] Test mixed export: pitch + rhythm records interleaved by timestamp
+  - [x] Test rhythm-only export
+  - [x] Test empty export (header only)
+  - [x] Test round-trip: export produces valid CSV with correct discriminators
 
-- [ ] Task 5: Run full test suite
-  - [ ] `bin/test.sh` — zero regressions
+- [x] Task 5: Run full test suite
+  - [x] `bin/test.sh` — zero regressions (1403 tests passed)
 
 ## Dev Notes
 
@@ -164,9 +164,28 @@ Follow existing test conventions in `CSVExportSchemaTests.swift`, `CSVRecordForm
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
 
 ### Debug Log References
+- Fixed `TrainingDataTransferService.refreshExport()` empty-export comparison to use V2 schema (Boy Scout Rule)
+- Updated existing pitch `format()` methods to produce 15-column V2 rows (3 empty rhythm fields appended)
+- Updated round-trip test to verify V1 importer rejects V2 format (import V2 is story 52.2)
 
 ### Completion Notes List
+- Task 1: Created `CSVExportSchemaV2` enum with formatVersion=2, shared metadataPrefix, 4-case TrainingType, 15-column header extending V1's 12 columns with 3 rhythm columns
+- Task 2: Added `format(RhythmOffsetDetectionRecord)` and `format(RhythmMatchingRecord)` to CSVRecordFormatter; updated existing pitch formatters to 15-column V2 layout
+- Task 3: Updated TrainingDataExporter to fetch all 4 record types, merge by timestamp, use V2 metadata/header
+- Task 4: Added comprehensive tests: 15-column verification, all-four-types mixed export, rhythm-only export, empty V2 export, discriminator correctness, V1 parser rejects V2 format
+- Task 5: Full test suite passes — 1403 tests, zero regressions
+
+### Change Log
+- 2026-03-21: Implemented CSV Export Schema V2 with all four training types
 
 ### File List
+- `Peach/Core/Data/CSVExportSchemaV2.swift` (new)
+- `Peach/Core/Data/CSVRecordFormatter.swift` (modified — added rhythm format overloads, extended pitch formatters to 15 columns)
+- `Peach/Core/Data/TrainingDataExporter.swift` (modified — fetches all 4 record types, uses V2 schema)
+- `Peach/Core/Data/TrainingDataTransferService.swift` (modified — empty-export comparison uses V2)
+- `PeachTests/Core/Data/CSVExportSchemaV2Tests.swift` (new)
+- `PeachTests/Core/Data/CSVRecordFormatterTests.swift` (modified — added rhythm formatting tests)
+- `PeachTests/Core/Data/TrainingDataExporterTests.swift` (modified — added V2 and rhythm export tests)

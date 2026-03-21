@@ -6,7 +6,7 @@ nonisolated enum CSVRecordFormatter {
 
     static func format(_ record: PitchDiscriminationRecord) -> String {
         let fields: [String] = [
-            CSVExportSchema.TrainingType.pitchDiscrimination.csvValue,
+            CSVExportSchemaV2.TrainingType.pitchDiscrimination.csvValue,
             formatTimestamp(record.timestamp),
             "\(record.referenceNote)",
             formatNoteName(record.referenceNote),
@@ -16,8 +16,11 @@ nonisolated enum CSVRecordFormatter {
             record.tuningSystem,
             formatDouble(record.centOffset),
             record.isCorrect ? "true" : "false",
-            "",
-            "",
+            "", // initialCentOffset
+            "", // userCentError
+            "", // tempoBPM
+            "", // offsetMs
+            "", // userOffsetMs
         ]
         return fields.map { escapeField($0) }.joined(separator: ",")
     }
@@ -26,7 +29,7 @@ nonisolated enum CSVRecordFormatter {
 
     static func format(_ record: PitchMatchingRecord) -> String {
         let fields: [String] = [
-            CSVExportSchema.TrainingType.pitchMatching.csvValue,
+            CSVExportSchemaV2.TrainingType.pitchMatching.csvValue,
             formatTimestamp(record.timestamp),
             "\(record.referenceNote)",
             formatNoteName(record.referenceNote),
@@ -34,10 +37,59 @@ nonisolated enum CSVRecordFormatter {
             formatNoteName(record.targetNote),
             formatInterval(record.interval),
             record.tuningSystem,
-            "",
-            "",
+            "", // centOffset
+            "", // isCorrect
             formatDouble(record.initialCentOffset),
             formatDouble(record.userCentError),
+            "", // tempoBPM
+            "", // offsetMs
+            "", // userOffsetMs
+        ]
+        return fields.map { escapeField($0) }.joined(separator: ",")
+    }
+
+    // MARK: - RhythmOffsetDetection Record Formatting
+
+    static func format(_ record: RhythmOffsetDetectionRecord) -> String {
+        let fields: [String] = [
+            CSVExportSchemaV2.TrainingType.rhythmOffsetDetection.csvValue,
+            formatTimestamp(record.timestamp),
+            "", // referenceNote
+            "", // referenceNoteName
+            "", // targetNote
+            "", // targetNoteName
+            "", // interval
+            "", // tuningSystem
+            "", // centOffset
+            record.isCorrect ? "true" : "false",
+            "", // initialCentOffset
+            "", // userCentError
+            "\(record.tempoBPM)",
+            formatDouble(record.offsetMs),
+            "", // userOffsetMs
+        ]
+        return fields.map { escapeField($0) }.joined(separator: ",")
+    }
+
+    // MARK: - RhythmMatching Record Formatting
+
+    static func format(_ record: RhythmMatchingRecord) -> String {
+        let fields: [String] = [
+            CSVExportSchemaV2.TrainingType.rhythmMatching.csvValue,
+            formatTimestamp(record.timestamp),
+            "", // referenceNote
+            "", // referenceNoteName
+            "", // targetNote
+            "", // targetNoteName
+            "", // interval
+            "", // tuningSystem
+            "", // centOffset
+            "", // isCorrect
+            "", // initialCentOffset
+            "", // userCentError
+            "\(record.tempoBPM)",
+            "", // offsetMs
+            formatDouble(record.userOffsetMs),
         ]
         return fields.map { escapeField($0) }.joined(separator: ",")
     }

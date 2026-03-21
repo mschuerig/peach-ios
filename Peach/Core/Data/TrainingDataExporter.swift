@@ -5,6 +5,8 @@ enum TrainingDataExporter {
     static func export(from store: TrainingDataStore) throws -> String {
         let comparisons = try store.fetchAllPitchDiscriminations()
         let pitchMatchings = try store.fetchAllPitchMatchings()
+        let rhythmOffsets = try store.fetchAllRhythmOffsetDetections()
+        let rhythmMatchings = try store.fetchAllRhythmMatchings()
 
         var merged: [(timestamp: Date, row: String)] = []
 
@@ -16,13 +18,21 @@ enum TrainingDataExporter {
             merged.append((record.timestamp, CSVRecordFormatter.format(record)))
         }
 
+        for record in rhythmOffsets {
+            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
+        }
+
+        for record in rhythmMatchings {
+            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
+        }
+
         guard !merged.isEmpty else {
-            return CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow
+            return CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow
         }
 
         merged.sort { $0.timestamp < $1.timestamp }
 
         let rows = merged.map(\.row)
-        return CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow + "\n" + rows.joined(separator: "\n")
+        return CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow + "\n" + rows.joined(separator: "\n")
     }
 }
