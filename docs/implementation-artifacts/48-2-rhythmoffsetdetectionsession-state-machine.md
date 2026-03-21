@@ -1,6 +1,6 @@
 # Story 48.2: RhythmOffsetDetectionSession State Machine
 
-Status: review
+Status: done
 
 ## Story
 
