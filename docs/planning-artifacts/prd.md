@@ -596,7 +596,7 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 ### Rhythm Export/Import
 
 - **FR100:** System uses CSV format version 2 for export/import with a `trainingType` discriminator
-- **FR101:** Format version 2 introduces `rhythmComparison` and `rhythmMatching` as new trainingType values with type-specific columns
+- **FR101:** Format version 2 introduces `rhythmOffsetDetection` and `rhythmMatching` as new trainingType values with type-specific columns
 - **FR102:** V1 exports remain importable; V2 parser handles all training types including V1 records
 - **FR103:** System deduplicates merged records by timestamp, tempo, and training type
 
