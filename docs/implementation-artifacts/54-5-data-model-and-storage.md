@@ -1,6 +1,6 @@
 # Story 54.5: Data Model and Storage
 
-Status: review
+Status: done
 
 ## Story
 
@@ -10,13 +10,13 @@ so that continuous rhythm matching trials are persisted and available for profil
 
 ## Acceptance Criteria
 
-1. **Given** `ContinuousRhythmMatchingRecord` as a SwiftData `@Model`, **when** inspected, **then** it stores: `tempoBPM: Int`, `meanOffsetMs: Double`, `hitRate: Double`, `gapPositionBreakdown: Data` (encoded JSON), `cycleCount: Int`, `timestamp: Date`.
+1. **Given** `ContinuousRhythmMatchingRecord` as a SwiftData `@Model`, **when** inspected, **then** it stores: `tempoBPM: Int`, `meanOffsetMs: Double`, `hitRate: Double`, `gapPositionBreakdownJSON: Data` (encoded JSON), `cycleCount: Int`, `timestamp: Date`.
 
 2. **Given** `TrainingDataStore`, **when** it conforms to `ContinuousRhythmMatchingObserver`, **then** `continuousRhythmMatchingCompleted(_:)` converts the trial to a record and persists it.
 
 3. **Given** `TrainingDataStore`, **when** CRUD methods are called, **then** `save`, `fetchAll`, and `deleteAll` operations work for `ContinuousRhythmMatchingRecord` following existing patterns.
 
-4. **Given** `PerceptualProfile`, **when** it conforms to `ContinuousRhythmMatchingObserver`, **then** it updates rhythm statistics keyed by `TempoRange` using the trial's mean offset, split by early/late direction of the mean.
+4. **Given** `PerceptualProfile`, **when** it conforms to `ContinuousRhythmMatchingObserver`, **then** it updates rhythm statistics keyed by `TempoRange` using the signed mean offset computed from individual gap offsets, split by early/late direction.
 
 5. **Given** `TrainingDisciplineConfig`, **when** a `.continuousRhythmMatching` discipline is registered, **then** it has appropriate display name, unit label, and optimal baseline.
 

@@ -377,7 +377,7 @@ extension TrainingDataStore: ContinuousRhythmMatchingObserver {
             if gap.isHit {
                 entry.hits += 1
                 if let offset = gap.offset {
-                    entry.offsets.append(offset.absoluteMilliseconds)
+                    entry.offsets.append(offset.statisticalValue)
                 }
             } else {
                 entry.misses += 1

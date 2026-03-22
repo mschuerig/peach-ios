@@ -38,7 +38,7 @@ struct CompletedContinuousRhythmMatchingTrial: Sendable {
     var meanOffsetMs: Double? {
         let hits = gapResults.compactMap(\.offset)
         guard !hits.isEmpty else { return nil }
-        let totalMs = hits.reduce(0.0) { $0 + $1.absoluteMilliseconds }
+        let totalMs = hits.reduce(0.0) { $0 + $1.statisticalValue }
         return totalMs / Double(hits.count)
     }
 }

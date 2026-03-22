@@ -61,6 +61,7 @@ enum MetricPointMapper {
 
     static func feedContinuousRhythmMatchings(_ records: [ContinuousRhythmMatchingRecord], into builder: PerceptualProfile.Builder) {
         for record in records {
+            guard record.hitRate > 0 else { continue }
             let offset = RhythmOffset(.milliseconds(record.meanOffsetMs))
             guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
             builder.addPoint(

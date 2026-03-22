@@ -140,7 +140,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
         #expect(trial.meanOffsetPercentage == nil)
     }
 
-    @Test("meanOffsetMs averages absolute millisecond offsets")
+    @Test("meanOffsetMs averages signed millisecond offsets")
     func meanOffsetMs() async throws {
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),
@@ -150,7 +150,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
             ]
         )
         let ms = try #require(trial.meanOffsetMs)
-        #expect(abs(ms - 15.0) < 0.01)
+        #expect(abs(ms - (-5.0)) < 0.01)
     }
 
     @Test("meanOffsetMs returns nil for no hits")
