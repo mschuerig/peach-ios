@@ -315,8 +315,8 @@ development_status:
   cleanup-rename-discrimination-to-pitch-comparison: done # Completed naming-symmetry rename across ~70 source/test files and ~19 doc files
 
   # Epic 39: App Icon Redesign — AI-Generated Peach Icon
-  epic-39: in-progress
-  39-1-app-icon-redesign: ready-for-dev
+  epic-39: done
+  39-1-app-icon-redesign: done
 
   # Epic 40: Version Your Data — CSV Export Format Versioning
   epic-40: done
@@ -336,9 +336,9 @@ development_status:
   41-9-session-level-detail-markers: done # Already implemented as part of chart assembly (sessionDots in ProgressChartView)
 
   # Epic 42: Fix Your Piano — Custom SoundFont Assembly
-  epic-42: in-progress
+  epic-42: done
   42-1-extend-download-script-for-multiple-soundfont-sources: done
-  42-2-clean-up-soundfontlibrary-and-soundfontnoteplayer-defaults: review
+  42-2-clean-up-soundfontlibrary-and-soundfontnoteplayer-defaults: done
 
   # Epic 43: Share Your Progress — Sharing
   epic-43: done
@@ -348,7 +348,7 @@ development_status:
   43-4-add-share-button-to-progress-chart-cards: done
 
   # Epic 44: Solid Ground — Prerequisite Refactorings
-  epic-44: in-progress
+  epic-44: done
   44-1-split-core-audio-into-core-music-and-core-audio: done
   44-2-clean-up-perceptualprofile-for-multi-mode-extension: done
   44-3-re-architect-profile-and-progress-responsibilities: done
@@ -362,7 +362,7 @@ development_status:
   45-4-rhythmprofile-protocol: done
 
   # Epic 46: One Engine — Audio Architecture Redesign
-  epic-46: in-progress
+  epic-46: done
   46-1-extract-soundfontengine-from-soundfontnoteplayer: done
   46-2-refactor-soundfontnoteplayer-to-delegate-to-soundfontengine: done
   46-3-add-render-thread-scheduling-to-soundfontengine: done
@@ -371,7 +371,7 @@ development_status:
 
 
   # Epic 47: Remember Every Beat — Rhythm Data Layer
-  epic-47: in-progress
+  epic-47: done
   47-1-rhythm-swiftdata-records: done
   47-2-trainingdatastore-rhythm-crud-and-observer-conformance: done
   47-3-perceptualprofile-rhythmprofile-conformance: done
@@ -384,27 +384,27 @@ development_status:
   48-3-rhythmoffsetdetectionscreen-with-dot-visualization: done
 
   # Epic 49: Hit That Beat — Rhythm Matching Training
-  epic-49: in-progress
+  epic-49: done
   49-1-rhythmmatchingsession-state-machine: done
   49-2-rhythmmatchingscreen-with-tap-button-and-color-feedback: done
 
   # Epic 50: Six Modes, One App — Start Screen & Settings
-  epic-50: in-progress
+  epic-50: done
   50-1-navigationdestination-and-settings-for-rhythm: done
   50-2-start-screen-six-button-layout-with-section-labels: done
   50-3-settings-screen-tempo-stepper: done
 
   # Epic 51: See Your Rhythm — Profile Visualization
-  epic-51: in-progress
+  epic-51: done
   51-1-rhythm-spectrogram-view: done
-  51-2-rhythm-profile-card-and-profile-screen-integration: review
+  51-2-rhythm-profile-card-and-profile-screen-integration: done
   51-3-spectrogram-accuracy-thresholds: done
 
   # Epic 52: Version Your Exports — CSV Format v2
-  epic-52: in-progress
+  epic-52: done
   52-1-csv-export-schema-v2: done
   52-2-csv-import-parser-v2-with-backward-compatibility: done
 
   # Epic 53: Rhythm in Every Language — Localization
-  epic-53: in-progress
+  epic-53: done
   53-1-rhythm-training-localization: done
