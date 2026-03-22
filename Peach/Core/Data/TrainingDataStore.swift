@@ -350,12 +350,14 @@ extension TrainingDataStore: PitchDiscriminationObserver {
 
 extension TrainingDataStore: ContinuousRhythmMatchingObserver {
     func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial) {
-        let breakdowns = buildPositionBreakdowns(from: result.gapResults)
-        let breakdownJSON = (try? JSONEncoder().encode(breakdowns)) ?? Data()
+        let positionMeans = computePositionMeanOffsets(from: result.gapResults)
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: result.tempo.value,
             meanOffsetMs: result.meanOffsetMs ?? 0,
-            gapPositionBreakdownJSON: breakdownJSON,
+            meanOffsetMsPosition0: positionMeans.0,
+            meanOffsetMsPosition1: positionMeans.1,
+            meanOffsetMsPosition2: positionMeans.2,
+            meanOffsetMsPosition3: positionMeans.3,
             timestamp: result.timestamp
         )
         do {
@@ -367,18 +369,15 @@ extension TrainingDataStore: ContinuousRhythmMatchingObserver {
         }
     }
 
-    private func buildPositionBreakdowns(from gapResults: [GapResult]) -> [PositionBreakdown] {
+    private func computePositionMeanOffsets(from gapResults: [GapResult]) -> (Double?, Double?, Double?, Double?) {
         var grouped: [Int: [Double]] = [:]
         for gap in gapResults {
             grouped[gap.position.rawValue, default: []].append(gap.offset.statisticalValue)
         }
-        return grouped.sorted { $0.key < $1.key }.map { pos, offsets in
-            let meanOffset = offsets.reduce(0, +) / Double(offsets.count)
-            return PositionBreakdown(
-                position: pos,
-                count: offsets.count,
-                meanOffsetMs: meanOffset
-            )
+        func mean(for position: Int) -> Double? {
+            guard let offsets = grouped[position], !offsets.isEmpty else { return nil }
+            return offsets.reduce(0, +) / Double(offsets.count)
         }
+        return (mean(for: 0), mean(for: 1), mean(for: 2), mean(for: 3))
     }
 }

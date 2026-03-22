@@ -656,11 +656,10 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let breakdownJSON = try JSONEncoder().encode([PositionBreakdown(position: 0, count: 3, meanOffsetMs: -5.0)])
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 120,
             meanOffsetMs: -8.5,
-            gapPositionBreakdownJSON: breakdownJSON,
+            meanOffsetMsPosition0: -5.0,
             timestamp: timestamp
         )
 
@@ -681,10 +680,9 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let now = Date()
-        let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
-        let record1 = ContinuousRhythmMatchingRecord(tempoBPM: 80, meanOffsetMs: -5.0, gapPositionBreakdownJSON: emptyJSON, timestamp: now.addingTimeInterval(-60))
-        let record2 = ContinuousRhythmMatchingRecord(tempoBPM: 100, meanOffsetMs: 2.0, gapPositionBreakdownJSON: emptyJSON, timestamp: now.addingTimeInterval(-30))
-        let record3 = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: 0.5, gapPositionBreakdownJSON: emptyJSON, timestamp: now)
+        let record1 = ContinuousRhythmMatchingRecord(tempoBPM: 80, meanOffsetMs: -5.0, timestamp: now.addingTimeInterval(-60))
+        let record2 = ContinuousRhythmMatchingRecord(tempoBPM: 100, meanOffsetMs: 2.0, timestamp: now.addingTimeInterval(-30))
+        let record3 = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: 0.5, timestamp: now)
 
         try store.save(record1)
         try store.save(record2)
@@ -704,8 +702,7 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
-        let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, gapPositionBreakdownJSON: emptyJSON)
+        let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0)
         try store.save(continuousRecord)
 
         let rhythmMatchRecord = RhythmMatchingRecord(tempoBPM: 100, userOffsetMs: 3.0)
@@ -726,8 +723,7 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
-        let record = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, gapPositionBreakdownJSON: emptyJSON)
+        let record = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0)
         try store.save(record)
 
         try store.deleteAll()
@@ -764,12 +760,15 @@ struct TrainingDataStoreTests {
         #expect(fetched[0].tempoBPM == 120)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
 
-        let breakdowns = try JSONDecoder().decode([PositionBreakdown].self, from: fetched[0].gapPositionBreakdownJSON)
-        #expect(breakdowns.count == 2)
-        // Sorted by position
-        #expect(breakdowns[0].position == 0) // .first
-        #expect(breakdowns[0].count == 2)
-        #expect(breakdowns[1].position == 2) // .third
-        #expect(breakdowns[1].count == 1)
+        // Position 0 (.first): mean of -10 and -8 = -9.0
+        #expect(fetched[0].meanOffsetMsPosition0 != nil)
+        #expect(abs(fetched[0].meanOffsetMsPosition0! - (-9.0)) < 0.001)
+        // Position 1 (.second): not used
+        #expect(fetched[0].meanOffsetMsPosition1 == nil)
+        // Position 2 (.third): single value 5.0
+        #expect(fetched[0].meanOffsetMsPosition2 != nil)
+        #expect(abs(fetched[0].meanOffsetMsPosition2! - 5.0) < 0.001)
+        // Position 3 (.fourth): not used
+        #expect(fetched[0].meanOffsetMsPosition3 == nil)
     }
 }

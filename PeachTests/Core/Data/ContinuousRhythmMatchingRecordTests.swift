@@ -21,13 +21,14 @@ struct ContinuousRhythmMatchingRecordTests {
         let context = ModelContext(container)
 
         let timestamp = Date()
-        let breakdown = [PositionBreakdown(position: 0, count: 3, meanOffsetMs: -5.2)]
-        let breakdownJSON = try JSONEncoder().encode(breakdown)
 
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 120,
             meanOffsetMs: -8.5,
-            gapPositionBreakdownJSON: breakdownJSON,
+            meanOffsetMsPosition0: -5.2,
+            meanOffsetMsPosition1: nil,
+            meanOffsetMsPosition2: 3.1,
+            meanOffsetMsPosition3: nil,
             timestamp: timestamp
         )
 
@@ -40,7 +41,10 @@ struct ContinuousRhythmMatchingRecordTests {
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
         #expect(fetched[0].meanOffsetMs == -8.5)
-        #expect(fetched[0].gapPositionBreakdownJSON == breakdownJSON)
+        #expect(fetched[0].meanOffsetMsPosition0 == -5.2)
+        #expect(fetched[0].meanOffsetMsPosition1 == nil)
+        #expect(fetched[0].meanOffsetMsPosition2 == 3.1)
+        #expect(fetched[0].meanOffsetMsPosition3 == nil)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
@@ -49,8 +53,7 @@ struct ContinuousRhythmMatchingRecordTests {
         let before = Date()
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 90,
-            meanOffsetMs: 3.2,
-            gapPositionBreakdownJSON: Data()
+            meanOffsetMs: 3.2
         )
         let after = Date()
 
@@ -58,28 +61,44 @@ struct ContinuousRhythmMatchingRecordTests {
         #expect(record.timestamp <= after)
     }
 
-    @Test("Gap position breakdown round-trips through JSON")
-    func gapPositionBreakdownRoundTrips() async throws {
-        let breakdowns = [
-            PositionBreakdown(position: 0, count: 5, meanOffsetMs: -3.1),
-            PositionBreakdown(position: 2, count: 4, meanOffsetMs: 7.8)
-        ]
-        let encoded = try JSONEncoder().encode(breakdowns)
+    @Test("All four position offsets stored and retrieved")
+    func allFourPositionOffsets() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
 
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 100,
             meanOffsetMs: 2.3,
-            gapPositionBreakdownJSON: encoded
+            meanOffsetMsPosition0: -3.1,
+            meanOffsetMsPosition1: 1.5,
+            meanOffsetMsPosition2: 7.8,
+            meanOffsetMsPosition3: -0.4
         )
 
-        let decoded = try JSONDecoder().decode([PositionBreakdown].self, from: record.gapPositionBreakdownJSON)
-        #expect(decoded.count == 2)
-        #expect(decoded[0].position == 0)
-        #expect(decoded[0].count == 5)
-        #expect(decoded[0].meanOffsetMs == -3.1)
-        #expect(decoded[1].position == 2)
-        #expect(decoded[1].count == 4)
-        #expect(decoded[1].meanOffsetMs == 7.8)
+        context.insert(record)
+        try context.save()
+
+        let descriptor = FetchDescriptor<ContinuousRhythmMatchingRecord>()
+        let fetched = try context.fetch(descriptor)
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].meanOffsetMsPosition0 == -3.1)
+        #expect(fetched[0].meanOffsetMsPosition1 == 1.5)
+        #expect(fetched[0].meanOffsetMsPosition2 == 7.8)
+        #expect(fetched[0].meanOffsetMsPosition3 == -0.4)
+    }
+
+    @Test("Nil position offsets default correctly")
+    func nilPositionOffsets() async {
+        let record = ContinuousRhythmMatchingRecord(
+            tempoBPM: 80,
+            meanOffsetMs: 1.0
+        )
+
+        #expect(record.meanOffsetMsPosition0 == nil)
+        #expect(record.meanOffsetMsPosition1 == nil)
+        #expect(record.meanOffsetMsPosition2 == nil)
+        #expect(record.meanOffsetMsPosition3 == nil)
     }
 
     @Test("All fields intact after save and fetch")
@@ -88,12 +107,11 @@ struct ContinuousRhythmMatchingRecordTests {
         let context = ModelContext(container)
 
         let timestamp = Date()
-        let breakdownJSON = try JSONEncoder().encode([PositionBreakdown]())
 
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 60,
             meanOffsetMs: -0.1,
-            gapPositionBreakdownJSON: breakdownJSON,
+            meanOffsetMsPosition0: 2.0,
             timestamp: timestamp
         )
 
@@ -107,6 +125,8 @@ struct ContinuousRhythmMatchingRecordTests {
         let retrieved = fetched[0]
         #expect(retrieved.tempoBPM == 60)
         #expect(retrieved.meanOffsetMs == -0.1)
+        #expect(retrieved.meanOffsetMsPosition0 == 2.0)
+        #expect(retrieved.meanOffsetMsPosition1 == nil)
         #expect(abs(retrieved.timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 }

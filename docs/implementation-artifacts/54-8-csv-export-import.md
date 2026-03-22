@@ -53,9 +53,8 @@ Follow the existing V2 pattern where type-specific fields reuse or extend the co
 - `trainingType`: `"continuousRhythmMatching"`
 - `timestamp`: ISO 8601
 - `tempoBPM`: integer (reuses existing column at index 12)
-- `meanOffsetMs`: float (signed, new column at index 15)
-
-Gap position breakdown is NOT exported per-row — it's detailed data that stays on-device. The aggregate stats are sufficient for backup/restore.
+- `meanOffsetMs`: float (signed, column at index 15)
+- `meanOffsetMsPosition0`–`meanOffsetMsPosition3`: optional float (columns 16–19, one per `StepPosition`; empty when that position wasn't a gap in the session)
 
 ### Chain of responsibility pattern
 
@@ -65,7 +64,7 @@ The import parser uses chain of responsibility (ADR-6). The new training type is
 
 - Do NOT modify V1 parser
 - Do NOT change existing V2 column layout for other training types
-- Do NOT export per-gap detail data — only aggregates
+- Do NOT export raw per-gap detail data — export per-position mean aggregates
 
 ### References
 
@@ -79,28 +78,32 @@ The import parser uses chain of responsibility (ADR-6). The new training type is
 
 ### Design Decisions
 
-1. **Extended V2 schema from 15 to 16 columns** — Added `meanOffsetMs` (index 15). Continuous rhythm matching reuses `tempoBPM` at existing index 12. All formatters produce 16-field rows with empty strings for unused columns. `hitRate` and `cycleCount` are not exported — they were removed from the data model in story 54.7 code review.
+1. **Extended V2 schema from 15 to 20 columns** — Added `meanOffsetMs` (index 15) and `meanOffsetMsPosition0`–`meanOffsetMsPosition3` (indices 16–19). Continuous rhythm matching reuses `tempoBPM` at existing index 12. All formatters produce 20-field rows with empty strings for unused columns.
 
-2. **Deduplication uses `RhythmDuplicateKey` with `continuousRhythmMatching` training type** — Follows existing pattern for rhythm offset detection and rhythm matching: key on `timestamp + tempoBPM + trainingType`.
+2. **Replaced `gapPositionBreakdownJSON: Data` with 4 explicit `Double?` properties** — `meanOffsetMsPosition0` through `meanOffsetMsPosition3` on `ContinuousRhythmMatchingRecord`. Removed `PositionBreakdown` struct. Per-position mean offsets are now first-class CSV columns, making the data fully spreadsheet-friendly. SwiftData lightweight migration handles the schema change.
 
-3. **Imported records get empty `gapPositionBreakdownJSON`** — Gap position breakdown is on-device only (not exported per dev notes), so imported records have `Data()` for this field.
+3. **Deduplication uses `RhythmDuplicateKey` with `continuousRhythmMatching` training type** — Follows existing pattern for rhythm offset detection and rhythm matching: key on `timestamp + tempoBPM + trainingType`.
 
 ### File List
 
 | File | Action |
 |------|--------|
-| `Peach/Core/Data/CSVExportSchemaV2.swift` | Modified — 16 columns, `continuousRhythmMatching` type |
-| `Peach/Core/Data/CSVRecordFormatter.swift` | Modified — all formatters produce 16 fields, added continuous formatter |
+| `Peach/Core/Data/ContinuousRhythmMatchingRecord.swift` | Modified — replaced `gapPositionBreakdownJSON: Data` with 4 `Double?` position properties |
+| `Peach/Core/Data/CSVExportSchemaV2.swift` | Modified — 20 columns, `continuousRhythmMatching` type |
+| `Peach/Core/Data/CSVRecordFormatter.swift` | Modified — all formatters produce 20 fields, added continuous formatter |
 | `Peach/Core/Data/CSVImportParser.swift` | Modified — `ImportResult` includes `continuousRhythmMatchings` |
 | `Peach/Core/Data/CSVImportParserV1.swift` | Modified — updated `ImportResult` constructions |
-| `Peach/Core/Data/CSVImportParserV2.swift` | Modified — added `parseContinuousRhythmMatchingRow()`, cross-type validation |
+| `Peach/Core/Data/CSVImportParserV2.swift` | Modified — added `parseContinuousRhythmMatchingRow()`, cross-type validation, position parsing |
 | `Peach/Core/Data/TrainingDataExporter.swift` | Modified — exports continuous rhythm matching records |
 | `Peach/Core/Data/TrainingDataImporter.swift` | Modified — import/merge/replace for continuous rhythm matching |
+| `Peach/Core/Data/TrainingDataStore.swift` | Modified — replaced JSON encoding with direct position mean computation |
 | `Peach/Core/Data/TrainingDataTransferService.swift` | Modified — preview container, file validation |
-| `PeachTests/Core/Data/CSVExportSchemaV2Tests.swift` | Modified — 16-column tests |
-| `PeachTests/Core/Data/CSVImportParserTests.swift` | Modified — 16-column V2 rows, round-trip tests |
-| `PeachTests/Core/Data/CSVImportParserV2Tests.swift` | Modified — continuous rhythm matching parser tests |
-| `PeachTests/Core/Data/CSVRecordFormatterTests.swift` | Modified — 16-column assertions |
+| `PeachTests/Core/Data/CSVExportSchemaV2Tests.swift` | Modified — 20-column tests |
+| `PeachTests/Core/Data/CSVImportParserTests.swift` | Modified — 20-column V2 rows, round-trip tests |
+| `PeachTests/Core/Data/CSVImportParserV2Tests.swift` | Modified — continuous rhythm matching parser tests, position offset tests |
+| `PeachTests/Core/Data/CSVRecordFormatterTests.swift` | Modified — 20-column assertions |
+| `PeachTests/Core/Data/ContinuousRhythmMatchingRecordTests.swift` | Modified — rewritten for explicit position properties |
+| `PeachTests/Core/Data/TrainingDataStoreTests.swift` | Modified — updated observer test assertions |
 | `PeachTests/Core/Data/TrainingDataExporterTests.swift` | Modified — column count update |
 | `PeachTests/Core/Data/TrainingDataImporterTests.swift` | Modified — updated summaries |
 | `PeachTests/Core/Data/TrainingDataTransferServiceTests.swift` | Modified — updated ImportResult/ImportSummary |
@@ -110,7 +113,8 @@ The import parser uses chain of responsibility (ADR-6). The new training type is
 
 | Change | Reason |
 |--------|--------|
-| Extended V2 CSV from 15→16 columns | Added `meanOffsetMs` column for continuous rhythm matching |
+| Extended V2 CSV from 15→20 columns | Added `meanOffsetMs` + 4 position breakdown columns for continuous rhythm matching |
+| Replaced `gapPositionBreakdownJSON` with 4 `Double?` properties | Eliminated JSON blob from @Model; per-position offsets are now spreadsheet-friendly CSV columns |
 | Added `parseContinuousRhythmMatchingRow()` | AC #2 — parse and validate continuous rhythm matching rows |
 | Added deduplication for continuous rhythm matching | AC #4 — merge mode deduplicates by timestamp+tempoBPM+trainingType |
 | Added round-trip test with all 5 training types | AC #6 — export→import cycle preserves all fields |

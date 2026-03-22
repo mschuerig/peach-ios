@@ -494,15 +494,15 @@ struct CSVImportParserTests {
     }
 
     private var validV2PitchDiscriminationRow: String {
-        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,"
+        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,,"
     }
 
     private var validV2RhythmOffsetDetectionRow: String {
-        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,"
+        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,,,,,"
     }
 
     private var validV2RhythmMatchingRow: String {
-        "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,7.1,"
+        "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,7.1,,,,,"
     }
 
     @Test("version 2 dispatches to v2 parser")
@@ -572,7 +572,7 @@ struct CSVImportParserTests {
             tempoBPM: 90, userOffsetMs: -3.7, timestamp: fixedDate()
         )
         let continuousRhythm = ContinuousRhythmMatchingRecord(
-            tempoBPM: 100, meanOffsetMs: -2.5, gapPositionBreakdownJSON: Data(), timestamp: fixedDate()
+            tempoBPM: 100, meanOffsetMs: -2.5, meanOffsetMsPosition0: -1.0, meanOffsetMsPosition3: 3.5, timestamp: fixedDate()
         )
 
         // Export
@@ -618,12 +618,19 @@ struct CSVImportParserTests {
         let importedContinuous = result.continuousRhythmMatchings[0]
         #expect(importedContinuous.tempoBPM == 100)
         #expect(importedContinuous.meanOffsetMs == -2.5)
+        #expect(importedContinuous.meanOffsetMsPosition0 == -1.0)
+        #expect(importedContinuous.meanOffsetMsPosition1 == nil)
+        #expect(importedContinuous.meanOffsetMsPosition2 == nil)
+        #expect(importedContinuous.meanOffsetMsPosition3 == 3.5)
     }
 
     @Test("continuous rhythm matching round-trip preserves all fields")
     func continuousRhythmMatchingRoundTrip() async {
         let record = ContinuousRhythmMatchingRecord(
-            tempoBPM: 140, meanOffsetMs: 1.23, gapPositionBreakdownJSON: Data(), timestamp: fixedDate()
+            tempoBPM: 140, meanOffsetMs: 1.23,
+            meanOffsetMsPosition0: -2.0, meanOffsetMsPosition1: 4.5,
+            meanOffsetMsPosition2: nil, meanOffsetMsPosition3: 0.0,
+            timestamp: fixedDate()
         )
 
         let csv = makeV2CSV([CSVRecordFormatter.format(record)])
@@ -635,6 +642,10 @@ struct CSVImportParserTests {
         let imported = result.continuousRhythmMatchings[0]
         #expect(imported.tempoBPM == record.tempoBPM)
         #expect(imported.meanOffsetMs == record.meanOffsetMs)
+        #expect(imported.meanOffsetMsPosition0 == -2.0)
+        #expect(imported.meanOffsetMsPosition1 == 4.5)
+        #expect(imported.meanOffsetMsPosition2 == nil)
+        #expect(imported.meanOffsetMsPosition3 == 0.0)
         #expect(imported.timestamp == record.timestamp)
     }
 }

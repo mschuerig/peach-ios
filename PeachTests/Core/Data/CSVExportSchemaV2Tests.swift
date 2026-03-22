@@ -35,12 +35,12 @@ struct CSVExportSchemaV2Tests {
 
     // MARK: - Header Row
 
-    @Test("headerRow contains all 16 columns in correct order")
-    func headerRowContainsAll16Columns() async {
+    @Test("headerRow contains all 20 columns in correct order")
+    func headerRowContainsAll20Columns() async {
         let header = CSVExportSchemaV2.headerRow
         let columns = header.split(separator: ",").map(String.init)
 
-        #expect(columns.count == 16)
+        #expect(columns.count == 20)
         #expect(columns[0] == "trainingType")
         #expect(columns[1] == "timestamp")
         #expect(columns[2] == "referenceNote")
@@ -57,6 +57,10 @@ struct CSVExportSchemaV2Tests {
         #expect(columns[13] == "offsetMs")
         #expect(columns[14] == "userOffsetMs")
         #expect(columns[15] == "meanOffsetMs")
+        #expect(columns[16] == "meanOffsetMsPosition0")
+        #expect(columns[17] == "meanOffsetMsPosition1")
+        #expect(columns[18] == "meanOffsetMsPosition2")
+        #expect(columns[19] == "meanOffsetMsPosition3")
     }
 
     @Test("first 12 columns match V1 layout for backward compatibility")

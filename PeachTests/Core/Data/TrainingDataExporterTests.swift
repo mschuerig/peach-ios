@@ -351,7 +351,7 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         let columns = lines[1].split(separator: ",").map(String.init)
 
-        #expect(columns.count == 16)
+        #expect(columns.count == 20)
         #expect(columns[12] == "tempoBPM")
         #expect(columns[13] == "offsetMs")
         #expect(columns[14] == "userOffsetMs")
@@ -397,8 +397,8 @@ struct TrainingDataExporterTests {
         #expect(csv == CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow)
     }
 
-    @Test("all rows have exactly 15 fields matching V2 column count")
-    func allRowsHave15Fields() async throws {
+    @Test("all rows have exactly 20 fields matching V2 column count")
+    func allRowsHave20Fields() async throws {
         let store = try makeStore()
 
         let pitchDisc = PitchDiscriminationRecord(
@@ -427,7 +427,7 @@ struct TrainingDataExporterTests {
         // Skip metadata and header, check all data rows
         for i in 2..<lines.count {
             let fields = lines[i].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-            #expect(fields.count == 16, "Row \(i) has \(fields.count) fields, expected 16")
+            #expect(fields.count == 20, "Row \(i) has \(fields.count) fields, expected 20")
         }
     }
 

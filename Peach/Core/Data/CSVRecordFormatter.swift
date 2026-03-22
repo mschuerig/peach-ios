@@ -22,6 +22,10 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             "", // userOffsetMs
             "", // meanOffsetMs
+            "", // meanOffsetMsPosition0
+            "", // meanOffsetMsPosition1
+            "", // meanOffsetMsPosition2
+            "", // meanOffsetMsPosition3
         ]
         return buildRow(fields)
     }
@@ -46,6 +50,10 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             "", // userOffsetMs
             "", // meanOffsetMs
+            "", // meanOffsetMsPosition0
+            "", // meanOffsetMsPosition1
+            "", // meanOffsetMsPosition2
+            "", // meanOffsetMsPosition3
         ]
         return buildRow(fields)
     }
@@ -70,6 +78,10 @@ nonisolated enum CSVRecordFormatter {
             formatDouble(record.offsetMs),
             "", // userOffsetMs
             "", // meanOffsetMs
+            "", // meanOffsetMsPosition0
+            "", // meanOffsetMsPosition1
+            "", // meanOffsetMsPosition2
+            "", // meanOffsetMsPosition3
         ]
         return buildRow(fields)
     }
@@ -94,6 +106,10 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             formatDouble(record.userOffsetMs),
             "", // meanOffsetMs
+            "", // meanOffsetMsPosition0
+            "", // meanOffsetMsPosition1
+            "", // meanOffsetMsPosition2
+            "", // meanOffsetMsPosition3
         ]
         return buildRow(fields)
     }
@@ -118,6 +134,10 @@ nonisolated enum CSVRecordFormatter {
             "", // offsetMs
             "", // userOffsetMs
             formatDouble(record.meanOffsetMs),
+            formatOptionalDouble(record.meanOffsetMsPosition0),
+            formatOptionalDouble(record.meanOffsetMsPosition1),
+            formatOptionalDouble(record.meanOffsetMsPosition2),
+            formatOptionalDouble(record.meanOffsetMsPosition3),
         ]
         return buildRow(fields)
     }
@@ -143,6 +163,11 @@ nonisolated enum CSVRecordFormatter {
             return formatted
         }
         return formatted + ".0"
+    }
+
+    private static func formatOptionalDouble(_ value: Double?) -> String {
+        guard let value else { return "" }
+        return formatDouble(value)
     }
 
     // MARK: - Row Builder

@@ -31,7 +31,7 @@ struct CSVRecordFormatterTests {
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields.count == 16)
+        #expect(fields.count == 20)
         #expect(fields[0] == "pitchDiscrimination")
         #expect(fields[1] == "2026-03-03T14:30:00Z")
         #expect(fields[2] == "60")
@@ -63,7 +63,7 @@ struct CSVRecordFormatterTests {
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields.count == 16)
+        #expect(fields.count == 20)
         #expect(fields[0] == "pitchMatching")
         #expect(fields[1] == "2026-03-03T14:30:00Z")
         #expect(fields[2] == "60")
@@ -330,7 +330,7 @@ struct CSVRecordFormatterTests {
 
     // MARK: - RhythmOffsetDetectionRecord Formatting
 
-    @Test("RhythmOffsetDetectionRecord formatting produces correct 16-column CSV row")
+    @Test("RhythmOffsetDetectionRecord formatting produces correct 20-column CSV row")
     func formatRhythmOffsetDetectionRecord() async {
         let record = RhythmOffsetDetectionRecord(
             tempoBPM: 120,
@@ -342,7 +342,7 @@ struct CSVRecordFormatterTests {
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields.count == 16)
+        #expect(fields.count == 20)
         #expect(fields[0] == "rhythmOffsetDetection")
         #expect(fields[1] == "2026-03-03T14:30:00Z")
         // Pitch-specific columns are empty
@@ -385,7 +385,7 @@ struct CSVRecordFormatterTests {
 
     // MARK: - RhythmMatchingRecord Formatting
 
-    @Test("RhythmMatchingRecord formatting produces correct 16-column CSV row")
+    @Test("RhythmMatchingRecord formatting produces correct 20-column CSV row")
     func formatRhythmMatchingRecord() async {
         let record = RhythmMatchingRecord(
             tempoBPM: 100,
@@ -396,7 +396,7 @@ struct CSVRecordFormatterTests {
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields.count == 16)
+        #expect(fields.count == 20)
         #expect(fields[0] == "rhythmMatching")
         #expect(fields[1] == "2026-03-03T14:30:00Z")
         // Pitch-specific columns are empty
@@ -437,19 +437,20 @@ struct CSVRecordFormatterTests {
 
     // MARK: - ContinuousRhythmMatchingRecord Formatting
 
-    @Test("ContinuousRhythmMatchingRecord formatting produces correct 16-column CSV row")
+    @Test("ContinuousRhythmMatchingRecord formatting produces correct 20-column CSV row")
     func formatContinuousRhythmMatchingRecord() async {
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 120,
             meanOffsetMs: -3.5,
-            gapPositionBreakdownJSON: Data(),
+            meanOffsetMsPosition0: -5.2,
+            meanOffsetMsPosition2: 3.1,
             timestamp: fixedDate()
         )
 
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields.count == 16)
+        #expect(fields.count == 20)
         #expect(fields[0] == "continuousRhythmMatching")
         #expect(fields[1] == "2026-03-03T14:30:00Z")
         // Pitch-specific columns empty
@@ -462,8 +463,12 @@ struct CSVRecordFormatterTests {
         #expect(fields[14] == "")
         // Shared rhythm column
         #expect(fields[12] == "120")
-        // Continuous-specific column
+        // Continuous-specific columns
         #expect(fields[15] == "-3.5")
+        #expect(fields[16] == "-5.2")
+        #expect(fields[17] == "")
+        #expect(fields[18] == "3.1")
+        #expect(fields[19] == "")
     }
 
     @Test("ContinuousRhythmMatchingRecord with zero meanOffsetMs formats correctly")
@@ -471,7 +476,6 @@ struct CSVRecordFormatterTests {
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 90,
             meanOffsetMs: 0.0,
-            gapPositionBreakdownJSON: Data(),
             timestamp: fixedDate()
         )
 
@@ -479,6 +483,11 @@ struct CSVRecordFormatterTests {
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
         #expect(fields[15] == "0.0")
+        // Position columns all empty when nil
+        #expect(fields[16] == "")
+        #expect(fields[17] == "")
+        #expect(fields[18] == "")
+        #expect(fields[19] == "")
     }
 
     // MARK: - Non-Finite Double Handling

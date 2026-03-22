@@ -407,10 +407,31 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             return .error(.invalidRowData(row: rowNumber, column: "meanOffsetMs", value: meanOffsetMsStr, reason: "not a valid number"))
         }
 
+        let positionColumns: [(Int, String)] = [
+            (16, "meanOffsetMsPosition0"),
+            (17, "meanOffsetMsPosition1"),
+            (18, "meanOffsetMsPosition2"),
+            (19, "meanOffsetMsPosition3"),
+        ]
+        var positionValues: [Double?] = []
+        for (index, columnName) in positionColumns {
+            let str = fields[index]
+            if str.isEmpty {
+                positionValues.append(nil)
+            } else if let value = Double(str), value.isFinite {
+                positionValues.append(value)
+            } else {
+                return .error(.invalidRowData(row: rowNumber, column: columnName, value: str, reason: "not a valid number"))
+            }
+        }
+
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: tempoBPM,
             meanOffsetMs: meanOffsetMs,
-            gapPositionBreakdownJSON: Data(),
+            meanOffsetMsPosition0: positionValues[0],
+            meanOffsetMsPosition1: positionValues[1],
+            meanOffsetMsPosition2: positionValues[2],
+            meanOffsetMsPosition3: positionValues[3],
             timestamp: timestamp
         )
         return .continuousRhythmMatching(record)
@@ -477,17 +498,27 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
     }
 
     private func validateContinuousColumnsEmpty(_ fields: [String], rowNumber: Int, trainingType: String) -> RowResult? {
-        let meanOffsetMsStr = fields[15]
+        let continuousColumns = [
+            (15, "meanOffsetMs"),
+            (16, "meanOffsetMsPosition0"),
+            (17, "meanOffsetMsPosition1"),
+            (18, "meanOffsetMsPosition2"),
+            (19, "meanOffsetMsPosition3"),
+        ]
 
-        guard meanOffsetMsStr.isEmpty else {
-            return .error(.invalidRowData(
-                row: rowNumber,
-                column: "meanOffsetMs",
-                value: meanOffsetMsStr,
-                reason: "must be empty for \(trainingType) rows"
-            ))
+        for (index, columnName) in continuousColumns {
+            let value = fields[index]
+            guard value.isEmpty else {
+                return .error(.invalidRowData(
+                    row: rowNumber,
+                    column: columnName,
+                    value: value,
+                    reason: "must be empty for \(trainingType) rows"
+                ))
+            }
         }
 
         return nil
     }
+
 }
