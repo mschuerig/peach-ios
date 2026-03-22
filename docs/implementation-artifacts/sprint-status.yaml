@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 55.2 review
+# last_updated: 2026-03-23 # Story 55.2 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -426,5 +426,5 @@ development_status:
   # Work order: 55.1 before 55.2 (port protocols are a prerequisite for registry)
   epic-55: in-progress
   55-1-extract-observer-adapters-with-port-protocols: done
-  55-2-protocol-based-discipline-registry: review
+  55-2-protocol-based-discipline-registry: done
   55-3-discipline-owned-csv-format: ready-for-dev

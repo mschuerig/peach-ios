@@ -84,6 +84,31 @@ The spectrogram color bands (green/yellow/red) use `SpectrogramThresholds.defaul
 
 ## Data & Infrastructure
 
+### Batch/Streaming Fetch for Discipline Registry Operations
+
+**Priority:** Low
+**Category:** Performance
+**Date Added:** 2026-03-23
+
+**Observation:**
+After story 55.2 (protocol-based discipline registry), disciplines that share a record type (e.g., UnisonPitchDiscrimination and IntervalPitchDiscrimination both use `PitchDiscriminationRecord`) each fetch *all* records of that type independently and filter in-memory. This doubles the fetches for shared types during profile building and export. During merge import, `buildPitchDuplicateKeys()` is called once per pitch discipline (4 times), each fetching all PitchDiscrimination + PitchMatching records — ~12 SwiftData fetches vs ~4 previously.
+
+**Impact:**
+- Not a correctness issue — each discipline correctly filters to its own records
+- Performance overhead scales with record count; negligible at current volumes but will grow
+- Compounds with the long-standing concern about unbounded `fetchAll` calls (no pagination or streaming)
+
+**Potential Approaches:**
+1. **Shared fetch context:** pass a pre-fetched record cache into batch operations (`feedAllRecords`, `export`, `mergeImport`) so each record type is fetched once
+2. **Streaming/batched fetch:** introduce a `FetchDescriptor` with `fetchLimit`/`fetchOffset` or SwiftData's `enumerate()` for memory-bounded iteration — addresses both the duplication and the unbounded-fetch concern in one design
+
+**Related Code:**
+- `Peach/Core/Training/TrainingDisciplineRegistry.swift` — `feedAllRecords()`
+- `Peach/Core/Data/DuplicateKey.swift` — `buildPitchDuplicateKeys()`, `buildRhythmDuplicateKeys()`
+- All 6 discipline conformances (`feedRecords`, `fetchAndFormatRecords`, `mergeImportRecords`)
+
+---
+
 ### Add SwiftData VersionedSchema and SchemaMigrationPlan
 
 **Priority:** Medium

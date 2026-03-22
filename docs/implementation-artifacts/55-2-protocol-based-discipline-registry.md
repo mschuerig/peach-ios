@@ -1,6 +1,6 @@
 # Story 55.2: Protocol-Based Discipline Registry
 
-Status: review
+Status: done
 
 ## Story
 
