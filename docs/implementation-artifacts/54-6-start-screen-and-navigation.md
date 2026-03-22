@@ -1,6 +1,6 @@
 # Story 54.6: Start Screen and Navigation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -20,7 +20,7 @@ so that I can access the new training mode alongside existing modes.
 
 5. **Given** the `navigationDestination` modifier, **when** `.continuousRhythmMatching` is pushed, **then** `ContinuousRhythmMatchingScreen` is rendered with proper environment injection.
 
-6. **Given** VoiceOver, **when** the button is focused, **then** it reads the training mode name with an appropriate hint.
+6. **Given** VoiceOver, **when** the button is focused, **then** it reads the training mode name via an accessibility label — consistent with existing Start Screen buttons.
 
 ## Tasks / Subtasks
 

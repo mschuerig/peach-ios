@@ -416,7 +416,7 @@ development_status:
   54-3-gap-position-settings: done
   54-4-continuous-rhythm-matching-screen: done
   54-5-data-model-and-storage: done
-  54-6-start-screen-and-navigation: review
+  54-6-start-screen-and-navigation: done
   54-7-profile-visualization: ready-for-dev
   54-8-csv-export-import: ready-for-dev
   54-9-localization: ready-for-dev
