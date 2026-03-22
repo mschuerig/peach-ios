@@ -142,4 +142,5 @@ private final class PreviewUserSettings: UserSettings {
     let tuningSystem: TuningSystem = .equalTemperament
     let noteGap: Duration = SettingsKeys.defaultNoteGap
     let tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM
+    let enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions
 }

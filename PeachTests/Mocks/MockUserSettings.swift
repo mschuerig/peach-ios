@@ -29,6 +29,9 @@ final class MockUserSettings: UserSettings {
     var tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM {
         didSet { onSettingsChanged?() }
     }
+    var enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions {
+        didSet { onSettingsChanged?() }
+    }
 
     // MARK: - Test Control
 
@@ -46,6 +49,7 @@ final class MockUserSettings: UserSettings {
         tuningSystem = SettingsKeys.defaultTuningSystem
         noteGap = SettingsKeys.defaultNoteGap
         tempoBPM = SettingsKeys.defaultTempoBPM
+        enabledGapPositions = SettingsKeys.defaultEnabledGapPositions
         onSettingsChanged = nil
     }
 }

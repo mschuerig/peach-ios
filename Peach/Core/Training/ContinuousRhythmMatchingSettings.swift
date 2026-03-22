@@ -11,6 +11,9 @@ struct ContinuousRhythmMatchingSettings: Sendable {
     }
 
     static func from(_ userSettings: UserSettings) -> ContinuousRhythmMatchingSettings {
-        ContinuousRhythmMatchingSettings(tempo: userSettings.tempoBPM)
+        ContinuousRhythmMatchingSettings(
+            tempo: userSettings.tempoBPM,
+            enabledGapPositions: userSettings.enabledGapPositions
+        )
     }
 }

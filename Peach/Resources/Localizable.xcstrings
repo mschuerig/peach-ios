@@ -51,6 +51,16 @@
         }
       }
     },
+    "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Tempo** steuert die Geschwindigkeit aller Rhythmus-Trainingsmodi, gemessen in Schlägen pro Minute (BPM). Ein langsameres Tempo ist leichter; erhöhe es, wenn sich dein Timing verbessert.\n\n**Lücken-Positionen** bestimmen, welche Unterteilungen des Schlags im „Lücke füllen“-Training verwendet werden. Jeder Schlag wird in vier 16tel-Positionen unterteilt: Beat (Grundschlag), E, Und, A. Deaktiviere Positionen, um dich auf bestimmte Unterteilungen zu konzentrieren."
+          }
+        }
+      }
+    },
     "**Touch** the slider to hear your note, then **drag** to adjust the pitch. When you think you've matched the reference, **release** the slider to lock in your answer." : {
       "localizations" : {
         "de" : {
@@ -382,6 +392,46 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "0%"
+          }
+        }
+      }
+    },
+    "1 — Beat" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 — Beat"
+          }
+        }
+      }
+    },
+    "2 — E" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "2 — E"
+          }
+        }
+      }
+    },
+    "3 — And" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3 — Und"
+          }
+        }
+      }
+    },
+    "4 — A" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "4 — A"
           }
         }
       }
@@ -973,6 +1023,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Feedback"
+          }
+        }
+      }
+    },
+    "Gap Positions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lücken-Positionen"
           }
         }
       }
@@ -2235,6 +2295,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Wähle die Stimmung für Intervalle. Die gleichstufige Stimmung teilt die Oktave in 12 gleiche Schritte. Reine Stimmung verwendet reine Frequenzverhältnisse."
+          }
+        }
+      }
+    },
+    "Select which gap positions to practice. At least one must remain active." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle die Lücken-Positionen zum Üben. Mindestens eine muss aktiv bleiben."
           }
         }
       }

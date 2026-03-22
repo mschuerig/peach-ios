@@ -32,6 +32,9 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.tempoBPM)
     private var tempoBPM: Int = SettingsKeys.defaultTempoBPM.value
 
+    @AppStorage(SettingsKeys.enabledGapPositions)
+    private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
+
     @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.soundPreviewPlay) private var soundPreviewPlay
@@ -73,7 +76,7 @@ struct SettingsScreen: View {
         ),
         HelpSection(
             title: String(localized: "Rhythm"),
-            body: String(localized: "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.")
+            body: String(localized: "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
         ),
         HelpSection(
             title: String(localized: "Data"),
@@ -88,6 +91,7 @@ struct SettingsScreen: View {
             soundSection
             difficultySection
             rhythmSection
+            gapPositionsSection
             dataSection
         }
         .navigationTitle("Settings")
@@ -261,6 +265,55 @@ struct SettingsScreen: View {
                 step: 0.1
             )
             .accessibilityValue(Text("\(noteGap, specifier: "%.1f") seconds"))
+        }
+    }
+
+    private var enabledGapPositions: Set<StepPosition> {
+        let decoded = GapPositionEncoding.decode(enabledGapPositionsEncoded)
+        return decoded.isEmpty ? SettingsKeys.defaultEnabledGapPositions : decoded
+    }
+
+    private func isGapPositionEnabled(_ position: StepPosition) -> Bool {
+        enabledGapPositions.contains(position)
+    }
+
+    private func isLastEnabledGapPosition(_ position: StepPosition) -> Bool {
+        enabledGapPositions.count == 1 && enabledGapPositions.contains(position)
+    }
+
+    private func toggleGapPosition(_ position: StepPosition) {
+        var positions = enabledGapPositions
+        if positions.contains(position) {
+            positions.remove(position)
+        } else {
+            positions.insert(position)
+        }
+        enabledGapPositionsEncoded = GapPositionEncoding.encode(positions)
+    }
+
+    private static let gapPositionLabels: [(position: StepPosition, label: LocalizedStringResource)] = [
+        (.first, "1 — Beat"),
+        (.second, "2 — E"),
+        (.third, "3 — And"),
+        (.fourth, "4 — A"),
+    ]
+
+    private var gapPositionsSection: some View {
+        Section {
+            ForEach(Self.gapPositionLabels, id: \.position) { item in
+                Toggle(
+                    String(localized: item.label),
+                    isOn: Binding(
+                        get: { isGapPositionEnabled(item.position) },
+                        set: { _ in toggleGapPosition(item.position) }
+                    )
+                )
+                .disabled(isLastEnabledGapPosition(item.position))
+            }
+        } header: {
+            Text(String(localized: "Gap Positions"))
+        } footer: {
+            Text(String(localized: "Select which gap positions to practice. At least one must remain active."))
         }
     }
 

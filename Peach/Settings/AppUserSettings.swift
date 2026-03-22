@@ -64,4 +64,12 @@ final class AppUserSettings: UserSettings {
         }
         return system
     }
+
+    var enabledGapPositions: Set<StepPosition> {
+        guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.enabledGapPositions) else {
+            return SettingsKeys.defaultEnabledGapPositions
+        }
+        let positions = GapPositionEncoding.decode(raw)
+        return positions.isEmpty ? SettingsKeys.defaultEnabledGapPositions : positions
+    }
 }

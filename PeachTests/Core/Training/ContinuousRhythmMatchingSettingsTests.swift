@@ -22,11 +22,29 @@ struct ContinuousRhythmMatchingSettingsTests {
         #expect(settings.enabledGapPositions == [.second, .third])
     }
 
-    @Test("from user settings uses tempo from user settings")
-    func fromUserSettings() async {
+    @Test("from user settings reads tempo and gap positions")
+    func fromUserSettingsReadsGapPositions() async {
+        let userSettings = MockUserSettings()
+        userSettings.tempoBPM = TempoBPM(100)
+        userSettings.enabledGapPositions = [.first, .third]
+
+        let settings = ContinuousRhythmMatchingSettings.from(userSettings)
+
+        #expect(settings.tempo == TempoBPM(100))
+        #expect(settings.enabledGapPositions == [.first, .third])
+    }
+
+    @Test("from user settings uses default gap positions when all enabled")
+    func fromUserSettingsDefaultGapPositions() async {
         let userSettings = MockUserSettings()
         let settings = ContinuousRhythmMatchingSettings.from(userSettings)
-        #expect(settings.tempo == userSettings.tempoBPM)
+        #expect(settings.enabledGapPositions == Set(StepPosition.allCases))
+    }
+
+    @Test("accepts any non-empty set of gap positions")
+    func acceptsNonEmptySet() async {
+        let settings = ContinuousRhythmMatchingSettings(enabledGapPositions: [.second])
+        #expect(settings.enabledGapPositions.count == 1)
     }
 
     @Test("conforms to Sendable")

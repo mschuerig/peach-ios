@@ -13,6 +13,7 @@ enum SettingsKeys {
     static let tuningSystem = "tuningSystem"
     static let noteGap = "noteGap"
     static let tempoBPM = "tempoBPM"
+    static let enabledGapPositions = "enabledGapPositions"
 
     // MARK: - Default Values (matching TrainingSettings defaults)
 
@@ -27,6 +28,7 @@ enum SettingsKeys {
     static let defaultTempoBPM: TempoBPM = TempoBPM(80)
     static let minimumTempoBPM: TempoBPM = TempoBPM(20)
     static let maximumTempoBPM: TempoBPM = TempoBPM(300)
+    static let defaultEnabledGapPositions: Set<StepPosition> = Set(StepPosition.allCases)
 
     // MARK: - Note Range Constants
 
