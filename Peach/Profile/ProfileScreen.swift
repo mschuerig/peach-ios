@@ -20,7 +20,7 @@ struct ProfileScreen: View {
                 }
                 ForEach(TrainingDiscipline.allCases, id: \.self) { mode in
                     switch mode {
-                    case .rhythmOffsetDetection, .rhythmMatching, .continuousRhythmMatching:
+                    case .rhythmOffsetDetection, .continuousRhythmMatching:
                         RhythmProfileCardView(mode: mode)
                     default:
                         let state = progressTimeline.state(for: mode)

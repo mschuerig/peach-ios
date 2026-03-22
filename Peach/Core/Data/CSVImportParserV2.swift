@@ -10,18 +10,17 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
         var pitchDiscriminations: [PitchDiscriminationRecord] = []
         var pitchMatchings: [PitchMatchingRecord] = []
         var rhythmOffsetDetections: [RhythmOffsetDetectionRecord] = []
-        var rhythmMatchings: [RhythmMatchingRecord] = []
         var continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = []
         var errors: [CSVImportError] = []
 
         guard let headerLine = lines.first, !headerLine.isEmpty else {
             errors.append(.invalidHeader(expected: CSVExportSchemaV2.headerRow, actual: "(empty)"))
-            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
+            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: errors)
         }
 
         if let headerError = validateHeader(headerLine) {
             errors.append(headerError)
-            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
+            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: errors)
         }
 
         let dataLines = lines.dropFirst()
@@ -35,8 +34,6 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 pitchMatchings.append(record)
             case .rhythmOffsetDetection(let record):
                 rhythmOffsetDetections.append(record)
-            case .rhythmMatching(let record):
-                rhythmMatchings.append(record)
             case .continuousRhythmMatching(let record):
                 continuousRhythmMatchings.append(record)
             case .error(let error):
@@ -48,7 +45,6 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             pitchDiscriminations: pitchDiscriminations,
             pitchMatchings: pitchMatchings,
             rhythmOffsetDetections: rhythmOffsetDetections,
-            rhythmMatchings: rhythmMatchings,
             continuousRhythmMatchings: continuousRhythmMatchings,
             errors: errors
         )
@@ -82,7 +78,6 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
         case pitchDiscrimination(PitchDiscriminationRecord)
         case pitchMatching(PitchMatchingRecord)
         case rhythmOffsetDetection(RhythmOffsetDetectionRecord)
-        case rhythmMatching(RhythmMatchingRecord)
         case continuousRhythmMatching(ContinuousRhythmMatchingRecord)
         case error(CSVImportError)
     }
@@ -109,8 +104,6 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             return parsePitchMatchingRow(fields, rowNumber: rowNumber)
         case CSVExportSchemaV2.TrainingType.rhythmOffsetDetection.csvValue:
             return parseRhythmOffsetDetectionRow(fields, rowNumber: rowNumber)
-        case CSVExportSchemaV2.TrainingType.rhythmMatching.csvValue:
-            return parseRhythmMatchingRow(fields, rowNumber: rowNumber)
         case CSVExportSchemaV2.TrainingType.continuousRhythmMatching.csvValue:
             return parseContinuousRhythmMatchingRow(fields, rowNumber: rowNumber)
         default:
@@ -118,7 +111,7 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 row: rowNumber,
                 column: "trainingType",
                 value: trainingType,
-                reason: "must be 'pitchDiscrimination', 'pitchMatching', 'rhythmOffsetDetection', 'rhythmMatching', or 'continuousRhythmMatching'"
+                reason: "must be 'pitchDiscrimination', 'pitchMatching', 'rhythmOffsetDetection', or 'continuousRhythmMatching'"
             ))
         }
     }
@@ -303,67 +296,6 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             timestamp: timestamp
         )
         return .rhythmOffsetDetection(record)
-    }
-
-    // MARK: - Rhythm Matching Row
-
-    private func parseRhythmMatchingRow(_ fields: [String], rowNumber: Int) -> RowResult {
-        // Validate pitch-specific columns are empty
-        if let error = validatePitchColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "rhythmMatching") {
-            return error
-        }
-
-        // Validate pitch-only columns are empty
-        let centOffsetStr = fields[8]
-        let isCorrectStr = fields[9]
-        let initialCentOffsetStr = fields[10]
-        let userCentErrorStr = fields[11]
-        guard centOffsetStr.isEmpty && isCorrectStr.isEmpty && initialCentOffsetStr.isEmpty && userCentErrorStr.isEmpty else {
-            return .error(.invalidRowData(
-                row: rowNumber,
-                column: "centOffset/isCorrect/initialCentOffset/userCentError",
-                value: "\(centOffsetStr),\(isCorrectStr),\(initialCentOffsetStr),\(userCentErrorStr)",
-                reason: "must be empty for rhythmMatching rows"
-            ))
-        }
-
-        // Validate offsetMs is empty
-        let offsetMsStr = fields[13]
-        guard offsetMsStr.isEmpty else {
-            return .error(.invalidRowData(
-                row: rowNumber,
-                column: "offsetMs",
-                value: offsetMsStr,
-                reason: "must be empty for rhythmMatching rows"
-            ))
-        }
-
-        // Validate continuous rhythm matching columns are empty
-        if let error = validateContinuousColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "rhythmMatching") {
-            return error
-        }
-
-        let timestampStr = fields[1]
-        guard let timestamp = CSVParserHelpers.parseISO8601(timestampStr) else {
-            return .error(.invalidRowData(row: rowNumber, column: "timestamp", value: timestampStr, reason: "not a valid ISO 8601 date"))
-        }
-
-        let tempoBPMStr = fields[12]
-        guard let tempoBPM = Int(tempoBPMStr), tempoBPM > 0 else {
-            return .error(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a positive integer"))
-        }
-
-        let userOffsetMsStr = fields[14]
-        guard let userOffsetMs = Double(userOffsetMsStr), userOffsetMs.isFinite else {
-            return .error(.invalidRowData(row: rowNumber, column: "userOffsetMs", value: userOffsetMsStr, reason: "not a valid number"))
-        }
-
-        let record = RhythmMatchingRecord(
-            tempoBPM: tempoBPM,
-            userOffsetMs: userOffsetMs,
-            timestamp: timestamp
-        )
-        return .rhythmMatching(record)
     }
 
     // MARK: - Continuous Rhythm Matching Row

@@ -10,7 +10,6 @@ struct PeachApp: App {
     @State private var pitchDiscriminationSession: PitchDiscriminationSession
     @State private var pitchMatchingSession: PitchMatchingSession
     @State private var rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
-    @State private var rhythmMatchingSession: RhythmMatchingSession
     @State private var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
     @State private var profile: PerceptualProfile
     @State private var progressTimeline: ProgressTimeline
@@ -32,7 +31,6 @@ struct PeachApp: App {
                 for: PitchDiscriminationRecord.self,
                 PitchMatchingRecord.self,
                 RhythmOffsetDetectionRecord.self,
-                RhythmMatchingRecord.self,
                 ContinuousRhythmMatchingRecord.self
             )
             _modelContainer = State(wrappedValue: container)
@@ -104,13 +102,6 @@ struct PeachApp: App {
                 sampleRate: soundFontEngine.sampleRate
             ))
 
-            _rhythmMatchingSession = State(wrappedValue: Self.createRhythmMatchingSession(
-                rhythmPlayer: rhythmPlayer,
-                profile: profile,
-                dataStore: dataStore,
-                sampleRate: soundFontEngine.sampleRate
-            ))
-
             let soundFontStepSequencer = SoundFontStepSequencer(
                 engine: soundFontEngine,
                 preset: percussionPreset,
@@ -171,7 +162,6 @@ struct PeachApp: App {
                 .environment(\.stepSequencer, stepSequencer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
-                .environment(\.rhythmMatchingSession, rhythmMatchingSession)
                 .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
@@ -223,16 +213,6 @@ struct PeachApp: App {
                         }
                         activeSession = rhythmOffsetDetectionSession
                     } else if activeSession === rhythmOffsetDetectionSession {
-                        activeSession = nil
-                    }
-                }
-                .onChange(of: rhythmMatchingSession.isIdle) { _, isIdle in
-                    if !isIdle {
-                        if activeSession !== rhythmMatchingSession {
-                            activeSession?.stop()
-                        }
-                        activeSession = rhythmMatchingSession
-                    } else if activeSession === rhythmMatchingSession {
                         activeSession = nil
                     }
                 }
@@ -289,20 +269,6 @@ struct PeachApp: App {
             rhythmPlayer: rhythmPlayer,
             strategy: AdaptiveRhythmOffsetDetectionStrategy(),
             profile: profile,
-            observers: observers,
-            sampleRate: sampleRate
-        )
-    }
-
-    private static func createRhythmMatchingSession(
-        rhythmPlayer: RhythmPlayer,
-        profile: PerceptualProfile,
-        dataStore: TrainingDataStore,
-        sampleRate: SampleRate
-    ) -> RhythmMatchingSession {
-        let observers: [RhythmMatchingObserver] = [dataStore, profile]
-        return RhythmMatchingSession(
-            rhythmPlayer: rhythmPlayer,
             observers: observers,
             sampleRate: sampleRate
         )

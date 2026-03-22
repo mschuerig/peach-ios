@@ -11,24 +11,22 @@ enum TrainingDataImporter {
         let pitchDiscriminationsImported: Int
         let pitchMatchingsImported: Int
         let rhythmOffsetDetectionsImported: Int
-        let rhythmMatchingsImported: Int
         let continuousRhythmMatchingsImported: Int
         let pitchDiscriminationsSkipped: Int
         let pitchMatchingsSkipped: Int
         let rhythmOffsetDetectionsSkipped: Int
-        let rhythmMatchingsSkipped: Int
         let continuousRhythmMatchingsSkipped: Int
         let parseErrorCount: Int
 
         var totalImported: Int {
             pitchDiscriminationsImported + pitchMatchingsImported +
-            rhythmOffsetDetectionsImported + rhythmMatchingsImported +
+            rhythmOffsetDetectionsImported +
             continuousRhythmMatchingsImported
         }
 
         var totalSkipped: Int {
             pitchDiscriminationsSkipped + pitchMatchingsSkipped +
-            rhythmOffsetDetectionsSkipped + rhythmMatchingsSkipped +
+            rhythmOffsetDetectionsSkipped +
             continuousRhythmMatchingsSkipped
         }
     }
@@ -56,7 +54,6 @@ enum TrainingDataImporter {
             pitchDiscriminations: parseResult.pitchDiscriminations,
             pitchMatchings: parseResult.pitchMatchings,
             rhythmOffsetDetections: parseResult.rhythmOffsetDetections,
-            rhythmMatchings: parseResult.rhythmMatchings,
             continuousRhythmMatchings: parseResult.continuousRhythmMatchings
         )
 
@@ -64,12 +61,10 @@ enum TrainingDataImporter {
             pitchDiscriminationsImported: parseResult.pitchDiscriminations.count,
             pitchMatchingsImported: parseResult.pitchMatchings.count,
             rhythmOffsetDetectionsImported: parseResult.rhythmOffsetDetections.count,
-            rhythmMatchingsImported: parseResult.rhythmMatchings.count,
             continuousRhythmMatchingsImported: parseResult.continuousRhythmMatchings.count,
             pitchDiscriminationsSkipped: 0,
             pitchMatchingsSkipped: 0,
             rhythmOffsetDetectionsSkipped: 0,
-            rhythmMatchingsSkipped: 0,
             continuousRhythmMatchingsSkipped: 0,
             parseErrorCount: parseResult.errors.count
         )
@@ -143,7 +138,6 @@ enum TrainingDataImporter {
 
         // Build rhythm duplicate keys
         let existingRhythmOffsets = try store.fetchAllRhythmOffsetDetections()
-        let existingRhythmMatchings = try store.fetchAllRhythmMatchings()
         let existingContinuousRhythmMatchings = try store.fetchAllContinuousRhythmMatchings()
 
         var existingRhythmKeys = Set<RhythmDuplicateKey>()
@@ -152,13 +146,6 @@ enum TrainingDataImporter {
                 timestamp: record.timestamp,
                 tempoBPM: record.tempoBPM,
                 trainingType: TrainingType.rhythmOffsetDetection
-            ))
-        }
-        for record in existingRhythmMatchings {
-            existingRhythmKeys.insert(RhythmDuplicateKey(
-                timestamp: record.timestamp,
-                tempoBPM: record.tempoBPM,
-                trainingType: TrainingType.rhythmMatching
             ))
         }
         for record in existingContinuousRhythmMatchings {
@@ -187,24 +174,6 @@ enum TrainingDataImporter {
             }
         }
 
-        // Merge rhythm matchings
-        var rhythmMatchingsImported = 0
-        var rhythmMatchingsSkipped = 0
-        for record in parseResult.rhythmMatchings {
-            let key = RhythmDuplicateKey(
-                timestamp: record.timestamp,
-                tempoBPM: record.tempoBPM,
-                trainingType: TrainingType.rhythmMatching
-            )
-            if existingRhythmKeys.contains(key) {
-                rhythmMatchingsSkipped += 1
-            } else {
-                try store.save(record)
-                existingRhythmKeys.insert(key)
-                rhythmMatchingsImported += 1
-            }
-        }
-
         // Merge continuous rhythm matchings
         var continuousRhythmMatchingsImported = 0
         var continuousRhythmMatchingsSkipped = 0
@@ -227,12 +196,10 @@ enum TrainingDataImporter {
             pitchDiscriminationsImported: pitchDiscriminationsImported,
             pitchMatchingsImported: pitchMatchingsImported,
             rhythmOffsetDetectionsImported: rhythmOffsetDetectionsImported,
-            rhythmMatchingsImported: rhythmMatchingsImported,
             continuousRhythmMatchingsImported: continuousRhythmMatchingsImported,
             pitchDiscriminationsSkipped: pitchDiscriminationsSkipped,
             pitchMatchingsSkipped: pitchMatchingsSkipped,
             rhythmOffsetDetectionsSkipped: rhythmOffsetDetectionsSkipped,
-            rhythmMatchingsSkipped: rhythmMatchingsSkipped,
             continuousRhythmMatchingsSkipped: continuousRhythmMatchingsSkipped,
             parseErrorCount: parseResult.errors.count
         )
@@ -244,7 +211,6 @@ enum TrainingDataImporter {
         static let pitchDiscrimination = "pitchDiscrimination"
         static let pitchMatching = "pitchMatching"
         static let rhythmOffsetDetection = "rhythmOffsetDetection"
-        static let rhythmMatching = "rhythmMatching"
         static let continuousRhythmMatching = "continuousRhythmMatching"
     }
 

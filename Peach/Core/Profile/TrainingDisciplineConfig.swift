@@ -72,13 +72,6 @@ extension TrainingDisciplineConfig {
         statistics: .default
     )
 
-    static let rhythmMatching = TrainingDisciplineConfig(
-        displayName: String(localized: "Tap & Match – Rhythm"),
-        unitLabel: String(localized: "ms"),
-        optimalBaseline: 20.0,
-        statistics: .default
-    )
-
     static let continuousRhythmMatching = TrainingDisciplineConfig(
         displayName: String(localized: "Fill the Gap – Rhythm"),
         unitLabel: String(localized: "ms"),

@@ -6,7 +6,6 @@ nonisolated enum CSVImportParser {
         var pitchDiscriminations: [PitchDiscriminationRecord]
         var pitchMatchings: [PitchMatchingRecord]
         var rhythmOffsetDetections: [RhythmOffsetDetectionRecord]
-        var rhythmMatchings: [RhythmMatchingRecord]
         var continuousRhythmMatchings: [ContinuousRhythmMatchingRecord]
         var errors: [CSVImportError]
     }
@@ -18,11 +17,11 @@ nonisolated enum CSVImportParser {
 
         switch versionResult {
         case .failure(let error):
-            return ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: [error])
+            return ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: [error])
 
         case .success(let version, let remainingLines):
             guard let parser = parsers.first(where: { $0.supportedVersion == version }) else {
-                return ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: [.unsupportedVersion(version: version)])
+                return ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: [.unsupportedVersion(version: version)])
             }
             return parser.parse(lines: remainingLines)
         }

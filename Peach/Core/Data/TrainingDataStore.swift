@@ -66,7 +66,6 @@ final class TrainingDataStore {
                 try modelContext.delete(model: PitchDiscriminationRecord.self)
                 try modelContext.delete(model: PitchMatchingRecord.self)
                 try modelContext.delete(model: RhythmOffsetDetectionRecord.self)
-                try modelContext.delete(model: RhythmMatchingRecord.self)
                 try modelContext.delete(model: ContinuousRhythmMatchingRecord.self)
             }
         } catch {
@@ -84,7 +83,6 @@ final class TrainingDataStore {
         pitchDiscriminations: [PitchDiscriminationRecord],
         pitchMatchings: [PitchMatchingRecord],
         rhythmOffsetDetections: [RhythmOffsetDetectionRecord],
-        rhythmMatchings: [RhythmMatchingRecord],
         continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = []
     ) throws {
         do {
@@ -92,7 +90,6 @@ final class TrainingDataStore {
                 try modelContext.delete(model: PitchDiscriminationRecord.self)
                 try modelContext.delete(model: PitchMatchingRecord.self)
                 try modelContext.delete(model: RhythmOffsetDetectionRecord.self)
-                try modelContext.delete(model: RhythmMatchingRecord.self)
                 try modelContext.delete(model: ContinuousRhythmMatchingRecord.self)
                 for record in pitchDiscriminations {
                     modelContext.insert(record)
@@ -101,9 +98,6 @@ final class TrainingDataStore {
                     modelContext.insert(record)
                 }
                 for record in rhythmOffsetDetections {
-                    modelContext.insert(record)
-                }
-                for record in rhythmMatchings {
                     modelContext.insert(record)
                 }
                 for record in continuousRhythmMatchings {
@@ -145,39 +139,6 @@ final class TrainingDataStore {
             }
         } catch {
             throw DataStoreError.deleteFailed("Failed to delete all rhythm offset detection records: \(error.localizedDescription)")
-        }
-    }
-
-    // MARK: - Rhythm Matching CRUD
-
-    func save(_ record: RhythmMatchingRecord) throws {
-        do {
-            try modelContext.transaction {
-                modelContext.insert(record)
-            }
-        } catch {
-            throw DataStoreError.saveFailed("Failed to save RhythmMatchingRecord: \(error.localizedDescription)")
-        }
-    }
-
-    func fetchAllRhythmMatchings() throws -> [RhythmMatchingRecord] {
-        let descriptor = FetchDescriptor<RhythmMatchingRecord>(
-            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
-        )
-        do {
-            return try modelContext.fetch(descriptor)
-        } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch rhythm matching records: \(error.localizedDescription)")
-        }
-    }
-
-    func deleteAllRhythmMatchings() throws {
-        do {
-            try modelContext.transaction {
-                try modelContext.delete(model: RhythmMatchingRecord.self)
-            }
-        } catch {
-            throw DataStoreError.deleteFailed("Failed to delete all rhythm matching records: \(error.localizedDescription)")
         }
     }
 
@@ -268,25 +229,6 @@ extension TrainingDataStore: RhythmOffsetDetectionObserver {
             Self.logger.warning("Rhythm offset detection save error: \(error.localizedDescription)")
         } catch {
             Self.logger.warning("Rhythm offset detection unexpected error: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - RhythmMatchingObserver Conformance
-
-extension TrainingDataStore: RhythmMatchingObserver {
-    func rhythmMatchingCompleted(_ result: CompletedRhythmMatchingTrial) {
-        let record = RhythmMatchingRecord(
-            tempoBPM: result.tempo.value,
-            userOffsetMs: result.userOffset.duration / .milliseconds(1),
-            timestamp: result.timestamp
-        )
-        do {
-            try save(record)
-        } catch let error as DataStoreError {
-            Self.logger.warning("Rhythm matching save error: \(error.localizedDescription)")
-        } catch {
-            Self.logger.warning("Rhythm matching unexpected error: \(error.localizedDescription)")
         }
     }
 }

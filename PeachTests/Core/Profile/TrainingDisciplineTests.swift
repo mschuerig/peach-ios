@@ -31,11 +31,6 @@ struct TrainingDisciplineTests {
         #expect(TrainingDiscipline.rhythmOffsetDetection.slug == "rhythm-offset-detection")
     }
 
-    @Test("slug returns rhythm-matching for rhythm matching")
-    func slugRhythmMatching() async {
-        #expect(TrainingDiscipline.rhythmMatching.slug == "rhythm-matching")
-    }
-
     // MARK: - statisticsKeys
 
     @Test("pitch modes return single key")
@@ -48,7 +43,7 @@ struct TrainingDisciplineTests {
 
     @Test("rhythm modes return 6 keys (3 tempo ranges x 2 directions)")
     func rhythmModesReturn6Keys() async {
-        for mode in [TrainingDiscipline.rhythmOffsetDetection, .rhythmMatching] {
+        for mode in [TrainingDiscipline.rhythmOffsetDetection, .continuousRhythmMatching] {
             let keys = mode.statisticsKeys
             #expect(keys.count == 6)
             for range in TempoRange.defaultRanges {

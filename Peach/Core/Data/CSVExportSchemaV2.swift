@@ -23,7 +23,6 @@ nonisolated enum CSVExportSchemaV2 {
         case pitchDiscrimination
         case pitchMatching
         case rhythmOffsetDetection
-        case rhythmMatching
         case continuousRhythmMatching
 
         var csvValue: String {
@@ -31,7 +30,6 @@ nonisolated enum CSVExportSchemaV2 {
             case .pitchDiscrimination: "pitchDiscrimination"
             case .pitchMatching: "pitchMatching"
             case .rhythmOffsetDetection: "rhythmOffsetDetection"
-            case .rhythmMatching: "rhythmMatching"
             case .continuousRhythmMatching: "continuousRhythmMatching"
             }
         }

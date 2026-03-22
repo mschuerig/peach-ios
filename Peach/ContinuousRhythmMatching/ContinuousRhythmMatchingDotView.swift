@@ -69,9 +69,14 @@ struct ContinuousRhythmMatchingDotView: View {
 
     static func feedbackColor(forPercentage percentage: Double?) -> Color? {
         guard let percentage else { return nil }
-        return RhythmMatchingFeedbackView.feedbackColor(
-            band: RhythmMatchingFeedbackView.band(offsetPercentage: percentage)
-        )
+        let absolute = abs(percentage)
+        if absolute <= 5 {
+            return .green
+        } else if absolute <= 15 {
+            return .yellow
+        } else {
+            return .red
+        }
     }
 }
 

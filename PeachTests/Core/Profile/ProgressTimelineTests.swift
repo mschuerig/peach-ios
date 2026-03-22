@@ -13,14 +13,12 @@ struct ProgressTimelineTests {
     private func makeTimeline(
         pitchDiscriminationRecords: [PitchDiscriminationRecord] = [],
         pitchMatchingRecords: [PitchMatchingRecord] = [],
-        rhythmOffsetDetectionRecords: [RhythmOffsetDetectionRecord] = [],
-        rhythmMatchingRecords: [RhythmMatchingRecord] = []
+        rhythmOffsetDetectionRecords: [RhythmOffsetDetectionRecord] = []
     ) -> ProgressTimeline {
         let profile = PerceptualProfile { builder in
             MetricPointMapper.feedPitchDiscriminations(pitchDiscriminationRecords, into: builder)
             MetricPointMapper.feedPitchMatchings(pitchMatchingRecords, into: builder)
             MetricPointMapper.feedRhythmOffsetDetections(rhythmOffsetDetectionRecords, into: builder)
-            MetricPointMapper.feedRhythmMatchings(rhythmMatchingRecords, into: builder)
         }
         return ProgressTimeline(profile: profile)
     }
@@ -895,15 +893,6 @@ struct ProgressTimelineTests {
         ]
         let timeline = makeTimeline(rhythmOffsetDetectionRecords: records)
         #expect(timeline.state(for: .rhythmOffsetDetection) == .noData)
-    }
-
-    @Test("rhythmMatching state is active with rhythm matching data")
-    func rhythmMatchingActive() async {
-        let records = [
-            RhythmMatchingRecord(tempoBPM: 120, userOffsetMs: 15.0, timestamp: now.addingTimeInterval(-3600))
-        ]
-        let timeline = makeTimeline(rhythmMatchingRecords: records)
-        #expect(timeline.state(for: .rhythmMatching) == .active)
     }
 
     @Test("rhythmOffsetDetection buckets are produced from rhythm data")

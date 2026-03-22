@@ -51,13 +51,6 @@ extension EnvironmentValues {
         )
     }()
 
-    @Entry var rhythmMatchingSession: RhythmMatchingSession = {
-        RhythmMatchingSession(
-            rhythmPlayer: PreviewRhythmPlayer(),
-            sampleRate: .standard48000
-        )
-    }()
-
     @Entry var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession = {
         ContinuousRhythmMatchingSession(
             stepSequencer: PreviewStepSequencer()

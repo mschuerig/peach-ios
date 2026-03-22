@@ -114,7 +114,7 @@ struct ContinuousRhythmMatchingScreen: View {
     private var toolbarContent: some ToolbarContent {
         ToolbarItem(placement: .principal) {
             HStack(spacing: 6) {
-                Image(systemName: "waveform.path")
+                Image(systemName: "hand.tap")
                 Text(String(localized: "Rhythm"))
             }
             .accessibilityElement(children: .ignore)

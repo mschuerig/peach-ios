@@ -10,7 +10,7 @@ struct TrainingDataExporterTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
@@ -259,48 +259,22 @@ struct TrainingDataExporterTests {
         #expect(fields[13] == "-15.3")
     }
 
-    @Test("export with rhythm matching records produces correct CSV")
-    func exportRhythmMatching() async throws {
+    @Test("export with all record types produces correctly sorted CSV")
+    func exportAllTypes() async throws {
         let store = try makeStore()
 
-        let record = RhythmMatchingRecord(
-            tempoBPM: 100, userOffsetMs: -8.5, timestamp: fixedDate()
-        )
-        try store.save(record)
-
-        let csv = try TrainingDataExporter.export(from: store)
-        let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
-
-        #expect(lines.count == 3)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
-        #expect(lines[2].hasPrefix("rhythmMatching"))
-
-        let fields = lines[2].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-        #expect(fields[12] == "100")
-        #expect(fields[14] == "-8.5")
-    }
-
-    @Test("export with all four record types produces correctly sorted CSV")
-    func exportAllFourTypes() async throws {
-        let store = try makeStore()
-
-        let rhythmMatch = RhythmMatchingRecord(
-            tempoBPM: 100, userOffsetMs: 5.0, timestamp: fixedDate(minutesOffset: 0)
-        )
         let pitchDisc = PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
+            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
         )
         let rhythmOffset = RhythmOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
+            tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 1)
         )
         let pitchMatch = PitchMatchingRecord(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 3)
+            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 2)
         )
 
-        try store.save(rhythmMatch)
         try store.save(pitchDisc)
         try store.save(rhythmOffset)
         try store.save(pitchMatch)
@@ -308,13 +282,12 @@ struct TrainingDataExporterTests {
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(lines.count == 6)
+        #expect(lines.count == 5)
         #expect(lines[0] == CSVExportSchemaV2.metadataLine)
         #expect(lines[1] == CSVExportSchemaV2.headerRow)
-        #expect(lines[2].hasPrefix("rhythmMatching"))
-        #expect(lines[3].hasPrefix("pitchDiscrimination"))
-        #expect(lines[4].hasPrefix("rhythmOffsetDetection"))
-        #expect(lines[5].hasPrefix("pitchMatching"))
+        #expect(lines[2].hasPrefix("pitchDiscrimination"))
+        #expect(lines[3].hasPrefix("rhythmOffsetDetection"))
+        #expect(lines[4].hasPrefix("pitchMatching"))
     }
 
     // MARK: - Round-Trip Test
@@ -364,28 +337,19 @@ struct TrainingDataExporterTests {
         let offset = RhythmOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -5.0, isCorrect: true, timestamp: fixedDate(minutesOffset: 0)
         )
-        let matching = RhythmMatchingRecord(
-            tempoBPM: 90, userOffsetMs: 3.2, timestamp: fixedDate(minutesOffset: 1)
-        )
         try store.save(offset)
-        try store.save(matching)
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(lines.count == 4)
+        #expect(lines.count == 3)
         #expect(lines[2].hasPrefix("rhythmOffsetDetection"))
-        #expect(lines[3].hasPrefix("rhythmMatching"))
 
         // Verify pitch columns are empty in rhythm rows
         let offsetFields = lines[2].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
         #expect(offsetFields[2] == "") // referenceNote
         #expect(offsetFields[6] == "") // interval
         #expect(offsetFields[8] == "") // centOffset
-
-        let matchFields = lines[3].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-        #expect(matchFields[2] == "") // referenceNote
-        #expect(matchFields[9] == "") // isCorrect
     }
 
     @Test("empty export with no records produces V2 metadata and header only")
@@ -412,14 +376,10 @@ struct TrainingDataExporterTests {
         let rhythmOffset = RhythmOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
         )
-        let rhythmMatch = RhythmMatchingRecord(
-            tempoBPM: 100, userOffsetMs: 5.0, timestamp: fixedDate(minutesOffset: 3)
-        )
 
         try store.save(pitchDisc)
         try store.save(pitchMatch)
         try store.save(rhythmOffset)
-        try store.save(rhythmMatch)
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -446,14 +406,10 @@ struct TrainingDataExporterTests {
         let rhythmOffset = RhythmOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
         )
-        let rhythmMatch = RhythmMatchingRecord(
-            tempoBPM: 100, userOffsetMs: 5.0, timestamp: fixedDate(minutesOffset: 3)
-        )
 
         try store.save(pitchDisc)
         try store.save(pitchMatch)
         try store.save(rhythmOffset)
-        try store.save(rhythmMatch)
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -465,6 +421,5 @@ struct TrainingDataExporterTests {
         #expect(discriminators.contains("pitchDiscrimination"))
         #expect(discriminators.contains("pitchMatching"))
         #expect(discriminators.contains("rhythmOffsetDetection"))
-        #expect(discriminators.contains("rhythmMatching"))
     }
 }

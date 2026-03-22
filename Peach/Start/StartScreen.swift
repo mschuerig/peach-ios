@@ -68,8 +68,6 @@ struct StartScreen: View {
                 ProfileScreen()
             case .rhythmOffsetDetection:
                 RhythmOffsetDetectionScreen()
-            case .rhythmMatching:
-                RhythmMatchingScreen()
             case .continuousRhythmMatching:
                 ContinuousRhythmMatchingScreen()
             }
@@ -157,14 +155,8 @@ struct StartScreen: View {
             .buttonStyle(TrainingCardButtonStyle())
             .accessibilityLabel("Compare Timing")
 
-            NavigationLink(value: NavigationDestination.rhythmMatching) {
-                trainingCard("Match", systemImage: "hand.tap", mode: .rhythmMatching)
-            }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Match Rhythm")
-
             NavigationLink(value: NavigationDestination.continuousRhythmMatching) {
-                trainingCard("Fill the Gap", systemImage: "waveform.path", mode: .continuousRhythmMatching)
+                trainingCard("Fill the Gap", systemImage: "hand.tap", mode: .continuousRhythmMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())
             .accessibilityLabel("Fill the Gap")

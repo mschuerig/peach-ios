@@ -383,58 +383,6 @@ struct CSVRecordFormatterTests {
         #expect(fields[13] == "22.7")
     }
 
-    // MARK: - RhythmMatchingRecord Formatting
-
-    @Test("RhythmMatchingRecord formatting produces correct 20-column CSV row")
-    func formatRhythmMatchingRecord() async {
-        let record = RhythmMatchingRecord(
-            tempoBPM: 100,
-            userOffsetMs: -8.5,
-            timestamp: fixedDate()
-        )
-
-        let row = CSVRecordFormatter.format(record)
-        let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-
-        #expect(fields.count == 20)
-        #expect(fields[0] == "rhythmMatching")
-        #expect(fields[1] == "2026-03-03T14:30:00Z")
-        // Pitch-specific columns are empty
-        #expect(fields[2] == "")
-        #expect(fields[3] == "")
-        #expect(fields[4] == "")
-        #expect(fields[5] == "")
-        #expect(fields[6] == "")
-        #expect(fields[7] == "")
-        #expect(fields[8] == "")
-        // isCorrect empty for rhythm matching
-        #expect(fields[9] == "")
-        #expect(fields[10] == "")
-        #expect(fields[11] == "")
-        // Rhythm-specific columns
-        #expect(fields[12] == "100")
-        #expect(fields[13] == "")
-        #expect(fields[14] == "-8.5")
-        // Continuous column empty
-        #expect(fields[15] == "")
-    }
-
-    @Test("RhythmMatchingRecord with positive offset formats correctly")
-    func rhythmMatchingPositiveOffset() async {
-        let record = RhythmMatchingRecord(
-            tempoBPM: 140,
-            userOffsetMs: 12.0,
-            timestamp: fixedDate()
-        )
-
-        let row = CSVRecordFormatter.format(record)
-        let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-
-        #expect(fields[0] == "rhythmMatching")
-        #expect(fields[12] == "140")
-        #expect(fields[14] == "12.0")
-    }
-
     // MARK: - ContinuousRhythmMatchingRecord Formatting
 
     @Test("ContinuousRhythmMatchingRecord formatting produces correct 20-column CSV row")
@@ -509,15 +457,15 @@ struct CSVRecordFormatterTests {
 
     @Test("NaN Double value produces empty field")
     func nanDoubleProducesEmptyField() async {
-        let record = RhythmMatchingRecord(
+        let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 100,
-            userOffsetMs: Double.nan,
+            meanOffsetMs: Double.nan,
             timestamp: fixedDate()
         )
 
         let row = CSVRecordFormatter.format(record)
         let fields = row.split(separator: ",", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(fields[14] == "")
+        #expect(fields[15] == "")
     }
 }

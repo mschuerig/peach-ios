@@ -24,12 +24,11 @@ struct CSVExportSchemaV2Tests {
 
     // MARK: - Training Type
 
-    @Test("TrainingType has five cases with correct csvValues")
+    @Test("TrainingType has four cases with correct csvValues")
     func trainingTypeCsvValues() async {
         #expect(CSVExportSchemaV2.TrainingType.pitchDiscrimination.csvValue == "pitchDiscrimination")
         #expect(CSVExportSchemaV2.TrainingType.pitchMatching.csvValue == "pitchMatching")
         #expect(CSVExportSchemaV2.TrainingType.rhythmOffsetDetection.csvValue == "rhythmOffsetDetection")
-        #expect(CSVExportSchemaV2.TrainingType.rhythmMatching.csvValue == "rhythmMatching")
         #expect(CSVExportSchemaV2.TrainingType.continuousRhythmMatching.csvValue == "continuousRhythmMatching")
     }
 

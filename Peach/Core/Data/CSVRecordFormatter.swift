@@ -86,34 +86,6 @@ nonisolated enum CSVRecordFormatter {
         return buildRow(fields)
     }
 
-    // MARK: - RhythmMatching Record Formatting
-
-    static func format(_ record: RhythmMatchingRecord) -> String {
-        let fields: [String] = [
-            CSVExportSchemaV2.TrainingType.rhythmMatching.csvValue,
-            formatTimestamp(record.timestamp),
-            "", // referenceNote
-            "", // referenceNoteName
-            "", // targetNote
-            "", // targetNoteName
-            "", // interval
-            "", // tuningSystem
-            "", // centOffset
-            "", // isCorrect
-            "", // initialCentOffset
-            "", // userCentError
-            "\(record.tempoBPM)",
-            "", // offsetMs
-            formatDouble(record.userOffsetMs),
-            "", // meanOffsetMs
-            "", // meanOffsetMsPosition0
-            "", // meanOffsetMsPosition1
-            "", // meanOffsetMsPosition2
-            "", // meanOffsetMsPosition3
-        ]
-        return buildRow(fields)
-    }
-
     // MARK: - ContinuousRhythmMatching Record Formatting
 
     static func format(_ record: ContinuousRhythmMatchingRecord) -> String {

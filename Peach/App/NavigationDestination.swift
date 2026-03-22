@@ -8,6 +8,5 @@ enum NavigationDestination: Hashable {
     case settings
     case profile
     case rhythmOffsetDetection
-    case rhythmMatching
     case continuousRhythmMatching
 }

@@ -44,13 +44,6 @@ struct TrainingDisciplineConfigTests {
         #expect(config.unitLabel == "ms")
     }
 
-    @Test("rhythm matching has expected parameters")
-    func rhythmMatching() async {
-        let config = TrainingDisciplineConfig.rhythmMatching
-        #expect(config.optimalBaseline == 20.0)
-        #expect(config.unitLabel == "ms")
-    }
-
     @Test("all configurations have unique display names")
     func uniqueDisplayNames() async {
         let configs = TrainingDiscipline.allCases.map(\.config)

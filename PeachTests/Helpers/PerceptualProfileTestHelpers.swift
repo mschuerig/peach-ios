@@ -107,7 +107,7 @@ extension PerceptualProfile {
         var ranges = Set<TempoRange>()
         for range in TempoRange.defaultRanges {
             for direction in RhythmDirection.allCases {
-                for mode in [TrainingDiscipline.rhythmOffsetDetection, .rhythmMatching, .continuousRhythmMatching] {
+                for mode in [TrainingDiscipline.rhythmOffsetDetection, .continuousRhythmMatching] {
                     if statistics(for: .rhythm(mode, range, direction)) != nil {
                         ranges.insert(range)
                     }
@@ -122,7 +122,7 @@ extension PerceptualProfile {
         var weightedSum = 0.0
         for range in TempoRange.defaultRanges {
             for direction in RhythmDirection.allCases {
-                for mode in [TrainingDiscipline.rhythmOffsetDetection, .rhythmMatching, .continuousRhythmMatching] {
+                for mode in [TrainingDiscipline.rhythmOffsetDetection, .continuousRhythmMatching] {
                     if case .continuous(let stats) = statistics(for: .rhythm(mode, range, direction)),
                        stats.recordCount > 0 {
                         totalCount += stats.recordCount
