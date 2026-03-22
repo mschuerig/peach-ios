@@ -421,3 +421,10 @@ development_status:
   54-8-csv-export-import: done
   54-9-localization: done
   epic-54-retrospective: optional
+
+  # Epic 55: Clean Seams — Discipline Decoupling
+  # Work order: 55.1 before 55.2 (port protocols are a prerequisite for registry)
+  epic-55: backlog
+  55-1-extract-observer-adapters-with-port-protocols: ready-for-dev
+  55-2-protocol-based-discipline-registry: ready-for-dev
+  55-3-discipline-owned-csv-format: ready-for-dev

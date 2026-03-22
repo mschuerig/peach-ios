@@ -3,7 +3,7 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
 status: 'amended'
 completedAt: '2026-02-12'
-amendedAt: '2026-03-18'
+amendedAt: '2026-03-22'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 workflowType: 'architecture'
 project_name: 'Peach'
@@ -2690,3 +2690,274 @@ No rhythm special cases. No pitch special cases. One code path for all modes.
 **Requirements Coverage:** All 37 new FRs (FR68–FR104) mapped to specific components and directories. All rhythm timing precision NFRs addressed by the render-thread scheduling architecture. PerceptualProfile cleanup pre-work documented.
 
 **Gap Analysis:** No critical gaps. UX Design Specification for rhythm training does not exist yet — the architecture supports the PRD requirements, but visual design details (dot styling, spectrogram color thresholds, screen layouts) need a separate UX workflow before UI implementation.
+
+## v0.5 Architecture Amendment — Discipline Decoupling
+
+*Amended: 2026-03-22*
+
+Removing the RhythmMatching training discipline (commit 96b0cb9) required modifying 39 files beyond the deletions. Analysis revealed that the architecture assumes a fixed set of training disciplines, encoding that assumption in enums, explicit type lists, per-discipline observer protocols, and central dispatchers that switch on discipline types. This amendment introduces a ports-and-adapters pattern and a protocol-based discipline registry to make disciplines independently addable and removable.
+
+**Supersedes:**
+- "Observer Protocols" section in v0.4 (per-discipline observer protocols in `Core/Training/`, conformances on `TrainingDataStore` and `PerceptualProfile`)
+- "TrainingDataStore Extension" section in v0.4 (per-discipline CRUD methods)
+- "CSV Format v2" section in v0.4 (union column schema, `CSVRecordFormatter`, V1 backward compatibility)
+- "Training Modes Extension" section in v0.4 (`TrainingDiscipline` enum, `TrainingDisciplineConfig` static properties)
+- `TrainingDiscipline` key expansion in "Profile Architecture Redesign" section (enum-based `statisticsKeys` switch)
+
+**Implementation stories:** Epic 55 (55.1, 55.2, 55.3) in `docs/implementation-artifacts/`.
+
+### Problem: Coupling Inventory
+
+Removing one discipline touched 39 files across 8 coupling categories:
+
+| Category | Files | Coupling mechanism |
+|---|:---:|---|
+| `TrainingDiscipline` enum exhaustiveness | ~17 | Every `switch` must be updated |
+| Per-discipline CRUD in `TrainingDataStore` | ~11 | Explicit `save`/`fetchAll`/`deleteAll` overloads per record type |
+| Per-discipline observer protocols | ~7 | Separate protocol + conformances per discipline |
+| Central dispatchers (`MetricPointMapper`, `CSVRecordFormatter`) | ~6 | Switch on record type to delegate |
+| CSV union schema | ~6 | Fixed-width columns; every discipline pads empties for others |
+| Navigation | 3 | `NavigationDestination` enum cases |
+| Environment wiring | 2 | Manual session creation in `PeachApp` |
+| Localization | 1 | UI strings |
+
+Tests mirror this coupling, adding ~21 modified test files.
+
+### Design Principle: Ports and Adapters
+
+The core domain defines **ports** — narrow protocols declaring capabilities that training disciplines can use. Disciplines provide **adapters** — thin types that map discipline-specific trial results into generic port operations. Core never imports feature code. Features depend on core protocols.
+
+```
+Feature (adapter) → Core/Training (port protocol) ← Core/Data, Core/Profile (implementation)
+```
+
+### Port Protocols
+
+Two port protocols defined in `Core/Training/`:
+
+**`ProfileUpdating`** — the port for updating the perceptual profile:
+
+```swift
+protocol ProfileUpdating {
+    func update(_ key: StatisticsKey, timestamp: Date, value: Double)
+}
+```
+
+`PerceptualProfile` conforms. Its existing `update` method (currently `private`) becomes the protocol requirement.
+
+**Contracts:**
+- `update()` requires monotonically ascending timestamps. Naturally satisfied during live training.
+- For bulk loading (init/import), use `PerceptualProfile.Builder` instead — it accepts unordered points and sorts internally via `finalize()`.
+
+**`TrainingRecordPersisting`** — the port for saving training records:
+
+```swift
+protocol TrainingRecordPersisting {
+    func save(_ record: some PersistentModel) throws
+}
+```
+
+`TrainingDataStore` conforms. The four identical `save` overloads (each doing `modelContext.insert(record)` in a transaction) are replaced with one generic method.
+
+### Observer Adapters
+
+Per-discipline observer protocols (`PitchDiscriminationObserver`, `RhythmOffsetDetectionObserver`, etc.) move from `Core/Training/` to their respective feature directories. They remain as-is — the protocol definitions don't change.
+
+`PerceptualProfile` and `TrainingDataStore` lose all observer conformances. The mapping logic (trial → port operation) moves into **adapter structs** in each feature directory:
+
+```
+Peach/PitchDiscrimination/
+    PitchDiscriminationProfileAdapter.swift    # PitchDiscriminationObserver → ProfileUpdating
+    PitchDiscriminationStoreAdapter.swift      # PitchDiscriminationObserver → TrainingRecordPersisting
+
+Peach/RhythmOffsetDetection/
+    RhythmOffsetDetectionProfileAdapter.swift
+    RhythmOffsetDetectionStoreAdapter.swift
+
+(same pattern for PitchMatching, ContinuousRhythmMatching)
+```
+
+Each adapter is a struct holding a reference to the port protocol, with a single method that maps the discipline-specific trial result to the generic operation. No business logic beyond the mapping.
+
+**Wiring:** `PeachApp` creates adapters and passes them in the session's observers array instead of passing `profile` and `dataStore` directly.
+
+### `Core/Training/` Role Change
+
+After the adapter extraction, `Core/Training/` contains only domain-generic types:
+
+| File | Purpose |
+|---|---|
+| `ProfileUpdating.swift` | Port protocol for profile updates |
+| `TrainingRecordPersisting.swift` | Port protocol for record persistence |
+| `Resettable.swift` | Existing reset protocol |
+
+All discipline-specific types (observer protocols, completed trial types, settings types) move to their feature directories. `Core/Training/` becomes a pure **ports layer** — every file in it is abstract.
+
+### Discipline Registry
+
+The `TrainingDiscipline` enum is replaced with a protocol-based registry. Each discipline is a conforming type registered at startup.
+
+**`TrainingDiscipline` protocol** — defines what a discipline must provide:
+
+- Display metadata (name, icon, unit label, slug)
+- `StatisticsKey` expansion (for profile queries)
+- Progress timeline configuration (EWMA half-life, session gap, baseline)
+- Record type (`PersistentModel` metatype) for generic data store operations
+- Profile feeding: how to map stored records to `MetricPoint`s for `PerceptualProfile.Builder`
+- CSV formatting: how to produce key-value pairs from records for export
+- CSV parsing: how to parse a row's fields into a record on import
+- Duplicate detection: how to build deduplication keys for merge import
+
+**`TrainingDisciplineRegistry`** — holds registered discipline conformances. This is compile-time registration, not runtime discovery. The registry is the single place that knows which disciplines are active.
+
+### Generic Data Store
+
+Per-discipline CRUD methods are replaced with generic methods:
+
+```swift
+func save(_ record: some PersistentModel) throws
+func fetchAll<T: PersistentModel>(_ type: T.Type) throws -> [T]
+func deleteAll<T: PersistentModel>(_ type: T.Type) throws
+```
+
+**Contracts:**
+- `save` persists a single record. No ordering guarantees.
+- `fetchAll` returns records in arbitrary order. The store is a bag, not a sequence. Callers must not assume ordering. `PerceptualProfile.Builder.finalize()` sorts internally; `TrainingDataExporter` sorts the merged output by timestamp.
+- `deleteAll()` (all disciplines) iterates registered discipline record types via the registry.
+- `replaceAllRecords()` accepts type-erased record groups via the registry.
+
+### Eliminated Central Dispatchers
+
+**`MetricPointMapper`** — exists solely to enumerate all record types and map each to metric points for the profile builder. When each discipline declares its own mapping via the `TrainingDiscipline` protocol, the caller iterates the registry. `MetricPointMapper` is deleted.
+
+**`CSVRecordFormatter`** — exists solely to enumerate all record types and format each to CSV rows with empty-string padding. When each discipline declares its own formatting, the formatter has no remaining purpose. `CSVRecordFormatter` is deleted.
+
+### Discipline-Owned CSV Format
+
+The fixed-width union schema (where every row has all columns and each discipline pads empties for irrelevant ones) is replaced with a discipline-owned column scheme:
+
+- Common columns (`trainingType`, `timestamp`) remain in shared infrastructure
+- Each discipline declares its own column names via the `TrainingDiscipline` protocol
+- The exporter collects all columns from the registry, assembles a union header, and maps each discipline's key-value pairs into the correct column positions
+- Each discipline produces **key-value pairs** (column name → value) for export, not positional arrays
+- Each discipline parses its own columns on import, receiving the fields and a column-to-index map
+
+**Backward compatibility:** There is no installed base. V1 schema, V1 parser, `CSVFormatVersionReader`, and the version-dispatch chain are deleted. Format version bumps to V3 to distinguish from old formats.
+
+**Deleted files:**
+- `CSVExportSchema.swift` (V1)
+- `CSVImportParserV1.swift`
+- `CSVFormatVersionReader.swift`
+- `CSVRecordFormatter.swift`
+- All corresponding test files
+
+### Navigation
+
+`NavigationDestination` enum remains as-is. The coupling (3 files per discipline change) is tolerable and not worth the abstraction cost of type-erased navigation values.
+
+### Expected Result
+
+After all three stories (55.1, 55.2, 55.3):
+
+**Adding a discipline requires:**
+1. Create the discipline conformance in the feature directory (record type, session, screen, adapters, observer protocol, settings, trial type)
+2. Register it in the registry (one line)
+3. Add a `NavigationDestination` case (one file)
+4. Add localization strings (one file)
+
+No modifications to `PerceptualProfile`, `TrainingDataStore`, `TrainingDataExporter`, `TrainingDataImporter`, `ProgressTimeline`, `StartScreen`, or any of their tests.
+
+**Removing a discipline requires:**
+1. Delete the feature directory and its tests
+2. Remove the registration (one line)
+3. Remove the `NavigationDestination` case (one file)
+4. Remove localization strings (one file)
+
+~3 files modified instead of 39.
+
+### Updated Project Structure (v0.5 — Core/Training/ and feature directories)
+
+```
+Peach/Core/Training/
+    ProfileUpdating.swift              # Port protocol
+    TrainingRecordPersisting.swift     # Port protocol
+    Resettable.swift                   # Existing
+
+Peach/PitchDiscrimination/
+    PitchDiscriminationSession.swift
+    PitchDiscriminationScreen.swift
+    PitchDiscriminationObserver.swift          # Moved from Core/Training/
+    PitchDiscriminationTrial.swift             # Moved from Core/Training/
+    PitchDiscriminationSettings.swift          # Moved from Core/Training/
+    PitchDiscriminationProfileAdapter.swift    # NEW
+    PitchDiscriminationStoreAdapter.swift      # NEW
+    PitchDiscriminationFeedbackIndicator.swift
+    HapticFeedbackManager.swift
+
+Peach/PitchMatching/
+    PitchMatchingSession.swift
+    PitchMatchingScreen.swift
+    PitchMatchingObserver.swift                # Moved from Core/Training/
+    CompletedPitchMatchingTrial.swift          # Moved from Core/Training/
+    PitchMatchingSettings.swift                # Moved from Core/Training/
+    PitchMatchingProfileAdapter.swift          # NEW
+    PitchMatchingStoreAdapter.swift            # NEW
+    PitchMatchingTrial.swift
+    PitchMatchingFeedbackIndicator.swift
+    PitchSlider.swift
+
+Peach/RhythmOffsetDetection/
+    RhythmOffsetDetectionSession.swift
+    RhythmOffsetDetectionScreen.swift
+    RhythmOffsetDetectionObserver.swift        # Moved from Core/Training/
+    CompletedRhythmOffsetDetectionTrial.swift  # Moved from Core/Training/
+    RhythmOffsetDetectionSettings.swift        # Moved from Core/Training/
+    RhythmOffsetDetectionProfileAdapter.swift  # NEW
+    RhythmOffsetDetectionStoreAdapter.swift    # NEW
+    RhythmChallenge.swift
+    RhythmOffsetDetectionDotView.swift
+
+Peach/ContinuousRhythmMatching/
+    ContinuousRhythmMatchingSession.swift
+    ContinuousRhythmMatchingScreen.swift
+    ContinuousRhythmMatchingObserver.swift     # Moved from Core/Training/
+    CompletedContinuousRhythmMatchingTrial.swift # Moved from Core/Training/
+    ContinuousRhythmMatchingSettings.swift     # Moved from Core/Training/
+    ContinuousRhythmMatchingProfileAdapter.swift # NEW
+    ContinuousRhythmMatchingStoreAdapter.swift # NEW
+    ContinuousRhythmMatchingDotView.swift
+
+Peach/Core/Data/
+    TrainingDataStore.swift            # Generic CRUD, no per-discipline methods
+    TrainingDataExporter.swift         # Discipline-agnostic via registry
+    TrainingDataImporter.swift         # Discipline-agnostic via registry
+    CSVExportSchemaV2.swift            # Column set assembled from registry (DELETED: CSVExportSchema.swift)
+    CSVImportParserV2.swift            # Dispatches to discipline-owned parsers (DELETED: CSVImportParserV1.swift)
+    CSVImportParser.swift              # Single parser, no version dispatch (DELETED: CSVFormatVersionReader.swift)
+    (DELETED: CSVRecordFormatter.swift)
+
+Peach/App/
+    (DELETED: MetricPointMapper.swift)
+```
+
+### Updated Service Boundaries (v0.5)
+
+| Component | Responsibility | Discipline knowledge |
+|---|---|---|
+| `PerceptualProfile` | Generic statistics engine: `(StatisticsKey, Date, Double) → TrainingDisciplineStatistics` | None — receives generic keys and values via `ProfileUpdating` port |
+| `TrainingDataStore` | Generic persistence: `save/fetchAll/deleteAll` on `PersistentModel` | None — receives generic models via `TrainingRecordPersisting` port |
+| `TrainingDataExporter` | Iterates registered disciplines, collects formatted rows, sorts by timestamp | None — delegates to discipline conformances |
+| `TrainingDataImporter` | Iterates registered disciplines for replace/merge | None — delegates to discipline conformances |
+| `ProgressTimeline` | Progress tracking via registry-based discipline queries | None — uses `TrainingDiscipline` protocol |
+| Profile/Store adapters | Map discipline-specific trial results to generic port operations | Single discipline each |
+| `TrainingDisciplineRegistry` | Knows which disciplines are active | All (by design — single registration point) |
+
+### v0.5 Architecture Validation
+
+**Decision Compatibility:** No new frameworks or technologies. Pure structural refactoring using Swift's existing protocol and generics system.
+
+**Pattern Consistency:** The discipline registry follows the chain-of-responsibility pattern already validated in the CSV import parser architecture. Port protocols follow the dependency inversion pattern already established in Epic 20.
+
+**Backward Compatibility:** No installed base for CSV format. V1/V2 parsers and version dispatch are safely deletable.
+
+**Risk Assessment:** The `TrainingDiscipline` protocol surface area is large (metadata, statistics keys, record type, profile feeding, CSV formatting, CSV parsing, duplicate detection). If the protocol becomes unwieldy, consider splitting into composed protocols (e.g., `CSVFormattable`, `ProfileFeedable`) that the discipline opts into. Monitor during 55.2 implementation.
