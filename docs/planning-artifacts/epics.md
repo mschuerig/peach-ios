@@ -121,6 +121,15 @@ FR101: Format version 2 introduces rhythmOffsetDetection and rhythmMatching as n
 FR102: V1 exports remain importable; V2 parser handles all training types including V1 records
 FR103: System deduplicates merged records by timestamp, tempo, and training type
 FR104: Start Screen shows six training buttons: "Pitch Comparison", "Pitch Matching", "Interval Pitch Comparison", "Interval Pitch Matching", "Rhythm Comparison", "Rhythm Matching"
+FR105: User can start continuous rhythm matching training from the Start Screen via a dedicated button
+FR106: System plays a continuous loop of 4 sixteenth notes at the user's chosen tempo, with step 1 at accent velocity and exactly one step per cycle as a silent gap
+FR107: User fills the gap by tapping; system evaluates tap timing against a window centered on the gap
+FR108: System silently ignores taps outside the evaluation window; tap button remains visually active at all times
+FR109: User can select which gap positions (1–4) are enabled in settings; when multiple are enabled, each cycle randomly selects one
+FR110: System aggregates 16 consecutive gap evaluations into a single trial; incomplete trials (< 16 cycles) are discarded on exit
+FR111: System displays four dots showing current step position (highlighted) and gap position (outline); step-1 dot visually bolder; gap outline updates at cycle start
+FR112: System discards incomplete continuous rhythm matching trials on interruption (same rules as FR79)
+FR113: System stores continuous rhythm matching results with aggregate statistics: mean offset, hit rate, per-gap-position breakdown
 
 ### NonFunctional Requirements
 
@@ -593,6 +602,11 @@ CSVImportParserV2 and CSVExportSchemaV2 extending the chain-of-responsibility pa
 ### Epic 53: Rhythm in Every Language — Localization
 English + German UI strings for all rhythm training screens, Start Screen section labels, Settings tempo section, Profile rhythm cards, feedback text, and spectrogram accessibility descriptions.
 **FRs covered:** None directly (cross-cutting)
+
+### Epic 54: Fill the Gap — Continuous Rhythm Matching
+Continuous step-sequencer-style rhythm matching training, built as a new training discipline alongside the existing rhythm matching mode (Epic 49). A looping 4-step cycle of 16th notes plays at the user's tempo with beat-1 accent. One step per cycle is a silent gap — the user fills it by tapping at the right moment. Gap positions are configurable in settings; when multiple are enabled, each cycle randomly selects one. Taps are silently evaluated against a timing window around the gap. A trial aggregates 16 consecutive cycles into a single statistical unit; incomplete trials are discarded on exit.
+**FRs covered:** FR105, FR106, FR107, FR108, FR109, FR110, FR111, FR112, FR113
+**Depends on:** Epic 48 (reuses audio infrastructure), Epic 50 (Start Screen extension)
 
 ## Epic 1: Remember Every Note — Data Foundation
 
