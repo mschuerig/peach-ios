@@ -134,10 +134,10 @@ extension PerceptualProfile: RhythmMatchingObserver {
 
 extension PerceptualProfile: ContinuousRhythmMatchingObserver {
     func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial) {
-        let hits = result.gapResults.compactMap(\.offset)
-        guard !hits.isEmpty else { return }
+        guard !result.gapResults.isEmpty else { return }
         guard let range = TempoRange.range(for: result.tempo) else { return }
-        let signedMeanMs = hits.reduce(0.0) { $0 + $1.statisticalValue } / Double(hits.count)
+        let offsets = result.gapResults.map(\.offset)
+        let signedMeanMs = offsets.reduce(0.0) { $0 + $1.statisticalValue } / Double(offsets.count)
         let direction = RhythmOffset(.milliseconds(signedMeanMs)).direction
         update(.rhythm(.continuousRhythmMatching, range, direction),
                timestamp: result.timestamp,

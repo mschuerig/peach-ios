@@ -171,6 +171,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             let rhythmOffset = RhythmOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
             recordGapResult(GapResult(position: gapPosition, offset: rhythmOffset))
+            advanceCycleCount()
             showHitFeedback(rhythmOffset)
             logger.debug("Gap hit at offset \(offset * 1000, format: .fixed(precision: 1))ms")
         }
@@ -208,7 +209,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         }
     }
 
-    /// Evaluates completed cycles and records misses for gaps that were not tapped.
+    /// Evaluates completed cycles and advances the cycle counter.
     /// Visible for testing.
     func evaluatePlaybackPosition() {
         guard isRunning, cycleDuration > 0 else { return }
@@ -228,18 +229,13 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             currentGapPosition = gapPositions[playingCycleIndex]
         }
 
-        // Evaluate completed cycles — all before the currently-playing one
+        // Advance past completed cycles — each missed one counts toward the trial limit.
+        // Hit cycles are already counted immediately in handleTap, so skip them here.
         while lastEvaluatedCycleIndex < playingCycleIndex - 1 {
-            let cycleToEvaluate = lastEvaluatedCycleIndex + 1
-
-            if cycleToEvaluate < gapPositions.count
-                && !hitCycleIndices.contains(cycleToEvaluate) {
-                let missPosition = gapPositions[cycleToEvaluate]
-                recordGapResult(GapResult(position: missPosition, offset: nil))
-                logger.debug("Gap missed at position \(String(describing: missPosition))")
+            lastEvaluatedCycleIndex += 1
+            if !hitCycleIndices.contains(lastEvaluatedCycleIndex) {
+                advanceCycleCount()
             }
-
-            lastEvaluatedCycleIndex = cycleToEvaluate
         }
     }
 
@@ -262,9 +258,13 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     func recordGapResult(_ result: GapResult) {
         gapResults.append(result)
-        cyclesInCurrentTrial = gapResults.count
+    }
 
-        if gapResults.count >= Self.cyclesPerTrial {
+    /// Called from `evaluatePlaybackPosition` when enough cycles have elapsed, or
+    /// when a hit pushes past the cycle limit.
+    private func advanceCycleCount() {
+        cyclesInCurrentTrial += 1
+        if cyclesInCurrentTrial >= Self.cyclesPerTrial {
             completeTrial()
         }
     }
@@ -272,16 +272,20 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private func completeTrial() {
         guard let settings else { return }
 
-        let trial = CompletedContinuousRhythmMatchingTrial(
-            tempo: settings.tempo,
-            gapResults: gapResults
-        )
+        if !gapResults.isEmpty {
+            let trial = CompletedContinuousRhythmMatchingTrial(
+                tempo: settings.tempo,
+                gapResults: gapResults
+            )
 
-        lastTrialResult = trial
-        logger.info("Trial completed: \(trial.gapResults.filter(\.isHit).count)/\(trial.gapResults.count) hits")
+            lastTrialResult = trial
+            logger.info("Trial completed: \(trial.gapResults.count) hits in \(Self.cyclesPerTrial) cycles")
 
-        observers.forEach { observer in
-            observer.continuousRhythmMatchingCompleted(trial)
+            observers.forEach { observer in
+                observer.continuousRhythmMatchingCompleted(trial)
+            }
+        } else {
+            logger.info("Trial completed with no hits — skipping")
         }
 
         gapResults = []

@@ -2,8 +2,7 @@ import Foundation
 
 struct GapResult: Sendable {
     let position: StepPosition
-    let offset: RhythmOffset?
-    var isHit: Bool { offset != nil }
+    let offset: RhythmOffset
 }
 
 struct CompletedContinuousRhythmMatchingTrial: Sendable {
@@ -17,28 +16,17 @@ struct CompletedContinuousRhythmMatchingTrial: Sendable {
         self.timestamp = timestamp
     }
 
-    var hitCount: Int {
-        gapResults.filter(\.isHit).count
-    }
-
-    var hitRate: Double {
-        guard !gapResults.isEmpty else { return 0 }
-        return Double(hitCount) / Double(gapResults.count) * 100.0
-    }
-
     var meanOffsetPercentage: Double? {
-        let hits = gapResults.compactMap(\.offset)
-        guard !hits.isEmpty else { return nil }
-        let totalPercentage = hits.reduce(0.0) { sum, offset in
-            sum + offset.percentageOfSixteenthNote(at: tempo)
+        guard !gapResults.isEmpty else { return nil }
+        let totalPercentage = gapResults.reduce(0.0) { sum, result in
+            sum + result.offset.percentageOfSixteenthNote(at: tempo)
         }
-        return totalPercentage / Double(hits.count)
+        return totalPercentage / Double(gapResults.count)
     }
 
     var meanOffsetMs: Double? {
-        let hits = gapResults.compactMap(\.offset)
-        guard !hits.isEmpty else { return nil }
-        let totalMs = hits.reduce(0.0) { $0 + $1.statisticalValue }
-        return totalMs / Double(hits.count)
+        guard !gapResults.isEmpty else { return nil }
+        let totalMs = gapResults.reduce(0.0) { $0 + $1.offset.statisticalValue }
+        return totalMs / Double(gapResults.count)
     }
 }

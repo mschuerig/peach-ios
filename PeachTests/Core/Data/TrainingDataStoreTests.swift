@@ -656,13 +656,11 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let breakdownJSON = try JSONEncoder().encode([PositionBreakdown(position: 0, hitCount: 3, missCount: 1, meanOffsetMs: -5.0)])
+        let breakdownJSON = try JSONEncoder().encode([PositionBreakdown(position: 0, count: 3, meanOffsetMs: -5.0)])
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: 120,
             meanOffsetMs: -8.5,
-            hitRate: 75.0,
             gapPositionBreakdownJSON: breakdownJSON,
-            cycleCount: 4,
             timestamp: timestamp
         )
 
@@ -673,8 +671,6 @@ struct TrainingDataStoreTests {
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
         #expect(fetched[0].meanOffsetMs == -8.5)
-        #expect(fetched[0].hitRate == 75.0)
-        #expect(fetched[0].cycleCount == 4)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
@@ -686,9 +682,9 @@ struct TrainingDataStoreTests {
 
         let now = Date()
         let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
-        let record1 = ContinuousRhythmMatchingRecord(tempoBPM: 80, meanOffsetMs: -5.0, hitRate: 60.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 2, timestamp: now.addingTimeInterval(-60))
-        let record2 = ContinuousRhythmMatchingRecord(tempoBPM: 100, meanOffsetMs: 2.0, hitRate: 80.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 4, timestamp: now.addingTimeInterval(-30))
-        let record3 = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: 0.5, hitRate: 90.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 6, timestamp: now)
+        let record1 = ContinuousRhythmMatchingRecord(tempoBPM: 80, meanOffsetMs: -5.0, gapPositionBreakdownJSON: emptyJSON, timestamp: now.addingTimeInterval(-60))
+        let record2 = ContinuousRhythmMatchingRecord(tempoBPM: 100, meanOffsetMs: 2.0, gapPositionBreakdownJSON: emptyJSON, timestamp: now.addingTimeInterval(-30))
+        let record3 = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: 0.5, gapPositionBreakdownJSON: emptyJSON, timestamp: now)
 
         try store.save(record1)
         try store.save(record2)
@@ -709,7 +705,7 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
-        let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, hitRate: 80.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 4)
+        let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, gapPositionBreakdownJSON: emptyJSON)
         try store.save(continuousRecord)
 
         let rhythmMatchRecord = RhythmMatchingRecord(tempoBPM: 100, userOffsetMs: 3.0)
@@ -731,7 +727,7 @@ struct TrainingDataStoreTests {
         let store = TrainingDataStore(modelContext: context)
 
         let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
-        let record = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, hitRate: 80.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 4)
+        let record = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, gapPositionBreakdownJSON: emptyJSON)
         try store.save(record)
 
         try store.deleteAll()
@@ -752,7 +748,7 @@ struct TrainingDataStoreTests {
         let gapResults = [
             GapResult(position: .first, offset: RhythmOffset(.milliseconds(-10))),
             GapResult(position: .third, offset: RhythmOffset(.milliseconds(5))),
-            GapResult(position: .second, offset: nil)
+            GapResult(position: .first, offset: RhythmOffset(.milliseconds(-8))),
         ]
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),
@@ -766,19 +762,14 @@ struct TrainingDataStoreTests {
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
-        #expect(fetched[0].cycleCount == 3)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
 
         let breakdowns = try JSONDecoder().decode([PositionBreakdown].self, from: fetched[0].gapPositionBreakdownJSON)
-        #expect(breakdowns.count == 3)
+        #expect(breakdowns.count == 2)
         // Sorted by position
         #expect(breakdowns[0].position == 0) // .first
-        #expect(breakdowns[0].hitCount == 1)
-        #expect(breakdowns[0].missCount == 0)
-        #expect(breakdowns[1].position == 1) // .second
-        #expect(breakdowns[1].hitCount == 0)
-        #expect(breakdowns[1].missCount == 1)
-        #expect(breakdowns[2].position == 2) // .third
-        #expect(breakdowns[2].hitCount == 1)
+        #expect(breakdowns[0].count == 2)
+        #expect(breakdowns[1].position == 2) // .third
+        #expect(breakdowns[1].count == 1)
     }
 }

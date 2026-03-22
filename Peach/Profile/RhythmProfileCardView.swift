@@ -59,7 +59,7 @@ struct RhythmProfileCardView: View {
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(String(localized: "No rhythm training data. Start training to build your profile."))
+        .accessibilityLabel(String(localized: "No training data for \(config.displayName). Start training to build your profile."))
     }
 
     // MARK: - Headline Row

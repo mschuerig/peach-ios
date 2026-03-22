@@ -523,16 +523,13 @@ struct PerceptualProfileTests {
         #expect(abs((stats?.welfordMean ?? 0) - 15.0) < 0.01) // abs(mean of 20, 10 = 15) = 15
     }
 
-    @Test("ContinuousRhythmMatchingObserver skips trials with no hits")
-    func continuousRhythmMatchingObserverSkipsNoHits() async {
+    @Test("ContinuousRhythmMatchingObserver skips empty trials")
+    func continuousRhythmMatchingObserverSkipsEmptyTrials() async {
         let profile = PerceptualProfile()
 
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(100),
-            gapResults: [
-                GapResult(position: .first, offset: nil),
-                GapResult(position: .second, offset: nil)
-            ]
+            gapResults: []
         )
         profile.continuousRhythmMatchingCompleted(trial)
 

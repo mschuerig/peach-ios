@@ -59,6 +59,29 @@ The primary value of rhythm training is trend tracking (improvement over time), 
 
 ---
 
+### Evaluate Spectrogram Color Thresholds for Continuous Rhythm Matching
+
+**Priority:** Low
+**Category:** Algorithm Design / Calibration
+**Date Added:** 2026-03-22
+
+**Observation:**
+The spectrogram color bands (green/yellow/red) use `SpectrogramThresholds.default`, which was designed for rhythm offset detection and rhythm matching. Story 54.7's dev notes flagged that thresholds "may need adjustment for hit-rate-based data." The implementation maps `meanOffsetMs` (same unit as other rhythm modes), so the current thresholds are numerically reasonable — but no explicit evaluation was performed.
+
+**Impact:**
+- If hit rate is later threaded into the spectrogram (see AC#3 of story 54.7), the thresholds will need revisiting since hit rate is a percentage, not milliseconds
+- Even for offset data, continuous matching may have different accuracy distributions than discrete matching (longer sequences, fatigue effects)
+
+**Action:**
+- When hit rate is added to the profile path, define appropriate threshold bands for percentage-based data
+- Consider whether offset thresholds need mode-specific tuning based on user data
+
+**Related Code:**
+- `Peach/Profile/RhythmSpectrogramView.swift` — threshold usage
+- `Peach/Core/Profile/SpectrogramData.swift` — threshold definitions
+
+---
+
 ## Data & Infrastructure
 
 ### Add SwiftData VersionedSchema and SchemaMigrationPlan

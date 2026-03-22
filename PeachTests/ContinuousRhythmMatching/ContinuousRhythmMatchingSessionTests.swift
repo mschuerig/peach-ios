@@ -153,13 +153,16 @@ struct ContinuousRhythmMatchingSessionTests {
 
     @Test("stop discards incomplete trial")
     func stopDiscardsIncompleteTrial() async {
-        let (f, _) = makeTimedSession()
-        f.session.start(settings: f.defaultSettings())
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Record some misses but not enough for a trial
-        for _ in 0..<5 {
-            f.session.recordGapResult(GapResult(position: .fourth, offset: nil))
+        // Populate gap positions and record a few hits
+        for i in 0..<5 {
+            _ = f.session.nextCycle()
+            let gapTime = f.mockTime + Double(i * 4 + 3) * f.sixteenthDuration
+            setTime(gapTime + 0.005)
+            f.session.handleTap()
         }
 
         f.session.stop()
@@ -343,15 +346,18 @@ struct ContinuousRhythmMatchingSessionTests {
 
     // MARK: - Trial Completion
 
-    @Test("trial completes after 16 gap results and notifies observers")
-    func trialCompletesAfter16GapResults() async {
-        let (f, _) = makeTimedSession()
+    @Test("trial completes after 16 cycles with hits and notifies observers")
+    func trialCompletesAfter16Cycles() async {
+        let (f, setTime) = makeTimedSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Record 16 misses directly
-        for _ in 0..<16 {
-            f.session.recordGapResult(GapResult(position: .fourth, offset: nil))
+        // Populate 16 cycles and hit all of them
+        for i in 0..<16 {
+            _ = f.session.nextCycle()
+            let gapTime = f.mockTime + Double(i * 4 + 3) * f.sixteenthDuration
+            setTime(gapTime + 0.005)
+            f.session.handleTap()
         }
 
         #expect(f.observer.completedCallCount == 1)
@@ -364,12 +370,15 @@ struct ContinuousRhythmMatchingSessionTests {
 
     @Test("trial contains correct tempo")
     func trialContainsCorrectTempo() async {
-        let (f, _) = makeTimedSession()
+        let (f, setTime) = makeTimedSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        for _ in 0..<16 {
-            f.session.recordGapResult(GapResult(position: .fourth, offset: nil))
+        for i in 0..<16 {
+            _ = f.session.nextCycle()
+            let gapTime = f.mockTime + Double(i * 4 + 3) * f.sixteenthDuration
+            setTime(gapTime + 0.005)
+            f.session.handleTap()
         }
 
         #expect(f.observer.lastResult?.tempo == TempoBPM(120))
@@ -377,41 +386,67 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    @Test("trial with mixed hits and misses")
-    func trialWithMixedHitsAndMisses() async {
-        let (f, _) = makeTimedSession()
+    @Test("trial with missed cycles contains only hits")
+    func trialWithMissedCyclesContainsOnlyHits() async {
+        let (f, setTime) = makeTimedSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // 12 hits, 4 misses
+        // Populate 16 cycles, hit only the first 12
         for i in 0..<16 {
+            _ = f.session.nextCycle()
             if i < 12 {
-                f.session.recordGapResult(GapResult(
-                    position: .fourth,
-                    offset: RhythmOffset(.milliseconds(10))
-                ))
-            } else {
-                f.session.recordGapResult(GapResult(position: .fourth, offset: nil))
+                let gapTime = f.mockTime + Double(i * 4 + 3) * f.sixteenthDuration
+                setTime(gapTime + 0.005)
+                f.session.handleTap()
             }
         }
 
+        // Advance time past all 16 cycles so evaluatePlaybackPosition counts the misses
+        setTime(f.mockTime + 17.0 * f.cycleDuration)
+        f.session.evaluatePlaybackPosition()
+
         let trial = f.observer.lastResult
         #expect(trial != nil)
-        #expect(trial?.gapResults.count == 16)
-        #expect(trial?.gapResults.filter(\.isHit).count == 12)
+        #expect(trial?.gapResults.count == 12)
+
+        f.session.stop()
+    }
+
+    @Test("trial with no hits is not emitted")
+    func trialWithNoHitsIsNotEmitted() async {
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        // Populate 16 cycles but don't hit any
+        for _ in 0..<16 {
+            _ = f.session.nextCycle()
+        }
+
+        // Advance time to mid-cycle 16 — exactly 16 completed cycles (0–15) are evaluated
+        setTime(f.mockTime + 16.5 * f.cycleDuration)
+        f.session.evaluatePlaybackPosition()
+
+        #expect(f.observer.completedCallCount == 0)
+        #expect(f.session.lastTrialResult == nil)
+        #expect(f.session.cyclesInCurrentTrial == 0)
 
         f.session.stop()
     }
 
     @Test("multiple consecutive trials work correctly")
     func multipleConsecutiveTrialsWorkCorrectly() async {
-        let (f, _) = makeTimedSession()
+        let (f, setTime) = makeTimedSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Two complete trials
-        for _ in 0..<32 {
-            f.session.recordGapResult(GapResult(position: .fourth, offset: nil))
+        // Two complete trials, hitting every gap
+        for i in 0..<32 {
+            _ = f.session.nextCycle()
+            let gapTime = f.mockTime + Double(i * 4 + 3) * f.sixteenthDuration
+            setTime(gapTime + 0.005)
+            f.session.handleTap()
         }
 
         #expect(f.observer.completedCallCount == 2)
@@ -424,13 +459,16 @@ struct ContinuousRhythmMatchingSessionTests {
 
     @Test("audio interruption stops session and discards incomplete trial")
     func audioInterruptionStopsSession() async {
-        let (f, _) = makeTimedSession()
-        f.session.start(settings: f.defaultSettings())
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Record some results but not enough for a trial
-        for _ in 0..<5 {
-            f.session.recordGapResult(GapResult(position: .fourth, offset: nil))
+        // Record some hits but not enough for a trial
+        for i in 0..<5 {
+            _ = f.session.nextCycle()
+            let gapTime = f.mockTime + Double(i * 4 + 3) * f.sixteenthDuration
+            setTime(gapTime + 0.005)
+            f.session.handleTap()
         }
 
         // Simulate audio interruption

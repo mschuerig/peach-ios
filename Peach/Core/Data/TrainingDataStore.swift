@@ -355,9 +355,7 @@ extension TrainingDataStore: ContinuousRhythmMatchingObserver {
         let record = ContinuousRhythmMatchingRecord(
             tempoBPM: result.tempo.value,
             meanOffsetMs: result.meanOffsetMs ?? 0,
-            hitRate: result.hitRate,
             gapPositionBreakdownJSON: breakdownJSON,
-            cycleCount: result.gapResults.count,
             timestamp: result.timestamp
         )
         do {
@@ -370,26 +368,15 @@ extension TrainingDataStore: ContinuousRhythmMatchingObserver {
     }
 
     private func buildPositionBreakdowns(from gapResults: [GapResult]) -> [PositionBreakdown] {
-        var grouped: [Int: (hits: Int, misses: Int, offsets: [Double])] = [:]
+        var grouped: [Int: [Double]] = [:]
         for gap in gapResults {
-            let pos = gap.position.rawValue
-            var entry = grouped[pos, default: (hits: 0, misses: 0, offsets: [])]
-            if gap.isHit {
-                entry.hits += 1
-                if let offset = gap.offset {
-                    entry.offsets.append(offset.statisticalValue)
-                }
-            } else {
-                entry.misses += 1
-            }
-            grouped[pos] = entry
+            grouped[gap.position.rawValue, default: []].append(gap.offset.statisticalValue)
         }
-        return grouped.sorted { $0.key < $1.key }.map { pos, data in
-            let meanOffset = data.offsets.isEmpty ? 0 : data.offsets.reduce(0, +) / Double(data.offsets.count)
+        return grouped.sorted { $0.key < $1.key }.map { pos, offsets in
+            let meanOffset = offsets.reduce(0, +) / Double(offsets.count)
             return PositionBreakdown(
                 position: pos,
-                hitCount: data.hits,
-                missCount: data.misses,
+                count: offsets.count,
                 meanOffsetMs: meanOffset
             )
         }

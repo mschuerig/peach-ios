@@ -1,6 +1,6 @@
 # Story 54.7: Profile Visualization
 
-Status: review
+Status: done
 
 ## Story
 

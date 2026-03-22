@@ -7,16 +7,11 @@ struct CompletedContinuousRhythmMatchingTrialTests {
 
     // MARK: - GapResult
 
-    @Test("gap result with offset is a hit")
-    func gapResultWithOffsetIsHit() async {
+    @Test("gap result stores position and offset")
+    func gapResultStoresPositionAndOffset() async {
         let result = GapResult(position: .first, offset: RhythmOffset(.milliseconds(10)))
-        #expect(result.isHit)
-    }
-
-    @Test("gap result without offset is a miss")
-    func gapResultWithoutOffsetIsMiss() async {
-        let result = GapResult(position: .second, offset: nil)
-        #expect(!result.isHit)
+        #expect(result.position == .first)
+        #expect(result.offset.statisticalValue != 0)
     }
 
     // MARK: - Trial as Container
@@ -25,14 +20,12 @@ struct CompletedContinuousRhythmMatchingTrialTests {
     func trialStoresTempoAndGapResults() async {
         let results = [
             GapResult(position: .fourth, offset: RhythmOffset(.milliseconds(5))),
-            GapResult(position: .second, offset: nil),
+            GapResult(position: .second, offset: RhythmOffset(.milliseconds(-3))),
         ]
         let trial = CompletedContinuousRhythmMatchingTrial(tempo: TempoBPM(120), gapResults: results)
 
         #expect(trial.tempo == TempoBPM(120))
         #expect(trial.gapResults.count == 2)
-        #expect(trial.gapResults[0].isHit)
-        #expect(!trial.gapResults[1].isHit)
     }
 
     @Test("default timestamp is populated")
@@ -71,52 +64,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
 
     // MARK: - Computed Properties
 
-    @Test("hitCount counts results with non-nil offset")
-    func hitCount() async {
-        let trial = CompletedContinuousRhythmMatchingTrial(
-            tempo: TempoBPM(120),
-            gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10))),
-                GapResult(position: .second, offset: nil),
-                GapResult(position: .third, offset: RhythmOffset(.milliseconds(-5))),
-            ]
-        )
-        #expect(trial.hitCount == 2)
-    }
-
-    @Test("hitRate returns percentage of hits")
-    func hitRate() async {
-        let trial = CompletedContinuousRhythmMatchingTrial(
-            tempo: TempoBPM(120),
-            gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10))),
-                GapResult(position: .second, offset: nil),
-                GapResult(position: .third, offset: RhythmOffset(.milliseconds(-5))),
-                GapResult(position: .fourth, offset: nil),
-            ]
-        )
-        #expect(trial.hitRate == 50.0)
-    }
-
-    @Test("hitRate returns 0 for empty results")
-    func hitRateEmpty() async {
-        let trial = CompletedContinuousRhythmMatchingTrial(tempo: TempoBPM(120), gapResults: [])
-        #expect(trial.hitRate == 0)
-    }
-
-    @Test("hitRate returns 100 for all hits")
-    func hitRateAllHits() async {
-        let trial = CompletedContinuousRhythmMatchingTrial(
-            tempo: TempoBPM(120),
-            gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10))),
-                GapResult(position: .second, offset: RhythmOffset(.milliseconds(5))),
-            ]
-        )
-        #expect(trial.hitRate == 100.0)
-    }
-
-    @Test("meanOffsetPercentage averages hit offsets as percentage of sixteenth note")
+    @Test("meanOffsetPercentage averages offsets as percentage of sixteenth note")
     func meanOffsetPercentage() async throws {
         // At 120 BPM, sixteenth note = 125ms
         // 12.5ms offset = 10% of sixteenth note
@@ -124,19 +72,15 @@ struct CompletedContinuousRhythmMatchingTrialTests {
             tempo: TempoBPM(120),
             gapResults: [
                 GapResult(position: .first, offset: RhythmOffset(.milliseconds(12.5))),
-                GapResult(position: .second, offset: nil),
             ]
         )
         let percentage = try #require(trial.meanOffsetPercentage)
         #expect(abs(percentage - 10.0) < 0.01)
     }
 
-    @Test("meanOffsetPercentage returns nil for no hits")
-    func meanOffsetPercentageNoHits() async {
-        let trial = CompletedContinuousRhythmMatchingTrial(
-            tempo: TempoBPM(120),
-            gapResults: [GapResult(position: .first, offset: nil)]
-        )
+    @Test("meanOffsetPercentage returns nil for empty results")
+    func meanOffsetPercentageEmpty() async {
+        let trial = CompletedContinuousRhythmMatchingTrial(tempo: TempoBPM(120), gapResults: [])
         #expect(trial.meanOffsetPercentage == nil)
     }
 
@@ -153,12 +97,9 @@ struct CompletedContinuousRhythmMatchingTrialTests {
         #expect(abs(ms - (-5.0)) < 0.01)
     }
 
-    @Test("meanOffsetMs returns nil for no hits")
-    func meanOffsetMsNoHits() async {
-        let trial = CompletedContinuousRhythmMatchingTrial(
-            tempo: TempoBPM(120),
-            gapResults: [GapResult(position: .first, offset: nil)]
-        )
+    @Test("meanOffsetMs returns nil for empty results")
+    func meanOffsetMsEmpty() async {
+        let trial = CompletedContinuousRhythmMatchingTrial(tempo: TempoBPM(120), gapResults: [])
         #expect(trial.meanOffsetMs == nil)
     }
 
@@ -171,7 +112,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
             gapResults: [early, late]
         )
 
-        #expect(trial.gapResults[0].offset?.direction == .early)
-        #expect(trial.gapResults[1].offset?.direction == .late)
+        #expect(trial.gapResults[0].offset.direction == .early)
+        #expect(trial.gapResults[1].offset.direction == .late)
     }
 }

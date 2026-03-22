@@ -41,16 +41,6 @@ struct ContinuousRhythmMatchingScreenTests {
 
     // MARK: - Stats Formatting
 
-    @Test("hitRateText formats percentage correctly")
-    func hitRateText() async {
-        #expect(ContinuousRhythmMatchingScreen.hitRateText(75.0) == "75%")
-    }
-
-    @Test("hitRateText rounds to nearest integer")
-    func hitRateTextRounding() async {
-        #expect(ContinuousRhythmMatchingScreen.hitRateText(83.7) == "84%")
-    }
-
     @Test("cycleProgressText shows count out of 16")
     func cycleProgressText() async {
         #expect(ContinuousRhythmMatchingScreen.cycleProgressText(4) == "4/16")

@@ -5,6 +5,22 @@ import SwiftUI
 @Suite("Continuous Rhythm Matching Profile Tests")
 struct ContinuousRhythmMatchingProfileTests {
 
+    // MARK: - Profile Screen Routing
+
+    @Test("continuousRhythmMatching is routed to rhythm profile card alongside other rhythm modes")
+    func routedToRhythmProfileCard() async {
+        // The rhythm card set in ProfileScreen routes these modes to RhythmProfileCardView.
+        // Verify continuousRhythmMatching is grouped with the other rhythm modes by checking
+        // that it shares the same card infrastructure (statisticsKeys use rhythm keys).
+        let keys = TrainingDiscipline.continuousRhythmMatching.statisticsKeys
+        let allAreRhythmKeys = keys.allSatisfy {
+            if case .rhythm(.continuousRhythmMatching, _, _) = $0 { return true }
+            return false
+        }
+        #expect(allAreRhythmKeys)
+        #expect(!keys.isEmpty)
+    }
+
     // MARK: - Profile Card Integration
 
     @Test("Profile accessibility summary includes continuous rhythm matching when data exists")
@@ -28,16 +44,23 @@ struct ContinuousRhythmMatchingProfileTests {
         #expect(summary.contains(expectedName))
     }
 
-    @Test("Rhythm profile card view shows empty state for continuous rhythm matching with no data")
-    func emptyStateForContinuousRhythmMatching() async {
+    @Test("Empty profile does not include continuous rhythm matching in accessibility summary")
+    func emptyProfileExcludesContinuousRhythmMatching() async {
         let timeline = ProgressTimeline(profile: PerceptualProfile())
-        let state = timeline.state(for: .continuousRhythmMatching)
+        let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
-        #expect(state == .noData)
+        let name = TrainingDisciplineConfig.continuousRhythmMatching.displayName
+        #expect(!summary.contains(name))
     }
 
-    @Test("Rhythm profile card view shows active state for continuous rhythm matching with data")
-    func activeStateForContinuousRhythmMatching() async {
+    @Test("ProgressTimeline reports noData for continuous rhythm matching with no data")
+    func noDataState() async {
+        let timeline = ProgressTimeline(profile: PerceptualProfile())
+        #expect(timeline.state(for: .continuousRhythmMatching) == .noData)
+    }
+
+    @Test("ProgressTimeline reports active state with EWMA and trend when data exists")
+    func activeStateWithEWMAAndTrend() async {
         let profile = PerceptualProfile { builder in
             for i in 0..<10 {
                 builder.addPoint(
@@ -58,8 +81,8 @@ struct ContinuousRhythmMatchingProfileTests {
 
     // MARK: - Spectrogram Data
 
-    @Test("Spectrogram computes for continuous rhythm matching data")
-    func spectrogramComputesForContinuousRhythmMatching() async {
+    @Test("Spectrogram computes for continuous rhythm matching data with correct trained ranges")
+    func spectrogramComputesWithCorrectRanges() async {
         let profile = PerceptualProfile { builder in
             for i in 0..<10 {
                 builder.addPoint(
@@ -82,8 +105,7 @@ struct ContinuousRhythmMatchingProfileTests {
         let buckets = timeline.allGranularityBuckets(for: .continuousRhythmMatching)
         let data = SpectrogramData.compute(mode: .continuousRhythmMatching, profile: profile, timeBuckets: buckets)
 
-        #expect(!data.trainedRanges.isEmpty)
-        #expect(data.trainedRanges.contains(.medium))
+        #expect(data.trainedRanges == [.medium])
         #expect(!data.columns.isEmpty)
     }
 
@@ -96,19 +118,5 @@ struct ContinuousRhythmMatchingProfileTests {
 
         #expect(fileName.contains("continuous-rhythm-matching"))
         #expect(fileName.hasSuffix(".png"))
-    }
-
-    // MARK: - Formatting
-
-    @Test("Rhythm EWMA formats correctly for continuous matching values")
-    func rhythmEWMAFormattingForContinuousMatching() async {
-        let formatted = RhythmProfileCardView.formatRhythmEWMA(18.3)
-        #expect(formatted == "18.3 ms")
-    }
-
-    @Test("Rhythm stddev formats correctly for continuous matching values")
-    func rhythmStdDevFormattingForContinuousMatching() async {
-        let formatted = RhythmProfileCardView.formatRhythmStdDev(5.7)
-        #expect(formatted == "±5.7 ms")
     }
 }

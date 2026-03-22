@@ -69,16 +69,12 @@ struct ContinuousRhythmMatchingScreen: View {
     private var statsHeader: some View {
         HStack(alignment: .top) {
             VStack(alignment: .leading, spacing: 2) {
-                if let result = session.lastTrialResult {
-                    Text("Hit rate: \(Self.hitRateText(result.hitRate))")
+                if let result = session.lastTrialResult,
+                   let meanOffset = result.meanOffsetPercentage,
+                   let meanMs = result.meanOffsetMs {
+                    Text("Mean offset: \(RhythmStatsView.percentageText(meanOffset, ms: meanMs))")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    if let meanOffset = result.meanOffsetPercentage,
-                       let meanMs = result.meanOffsetMs {
-                        Text("Mean offset: \(RhythmStatsView.percentageText(meanOffset, ms: meanMs))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -182,10 +178,6 @@ struct ContinuousRhythmMatchingScreen: View {
     }
 
     // MARK: - Formatting
-
-    static func hitRateText(_ hitRate: Double) -> String {
-        String(format: "%.0f%%", hitRate)
-    }
 
     static func cycleProgressText(_ count: Int) -> String {
         "\(count)/\(ContinuousRhythmMatchingSession.cyclesPerTrial)"
