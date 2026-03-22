@@ -408,3 +408,7 @@ development_status:
   # Epic 53: Rhythm in Every Language — Localization
   epic-53: done
   53-1-rhythm-training-localization: done
+
+  # Epic 54: Fill the Gap — Continuous Rhythm Matching
+  epic-54: in-progress
+  54-1-step-sequencer-protocol-and-audio-engine: review

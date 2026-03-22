@@ -18,6 +18,7 @@ struct PeachApp: App {
     @State private var transferService: TrainingDataTransferService
     @State private var notePlayer: any NotePlayer
     @State private var rhythmPlayer: any RhythmPlayer
+    @State private var stepSequencer: SoundFontStepSequencer
     @State private var activeSession: (any TrainingSession)?
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
@@ -56,12 +57,19 @@ struct PeachApp: App {
             try soundFontEngine.createChannel(SoundFontEngine.ChannelID(1))
             let percussionPreset = soundFontLibrary.percussionPresets.first
                 ?? SF2Preset(name: "", program: 0, bank: SF2Preset.percussionBank)
+            let percussionChannel = SoundFontEngine.ChannelID(1)
             let rhythmPlayer: any RhythmPlayer = SoundFontPlayer(
                 engine: soundFontEngine,
                 preset: percussionPreset,
-                channel: SoundFontEngine.ChannelID(1)
+                channel: percussionChannel
             )
             _rhythmPlayer = State(wrappedValue: rhythmPlayer)
+
+            _stepSequencer = State(wrappedValue: SoundFontStepSequencer(
+                engine: soundFontEngine,
+                preset: percussionPreset,
+                channel: percussionChannel
+            ))
 
             let profile = try Self.loadPerceptualProfile(dataStore: dataStore)
             _profile = State(wrappedValue: profile)
@@ -151,6 +159,7 @@ struct PeachApp: App {
                 })
                 .environment(\.trainingDataTransferService, transferService)
                 .environment(\.rhythmPlayer, rhythmPlayer)
+                .environment(\.stepSequencer, stepSequencer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
                 .environment(\.rhythmMatchingSession, rhythmMatchingSession)

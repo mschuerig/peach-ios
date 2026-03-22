@@ -1,6 +1,6 @@
 # Story 54.1: StepSequencer Protocol and Audio Engine
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -26,47 +26,47 @@ so that continuous rhythm training has sample-accurate, indefinitely looping pla
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define domain types (AC: #1, #3)
-  - [ ] Create `Peach/Core/Audio/StepSequencer.swift`
-  - [ ] Define `StepPosition` enum: `.first`, `.second`, `.third`, `.fourth` (raw Int values 0–3)
-  - [ ] Define `CycleDefinition` struct with `gapPosition: StepPosition`
-  - [ ] Define `StepProvider` protocol with `func nextCycle() -> CycleDefinition`
-  - [ ] Define `StepSequencer` protocol with `func start(tempo: TempoBPM, stepProvider: StepProvider) async throws` and `func stop() async throws`
-  - [ ] All types conform to `Sendable`
-  - [ ] Write tests for `StepPosition` and `CycleDefinition` in `PeachTests/Core/Audio/StepSequencerTests.swift`
+- [x] Task 1: Define domain types (AC: #1, #3)
+  - [x] Create `Peach/Core/Audio/StepSequencer.swift`
+  - [x] Define `StepPosition` enum: `.first`, `.second`, `.third`, `.fourth` (raw Int values 0–3)
+  - [x] Define `CycleDefinition` struct with `gapPosition: StepPosition`
+  - [x] Define `StepProvider` protocol with `func nextCycle() -> CycleDefinition`
+  - [x] Define `StepSequencer` protocol with `func start(tempo: TempoBPM, stepProvider: StepProvider) async throws` and `func stop() async throws`
+  - [x] All types conform to `Sendable`
+  - [x] Write tests for `StepPosition` and `CycleDefinition` in `PeachTests/Core/Audio/StepSequencerTests.swift`
 
-- [ ] Task 2: Implement `SoundFontStepSequencer` (AC: #2, #3, #5, #6)
-  - [ ] Create `Peach/Core/Audio/SoundFontStepSequencer.swift`
-  - [ ] Accept `SoundFontEngine` dependency (same engine used by `SoundFontPlayer`)
-  - [ ] On `start()`: compute `samplesPerSixteenth` from tempo and sample rate
-  - [ ] Use a render-callback approach: schedule one cycle's worth of events, then at the end of each cycle, request the next `CycleDefinition` from the provider and schedule the next cycle
-  - [ ] Step 1 always uses accent velocity `MIDIVelocity(127)`; other non-gap steps use `MIDIVelocity(100)`; gap step has no event
-  - [ ] Click note: `MIDINote(76)` (same as existing rhythm training)
-  - [ ] Ensure no allocations on audio thread — pre-allocate event buffers
-  - [ ] On `stop()`: cancel scheduling, silence engine
+- [x] Task 2: Implement `SoundFontStepSequencer` (AC: #2, #3, #5, #6)
+  - [x] Create `Peach/Core/Audio/SoundFontStepSequencer.swift`
+  - [x] Accept `SoundFontEngine` dependency (same engine used by `SoundFontPlayer`)
+  - [x] On `start()`: compute `samplesPerSixteenth` from tempo and sample rate
+  - [x] Use a render-callback approach: schedule one cycle's worth of events, then at the end of each cycle, request the next `CycleDefinition` from the provider and schedule the next cycle
+  - [x] Step 1 always uses accent velocity `MIDIVelocity(127)`; other non-gap steps use `MIDIVelocity(100)`; gap step has no event
+  - [x] Click note: `MIDINote(76)` (same as existing rhythm training)
+  - [x] Ensure no allocations on audio thread — pre-allocate event buffers
+  - [x] On `stop()`: cancel scheduling, silence engine
 
-- [ ] Task 3: Expose current step position for UI (AC: #2)
-  - [ ] Add observable property `currentStep: StepPosition?` to the sequencer (nil when stopped)
-  - [ ] Update at each step transition so the UI can highlight the active dot
-  - [ ] Add `currentCycle: CycleDefinition?` so the UI knows where the gap is
+- [x] Task 3: Expose current step position for UI (AC: #2)
+  - [x] Add observable property `currentStep: StepPosition?` to the sequencer (nil when stopped)
+  - [x] Update at each step transition so the UI can highlight the active dot
+  - [x] Add `currentCycle: CycleDefinition?` so the UI knows where the gap is
 
-- [ ] Task 4: Wire into `SoundFontPlayer` or as standalone (AC: #6)
-  - [ ] Decide whether `SoundFontStepSequencer` is a separate class using `SoundFontEngine` directly, or exposed via `SoundFontPlayer`
-  - [ ] If standalone: add factory method or init that accepts the shared `SoundFontEngine`
-  - [ ] Ensure mutual exclusion with `RhythmPlayer.play()` — cannot run a step sequencer and a pattern simultaneously on the same engine
+- [x] Task 4: Wire into `SoundFontPlayer` or as standalone (AC: #6)
+  - [x] Decide whether `SoundFontStepSequencer` is a separate class using `SoundFontEngine` directly, or exposed via `SoundFontPlayer`
+  - [x] If standalone: add factory method or init that accepts the shared `SoundFontEngine`
+  - [x] Ensure mutual exclusion with `RhythmPlayer.play()` — cannot run a step sequencer and a pattern simultaneously on the same engine
 
-- [ ] Task 5: Write comprehensive tests (AC: #7)
-  - [ ] Create `PeachTests/Core/Audio/SoundFontStepSequencerTests.swift`
-  - [ ] Test that `start()` begins cycling and calls `stepProvider.nextCycle()` for each cycle
-  - [ ] Test that gap position produces silence (no event at that step's sample offset)
-  - [ ] Test that step 1 uses accent velocity (127) and other steps use normal velocity (100)
-  - [ ] Test that `stop()` halts playback
-  - [ ] Test that restarting after stop works
-  - [ ] Test multiple cycles with changing gap positions
-  - [ ] Create `PeachTests/Mocks/MockStepProvider.swift`
+- [x] Task 5: Write comprehensive tests (AC: #7)
+  - [x] Create `PeachTests/Core/Audio/SoundFontStepSequencerTests.swift`
+  - [x] Test that `start()` begins cycling and calls `stepProvider.nextCycle()` for each cycle
+  - [x] Test that gap position produces silence (no event at that step's sample offset)
+  - [x] Test that step 1 uses accent velocity (127) and other steps use normal velocity (100)
+  - [x] Test that `stop()` halts playback
+  - [x] Test that restarting after stop works
+  - [x] Test multiple cycles with changing gap positions
+  - [x] Create `PeachTests/Mocks/MockStepProvider.swift`
 
-- [ ] Task 6: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 6: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions (1471 passed)
 
 ## Dev Notes
 
@@ -114,3 +114,35 @@ At tempo T BPM, one sixteenth note = `60.0 / (T * 4)` seconds. One cycle = 4 six
 - [Source: Peach/Core/Music/MIDINote.swift — MIDINote(76) click note]
 - [Source: Peach/Core/Music/MIDIVelocity.swift — velocity type]
 - [Source: docs/project-context.md — project rules and conventions]
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Domain types (`StepPosition`, `CycleDefinition`, `StepVelocity`, `StepProvider`, `StepSequencer`) defined in `StepSequencer.swift`
+- `SoundFontStepSequencer` uses batch scheduling via `SoundFontEngine.scheduleEvents()` for sample-accurate timing within each batch (500 cycles ≈ 8+ minutes per batch, auto-replenished)
+- Event building extracted as static testable methods (`buildCycleEvents`, `buildBatch`)
+- UI tracking via separate Task loop that updates `@Observable` properties (`currentStep`, `currentCycle`)
+- Standalone class sharing `SoundFontEngine` channel 1 with rhythm player — mutual exclusion through shared channel (starting one replaces the other's scheduled events)
+
+### Completion Notes
+
+- All 6 tasks completed: domain types, engine implementation, UI observables, PeachApp wiring, comprehensive tests, full regression suite
+- 44 new tests (12 domain + 32 sequencer), 1471 total pass
+- `StepProvider` and `StepSequencer` protocols not marked `Sendable` — they're MainActor-isolated by default, which satisfies Sendable via actor isolation
+- `SoundFontStepSequencer` uses `@Observable` for `currentStep`/`currentCycle` per project conventions
+
+## File List
+
+- `Peach/Core/Audio/StepSequencer.swift` (new) — domain types and protocols
+- `Peach/Core/Audio/SoundFontStepSequencer.swift` (new) — engine implementation
+- `Peach/App/PeachApp.swift` (modified) — stepSequencer instantiation and injection
+- `Peach/App/EnvironmentKeys.swift` (modified) — `@Entry var stepSequencer`
+- `PeachTests/Core/Audio/StepSequencerTests.swift` (new) — domain type tests
+- `PeachTests/Core/Audio/SoundFontStepSequencerTests.swift` (new) — sequencer tests
+- `PeachTests/Mocks/MockStepProvider.swift` (new) — test mock
+- `docs/implementation-artifacts/sprint-status.yaml` (modified) — epic 54 + story status
+
+## Change Log
+
+- 2026-03-22: Implemented Story 54.1 — StepSequencer protocol and SoundFontStepSequencer audio engine with batch scheduling, observable UI state, and comprehensive test coverage
