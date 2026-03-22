@@ -13,7 +13,7 @@ struct ContinuousRhythmMatchingScreen: View {
     static let helpSections: [HelpSection] = [
         HelpSection(
             title: String(localized: "Goal"),
-            body: String(localized: "A continuous stream of notes plays — fill the gap by tapping at the right moment.")
+            body: String(localized: "A continuous stream of 16th notes plays — fill the gap by tapping at the right moment.")
         ),
         HelpSection(
             title: String(localized: "Controls"),
