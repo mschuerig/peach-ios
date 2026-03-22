@@ -22,6 +22,7 @@ enum TrainingDiscipline: CaseIterable {
     case intervalPitchMatching
     case rhythmOffsetDetection
     case rhythmMatching
+    case continuousRhythmMatching
 
     var config: TrainingDisciplineConfig {
         switch self {
@@ -31,6 +32,7 @@ enum TrainingDiscipline: CaseIterable {
         case .intervalPitchMatching: .intervalPitchMatching
         case .rhythmOffsetDetection: .rhythmOffsetDetection
         case .rhythmMatching: .rhythmMatching
+        case .continuousRhythmMatching: .continuousRhythmMatching
         }
     }
 
@@ -39,7 +41,7 @@ enum TrainingDiscipline: CaseIterable {
         case .unisonPitchDiscrimination, .intervalPitchDiscrimination,
              .unisonPitchMatching, .intervalPitchMatching:
             [.pitch(self)]
-        case .rhythmOffsetDetection, .rhythmMatching:
+        case .rhythmOffsetDetection, .rhythmMatching, .continuousRhythmMatching:
             TempoRange.defaultRanges.flatMap { range in
                 RhythmDirection.allCases.map { direction in
                     .rhythm(self, range, direction)
@@ -56,6 +58,7 @@ enum TrainingDiscipline: CaseIterable {
         case .intervalPitchMatching: "interval-matching"
         case .rhythmOffsetDetection: "rhythm-offset-detection"
         case .rhythmMatching: "rhythm-matching"
+        case .continuousRhythmMatching: "continuous-rhythm-matching"
         }
     }
 }

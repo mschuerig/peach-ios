@@ -484,4 +484,63 @@ struct PerceptualProfileTests {
         #expect(profile.trainedTempoRanges.isEmpty)
         #expect(profile.rhythmOverallAccuracy == nil)
     }
+
+    // MARK: - Continuous Rhythm Matching via Observer
+
+    @Test("ContinuousRhythmMatchingObserver routes to correct key with early mean offset")
+    func continuousRhythmMatchingObserverEarlyOffset() async {
+        let profile = PerceptualProfile()
+
+        let trial = CompletedContinuousRhythmMatchingTrial(
+            tempo: TempoBPM(100),
+            gapResults: [
+                GapResult(position: .first, offset: RhythmOffset(.milliseconds(-15))),
+                GapResult(position: .third, offset: RhythmOffset(.milliseconds(-5)))
+            ]
+        )
+        profile.continuousRhythmMatchingCompleted(trial)
+
+        let stats = profile.statistics(for: .rhythm(.continuousRhythmMatching, .medium, .early))
+        #expect(stats?.recordCount == 1)
+        #expect(abs((stats?.welfordMean ?? 0) - 10.0) < 0.01) // abs(mean of -15, -5 = -10) = 10
+    }
+
+    @Test("ContinuousRhythmMatchingObserver routes to correct key with late mean offset")
+    func continuousRhythmMatchingObserverLateOffset() async {
+        let profile = PerceptualProfile()
+
+        let trial = CompletedContinuousRhythmMatchingTrial(
+            tempo: TempoBPM(130),
+            gapResults: [
+                GapResult(position: .first, offset: RhythmOffset(.milliseconds(20))),
+                GapResult(position: .second, offset: RhythmOffset(.milliseconds(10)))
+            ]
+        )
+        profile.continuousRhythmMatchingCompleted(trial)
+
+        let stats = profile.statistics(for: .rhythm(.continuousRhythmMatching, .fast, .late))
+        #expect(stats?.recordCount == 1)
+        #expect(abs((stats?.welfordMean ?? 0) - 15.0) < 0.01) // abs(mean of 20, 10 = 15) = 15
+    }
+
+    @Test("ContinuousRhythmMatchingObserver skips trials with no hits")
+    func continuousRhythmMatchingObserverSkipsNoHits() async {
+        let profile = PerceptualProfile()
+
+        let trial = CompletedContinuousRhythmMatchingTrial(
+            tempo: TempoBPM(100),
+            gapResults: [
+                GapResult(position: .first, offset: nil),
+                GapResult(position: .second, offset: nil)
+            ]
+        )
+        profile.continuousRhythmMatchingCompleted(trial)
+
+        // No rhythm stats should exist for any tempo range / direction
+        for range in TempoRange.defaultRanges {
+            for direction in RhythmDirection.allCases {
+                #expect(profile.statistics(for: .rhythm(.continuousRhythmMatching, range, direction)) == nil)
+            }
+        }
+    }
 }

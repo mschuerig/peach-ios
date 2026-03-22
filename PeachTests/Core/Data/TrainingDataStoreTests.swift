@@ -11,13 +11,13 @@ struct TrainingDataStoreTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     private func makeFileBasedContainer() throws -> ModelContainer {
         let tempDir = FileManager.default.temporaryDirectory
         let config = ModelConfiguration(url: tempDir.appendingPathComponent("test-\(UUID().uuidString).store"))
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     // MARK: - Save and Fetch Tests
@@ -645,5 +645,140 @@ struct TrainingDataStoreTests {
         #expect(fetched[0].tempoBPM == 90)
         #expect(fetched[0].userOffsetMs == 8.0)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+    }
+
+    // MARK: - Continuous Rhythm Matching CRUD Tests
+
+    @Test("Save and retrieve a single continuous rhythm matching record")
+    func saveAndRetrieveContinuousRhythmMatchingRecord() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let timestamp = Date()
+        let breakdownJSON = try JSONEncoder().encode([PositionBreakdown(position: 0, hitCount: 3, missCount: 1, meanOffsetMs: -5.0)])
+        let record = ContinuousRhythmMatchingRecord(
+            tempoBPM: 120,
+            meanOffsetMs: -8.5,
+            hitRate: 75.0,
+            gapPositionBreakdownJSON: breakdownJSON,
+            cycleCount: 4,
+            timestamp: timestamp
+        )
+
+        try store.save(record)
+
+        let fetched = try store.fetchAllContinuousRhythmMatchings()
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].tempoBPM == 120)
+        #expect(fetched[0].meanOffsetMs == -8.5)
+        #expect(fetched[0].hitRate == 75.0)
+        #expect(fetched[0].cycleCount == 4)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+    }
+
+    @Test("FetchAllContinuousRhythmMatchings returns records in timestamp order")
+    func fetchContinuousRhythmMatchingsInOrder() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let now = Date()
+        let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
+        let record1 = ContinuousRhythmMatchingRecord(tempoBPM: 80, meanOffsetMs: -5.0, hitRate: 60.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 2, timestamp: now.addingTimeInterval(-60))
+        let record2 = ContinuousRhythmMatchingRecord(tempoBPM: 100, meanOffsetMs: 2.0, hitRate: 80.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 4, timestamp: now.addingTimeInterval(-30))
+        let record3 = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: 0.5, hitRate: 90.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 6, timestamp: now)
+
+        try store.save(record1)
+        try store.save(record2)
+        try store.save(record3)
+
+        let fetched = try store.fetchAllContinuousRhythmMatchings()
+
+        #expect(fetched.count == 3)
+        #expect(fetched[0].tempoBPM == 80)
+        #expect(fetched[1].tempoBPM == 100)
+        #expect(fetched[2].tempoBPM == 120)
+    }
+
+    @Test("deleteAllContinuousRhythmMatchings deletes only continuous rhythm matching records")
+    func deleteAllContinuousRhythmMatchingsOnly() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
+        let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, hitRate: 80.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 4)
+        try store.save(continuousRecord)
+
+        let rhythmMatchRecord = RhythmMatchingRecord(tempoBPM: 100, userOffsetMs: 3.0)
+        try store.save(rhythmMatchRecord)
+
+        try store.deleteAllContinuousRhythmMatchings()
+
+        let continuous = try store.fetchAllContinuousRhythmMatchings()
+        #expect(continuous.isEmpty)
+
+        let rhythmMatchings = try store.fetchAllRhythmMatchings()
+        #expect(rhythmMatchings.count == 1)
+    }
+
+    @Test("deleteAll removes continuous rhythm matching records too")
+    func deleteAllIncludesContinuousRhythmMatching() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let emptyJSON = try JSONEncoder().encode([PositionBreakdown]())
+        let record = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0, hitRate: 80.0, gapPositionBreakdownJSON: emptyJSON, cycleCount: 4)
+        try store.save(record)
+
+        try store.deleteAll()
+
+        let fetched = try store.fetchAllContinuousRhythmMatchings()
+        #expect(fetched.isEmpty)
+    }
+
+    // MARK: - ContinuousRhythmMatchingObserver Conformance Tests
+
+    @Test("ContinuousRhythmMatchingObserver conformance saves record with correct fields")
+    func continuousRhythmMatchingObserverSaves() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let timestamp = Date()
+        let gapResults = [
+            GapResult(position: .first, offset: RhythmOffset(.milliseconds(-10))),
+            GapResult(position: .third, offset: RhythmOffset(.milliseconds(5))),
+            GapResult(position: .second, offset: nil)
+        ]
+        let trial = CompletedContinuousRhythmMatchingTrial(
+            tempo: TempoBPM(120),
+            gapResults: gapResults,
+            timestamp: timestamp
+        )
+
+        store.continuousRhythmMatchingCompleted(trial)
+
+        let fetched = try store.fetchAllContinuousRhythmMatchings()
+
+        #expect(fetched.count == 1)
+        #expect(fetched[0].tempoBPM == 120)
+        #expect(fetched[0].cycleCount == 3)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+
+        let breakdowns = try JSONDecoder().decode([PositionBreakdown].self, from: fetched[0].gapPositionBreakdownJSON)
+        #expect(breakdowns.count == 3)
+        // Sorted by position
+        #expect(breakdowns[0].position == 0) // .first
+        #expect(breakdowns[0].hitCount == 1)
+        #expect(breakdowns[0].missCount == 0)
+        #expect(breakdowns[1].position == 1) // .second
+        #expect(breakdowns[1].hitCount == 0)
+        #expect(breakdowns[1].missCount == 1)
+        #expect(breakdowns[2].position == 2) // .third
+        #expect(breakdowns[2].hitCount == 1)
     }
 }

@@ -78,4 +78,11 @@ extension TrainingDisciplineConfig {
         optimalBaseline: 20.0,
         statistics: .default
     )
+
+    static let continuousRhythmMatching = TrainingDisciplineConfig(
+        displayName: String(localized: "Fill the Gap – Rhythm"),
+        unitLabel: String(localized: "ms"),
+        optimalBaseline: 20.0,
+        statistics: .default
+    )
 }

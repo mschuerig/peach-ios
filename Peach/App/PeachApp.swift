@@ -32,7 +32,8 @@ struct PeachApp: App {
                 for: PitchDiscriminationRecord.self,
                 PitchMatchingRecord.self,
                 RhythmOffsetDetectionRecord.self,
-                RhythmMatchingRecord.self
+                RhythmMatchingRecord.self,
+                ContinuousRhythmMatchingRecord.self
             )
             _modelContainer = State(wrappedValue: container)
 
@@ -312,7 +313,7 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
     ) -> ContinuousRhythmMatchingSession {
-        let observers: [ContinuousRhythmMatchingObserver] = []
+        let observers: [ContinuousRhythmMatchingObserver] = [dataStore, profile]
         return ContinuousRhythmMatchingSession(
             stepSequencer: stepSequencer,
             observers: observers

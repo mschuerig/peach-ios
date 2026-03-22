@@ -10,7 +10,7 @@ struct TrainingDataImporterTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     private func makeStore() throws -> TrainingDataStore {

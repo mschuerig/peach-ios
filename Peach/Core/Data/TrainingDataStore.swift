@@ -67,6 +67,7 @@ final class TrainingDataStore {
                 try modelContext.delete(model: PitchMatchingRecord.self)
                 try modelContext.delete(model: RhythmOffsetDetectionRecord.self)
                 try modelContext.delete(model: RhythmMatchingRecord.self)
+                try modelContext.delete(model: ContinuousRhythmMatchingRecord.self)
             }
         } catch {
             throw DataStoreError.deleteFailed("Failed to delete all records: \(error.localizedDescription)")
@@ -83,7 +84,8 @@ final class TrainingDataStore {
         pitchDiscriminations: [PitchDiscriminationRecord],
         pitchMatchings: [PitchMatchingRecord],
         rhythmOffsetDetections: [RhythmOffsetDetectionRecord],
-        rhythmMatchings: [RhythmMatchingRecord]
+        rhythmMatchings: [RhythmMatchingRecord],
+        continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = []
     ) throws {
         do {
             try modelContext.transaction {
@@ -91,6 +93,7 @@ final class TrainingDataStore {
                 try modelContext.delete(model: PitchMatchingRecord.self)
                 try modelContext.delete(model: RhythmOffsetDetectionRecord.self)
                 try modelContext.delete(model: RhythmMatchingRecord.self)
+                try modelContext.delete(model: ContinuousRhythmMatchingRecord.self)
                 for record in pitchDiscriminations {
                     modelContext.insert(record)
                 }
@@ -101,6 +104,9 @@ final class TrainingDataStore {
                     modelContext.insert(record)
                 }
                 for record in rhythmMatchings {
+                    modelContext.insert(record)
+                }
+                for record in continuousRhythmMatchings {
                     modelContext.insert(record)
                 }
             }
@@ -172,6 +178,39 @@ final class TrainingDataStore {
             }
         } catch {
             throw DataStoreError.deleteFailed("Failed to delete all rhythm matching records: \(error.localizedDescription)")
+        }
+    }
+
+    // MARK: - Continuous Rhythm Matching CRUD
+
+    func save(_ record: ContinuousRhythmMatchingRecord) throws {
+        do {
+            try modelContext.transaction {
+                modelContext.insert(record)
+            }
+        } catch {
+            throw DataStoreError.saveFailed("Failed to save ContinuousRhythmMatchingRecord: \(error.localizedDescription)")
+        }
+    }
+
+    func fetchAllContinuousRhythmMatchings() throws -> [ContinuousRhythmMatchingRecord] {
+        let descriptor = FetchDescriptor<ContinuousRhythmMatchingRecord>(
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+        do {
+            return try modelContext.fetch(descriptor)
+        } catch {
+            throw DataStoreError.fetchFailed("Failed to fetch continuous rhythm matching records: \(error.localizedDescription)")
+        }
+    }
+
+    func deleteAllContinuousRhythmMatchings() throws {
+        do {
+            try modelContext.transaction {
+                try modelContext.delete(model: ContinuousRhythmMatchingRecord.self)
+            }
+        } catch {
+            throw DataStoreError.deleteFailed("Failed to delete all continuous rhythm matching records: \(error.localizedDescription)")
         }
     }
 
@@ -303,6 +342,56 @@ extension TrainingDataStore: PitchDiscriminationObserver {
         } catch {
             // Unexpected error - log but don't propagate
             Self.logger.warning("Pitch discrimination unexpected error: \(error.localizedDescription)")
+        }
+    }
+}
+
+// MARK: - ContinuousRhythmMatchingObserver Conformance
+
+extension TrainingDataStore: ContinuousRhythmMatchingObserver {
+    func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial) {
+        let breakdowns = buildPositionBreakdowns(from: result.gapResults)
+        let breakdownJSON = (try? JSONEncoder().encode(breakdowns)) ?? Data()
+        let record = ContinuousRhythmMatchingRecord(
+            tempoBPM: result.tempo.value,
+            meanOffsetMs: result.meanOffsetMs ?? 0,
+            hitRate: result.hitRate,
+            gapPositionBreakdownJSON: breakdownJSON,
+            cycleCount: result.gapResults.count,
+            timestamp: result.timestamp
+        )
+        do {
+            try save(record)
+        } catch let error as DataStoreError {
+            Self.logger.warning("Continuous rhythm matching save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Continuous rhythm matching unexpected error: \(error.localizedDescription)")
+        }
+    }
+
+    private func buildPositionBreakdowns(from gapResults: [GapResult]) -> [PositionBreakdown] {
+        var grouped: [Int: (hits: Int, misses: Int, offsets: [Double])] = [:]
+        for gap in gapResults {
+            let pos = gap.position.rawValue
+            var entry = grouped[pos, default: (hits: 0, misses: 0, offsets: [])]
+            if gap.isHit {
+                entry.hits += 1
+                if let offset = gap.offset {
+                    entry.offsets.append(offset.absoluteMilliseconds)
+                }
+            } else {
+                entry.misses += 1
+            }
+            grouped[pos] = entry
+        }
+        return grouped.sorted { $0.key < $1.key }.map { pos, data in
+            let meanOffset = data.offsets.isEmpty ? 0 : data.offsets.reduce(0, +) / Double(data.offsets.count)
+            return PositionBreakdown(
+                position: pos,
+                hitCount: data.hits,
+                missCount: data.misses,
+                meanOffsetMs: meanOffset
+            )
         }
     }
 }

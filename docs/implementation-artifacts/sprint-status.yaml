@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-22 # Story 54.4 done
+# last_updated: 2026-03-22 # Story 54.5 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -415,7 +415,7 @@ development_status:
   54-2-continuous-rhythm-matching-session: done
   54-3-gap-position-settings: done
   54-4-continuous-rhythm-matching-screen: done
-  54-5-data-model-and-storage: ready-for-dev
+  54-5-data-model-and-storage: done
   54-6-start-screen-and-navigation: ready-for-dev
   54-7-profile-visualization: ready-for-dev
   54-8-csv-export-import: ready-for-dev

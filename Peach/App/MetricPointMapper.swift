@@ -12,6 +12,7 @@ enum MetricPointMapper {
         feedPitchMatchings(try dataStore.fetchAllPitchMatchings(), into: builder)
         feedRhythmOffsetDetections(try dataStore.fetchAllRhythmOffsetDetections(), into: builder)
         feedRhythmMatchings(try dataStore.fetchAllRhythmMatchings(), into: builder)
+        feedContinuousRhythmMatchings(try dataStore.fetchAllContinuousRhythmMatchings(), into: builder)
     }
 
     static func feedPitchDiscriminations(_ records: [PitchDiscriminationRecord], into builder: PerceptualProfile.Builder) {
@@ -54,6 +55,17 @@ enum MetricPointMapper {
             builder.addPoint(
                 MetricPoint(timestamp: record.timestamp, value: abs(record.userOffsetMs)),
                 for: .rhythm(.rhythmMatching, range, offset.direction)
+            )
+        }
+    }
+
+    static func feedContinuousRhythmMatchings(_ records: [ContinuousRhythmMatchingRecord], into builder: PerceptualProfile.Builder) {
+        for record in records {
+            let offset = RhythmOffset(.milliseconds(record.meanOffsetMs))
+            guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
+            builder.addPoint(
+                MetricPoint(timestamp: record.timestamp, value: abs(record.meanOffsetMs)),
+                for: .rhythm(.continuousRhythmMatching, range, offset.direction)
             )
         }
     }
