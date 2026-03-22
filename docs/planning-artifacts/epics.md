@@ -5536,3 +5536,337 @@ So that the app provides a consistent localized experience across all training m
 **Then** no trailing dots on German abbreviations (consistent with existing localization conventions)
 
 ---
+
+## Epic 54: Fill the Gap — Continuous Rhythm Matching
+
+Continuous step-sequencer-style rhythm matching training, built as a new training discipline alongside the existing rhythm matching mode (Epic 49). A looping 4-step cycle of 16th notes plays at the user's tempo with beat-1 accent. One step per cycle is a silent gap — the user fills it by tapping at the right moment. Gap positions are configurable in settings; when multiple are enabled, each cycle randomly selects one. Taps are silently evaluated against a timing window around the gap. A trial aggregates 16 consecutive cycles into a single statistical unit; incomplete trials are discarded on exit.
+
+### Story 54.1: StepSequencer Protocol and Audio Engine
+
+As a **developer**,
+I want a `StepSequencer` protocol and audio engine implementation that loops a 4-step cycle with callback-driven step configuration,
+so that continuous rhythm training has sample-accurate, indefinitely looping playback with per-cycle gap selection.
+
+**Acceptance Criteria:**
+
+**Given** a `StepSequencer` protocol
+**When** inspected
+**Then** it exposes `start(tempo:stepProvider:)` and `stop()` methods, where `StepProvider` supplies a `CycleDefinition` at the top of each 4-step loop
+
+**Given** `start()` is called with a tempo and step provider
+**When** the sequencer runs
+**Then** it plays a continuous loop of 4 sixteenth notes at the given tempo, calling back to the step provider at each cycle boundary for the next `CycleDefinition`
+
+**Given** a `CycleDefinition` with a gap at position N
+**When** the cycle plays
+**Then** step 1 plays at accent velocity (127), non-gap steps 2–4 play at normal velocity (100), and the gap step is pure silence (no MIDI event)
+
+**Given** the sequencer is running
+**When** `stop()` is called
+**Then** playback ceases immediately and the sequencer can be restarted
+
+**Given** the sequencer completes a cycle
+**When** the next cycle begins
+**Then** it calls `stepProvider.nextCycle()` to get the gap position for the upcoming cycle
+
+**Given** the underlying audio infrastructure
+**When** the sequencer schedules events
+**Then** it reuses `SoundFontEngine` for sample-accurate MIDI event rendering on the audio thread, with no allocations or locks during rendering
+
+**Given** unit tests with a mock audio engine
+**When** the sequencer is tested
+**Then** cycle timing, gap silence, accent velocity, and stop behavior are verified
+
+### Story 54.2: ContinuousRhythmMatchingSession
+
+As a **developer**,
+I want a `ContinuousRhythmMatchingSession` that acts as the step provider, evaluates tap timing against gap windows, counts cycles, and aggregates 16 cycles into a single trial,
+so that the continuous rhythm matching training loop works end-to-end.
+
+**Acceptance Criteria:**
+
+**Given** `ContinuousRhythmMatchingSession` conforms to `TrainingSession` and `StepProvider`
+**When** inspected
+**Then** it manages the step sequencer lifecycle and provides `CycleDefinition` per cycle
+
+**Given** `start()` is called
+**When** the session begins
+**Then** it starts the step sequencer at the configured tempo, providing itself as the `StepProvider`
+
+**Given** the step provider is called for `nextCycle()`
+**When** multiple gap positions are enabled
+**Then** it randomly selects one of the enabled positions; when exactly one is enabled, it always uses that position
+
+**Given** the user taps
+**When** the tap falls within the evaluation window (±50% of one sixteenth-note duration centered on the gap)
+**Then** the session records the signed offset and marks the gap as hit
+
+**Given** the user taps
+**When** the tap falls outside the evaluation window
+**Then** the tap is silently ignored — no feedback, no recording
+
+**Given** the user does not tap during a gap's evaluation window
+**When** the window closes
+**Then** the gap is recorded as a miss
+
+**Given** 16 consecutive gap evaluations have been recorded (hits + misses)
+**When** the cycle count reaches 16
+**Then** the session packages a `CompletedContinuousRhythmMatchingTrial` with aggregate statistics and notifies observers, then resets the cycle counter and begins the next trial
+
+**Given** `stop()` is called or an interruption occurs
+**When** the current trial has fewer than 16 cycles
+**Then** the incomplete trial is discarded
+
+**Given** the session is `@Observable`
+**When** state changes
+**Then** the screen can observe: `isRunning`, `currentStep`, `currentGapPosition`, `cyclesInCurrentTrial`, `lastTrialResult`
+
+**Given** unit tests with mock step sequencer and mock observers
+**When** all behaviors are tested
+**Then** full coverage of gap selection, tap evaluation, trial aggregation, and interruption
+
+### Story 54.3: Gap Position Settings
+
+As a **musician using Peach**,
+I want to select which gap positions (1–4) are enabled for continuous rhythm matching,
+so that I can focus my training on specific subdivisions within the beat.
+
+**Acceptance Criteria:**
+
+**Given** `ContinuousRhythmMatchingSettings`
+**When** inspected
+**Then** it has `enabledGapPositions: Set<StepPosition>` (default: all four enabled) and `tempo: TempoBPM`
+
+**Given** the Settings Screen
+**When** the user navigates to it
+**Then** a "Gap Positions" section is visible with toggles for positions 1–4, labeled with their musical function (e.g., "Beat", "E", "And", "A")
+
+**Given** the gap position toggles
+**When** the user disables a position
+**Then** it is removed from the enabled set; when all other positions are disabled, the last remaining position cannot be disabled (at least one must be enabled)
+
+**Given** the settings are persisted via `@AppStorage`
+**When** the app restarts
+**Then** the enabled gap positions are restored
+
+**Given** `ContinuousRhythmMatchingSettings.from(_ userSettings:)`
+**When** called
+**Then** it reads the user's tempo and gap position preferences from `UserSettings`
+
+**Given** unit tests
+**When** settings serialization and validation are tested
+**Then** encoding/decoding of `Set<StepPosition>` round-trips correctly and the "at least one" invariant holds
+
+### Story 54.4: Continuous Rhythm Matching Screen
+
+As a **musician using Peach**,
+I want a training screen with four dots that show my position in the beat cycle and which note is the gap, plus a tap button to fill the gap,
+so that I can train my rhythmic timing in a continuous, groove-locked flow.
+
+**Acceptance Criteria:**
+
+**Given** the Continuous Rhythm Matching Screen
+**When** displayed
+**Then** it shows four horizontal dots and a full-width Tap button below
+
+**Given** the four dots
+**When** the sequencer advances through steps
+**Then** the current step's dot is highlighted (filled/bright), and dots for completed steps dim back down
+
+**Given** the gap position for the current cycle
+**When** the dots are displayed
+**Then** the gap dot is rendered as an outline circle while non-gap dots are filled, updating at the start of each cycle
+
+**Given** the step-1 dot
+**When** displayed
+**Then** it is visually bolder/larger than dots 2–4, reflecting the beat-1 accent
+
+**Given** the Tap button
+**When** displayed
+**Then** it is full-width, `.borderedProminent`, always visually active — never disabled or dimmed
+
+**Given** the user taps
+**When** inside the evaluation window
+**Then** brief visual feedback appears on the gap dot (green/yellow/red color based on timing accuracy)
+
+**Given** the user taps
+**When** outside the evaluation window
+**Then** no visual feedback occurs
+
+**Given** a trial completes (16 cycles)
+**When** the result is available
+**Then** a stats summary updates showing the trial's hit rate and mean offset
+
+**Given** `onAppear`
+**When** the screen loads
+**Then** the step sequencer starts immediately
+
+**Given** `onDisappear` or interruption
+**When** the screen exits
+**Then** the session stops and any incomplete trial is discarded
+
+**Given** VoiceOver is active
+**When** the Tap button is focused
+**Then** it reads "Tap" with hint "Tap to fill the gap in the rhythm"
+
+### Story 54.5: Data Model and Storage
+
+As a **developer**,
+I want a `ContinuousRhythmMatchingRecord` SwiftData model and `TrainingDataStore` integration,
+so that continuous rhythm matching trials are persisted and available for profile visualization and export.
+
+**Acceptance Criteria:**
+
+**Given** `ContinuousRhythmMatchingRecord` as a SwiftData `@Model`
+**When** inspected
+**Then** it stores: `tempoBPM: Int`, `meanOffsetMs: Double`, `hitRate: Double`, `gapPositionBreakdown: Data` (encoded JSON), `cycleCount: Int`, `timestamp: Date`
+
+**Given** `TrainingDataStore`
+**When** it conforms to `ContinuousRhythmMatchingObserver`
+**Then** `continuousRhythmMatchingCompleted(_:)` converts the trial to a record and persists it
+
+**Given** `TrainingDataStore`
+**When** CRUD methods are called
+**Then** `save`, `fetchAll`, and `deleteAll` operations work for `ContinuousRhythmMatchingRecord`
+
+**Given** `PerceptualProfile`
+**When** it conforms to `ContinuousRhythmMatchingObserver`
+**Then** it updates rhythm statistics keyed by `TempoRange` using the trial's mean offset
+
+**Given** `TrainingDisciplineConfig`
+**When** a `.continuousRhythmMatching` discipline is registered
+**Then** it has appropriate display name, unit label, and optimal baseline
+
+**Given** `ProgressTimeline`
+**When** extended for the new discipline
+**Then** it tracks trend data for continuous rhythm matching
+
+**Given** unit tests
+**When** all data operations are tested
+**Then** save/fetch/delete, observer conversion, and profile update are verified
+
+### Story 54.6: Start Screen and Navigation
+
+As a **musician using Peach**,
+I want a dedicated button on the Start Screen to launch continuous rhythm matching training,
+so that I can access the new training mode alongside existing modes.
+
+**Acceptance Criteria:**
+
+**Given** `NavigationDestination`
+**When** inspected
+**Then** it includes a `.continuousRhythmMatching` case
+
+**Given** the Start Screen
+**When** displayed
+**Then** a 7th training button appears in the Rhythm section labeled "Fill the Gap" with an appropriate SF Symbol icon
+
+**Given** the 7th button
+**When** tapped
+**Then** it navigates to `ContinuousRhythmMatchingScreen`
+
+**Given** the Start Screen layout
+**When** displayed in portrait
+**Then** the Rhythm section accommodates 3 buttons; in landscape, the grid layout adapts
+
+**Given** the `navigationDestination` modifier
+**When** `.continuousRhythmMatching` is pushed
+**Then** `ContinuousRhythmMatchingScreen` is rendered with proper environment injection
+
+**Given** VoiceOver
+**When** the button is focused
+**Then** it reads the training mode name with an appropriate hint
+
+### Story 54.7: Profile Visualization
+
+As a **musician using Peach**,
+I want to see my continuous rhythm matching progress in the Profile Screen,
+so that I can track my gap-filling accuracy across tempos and over time.
+
+**Acceptance Criteria:**
+
+**Given** the Profile Screen
+**When** the user has continuous rhythm matching data
+**Then** a profile card appears showing the EWMA of recent accuracy with a trend arrow
+
+**Given** the spectrogram view
+**When** continuous rhythm matching data exists
+**Then** it renders alongside or integrated with the existing rhythm spectrogram, showing tempo × time accuracy with green/yellow/red color coding
+
+**Given** tap-to-detail on a spectrogram cell
+**When** tapped
+**Then** it shows hit rate and mean offset for that tempo/time bucket
+
+**Given** no continuous rhythm matching data
+**When** the profile is displayed
+**Then** the card shows an appropriate empty state
+
+**Given** VoiceOver
+**When** the profile card is focused
+**Then** it reads the accuracy value, trend, and training mode name
+
+### Story 54.8: CSV Export/Import
+
+As a **musician using Peach**,
+I want my continuous rhythm matching data included in CSV exports and importable from CSV files,
+so that my training data is portable and backed up alongside all other training records.
+
+**Acceptance Criteria:**
+
+**Given** `CSVExportSchemaV2`
+**When** extended
+**Then** it supports a `continuousRhythmMatching` training type with columns for: `tempoBPM`, `meanOffsetMs`, `hitRate`, `cycleCount`, `timestamp`
+
+**Given** `CSVImportParserV2`
+**When** it encounters a `continuousRhythmMatching` row
+**Then** it parses it into a `ContinuousRhythmMatchingRecord` with validation
+
+**Given** export
+**When** the user exports data
+**Then** all `ContinuousRhythmMatchingRecord` entries are included alongside existing training types
+
+**Given** import with merge
+**When** duplicate detection runs
+**Then** continuous rhythm matching records are deduplicated by `timestamp + tempoBPM + trainingType`
+
+**Given** a V2 CSV without `continuousRhythmMatching` rows
+**When** imported
+**Then** it imports successfully — the new type is optional
+
+**Given** unit tests
+**When** export/import round-trip is tested
+**Then** continuous rhythm matching records survive the cycle intact
+
+### Story 54.9: Localization
+
+As a **musician using Peach**,
+I want all continuous rhythm matching UI text available in English and German,
+so that the app communicates clearly in both languages.
+
+**Acceptance Criteria:**
+
+**Given** the continuous rhythm matching screen
+**When** displayed in German
+**Then** all UI text (button labels, stats, feedback, help content) is localized
+
+**Given** the gap position settings
+**When** displayed in German
+**Then** section headers, toggle labels, and position names are localized
+
+**Given** the Start Screen button
+**When** displayed in German
+**Then** the training mode label is localized
+
+**Given** the profile card and spectrogram
+**When** displayed in German
+**Then** all labels, empty states, and accessibility descriptions are localized
+
+**Given** VoiceOver in German
+**When** navigating the continuous rhythm matching screens
+**Then** all accessibility labels and hints are localized
+
+**Given** `bin/add-localization.swift --missing`
+**When** run
+**Then** no missing keys are reported for continuous rhythm matching strings
+
+---

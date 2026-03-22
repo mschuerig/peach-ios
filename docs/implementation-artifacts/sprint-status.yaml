@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-22 # story 53.1 created
+# last_updated: 2026-03-22 # Epic 54 stories added
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -412,3 +412,12 @@ development_status:
   # Epic 54: Fill the Gap — Continuous Rhythm Matching
   epic-54: in-progress
   54-1-step-sequencer-protocol-and-audio-engine: review
+  54-2-continuous-rhythm-matching-session: ready-for-dev
+  54-3-gap-position-settings: ready-for-dev
+  54-4-continuous-rhythm-matching-screen: ready-for-dev
+  54-5-data-model-and-storage: ready-for-dev
+  54-6-start-screen-and-navigation: ready-for-dev
+  54-7-profile-visualization: ready-for-dev
+  54-8-csv-export-import: ready-for-dev
+  54-9-localization: ready-for-dev
+  epic-54-retrospective: optional
