@@ -1,6 +1,6 @@
 # Story 54.2: ContinuousRhythmMatchingSession
 
-Status: review
+Status: done
 
 ## Story
 
