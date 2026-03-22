@@ -36,7 +36,8 @@ func makePitchDiscriminationSession(
     let profile = PerceptualProfile()
     let mockStrategy = MockNextPitchDiscriminationStrategy(comparisons: comparisons)
 
-    var observers: [PitchDiscriminationObserver] = [mockDataStore, profile]
+    let profileAdapter = PitchDiscriminationProfileAdapter(profile: profile)
+    var observers: [PitchDiscriminationObserver] = [mockDataStore, profileAdapter]
     let mockHaptic: MockHapticFeedbackManager?
     if includeHaptic {
         let haptic = MockHapticFeedbackManager()

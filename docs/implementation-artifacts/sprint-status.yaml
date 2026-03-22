@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-22 # Story 54.7 done
+# last_updated: 2026-03-22 # Story 55.1 in-progress
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -424,7 +424,7 @@ development_status:
 
   # Epic 55: Clean Seams — Discipline Decoupling
   # Work order: 55.1 before 55.2 (port protocols are a prerequisite for registry)
-  epic-55: backlog
-  55-1-extract-observer-adapters-with-port-protocols: ready-for-dev
+  epic-55: in-progress
+  55-1-extract-observer-adapters-with-port-protocols: review
   55-2-protocol-based-discipline-registry: ready-for-dev
   55-3-discipline-owned-csv-format: ready-for-dev

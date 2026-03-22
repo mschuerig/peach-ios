@@ -1,6 +1,6 @@
 # Story 55.1: Extract Observer Adapters with Port Protocols
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -52,33 +52,108 @@ Removing the RhythmMatching discipline (commit 96b0cb9) required modifying 39 no
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create port protocols (AC: #1, #2)
-  - [ ] Create `Peach/Core/Training/ProfileUpdating.swift`
-  - [ ] Create `Peach/Core/Training/TrainingRecordPersisting.swift`
+- [x] Task 1: Create port protocols (AC: #1, #2)
+  - [x] Create `Peach/Core/Training/ProfileUpdating.swift`
+  - [x] Create `Peach/Core/Data/TrainingRecordPersisting.swift` (moved to Core/Data/ to comply with SwiftData import rule)
 
-- [ ] Task 2: Conform core types to port protocols (AC: #3, #4)
-  - [ ] Make `PerceptualProfile.update` internal and conform to `ProfileUpdating`
-  - [ ] Replace four `TrainingDataStore.save` overloads with one generic method conforming to `TrainingRecordPersisting`
+- [x] Task 2: Conform core types to port protocols (AC: #3, #4)
+  - [x] Make `PerceptualProfile.update` internal and conform to `ProfileUpdating`
+  - [x] Replace four `TrainingDataStore.save` overloads with one generic method conforming to `TrainingRecordPersisting`
 
-- [ ] Task 3: Create profile adapters (AC: #7)
-  - [ ] Create adapters in each feature directory with mapping logic from current `PerceptualProfile` extensions
+- [x] Task 3: Create profile adapters (AC: #7)
+  - [x] Create adapters in each feature directory with mapping logic from current `PerceptualProfile` extensions
 
-- [ ] Task 4: Create store adapters (AC: #8)
-  - [ ] Create adapters in each feature directory with mapping logic from current `TrainingDataStore` extensions
+- [x] Task 4: Create store adapters (AC: #8)
+  - [x] Create adapters in each feature directory with mapping logic from current `TrainingDataStore` extensions
 
-- [ ] Task 5: Update `PeachApp` wiring (AC: #9)
-  - [ ] Replace direct `profile`/`dataStore` observer usage with adapter instances
+- [x] Task 5: Update `PeachApp` wiring (AC: #9)
+  - [x] Replace direct `profile`/`dataStore` observer usage with adapter instances
 
-- [ ] Task 6: Remove observer conformances from core types (AC: #5, #6)
-  - [ ] Remove all `extension PerceptualProfile: *Observer` blocks
-  - [ ] Remove all `extension TrainingDataStore: *Observer` blocks
+- [x] Task 6: Remove observer conformances from core types (AC: #5, #6)
+  - [x] Remove all `extension PerceptualProfile: *Observer` blocks
+  - [x] Remove all `extension TrainingDataStore: *Observer` blocks
 
-- [ ] Task 7: Move discipline-specific types out of `Core/Training/` (AC: #10, #11)
-  - [ ] Move observer protocols, completed trial types, and settings types to feature directories
-  - [ ] Update any import paths if needed
+- [x] Task 7: Move discipline-specific types out of `Core/Training/` (AC: #10, #11)
+  - [x] Move observer protocols, completed trial types, and settings types to feature directories
+  - [x] No import path changes needed (single-module app)
 
-- [ ] Task 8: Run full test suite (AC: #12)
-  - [ ] All tests pass, zero regressions
+- [x] Task 8: Run full test suite (AC: #12)
+  - [x] All 1496 tests pass, zero regressions
+
+## Dev Agent Record
+
+### Implementation Plan
+Ports-and-adapters refactoring: created ProfileUpdating and TrainingRecordPersisting port protocols, created 8 adapter structs (4 profile + 4 store) in feature directories, rewired PeachApp composition root to use adapters, removed all observer conformances from PerceptualProfile and TrainingDataStore, moved 12 discipline-specific files from Core/Training/ to feature directories.
+
+### Debug Log
+- TrainingRecordPersisting initially placed in Core/Training/ but `import SwiftData` violated the dependency rule (only Core/Data/ may import SwiftData). Moved to Core/Data/.
+- PeachApp `createPitchMatchingSession` was using implicit return; adding adapter variables required explicit `return`.
+- EnvironmentKeys.swift default `pitchDiscriminationSession` was passing `profile` in observer array; fixed to use only `dataStore`.
+- 11 test files updated to route observer calls through adapters instead of calling observer methods directly on PerceptualProfile/TrainingDataStore.
+
+### Completion Notes
+All 12 acceptance criteria satisfied:
+- AC #1-2: Port protocols exist (ProfileUpdating in Core/Training/, TrainingRecordPersisting in Core/Data/)
+- AC #3-4: Core types conform to port protocols
+- AC #5-6: Zero observer conformances on PerceptualProfile and TrainingDataStore
+- AC #7-8: 8 adapters in 4 feature directories
+- AC #9: PeachApp wires adapters in all 4 session factory methods
+- AC #10: 12 discipline-specific files moved to feature directories
+- AC #11: Core/Training/ contains only Resettable.swift and ProfileUpdating.swift (domain-generic)
+- AC #12: All 1496 tests pass
+
+## File List
+
+### New Files
+- Peach/Core/Training/ProfileUpdating.swift
+- Peach/Core/Data/TrainingRecordPersisting.swift
+- Peach/PitchDiscrimination/PitchDiscriminationProfileAdapter.swift
+- Peach/PitchDiscrimination/PitchDiscriminationStoreAdapter.swift
+- Peach/PitchMatching/PitchMatchingProfileAdapter.swift
+- Peach/PitchMatching/PitchMatchingStoreAdapter.swift
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionProfileAdapter.swift
+- Peach/RhythmOffsetDetection/RhythmOffsetDetectionStoreAdapter.swift
+- Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingProfileAdapter.swift
+- Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingStoreAdapter.swift
+
+### Modified Files
+- Peach/Core/Profile/PerceptualProfile.swift (removed observer conformances, made update internal, added ProfileUpdating conformance)
+- Peach/Core/Data/TrainingDataStore.swift (removed observer conformances, replaced 4 save overloads with 1 generic, added TrainingRecordPersisting conformance)
+- Peach/App/PeachApp.swift (wired adapters in all 4 session factory methods)
+- Peach/App/EnvironmentKeys.swift (removed profile from preview observer array)
+- PeachTests/Core/Profile/PerceptualProfileTests.swift (use adapters)
+- PeachTests/Core/Profile/PitchMatchingProfileTests.swift (use adapters)
+- PeachTests/Core/Profile/ProgressTimelineTests.swift (use adapters)
+- PeachTests/Core/Data/TrainingDataStoreTests.swift (use adapters)
+- PeachTests/PitchDiscrimination/PitchDiscriminationTestHelpers.swift (use adapter)
+- PeachTests/PitchDiscrimination/PitchDiscriminationSessionIntegrationTests.swift (use adapter)
+- PeachTests/PitchDiscrimination/PitchDiscriminationSessionResetTests.swift (use adapters)
+- PeachTests/PitchDiscrimination/PitchDiscriminationSessionTests.swift (use adapter)
+- PeachTests/PitchDiscrimination/PitchDiscriminationSessionUserDefaultsTests.swift (use adapter)
+- PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift (use adapters)
+- PeachTests/Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategyTests.swift (use adapters)
+- PeachTests/Settings/SettingsTests.swift (use adapters)
+- PeachTests/Profile/ProfileScreenTests.swift (use adapter)
+- docs/implementation-artifacts/sprint-status.yaml (status updates)
+- docs/planning-artifacts/epics.md (added Epic 55)
+
+### Moved Files (Core/Training/ → feature directories)
+- PitchDiscriminationObserver.swift → Peach/PitchDiscrimination/
+- PitchDiscriminationSettings.swift → Peach/PitchDiscrimination/
+- PitchDiscriminationTrial.swift → Peach/PitchDiscrimination/
+- PitchMatchingObserver.swift → Peach/PitchMatching/
+- PitchMatchingSettings.swift → Peach/PitchMatching/
+- CompletedPitchMatchingTrial.swift → Peach/PitchMatching/
+- RhythmOffsetDetectionObserver.swift → Peach/RhythmOffsetDetection/
+- RhythmOffsetDetectionSettings.swift → Peach/RhythmOffsetDetection/
+- CompletedRhythmOffsetDetectionTrial.swift → Peach/RhythmOffsetDetection/
+- ContinuousRhythmMatchingObserver.swift → Peach/ContinuousRhythmMatching/
+- ContinuousRhythmMatchingSettings.swift → Peach/ContinuousRhythmMatching/
+- CompletedContinuousRhythmMatchingTrial.swift → Peach/ContinuousRhythmMatching/
+
+## Change Log
+
+- 2026-03-22: Implemented story 55.1 — extracted observer adapters with port protocols
 
 ## Dev Notes
 

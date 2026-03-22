@@ -312,7 +312,7 @@ struct TrainingDataStoreTests {
             timestamp: timestamp
         )
 
-        store.pitchMatchingCompleted(completed)
+        PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
         let fetched = try store.fetchAllPitchMatchings()
 
@@ -340,8 +340,8 @@ struct TrainingDataStoreTests {
             tuningSystem: .equalTemperament
         )
 
-        store.pitchMatchingCompleted(completed)
-        store.pitchMatchingCompleted(completed)
+        PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
+        PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
         let fetched = try store.fetchAllPitchMatchings()
         #expect(fetched.count == 2)
@@ -367,7 +367,7 @@ struct TrainingDataStoreTests {
             timestamp: timestamp
         )
 
-        store.pitchDiscriminationCompleted(completed)
+        PitchDiscriminationStoreAdapter(store: store).pitchDiscriminationCompleted(completed)
 
         let fetched = try store.fetchAllPitchDiscriminations()
 
@@ -399,7 +399,7 @@ struct TrainingDataStoreTests {
             tuningSystem: .equalTemperament
         )
 
-        store.pitchDiscriminationCompleted(completed)
+        PitchDiscriminationStoreAdapter(store: store).pitchDiscriminationCompleted(completed)
 
         let fetched = try store.fetchAllPitchDiscriminations()
         #expect(fetched.count == 1)
@@ -424,7 +424,7 @@ struct TrainingDataStoreTests {
             tuningSystem: .equalTemperament
         )
 
-        store.pitchMatchingCompleted(completed)
+        PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
         let fetched = try store.fetchAllPitchMatchings()
         #expect(fetched.count == 1)
@@ -537,7 +537,7 @@ struct TrainingDataStoreTests {
             timestamp: timestamp
         )
 
-        store.rhythmOffsetDetectionCompleted(completed)
+        RhythmOffsetDetectionStoreAdapter(store: store).rhythmOffsetDetectionCompleted(completed)
 
         let fetched = try store.fetchAllRhythmOffsetDetections()
 
@@ -653,7 +653,7 @@ struct TrainingDataStoreTests {
             timestamp: timestamp
         )
 
-        store.continuousRhythmMatchingCompleted(trial)
+        ContinuousRhythmMatchingStoreAdapter(store: store).continuousRhythmMatchingCompleted(trial)
 
         let fetched = try store.fetchAllContinuousRhythmMatchings()
 

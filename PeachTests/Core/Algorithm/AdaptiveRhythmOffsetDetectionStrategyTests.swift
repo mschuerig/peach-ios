@@ -146,7 +146,7 @@ struct AdaptiveRhythmOffsetDetectionStrategyTests {
 
         // Train only late results — early direction should be favored
         for _ in 0..<5 {
-            profile.rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
+            RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
                 tempo: TempoBPM(80),
                 offset: RhythmOffset(.milliseconds(30)),
                 isCorrect: true
@@ -215,7 +215,7 @@ struct AdaptiveRhythmOffsetDetectionStrategyTests {
             let signedOffset = direction == .early
                 ? RhythmOffset(.zero - .milliseconds(50))
                 : offset
-            profile.rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
+            RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
                 tempo: TempoBPM(80),
                 offset: signedOffset,
                 isCorrect: true

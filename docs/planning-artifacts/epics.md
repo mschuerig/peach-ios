@@ -608,6 +608,11 @@ Continuous step-sequencer-style rhythm matching training, built as a new trainin
 **FRs covered:** FR105, FR106, FR107, FR108, FR109, FR110, FR111, FR112, FR113
 **Depends on:** Epic 48 (reuses audio infrastructure), Epic 50 (Start Screen extension)
 
+### Epic 55: Clean Seams — Discipline Decoupling
+Decouple `PerceptualProfile`, `TrainingDataStore`, `ProgressTimeline`, and the CSV pipeline from specific training disciplines using ports-and-adapters, a protocol-based registry, and discipline-owned CSV formats. Adding or removing a discipline becomes a single-point change with no modifications to shared infrastructure.
+**FRs covered:** None directly (architectural)
+**Depends on:** Epic 54 (all current disciplines must exist before decoupling)
+
 ## Epic 1: Remember Every Note — Data Foundation
 
 Every comparison the user answers is reliably stored and persists across sessions, crashes, and restarts — so that no training is ever lost. This includes establishing the Xcode project and folder structure as the implementation foundation.
@@ -5868,5 +5873,87 @@ so that the app communicates clearly in both languages.
 **Given** `bin/add-localization.swift --missing`
 **When** run
 **Then** no missing keys are reported for continuous rhythm matching strings
+
+---
+
+## Epic 55: Clean Seams — Discipline Decoupling
+
+Decouple `PerceptualProfile`, `TrainingDataStore`, `ProgressTimeline`, and the CSV pipeline from specific training disciplines. Uses ports-and-adapters for observer decoupling, a protocol-based registry to replace the `TrainingDiscipline` enum, and discipline-owned CSV formats to eliminate shared format knowledge. After this epic, adding or removing a discipline is a single-point change — register or delete — with no modifications to shared infrastructure.
+
+### Story 55.1: Extract Observer Adapters with Port Protocols
+
+As a **developer maintaining Peach**,
+I want `PerceptualProfile` and `TrainingDataStore` to have zero knowledge of specific training disciplines,
+So that adding or removing a discipline never requires modifying core infrastructure files or their tests.
+
+**Acceptance Criteria:**
+
+**Given** port protocols `ProfileUpdating` and `TrainingRecordPersisting`
+**When** defined in `Core/Training/`
+**Then** `PerceptualProfile` conforms to `ProfileUpdating` and `TrainingDataStore` conforms to `TrainingRecordPersisting`
+
+**Given** each training discipline
+**When** its observer callback fires
+**Then** a discipline-local adapter (in the feature directory) maps the result to a generic operation on the port protocol
+
+**Given** `PeachApp` (composition root)
+**When** sessions are created
+**Then** adapter instances are wired as observers instead of passing `profile` and `dataStore` directly
+
+**Given** `Core/Training/`
+**When** inspected after refactoring
+**Then** it contains only domain-generic types (`Resettable`, `ProfileUpdating`, `TrainingRecordPersisting`) and no discipline-specific files
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 55.2: Protocol-Based Discipline Registry
+
+As a **developer maintaining Peach**,
+I want training disciplines to be registered through a protocol-based registry instead of an exhaustive enum,
+So that adding or removing a discipline is a single-point change with no modifications to shared infrastructure.
+
+**Acceptance Criteria:**
+
+**Given** a `TrainingDisciplineDescriptor` protocol
+**When** each discipline conforms
+**Then** it provides its own config, metric-point mapping, and profile-loading logic
+
+**Given** a `DisciplineRegistry`
+**When** queried at startup
+**Then** it returns all registered descriptors without any switch/case enumeration
+
+**Given** `ProgressTimeline`, `MetricPointMapper`, and profile-loading
+**When** they need discipline-specific logic
+**Then** they iterate the registry instead of switching on an enum
+
+**Given** the `TrainingDiscipline` enum
+**When** refactoring is complete
+**Then** it is either removed or reduced to a simple identifier with no behavioral switches
+
+### Story 55.3: Discipline-Owned CSV Format
+
+As a **developer maintaining Peach**,
+I want each training discipline to own its CSV column definitions, row formatting, and row parsing,
+So that adding or removing a discipline never requires modifying shared CSV infrastructure.
+
+**Acceptance Criteria:**
+
+**Given** each discipline
+**When** it registers with the CSV pipeline
+**Then** it provides its own column schema, row formatter, and row parser
+
+**Given** CSV export
+**When** records are exported
+**Then** the pipeline iterates registered disciplines and delegates formatting to each
+
+**Given** CSV import
+**When** rows are parsed
+**Then** the pipeline dispatches each row to the registered parser for its training type
+
+**Given** the V1 schema and parser
+**When** the refactoring is complete
+**Then** they are removed entirely (no installed base to maintain)
 
 ---

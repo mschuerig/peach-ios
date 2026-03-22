@@ -347,11 +347,11 @@ struct SettingsTests {
         let profile = PerceptualProfile()
 
         // Add some training data via observer
-        profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(5.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
-        profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(3.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))

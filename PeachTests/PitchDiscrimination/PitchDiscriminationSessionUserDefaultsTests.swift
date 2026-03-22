@@ -54,7 +54,7 @@ struct PitchDiscriminationSessionUserDefaultsTests {
             notePlayer: mockPlayer,
             strategy: mockStrategy,
             profile: profile,
-            observers: [mockDataStore, profile]
+            observers: [mockDataStore, PitchDiscriminationProfileAdapter(profile: profile)]
         )
 
         let settings = PitchDiscriminationSettings(

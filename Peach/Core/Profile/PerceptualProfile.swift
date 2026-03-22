@@ -64,7 +64,7 @@ final class PerceptualProfile: TrainingProfile {
 
     // MARK: - Private
 
-    private func update(_ key: StatisticsKey, timestamp: Date, value: Double) {
+    func update(_ key: StatisticsKey, timestamp: Date, value: Double) {
         let point = MetricPoint(timestamp: timestamp, value: value)
         statisticsStore[key, default: TrainingDisciplineStatistics()]
             .addPoint(point, config: key.statisticsConfig)
@@ -80,56 +80,7 @@ final class PerceptualProfile: TrainingProfile {
     }
 }
 
-// MARK: - PitchDiscriminationObserver
+// MARK: - ProfileUpdating
 
-extension PerceptualProfile: PitchDiscriminationObserver {
-    func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
-        let pc = completed.trial
-        let interval = (try? Interval.between(pc.referenceNote, pc.targetNote.note))?.rawValue ?? 0
-        let isUnison = interval == 0
-        let mode: TrainingDiscipline = isUnison ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
+extension PerceptualProfile: ProfileUpdating {}
 
-        guard completed.isCorrect else { return }
-
-        update(.pitch(mode), timestamp: completed.timestamp, value: pc.targetNote.offset.magnitude)
-    }
-}
-
-// MARK: - PitchMatchingObserver
-
-extension PerceptualProfile: PitchMatchingObserver {
-    func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
-        let interval = (try? Interval.between(result.referenceNote, result.targetNote))?.rawValue ?? 0
-        let isUnison = interval == 0
-        let mode: TrainingDiscipline = isUnison ? .unisonPitchMatching : .intervalPitchMatching
-
-        update(.pitch(mode), timestamp: result.timestamp, value: result.userCentError.magnitude)
-    }
-}
-
-// MARK: - RhythmOffsetDetectionObserver
-
-extension PerceptualProfile: RhythmOffsetDetectionObserver {
-    func rhythmOffsetDetectionCompleted(_ result: CompletedRhythmOffsetDetectionTrial) {
-        guard result.isCorrect else { return }
-        guard let range = TempoRange.range(for: result.tempo) else { return }
-        update(.rhythm(.rhythmOffsetDetection, range, result.offset.direction),
-               timestamp: result.timestamp,
-               value: abs(result.offset.statisticalValue))
-    }
-}
-
-// MARK: - ContinuousRhythmMatchingObserver
-
-extension PerceptualProfile: ContinuousRhythmMatchingObserver {
-    func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial) {
-        guard !result.gapResults.isEmpty else { return }
-        guard let range = TempoRange.range(for: result.tempo) else { return }
-        let offsets = result.gapResults.map(\.offset)
-        let signedMeanMs = offsets.reduce(0.0) { $0 + $1.statisticalValue } / Double(offsets.count)
-        let direction = RhythmOffset(.milliseconds(signedMeanMs)).direction
-        update(.rhythm(.continuousRhythmMatching, range, direction),
-               timestamp: result.timestamp,
-               value: abs(signedMeanMs))
-    }
-}

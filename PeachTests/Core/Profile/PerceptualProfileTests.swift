@@ -55,7 +55,7 @@ struct PerceptualProfileTests {
     func singleUpdateSetsMean() async {
         let profile = PerceptualProfile()
 
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
 
         #expect(profile.comparisonMean(for: .prime) == 50.0)
     }
@@ -64,8 +64,8 @@ struct PerceptualProfileTests {
     func multipleUpdatesComputeMean() async {
         let profile = PerceptualProfile()
 
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 40))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 40))
 
         #expect(profile.comparisonMean(for: .prime) == 45.0) // (50+40)/2
     }
@@ -74,9 +74,9 @@ struct PerceptualProfileTests {
     func comparisonMeanComputation() async {
         let profile = PerceptualProfile()
 
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 30))
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 40))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 30))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 40))
 
         #expect(profile.comparisonMean(for: .prime) == 40.0) // (50+30+40)/3
     }
@@ -85,9 +85,9 @@ struct PerceptualProfileTests {
     func onlyCorrectAnswersContribute() async {
         let profile = PerceptualProfile()
 
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50, isCorrect: true))
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 200, isCorrect: false))
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 60, isCorrect: true))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50, isCorrect: true))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 200, isCorrect: false))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 60, isCorrect: true))
 
         #expect(profile.comparisonMean(for: .prime) == 55.0) // (50+60)/2, incorrect answer excluded
     }
@@ -108,7 +108,7 @@ struct PerceptualProfileTests {
             tuningSystem: .equalTemperament
         )
 
-        profile.pitchDiscriminationCompleted(completed)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(completed)
 
         #expect(profile.comparisonMean(for: .up(.perfectFifth)) == 25.0)
         #expect(profile.hasData(for: .intervalPitchDiscrimination))
@@ -127,7 +127,7 @@ struct PerceptualProfileTests {
             tuningSystem: .equalTemperament
         )
 
-        profile.pitchMatchingCompleted(completed)
+        PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(completed)
 
         #expect(profile.matchingSampleCount == 1)
         let mean = try #require(profile.matchingMean)
@@ -151,7 +151,7 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile()
 
         // Unison comparison
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 10))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 10))
         // Interval comparison
         let intervalComparison = CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(
@@ -161,7 +161,7 @@ struct PerceptualProfileTests {
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
-        profile.pitchDiscriminationCompleted(intervalComparison)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(intervalComparison)
 
         #expect(profile.recordCount(for: .unisonPitchDiscrimination) == 1)
         #expect(profile.recordCount(for: .intervalPitchDiscrimination) == 1)
@@ -191,8 +191,8 @@ struct PerceptualProfileTests {
     func resetAllClearsAllModes() async {
         let profile = PerceptualProfile()
 
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 10))
-        profile.pitchMatchingCompleted(makeMatchingCompleted(centError: 5))
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 10))
+        PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(makeMatchingCompleted(centError: 5))
 
         profile.resetAll()
 
@@ -210,11 +210,11 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile()
 
         // 2 unison matching
-        profile.pitchMatchingCompleted(makeMatchingCompleted(centError: 5))
-        profile.pitchMatchingCompleted(makeMatchingCompleted(centError: 3))
+        PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(makeMatchingCompleted(centError: 5))
+        PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(makeMatchingCompleted(centError: 3))
 
         // 1 interval matching
-        profile.pitchMatchingCompleted(makeMatchingCompleted(
+        PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(makeMatchingCompleted(
             referenceNote: MIDINote(60),
             targetNote: MIDINote(67),
             centError: 8
@@ -310,7 +310,7 @@ struct PerceptualProfileTests {
             offset: RhythmOffset(.milliseconds(-20)),
             isCorrect: true
         )
-        profile.rhythmOffsetDetectionCompleted(result)
+        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(result)
 
         let stats = profile.statistics(for: .rhythm(.rhythmOffsetDetection, .fast, .early))
         #expect(stats?.recordCount == 1)
@@ -326,7 +326,7 @@ struct PerceptualProfileTests {
             offset: RhythmOffset(.milliseconds(-20)),
             isCorrect: false
         )
-        profile.rhythmOffsetDetectionCompleted(result)
+        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(result)
 
         #expect(profile.statistics(for: .rhythm(.rhythmOffsetDetection, .fast, .early)) == nil)
     }
@@ -387,7 +387,7 @@ struct PerceptualProfileTests {
             offset: RhythmOffset(.milliseconds(-10)),
             isCorrect: true
         )
-        profile.rhythmOffsetDetectionCompleted(fast)
+        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(fast)
 
         let medium = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(90),
@@ -395,7 +395,7 @@ struct PerceptualProfileTests {
                 GapResult(position: .first, offset: RhythmOffset(.milliseconds(5)))
             ]
         )
-        profile.continuousRhythmMatchingCompleted(medium)
+        ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(medium)
 
         let ranges = profile.trainedTempoRanges
         #expect(Set(ranges) == Set([TempoRange.fast, TempoRange.medium]))
@@ -408,15 +408,15 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile()
 
         // 2 samples at tempo 120 early, mean offset 20ms
-        profile.rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
+        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
             tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-15)), isCorrect: true
         ))
-        profile.rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
+        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
             tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-25)), isCorrect: true
         ))
 
         // 1 sample at tempo 90 late, mean offset 10ms
-        profile.continuousRhythmMatchingCompleted(CompletedContinuousRhythmMatchingTrial(
+        ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(90),
             gapResults: [
                 GapResult(position: .first, offset: RhythmOffset(.milliseconds(10)))
@@ -441,8 +441,8 @@ struct PerceptualProfileTests {
     func resetAllClearsEverythingIncludingRhythm() async {
         let profile = PerceptualProfile()
 
-        profile.pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
-        profile.rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
+        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
             tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-10)), isCorrect: true
         ))
 
@@ -466,7 +466,7 @@ struct PerceptualProfileTests {
                 GapResult(position: .third, offset: RhythmOffset(.milliseconds(-5)))
             ]
         )
-        profile.continuousRhythmMatchingCompleted(trial)
+        ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(trial)
 
         let stats = profile.statistics(for: .rhythm(.continuousRhythmMatching, .medium, .early))
         #expect(stats?.recordCount == 1)
@@ -484,7 +484,7 @@ struct PerceptualProfileTests {
                 GapResult(position: .second, offset: RhythmOffset(.milliseconds(10)))
             ]
         )
-        profile.continuousRhythmMatchingCompleted(trial)
+        ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(trial)
 
         let stats = profile.statistics(for: .rhythm(.continuousRhythmMatching, .fast, .late))
         #expect(stats?.recordCount == 1)
@@ -499,7 +499,7 @@ struct PerceptualProfileTests {
             tempo: TempoBPM(100),
             gapResults: []
         )
-        profile.continuousRhythmMatchingCompleted(trial)
+        ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(trial)
 
         // No rhythm stats should exist for any tempo range / direction
         for range in TempoRange.defaultRanges {

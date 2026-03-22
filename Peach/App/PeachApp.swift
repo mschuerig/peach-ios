@@ -166,22 +166,22 @@ struct PeachApp: App {
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
                     let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
-                    let newPlayer = SoundFontPlayer(
+                    let newNotePlayer = SoundFontPlayer(
                         engine: soundFontEngine,
                         preset: preset,
                         stopPropagationDelay: .zero
                     )
-                    notePlayer = newPlayer
+                    notePlayer = newNotePlayer
 
                     let strategy = KazezNoteStrategy()
                     pitchDiscriminationSession = Self.createPitchDiscriminationSession(
-                        notePlayer: newPlayer,
+                        notePlayer: newNotePlayer,
                         strategy: strategy,
                         profile: profile,
                         dataStore: dataStore
                     )
                     pitchMatchingSession = Self.createPitchMatchingSession(
-                        notePlayer: newPlayer,
+                        notePlayer: newNotePlayer,
                         profile: profile,
                         dataStore: dataStore
                     )
@@ -248,7 +248,9 @@ struct PeachApp: App {
         dataStore: TrainingDataStore
     ) -> PitchDiscriminationSession {
         let hapticManager = HapticFeedbackManager()
-        let observers: [PitchDiscriminationObserver] = [dataStore, profile, hapticManager]
+        let profileAdapter = PitchDiscriminationProfileAdapter(profile: profile)
+        let storeAdapter = PitchDiscriminationStoreAdapter(store: dataStore)
+        let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter, hapticManager]
         return PitchDiscriminationSession(
             notePlayer: notePlayer,
             strategy: strategy,
@@ -264,7 +266,9 @@ struct PeachApp: App {
         sampleRate: SampleRate
     ) -> RhythmOffsetDetectionSession {
         let hapticManager = HapticFeedbackManager()
-        let observers: [RhythmOffsetDetectionObserver] = [dataStore, profile, hapticManager]
+        let profileAdapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
+        let storeAdapter = RhythmOffsetDetectionStoreAdapter(store: dataStore)
+        let observers: [RhythmOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticManager]
         return RhythmOffsetDetectionSession(
             rhythmPlayer: rhythmPlayer,
             strategy: AdaptiveRhythmOffsetDetectionStrategy(),
@@ -279,7 +283,9 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
     ) -> ContinuousRhythmMatchingSession {
-        let observers: [ContinuousRhythmMatchingObserver] = [dataStore, profile]
+        let profileAdapter = ContinuousRhythmMatchingProfileAdapter(profile: profile)
+        let storeAdapter = ContinuousRhythmMatchingStoreAdapter(store: dataStore)
+        let observers: [ContinuousRhythmMatchingObserver] = [storeAdapter, profileAdapter]
         return ContinuousRhythmMatchingSession(
             stepSequencer: stepSequencer,
             observers: observers
@@ -291,10 +297,12 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
     ) -> PitchMatchingSession {
-        PitchMatchingSession(
+        let profileAdapter = PitchMatchingProfileAdapter(profile: profile)
+        let storeAdapter = PitchMatchingStoreAdapter(store: dataStore)
+        return PitchMatchingSession(
             notePlayer: notePlayer,
             profile: profile,
-            observers: [dataStore, profile],
+            observers: [storeAdapter, profileAdapter],
             backgroundNotificationName: UIApplication.didEnterBackgroundNotification,
             foregroundNotificationName: UIApplication.willEnterForegroundNotification
         )

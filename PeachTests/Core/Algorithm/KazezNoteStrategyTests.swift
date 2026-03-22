@@ -202,11 +202,11 @@ struct KazezNoteStrategyTests {
         let strategy = KazezNoteStrategy()
         let profile = PerceptualProfile()
         // Train some notes via observer so comparisonMean returns a value
-        profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(10.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
-        profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(8.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
@@ -231,7 +231,7 @@ struct KazezNoteStrategyTests {
         let strategy = KazezNoteStrategy()
         let profile = PerceptualProfile()
         // Train a note with very small offset via observer
-        profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(0.05))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
@@ -254,7 +254,7 @@ struct KazezNoteStrategyTests {
         let strategy = KazezNoteStrategy()
         let profile = PerceptualProfile()
         // Train with large offset via observer
-        profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(200.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))

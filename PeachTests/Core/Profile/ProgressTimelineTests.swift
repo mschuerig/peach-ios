@@ -290,7 +290,7 @@ struct ProgressTimelineTests {
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
-        profile.pitchDiscriminationCompleted(completed)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(completed)
 
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
         let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
@@ -310,7 +310,7 @@ struct ProgressTimelineTests {
             userCentError: -3.0,
             tuningSystem: .equalTemperament
         )
-        profile.pitchMatchingCompleted(result)
+        PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(result)
 
         let buckets = timeline.buckets(for: .unisonPitchMatching)
         let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
@@ -330,7 +330,7 @@ struct ProgressTimelineTests {
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
-        profile.pitchDiscriminationCompleted(completed)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(completed)
 
         // Should route to interval comparison (interval != 0)
         let intervalBuckets = timeline.buckets(for: .intervalPitchDiscrimination)
@@ -357,14 +357,14 @@ struct ProgressTimelineTests {
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
-        profile.pitchDiscriminationCompleted(completed1)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(completed1)
 
         let completed2 = CompletedPitchDiscriminationTrial(
             trial: comparison,
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
-        profile.pitchDiscriminationCompleted(completed2)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(completed2)
 
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
         // Both records should be in the same session bucket
@@ -444,7 +444,7 @@ struct ProgressTimelineTests {
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
-        profile.pitchDiscriminationCompleted(completed)
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(completed)
 
         let trend = timeline.trend(for: .unisonPitchDiscrimination)
         #expect(trend == .declining)

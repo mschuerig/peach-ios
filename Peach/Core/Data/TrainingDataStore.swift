@@ -14,16 +14,13 @@ final class TrainingDataStore {
         self.modelContext = modelContext
     }
 
-    /// Saves a pitch discrimination record to persistent storage
-    /// - Parameter record: The PitchDiscriminationRecord to save
-    /// - Throws: DataStoreError.saveFailed if save operation fails
-    func save(_ record: PitchDiscriminationRecord) throws {
+    func save(_ record: some PersistentModel) throws {
         do {
             try modelContext.transaction {
                 modelContext.insert(record)
             }
         } catch {
-            throw DataStoreError.saveFailed("Failed to save PitchDiscriminationRecord: \(error.localizedDescription)")
+            throw DataStoreError.saveFailed("Failed to save \(type(of: record)): \(error.localizedDescription)")
         }
     }
 
@@ -111,16 +108,6 @@ final class TrainingDataStore {
 
     // MARK: - Rhythm Offset Detection CRUD
 
-    func save(_ record: RhythmOffsetDetectionRecord) throws {
-        do {
-            try modelContext.transaction {
-                modelContext.insert(record)
-            }
-        } catch {
-            throw DataStoreError.saveFailed("Failed to save RhythmOffsetDetectionRecord: \(error.localizedDescription)")
-        }
-    }
-
     func fetchAllRhythmOffsetDetections() throws -> [RhythmOffsetDetectionRecord] {
         let descriptor = FetchDescriptor<RhythmOffsetDetectionRecord>(
             sortBy: [SortDescriptor(\.timestamp, order: .forward)]
@@ -143,16 +130,6 @@ final class TrainingDataStore {
     }
 
     // MARK: - Continuous Rhythm Matching CRUD
-
-    func save(_ record: ContinuousRhythmMatchingRecord) throws {
-        do {
-            try modelContext.transaction {
-                modelContext.insert(record)
-            }
-        } catch {
-            throw DataStoreError.saveFailed("Failed to save ContinuousRhythmMatchingRecord: \(error.localizedDescription)")
-        }
-    }
 
     func fetchAllContinuousRhythmMatchings() throws -> [ContinuousRhythmMatchingRecord] {
         let descriptor = FetchDescriptor<ContinuousRhythmMatchingRecord>(
@@ -177,19 +154,6 @@ final class TrainingDataStore {
 
     // MARK: - Pitch Matching CRUD
 
-    /// Saves a pitch matching record to persistent storage
-    /// - Parameter record: The PitchMatchingRecord to save
-    /// - Throws: DataStoreError.saveFailed if save operation fails
-    func save(_ record: PitchMatchingRecord) throws {
-        do {
-            try modelContext.transaction {
-                modelContext.insert(record)
-            }
-        } catch {
-            throw DataStoreError.saveFailed("Failed to save PitchMatchingRecord: \(error.localizedDescription)")
-        }
-    }
-
     /// Fetches all pitch matching records from persistent storage
     /// - Returns: All PitchMatchingRecord instances sorted by timestamp (oldest first)
     /// - Throws: DataStoreError.fetchFailed if fetch operation fails
@@ -205,6 +169,10 @@ final class TrainingDataStore {
     }
 }
 
+// MARK: - TrainingRecordPersisting
+
+extension TrainingDataStore: TrainingRecordPersisting {}
+
 // MARK: - Resettable Conformance
 
 extension TrainingDataStore: Resettable {
@@ -213,113 +181,3 @@ extension TrainingDataStore: Resettable {
     }
 }
 
-// MARK: - RhythmOffsetDetectionObserver Conformance
-
-extension TrainingDataStore: RhythmOffsetDetectionObserver {
-    func rhythmOffsetDetectionCompleted(_ result: CompletedRhythmOffsetDetectionTrial) {
-        let record = RhythmOffsetDetectionRecord(
-            tempoBPM: result.tempo.value,
-            offsetMs: result.offset.duration / .milliseconds(1),
-            isCorrect: result.isCorrect,
-            timestamp: result.timestamp
-        )
-        do {
-            try save(record)
-        } catch let error as DataStoreError {
-            Self.logger.warning("Rhythm offset detection save error: \(error.localizedDescription)")
-        } catch {
-            Self.logger.warning("Rhythm offset detection unexpected error: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - PitchMatchingObserver Conformance
-
-extension TrainingDataStore: PitchMatchingObserver {
-    func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
-        let interval = (try? Interval.between(result.referenceNote, result.targetNote))?.rawValue ?? 0
-        let record = PitchMatchingRecord(
-            referenceNote: result.referenceNote.rawValue,
-            targetNote: result.targetNote.rawValue,
-            initialCentOffset: result.initialCentOffset.rawValue,
-            userCentError: result.userCentError.rawValue,
-            interval: interval,
-            tuningSystem: result.tuningSystem.identifier,
-            timestamp: result.timestamp
-        )
-
-        do {
-            try save(record)
-        } catch let error as DataStoreError {
-            Self.logger.warning("Pitch matching save error: \(error.localizedDescription)")
-        } catch {
-            Self.logger.warning("Pitch matching unexpected error: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - PitchDiscriminationObserver Conformance
-
-extension TrainingDataStore: PitchDiscriminationObserver {
-    /// Observes pitch discrimination completion and persists the result
-    /// - Parameter completed: The completed pitch discrimination with user's answer and result
-    func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
-        let trial = completed.trial
-        let interval = (try? Interval.between(trial.referenceNote, trial.targetNote.note))?.rawValue ?? 0
-        let record = PitchDiscriminationRecord(
-            referenceNote: trial.referenceNote.rawValue,
-            targetNote: trial.targetNote.note.rawValue,
-            centOffset: trial.targetNote.offset.rawValue,
-            isCorrect: completed.isCorrect,
-            interval: interval,
-            tuningSystem: completed.tuningSystem.identifier,
-            timestamp: completed.timestamp
-        )
-
-        do {
-            try save(record)
-        } catch let error as DataStoreError {
-            // Data error - log but don't propagate (observers shouldn't fail training)
-            Self.logger.warning("Pitch discrimination save error: \(error.localizedDescription)")
-        } catch {
-            // Unexpected error - log but don't propagate
-            Self.logger.warning("Pitch discrimination unexpected error: \(error.localizedDescription)")
-        }
-    }
-}
-
-// MARK: - ContinuousRhythmMatchingObserver Conformance
-
-extension TrainingDataStore: ContinuousRhythmMatchingObserver {
-    func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial) {
-        let positionMeans = computePositionMeanOffsets(from: result.gapResults)
-        let record = ContinuousRhythmMatchingRecord(
-            tempoBPM: result.tempo.value,
-            meanOffsetMs: result.meanOffsetMs ?? 0,
-            meanOffsetMsPosition0: positionMeans.0,
-            meanOffsetMsPosition1: positionMeans.1,
-            meanOffsetMsPosition2: positionMeans.2,
-            meanOffsetMsPosition3: positionMeans.3,
-            timestamp: result.timestamp
-        )
-        do {
-            try save(record)
-        } catch let error as DataStoreError {
-            Self.logger.warning("Continuous rhythm matching save error: \(error.localizedDescription)")
-        } catch {
-            Self.logger.warning("Continuous rhythm matching unexpected error: \(error.localizedDescription)")
-        }
-    }
-
-    private func computePositionMeanOffsets(from gapResults: [GapResult]) -> (Double?, Double?, Double?, Double?) {
-        var grouped: [Int: [Double]] = [:]
-        for gap in gapResults {
-            grouped[gap.position.rawValue, default: []].append(gap.offset.statisticalValue)
-        }
-        func mean(for position: Int) -> Double? {
-            guard let offsets = grouped[position], !offsets.isEmpty else { return nil }
-            return offsets.reduce(0, +) / Double(offsets.count)
-        }
-        return (mean(for: 0), mean(for: 1), mean(for: 2), mean(for: 3))
-    }
-}

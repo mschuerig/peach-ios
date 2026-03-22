@@ -130,11 +130,11 @@ struct PitchDiscriminationSessionIntegrationTests {
     func profileUsesUnsignedCentOffset() async {
         let f = makePitchDiscriminationSession()
 
-        f.profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: f.profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
-        f.profile.pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
+        PitchDiscriminationProfileAdapter(profile: f.profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0))),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))

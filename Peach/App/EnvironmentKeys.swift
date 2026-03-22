@@ -26,7 +26,7 @@ extension EnvironmentValues {
         let dataStore = PreviewPitchDiscriminationDataStore()
         let profile = PerceptualProfile()
         let strategy = PreviewPitchDiscriminationStrategy()
-        let observers: [PitchDiscriminationObserver] = [dataStore, profile]
+        let observers: [PitchDiscriminationObserver] = [dataStore]
         return PitchDiscriminationSession(
             notePlayer: PreviewNotePlayer(),
             strategy: strategy,
