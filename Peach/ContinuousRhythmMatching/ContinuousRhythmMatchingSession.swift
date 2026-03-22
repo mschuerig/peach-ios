@@ -8,7 +8,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     // MARK: - Constants
 
-    private static let cyclesPerTrial = 16
+    static let cyclesPerTrial = 16
 
     /// Polling interval for real-time cycle tracking (~120 Hz, matching the step sequencer).
     private static let trackingPollingInterval: Duration = .milliseconds(8)

@@ -1,6 +1,6 @@
 # Story 54.4: Continuous Rhythm Matching Screen
 
-Status: review
+Status: done
 
 ## Story
 

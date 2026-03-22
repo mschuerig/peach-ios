@@ -188,7 +188,7 @@ struct ContinuousRhythmMatchingScreen: View {
     }
 
     static func cycleProgressText(_ count: Int) -> String {
-        "\(count)/16"
+        "\(count)/\(ContinuousRhythmMatchingSession.cyclesPerTrial)"
     }
 }
 
