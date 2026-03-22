@@ -1,6 +1,6 @@
 # Story 54.6: Start Screen and Navigation
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -24,25 +24,25 @@ so that I can access the new training mode alongside existing modes.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `NavigationDestination.continuousRhythmMatching` (AC: #1, #5)
-  - [ ] Add case to `NavigationDestination` enum
-  - [ ] Add `navigationDestination` handler in the appropriate view
-  - [ ] Route to `ContinuousRhythmMatchingScreen`
+- [x] Task 1: Add `NavigationDestination.continuousRhythmMatching` (AC: #1, #5)
+  - [x] Add case to `NavigationDestination` enum
+  - [x] Add `navigationDestination` handler in the appropriate view
+  - [x] Route to `ContinuousRhythmMatchingScreen`
 
-- [ ] Task 2: Add Start Screen button (AC: #2, #3, #4, #6)
-  - [ ] Add `NavigationLink(value: .continuousRhythmMatching)` in the Rhythm section
-  - [ ] Choose appropriate icon (e.g., `metronome.fill`, `waveform.path`, or similar)
-  - [ ] Label: "Fill the Gap" (localized)
-  - [ ] Training mode: `.continuousRhythmMatching` for the card
-  - [ ] Ensure layout works in portrait and landscape
+- [x] Task 2: Add Start Screen button (AC: #2, #3, #4, #6)
+  - [x] Add `NavigationLink(value: .continuousRhythmMatching)` in the Rhythm section
+  - [x] Choose appropriate icon (e.g., `metronome.fill`, `waveform.path`, or similar)
+  - [x] Label: "Fill the Gap" (localized)
+  - [x] Training mode: `.continuousRhythmMatching` for the card
+  - [x] Ensure layout works in portrait and landscape
 
-- [ ] Task 3: Localize strings (AC: #2, #6)
-  - [ ] English: "Fill the Gap"
-  - [ ] German: "Lücke füllen" (or equivalent — verify with domain context)
-  - [ ] VoiceOver hint localized
+- [x] Task 3: Localize strings (AC: #2, #6)
+  - [x] English: "Fill the Gap"
+  - [x] German: "Lücke füllen" (or equivalent — verify with domain context)
+  - [x] VoiceOver hint localized
 
-- [ ] Task 4: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 4: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions
 
 ## Dev Notes
 
@@ -65,3 +65,26 @@ The screen should have a navigation title. Use icon-based titles consistent with
 - [Source: Peach/App/NavigationDestination.swift — navigation enum]
 - [Source: Peach/App/PeachApp.swift — navigationDestination handlers]
 - [Source: docs/project-context.md — project rules and conventions]
+
+## Dev Agent Record
+
+### Completion Notes
+
+- Added `.continuousRhythmMatching` case to `NavigationDestination` enum
+- Added routing in `StartScreen.navigationDestination` switch to render `ContinuousRhythmMatchingScreen`
+- Added 3rd button in Rhythm section with "Fill the Gap" label, `waveform.path` SF Symbol, `.continuousRhythmMatching` training discipline
+- Layout naturally accommodates 3 buttons in both portrait (VStack) and landscape (HStack) — no grid adaptation needed since sections use VStack, not a fixed grid
+- Added German localization "Lücke füllen" via `bin/add-localization.swift`
+- VoiceOver accessibility label "Fill the Gap" set on the NavigationLink
+- Environment injection already configured in `PeachApp.swift` (`.continuousRhythmMatchingSession` already injected)
+- All 1571 tests pass, no regressions
+
+## File List
+
+- `Peach/App/NavigationDestination.swift` — added `.continuousRhythmMatching` case
+- `Peach/Start/StartScreen.swift` — added navigation destination handler and rhythm section button
+- `Peach/Resources/Localizable.xcstrings` — added "Fill the Gap" / "Lücke füllen" translation
+
+## Change Log
+
+- 2026-03-22: Implemented story 54.6 — added continuous rhythm matching navigation destination and start screen button

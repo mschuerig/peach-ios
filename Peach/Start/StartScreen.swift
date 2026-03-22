@@ -70,6 +70,8 @@ struct StartScreen: View {
                 RhythmOffsetDetectionScreen()
             case .rhythmMatching:
                 RhythmMatchingScreen()
+            case .continuousRhythmMatching:
+                ContinuousRhythmMatchingScreen()
             }
         }
         .sheet(isPresented: $showInfoSheet) {
@@ -160,6 +162,12 @@ struct StartScreen: View {
             }
             .buttonStyle(TrainingCardButtonStyle())
             .accessibilityLabel("Match Rhythm")
+
+            NavigationLink(value: NavigationDestination.continuousRhythmMatching) {
+                trainingCard("Fill the Gap", systemImage: "waveform.path", mode: .continuousRhythmMatching)
+            }
+            .buttonStyle(TrainingCardButtonStyle())
+            .accessibilityLabel("Fill the Gap")
         }
     }
 
