@@ -8,7 +8,7 @@ struct ExportChartViewTests {
 
     private func makeTimeline(records: [PitchDiscriminationRecord]) -> ProgressTimeline {
         let profile = PerceptualProfile { builder in
-            MetricPointMapper.feedPitchDiscriminations(records, into: builder)
+            builder.feedPitchDiscriminations(records)
         }
         return ProgressTimeline(profile: profile)
     }

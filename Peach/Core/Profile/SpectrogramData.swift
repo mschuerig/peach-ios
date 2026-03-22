@@ -92,7 +92,7 @@ struct SpectrogramData: Sendable {
     let trainedRanges: [TempoRange]
 
     static func compute(
-        mode: TrainingDiscipline,
+        mode: TrainingDisciplineID,
         profile: TrainingProfile,
         timeBuckets: [TimeBucket]
     ) -> SpectrogramData {

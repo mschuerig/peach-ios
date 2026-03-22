@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct RhythmSpectrogramView: View {
-    let mode: TrainingDiscipline
+    let mode: TrainingDisciplineID
 
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.perceptualProfile) private var perceptualProfile

@@ -75,7 +75,7 @@ struct PeachApp: App {
                 dataStore: dataStore,
                 onDataChanged: { [dataStore, profile] in
                     profile.replaceAll { builder in
-                        try? MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+                        try? TrainingDisciplineRegistry.shared.feedAllRecords(from: dataStore, into: builder)
                     }
                 }
             ))
@@ -234,7 +234,7 @@ struct PeachApp: App {
     private static func loadPerceptualProfile(dataStore: TrainingDataStore) throws -> PerceptualProfile {
         let (profile, elapsed) = try withTiming {
             try PerceptualProfile { builder in
-                try MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+                try TrainingDisciplineRegistry.shared.feedAllRecords(from: dataStore, into: builder)
             }
         }
         logger.info("Profile loaded in \(elapsed)ms")

@@ -14,52 +14,6 @@ enum Trend: Equatable {
 
 // MARK: - Supporting Types
 
-/// The training discipline categories tracked independently.
-enum TrainingDiscipline: CaseIterable {
-    case unisonPitchDiscrimination
-    case intervalPitchDiscrimination
-    case unisonPitchMatching
-    case intervalPitchMatching
-    case rhythmOffsetDetection
-    case continuousRhythmMatching
-
-    var config: TrainingDisciplineConfig {
-        switch self {
-        case .unisonPitchDiscrimination: .unisonPitchDiscrimination
-        case .intervalPitchDiscrimination: .intervalPitchDiscrimination
-        case .unisonPitchMatching: .unisonPitchMatching
-        case .intervalPitchMatching: .intervalPitchMatching
-        case .rhythmOffsetDetection: .rhythmOffsetDetection
-        case .continuousRhythmMatching: .continuousRhythmMatching
-        }
-    }
-
-    var statisticsKeys: [StatisticsKey] {
-        switch self {
-        case .unisonPitchDiscrimination, .intervalPitchDiscrimination,
-             .unisonPitchMatching, .intervalPitchMatching:
-            [.pitch(self)]
-        case .rhythmOffsetDetection, .continuousRhythmMatching:
-            TempoRange.defaultRanges.flatMap { range in
-                RhythmDirection.allCases.map { direction in
-                    .rhythm(self, range, direction)
-                }
-            }
-        }
-    }
-
-    var slug: String {
-        switch self {
-        case .unisonPitchDiscrimination: "pitch-discrimination"
-        case .intervalPitchDiscrimination: "interval-discrimination"
-        case .unisonPitchMatching: "pitch-matching"
-        case .intervalPitchMatching: "interval-matching"
-        case .rhythmOffsetDetection: "rhythm-offset-detection"
-        case .continuousRhythmMatching: "continuous-rhythm-matching"
-        }
-    }
-}
-
 /// Whether a training discipline has data for visualization.
 enum TrainingDisciplineState: Equatable {
     /// No records at all — card is hidden.
@@ -122,29 +76,29 @@ final class ProgressTimeline {
     // MARK: - Delegated to Profile
 
     /// Returns the display state for a training discipline (no data or active).
-    func state(for mode: TrainingDiscipline) -> TrainingDisciplineState {
+    func state(for mode: TrainingDisciplineID) -> TrainingDisciplineState {
         profile.mergedStatistics(for: mode.statisticsKeys) != nil ? .active : .noData
     }
 
     /// Returns the current EWMA value for a mode, or nil if no data.
-    func currentEWMA(for mode: TrainingDiscipline) -> Double? {
+    func currentEWMA(for mode: TrainingDisciplineID) -> Double? {
         profile.mergedStatistics(for: mode.statisticsKeys)?.ewma
     }
 
     /// Returns the total number of records ingested for a mode.
-    func recordCount(for mode: TrainingDiscipline) -> Int {
+    func recordCount(for mode: TrainingDisciplineID) -> Int {
         profile.mergedStatistics(for: mode.statisticsKeys)?.recordCount ?? 0
     }
 
     /// Returns the trend direction for a mode, or nil if insufficient data.
-    func trend(for mode: TrainingDiscipline) -> Trend? {
+    func trend(for mode: TrainingDisciplineID) -> Trend? {
         profile.mergedStatistics(for: mode.statisticsKeys)?.trend
     }
 
     // MARK: - Bucketing (presentation-only)
 
     /// Returns the adaptive time buckets for charting a mode's progress.
-    func buckets(for mode: TrainingDiscipline) -> [TimeBucket] {
+    func buckets(for mode: TrainingDisciplineID) -> [TimeBucket] {
         guard let summary = profile.mergedStatistics(for: mode.statisticsKeys),
               !summary.metrics.isEmpty else { return [] }
         let now = Date()
@@ -159,7 +113,7 @@ final class ProgressTimeline {
     /// - **Month zone**: everything older, with the last monthly bucket truncated at the day zone start
     ///
     /// Only three granularity tiers are used: month, day, and session.
-    func allGranularityBuckets(for mode: TrainingDiscipline) -> [TimeBucket] {
+    func allGranularityBuckets(for mode: TrainingDisciplineID) -> [TimeBucket] {
         guard let summary = profile.mergedStatistics(for: mode.statisticsKeys),
               !summary.metrics.isEmpty else { return [] }
         let now = Date()
@@ -171,7 +125,7 @@ final class ProgressTimeline {
     ///
     /// Splits a month bucket into days, or a day into sessions.
     /// Returns an empty array for session buckets (finest granularity).
-    func subBuckets(for mode: TrainingDiscipline, expanding bucket: TimeBucket) -> [TimeBucket] {
+    func subBuckets(for mode: TrainingDisciplineID, expanding bucket: TimeBucket) -> [TimeBucket] {
         guard bucket.bucketSize != .session else { return [] }
         guard let summary = profile.mergedStatistics(for: mode.statisticsKeys) else { return [] }
 

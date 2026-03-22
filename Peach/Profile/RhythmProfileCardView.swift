@@ -2,7 +2,7 @@ import SwiftUI
 import os
 
 struct RhythmProfileCardView: View {
-    let mode: TrainingDiscipline
+    let mode: TrainingDisciplineID
 
     @Environment(\.progressTimeline) private var progressTimeline
 
@@ -134,7 +134,7 @@ struct RhythmProfileCardView: View {
 // MARK: - Export View
 
 private struct RhythmProfileCardExportView: View {
-    let mode: TrainingDiscipline
+    let mode: TrainingDisciplineID
 
     @Environment(\.progressTimeline) private var progressTimeline
 

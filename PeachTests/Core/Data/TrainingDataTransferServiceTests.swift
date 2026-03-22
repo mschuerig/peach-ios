@@ -165,8 +165,8 @@ struct TrainingDataTransferServiceTests {
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
-        #expect(summary.pitchDiscriminationsImported == 2)
-        #expect(summary.pitchMatchingsImported == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(try dataStore.fetchAllPitchDiscriminations().count == 2)
     }
 
@@ -183,8 +183,8 @@ struct TrainingDataTransferServiceTests {
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .merge)
-        #expect(summary.pitchDiscriminationsImported == 1)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
     }
 
     @Test("performImport calls onDataChanged callback")
@@ -229,10 +229,11 @@ struct TrainingDataTransferServiceTests {
     func formatSummaryImportedOnly() async throws {
         let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
-            pitchDiscriminationsImported: 8, pitchMatchingsImported: 2,
-            rhythmOffsetDetectionsImported: 0, continuousRhythmMatchingsImported: 0,
-            pitchDiscriminationsSkipped: 0, pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0, continuousRhythmMatchingsSkipped: 0, parseErrorCount: 0
+            perDiscipline: [
+                .intervalPitchDiscrimination: (imported: 8, skipped: 0),
+                .intervalPitchMatching: (imported: 2, skipped: 0),
+            ],
+            parseErrorCount: 0
         )
         let message = service.formatImportSummary(summary)
         #expect(message.contains("10"))
@@ -243,10 +244,10 @@ struct TrainingDataTransferServiceTests {
     func formatSummaryWithSkipped() async throws {
         let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
-            pitchDiscriminationsImported: 5, pitchMatchingsImported: 0,
-            rhythmOffsetDetectionsImported: 0, continuousRhythmMatchingsImported: 0,
-            pitchDiscriminationsSkipped: 3, pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0, continuousRhythmMatchingsSkipped: 0, parseErrorCount: 0
+            perDiscipline: [
+                .intervalPitchDiscrimination: (imported: 5, skipped: 3),
+            ],
+            parseErrorCount: 0
         )
         let message = service.formatImportSummary(summary)
         #expect(message.contains("5"))
@@ -257,10 +258,10 @@ struct TrainingDataTransferServiceTests {
     func formatSummaryWithErrors() async throws {
         let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
-            pitchDiscriminationsImported: 10, pitchMatchingsImported: 0,
-            rhythmOffsetDetectionsImported: 0, continuousRhythmMatchingsImported: 0,
-            pitchDiscriminationsSkipped: 3, pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0, continuousRhythmMatchingsSkipped: 0, parseErrorCount: 2
+            perDiscipline: [
+                .intervalPitchDiscrimination: (imported: 10, skipped: 3),
+            ],
+            parseErrorCount: 2
         )
         let message = service.formatImportSummary(summary)
         #expect(message.contains("10"))
@@ -284,7 +285,7 @@ struct TrainingDataTransferServiceTests {
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
-        #expect(summary.rhythmOffsetDetectionsImported == 1)
+        #expect(summary.imported(for: .rhythmOffsetDetection) == 1)
         #expect(summary.totalImported == 1)
         #expect(try dataStore.fetchAllRhythmOffsetDetections().count == 1)
     }

@@ -432,7 +432,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: jan2026, periodEnd: feb2026, bucketSize: .month, mean: 11.0, stddev: 1.0, recordCount: 12),
         ]
         let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 2)
-        let config = TrainingDisciplineConfig.unisonPitchDiscrimination
+        let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
@@ -454,7 +454,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: mar6, periodEnd: mar7, bucketSize: .day, mean: 9.0, stddev: 0.5, recordCount: 3),
         ]
         let zone = ProgressChartView.ZoneInfo(bucketSize: .day, startIndex: 0, endIndex: 1)
-        let config = TrainingDisciplineConfig.unisonPitchDiscrimination
+        let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
@@ -469,7 +469,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: date, periodEnd: date.addingTimeInterval(3600), bucketSize: .session, mean: 8.5, stddev: 0.5, recordCount: 3),
         ]
         let zone = ProgressChartView.ZoneInfo(bucketSize: .session, startIndex: 0, endIndex: 0)
-        let config = TrainingDisciplineConfig.unisonPitchDiscrimination
+        let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
@@ -481,7 +481,7 @@ struct ProgressChartViewTests {
     func zoneAccessibilitySummaryEmptyZone() async {
         let buckets: [TimeBucket] = []
         let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: -1)
-        let config = TrainingDisciplineConfig.unisonPitchDiscrimination
+        let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
@@ -495,7 +495,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: date, periodEnd: date.addingTimeInterval(3600), bucketSize: .month, mean: 10.0, stddev: 1.0, recordCount: 5),
         ]
         let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 5)
-        let config = TrainingDisciplineConfig.unisonPitchDiscrimination
+        let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
@@ -546,14 +546,14 @@ struct ProgressChartViewTests {
     // MARK: - Share Button Accessibility Labels
 
     @Test("share accessibility label contains mode display name and is non-empty for all training modes",
-          arguments: TrainingDiscipline.allCases)
-    func shareAccessibilityLabel(mode: TrainingDiscipline) async {
+          arguments: TrainingDisciplineID.allCases)
+    func shareAccessibilityLabel(mode: TrainingDisciplineID) async {
         let label = String(localized: "Share \(mode.config.displayName) chart")
         #expect(!label.isEmpty)
         #expect(label.contains(mode.config.displayName),
                 "Expected label to contain '\(mode.config.displayName)' but got: \(label)")
         // Verify the label is distinct per mode (not a generic fallback)
-        let otherModes = TrainingDiscipline.allCases.filter { $0 != mode }
+        let otherModes = TrainingDisciplineID.allCases.filter { $0 != mode }
         for other in otherModes {
             let otherLabel = String(localized: "Share \(other.config.displayName) chart")
             #expect(label != otherLabel, "Labels for \(mode) and \(other) should differ")

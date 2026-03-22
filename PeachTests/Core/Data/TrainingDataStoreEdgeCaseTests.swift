@@ -150,7 +150,8 @@ struct TrainingDataStoreEdgeCaseTests {
         let newComparison = PitchDiscriminationRecord(referenceNote: 72, targetNote: 72, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")
         let newMatching = PitchMatchingRecord(referenceNote: 69, targetNote: 69, initialCentOffset: 30.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
 
-        try store.replaceAllRecords(pitchDiscriminations: [newComparison], pitchMatchings: [newMatching], rhythmOffsetDetections: [])
+        var records: [any PersistentModel] = [newComparison, newMatching]
+        try store.replaceAllRecords(records)
 
         let comparisons = try store.fetchAllPitchDiscriminations()
         let matchings = try store.fetchAllPitchMatchings()
@@ -172,7 +173,7 @@ struct TrainingDataStoreEdgeCaseTests {
         try store.save(comparison)
         try store.save(matching)
 
-        try store.replaceAllRecords(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [])
+        try store.replaceAllRecords([])
 
         let comparisons = try store.fetchAllPitchDiscriminations()
         let matchings = try store.fetchAllPitchMatchings()
@@ -194,7 +195,8 @@ struct TrainingDataStoreEdgeCaseTests {
             PitchMatchingRecord(referenceNote: 69 + i, targetNote: 69 + i, initialCentOffset: Double(i) * 15, userCentError: Double(i), interval: 0, tuningSystem: "equalTemperament")
         }
 
-        try store.replaceAllRecords(pitchDiscriminations: comparisons, pitchMatchings: matchings, rhythmOffsetDetections: [])
+        var records: [any PersistentModel] = comparisons + matchings
+        try store.replaceAllRecords(records)
 
         let fetchedComparisons = try store.fetchAllPitchDiscriminations()
         let fetchedMatchings = try store.fetchAllPitchMatchings()

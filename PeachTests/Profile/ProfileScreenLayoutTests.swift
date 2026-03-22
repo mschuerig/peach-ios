@@ -21,7 +21,7 @@ struct ProfileScreenLayoutTests {
 
         let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
-        let expectedName = TrainingDisciplineConfig.unisonPitchDiscrimination.displayName
+        let expectedName = TrainingDisciplineID.unisonPitchDiscrimination.config.displayName
         #expect(summary.contains(expectedName))
     }
 

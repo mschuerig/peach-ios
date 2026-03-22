@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 enum TrainingDataImporter {
 
@@ -8,26 +9,23 @@ enum TrainingDataImporter {
     }
 
     struct ImportSummary {
-        let pitchDiscriminationsImported: Int
-        let pitchMatchingsImported: Int
-        let rhythmOffsetDetectionsImported: Int
-        let continuousRhythmMatchingsImported: Int
-        let pitchDiscriminationsSkipped: Int
-        let pitchMatchingsSkipped: Int
-        let rhythmOffsetDetectionsSkipped: Int
-        let continuousRhythmMatchingsSkipped: Int
+        let perDiscipline: [TrainingDisciplineID: (imported: Int, skipped: Int)]
         let parseErrorCount: Int
 
         var totalImported: Int {
-            pitchDiscriminationsImported + pitchMatchingsImported +
-            rhythmOffsetDetectionsImported +
-            continuousRhythmMatchingsImported
+            perDiscipline.values.reduce(0) { $0 + $1.imported }
         }
 
         var totalSkipped: Int {
-            pitchDiscriminationsSkipped + pitchMatchingsSkipped +
-            rhythmOffsetDetectionsSkipped +
-            continuousRhythmMatchingsSkipped
+            perDiscipline.values.reduce(0) { $0 + $1.skipped }
+        }
+
+        func imported(for id: TrainingDisciplineID) -> Int {
+            perDiscipline[id]?.imported ?? 0
+        }
+
+        func skipped(for id: TrainingDisciplineID) -> Int {
+            perDiscipline[id]?.skipped ?? 0
         }
     }
 
@@ -50,24 +48,17 @@ enum TrainingDataImporter {
         _ parseResult: CSVImportParser.ImportResult,
         into store: TrainingDataStore
     ) throws -> ImportSummary {
-        try store.replaceAllRecords(
-            pitchDiscriminations: parseResult.pitchDiscriminations,
-            pitchMatchings: parseResult.pitchMatchings,
-            rhythmOffsetDetections: parseResult.rhythmOffsetDetections,
-            continuousRhythmMatchings: parseResult.continuousRhythmMatchings
-        )
+        var allRecords: [any PersistentModel] = []
+        var perDiscipline: [TrainingDisciplineID: (imported: Int, skipped: Int)] = [:]
 
-        return ImportSummary(
-            pitchDiscriminationsImported: parseResult.pitchDiscriminations.count,
-            pitchMatchingsImported: parseResult.pitchMatchings.count,
-            rhythmOffsetDetectionsImported: parseResult.rhythmOffsetDetections.count,
-            continuousRhythmMatchingsImported: parseResult.continuousRhythmMatchings.count,
-            pitchDiscriminationsSkipped: 0,
-            pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0,
-            continuousRhythmMatchingsSkipped: 0,
-            parseErrorCount: parseResult.errors.count
-        )
+        for discipline in TrainingDisciplineRegistry.shared.all {
+            let records = discipline.parsedRecords(from: parseResult)
+            allRecords.append(contentsOf: records)
+            perDiscipline[discipline.id] = (imported: records.count, skipped: 0)
+        }
+
+        try store.replaceAllRecords(allRecords)
+        return ImportSummary(perDiscipline: perDiscipline, parseErrorCount: parseResult.errors.count)
     }
 
     // MARK: - Merge Mode
@@ -76,171 +67,13 @@ enum TrainingDataImporter {
         _ parseResult: CSVImportParser.ImportResult,
         into store: TrainingDataStore
     ) throws -> ImportSummary {
-        // Build pitch duplicate keys
-        let existingDiscriminations = try store.fetchAllPitchDiscriminations()
-        let existingPitchMatchings = try store.fetchAllPitchMatchings()
+        var perDiscipline: [TrainingDisciplineID: (imported: Int, skipped: Int)] = [:]
 
-        var existingPitchKeys = Set<PitchDuplicateKey>()
-        for record in existingDiscriminations {
-            existingPitchKeys.insert(PitchDuplicateKey(
-                timestamp: record.timestamp,
-                referenceNote: record.referenceNote,
-                targetNote: record.targetNote,
-                trainingType: TrainingType.pitchDiscrimination
-            ))
-        }
-        for record in existingPitchMatchings {
-            existingPitchKeys.insert(PitchDuplicateKey(
-                timestamp: record.timestamp,
-                referenceNote: record.referenceNote,
-                targetNote: record.targetNote,
-                trainingType: TrainingType.pitchMatching
-            ))
+        for discipline in TrainingDisciplineRegistry.shared.all {
+            let result = try discipline.mergeImportRecords(from: parseResult, into: store)
+            perDiscipline[discipline.id] = result
         }
 
-        // Merge pitch discriminations
-        var pitchDiscriminationsImported = 0
-        var pitchDiscriminationsSkipped = 0
-        for record in parseResult.pitchDiscriminations {
-            let key = PitchDuplicateKey(
-                timestamp: record.timestamp,
-                referenceNote: record.referenceNote,
-                targetNote: record.targetNote,
-                trainingType: TrainingType.pitchDiscrimination
-            )
-            if existingPitchKeys.contains(key) {
-                pitchDiscriminationsSkipped += 1
-            } else {
-                try store.save(record)
-                existingPitchKeys.insert(key)
-                pitchDiscriminationsImported += 1
-            }
-        }
-
-        // Merge pitch matchings
-        var pitchMatchingsImported = 0
-        var pitchMatchingsSkipped = 0
-        for record in parseResult.pitchMatchings {
-            let key = PitchDuplicateKey(
-                timestamp: record.timestamp,
-                referenceNote: record.referenceNote,
-                targetNote: record.targetNote,
-                trainingType: TrainingType.pitchMatching
-            )
-            if existingPitchKeys.contains(key) {
-                pitchMatchingsSkipped += 1
-            } else {
-                try store.save(record)
-                existingPitchKeys.insert(key)
-                pitchMatchingsImported += 1
-            }
-        }
-
-        // Build rhythm duplicate keys
-        let existingRhythmOffsets = try store.fetchAllRhythmOffsetDetections()
-        let existingContinuousRhythmMatchings = try store.fetchAllContinuousRhythmMatchings()
-
-        var existingRhythmKeys = Set<RhythmDuplicateKey>()
-        for record in existingRhythmOffsets {
-            existingRhythmKeys.insert(RhythmDuplicateKey(
-                timestamp: record.timestamp,
-                tempoBPM: record.tempoBPM,
-                trainingType: TrainingType.rhythmOffsetDetection
-            ))
-        }
-        for record in existingContinuousRhythmMatchings {
-            existingRhythmKeys.insert(RhythmDuplicateKey(
-                timestamp: record.timestamp,
-                tempoBPM: record.tempoBPM,
-                trainingType: TrainingType.continuousRhythmMatching
-            ))
-        }
-
-        // Merge rhythm offset detections
-        var rhythmOffsetDetectionsImported = 0
-        var rhythmOffsetDetectionsSkipped = 0
-        for record in parseResult.rhythmOffsetDetections {
-            let key = RhythmDuplicateKey(
-                timestamp: record.timestamp,
-                tempoBPM: record.tempoBPM,
-                trainingType: TrainingType.rhythmOffsetDetection
-            )
-            if existingRhythmKeys.contains(key) {
-                rhythmOffsetDetectionsSkipped += 1
-            } else {
-                try store.save(record)
-                existingRhythmKeys.insert(key)
-                rhythmOffsetDetectionsImported += 1
-            }
-        }
-
-        // Merge continuous rhythm matchings
-        var continuousRhythmMatchingsImported = 0
-        var continuousRhythmMatchingsSkipped = 0
-        for record in parseResult.continuousRhythmMatchings {
-            let key = RhythmDuplicateKey(
-                timestamp: record.timestamp,
-                tempoBPM: record.tempoBPM,
-                trainingType: TrainingType.continuousRhythmMatching
-            )
-            if existingRhythmKeys.contains(key) {
-                continuousRhythmMatchingsSkipped += 1
-            } else {
-                try store.save(record)
-                existingRhythmKeys.insert(key)
-                continuousRhythmMatchingsImported += 1
-            }
-        }
-
-        return ImportSummary(
-            pitchDiscriminationsImported: pitchDiscriminationsImported,
-            pitchMatchingsImported: pitchMatchingsImported,
-            rhythmOffsetDetectionsImported: rhythmOffsetDetectionsImported,
-            continuousRhythmMatchingsImported: continuousRhythmMatchingsImported,
-            pitchDiscriminationsSkipped: pitchDiscriminationsSkipped,
-            pitchMatchingsSkipped: pitchMatchingsSkipped,
-            rhythmOffsetDetectionsSkipped: rhythmOffsetDetectionsSkipped,
-            continuousRhythmMatchingsSkipped: continuousRhythmMatchingsSkipped,
-            parseErrorCount: parseResult.errors.count
-        )
-    }
-
-    // MARK: - Training Type Constants
-
-    private enum TrainingType {
-        static let pitchDiscrimination = "pitchDiscrimination"
-        static let pitchMatching = "pitchMatching"
-        static let rhythmOffsetDetection = "rhythmOffsetDetection"
-        static let continuousRhythmMatching = "continuousRhythmMatching"
-    }
-
-    // MARK: - Pitch Duplicate Key
-
-    private struct PitchDuplicateKey: Hashable {
-        let timestampSeconds: Int64
-        let referenceNote: Int
-        let targetNote: Int
-        let trainingType: String
-
-        init(timestamp: Date, referenceNote: Int, targetNote: Int, trainingType: String) {
-            self.timestampSeconds = Int64(timestamp.timeIntervalSinceReferenceDate)
-            self.referenceNote = referenceNote
-            self.targetNote = targetNote
-            self.trainingType = trainingType
-        }
-    }
-
-    // MARK: - Rhythm Duplicate Key
-
-    private struct RhythmDuplicateKey: Hashable {
-        let timestampSeconds: Int64
-        let tempoBPM: Int
-        let trainingType: String
-
-        init(timestamp: Date, tempoBPM: Int, trainingType: String) {
-            self.timestampSeconds = Int64(timestamp.timeIntervalSinceReferenceDate)
-            self.tempoBPM = tempoBPM
-            self.trainingType = trainingType
-        }
+        return ImportSummary(perDiscipline: perDiscipline, parseErrorCount: parseResult.errors.count)
     }
 }

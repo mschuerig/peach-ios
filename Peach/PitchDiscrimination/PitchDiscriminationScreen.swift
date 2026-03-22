@@ -55,7 +55,7 @@ struct PitchDiscriminationScreen: View {
         verticalSizeClass == .compact
     }
 
-    private var trainingDiscipline: TrainingDiscipline {
+    private var trainingDiscipline: TrainingDisciplineID {
         Self.trainingDiscipline(for: intervals)
     }
 
@@ -254,7 +254,7 @@ struct PitchDiscriminationScreen: View {
 
     // MARK: - Helpers
 
-    static func trainingDiscipline(for intervals: Set<DirectedInterval>) -> TrainingDiscipline {
+    static func trainingDiscipline(for intervals: Set<DirectedInterval>) -> TrainingDisciplineID {
         intervals == [.prime] ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
     }
 

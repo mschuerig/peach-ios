@@ -168,7 +168,7 @@ struct StartScreen: View {
     private func trainingCard(
         _ title: LocalizedStringKey,
         systemImage: String,
-        mode: TrainingDiscipline,
+        mode: TrainingDisciplineID,
         isHero: Bool = false
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {

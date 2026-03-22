@@ -11,7 +11,7 @@ struct PitchDiscriminationProfileAdapter: PitchDiscriminationObserver {
         let pc = completed.trial
         let interval = (try? Interval.between(pc.referenceNote, pc.targetNote.note))?.rawValue ?? 0
         let isUnison = interval == 0
-        let mode: TrainingDiscipline = isUnison ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
+        let mode: TrainingDisciplineID = isUnison ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
 
         guard completed.isCorrect else { return }
 

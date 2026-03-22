@@ -12,7 +12,7 @@ struct ContinuousRhythmMatchingProfileTests {
         // The rhythm card set in ProfileScreen routes these modes to RhythmProfileCardView.
         // Verify continuousRhythmMatching is grouped with the other rhythm modes by checking
         // that it shares the same card infrastructure (statisticsKeys use rhythm keys).
-        let keys = TrainingDiscipline.continuousRhythmMatching.statisticsKeys
+        let keys = TrainingDisciplineID.continuousRhythmMatching.statisticsKeys
         let allAreRhythmKeys = keys.allSatisfy {
             if case .rhythm(.continuousRhythmMatching, _, _) = $0 { return true }
             return false
@@ -40,7 +40,7 @@ struct ContinuousRhythmMatchingProfileTests {
 
         let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
-        let expectedName = TrainingDisciplineConfig.continuousRhythmMatching.displayName
+        let expectedName = TrainingDisciplineID.continuousRhythmMatching.config.displayName
         #expect(summary.contains(expectedName))
     }
 
@@ -49,7 +49,7 @@ struct ContinuousRhythmMatchingProfileTests {
         let timeline = ProgressTimeline(profile: PerceptualProfile())
         let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
-        let name = TrainingDisciplineConfig.continuousRhythmMatching.displayName
+        let name = TrainingDisciplineID.continuousRhythmMatching.config.displayName
         #expect(!summary.contains(name))
     }
 

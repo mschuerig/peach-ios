@@ -2,7 +2,7 @@ import SwiftUI
 import Charts
 
 struct ProgressChartView: View {
-    let mode: TrainingDiscipline
+    let mode: TrainingDisciplineID
 
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass

@@ -36,9 +36,9 @@ struct StatisticsKeyTests {
     @Test("statisticsConfig returns mode config")
     func configLookup() async {
         let pitchKey = StatisticsKey.pitch(.unisonPitchDiscrimination)
-        #expect(pitchKey.statisticsConfig.ewmaHalflife == TrainingDisciplineConfig.unisonPitchDiscrimination.statistics.ewmaHalflife)
+        #expect(pitchKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.unisonPitchDiscrimination.config.statistics.ewmaHalflife)
 
         let rhythmKey = StatisticsKey.rhythm(.rhythmOffsetDetection, .fast, .early)
-        #expect(rhythmKey.statisticsConfig.ewmaHalflife == TrainingDisciplineConfig.rhythmOffsetDetection.statistics.ewmaHalflife)
+        #expect(rhythmKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.rhythmOffsetDetection.config.statistics.ewmaHalflife)
     }
 }

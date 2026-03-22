@@ -3,27 +3,10 @@ import Foundation
 enum TrainingDataExporter {
 
     static func export(from store: TrainingDataStore) throws -> String {
-        let comparisons = try store.fetchAllPitchDiscriminations()
-        let pitchMatchings = try store.fetchAllPitchMatchings()
-        let rhythmOffsets = try store.fetchAllRhythmOffsetDetections()
-        let continuousRhythmMatchings = try store.fetchAllContinuousRhythmMatchings()
-
         var merged: [(timestamp: Date, row: String)] = []
 
-        for record in comparisons {
-            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
-        }
-
-        for record in pitchMatchings {
-            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
-        }
-
-        for record in rhythmOffsets {
-            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
-        }
-
-        for record in continuousRhythmMatchings {
-            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
+        for discipline in TrainingDisciplineRegistry.shared.all {
+            merged.append(contentsOf: try discipline.fetchAndFormatRecords(from: store))
         }
 
         guard !merged.isEmpty else {

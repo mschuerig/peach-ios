@@ -2,11 +2,11 @@ import SwiftUI
 import Charts
 
 struct ExportChartView: View {
-    let mode: TrainingDiscipline
+    let mode: TrainingDisciplineID
     let progressTimeline: ProgressTimeline
     let date: Date
 
-    init(mode: TrainingDiscipline, progressTimeline: ProgressTimeline, date: Date = Date()) {
+    init(mode: TrainingDisciplineID, progressTimeline: ProgressTimeline, date: Date = Date()) {
         self.mode = mode
         self.progressTimeline = progressTimeline
         self.date = date

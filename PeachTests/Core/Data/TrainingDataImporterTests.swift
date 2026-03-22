@@ -25,53 +25,41 @@ struct TrainingDataImporterTests {
 
     // MARK: - ImportSummary Tests
 
-    @Test("ImportSummary stores all field values")
+    @Test("ImportSummary stores per-discipline values")
     func importSummaryFields() async throws {
         let summary = TrainingDataImporter.ImportSummary(
-            pitchDiscriminationsImported: 5,
-            pitchMatchingsImported: 3,
-            rhythmOffsetDetectionsImported: 0,
-            continuousRhythmMatchingsImported: 0,
-            pitchDiscriminationsSkipped: 2,
-            pitchMatchingsSkipped: 1,
-            rhythmOffsetDetectionsSkipped: 0,
-            continuousRhythmMatchingsSkipped: 0,
+            perDiscipline: [
+                .intervalPitchDiscrimination: (imported: 5, skipped: 2),
+                .intervalPitchMatching: (imported: 3, skipped: 1),
+            ],
             parseErrorCount: 4
         )
-        #expect(summary.pitchDiscriminationsImported == 5)
-        #expect(summary.pitchMatchingsImported == 3)
-        #expect(summary.pitchDiscriminationsSkipped == 2)
-        #expect(summary.pitchMatchingsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 5)
+        #expect(summary.imported(for: .intervalPitchMatching) == 3)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 2)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 1)
         #expect(summary.parseErrorCount == 4)
     }
 
-    @Test("ImportSummary totalImported sums comparisons and pitch matchings")
+    @Test("ImportSummary totalImported sums all disciplines")
     func importSummaryTotalImported() async throws {
         let summary = TrainingDataImporter.ImportSummary(
-            pitchDiscriminationsImported: 5,
-            pitchMatchingsImported: 3,
-            rhythmOffsetDetectionsImported: 0,
-            continuousRhythmMatchingsImported: 0,
-            pitchDiscriminationsSkipped: 0,
-            pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0,
-            continuousRhythmMatchingsSkipped: 0,
+            perDiscipline: [
+                .intervalPitchDiscrimination: (imported: 5, skipped: 0),
+                .intervalPitchMatching: (imported: 3, skipped: 0),
+            ],
             parseErrorCount: 0
         )
         #expect(summary.totalImported == 8)
     }
 
-    @Test("ImportSummary totalSkipped sums comparisons and pitch matchings skipped")
+    @Test("ImportSummary totalSkipped sums all disciplines")
     func importSummaryTotalSkipped() async throws {
         let summary = TrainingDataImporter.ImportSummary(
-            pitchDiscriminationsImported: 0,
-            pitchMatchingsImported: 0,
-            rhythmOffsetDetectionsImported: 0,
-            continuousRhythmMatchingsImported: 0,
-            pitchDiscriminationsSkipped: 2,
-            pitchMatchingsSkipped: 1,
-            rhythmOffsetDetectionsSkipped: 0,
-            continuousRhythmMatchingsSkipped: 0,
+            perDiscipline: [
+                .intervalPitchDiscrimination: (imported: 0, skipped: 2),
+                .intervalPitchMatching: (imported: 0, skipped: 1),
+            ],
             parseErrorCount: 0
         )
         #expect(summary.totalSkipped == 3)
@@ -137,10 +125,10 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 2)
-        #expect(summary.pitchMatchingsImported == 1)
-        #expect(summary.pitchDiscriminationsSkipped == 0)
-        #expect(summary.pitchMatchingsSkipped == 0)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 0)
 
         // Verify only imported records exist
         let comparisons = try store.fetchAllPitchDiscriminations()
@@ -158,8 +146,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(makeImportResult(), mode: .replace, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 0)
-        #expect(summary.pitchMatchingsImported == 0)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 0)
+        #expect(summary.imported(for: .intervalPitchMatching) == 0)
 
         let comparisons = try store.fetchAllPitchDiscriminations()
         let pitchMatchings = try store.fetchAllPitchMatchings()
@@ -183,7 +171,7 @@ struct TrainingDataImporterTests {
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
         #expect(summary.parseErrorCount == 2)
-        #expect(summary.pitchDiscriminationsImported == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
     }
 
     // MARK: - Merge Mode Tests
@@ -205,8 +193,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 1)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
 
         let comparisons = try store.fetchAllPitchDiscriminations()
         #expect(comparisons.count == 2)
@@ -227,8 +215,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchMatchingsImported == 1)
-        #expect(summary.pitchMatchingsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 1)
 
         let pitchMatchings = try store.fetchAllPitchMatchings()
         #expect(pitchMatchings.count == 2)
@@ -274,8 +262,8 @@ struct TrainingDataImporterTests {
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
         #expect(summary.totalImported == 0)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
-        #expect(summary.pitchMatchingsSkipped == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 1)
     }
 
     @Test("merge with no duplicates imports all")
@@ -289,8 +277,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 2)
-        #expect(summary.pitchMatchingsImported == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.totalSkipped == 0)
     }
 
@@ -314,10 +302,10 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 1)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
-        #expect(summary.pitchMatchingsImported == 1)
-        #expect(summary.pitchMatchingsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 1)
 
         #expect(try store.fetchAllPitchDiscriminations().count == 2)
         #expect(try store.fetchAllPitchMatchings().count == 2)
@@ -331,10 +319,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(makeImportResult(), mode: .replace, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 0)
-        #expect(summary.pitchMatchingsImported == 0)
-        #expect(summary.pitchDiscriminationsSkipped == 0)
-        #expect(summary.pitchMatchingsSkipped == 0)
+        #expect(summary.totalImported == 0)
+        #expect(summary.totalSkipped == 0)
         #expect(summary.parseErrorCount == 0)
     }
 
@@ -344,10 +330,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(makeImportResult(), mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 0)
-        #expect(summary.pitchMatchingsImported == 0)
-        #expect(summary.pitchDiscriminationsSkipped == 0)
-        #expect(summary.pitchMatchingsSkipped == 0)
+        #expect(summary.totalImported == 0)
+        #expect(summary.totalSkipped == 0)
         #expect(summary.parseErrorCount == 0)
     }
 
@@ -387,10 +371,10 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 1)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
-        #expect(summary.pitchMatchingsImported == 1)
-        #expect(summary.pitchMatchingsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 1)
         #expect(try store.fetchAllPitchDiscriminations().count == 1)
         #expect(try store.fetchAllPitchMatchings().count == 1)
     }
@@ -416,8 +400,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchMatchingsImported == 1)
-        #expect(summary.pitchMatchingsSkipped == 0)
+        #expect(summary.imported(for: .intervalPitchMatching) == 1)
+        #expect(summary.skipped(for: .intervalPitchMatching) == 0)
     }
 
     @Test("records with identical timestamps and training type but different notes are not duplicates")
@@ -445,8 +429,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 2)
-        #expect(summary.pitchDiscriminationsSkipped == 0)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
         #expect(try store.fetchAllPitchDiscriminations().count == 3)
     }
 
@@ -476,8 +460,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 0)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 0)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
         #expect(try store.fetchAllPitchDiscriminations().count == 1)
     }
 
@@ -505,8 +489,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
-        #expect(summary.pitchDiscriminationsImported == 1)
-        #expect(summary.rhythmOffsetDetectionsImported == 1)
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.imported(for: .rhythmOffsetDetection) == 1)
         #expect(try store.fetchAllPitchDiscriminations().count == 1)
         #expect(try store.fetchAllRhythmOffsetDetections().count == 1)
     }
@@ -523,7 +507,7 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
-        #expect(summary.rhythmOffsetDetectionsImported == 2)
+        #expect(summary.imported(for: .rhythmOffsetDetection) == 2)
         #expect(try store.fetchAllRhythmOffsetDetections().count == 2)
     }
 
@@ -544,8 +528,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.rhythmOffsetDetectionsImported == 1)
-        #expect(summary.rhythmOffsetDetectionsSkipped == 1)
+        #expect(summary.imported(for: .rhythmOffsetDetection) == 1)
+        #expect(summary.skipped(for: .rhythmOffsetDetection) == 1)
         #expect(try store.fetchAllRhythmOffsetDetections().count == 2)
     }
 
@@ -561,8 +545,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.rhythmOffsetDetectionsImported == 1)
-        #expect(summary.rhythmOffsetDetectionsSkipped == 0)
+        #expect(summary.imported(for: .rhythmOffsetDetection) == 1)
+        #expect(summary.skipped(for: .rhythmOffsetDetection) == 0)
     }
 
     @Test("merge deduplicates identical rhythm records within the same import file")
@@ -578,8 +562,8 @@ struct TrainingDataImporterTests {
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        #expect(summary.rhythmOffsetDetectionsImported == 1)
-        #expect(summary.rhythmOffsetDetectionsSkipped == 1)
+        #expect(summary.imported(for: .rhythmOffsetDetection) == 1)
+        #expect(summary.skipped(for: .rhythmOffsetDetection) == 1)
     }
 
     // MARK: - ImportSummary Totals with Rhythm

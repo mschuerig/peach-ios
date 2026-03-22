@@ -5,9 +5,9 @@ enum ChartImageRenderer {
 
     private static let logger = Logger(subsystem: "Peach", category: "ChartImageRenderer")
 
-    private static var lastRenderedURLs: [TrainingDiscipline: URL] = [:]
+    private static var lastRenderedURLs: [TrainingDisciplineID: URL] = [:]
 
-    static func render(mode: TrainingDiscipline, progressTimeline: ProgressTimeline, date: Date = Date()) -> URL? {
+    static func render(mode: TrainingDisciplineID, progressTimeline: ProgressTimeline, date: Date = Date()) -> URL? {
         let view = ExportChartView(mode: mode, progressTimeline: progressTimeline, date: date)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2.0
@@ -29,7 +29,7 @@ enum ChartImageRenderer {
         }
     }
 
-    static func exportFileName(for date: Date = Date(), mode: TrainingDiscipline) -> String {
+    static func exportFileName(for date: Date = Date(), mode: TrainingDisciplineID) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmm"
         formatter.locale = Locale(identifier: "en_US_POSIX")

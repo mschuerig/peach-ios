@@ -5,7 +5,7 @@ import Foundation
 @Suite("TrainingDisciplineStatistics Tests")
 struct TrainingDisciplineStatisticsTests {
 
-    private let config = TrainingDisciplineConfig.unisonPitchDiscrimination.statistics
+    private let config = TrainingDisciplineID.unisonPitchDiscrimination.config.statistics
 
     // MARK: - Welford Correctness
 

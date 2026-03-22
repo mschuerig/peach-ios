@@ -9,16 +9,15 @@ struct ProgressTimelineTests {
 
     private let now = Date()
 
-    /// Builds a ProgressTimeline by populating a PerceptualProfile from records via MetricPointMapper.
     private func makeTimeline(
         pitchDiscriminationRecords: [PitchDiscriminationRecord] = [],
         pitchMatchingRecords: [PitchMatchingRecord] = [],
         rhythmOffsetDetectionRecords: [RhythmOffsetDetectionRecord] = []
     ) -> ProgressTimeline {
         let profile = PerceptualProfile { builder in
-            MetricPointMapper.feedPitchDiscriminations(pitchDiscriminationRecords, into: builder)
-            MetricPointMapper.feedPitchMatchings(pitchMatchingRecords, into: builder)
-            MetricPointMapper.feedRhythmOffsetDetections(rhythmOffsetDetectionRecords, into: builder)
+            builder.feedPitchDiscriminations(pitchDiscriminationRecords)
+            builder.feedPitchMatchings(pitchMatchingRecords)
+            builder.feedRhythmOffsetDetections(rhythmOffsetDetectionRecords)
         }
         return ProgressTimeline(profile: profile)
     }
@@ -74,7 +73,7 @@ struct ProgressTimelineTests {
     @Test("empty timeline reports noData for all modes")
     func emptyTimeline() async {
         let timeline = ProgressTimeline(profile: PerceptualProfile())
-        for mode in TrainingDiscipline.allCases {
+        for mode in TrainingDisciplineID.allCases {
             #expect(timeline.state(for: mode) == .noData)
         }
     }
@@ -431,7 +430,7 @@ struct ProgressTimelineTests {
         }
 
         let profile = PerceptualProfile { builder in
-            MetricPointMapper.feedPitchDiscriminations(records, into: builder)
+            builder.feedPitchDiscriminations(records)
         }
         let timeline = ProgressTimeline(profile: profile)
 

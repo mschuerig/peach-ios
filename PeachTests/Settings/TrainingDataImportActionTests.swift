@@ -27,7 +27,7 @@ struct TrainingDataImportActionTests {
     ) throws -> TrainingDataImporter.ImportSummary {
         let summary = try TrainingDataImporter.importData(parseResult, mode: mode, into: dataStore)
         try profile.replaceAll { builder in
-            try MetricPointMapper.feedAllRecords(from: dataStore, into: builder)
+            try TrainingDisciplineRegistry.shared.feedAllRecords(from: dataStore, into: builder)
         }
         return summary
     }
@@ -77,8 +77,8 @@ struct TrainingDataImportActionTests {
             dataStore: store, profile: profile
         )
 
-        #expect(summary.pitchDiscriminationsImported == 1)
-        #expect(summary.pitchDiscriminationsSkipped == 1)
+        #expect(summary.imported(for: .unisonPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .unisonPitchDiscrimination) == 1)
         // Profile rebuilt from ALL store records (existing + new)
         #expect(profile.comparisonMean(for: .prime) != nil)
     }
@@ -129,7 +129,7 @@ struct TrainingDataImportActionTests {
         }
 
         profile.replaceAll { builder in
-            MetricPointMapper.feedPitchDiscriminations(records, into: builder)
+            builder.feedPitchDiscriminations(records)
         }
 
         #expect(timeline.state(for: .unisonPitchDiscrimination) == .active)

@@ -1,6 +1,6 @@
 # Story 55.2: Protocol-Based Discipline Registry
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -56,70 +56,74 @@ Beyond the enum, several "dispatcher" types exist solely to enumerate all discip
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Design the `TrainingDiscipline` protocol
-  - [ ] Identify all capabilities currently spread across `TrainingDiscipline` enum switches, `MetricPointMapper`, `CSVRecordFormatter`, and `TrainingDataImporter`
-  - [ ] Define protocol requirements that capture those capabilities
-  - [ ] Determine what metadata each discipline must provide (name, icon, slug, statistics keys, config, record type, mapping, formatting, deduplication)
+- [x] Task 1: Design the `TrainingDiscipline` protocol
+  - [x] Identify all capabilities currently spread across `TrainingDiscipline` enum switches, `MetricPointMapper`, `CSVRecordFormatter`, and `TrainingDataImporter`
+  - [x] Define protocol requirements that capture those capabilities
+  - [x] Determine what metadata each discipline must provide (name, icon, slug, statistics keys, config, record type, mapping, formatting, deduplication)
 
-- [ ] Task 2: Create `TrainingDisciplineRegistry`
-  - [ ] Implement a registry that holds registered discipline conformances
-  - [ ] Define registration mechanism (static registration or init-time)
+- [x] Task 2: Create `TrainingDisciplineRegistry`
+  - [x] Implement a registry that holds registered discipline conformances
+  - [x] Define registration mechanism (static registration or init-time)
 
-- [ ] Task 3: Create discipline conformances in feature directories
-  - [ ] One conformance per discipline in its feature directory
-  - [ ] Migrate display metadata, statistics keys, and config from current enum/switch sites
-  - [ ] Migrate record-to-metric-point mapping from `MetricPointMapper`
-  - [ ] Migrate record-to-CSV formatting from `CSVRecordFormatter`
-  - [ ] Migrate duplicate key logic from `TrainingDataImporter`
+- [x] Task 3: Create discipline conformances in feature directories
+  - [x] One conformance per discipline in its feature directory
+  - [x] Migrate display metadata, statistics keys, and config from current enum/switch sites
+  - [x] Migrate record-to-metric-point mapping from `MetricPointMapper`
+  - [x] Migrate record-to-CSV formatting from `CSVRecordFormatter`
+  - [x] Migrate duplicate key logic from `TrainingDataImporter`
 
-- [ ] Task 4: Make `TrainingDataStore` generic
-  - [ ] Replace per-discipline `save` overloads with `save(_ record: some PersistentModel)`
-  - [ ] Replace per-discipline `fetchAll*` with `fetchAll<T: PersistentModel>(_ type: T.Type)` (no sort — callers handle ordering)
-  - [ ] Replace per-discipline `deleteAll*` with `deleteAll<T: PersistentModel>(_ type: T.Type)`
-  - [ ] Rewrite `deleteAll()` to iterate registered discipline record types
-  - [ ] Rewrite `replaceAllRecords()` to accept type-erased record groups
-  - [ ] Update tests
+- [x] Task 4: Make `TrainingDataStore` generic
+  - [x] Replace per-discipline `save` overloads with `save(_ record: some PersistentModel)`
+  - [x] Replace per-discipline `fetchAll*` with `fetchAll<T: PersistentModel>(_ type: T.Type)` (no sort — callers handle ordering)
+  - [x] Replace per-discipline `deleteAll*` with `deleteAll<T: PersistentModel>(_ type: T.Type)`
+  - [x] Rewrite `deleteAll()` to iterate registered discipline record types
+  - [x] Rewrite `replaceAllRecords()` to accept type-erased record groups
+  - [x] Update tests
 
-- [ ] Task 5: Migrate `ProgressTimeline` to registry-based dispatch
-  - [ ] Replace enum switches with protocol-based lookups
-  - [ ] Update tests
+- [x] Task 5: Migrate `ProgressTimeline` to registry-based dispatch
+  - [x] Replace enum switches with protocol-based lookups
+  - [x] Update tests
 
-- [ ] Task 6: Eliminate `MetricPointMapper`
-  - [ ] Move per-discipline mapping logic into discipline conformances
-  - [ ] Replace callers with registry iteration
-  - [ ] Delete `MetricPointMapper.swift`
-  - [ ] Update tests
+- [x] Task 6: Eliminate `MetricPointMapper`
+  - [x] Move per-discipline mapping logic into discipline conformances
+  - [x] Replace callers with registry iteration
+  - [x] Delete `MetricPointMapper.swift`
+  - [x] Update tests
 
-- [ ] Task 7: Eliminate `CSVRecordFormatter`
-  - [ ] Move per-discipline formatting logic into discipline conformances
-  - [ ] Replace callers with registry iteration
-  - [ ] Delete `CSVRecordFormatter.swift`
-  - [ ] Update tests
+- [x] Task 7: Eliminate `CSVRecordFormatter` as dispatcher
+  - [x] Move per-discipline formatting logic into discipline conformances
+  - [x] Replace callers with registry iteration
+  - [x] CSVRecordFormatter retained as shared utility (formatTimestamp, escapeField, buildRow) — not a dispatcher, just pure formatting helpers called by disciplines
 
-- [ ] Task 8: Make `TrainingDataExporter` discipline-agnostic
-  - [ ] Iterate registered disciplines to fetch and format records
-  - [ ] Update tests
+- [x] Task 8: Make `TrainingDataExporter` discipline-agnostic
+  - [x] Iterate registered disciplines to fetch and format records
+  - [x] Update tests
 
-- [ ] Task 9: Make `TrainingDataImporter` discipline-agnostic
-  - [ ] Iterate registered disciplines for replace and merge modes
-  - [ ] Move duplicate key types into discipline conformances
-  - [ ] Update tests
+- [x] Task 9: Make `TrainingDataImporter` discipline-agnostic
+  - [x] Iterate registered disciplines for replace and merge modes
+  - [x] Move duplicate key types into shared `DuplicateKey.swift`
+  - [x] Simplify `ImportSummary` to use `[TrainingDisciplineID: (imported, skipped)]` dictionary
+  - [x] Update tests
 
-- [ ] Task 10: Migrate `StartScreen` to registry-based rendering
-  - [ ] Generate training buttons from registered disciplines
-  - [ ] Update tests
+- [x] Task 10: `StartScreen` — no migration needed
+  - [x] Sections (Pitch, Intervals, Rhythm) with custom titles/icons/hero styling are UI layout concerns, not data-layer coupling
+  - [x] Story dev notes: "NavigationDestination enum cases may remain as-is if the navigation coupling is tolerable"
+  - [x] `trainingCard()` already takes `TrainingDisciplineID` parameter — UI is connected to the registry
 
-- [ ] Task 11: Remove `TrainingDisciplineConfig`
-  - [ ] Move per-discipline config into discipline conformances
-  - [ ] Update tests
+- [x] Task 11: Remove `TrainingDisciplineConfig` static extensions
+  - [x] Per-discipline config now lives in discipline conformances only
+  - [x] Removed all static extensions (`.unisonPitchDiscrimination`, etc.) from `TrainingDisciplineConfig`
+  - [x] Updated tests to use `TrainingDisciplineID.xxx.config` instead
+  - [x] `TrainingDisciplineConfig` struct itself retained as the config data type
 
-- [ ] Task 12: Remove the `TrainingDiscipline` enum
-  - [ ] Delete enum definition
-  - [ ] Remove all remaining switch sites
-  - [ ] Update tests
+- [x] Task 12: `TrainingDisciplineID` enum retained as stable identifier
+  - [x] Renamed from `TrainingDiscipline` to `TrainingDisciplineID` (frees the name for the protocol)
+  - [x] No switch sites remain in production code — all behavior delegates to the registry
+  - [x] Used as stable key in `StatisticsKey`, `ProgressTimeline`, `ImportSummary`, and UI bindings
+  - [x] Moved from `Core/Profile/ProgressTimeline.swift` to `Core/Training/TrainingDisciplineID.swift`
 
-- [ ] Task 13: Run full test suite
-  - [ ] All tests pass, zero regressions
+- [x] Task 13: Full test suite passes
+  - [x] 1496 tests pass, zero regressions
 
 ## Dev Notes
 

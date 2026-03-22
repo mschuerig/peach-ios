@@ -512,7 +512,7 @@ struct TrainingDataStoreTests {
         let rhythmCompRecord = RhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
         try store.save(rhythmCompRecord)
 
-        try store.deleteAllRhythmOffsetDetections()
+        try store.deleteAll(RhythmOffsetDetectionRecord.self)
 
         let rhythmComps = try store.fetchAllRhythmOffsetDetections()
         #expect(rhythmComps.isEmpty)
@@ -609,7 +609,7 @@ struct TrainingDataStoreTests {
         let rhythmOffsetRecord = RhythmOffsetDetectionRecord(tempoBPM: 100, offsetMs: 3.0, isCorrect: true)
         try store.save(rhythmOffsetRecord)
 
-        try store.deleteAllContinuousRhythmMatchings()
+        try store.deleteAll(ContinuousRhythmMatchingRecord.self)
 
         let continuous = try store.fetchAllContinuousRhythmMatchings()
         #expect(continuous.isEmpty)

@@ -141,7 +141,7 @@ struct PerceptualProfileTests {
     @Test("hasData returns false for empty modes")
     func hasDataEmptyProfile() async {
         let profile = PerceptualProfile()
-        for mode in [TrainingDiscipline.unisonPitchDiscrimination, .intervalPitchDiscrimination, .unisonPitchMatching, .intervalPitchMatching] {
+        for mode in [TrainingDisciplineID.unisonPitchDiscrimination, .intervalPitchDiscrimination, .unisonPitchMatching, .intervalPitchMatching] {
             #expect(!profile.hasData(for: mode))
         }
     }
@@ -196,7 +196,7 @@ struct PerceptualProfileTests {
 
         profile.resetAll()
 
-        for mode in [TrainingDiscipline.unisonPitchDiscrimination, .intervalPitchDiscrimination, .unisonPitchMatching, .intervalPitchMatching] {
+        for mode in [TrainingDisciplineID.unisonPitchDiscrimination, .intervalPitchDiscrimination, .unisonPitchMatching, .intervalPitchMatching] {
             #expect(!profile.hasData(for: mode))
         }
         #expect(profile.comparisonMean(for: .prime) == nil)

@@ -188,7 +188,7 @@ struct PitchDiscriminationSessionIntegrationTests {
         ]
 
         let profile = PerceptualProfile { builder in
-            MetricPointMapper.feedPitchDiscriminations(records, into: builder)
+            builder.feedPitchDiscriminations(records)
         }
 
         // Only correct answers contribute: mean of [50, 30] = 40.0
