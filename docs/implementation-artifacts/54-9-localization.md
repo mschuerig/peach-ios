@@ -1,6 +1,6 @@
 # Story 54.9: Localization
 
-Status: review
+Status: done
 
 ## Story
 
