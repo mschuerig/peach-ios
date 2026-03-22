@@ -335,4 +335,132 @@ struct SoundFontStepSequencerTests {
 
         #expect(delay < fastSamplesPerStep)
     }
+
+    // MARK: - Lifecycle (start / stop / restart)
+
+    private static let testPreset = SF2Preset(name: "test", program: 0, bank: SF2Preset.percussionBank)
+
+    @Test("start sets currentStep and currentCycle from audio position")
+    func startSetsObservableState() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.second])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+
+        #expect(sequencer.currentStep != nil)
+        #expect(sequencer.currentCycle != nil)
+
+        try await sequencer.stop()
+    }
+
+    @Test("stop resets currentStep and currentCycle to nil")
+    func stopResetsState() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.second])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+        try await sequencer.stop()
+
+        #expect(sequencer.currentStep == nil)
+        #expect(sequencer.currentCycle == nil)
+    }
+
+    @Test("stop clears engine schedule and stops notes")
+    func stopClearsEngine() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.second])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+        try await sequencer.stop()
+
+        #expect(engine.clearScheduleCallCount > 0)
+        #expect(engine.stopNotesCallCount > 0)
+    }
+
+    @Test("restart after stop works correctly")
+    func restartAfterStop() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.third])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+        try await sequencer.stop()
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+
+        #expect(sequencer.currentStep != nil)
+        #expect(engine.scheduleCallCount >= 2)
+
+        try await sequencer.stop()
+    }
+
+    @Test("currentStep tracks actual audio position")
+    func currentStepTracksAudioPosition() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.second])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+
+        // Position 0 → first step
+        #expect(sequencer.currentStep == .first)
+
+        // Advance to second step
+        engine.currentSamplePosition = Self.samplesPerStep
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(sequencer.currentStep == .second)
+
+        // Advance to fourth step
+        engine.currentSamplePosition = Self.samplesPerStep * 3
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(sequencer.currentStep == .fourth)
+
+        try await sequencer.stop()
+    }
+
+    @Test("currentCycle reflects the correct cycle definition at each position")
+    func currentCycleTracksPosition() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.first, .third])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+        try await Task.sleep(for: .milliseconds(20))
+
+        // Cycle 0 → gap at .first
+        #expect(sequencer.currentCycle?.gapPosition == .first)
+
+        // Advance to cycle 1 → gap at .third
+        let samplesPerCycle = Self.samplesPerStep * 4
+        engine.currentSamplePosition = samplesPerCycle
+        try await Task.sleep(for: .milliseconds(20))
+        #expect(sequencer.currentCycle?.gapPosition == .third)
+
+        try await sequencer.stop()
+    }
+
+    @Test("start calls engine setup methods")
+    func startCallsEngineSetup() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        let provider = MockStepProvider(gapPositions: [.second])
+
+        try await sequencer.start(tempo: Self.tempo, stepProvider: provider)
+
+        #expect(engine.ensureAudioSessionConfiguredCallCount == 1)
+        #expect(engine.ensureEngineRunningCallCount == 1)
+        #expect(engine.loadPresetCallCount == 1)
+        #expect(engine.scheduleCallCount == 1)
+
+        try await sequencer.stop()
+    }
 }

@@ -1748,7 +1748,7 @@ File location: `Core/Music/RhythmDirection.swift`
 - How samples are actually delivered (SF2 percussion bank, separate audio files, synthesized clicks) is an implementation detail — the engine resolves a `SoundSourceID` to whatever mechanism works best with the existing `AVAudioUnitSampler` infrastructure
 - Exposed through the existing `SoundSourceProvider` protocol pattern
 
-**Not a protocol** — `SoundFontEngine` is a concrete internal class. It's the single implementation behind both `SoundFontNotePlayer` and `SoundFontRhythmPlayer`. If a future engine replacement is needed, both players change together.
+**Not a protocol** — `SoundFontEngine` is a concrete internal class. It's the single implementation behind `SoundFontNotePlayer`, `SoundFontRhythmPlayer`, and `SoundFontStepSequencer`. If a future engine replacement is needed, all consumers change together. Individual consumers may extract narrow protocol views of the engine (e.g., `StepSequencerEngine`) for testability — these are consumer-specific test seams, not engine substitution points.
 
 **File location:** `Core/Audio/SoundFontEngine.swift`
 
@@ -1830,6 +1830,35 @@ final class SoundFontRhythmPlayer: RhythmPlayer {
 - `Core/Audio/RhythmPlaybackHandle.swift` — protocol
 - `Core/Audio/SoundFontRhythmPlayer.swift` — implementation
 - `Core/Audio/SoundFontRhythmPlaybackHandle.swift` — implementation
+
+#### Layer 3b: StepSequencer (Continuous Rhythm)
+
+`StepSequencer` is a protocol for indefinitely looping 4-step cycles with per-cycle gap selection. Unlike `RhythmPlayer` (finite patterns), the step sequencer loops until stopped, requesting a new `CycleDefinition` from a `StepProvider` at each cycle boundary.
+
+**Key types (in `Core/Audio/StepSequencer.swift`):**
+
+```swift
+protocol StepSequencer {
+    var currentStep: StepPosition? { get }
+    var currentCycle: CycleDefinition? { get }
+    func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws
+    func stop() async throws
+}
+
+protocol StepProvider {
+    func nextCycle() -> CycleDefinition
+}
+```
+
+**`SoundFontStepSequencer`** — concrete `@Observable` implementation. Uses batch scheduling (500 cycles per batch) via `SoundFontEngine.scheduleEvents()`. UI state (`currentStep`, `currentCycle`) is driven by polling `engine.currentSamplePosition` at ~120 Hz — sample-accurate with no drift.
+
+**`StepSequencerEngine`** — protocol abstracting the engine operations the sequencer needs (`scheduleEvents`, `currentSamplePosition`, etc.). `SoundFontEngine` conforms. Enables mock-based testing of lifecycle behavior.
+
+**Mutual exclusion with `RhythmPlayer`:** Both share channel 1 on `SoundFontEngine`. Calling `scheduleEvents` on either replaces the other's schedule (implicit mutual exclusion by replacement).
+
+**File locations:**
+- `Core/Audio/StepSequencer.swift` — protocols and domain types
+- `Core/Audio/SoundFontStepSequencer.swift` — implementation + `StepSequencerEngine` protocol
 
 ### Rhythm Sessions
 

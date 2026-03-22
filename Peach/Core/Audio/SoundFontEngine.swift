@@ -359,6 +359,10 @@ final class SoundFontEngine {
         scheduleLockState.withLock { data in data.count }
     }
 
+    var currentSamplePosition: Int64 {
+        scheduleLockState.withLock { data in data.samplePosition }
+    }
+
     // MARK: - Schedule Scanning (testable pure function)
 
     nonisolated static func scanSchedule(

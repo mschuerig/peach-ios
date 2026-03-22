@@ -411,7 +411,7 @@ development_status:
 
   # Epic 54: Fill the Gap — Continuous Rhythm Matching
   epic-54: in-progress
-  54-1-step-sequencer-protocol-and-audio-engine: review
+  54-1-step-sequencer-protocol-and-audio-engine: done
   54-2-continuous-rhythm-matching-session: ready-for-dev
   54-3-gap-position-settings: ready-for-dev
   54-4-continuous-rhythm-matching-screen: ready-for-dev

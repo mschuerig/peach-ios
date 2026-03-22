@@ -15,7 +15,7 @@ extension EnvironmentValues {
     @Entry var trainingDataTransferService: TrainingDataTransferService = TrainingDataTransferService.preview()
     @Entry var userSettings: any UserSettings = PreviewUserSettings()
     @Entry var rhythmPlayer: (any RhythmPlayer)? = nil
-    @Entry var stepSequencer: SoundFontStepSequencer? = nil
+    @Entry var stepSequencer: (any StepSequencer)? = nil
     @Entry var audioSampleRate: SampleRate = .standard48000
 }
 

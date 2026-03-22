@@ -1,6 +1,23 @@
 import Foundation
 import os
 
+// MARK: - StepSequencerEngine
+
+protocol StepSequencerEngine {
+    var sampleRate: SampleRate { get }
+    var currentSamplePosition: Int64 { get }
+    func ensureAudioSessionConfigured() throws
+    func ensureEngineRunning() throws
+    func loadPreset(_ preset: SF2Preset, channel: SoundFontEngine.ChannelID) async throws
+    func scheduleEvents(_ events: [ScheduledMIDIEvent])
+    func clearSchedule()
+    func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async
+}
+
+extension SoundFontEngine: StepSequencerEngine {}
+
+// MARK: - SoundFontStepSequencer
+
 @Observable
 final class SoundFontStepSequencer: StepSequencer {
 
@@ -14,13 +31,16 @@ final class SoundFontStepSequencer: StepSequencer {
     /// (each cycle produces at most 6 events: 3 note-on + 3 note-off).
     private nonisolated static let cyclesPerBatch = 500
 
+    /// Polling interval for sample-position-driven UI tracking (~120 Hz).
+    private nonisolated static let uiPollingInterval: Duration = .milliseconds(8)
+
     // MARK: - Logger
 
     private let logger = Logger(subsystem: "com.peach.app", category: "SoundFontStepSequencer")
 
     // MARK: - Dependencies
 
-    private let engine: SoundFontEngine
+    private let engine: any StepSequencerEngine
     private let channel: SoundFontEngine.ChannelID
     private let preset: SF2Preset
 
@@ -31,13 +51,11 @@ final class SoundFontStepSequencer: StepSequencer {
 
     // MARK: - State
 
-    private var sequencerTask: Task<Void, any Error>?
-    private var uiTrackingTask: Task<Void, any Error>?
-    private var batchCycleDefinitions: [CycleDefinition] = []
+    private var runLoopTask: Task<Void, any Error>?
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, preset: SF2Preset, channel: SoundFontEngine.ChannelID) {
+    init(engine: any StepSequencerEngine, preset: SF2Preset, channel: SoundFontEngine.ChannelID) {
         self.engine = engine
         self.preset = preset
         self.channel = channel
@@ -58,7 +76,7 @@ final class SoundFontStepSequencer: StepSequencer {
             sampleRate: sampleRate,
             samplesPerStep: samplesPerStep
         )
-        let cycleDuration = tempo.sixteenthNoteDuration.timeInterval * 4.0
+        let samplesPerCycle = samplesPerStep * 4
 
         let batch = Self.buildBatch(
             cycleCount: Self.cyclesPerBatch,
@@ -67,55 +85,50 @@ final class SoundFontStepSequencer: StepSequencer {
             noteOffDelaySamples: noteOffDelaySamples,
             channelID: channel
         )
-        batchCycleDefinitions = batch.definitions
         engine.scheduleEvents(batch.events)
 
         logger.info("Step sequencer started at \(tempo.value) BPM")
 
-        let stepDuration = tempo.sixteenthNoteDuration
+        let refillThreshold = Int64(Self.cyclesPerBatch - 10) * samplesPerCycle
 
-        // UI tracking: advance currentStep and currentCycle in sync with audio
-        uiTrackingTask = Task {
-            var cycleIndex = 0
+        runLoopTask = Task {
+            var definitions = batch.definitions
+
             while !Task.isCancelled {
-                let definition = batchCycleDefinitions[cycleIndex % batchCycleDefinitions.count]
-                currentCycle = definition
-                for step in StepPosition.allCases {
-                    if Task.isCancelled { return }
-                    currentStep = step
-                    try await Task.sleep(for: stepDuration)
+                let position = engine.currentSamplePosition
+
+                // Derive UI state from the engine's actual sample position
+                let globalStepIndex = position / samplesPerStep
+                let stepInCycle = Int(globalStepIndex % 4)
+                let cycleIndex = Int(globalStepIndex / 4)
+
+                currentStep = StepPosition(rawValue: stepInCycle)
+                currentCycle = definitions[cycleIndex % definitions.count]
+
+                // Replenish batch when approaching the end
+                if position >= refillThreshold {
+                    let nextBatch = Self.buildBatch(
+                        cycleCount: Self.cyclesPerBatch,
+                        stepProvider: stepProvider,
+                        samplesPerStep: samplesPerStep,
+                        noteOffDelaySamples: noteOffDelaySamples,
+                        channelID: channel
+                    )
+                    definitions = nextBatch.definitions
+                    engine.scheduleEvents(nextBatch.events)
                 }
-                cycleIndex += 1
-            }
-        }
 
-        sequencerTask = Task {
-            let sleepDuration = cycleDuration * Double(Self.cyclesPerBatch - 10)
-            while !Task.isCancelled {
-                try await Task.sleep(for: .seconds(sleepDuration))
-                if Task.isCancelled { return }
-
-                let nextBatch = Self.buildBatch(
-                    cycleCount: Self.cyclesPerBatch,
-                    stepProvider: stepProvider,
-                    samplesPerStep: samplesPerStep,
-                    noteOffDelaySamples: noteOffDelaySamples,
-                    channelID: channel
-                )
-                batchCycleDefinitions = nextBatch.definitions
-                engine.scheduleEvents(nextBatch.events)
+                try await Task.sleep(for: Self.uiPollingInterval)
             }
         }
     }
 
     func stop() async throws {
-        uiTrackingTask?.cancel()
-        uiTrackingTask = nil
-        sequencerTask?.cancel()
-        sequencerTask = nil
+        runLoopTask?.cancel()
+        _ = await runLoopTask?.result
+        runLoopTask = nil
         currentStep = nil
         currentCycle = nil
-        batchCycleDefinitions = []
         engine.clearSchedule()
         await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
         logger.info("Step sequencer stopped")
