@@ -103,7 +103,7 @@ struct RhythmOffsetDetectionScreen: View {
         ToolbarItem(placement: .principal) {
             HStack(spacing: 6) {
                 Image(systemName: "metronome")
-                Text("Rhythm")
+                Text(String(localized: "Rhythm"))
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "Rhythm \u{2013} Compare"))

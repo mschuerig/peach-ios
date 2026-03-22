@@ -1,6 +1,6 @@
 # Story 53.1: Rhythm Training Localization
 
-Status: review
+Status: done
 
 ## Story
 

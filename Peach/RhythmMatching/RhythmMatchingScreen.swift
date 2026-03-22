@@ -117,7 +117,7 @@ struct RhythmMatchingScreen: View {
         ToolbarItem(placement: .principal) {
             HStack(spacing: 6) {
                 Image(systemName: "hand.tap")
-                Text("Rhythm")
+                Text(String(localized: "Rhythm"))
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "Rhythm \u{2013} Match"))
