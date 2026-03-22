@@ -11,6 +11,7 @@ struct PeachApp: App {
     @State private var pitchMatchingSession: PitchMatchingSession
     @State private var rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
     @State private var rhythmMatchingSession: RhythmMatchingSession
+    @State private var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
     @State private var profile: PerceptualProfile
     @State private var progressTimeline: ProgressTimeline
     @State private var soundFontLibrary: SoundFontLibrary
@@ -65,12 +66,6 @@ struct PeachApp: App {
             )
             _rhythmPlayer = State(wrappedValue: rhythmPlayer)
 
-            _stepSequencer = State(wrappedValue: SoundFontStepSequencer(
-                engine: soundFontEngine,
-                preset: percussionPreset,
-                channel: percussionChannel
-            ))
-
             let profile = try Self.loadPerceptualProfile(dataStore: dataStore)
             _profile = State(wrappedValue: profile)
 
@@ -113,6 +108,19 @@ struct PeachApp: App {
                 profile: profile,
                 dataStore: dataStore,
                 sampleRate: soundFontEngine.sampleRate
+            ))
+
+            let soundFontStepSequencer = SoundFontStepSequencer(
+                engine: soundFontEngine,
+                preset: percussionPreset,
+                channel: percussionChannel
+            )
+            _stepSequencer = State(wrappedValue: soundFontStepSequencer)
+
+            _continuousRhythmMatchingSession = State(wrappedValue: Self.createContinuousRhythmMatchingSession(
+                stepSequencer: soundFontStepSequencer,
+                profile: profile,
+                dataStore: dataStore
             ))
             try? Tips.configure()
         } catch {
@@ -163,6 +171,7 @@ struct PeachApp: App {
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
                 .environment(\.rhythmMatchingSession, rhythmMatchingSession)
+                .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
                     let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
@@ -226,6 +235,16 @@ struct PeachApp: App {
                         activeSession = nil
                     }
                 }
+                .onChange(of: continuousRhythmMatchingSession.isIdle) { _, isIdle in
+                    if !isIdle {
+                        if activeSession !== continuousRhythmMatchingSession {
+                            activeSession?.stop()
+                        }
+                        activeSession = continuousRhythmMatchingSession
+                    } else if activeSession === continuousRhythmMatchingSession {
+                        activeSession = nil
+                    }
+                }
         }
     }
 
@@ -285,6 +304,18 @@ struct PeachApp: App {
             rhythmPlayer: rhythmPlayer,
             observers: observers,
             sampleRate: sampleRate
+        )
+    }
+
+    private static func createContinuousRhythmMatchingSession(
+        stepSequencer: StepSequencer,
+        profile: PerceptualProfile,
+        dataStore: TrainingDataStore
+    ) -> ContinuousRhythmMatchingSession {
+        let observers: [ContinuousRhythmMatchingObserver] = []
+        return ContinuousRhythmMatchingSession(
+            stepSequencer: stepSequencer,
+            observers: observers
         )
     }
 

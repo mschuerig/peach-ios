@@ -57,6 +57,12 @@ extension EnvironmentValues {
             sampleRate: .standard48000
         )
     }()
+
+    @Entry var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession = {
+        ContinuousRhythmMatchingSession(
+            stepSequencer: PreviewStepSequencer()
+        )
+    }()
 }
 
 // MARK: - Preview Stubs
@@ -106,6 +112,13 @@ private final class PreviewRhythmPlayer: RhythmPlayer {
 }
 
 private final class PreviewRhythmPlaybackHandle: RhythmPlaybackHandle {
+    func stop() async throws {}
+}
+
+private final class PreviewStepSequencer: StepSequencer {
+    var currentStep: StepPosition?
+    var currentCycle: CycleDefinition?
+    func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws {}
     func stop() async throws {}
 }
 
