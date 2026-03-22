@@ -351,7 +351,7 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         let columns = lines[1].split(separator: ",").map(String.init)
 
-        #expect(columns.count == 15)
+        #expect(columns.count == 16)
         #expect(columns[12] == "tempoBPM")
         #expect(columns[13] == "offsetMs")
         #expect(columns[14] == "userOffsetMs")
@@ -427,7 +427,7 @@ struct TrainingDataExporterTests {
         // Skip metadata and header, check all data rows
         for i in 2..<lines.count {
             let fields = lines[i].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-            #expect(fields.count == 15, "Row \(i) has \(fields.count) fields, expected 15")
+            #expect(fields.count == 16, "Row \(i) has \(fields.count) fields, expected 16")
         }
     }
 

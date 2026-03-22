@@ -11,16 +11,17 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
         var pitchMatchings: [PitchMatchingRecord] = []
         var rhythmOffsetDetections: [RhythmOffsetDetectionRecord] = []
         var rhythmMatchings: [RhythmMatchingRecord] = []
+        var continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = []
         var errors: [CSVImportError] = []
 
         guard let headerLine = lines.first, !headerLine.isEmpty else {
             errors.append(.invalidHeader(expected: CSVExportSchemaV2.headerRow, actual: "(empty)"))
-            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], errors: errors)
+            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
         }
 
         if let headerError = validateHeader(headerLine) {
             errors.append(headerError)
-            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], errors: errors)
+            return CSVImportParser.ImportResult(pitchDiscriminations: [], pitchMatchings: [], rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
         }
 
         let dataLines = lines.dropFirst()
@@ -36,6 +37,8 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 rhythmOffsetDetections.append(record)
             case .rhythmMatching(let record):
                 rhythmMatchings.append(record)
+            case .continuousRhythmMatching(let record):
+                continuousRhythmMatchings.append(record)
             case .error(let error):
                 errors.append(error)
             }
@@ -46,6 +49,7 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             pitchMatchings: pitchMatchings,
             rhythmOffsetDetections: rhythmOffsetDetections,
             rhythmMatchings: rhythmMatchings,
+            continuousRhythmMatchings: continuousRhythmMatchings,
             errors: errors
         )
     }
@@ -79,6 +83,7 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
         case pitchMatching(PitchMatchingRecord)
         case rhythmOffsetDetection(RhythmOffsetDetectionRecord)
         case rhythmMatching(RhythmMatchingRecord)
+        case continuousRhythmMatching(ContinuousRhythmMatchingRecord)
         case error(CSVImportError)
     }
 
@@ -106,12 +111,14 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             return parseRhythmOffsetDetectionRow(fields, rowNumber: rowNumber)
         case CSVExportSchemaV2.TrainingType.rhythmMatching.csvValue:
             return parseRhythmMatchingRow(fields, rowNumber: rowNumber)
+        case CSVExportSchemaV2.TrainingType.continuousRhythmMatching.csvValue:
+            return parseContinuousRhythmMatchingRow(fields, rowNumber: rowNumber)
         default:
             return .error(.invalidRowData(
                 row: rowNumber,
                 column: "trainingType",
                 value: trainingType,
-                reason: "must be 'pitchDiscrimination', 'pitchMatching', 'rhythmOffsetDetection', or 'rhythmMatching'"
+                reason: "must be 'pitchDiscrimination', 'pitchMatching', 'rhythmOffsetDetection', 'rhythmMatching', or 'continuousRhythmMatching'"
             ))
         }
     }
@@ -142,6 +149,11 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 value: "\(initialCentOffsetStr),\(userCentErrorStr)",
                 reason: "must be empty for pitchDiscrimination rows"
             ))
+        }
+
+        // Validate continuous rhythm matching columns are empty
+        if let error = validateContinuousColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "pitchDiscrimination") {
+            return error
         }
 
         return parsePitchCommonFields(fields, rowNumber: rowNumber) { timestamp, referenceNote, targetNote, intervalRaw, tuningSystemStr in
@@ -195,6 +207,11 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 value: "\(centOffsetStr),\(isCorrectStr)",
                 reason: "must be empty for pitchMatching rows"
             ))
+        }
+
+        // Validate continuous rhythm matching columns are empty
+        if let error = validateContinuousColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "pitchMatching") {
+            return error
         }
 
         return parsePitchCommonFields(fields, rowNumber: rowNumber) { timestamp, referenceNote, targetNote, intervalRaw, tuningSystemStr in
@@ -252,6 +269,11 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 value: userOffsetMsStr,
                 reason: "must be empty for rhythmOffsetDetection rows"
             ))
+        }
+
+        // Validate continuous rhythm matching columns are empty
+        if let error = validateContinuousColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "rhythmOffsetDetection") {
+            return error
         }
 
         let timestampStr = fields[1]
@@ -316,6 +338,11 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             ))
         }
 
+        // Validate continuous rhythm matching columns are empty
+        if let error = validateContinuousColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "rhythmMatching") {
+            return error
+        }
+
         let timestampStr = fields[1]
         guard let timestamp = CSVParserHelpers.parseISO8601(timestampStr) else {
             return .error(.invalidRowData(row: rowNumber, column: "timestamp", value: timestampStr, reason: "not a valid ISO 8601 date"))
@@ -337,6 +364,56 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
             timestamp: timestamp
         )
         return .rhythmMatching(record)
+    }
+
+    // MARK: - Continuous Rhythm Matching Row
+
+    private func parseContinuousRhythmMatchingRow(_ fields: [String], rowNumber: Int) -> RowResult {
+        // Validate pitch-specific columns are empty
+        if let error = validatePitchColumnsEmpty(fields, rowNumber: rowNumber, trainingType: "continuousRhythmMatching") {
+            return error
+        }
+
+        // Validate pitch-only and discrete rhythm columns are empty
+        let centOffsetStr = fields[8]
+        let isCorrectStr = fields[9]
+        let initialCentOffsetStr = fields[10]
+        let userCentErrorStr = fields[11]
+        let offsetMsStr = fields[13]
+        let userOffsetMsStr = fields[14]
+        guard centOffsetStr.isEmpty && isCorrectStr.isEmpty &&
+              initialCentOffsetStr.isEmpty && userCentErrorStr.isEmpty &&
+              offsetMsStr.isEmpty && userOffsetMsStr.isEmpty else {
+            return .error(.invalidRowData(
+                row: rowNumber,
+                column: "centOffset/isCorrect/initialCentOffset/userCentError/offsetMs/userOffsetMs",
+                value: "\(centOffsetStr),\(isCorrectStr),\(initialCentOffsetStr),\(userCentErrorStr),\(offsetMsStr),\(userOffsetMsStr)",
+                reason: "must be empty for continuousRhythmMatching rows"
+            ))
+        }
+
+        let timestampStr = fields[1]
+        guard let timestamp = CSVParserHelpers.parseISO8601(timestampStr) else {
+            return .error(.invalidRowData(row: rowNumber, column: "timestamp", value: timestampStr, reason: "not a valid ISO 8601 date"))
+        }
+
+        let tempoBPMStr = fields[12]
+        guard let tempoBPM = Int(tempoBPMStr), tempoBPM > 0 else {
+            return .error(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a positive integer"))
+        }
+
+        let meanOffsetMsStr = fields[15]
+        guard let meanOffsetMs = Double(meanOffsetMsStr), meanOffsetMs.isFinite else {
+            return .error(.invalidRowData(row: rowNumber, column: "meanOffsetMs", value: meanOffsetMsStr, reason: "not a valid number"))
+        }
+
+        let record = ContinuousRhythmMatchingRecord(
+            tempoBPM: tempoBPM,
+            meanOffsetMs: meanOffsetMs,
+            gapPositionBreakdownJSON: Data(),
+            timestamp: timestamp
+        )
+        return .continuousRhythmMatching(record)
     }
 
     // MARK: - Shared Pitch Field Parsing
@@ -392,6 +469,21 @@ nonisolated struct CSVImportParserV2: CSVVersionedParser {
                 row: rowNumber,
                 column: "referenceNote/referenceNoteName/targetNote/targetNoteName/interval/tuningSystem",
                 value: "\(refNoteStr),\(refNoteNameStr),\(targetNoteStr),\(targetNoteNameStr),\(intervalStr),\(tuningSystemStr)",
+                reason: "must be empty for \(trainingType) rows"
+            ))
+        }
+
+        return nil
+    }
+
+    private func validateContinuousColumnsEmpty(_ fields: [String], rowNumber: Int, trainingType: String) -> RowResult? {
+        let meanOffsetMsStr = fields[15]
+
+        guard meanOffsetMsStr.isEmpty else {
+            return .error(.invalidRowData(
+                row: rowNumber,
+                column: "meanOffsetMs",
+                value: meanOffsetMsStr,
                 reason: "must be empty for \(trainingType) rows"
             ))
         }

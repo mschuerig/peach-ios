@@ -75,7 +75,8 @@ final class TrainingDataTransferService {
             let csvString = try String(contentsOf: url, encoding: .utf8)
             let parseResult = CSVImportParser.parse(csvString)
             if parseResult.pitchDiscriminations.isEmpty && parseResult.pitchMatchings.isEmpty &&
-               parseResult.rhythmOffsetDetections.isEmpty && parseResult.rhythmMatchings.isEmpty {
+               parseResult.rhythmOffsetDetections.isEmpty && parseResult.rhythmMatchings.isEmpty &&
+               parseResult.continuousRhythmMatchings.isEmpty {
                 if parseResult.errors.isEmpty {
                     return .failure(String(localized: "The file contains no valid training data."))
                 } else {
@@ -105,7 +106,7 @@ final class TrainingDataTransferService {
 
     static func preview() -> TrainingDataTransferService {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        guard let container = try? ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, configurations: config) else {
+        guard let container = try? ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, RhythmMatchingRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config) else {
             fatalError("Failed to create preview ModelContainer for TrainingDataTransferService")
         }
         let dataStore = TrainingDataStore(modelContext: container.mainContext)

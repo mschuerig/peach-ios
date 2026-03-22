@@ -7,6 +7,7 @@ enum TrainingDataExporter {
         let pitchMatchings = try store.fetchAllPitchMatchings()
         let rhythmOffsets = try store.fetchAllRhythmOffsetDetections()
         let rhythmMatchings = try store.fetchAllRhythmMatchings()
+        let continuousRhythmMatchings = try store.fetchAllContinuousRhythmMatchings()
 
         var merged: [(timestamp: Date, row: String)] = []
 
@@ -23,6 +24,10 @@ enum TrainingDataExporter {
         }
 
         for record in rhythmMatchings {
+            merged.append((record.timestamp, CSVRecordFormatter.format(record)))
+        }
+
+        for record in continuousRhythmMatchings {
             merged.append((record.timestamp, CSVRecordFormatter.format(record)))
         }
 

@@ -24,22 +24,23 @@ struct CSVExportSchemaV2Tests {
 
     // MARK: - Training Type
 
-    @Test("TrainingType has four cases with correct csvValues")
+    @Test("TrainingType has five cases with correct csvValues")
     func trainingTypeCsvValues() async {
         #expect(CSVExportSchemaV2.TrainingType.pitchDiscrimination.csvValue == "pitchDiscrimination")
         #expect(CSVExportSchemaV2.TrainingType.pitchMatching.csvValue == "pitchMatching")
         #expect(CSVExportSchemaV2.TrainingType.rhythmOffsetDetection.csvValue == "rhythmOffsetDetection")
         #expect(CSVExportSchemaV2.TrainingType.rhythmMatching.csvValue == "rhythmMatching")
+        #expect(CSVExportSchemaV2.TrainingType.continuousRhythmMatching.csvValue == "continuousRhythmMatching")
     }
 
     // MARK: - Header Row
 
-    @Test("headerRow contains all 15 columns in correct order")
-    func headerRowContainsAll15Columns() async {
+    @Test("headerRow contains all 16 columns in correct order")
+    func headerRowContainsAll16Columns() async {
         let header = CSVExportSchemaV2.headerRow
         let columns = header.split(separator: ",").map(String.init)
 
-        #expect(columns.count == 15)
+        #expect(columns.count == 16)
         #expect(columns[0] == "trainingType")
         #expect(columns[1] == "timestamp")
         #expect(columns[2] == "referenceNote")
@@ -55,6 +56,7 @@ struct CSVExportSchemaV2Tests {
         #expect(columns[12] == "tempoBPM")
         #expect(columns[13] == "offsetMs")
         #expect(columns[14] == "userOffsetMs")
+        #expect(columns[15] == "meanOffsetMs")
     }
 
     @Test("first 12 columns match V1 layout for backward compatibility")

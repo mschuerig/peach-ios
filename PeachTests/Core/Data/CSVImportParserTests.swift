@@ -88,6 +88,7 @@ struct CSVImportParserTests {
             pitchMatchings: [pitchMatching],
             rhythmOffsetDetections: [],
             rhythmMatchings: [],
+            continuousRhythmMatchings: [],
             errors: []
         )
 
@@ -108,6 +109,7 @@ struct CSVImportParserTests {
             pitchMatchings: [],
             rhythmOffsetDetections: [],
             rhythmMatchings: [],
+            continuousRhythmMatchings: [],
             errors: [error]
         )
 
@@ -492,15 +494,15 @@ struct CSVImportParserTests {
     }
 
     private var validV2PitchDiscriminationRow: String {
-        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,"
+        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,"
     }
 
     private var validV2RhythmOffsetDetectionRow: String {
-        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"
+        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,"
     }
 
     private var validV2RhythmMatchingRow: String {
-        "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,7.1"
+        "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,7.1,"
     }
 
     @Test("version 2 dispatches to v2 parser")
@@ -553,11 +555,15 @@ struct CSVImportParserTests {
 
     // MARK: - V2 Round-Trip
 
-    @Test("export V2 then import V2 produces identical records")
+    @Test("export V2 then import V2 produces identical records for all five types")
     func v2RoundTrip() async {
         let pitchDisc = PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
             interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate()
+        )
+        let pitchMatch = PitchMatchingRecord(
+            referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
+            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate()
         )
         let rhythmOffset = RhythmOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: 5.3, isCorrect: true, timestamp: fixedDate()
@@ -565,12 +571,17 @@ struct CSVImportParserTests {
         let rhythmMatch = RhythmMatchingRecord(
             tempoBPM: 90, userOffsetMs: -3.7, timestamp: fixedDate()
         )
+        let continuousRhythm = ContinuousRhythmMatchingRecord(
+            tempoBPM: 100, meanOffsetMs: -2.5, gapPositionBreakdownJSON: Data(), timestamp: fixedDate()
+        )
 
         // Export
         let rows = [
             CSVRecordFormatter.format(pitchDisc),
+            CSVRecordFormatter.format(pitchMatch),
             CSVRecordFormatter.format(rhythmOffset),
             CSVRecordFormatter.format(rhythmMatch),
+            CSVRecordFormatter.format(continuousRhythm),
         ]
         let csv = makeV2CSV(rows)
 
@@ -578,14 +589,22 @@ struct CSVImportParserTests {
         let result = CSVImportParser.parse(csv)
         #expect(result.errors.isEmpty)
         #expect(result.pitchDiscriminations.count == 1)
+        #expect(result.pitchMatchings.count == 1)
         #expect(result.rhythmOffsetDetections.count == 1)
         #expect(result.rhythmMatchings.count == 1)
+        #expect(result.continuousRhythmMatchings.count == 1)
 
         let importedPitchDisc = result.pitchDiscriminations[0]
         #expect(importedPitchDisc.referenceNote == 60)
         #expect(importedPitchDisc.targetNote == 64)
         #expect(importedPitchDisc.centOffset == 15.5)
         #expect(importedPitchDisc.isCorrect == true)
+
+        let importedPitchMatch = result.pitchMatchings[0]
+        #expect(importedPitchMatch.referenceNote == 69)
+        #expect(importedPitchMatch.targetNote == 72)
+        #expect(importedPitchMatch.initialCentOffset == 25.0)
+        #expect(importedPitchMatch.userCentError == 3.2)
 
         let importedRhythmOffset = result.rhythmOffsetDetections[0]
         #expect(importedRhythmOffset.tempoBPM == 120)
@@ -595,5 +614,27 @@ struct CSVImportParserTests {
         let importedRhythmMatch = result.rhythmMatchings[0]
         #expect(importedRhythmMatch.tempoBPM == 90)
         #expect(importedRhythmMatch.userOffsetMs == -3.7)
+
+        let importedContinuous = result.continuousRhythmMatchings[0]
+        #expect(importedContinuous.tempoBPM == 100)
+        #expect(importedContinuous.meanOffsetMs == -2.5)
+    }
+
+    @Test("continuous rhythm matching round-trip preserves all fields")
+    func continuousRhythmMatchingRoundTrip() async {
+        let record = ContinuousRhythmMatchingRecord(
+            tempoBPM: 140, meanOffsetMs: 1.23, gapPositionBreakdownJSON: Data(), timestamp: fixedDate()
+        )
+
+        let csv = makeV2CSV([CSVRecordFormatter.format(record)])
+        let result = CSVImportParser.parse(csv)
+
+        #expect(result.errors.isEmpty)
+        #expect(result.continuousRhythmMatchings.count == 1)
+
+        let imported = result.continuousRhythmMatchings[0]
+        #expect(imported.tempoBPM == record.tempoBPM)
+        #expect(imported.meanOffsetMs == record.meanOffsetMs)
+        #expect(imported.timestamp == record.timestamp)
     }
 }

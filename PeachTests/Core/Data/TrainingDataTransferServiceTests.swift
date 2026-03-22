@@ -162,6 +162,7 @@ struct TrainingDataTransferServiceTests {
             pitchMatchings: [makePitchMatching(minutesOffset: 12)],
             rhythmOffsetDetections: [],
             rhythmMatchings: [],
+            continuousRhythmMatchings: [],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
@@ -180,6 +181,7 @@ struct TrainingDataTransferServiceTests {
             pitchMatchings: [],
             rhythmOffsetDetections: [],
             rhythmMatchings: [],
+            continuousRhythmMatchings: [],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .merge)
@@ -200,6 +202,7 @@ struct TrainingDataTransferServiceTests {
             pitchMatchings: [makePitchMatching()],
             rhythmOffsetDetections: [],
             rhythmMatchings: [],
+            continuousRhythmMatchings: [],
             errors: []
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
@@ -217,6 +220,7 @@ struct TrainingDataTransferServiceTests {
             pitchMatchings: [],
             rhythmOffsetDetections: [],
             rhythmMatchings: [],
+            continuousRhythmMatchings: [],
             errors: []
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
@@ -230,9 +234,9 @@ struct TrainingDataTransferServiceTests {
         let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
             pitchDiscriminationsImported: 8, pitchMatchingsImported: 2,
-            rhythmOffsetDetectionsImported: 0, rhythmMatchingsImported: 0,
+            rhythmOffsetDetectionsImported: 0, rhythmMatchingsImported: 0, continuousRhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 0, pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0, rhythmMatchingsSkipped: 0, parseErrorCount: 0
+            rhythmOffsetDetectionsSkipped: 0, rhythmMatchingsSkipped: 0, continuousRhythmMatchingsSkipped: 0, parseErrorCount: 0
         )
         let message = service.formatImportSummary(summary)
         #expect(message.contains("10"))
@@ -244,9 +248,9 @@ struct TrainingDataTransferServiceTests {
         let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
             pitchDiscriminationsImported: 5, pitchMatchingsImported: 0,
-            rhythmOffsetDetectionsImported: 0, rhythmMatchingsImported: 0,
+            rhythmOffsetDetectionsImported: 0, rhythmMatchingsImported: 0, continuousRhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 3, pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0, rhythmMatchingsSkipped: 0, parseErrorCount: 0
+            rhythmOffsetDetectionsSkipped: 0, rhythmMatchingsSkipped: 0, continuousRhythmMatchingsSkipped: 0, parseErrorCount: 0
         )
         let message = service.formatImportSummary(summary)
         #expect(message.contains("5"))
@@ -258,9 +262,9 @@ struct TrainingDataTransferServiceTests {
         let (service, _) = try makeService()
         let summary = TrainingDataImporter.ImportSummary(
             pitchDiscriminationsImported: 10, pitchMatchingsImported: 0,
-            rhythmOffsetDetectionsImported: 0, rhythmMatchingsImported: 0,
+            rhythmOffsetDetectionsImported: 0, rhythmMatchingsImported: 0, continuousRhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 3, pitchMatchingsSkipped: 0,
-            rhythmOffsetDetectionsSkipped: 0, rhythmMatchingsSkipped: 0, parseErrorCount: 2
+            rhythmOffsetDetectionsSkipped: 0, rhythmMatchingsSkipped: 0, continuousRhythmMatchingsSkipped: 0, parseErrorCount: 2
         )
         let message = service.formatImportSummary(summary)
         #expect(message.contains("10"))
@@ -282,6 +286,7 @@ struct TrainingDataTransferServiceTests {
             pitchMatchings: [],
             rhythmOffsetDetections: [rhythmOffset],
             rhythmMatchings: [rhythmMatch],
+            continuousRhythmMatchings: [],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)

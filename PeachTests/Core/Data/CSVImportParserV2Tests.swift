@@ -19,19 +19,23 @@ struct CSVImportParserV2Tests {
     private var v2Header: String { CSVExportSchemaV2.headerRow }
 
     private var validPitchDiscriminationRow: String {
-        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,"
+        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,"
     }
 
     private var validPitchMatchingRow: String {
-        "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,,,"
+        "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,,,,"
     }
 
     private var validRhythmOffsetDetectionRow: String {
-        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"
+        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,"
     }
 
     private var validRhythmMatchingRow: String {
-        "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,7.1"
+        "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,7.1,"
+    }
+
+    private var validContinuousRhythmMatchingRow: String {
+        "continuousRhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,,-3.5"
     }
 
     private func makeV2CSV(_ rows: [String]) -> String {
@@ -141,7 +145,7 @@ struct CSVImportParserV2Tests {
 
     @Test("parses rhythm offset detection with negative offset")
     func parsesNegativeRhythmOffset() async {
-        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,false,,,90,-12.5,"
+        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,false,,,90,-12.5,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmOffsetDetections.count == 1)
@@ -166,24 +170,66 @@ struct CSVImportParserV2Tests {
 
     @Test("parses rhythm matching with negative user offset")
     func parsesNegativeRhythmMatchingOffset() async {
-        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,80,,-3.7"
+        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,80,,-3.7,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmMatchings.count == 1)
         #expect(result.rhythmMatchings[0].userOffsetMs == -3.7)
     }
 
-    // MARK: - All Four Training Types
+    // MARK: - Continuous Rhythm Matching Parsing
 
-    @Test("parses all four training types in one file")
-    func parsesAllFourTypes() async {
+    @Test("parses continuous rhythm matching row correctly")
+    func parsesContinuousRhythmMatchingRow() async {
+        let lines = [v2Header, validContinuousRhythmMatchingRow]
+        let result = parser.parse(lines: lines)
+        #expect(result.continuousRhythmMatchings.count == 1)
+        #expect(result.errors.isEmpty)
+
+        let record = result.continuousRhythmMatchings[0]
+        #expect(record.tempoBPM == 120)
+        #expect(record.meanOffsetMs == -3.5)
+        #expect(record.timestamp == fixedDate())
+    }
+
+    @Test("parses continuous rhythm matching with positive meanOffsetMs")
+    func parsesContinuousRhythmMatchingPositiveOffset() async {
+        let row = "continuousRhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,90,,,1.2"
+        let lines = [v2Header, row]
+        let result = parser.parse(lines: lines)
+        #expect(result.continuousRhythmMatchings.count == 1)
+        #expect(result.continuousRhythmMatchings[0].meanOffsetMs == 1.2)
+    }
+
+    @Test("continuous rhythm matching with non-numeric meanOffsetMs produces error")
+    func continuousRhythmMatchingInvalidMeanOffset() async {
+        let row = "continuousRhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,,abc"
+        let lines = [v2Header, row]
+        let result = parser.parse(lines: lines)
+        #expect(result.errors.count == 1)
+    }
+
+    @Test("continuous rhythm matching with non-empty pitch columns produces error")
+    func continuousRhythmMatchingWithPitchColumnsErrors() async {
+        let row = "continuousRhythmMatching,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,,,,,120,,,-3.5"
+        let lines = [v2Header, row]
+        let result = parser.parse(lines: lines)
+        #expect(result.errors.count == 1)
+        #expect(result.continuousRhythmMatchings.isEmpty)
+    }
+
+    // MARK: - All Five Training Types
+
+    @Test("parses all five training types in one file")
+    func parsesAllFiveTypes() async {
         let lines = [v2Header, validPitchDiscriminationRow, validPitchMatchingRow,
-                     validRhythmOffsetDetectionRow, validRhythmMatchingRow]
+                     validRhythmOffsetDetectionRow, validRhythmMatchingRow, validContinuousRhythmMatchingRow]
         let result = parser.parse(lines: lines)
         #expect(result.pitchDiscriminations.count == 1)
         #expect(result.pitchMatchings.count == 1)
         #expect(result.rhythmOffsetDetections.count == 1)
         #expect(result.rhythmMatchings.count == 1)
+        #expect(result.continuousRhythmMatchings.count == 1)
         #expect(result.errors.isEmpty)
     }
 
@@ -206,6 +252,7 @@ struct CSVImportParserV2Tests {
         #expect(result.pitchMatchings.isEmpty)
         #expect(result.rhythmOffsetDetections.isEmpty)
         #expect(result.rhythmMatchings.isEmpty)
+        #expect(result.continuousRhythmMatchings.isEmpty)
         #expect(result.errors.isEmpty)
     }
 
@@ -213,7 +260,7 @@ struct CSVImportParserV2Tests {
 
     @Test("pitch discrimination row with non-empty rhythm columns produces error")
     func pitchDiscriminationWithRhythmColumnsErrors() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,120,5.0,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,120,5.0,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.pitchDiscriminations.isEmpty)
@@ -222,7 +269,7 @@ struct CSVImportParserV2Tests {
 
     @Test("pitch matching row with non-empty rhythm columns produces error")
     func pitchMatchingWithRhythmColumnsErrors() async {
-        let row = "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,120,,"
+        let row = "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,120,,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.pitchMatchings.isEmpty)
@@ -231,7 +278,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm offset detection row with non-empty pitch columns produces error")
     func rhythmOffsetWithPitchColumnsErrors() async {
-        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,,true,,,120,5.3,"
+        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,,true,,,120,5.3,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmOffsetDetections.isEmpty)
@@ -240,7 +287,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm matching row with non-empty pitch columns produces error")
     func rhythmMatchingWithPitchColumnsErrors() async {
-        let row = "rhythmMatching,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,,,,,,7.1"
+        let row = "rhythmMatching,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,,,,,,7.1,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmMatchings.isEmpty)
@@ -249,7 +296,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm offset detection row with non-empty userOffsetMs produces error")
     func rhythmOffsetWithUserOffsetMsErrors() async {
-        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,2.0"
+        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,2.0,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmOffsetDetections.isEmpty)
@@ -258,7 +305,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm matching row with non-empty offsetMs produces error")
     func rhythmMatchingWithOffsetMsErrors() async {
-        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,5.3,7.1"
+        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,5.3,7.1,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmMatchings.isEmpty)
@@ -269,7 +316,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm offset detection with non-integer tempoBPM produces error")
     func invalidTempoBPMForRhythmOffset() async {
-        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,abc,5.3,"
+        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,abc,5.3,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -277,7 +324,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm offset detection with non-numeric offsetMs produces error")
     func invalidOffsetMsForRhythmOffset() async {
-        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,abc,"
+        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,abc,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -285,7 +332,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm offset detection with invalid isCorrect produces error")
     func invalidIsCorrectForRhythmOffset() async {
-        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,yes,,,120,5.3,"
+        let row = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,yes,,,120,5.3,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -293,7 +340,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm matching with non-integer tempoBPM produces error")
     func invalidTempoBPMForRhythmMatching() async {
-        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,abc,,7.1"
+        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,abc,,7.1,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -301,7 +348,7 @@ struct CSVImportParserV2Tests {
 
     @Test("rhythm matching with non-numeric userOffsetMs produces error")
     func invalidUserOffsetMsForRhythmMatching() async {
-        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,abc"
+        let row = "rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,abc,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -309,7 +356,7 @@ struct CSVImportParserV2Tests {
 
     @Test("invalid timestamp produces error for rhythm rows")
     func invalidTimestampForRhythm() async {
-        let row = "rhythmOffsetDetection,not-a-date,,,,,,,,true,,,120,5.3,"
+        let row = "rhythmOffsetDetection,not-a-date,,,,,,,,true,,,120,5.3,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -319,7 +366,7 @@ struct CSVImportParserV2Tests {
 
     @Test("unknown training type produces error")
     func unknownTrainingTypeProducesError() async {
-        let row = "unknown,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"
+        let row = "unknown,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,"
         let lines = [v2Header, row]
         let result = parser.parse(lines: lines)
         #expect(result.errors.count == 1)
@@ -339,11 +386,23 @@ struct CSVImportParserV2Tests {
 
     @Test("invalid row produces error alongside valid rows")
     func invalidAlongsideValid() async {
-        let invalidRow = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,abc,5.3,"
+        let invalidRow = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,abc,5.3,,"
         let lines = [v2Header, validRhythmOffsetDetectionRow, invalidRow, validRhythmMatchingRow]
         let result = parser.parse(lines: lines)
         #expect(result.rhythmOffsetDetections.count == 1)
         #expect(result.rhythmMatchings.count == 1)
         #expect(result.errors.count == 1)
+    }
+
+    // MARK: - V2 CSV Without Continuous Rhythm Matching (AC #5)
+
+    @Test("V2 CSV without continuousRhythmMatching rows imports successfully")
+    func v2WithoutContinuousImportsSuccessfully() async {
+        let lines = [v2Header, validPitchDiscriminationRow, validRhythmOffsetDetectionRow]
+        let result = parser.parse(lines: lines)
+        #expect(result.pitchDiscriminations.count == 1)
+        #expect(result.rhythmOffsetDetections.count == 1)
+        #expect(result.continuousRhythmMatchings.isEmpty)
+        #expect(result.errors.isEmpty)
     }
 }

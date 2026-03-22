@@ -32,10 +32,12 @@ struct TrainingDataImporterTests {
             pitchMatchingsImported: 3,
             rhythmOffsetDetectionsImported: 0,
             rhythmMatchingsImported: 0,
+            continuousRhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 2,
             pitchMatchingsSkipped: 1,
             rhythmOffsetDetectionsSkipped: 0,
             rhythmMatchingsSkipped: 0,
+            continuousRhythmMatchingsSkipped: 0,
             parseErrorCount: 4
         )
         #expect(summary.pitchDiscriminationsImported == 5)
@@ -52,10 +54,12 @@ struct TrainingDataImporterTests {
             pitchMatchingsImported: 3,
             rhythmOffsetDetectionsImported: 0,
             rhythmMatchingsImported: 0,
+            continuousRhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 0,
             pitchMatchingsSkipped: 0,
             rhythmOffsetDetectionsSkipped: 0,
             rhythmMatchingsSkipped: 0,
+            continuousRhythmMatchingsSkipped: 0,
             parseErrorCount: 0
         )
         #expect(summary.totalImported == 8)
@@ -68,10 +72,12 @@ struct TrainingDataImporterTests {
             pitchMatchingsImported: 0,
             rhythmOffsetDetectionsImported: 0,
             rhythmMatchingsImported: 0,
+            continuousRhythmMatchingsImported: 0,
             pitchDiscriminationsSkipped: 2,
             pitchMatchingsSkipped: 1,
             rhythmOffsetDetectionsSkipped: 0,
             rhythmMatchingsSkipped: 0,
+            continuousRhythmMatchingsSkipped: 0,
             parseErrorCount: 0
         )
         #expect(summary.totalSkipped == 3)
@@ -84,6 +90,7 @@ struct TrainingDataImporterTests {
         pitchMatchings: [PitchMatchingRecord] = [],
         rhythmOffsetDetections: [RhythmOffsetDetectionRecord] = [],
         rhythmMatchings: [RhythmMatchingRecord] = [],
+        continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = [],
         errors: [CSVImportError] = []
     ) -> CSVImportParser.ImportResult {
         CSVImportParser.ImportResult(
@@ -91,6 +98,7 @@ struct TrainingDataImporterTests {
             pitchMatchings: pitchMatchings,
             rhythmOffsetDetections: rhythmOffsetDetections,
             rhythmMatchings: rhythmMatchings,
+            continuousRhythmMatchings: continuousRhythmMatchings,
             errors: errors
         )
     }

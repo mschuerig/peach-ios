@@ -17,12 +17,12 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
 
         guard let headerLine = lines.first, !headerLine.isEmpty else {
             errors.append(.invalidHeader(expected: CSVExportSchema.headerRow, actual: "(empty)"))
-            return CSVImportParser.ImportResult(pitchDiscriminations: pitchDiscriminations, pitchMatchings: pitchMatchings, rhythmOffsetDetections: [], rhythmMatchings: [], errors: errors)
+            return CSVImportParser.ImportResult(pitchDiscriminations: pitchDiscriminations, pitchMatchings: pitchMatchings, rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
         }
 
         if let headerError = validateHeader(headerLine) {
             errors.append(headerError)
-            return CSVImportParser.ImportResult(pitchDiscriminations: pitchDiscriminations, pitchMatchings: pitchMatchings, rhythmOffsetDetections: [], rhythmMatchings: [], errors: errors)
+            return CSVImportParser.ImportResult(pitchDiscriminations: pitchDiscriminations, pitchMatchings: pitchMatchings, rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
         }
 
         let dataLines = lines.dropFirst()
@@ -40,7 +40,7 @@ nonisolated struct CSVImportParserV1: CSVVersionedParser {
             }
         }
 
-        return CSVImportParser.ImportResult(pitchDiscriminations: pitchDiscriminations, pitchMatchings: pitchMatchings, rhythmOffsetDetections: [], rhythmMatchings: [], errors: errors)
+        return CSVImportParser.ImportResult(pitchDiscriminations: pitchDiscriminations, pitchMatchings: pitchMatchings, rhythmOffsetDetections: [], rhythmMatchings: [], continuousRhythmMatchings: [], errors: errors)
     }
 
     // MARK: - Header Validation

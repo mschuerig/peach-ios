@@ -21,6 +21,7 @@ nonisolated enum CSVRecordFormatter {
             "", // tempoBPM
             "", // offsetMs
             "", // userOffsetMs
+            "", // meanOffsetMs
         ]
         return buildRow(fields)
     }
@@ -44,6 +45,7 @@ nonisolated enum CSVRecordFormatter {
             "", // tempoBPM
             "", // offsetMs
             "", // userOffsetMs
+            "", // meanOffsetMs
         ]
         return buildRow(fields)
     }
@@ -67,6 +69,7 @@ nonisolated enum CSVRecordFormatter {
             "\(record.tempoBPM)",
             formatDouble(record.offsetMs),
             "", // userOffsetMs
+            "", // meanOffsetMs
         ]
         return buildRow(fields)
     }
@@ -90,6 +93,31 @@ nonisolated enum CSVRecordFormatter {
             "\(record.tempoBPM)",
             "", // offsetMs
             formatDouble(record.userOffsetMs),
+            "", // meanOffsetMs
+        ]
+        return buildRow(fields)
+    }
+
+    // MARK: - ContinuousRhythmMatching Record Formatting
+
+    static func format(_ record: ContinuousRhythmMatchingRecord) -> String {
+        let fields: [String] = [
+            CSVExportSchemaV2.TrainingType.continuousRhythmMatching.csvValue,
+            formatTimestamp(record.timestamp),
+            "", // referenceNote
+            "", // referenceNoteName
+            "", // targetNote
+            "", // targetNoteName
+            "", // interval
+            "", // tuningSystem
+            "", // centOffset
+            "", // isCorrect
+            "", // initialCentOffset
+            "", // userCentError
+            "\(record.tempoBPM)",
+            "", // offsetMs
+            "", // userOffsetMs
+            formatDouble(record.meanOffsetMs),
         ]
         return buildRow(fields)
     }

@@ -6,11 +6,12 @@ nonisolated enum CSVExportSchemaV2 {
     static let metadataPrefix = CSVExportSchema.metadataPrefix
     static let metadataLine = metadataPrefix + "\(formatVersion)"
 
-    // MARK: - Column Names (indices 12–14 are rhythm-specific)
+    // MARK: - Column Names (indices 12–14 are rhythm-specific, 15 is continuous rhythm matching)
 
     static let columnTempoBPM = "tempoBPM"
     static let columnOffsetMs = "offsetMs"
     static let columnUserOffsetMs = "userOffsetMs"
+    static let columnMeanOffsetMs = "meanOffsetMs"
 
     // MARK: - Training Type
 
@@ -19,6 +20,7 @@ nonisolated enum CSVExportSchemaV2 {
         case pitchMatching
         case rhythmOffsetDetection
         case rhythmMatching
+        case continuousRhythmMatching
 
         var csvValue: String {
             switch self {
@@ -26,6 +28,7 @@ nonisolated enum CSVExportSchemaV2 {
             case .pitchMatching: "pitchMatching"
             case .rhythmOffsetDetection: "rhythmOffsetDetection"
             case .rhythmMatching: "rhythmMatching"
+            case .continuousRhythmMatching: "continuousRhythmMatching"
             }
         }
     }
@@ -36,6 +39,7 @@ nonisolated enum CSVExportSchemaV2 {
         columnTempoBPM,
         columnOffsetMs,
         columnUserOffsetMs,
+        columnMeanOffsetMs,
     ]
 
     static let headerRow: String = allColumns.joined(separator: ",")
