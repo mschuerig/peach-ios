@@ -1957,6 +1957,46 @@ Any state → idle (via stop(), triggered by: navigate away, background, interru
 
 **File location:** `RhythmMatching/RhythmMatchingSession.swift`
 
+#### ContinuousRhythmMatchingSession
+
+`@Observable final class` with a fundamentally different architecture from the other rhythm sessions. While `RhythmOffsetDetectionSession` and `RhythmMatchingSession` drive a play-then-respond loop, `ContinuousRhythmMatchingSession` runs a continuous metronome with silent gaps and evaluates user taps against those gaps in real time.
+
+**Dual-concern architecture:**
+
+The session conforms to both `TrainingSession` and `StepProvider`, but separates two concerns that the `StepProvider` protocol conflates:
+
+1. **Audio scheduling** — `nextCycle()` is called by `SoundFontStepSequencer.buildBatch()` (500 cycles at a time) to determine gap positions. This method is **side-effect-free**: it selects a gap position, stores it in a `gapPositions: [StepPosition]` array, and returns a `CycleDefinition`. No state tracking, no trial aggregation. Safe for batch pre-scheduling.
+
+2. **Real-time tracking** — A separate polling loop (`evaluatePlaybackPosition()` at ~120 Hz) uses elapsed time to determine which cycle is currently playing. It detects cycle transitions and records misses for gaps that were not tapped. `handleTap()` also uses elapsed time to compute the current playing cycle and evaluate tap timing against the gap window.
+
+This separation is necessary because the step sequencer batch-schedules hundreds of cycles before any audio plays. If `nextCycle()` had side effects (miss detection, trial aggregation), all trials would complete before the first note sounds.
+
+**Time computation:**
+
+```
+playingCycleIndex = (currentTime - sequencerStartTime) / cycleDuration
+gapTime = sequencerStartTime + (cycleIndex * 4 + gapPosition.rawValue) * sixteenthDuration
+evaluationWindow = gapTime ± 0.5 * sixteenthDuration
+```
+
+`sequencerStartTime` is captured after `await stepSequencer.start()` returns, not before, to avoid systematic offset from audio engine warm-up.
+
+**Hit tracking:**
+
+Per-cycle hit tracking uses `hitCycleIndices: Set<Int>` rather than a single boolean flag. This prevents incorrect miss/hit attribution when the polling loop catches up on multiple cycles at once (e.g., if the main thread was briefly blocked).
+
+**Trial aggregation:**
+
+16 gap evaluations (hits + misses) complete one `CompletedContinuousRhythmMatchingTrial`. Unlike other trial types, this is a **pure container** — it stores only `tempo`, `gapResults: [GapResult]`, and `timestamp`. Aggregate statistics (hit rate, mean offset, early/late breakdown, position-specific stats) are computed by observers, not by the trial itself. This keeps the trial type aligned with how observers will split data by `RhythmDirection` for the spectrogram.
+
+**Injectable time source:**
+
+The session accepts a `currentTime: () -> Double` closure (defaulting to `CACurrentMediaTime()`) for deterministic testing. Tests provide a controllable time source to simulate tap timing and cycle transitions without real-time waits.
+
+**Observable state:** `isRunning`, `currentStep`, `currentGapPosition`, `cyclesInCurrentTrial`, `lastTrialResult`
+
+**File location:** `ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift`
+
 ### NextRhythmOffsetStrategy
 
 ```swift
@@ -1994,6 +2034,10 @@ protocol RhythmOffsetDetectionObserver {
 protocol RhythmMatchingObserver {
     func rhythmMatchingCompleted(_ result: CompletedRhythmMatchingTrial)
 }
+
+protocol ContinuousRhythmMatchingObserver {
+    func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial)
+}
 ```
 
 **Value types:**
@@ -2012,6 +2056,19 @@ struct CompletedRhythmMatchingTrial {
     let userOffset: RhythmOffset      // signed timing error
     let timestamp: Date
 }
+
+/// Pure container — no computed aggregates. Observers compute statistics.
+struct CompletedContinuousRhythmMatchingTrial {
+    let tempo: TempoBPM
+    let gapResults: [GapResult]      // per-cycle hit (with signed RhythmOffset) or miss (nil offset)
+    let timestamp: Date
+}
+
+struct GapResult {
+    let position: StepPosition
+    let offset: RhythmOffset?        // nil = miss, non-nil = hit with signed timing error
+    var isHit: Bool { offset != nil }
+}
 ```
 
 **Conforming types:**
@@ -2023,8 +2080,10 @@ struct CompletedRhythmMatchingTrial {
 **File locations:**
 - `Core/Training/RhythmOffsetDetectionObserver.swift`
 - `Core/Training/RhythmMatchingObserver.swift`
+- `Core/Training/ContinuousRhythmMatchingObserver.swift`
 - `Core/Training/CompletedRhythmOffsetDetectionTrial.swift`
 - `Core/Training/CompletedRhythmMatchingTrial.swift`
+- `Core/Training/CompletedContinuousRhythmMatchingTrial.swift`
 - `RhythmOffsetDetection/RhythmChallenge.swift`
 
 ### RhythmProfile Protocol
