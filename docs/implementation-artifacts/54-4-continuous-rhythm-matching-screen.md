@@ -1,6 +1,6 @@
 # Story 54.4: Continuous Rhythm Matching Screen
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -36,46 +36,72 @@ so that I can train my rhythmic timing in a continuous, groove-locked flow.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `ContinuousRhythmMatchingDotView` (AC: #2, #3, #4)
-  - [ ] Create `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingDotView.swift`
-  - [ ] Four dots in a horizontal row
-  - [ ] Dot 1 larger/bolder than dots 2–4 (e.g., diameter 20 vs 16, or heavier stroke)
-  - [ ] Active step: highlighted (full opacity, filled)
-  - [ ] Gap step: outline circle (stroke only, no fill) when not the active step; when active and gap, show outline at full opacity
-  - [ ] Non-gap, non-active steps: filled at low opacity (0.2)
-  - [ ] Gap outline updates only at cycle boundary (driven by session's `currentGapPosition`)
-  - [ ] Optional: feedback color on gap dot after a hit (green/yellow/red, brief flash)
-  - [ ] `accessibilityHidden(true)` — dots are visual accompaniment
-  - [ ] Write tests in `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingDotViewTests.swift`
+- [x] Task 1: Create `ContinuousRhythmMatchingDotView` (AC: #2, #3, #4)
+  - [x] Create `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingDotView.swift`
+  - [x] Four dots in a horizontal row
+  - [x] Dot 1 larger/bolder than dots 2–4 (e.g., diameter 20 vs 16, or heavier stroke)
+  - [x] Active step: highlighted (full opacity, filled)
+  - [x] Gap step: outline circle (stroke only, no fill) when not the active step; when active and gap, show outline at full opacity
+  - [x] Non-gap, non-active steps: filled at low opacity (0.2)
+  - [x] Gap outline updates only at cycle boundary (driven by session's `currentGapPosition`)
+  - [x] Optional: feedback color on gap dot after a hit (green/yellow/red, brief flash)
+  - [x] `accessibilityHidden(true)` — dots are visual accompaniment
+  - [x] Write tests in `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingDotViewTests.swift`
 
-- [ ] Task 2: Create `ContinuousRhythmMatchingScreen` (AC: #1, #5, #8, #9, #10, #11, #12)
-  - [ ] Create `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift`
-  - [ ] `@Environment(\.continuousRhythmMatchingSession)` for session access
-  - [ ] Layout: `VStack` with stats header → `ContinuousRhythmMatchingDotView` → Tap button
-  - [ ] Tap button: full-width, `.borderedProminent`, "Tap" label, always active
-  - [ ] Tap action: `session.handleTap()`
-  - [ ] Stats area: show latest trial hit rate and mean offset (from `session.lastTrialResult`)
-  - [ ] Cycle progress indicator: subtle display of current cycle count within trial (e.g., "4/16")
-  - [ ] `onAppear`: `session.start(settings: ContinuousRhythmMatchingSettings.from(userSettings))`
-  - [ ] `onDisappear`: `session.stop()`
-  - [ ] VoiceOver: Tap button label "Tap", hint "Tap to fill the gap in the rhythm"
-  - [ ] Compact height adaptation (same pattern as `RhythmMatchingScreen`)
-  - [ ] Help sheet with stop/restart behavior
-  - [ ] Toolbar: Help, Settings, Profile icons
+- [x] Task 2: Create `ContinuousRhythmMatchingScreen` (AC: #1, #5, #8, #9, #10, #11, #12)
+  - [x] Create `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift`
+  - [x] `@Environment(\.continuousRhythmMatchingSession)` for session access
+  - [x] Layout: `VStack` with stats header → `ContinuousRhythmMatchingDotView` → Tap button
+  - [x] Tap button: full-width, `.borderedProminent`, "Tap" label, always active
+  - [x] Tap action: `session.handleTap()`
+  - [x] Stats area: show latest trial hit rate and mean offset (from `session.lastTrialResult`)
+  - [x] Cycle progress indicator: subtle display of current cycle count within trial (e.g., "4/16")
+  - [x] `onAppear`: `session.start(settings: ContinuousRhythmMatchingSettings.from(userSettings))`
+  - [x] `onDisappear`: `session.stop()`
+  - [x] VoiceOver: Tap button label "Tap", hint "Tap to fill the gap in the rhythm"
+  - [x] Compact height adaptation (same pattern as `RhythmMatchingScreen`)
+  - [x] Help sheet with stop/restart behavior
+  - [x] Toolbar: Help, Settings, Profile icons
 
-- [ ] Task 3: Create feedback overlay for gap hits (AC: #6, #7)
-  - [ ] When session reports a hit: briefly color the gap dot green/yellow/red
-  - [ ] Use same color bands as `RhythmMatchingDotView`: green (≤5%), yellow (5–15%), red (>15%)
-  - [ ] Feedback duration: brief flash (~200ms), not the full 400ms used in discrete mode
-  - [ ] On miss or out-of-window tap: no visual change
+- [x] Task 3: Create feedback overlay for gap hits (AC: #6, #7)
+  - [x] When session reports a hit: briefly color the gap dot green/yellow/red
+  - [x] Use same color bands as `RhythmMatchingDotView`: green (≤5%), yellow (5–15%), red (>15%)
+  - [x] Feedback duration: brief flash (~200ms), not the full 400ms used in discrete mode
+  - [x] On miss or out-of-window tap: no visual change
 
-- [ ] Task 4: Write help content (AC: #11)
-  - [ ] Static `helpSections: [HelpSection]`
-  - [ ] Sections: Goal ("A continuous stream of notes plays — fill the gap"), Controls ("Tap when the outlined note should sound"), Feedback ("Dot colors show timing accuracy")
-  - [ ] Localized strings
+- [x] Task 4: Write help content (AC: #11)
+  - [x] Static `helpSections: [HelpSection]`
+  - [x] Sections: Goal ("A continuous stream of notes plays — fill the gap"), Controls ("Tap when the outlined note should sound"), Feedback ("Dot colors show timing accuracy")
+  - [x] Localized strings
 
-- [ ] Task 5: Run full test suite
-  - [ ] `bin/test.sh` — all tests pass, no regressions
+- [x] Task 5: Run full test suite
+  - [x] `bin/test.sh` — all tests pass, no regressions
+
+## File List
+
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingDotView.swift` (new)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` (new)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` (modified — added feedback state)
+- `Peach/Core/Training/CompletedContinuousRhythmMatchingTrial.swift` (modified — added computed properties)
+- `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingDotViewTests.swift` (new)
+- `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingScreenTests.swift` (new)
+- `PeachTests/Core/Training/CompletedContinuousRhythmMatchingTrialTests.swift` (modified — added tests)
+
+## Dev Agent Record
+
+### Implementation Plan
+- Created `ContinuousRhythmMatchingDotView` with four-dot horizontal layout: beat-1 dot is 22pt (vs 16pt for others), gap dot rendered as outline, active step at full opacity, inactive at 0.2. Feedback color flash on gap dot uses same bands as `RhythmMatchingFeedbackView`.
+- Created `ContinuousRhythmMatchingScreen` following `RhythmMatchingScreen` pattern: VStack with stats header, dot view, full-width tap button. Session starts on `onAppear`, stops on `onDisappear`. Help sheet stops/restarts session. Toolbar has Help, Settings, Profile icons.
+- Added `lastHitOffsetPercentage`, `showFeedback`, and 200ms auto-clear feedback to `ContinuousRhythmMatchingSession`.
+- Added `hitCount`, `hitRate`, `meanOffsetPercentage`, `meanOffsetMs` computed properties to `CompletedContinuousRhythmMatchingTrial`.
+- Stats header shows hit rate and mean offset from last trial, plus cycle progress (e.g., "4/16").
+
+### Completion Notes
+All 5 tasks completed. 1558 tests pass (16 new). All 12 acceptance criteria satisfied.
+
+## Change Log
+
+- 2026-03-22: Implemented ContinuousRhythmMatchingScreen and ContinuousRhythmMatchingDotView with feedback overlay and help content
 
 ## Dev Notes
 

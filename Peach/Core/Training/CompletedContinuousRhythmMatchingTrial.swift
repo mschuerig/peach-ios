@@ -16,4 +16,29 @@ struct CompletedContinuousRhythmMatchingTrial: Sendable {
         self.gapResults = gapResults
         self.timestamp = timestamp
     }
+
+    var hitCount: Int {
+        gapResults.filter(\.isHit).count
+    }
+
+    var hitRate: Double {
+        guard !gapResults.isEmpty else { return 0 }
+        return Double(hitCount) / Double(gapResults.count) * 100.0
+    }
+
+    var meanOffsetPercentage: Double? {
+        let hits = gapResults.compactMap(\.offset)
+        guard !hits.isEmpty else { return nil }
+        let totalPercentage = hits.reduce(0.0) { sum, offset in
+            sum + offset.percentageOfSixteenthNote(at: tempo)
+        }
+        return totalPercentage / Double(hits.count)
+    }
+
+    var meanOffsetMs: Double? {
+        let hits = gapResults.compactMap(\.offset)
+        guard !hits.isEmpty else { return nil }
+        let totalMs = hits.reduce(0.0) { $0 + $1.absoluteMilliseconds }
+        return totalMs / Double(hits.count)
+    }
 }

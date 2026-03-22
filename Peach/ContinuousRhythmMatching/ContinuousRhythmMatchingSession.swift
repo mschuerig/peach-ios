@@ -13,6 +13,9 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     /// Polling interval for real-time cycle tracking (~120 Hz, matching the step sequencer).
     private static let trackingPollingInterval: Duration = .milliseconds(8)
 
+    /// Brief feedback flash duration for gap hits (shorter than discrete mode's 400ms).
+    static let feedbackDuration: Duration = .milliseconds(200)
+
     // MARK: - Logger
 
     private let logger = Logger(subsystem: "com.peach.app", category: "ContinuousRhythmMatchingSession")
@@ -24,6 +27,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private(set) var currentGapPosition: StepPosition?
     private(set) var cyclesInCurrentTrial = 0
     private(set) var lastTrialResult: CompletedContinuousRhythmMatchingTrial?
+    private(set) var lastHitOffsetPercentage: Double?
+    private(set) var showFeedback = false
 
     // MARK: - Dependencies
 
@@ -43,6 +48,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private var hitCycleIndices: Set<Int> = []
     private var startTask: Task<Void, Never>?
     private var trackingTask: Task<Void, Never>?
+    private var feedbackTask: Task<Void, Never>?
 
     /// Gap positions indexed by cycle number, populated by nextCycle() during batch scheduling.
     private var gapPositions: [StepPosition] = []
@@ -81,6 +87,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         startTask = nil
         trackingTask?.cancel()
         trackingTask = nil
+        feedbackTask?.cancel()
+        feedbackTask = nil
 
         Task {
             try? await stepSequencer.stop()
@@ -90,6 +98,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         currentStep = nil
         currentGapPosition = nil
         cyclesInCurrentTrial = 0
+        showFeedback = false
+        lastHitOffsetPercentage = nil
         gapResults = []
         gapPositions = []
         hitCycleIndices = []
@@ -161,6 +171,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             let rhythmOffset = RhythmOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
             recordGapResult(GapResult(position: gapPosition, offset: rhythmOffset))
+            showHitFeedback(rhythmOffset)
             logger.debug("Gap hit at offset \(offset * 1000, format: .fixed(precision: 1))ms")
         }
     }
@@ -229,6 +240,21 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             }
 
             lastEvaluatedCycleIndex = cycleToEvaluate
+        }
+    }
+
+    // MARK: - Feedback
+
+    private func showHitFeedback(_ offset: RhythmOffset) {
+        guard let settings else { return }
+        lastHitOffsetPercentage = offset.percentageOfSixteenthNote(at: settings.tempo)
+        showFeedback = true
+
+        feedbackTask?.cancel()
+        feedbackTask = Task {
+            try? await Task.sleep(for: Self.feedbackDuration)
+            guard !Task.isCancelled else { return }
+            showFeedback = false
         }
     }
 
