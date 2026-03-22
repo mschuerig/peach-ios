@@ -413,7 +413,7 @@ development_status:
   epic-54: in-progress
   54-1-step-sequencer-protocol-and-audio-engine: done
   54-2-continuous-rhythm-matching-session: done
-  54-3-gap-position-settings: review
+  54-3-gap-position-settings: done
   54-4-continuous-rhythm-matching-screen: ready-for-dev
   54-5-data-model-and-storage: ready-for-dev
   54-6-start-screen-and-navigation: ready-for-dev

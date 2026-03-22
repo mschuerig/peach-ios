@@ -269,8 +269,7 @@ struct SettingsScreen: View {
     }
 
     private var enabledGapPositions: Set<StepPosition> {
-        let decoded = GapPositionEncoding.decode(enabledGapPositionsEncoded)
-        return decoded.isEmpty ? SettingsKeys.defaultEnabledGapPositions : decoded
+        GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
     }
 
     private func isGapPositionEnabled(_ position: StepPosition) -> Bool {
@@ -284,6 +283,7 @@ struct SettingsScreen: View {
     private func toggleGapPosition(_ position: StepPosition) {
         var positions = enabledGapPositions
         if positions.contains(position) {
+            guard positions.count > 1 else { return }
             positions.remove(position)
         } else {
             positions.insert(position)

@@ -16,4 +16,9 @@ enum GapPositionEncoding {
             .compactMap(StepPosition.init(rawValue:))
         return Set(positions)
     }
+
+    static func decodeWithDefault(_ string: String) -> Set<StepPosition> {
+        let decoded = decode(string)
+        return decoded.isEmpty ? SettingsKeys.defaultEnabledGapPositions : decoded
+    }
 }

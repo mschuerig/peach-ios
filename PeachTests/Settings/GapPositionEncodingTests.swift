@@ -63,6 +63,24 @@ struct GapPositionEncodingTests {
         #expect(decoded == [.first, .third])
     }
 
+    @Test("decodeWithDefault returns all positions for empty string")
+    func decodeWithDefaultEmpty() async {
+        let result = GapPositionEncoding.decodeWithDefault("")
+        #expect(result == Set(StepPosition.allCases))
+    }
+
+    @Test("decodeWithDefault returns all positions for invalid string")
+    func decodeWithDefaultInvalid() async {
+        let result = GapPositionEncoding.decodeWithDefault("abc,xyz")
+        #expect(result == Set(StepPosition.allCases))
+    }
+
+    @Test("decodeWithDefault returns decoded positions for valid string")
+    func decodeWithDefaultValid() async {
+        let result = GapPositionEncoding.decodeWithDefault("0,2")
+        #expect(result == [.first, .third])
+    }
+
     @Test("round-trip preserves all positions", arguments: [
         Set<StepPosition>([.first]),
         Set<StepPosition>([.second, .fourth]),

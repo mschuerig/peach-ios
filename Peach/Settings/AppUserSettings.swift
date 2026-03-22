@@ -69,7 +69,6 @@ final class AppUserSettings: UserSettings {
         guard let raw = UserDefaults.standard.string(forKey: SettingsKeys.enabledGapPositions) else {
             return SettingsKeys.defaultEnabledGapPositions
         }
-        let positions = GapPositionEncoding.decode(raw)
-        return positions.isEmpty ? SettingsKeys.defaultEnabledGapPositions : positions
+        return GapPositionEncoding.decodeWithDefault(raw)
     }
 }

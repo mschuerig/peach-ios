@@ -1,6 +1,6 @@
 # Story 54.3: Gap Position Settings
 
-Status: review
+Status: done
 
 ## Story
 
