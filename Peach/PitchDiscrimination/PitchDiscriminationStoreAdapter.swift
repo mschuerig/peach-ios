@@ -24,8 +24,10 @@ struct PitchDiscriminationStoreAdapter: PitchDiscriminationObserver {
 
         do {
             try store.save(record)
-        } catch {
+        } catch let error as DataStoreError {
             Self.logger.warning("Pitch discrimination save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Pitch discrimination unexpected error: \(error.localizedDescription)")
         }
     }
 }

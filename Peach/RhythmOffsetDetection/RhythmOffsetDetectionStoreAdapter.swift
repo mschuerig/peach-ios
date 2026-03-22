@@ -18,8 +18,10 @@ struct RhythmOffsetDetectionStoreAdapter: RhythmOffsetDetectionObserver {
         )
         do {
             try store.save(record)
-        } catch {
+        } catch let error as DataStoreError {
             Self.logger.warning("Rhythm offset detection save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Rhythm offset detection unexpected error: \(error.localizedDescription)")
         }
     }
 }

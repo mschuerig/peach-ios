@@ -1,6 +1,6 @@
 # Story 55.1: Extract Observer Adapters with Port Protocols
 
-Status: review
+Status: done
 
 ## Story
 

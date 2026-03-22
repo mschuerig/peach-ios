@@ -22,8 +22,10 @@ struct ContinuousRhythmMatchingStoreAdapter: ContinuousRhythmMatchingObserver {
         )
         do {
             try store.save(record)
-        } catch {
+        } catch let error as DataStoreError {
             Self.logger.warning("Continuous rhythm matching save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Continuous rhythm matching unexpected error: \(error.localizedDescription)")
         }
     }
 

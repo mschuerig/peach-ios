@@ -23,8 +23,10 @@ struct PitchMatchingStoreAdapter: PitchMatchingObserver {
 
         do {
             try store.save(record)
-        } catch {
+        } catch let error as DataStoreError {
             Self.logger.warning("Pitch matching save error: \(error.localizedDescription)")
+        } catch {
+            Self.logger.warning("Pitch matching unexpected error: \(error.localizedDescription)")
         }
     }
 }

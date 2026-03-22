@@ -62,7 +62,7 @@ final class PerceptualProfile: TrainingProfile {
         logger.info("PerceptualProfile fully reset to cold start")
     }
 
-    // MARK: - Private
+    // MARK: - ProfileUpdating
 
     func update(_ key: StatisticsKey, timestamp: Date, value: Double) {
         let point = MetricPoint(timestamp: timestamp, value: value)
