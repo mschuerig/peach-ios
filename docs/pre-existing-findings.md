@@ -18,13 +18,6 @@
 **Details:** All four sessions (`PitchDiscriminationSession`, `PitchMatchingSession`, `RhythmOffsetDetectionSession`, `ContinuousRhythmMatchingSession`) duplicate `interruptionMonitor` wiring, `feedbackTask` lifecycle management, and `stop()` cleanup. ~15-20 duplicated lines per session × 4 sessions.
 **Action:** Story 58.2 — extract `SessionLifecycle` helper. Composition, not inheritance.
 
-### ST-1: Buggy `assignBuckets` still live on Start Screen sparkline
-
-**Source:** story 41-1 (M3 finding)
-**Severity:** MEDIUM
-**Details:** `assignBuckets` compares against session start instead of last record's timestamp for gap detection. `assignMultiGranularityBuckets` was written correctly. Both code paths are live: `assignBuckets` serves `ProgressSparklineView` on the Start Screen; `assignMultiGranularityBuckets` serves the Profile chart.
-**Action:** Story 58.1 — consolidate `buckets(for:)` to use `allGranularityBuckets(for:)`, then delete `assignBuckets`.
-
 ---
 
 ## WONT-FIX — Documented Exceptions

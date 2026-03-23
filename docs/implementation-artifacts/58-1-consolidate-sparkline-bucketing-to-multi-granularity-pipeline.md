@@ -1,6 +1,6 @@
 # Story 58.1: Consolidate Sparkline Bucketing to Multi-Granularity Pipeline
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,24 +22,24 @@ So that session grouping is correct and there is only one code path to maintain.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update `buckets(for:)` to delegate to `allGranularityBuckets(for:)` (AC: #1)
-  - [ ] In `ProgressTimeline.swift:101-106`, change `buckets(for:)` body to call `allGranularityBuckets(for:)` directly
-  - [ ] Keep the public `buckets(for:)` method signature unchanged — `ProgressSparklineView` still calls it
+- [x] Task 1: Update `buckets(for:)` to delegate to `allGranularityBuckets(for:)` (AC: #1)
+  - [x] In `ProgressTimeline.swift:101-106`, change `buckets(for:)` body to call `allGranularityBuckets(for:)` directly
+  - [x] Keep the public `buckets(for:)` method signature unchanged — `ProgressSparklineView` still calls it
 
-- [ ] Task 2: Delete `assignBuckets` (AC: #2)
-  - [ ] Remove `assignBuckets(_:now:sessionGap:)` at lines 142-182
-  - [ ] Remove the `recentThreshold` and `monthThreshold` constants (lines 59, 63) if they become unused — verify no other references first
-  - [ ] Keep `secondsPerDay` and `dayZoneDays` — they are used by `assignMultiGranularityBuckets` and `assignSubBuckets`
+- [x] Task 2: Delete `assignBuckets` (AC: #2)
+  - [x] Remove `assignBuckets(_:now:sessionGap:)` at lines 142-182
+  - [x] Remove the `recentThreshold` and `monthThreshold` constants (lines 59, 63) if they become unused — verify no other references first
+  - [x] Keep `secondsPerDay` and `dayZoneDays` — they are used by `assignMultiGranularityBuckets` and `assignSubBuckets`
 
-- [ ] Task 3: Fix tests that depend on old bucketing behavior (AC: #4)
-  - [ ] Run full suite to identify failures
-  - [ ] Update assertions in `ProgressTimelineTests.swift` where `buckets(for:)` is called — the return values will now use calendar-snapped zone boundaries instead of age-relative thresholds
-  - [ ] The test at line 831 (`"existing buckets(for:) still returns identical results after adding allGranularityBuckets"`) must be updated or removed — it explicitly asserts the old behavior matches the new
-  - [ ] Pay special attention to session merging tests — the bug fix (comparing against `lastGroup.end` instead of `lastGroup.key`) changes merge behavior
+- [x] Task 3: Fix tests that depend on old bucketing behavior (AC: #4)
+  - [x] Run full suite to identify failures
+  - [x] Update assertions in `ProgressTimelineTests.swift` where `buckets(for:)` is called — the return values will now use calendar-snapped zone boundaries instead of age-relative thresholds
+  - [x] The test at line 831 (`"existing buckets(for:) still returns identical results after adding allGranularityBuckets"`) must be updated or removed — it explicitly asserts the old behavior matches the new
+  - [x] Pay special attention to session merging tests — the bug fix (comparing against `lastGroup.end` instead of `lastGroup.key`) changes merge behavior
 
-- [ ] Task 4: Update pre-existing findings catalog (AC: #5)
-  - [ ] In `docs/pre-existing-findings.md`, update ST-1 to CLOSED with reference to story 58.1
-  - [ ] Move it from "OPEN — Needs Story" to a "CLOSED" section, or remove entirely per catalog convention (check git history note at top of file — closed findings are removed)
+- [x] Task 4: Update pre-existing findings catalog (AC: #5)
+  - [x] In `docs/pre-existing-findings.md`, update ST-1 to CLOSED with reference to story 58.1
+  - [x] Move it from "OPEN — Needs Story" to a "CLOSED" section, or remove entirely per catalog convention (check git history note at top of file — closed findings are removed)
 
 ## Dev Notes
 
@@ -102,10 +102,29 @@ The sparkline only maps `buckets.map(\.mean)` into a 60×24pt path, so the chang
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+None — clean implementation with no blockers.
+
 ### Completion Notes List
 
+- Wrote failing regression test `longSessionMergesCorrectly` exposing ST-1 bug (assignBuckets comparing against session start instead of last record timestamp)
+- Rewired `buckets(for:)` to delegate to `allGranularityBuckets(for:)` — one-line body change
+- Deleted `assignBuckets(_:now:sessionGap:)` method (41 lines) and unused `recentThreshold`/`monthThreshold` constants
+- Updated `dayBucketsExtendedRange` test → `monthBucketsForOlderRecords` (10/20 days ago are now month zone under calendar-snapped boundaries)
+- Replaced `existingBucketsAPIUnchanged` test with `bucketsForDelegatesToAllGranularity` verifying delegation equivalence
+- Removed ST-1 from pre-existing findings catalog (closed findings are removed per convention)
+- Full test suite: 1461 tests pass, zero regressions
+
+### Change Log
+
+- 2026-03-23: Implemented story 58.1 — consolidated sparkline bucketing to multi-granularity pipeline, deleted assignBuckets, closed ST-1
+
 ### File List
+
+- Peach/Core/Profile/ProgressTimeline.swift (modified — rewired buckets(for:), deleted assignBuckets and unused constants)
+- PeachTests/Core/Profile/ProgressTimelineTests.swift (modified — added regression test, updated 2 tests for calendar-snapped zones)
+- docs/pre-existing-findings.md (modified — removed closed ST-1 entry)
+- docs/implementation-artifacts/58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline.md (modified — task checkboxes, dev agent record, status)

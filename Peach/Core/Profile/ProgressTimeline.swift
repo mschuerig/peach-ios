@@ -53,15 +53,6 @@ struct TimeBucket {
 @Observable
 final class ProgressTimeline {
 
-    // MARK: - Bucket Age Thresholds
-
-    /// Records younger than this are bucketed per training session.
-    private static let recentThreshold: Duration = .seconds(24 * 3600)
-
-    /// Records younger than this (but older than recentThreshold) are bucketed per day.
-    /// Older records are bucketed per month.
-    private static let monthThreshold: Duration = .seconds(30 * 86400)
-
     private static let secondsPerDay: Duration = .seconds(86400)
 
     /// Number of calendar days in the day zone (before today).
@@ -99,10 +90,7 @@ final class ProgressTimeline {
 
     /// Returns the adaptive time buckets for charting a mode's progress.
     func buckets(for mode: TrainingDisciplineID) -> [TimeBucket] {
-        guard let summary = profile.mergedStatistics(for: mode.statisticsKeys),
-              !summary.metrics.isEmpty else { return [] }
-        let now = Date()
-        return assignBuckets(summary.metrics, now: now, sessionGap: mode.config.sessionGap)
+        allGranularityBuckets(for: mode)
     }
 
     /// Returns concatenated multi-granularity buckets ordered chronologically.
@@ -135,50 +123,6 @@ final class ProgressTimeline {
         guard !metrics.isEmpty else { return [] }
 
         return assignSubBuckets(metrics, parentSize: bucket.bucketSize, sessionGap: mode.config.sessionGap)
-    }
-
-    // MARK: - Bucket Assignment
-
-    private func assignBuckets(_ metrics: [MetricPoint], now: Date, sessionGap: Duration) -> [TimeBucket] {
-        let calendar = Calendar.current
-        let sessionGapSeconds = sessionGap / .seconds(1)
-        var groups: [(key: Date, end: Date, size: BucketSize, points: [Double])] = []
-
-        for metric in metrics {
-            let age = now.timeIntervalSince(metric.timestamp)
-            let bucketInfo: (key: Date, end: Date, size: BucketSize)
-
-            if age < Self.recentThreshold / .seconds(1) {
-                if let lastGroup = groups.last,
-                   lastGroup.size == .session,
-                   metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGapSeconds {
-                    groups[groups.count - 1].points.append(metric.value)
-                    groups[groups.count - 1].end = metric.timestamp
-                    continue
-                }
-                bucketInfo = (key: metric.timestamp, end: metric.timestamp, size: .session)
-            } else if age < Self.monthThreshold / .seconds(1) {
-                let dayStart = calendar.startOfDay(for: metric.timestamp)
-                let dayEnd = dayStart.addingTimeInterval(Self.secondsPerDay / .seconds(1))
-                bucketInfo = (key: dayStart, end: dayEnd, size: .day)
-            } else {
-                if let monthInterval = calendar.dateInterval(of: .month, for: metric.timestamp) {
-                    bucketInfo = (key: monthInterval.start, end: monthInterval.end, size: .month)
-                } else {
-                    continue
-                }
-            }
-
-            if let idx = groups.firstIndex(where: { $0.key == bucketInfo.key && $0.size == bucketInfo.size }) {
-                groups[idx].points.append(metric.value)
-            } else {
-                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.value]))
-            }
-        }
-
-        return groups.sorted { $0.key < $1.key }.map { group in
-            Self.makeBucket(periodStart: group.key, periodEnd: group.end, bucketSize: group.size, points: group.points)
-        }
     }
 
     // MARK: - Multi-Granularity Bucket Assignment

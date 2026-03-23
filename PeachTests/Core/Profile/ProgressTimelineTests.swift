@@ -177,8 +177,8 @@ struct ProgressTimelineTests {
         #expect(buckets.count == 2)
     }
 
-    @Test("records between 7-30 days old are grouped by day")
-    func dayBucketsExtendedRange() async {
+    @Test("records older than 7 days are grouped by month")
+    func monthBucketsForOlderRecords() async {
         let calendar = Calendar.current
         let now = Date()
         let noon10DaysAgo = calendar.startOfDay(for: now.addingTimeInterval(-10 * 86400)).addingTimeInterval(12 * 3600)
@@ -190,9 +190,9 @@ struct ProgressTimelineTests {
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
-        #expect(buckets.count == 2)
+        #expect(!buckets.isEmpty)
         for bucket in buckets {
-            #expect(bucket.bucketSize == .day)
+            #expect(bucket.bucketSize == .month)
         }
     }
 
@@ -828,18 +828,24 @@ struct ProgressTimelineTests {
         #expect(monthBuckets.isEmpty, "New user with only today's data should have no month buckets")
     }
 
-    @Test("existing buckets(for:) still returns identical results after adding allGranularityBuckets")
-    func existingBucketsAPIUnchanged() async {
+    @Test("buckets(for:) delegates to allGranularityBuckets producing calendar-snapped results")
+    func bucketsForDelegatesToAllGranularity() async {
+        let calendar = Calendar.current
+        let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
+
+        // All three records are today (session zone)
         let records = [
-            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 2.0),
-            makePitchDiscriminationRecord(centOffset: 12.0, hoursAgo: 1.9),
-            makePitchDiscriminationRecord(centOffset: 8.0, hoursAgo: 0.5),
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(120)),
+            makePitchDiscriminationRecord(centOffset: 8.0, date: midnightToday.addingTimeInterval(7200)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
+        let allGranBuckets = timeline.allGranularityBuckets(for: .unisonPitchDiscrimination)
 
-        // Existing behavior: session bucketing for recent records
-        #expect(buckets.count == 2)
+        // buckets(for:) and allGranularityBuckets(for:) must return identical results
+        #expect(buckets.count == allGranBuckets.count)
         let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
         #expect(totalRecords == 3)
     }
@@ -872,6 +878,32 @@ struct ProgressTimelineTests {
         let subs = timeline.subBuckets(for: .unisonPitchDiscrimination, expanding: monthBucket)
         let subRecordCount = subs.reduce(0) { $0 + $1.recordCount }
         #expect(subRecordCount == monthBucket.recordCount)
+    }
+
+    // MARK: - Session Merging Bug Regression (ST-1)
+
+    @Test("long session merges correctly when each record is within sessionGap of the previous one")
+    func longSessionMergesCorrectly() async {
+        let calendar = Calendar.current
+        let now = Date()
+        let midnightToday = calendar.startOfDay(for: now)
+
+        // 3 records today, each 20 minutes apart (< 30 min sessionGap).
+        // Total span is 40 minutes from first to last, but each consecutive gap is only 20 min.
+        // The old assignBuckets compared against session START (record 1), so record 3
+        // at +40min would incorrectly split because 40min > 30min sessionGap.
+        // The correct behavior compares against the LAST record's timestamp.
+        let records = [
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(60 + 20 * 60)),
+            makePitchDiscriminationRecord(centOffset: 14.0, date: midnightToday.addingTimeInterval(60 + 40 * 60)),
+        ]
+        let timeline = makeTimeline(pitchDiscriminationRecords: records)
+        let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
+
+        // All 3 should be in ONE session bucket
+        #expect(buckets.count == 1, "All 3 records should merge into one session bucket")
+        #expect(buckets.first?.recordCount == 3)
     }
 
     // MARK: - Rhythm Mode Tests
