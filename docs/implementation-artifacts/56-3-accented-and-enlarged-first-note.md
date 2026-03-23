@@ -1,6 +1,6 @@
 # Story 56.3: Accented and Enlarged First Note
 
-Status: review
+Status: done
 
 ## Story
 
