@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 57.3 done, epic 57 complete
+# last_updated: 2026-03-23 # Story 58.1 ready-for-dev
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -445,6 +445,6 @@ development_status:
   57-3-localization-for-rhythm-timing-feedback: done
 
   # Epic 58: Clean Slate — Pre-Existing Findings Cleanup
-  epic-58: backlog
-  58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: backlog
+  epic-58: in-progress
+  58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: ready-for-dev
   58-2-extract-sessionlifecycle-helper: backlog
