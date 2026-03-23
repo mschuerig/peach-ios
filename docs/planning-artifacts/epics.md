@@ -5957,3 +5957,215 @@ So that adding or removing a discipline never requires modifying shared CSV infr
 **Then** they are removed entirely (no installed base to maintain)
 
 ---
+
+## Epic 56: Tighter Grid — Rhythm Offset Discrimination UX Refinements
+
+Based on user testing feedback, this epic improves the Rhythm Offset Discrimination exercise. The tested note moves from the 4th to the 3rd sixteenth note so the user has reference clicks on both sides. A quarter-note timing grid ensures the first note of every pattern lands on the beat, building an internalized pulse. The first note is accented (visual + audio) matching Continuous Rhythm Matching, and the tested note is visually distinguished with overlapping circles.
+
+### Story 56.1: Quarter-Note Timing Grid Alignment
+
+As a **user training rhythm offset discrimination**,
+I want each pattern's first note to land exactly on a quarter-note grid established at session start,
+So that I can internalize a continuous beat across trials and judge offsets against a steady pulse.
+
+**Acceptance Criteria:**
+
+**Given** a session starts
+**When** the first pattern plays
+**Then** its first note defines the origin of a quarter-note grid at the current tempo
+
+**Given** a pattern has finished and the user has answered
+**When** the next pattern is about to play
+**Then** the session waits until the next quarter-note grid point before playing the first note
+
+**Given** the grid wait would be very short (e.g., < 100ms at fast tempos)
+**When** the next grid point arrives
+**Then** the pattern still starts on that grid point — the grid is never skipped
+
+**Given** the session is in the feedback state
+**When** feedback ends before the next grid point
+**Then** the session holds in a waiting state until the grid point, then transitions to playingPattern
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 56.2: Move Tested Note from 4th to 3rd Position
+
+As a **user training rhythm offset discrimination**,
+I want the shifted note to be the 3rd sixteenth note instead of the 4th,
+So that I have reference clicks on both sides of the tested note and can judge the offset more naturally.
+
+**Acceptance Criteria:**
+
+**Given** `buildPattern()` constructs a rhythm pattern
+**When** the trial offset is applied
+**Then** the offset is applied to event index 2 (3rd note), not index 3 (4th note)
+
+**Given** a pattern with an early offset
+**When** it plays
+**Then** notes 1, 2, 4 are on the sixteenth-note grid and note 3 arrives early
+
+**Given** a pattern with a late offset
+**When** it plays
+**Then** notes 1, 2, 4 are on the sixteenth-note grid and note 3 arrives late
+
+**Given** the dot visualization
+**When** dots light up sequentially
+**Then** dot 3 (index 2) corresponds to the offset note
+
+**Given** the help text on the training screen
+**When** displayed
+**Then** it reflects that the third click (not the last) may be early or late
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 56.3: Accented and Enlarged First Note
+
+As a **user training rhythm offset discrimination**,
+I want the first note to be visually larger and audibly accented,
+So that I can clearly identify the downbeat, matching the Continuous Rhythm Matching convention.
+
+**Acceptance Criteria:**
+
+**Given** `buildPattern()` constructs a rhythm pattern
+**When** events are created
+**Then** the first event uses accent velocity (127); all others use normal velocity (100)
+
+**Given** `RhythmDotView` renders the four dots
+**When** the first dot is rendered
+**Then** it uses the beat-one diameter (22pt) instead of the standard diameter (16pt)
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 56.4: Overlapping-Circle Visualization for Tested Note
+
+As a **user training rhythm offset discrimination**,
+I want the tested note (3rd position) to be visually distinguished as two overlapping circles,
+So that I can see at a glance which note may be shifted, and the double shape suggests imprecise timing.
+
+**Acceptance Criteria:**
+
+**Given** `RhythmDotView` renders the four dots
+**When** the 3rd dot (index 2) is rendered
+**Then** it appears as two circles horizontally offset by approximately half their diameter
+
+**Given** the overlapping circles
+**When** the pattern is not playing (all dots dimmed)
+**Then** the double-circle shape is still visible at dimmed opacity (0.2), as a permanent visual cue
+
+**Given** the overlapping circles
+**When** the 3rd note lights up during pattern playback
+**Then** both circles transition to full opacity together
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+---
+
+## Epic 57: Feel the Beat — Continuous Rhythm Matching Tap Feedback
+
+Based on user testing, this epic replaces the brief dot-color feedback with auditory tap confirmation and a directional timing indicator. The user's tap triggers the same note sample as the sequencer, making the tap audible as part of the rhythm. The offset indicator shows direction and magnitude in milliseconds, using the same accuracy bands as the profile spectrogram.
+
+### Story 57.1: Auditory Tap Feedback
+
+As a **user training continuous rhythm matching**,
+I want my tap to produce the same click sound as the sequencer notes,
+So that I hear my timing as part of the rhythm and can judge my accuracy by ear.
+
+**Acceptance Criteria:**
+
+**Given** the user taps during a gap window
+**When** the tap is registered
+**Then** the session immediately triggers a MIDI note-on for note 76 on the step sequencer's channel
+
+**Given** the gap falls on beat one (step position `.first`)
+**When** the user taps
+**Then** the note plays at accent velocity (127)
+
+**Given** the gap falls on any other step position
+**When** the user taps
+**Then** the note plays at normal velocity (100)
+
+**Given** the tap-triggered note
+**When** offset precision is calculated
+**Then** the measurement uses the same time source as the tap (i.e., the tap instant is both the sound trigger and the measurement point)
+
+**Given** a perfect performance recorded into a DAW
+**When** all taps land exactly on the grid
+**Then** the recording shows evenly spaced notes with no gaps — the tap sounds fill the gaps left by the sequencer
+
+**Given** `StepSequencer` protocol
+**When** the session needs to trigger an immediate note
+**Then** a new method (e.g., `playImmediateNote(velocity:)`) is available on the protocol for on-demand note playback
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 57.2: Replace Dot Coloring with Timing Feedback Indicator
+
+As a **user training continuous rhythm matching**,
+I want to see a brief directional indicator showing how many milliseconds early or late my tap was,
+So that I get precise, actionable feedback without relying on the too-fast dot coloring.
+
+**Acceptance Criteria:**
+
+**Given** the gap dot in `ContinuousRhythmMatchingDotView`
+**When** a hit is registered
+**Then** no color fill is applied — the gap dot remains an outline stroke
+
+**Given** a tap hit is registered
+**When** the offset is computed
+**Then** a `RhythmTimingFeedbackIndicator` appears showing: arrow direction (← early, → late, or • dead center), absolute offset in milliseconds, and a color from the spectrogram accuracy bands
+
+**Given** the spectrogram accuracy bands (`SpectrogramThresholds.default`)
+**When** determining the feedback color
+**Then** the indicator uses the hybrid model: base percentage of sixteenth-note duration clamped to floor/ceiling ms values — green (precise), yellow (moderate), red (erratic)
+
+**Given** the feedback indicator
+**When** displayed
+**Then** it appears briefly and fades out (transient, same duration as the current 200ms feedback)
+
+**Given** the user misses a gap (no tap)
+**When** the cycle advances
+**Then** no feedback is shown
+
+**Given** the help text on the training screen
+**When** displayed
+**Then** it reflects the new feedback style (arrows and milliseconds instead of dot colors)
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 57.3: Localization for Rhythm Timing Feedback
+
+As a **user with German locale**,
+I want the timing feedback indicator and updated help text to be properly localized,
+So that the new feedback is understandable in my language.
+
+**Acceptance Criteria:**
+
+**Given** the timing feedback indicator
+**When** displayed in German
+**Then** the millisecond unit ("ms") and direction terms are localized
+
+**Given** the updated help text for Continuous Rhythm Matching
+**When** displayed in German
+**Then** the feedback description reflects arrows and milliseconds
+
+**Given** VoiceOver in German
+**When** the feedback indicator is active
+**Then** the accessibility label is localized (e.g., "5 Millisekunden zu früh")
+
+**Given** `bin/add-localization.swift --missing`
+**When** run
+**Then** no missing keys are reported for rhythm timing feedback strings
+
+---

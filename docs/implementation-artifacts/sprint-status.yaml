@@ -428,3 +428,18 @@ development_status:
   55-1-extract-observer-adapters-with-port-protocols: done
   55-2-protocol-based-discipline-registry: done
   55-3-discipline-owned-csv-format: done
+
+  # Epic 56: Tighter Grid — Rhythm Offset Discrimination UX Refinements
+  # Work order: 56.1 before 56.2 (grid must exist before note position changes); 56.3 and 56.4 independent
+  epic-56: backlog
+  56-1-quarter-note-timing-grid-alignment: backlog
+  56-2-move-tested-note-from-4th-to-3rd-position: backlog
+  56-3-accented-and-enlarged-first-note: backlog
+  56-4-overlapping-circle-visualization-for-tested-note: backlog
+
+  # Epic 57: Feel the Beat — Continuous Rhythm Matching Tap Feedback
+  # Work order: 57.1 before 57.2 (tap sound needed before feedback indicator references it); 57.3 after 57.2
+  epic-57: backlog
+  57-1-auditory-tap-feedback: backlog
+  57-2-replace-dot-coloring-with-timing-feedback-indicator: backlog
+  57-3-localization-for-rhythm-timing-feedback: backlog
