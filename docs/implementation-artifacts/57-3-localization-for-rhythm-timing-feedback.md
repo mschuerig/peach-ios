@@ -1,6 +1,6 @@
 # Story 57.3: Localization for Rhythm Timing Feedback
 
-Status: review
+Status: done
 
 ## Story
 
