@@ -1,6 +1,6 @@
 # Story 57.2: Replace Dot Coloring with Timing Feedback Indicator
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -45,45 +45,79 @@ The accuracy bands use `SpectrogramThresholds.default` — the same hybrid model
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `RhythmTimingFeedbackIndicator`
-  - [ ] New file: `Peach/ContinuousRhythmMatching/RhythmTimingFeedbackIndicator.swift`
-  - [ ] Parameters: `offsetMs: Double?`, `tempo: TempoBPM`
-  - [ ] Static methods (extracted for testability, matching `PitchMatchingFeedbackIndicator` pattern):
-    - [ ] `arrowSymbolName(offsetMs:)` → `"arrow.left"` / `"arrow.right"` / `"circle.fill"`
-    - [ ] `offsetText(offsetMs:)` → `"← 5 ms"` / `"→ 3 ms"` / `"• 0 ms"`
-    - [ ] `accuracyLevel(offsetMs:tempo:)` → uses `SpectrogramThresholds` with a `TempoRange` derived from the tempo
-    - [ ] `feedbackColor(level:)` → green / yellow / red
-    - [ ] `accessibilityLabel(offsetMs:)` → e.g., "5 milliseconds early"
-  - [ ] HStack layout: arrow image + offset text, both colored by accuracy level
-  - [ ] Accessibility: `.accessibilityElement(children: .combine)`
+- [x] Task 1: Create `RhythmTimingFeedbackIndicator`
+  - [x] New file: `Peach/ContinuousRhythmMatching/RhythmTimingFeedbackIndicator.swift`
+  - [x] Parameters: `offsetMs: Double?`, `tempo: TempoBPM`
+  - [x] Static methods (extracted for testability, matching `PitchMatchingFeedbackIndicator` pattern):
+    - [x] `arrowSymbolName(offsetMs:)` → `"arrow.left"` / `"arrow.right"` / `"circle.fill"`
+    - [x] `offsetText(offsetMs:)` → `"← 5 ms"` / `"→ 3 ms"` / `"• 0 ms"`
+    - [x] `accuracyLevel(offsetMs:tempo:)` → uses `SpectrogramThresholds` with a `TempoRange` derived from the tempo
+    - [x] `feedbackColor(level:)` → green / yellow / red
+    - [x] `accessibilityLabel(offsetMs:)` → e.g., "5 milliseconds early"
+  - [x] HStack layout: arrow image + offset text, both colored by accuracy level
+  - [x] Accessibility: `.accessibilityElement(children: .combine)`
 
-- [ ] Task 2: Expose offset milliseconds from session
-  - [ ] Add `lastHitOffsetMs: Double?` to `ContinuousRhythmMatchingSession`
-  - [ ] In `showHitFeedback()`, compute ms from `RhythmOffset.duration` and store it
-  - [ ] Clear on feedback timeout
+- [x] Task 2: Expose offset milliseconds from session
+  - [x] Add `lastHitOffsetMs: Double?` to `ContinuousRhythmMatchingSession`
+  - [x] In `showHitFeedback()`, compute ms from `RhythmOffset.duration` and store it
+  - [x] Clear on feedback timeout
 
-- [ ] Task 3: Remove dot coloring from `ContinuousRhythmMatchingDotView`
-  - [ ] Remove `feedbackPercentage` parameter
-  - [ ] Remove `feedbackColor(forPercentage:)` static method
-  - [ ] Gap dot always renders as outline stroke (no fill branch)
-  - [ ] Update all call sites and previews
+- [x] Task 3: Remove dot coloring from `ContinuousRhythmMatchingDotView`
+  - [x] Remove `feedbackPercentage` parameter
+  - [x] Remove `feedbackColor(forPercentage:)` static method
+  - [x] Gap dot always renders as outline stroke (no fill branch)
+  - [x] Update all call sites and previews
 
-- [ ] Task 4: Integrate feedback indicator into `ContinuousRhythmMatchingScreen`
-  - [ ] Add `RhythmTimingFeedbackIndicator` to the stats header area (right side, matching pitch matching layout)
-  - [ ] Bind to `session.lastHitOffsetMs` and `session.showFeedback`
-  - [ ] Use opacity + animation for transient display (matching existing `feedbackAnimation` pattern)
+- [x] Task 4: Integrate feedback indicator into `ContinuousRhythmMatchingScreen`
+  - [x] Add `RhythmTimingFeedbackIndicator` to the stats header area (right side, matching pitch matching layout)
+  - [x] Bind to `session.lastHitOffsetMs` and `session.showFeedback`
+  - [x] Use opacity + animation for transient display (matching existing `feedbackAnimation` pattern)
 
-- [ ] Task 5: Update help text
-  - [ ] Change "Feedback" help section to describe arrows and milliseconds
-  - [ ] Update German translation
+- [x] Task 5: Update help text
+  - [x] Change "Feedback" help section to describe arrows and milliseconds
+  - [x] Update German translation
 
-- [ ] Task 6: Write tests
-  - [ ] Test `arrowSymbolName`: negative → left, positive → right, zero → circle
-  - [ ] Test `offsetText`: formatting with ms unit
-  - [ ] Test `accuracyLevel`: verify it uses `SpectrogramThresholds` correctly for various tempos
-  - [ ] Test `feedbackColor`: green/yellow/red mapping
-  - [ ] Test `accessibilityLabel`: direction + ms text
-  - [ ] Test session exposes `lastHitOffsetMs` correctly
+- [x] Task 6: Write tests
+  - [x] Test `arrowSymbolName`: negative → left, positive → right, zero → circle
+  - [x] Test `offsetText`: formatting with ms unit
+  - [x] Test `accuracyLevel`: verify it uses `SpectrogramThresholds` correctly for various tempos
+  - [x] Test `feedbackColor`: green/yellow/red mapping
+  - [x] Test `accessibilityLabel`: direction + ms text
+  - [x] Test session exposes `lastHitOffsetMs` correctly
+
+## Dev Agent Record
+
+### Implementation Plan
+- Created `RhythmTimingFeedbackIndicator` following `PitchMatchingFeedbackIndicator` pattern with static methods for testability
+- Used `SpectrogramThresholds.default` with a single-tempo `TempoRange` for accurate accuracy classification
+- Converted ms offset to percentage via duration arithmetic for the threshold API
+- Removed dot coloring entirely, gap dot now always renders as outline stroke
+- Integrated indicator into stats header with opacity/animation matching pitch matching screen pattern
+
+### Completion Notes
+- All 6 tasks completed with TDD approach
+- 18 new tests for `RhythmTimingFeedbackIndicator` (arrow symbols, offset text, accuracy levels, colors, accessibility)
+- 3 new tests for session `lastHitOffsetMs` exposure (positive/negative offsets, cleared on stop)
+- 4 dot view feedback color tests removed (dead code)
+- German translations added for "milliseconds early", "milliseconds late", and updated feedback help text
+- All tests pass with zero regressions
+
+## File List
+
+- `Peach/ContinuousRhythmMatching/RhythmTimingFeedbackIndicator.swift` (new)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` (modified)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingDotView.swift` (modified)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` (modified)
+- `Peach/Resources/Localizable.xcstrings` (modified)
+- `PeachTests/ContinuousRhythmMatching/RhythmTimingFeedbackIndicatorTests.swift` (new)
+- `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingSessionTests.swift` (modified)
+- `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingDotViewTests.swift` (modified)
+- `docs/implementation-artifacts/57-2-replace-dot-coloring-with-timing-feedback-indicator.md` (modified)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified)
+
+## Change Log
+
+- 2026-03-23: Implemented story 57.2 — replaced dot coloring with timing feedback indicator showing directional arrows and millisecond offset
 
 ## Technical Notes
 

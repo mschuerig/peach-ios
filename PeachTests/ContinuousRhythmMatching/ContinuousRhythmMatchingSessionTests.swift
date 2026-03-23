@@ -566,6 +566,65 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
+    // MARK: - Timing Feedback
+
+    @Test("tap within window exposes signed offset in milliseconds")
+    func tapExposesOffsetMs() async {
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        // Tap 10ms after the gap time → positive (late) offset
+        let gapTime = f.mockTime + Double(3) * f.sixteenthDuration
+        setTime(gapTime + 0.010)
+        f.session.handleTap()
+
+        #expect(f.session.lastHitOffsetMs != nil)
+        let offsetMs = f.session.lastHitOffsetMs!
+        #expect(abs(offsetMs - 10.0) < 0.1)
+
+        f.session.stop()
+    }
+
+    @Test("early tap produces negative offset milliseconds")
+    func earlyTapProducesNegativeOffsetMs() async {
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        // Tap 10ms before the gap time → negative (early) offset
+        let gapTime = f.mockTime + Double(3) * f.sixteenthDuration
+        setTime(gapTime - 0.010)
+        f.session.handleTap()
+
+        #expect(f.session.lastHitOffsetMs != nil)
+        let offsetMs = f.session.lastHitOffsetMs!
+        #expect(abs(offsetMs - (-10.0)) < 0.1)
+
+        f.session.stop()
+    }
+
+    @Test("stop clears lastHitOffsetMs")
+    func stopClearsOffsetMs() async {
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+        let gapTime = f.mockTime + Double(3) * f.sixteenthDuration
+        setTime(gapTime + 0.005)
+        f.session.handleTap()
+
+        #expect(f.session.lastHitOffsetMs != nil)
+
+        f.session.stop()
+        #expect(f.session.lastHitOffsetMs == nil)
+    }
+
     @Test("playImmediateNote error does not crash session")
     func playImmediateNoteErrorDoesNotCrashSession() async {
         let (f, setTime) = makeTimedSession()

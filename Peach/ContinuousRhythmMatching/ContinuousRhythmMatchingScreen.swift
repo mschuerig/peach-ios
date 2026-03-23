@@ -5,6 +5,7 @@ struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.continuousRhythmMatchingSession) private var session
     @Environment(\.userSettings) private var userSettings
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showHelpSheet = false
 
@@ -21,7 +22,7 @@ struct ContinuousRhythmMatchingScreen: View {
         ),
         HelpSection(
             title: String(localized: "Feedback"),
-            body: String(localized: "The gap dot briefly changes color after each hit: **green** (close), **yellow** (moderate), **red** (far). Stats update after each trial of 16 cycles.")
+            body: String(localized: "After each hit, an arrow shows whether you tapped early (←) or late (→) with the offset in milliseconds. The color indicates accuracy: **green** (precise), **yellow** (moderate), **red** (erratic). Stats update after each trial of 16 cycles.")
         ),
     ]
 
@@ -34,8 +35,7 @@ struct ContinuousRhythmMatchingScreen: View {
             statsHeader
             ContinuousRhythmMatchingDotView(
                 activeStep: session.currentStep,
-                gapPosition: session.currentGapPosition,
-                feedbackPercentage: session.showFeedback ? session.lastHitOffsetPercentage : nil
+                gapPosition: session.currentGapPosition
             )
             .padding(.vertical, 8)
             tapButton
@@ -79,7 +79,13 @@ struct ContinuousRhythmMatchingScreen: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Spacer()
+            RhythmTimingFeedbackIndicator(
+                offsetMs: session.lastHitOffsetMs,
+                tempo: userSettings.tempoBPM
+            )
+            .opacity(session.showFeedback ? 1 : 0)
+            .accessibilityHidden(!session.showFeedback)
+            .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: session.showFeedback)
 
             Text(Self.cycleProgressText(session.cyclesInCurrentTrial))
                 .font(.caption)
@@ -87,6 +93,12 @@ struct ContinuousRhythmMatchingScreen: View {
                 .monospacedDigit()
         }
         .padding(.horizontal)
+    }
+
+    // MARK: - Animation
+
+    static func feedbackAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .easeInOut(duration: 0.2)
     }
 
     private var tapButton: some View {

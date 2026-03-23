@@ -3,7 +3,6 @@ import SwiftUI
 struct ContinuousRhythmMatchingDotView: View {
     let activeStep: StepPosition?
     let gapPosition: StepPosition?
-    let feedbackPercentage: Double?
 
     var body: some View {
         HStack(spacing: Self.dotSpacing) {
@@ -19,20 +18,12 @@ struct ContinuousRhythmMatchingDotView: View {
         let diameter = Self.diameter(forStepIndex: index)
         let isGap = Self.isGapDot(stepIndex: index, gapPosition: gapPosition)
         let opacity = Self.dotOpacity(stepIndex: index, activeStep: activeStep, gapPosition: gapPosition)
-        let feedbackColor = isGap ? Self.feedbackColor(forPercentage: feedbackPercentage) : nil
 
         if isGap {
-            if let feedbackColor {
-                Circle()
-                    .fill(feedbackColor)
-                    .frame(width: diameter, height: diameter)
-                    .opacity(opacity)
-            } else {
-                Circle()
-                    .stroke(.primary, lineWidth: Self.gapStrokeWidth)
-                    .frame(width: diameter, height: diameter)
-                    .opacity(opacity)
-            }
+            Circle()
+                .stroke(.primary, lineWidth: Self.gapStrokeWidth)
+                .frame(width: diameter, height: diameter)
+                .opacity(opacity)
         } else {
             Circle()
                 .fill(.primary)
@@ -67,17 +58,6 @@ struct ContinuousRhythmMatchingDotView: View {
         return 0.2
     }
 
-    static func feedbackColor(forPercentage percentage: Double?) -> Color? {
-        guard let percentage else { return nil }
-        let absolute = abs(percentage)
-        if absolute <= 5 {
-            return .green
-        } else if absolute <= 15 {
-            return .yellow
-        } else {
-            return .red
-        }
-    }
 }
 
 // MARK: - Previews
@@ -85,17 +65,15 @@ struct ContinuousRhythmMatchingDotView: View {
 #Preview("Gap at position 2, step 1 active") {
     ContinuousRhythmMatchingDotView(
         activeStep: .first,
-        gapPosition: .second,
-        feedbackPercentage: nil
+        gapPosition: .second
     )
     .padding()
 }
 
-#Preview("Gap hit with green feedback") {
+#Preview("Gap dot active") {
     ContinuousRhythmMatchingDotView(
         activeStep: .second,
-        gapPosition: .second,
-        feedbackPercentage: 3
+        gapPosition: .second
     )
     .padding()
 }
@@ -103,8 +81,7 @@ struct ContinuousRhythmMatchingDotView: View {
 #Preview("No active step") {
     ContinuousRhythmMatchingDotView(
         activeStep: nil,
-        gapPosition: .fourth,
-        feedbackPercentage: nil
+        gapPosition: .fourth
     )
     .padding()
 }

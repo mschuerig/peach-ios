@@ -75,25 +75,4 @@ struct ContinuousRhythmMatchingDotViewTests {
         #expect(diameter == ContinuousRhythmMatchingDotView.dotDiameter)
     }
 
-    // MARK: - Feedback Color
-
-    @Test("green for precise timing (≤5%)")
-    func greenForPrecise() async {
-        #expect(ContinuousRhythmMatchingDotView.feedbackColor(forPercentage: 3) == .green)
-    }
-
-    @Test("yellow for moderate timing (>5% and ≤15%)")
-    func yellowForModerate() async {
-        #expect(ContinuousRhythmMatchingDotView.feedbackColor(forPercentage: 10) == .yellow)
-    }
-
-    @Test("red for erratic timing (>15%)")
-    func redForErratic() async {
-        #expect(ContinuousRhythmMatchingDotView.feedbackColor(forPercentage: 20) == .red)
-    }
-
-    @Test("nil percentage returns nil color")
-    func nilPercentageReturnsNilColor() async {
-        #expect(ContinuousRhythmMatchingDotView.feedbackColor(forPercentage: nil) == nil)
-    }
 }

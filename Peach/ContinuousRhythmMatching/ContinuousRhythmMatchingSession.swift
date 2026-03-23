@@ -28,6 +28,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private(set) var cyclesInCurrentTrial = 0
     private(set) var lastTrialResult: CompletedContinuousRhythmMatchingTrial?
     private(set) var lastHitOffsetPercentage: Double?
+    private(set) var lastHitOffsetMs: Double?
     private(set) var showFeedback = false
 
     // MARK: - Dependencies
@@ -100,6 +101,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         cyclesInCurrentTrial = 0
         showFeedback = false
         lastHitOffsetPercentage = nil
+        lastHitOffsetMs = nil
         gapResults = []
         gapPositions = []
         hitCycleIndices = []
@@ -252,6 +254,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private func showHitFeedback(_ offset: RhythmOffset) {
         guard let settings else { return }
         lastHitOffsetPercentage = offset.percentageOfSixteenthNote(at: settings.tempo)
+        lastHitOffsetMs = offset.duration.timeInterval * 1000.0
         showFeedback = true
 
         feedbackTask?.cancel()

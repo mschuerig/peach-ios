@@ -491,6 +491,16 @@
         }
       }
     },
+    "After each hit, an arrow shows whether you tapped early (←) or late (→) with the offset in milliseconds. The color indicates accuracy: **green** (precise), **yellow** (moderate), **red** (erratic). Stats update after each trial of 16 cycles." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nach jedem Treffer zeigt ein Pfeil, ob du zu früh (←) oder zu spät (→) getippt hast, mit dem Versatz in Millisekunden. Die Farbe zeigt die Genauigkeit an: **grün** (präzise), **gelb** (mäßig), **rot** (ungenau). Statistiken werden nach jedem Durchgang von 16 Zyklen aktualisiert."
+          }
+        }
+      }
+    },
     "Audio" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -1691,6 +1701,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Mit vorhandenen Daten zusammenführen"
+          }
+        }
+      }
+    },
+    "milliseconds early" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Millisekunden früh"
+          }
+        }
+      }
+    },
+    "milliseconds late" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Millisekunden spät"
           }
         }
       }
