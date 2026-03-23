@@ -255,7 +255,10 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     }
 
     /// Index of the note that receives the timing offset (0-based among 4 sixteenth notes).
-    private static let testedNoteIndex = 2
+    /// The help text in RhythmOffsetDetectionScreen refers to this position by ordinal name ("third").
+    static let testedNoteIndex = 2
+
+    private static let patternNoteCount = 4
 
     private func buildPattern(for trial: RhythmOffsetDetectionTrial, settings: RhythmOffsetDetectionSettings) -> RhythmPattern {
         let sixteenthDuration = settings.tempo.sixteenthNoteDuration
@@ -265,7 +268,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         let velocity = MIDIVelocity(100)
         let offsetSamples = Int64(sampleRate.rawValue * trial.offset.duration.timeInterval)
 
-        var events = (0..<4).map { i in
+        let events = (0..<Self.patternNoteCount).map { i in
             let base = Int64(i) * samplesPerSixteenth
             let offset = (i == Self.testedNoteIndex) ? offsetSamples : 0
             return RhythmPattern.Event(
@@ -274,8 +277,6 @@ final class RhythmOffsetDetectionSession: TrainingSession {
                 velocity: velocity
             )
         }
-
-        events.sort { $0.sampleOffset < $1.sampleOffset }
 
         return RhythmPattern(
             events: events,

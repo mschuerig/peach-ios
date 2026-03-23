@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 56.2 review
+# last_updated: 2026-03-23 # Story 56.2 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -433,7 +433,7 @@ development_status:
   # Work order: 56.1 before 56.2 (grid must exist before note position changes); 56.3 and 56.4 independent
   epic-56: in-progress
   56-1-quarter-note-timing-grid-alignment: done
-  56-2-move-tested-note-from-4th-to-3rd-position: review
+  56-2-move-tested-note-from-4th-to-3rd-position: done
   56-3-accented-and-enlarged-first-note: backlog
   56-4-overlapping-circle-visualization-for-tested-note: backlog
 

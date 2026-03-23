@@ -1,6 +1,6 @@
 # Story 56.2: Move Tested Note from 4th to 3rd Position
 
-Status: review
+Status: done
 
 ## Story
 

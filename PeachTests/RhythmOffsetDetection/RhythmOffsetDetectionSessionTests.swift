@@ -100,17 +100,16 @@ struct RhythmOffsetDetectionSessionTests {
     }
 
     @Test("pattern has 4 events with 3rd note offset and others on grid")
-    func patternHas4EventsWithCorrectOffsets() async {
+    func patternHas4EventsWithCorrectOffsets() async throws {
         let f = makeSession()
 
         f.session.start(settings: defaultRhythmSettings)
         await f.mockPlayer.waitForPlay()
 
-        let pattern = f.mockPlayer.lastPattern
-        #expect(pattern != nil)
-        #expect(pattern?.events.count == 4)
+        let pattern = try #require(f.mockPlayer.lastPattern)
+        #expect(pattern.events.count == 4)
 
-        guard let events = pattern?.events else { return }
+        let events = pattern.events
 
         let tempo = TempoBPM(80)
         let sixteenthDuration = tempo.sixteenthNoteDuration
@@ -133,8 +132,8 @@ struct RhythmOffsetDetectionSessionTests {
         }
     }
 
-    @Test("pattern with early offset keeps events sorted by sample offset")
-    func patternWithEarlyOffsetSortedCorrectly() async {
+    @Test("pattern with early offset preserves event order")
+    func patternWithEarlyOffsetPreservesOrder() async throws {
         let earlyTrial = RhythmOffsetDetectionTrial(
             tempo: TempoBPM(80),
             offset: RhythmOffset(.milliseconds(-50))
@@ -144,24 +143,41 @@ struct RhythmOffsetDetectionSessionTests {
         f.session.start(settings: defaultRhythmSettings)
         await f.mockPlayer.waitForPlay()
 
-        guard let events = f.mockPlayer.lastPattern?.events else { return }
+        let events = try #require(f.mockPlayer.lastPattern?.events)
 
-        // Events should be sorted by sampleOffset
+        // Early offset shifts event 2 earlier but it stays after event 1
+        // (offsets are capped at 20% of a sixteenth — well under the full sixteenth gap)
         for i in 1..<events.count {
             #expect(events[i].sampleOffset >= events[i - 1].sampleOffset)
         }
+
+        // Tested note is still at index 2
+        let tempo = TempoBPM(80)
+        let samplesPerSixteenth = Int64(SampleRate.standard48000.rawValue * tempo.sixteenthNoteDuration.timeInterval)
+        #expect(events[2].sampleOffset < 2 * samplesPerSixteenth, "early offset should shift event 2 before its grid position")
     }
 
     @Test("pattern total duration unchanged at 4 sixteenth notes")
-    func patternTotalDurationUnchanged() async {
+    func patternTotalDurationUnchanged() async throws {
         let f = makeSession()
 
         f.session.start(settings: defaultRhythmSettings)
         await f.mockPlayer.waitForPlay()
 
-        let pattern = f.mockPlayer.lastPattern
+        let pattern = try #require(f.mockPlayer.lastPattern)
         let expectedDuration = defaultRhythmSettings.tempo.sixteenthNoteDuration * 4
-        #expect(pattern?.totalDuration == expectedDuration)
+        #expect(pattern.totalDuration == expectedDuration)
+    }
+
+    @Test("testedNoteIndex is consistent with help text ordinal")
+    func testedNoteIndexConsistentWithHelpText() {
+        // Verify the English source key (locale-independent) embeds the correct ordinal.
+        // If testedNoteIndex changes, this test forces updating the localization key too.
+        let englishKey = "You'll hear four clicks — a short rhythmic pattern. The **third** click may arrive slightly **early** or **late**. Your job is to decide which one it was."
+        let ordinals = ["**first**", "**second**", "**third**", "**fourth**"]
+        let expectedOrdinal = ordinals[RhythmOffsetDetectionSession.testedNoteIndex]
+        #expect(englishKey.contains(expectedOrdinal),
+                "Localization key must contain '\(expectedOrdinal)' to match testedNoteIndex=\(RhythmOffsetDetectionSession.testedNoteIndex)")
     }
 
     @Test("transitions to awaitingAnswer after pattern completes")
