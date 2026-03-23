@@ -420,6 +420,7 @@
       }
     },
     "1 — Beat" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -430,6 +431,7 @@
       }
     },
     "2 — E" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -440,6 +442,7 @@
       }
     },
     "3 — And" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -450,6 +453,7 @@
       }
     },
     "4 — A" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

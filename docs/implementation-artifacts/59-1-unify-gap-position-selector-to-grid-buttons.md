@@ -1,6 +1,6 @@
 # Story 59.1: Unify Gap Position Selector to Grid Buttons
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -28,19 +28,19 @@ so that the settings screen has a consistent look and feel for all multi-select 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `GridToggleRow` reusable view (AC: 1, 3)
-  - [ ] 1.1 Create `Peach/Settings/GridToggleRow.swift`
-  - [ ] 1.2 Generic over `Element: CaseIterable & Hashable`, accepts `Binding<Set<Element>>` and `label: (Element) -> String` closure
-  - [ ] 1.3 Render a single `HStack` (or `GridRow`) of square toggle-buttons matching `IntervalSelectorView` cell styling
-  - [ ] 1.4 Disable the last remaining active button to enforce minimum-one constraint
-- [ ] Task 2: Integrate into `SettingsScreen` (AC: 2, 5, 6)
-  - [ ] 2.1 Replace `gapPositionsSection` body: swap `ForEach` + `Toggle` for `GridToggleRow<StepPosition>`
-  - [ ] 2.2 Provide label closure mapping `StepPosition` → `"1"`, `"2"`, `"3"`, `"4"`
-  - [ ] 2.3 Remove now-dead helper methods (`isGapPositionEnabled`, `isLastEnabledGapPosition`, `gapPositionLabels`) and `toggleGapPosition` if fully subsumed by the binding
-  - [ ] 2.4 Keep section header/footer text unchanged
-- [ ] Task 3: Tests (AC: 1, 2, 3, 4)
-  - [ ] 3.1 Unit test `GridToggleRow` toggle behavior: activate, deactivate, last-remaining guard
-  - [ ] 3.2 Verify visual styling matches spec (accent background, rounded rect, disabled state)
+- [x] Task 1: Create `GridToggleRow` reusable view (AC: 1, 3)
+  - [x] 1.1 Create `Peach/Settings/GridToggleRow.swift`
+  - [x] 1.2 Generic over `Element: CaseIterable & Hashable`, accepts `Binding<Set<Element>>` and `label: (Element) -> String` closure
+  - [x] 1.3 Render a single `HStack` (or `GridRow`) of square toggle-buttons matching `IntervalSelectorView` cell styling
+  - [x] 1.4 Disable the last remaining active button to enforce minimum-one constraint
+- [x] Task 2: Integrate into `SettingsScreen` (AC: 2, 5, 6)
+  - [x] 2.1 Replace `gapPositionsSection` body: swap `ForEach` + `Toggle` for `GridToggleRow<StepPosition>`
+  - [x] 2.2 Provide label closure mapping `StepPosition` → `"1"`, `"2"`, `"3"`, `"4"`
+  - [x] 2.3 Remove now-dead helper methods (`isGapPositionEnabled`, `isLastEnabledGapPosition`, `gapPositionLabels`) and `toggleGapPosition` if fully subsumed by the binding
+  - [x] 2.4 Keep section header/footer text unchanged
+- [x] Task 3: Tests (AC: 1, 2, 3, 4)
+  - [x] 3.1 Unit test `GridToggleRow` toggle behavior: activate, deactivate, last-remaining guard
+  - [x] 3.2 Verify visual styling matches spec (accent background, rounded rect, disabled state)
 
 ## Dev Notes
 
@@ -108,9 +108,23 @@ The `Binding<Set<Element>>` means SettingsScreen must bridge the `enabledGapPosi
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
 
 ### Debug Log References
+None — clean implementation with no build or test failures.
 
 ### Completion Notes List
+- Created `GridToggleRow<Element>` generic reusable component with `Binding<Set<Element>>`, matching `IntervalSelectorView` cell styling exactly
+- Static `toggle` and `isLastRemaining` methods extracted for testability
+- Replaced `gapPositionsSection` in `SettingsScreen` using `GridToggleRow<StepPosition>` with computed `Binding` bridging `@AppStorage` string ↔ `Set<StepPosition>`
+- Removed 4 dead helpers: `enabledGapPositions`, `isGapPositionEnabled`, `isLastEnabledGapPosition`, `toggleGapPosition`, and `gapPositionLabels`
+- 6 unit tests for toggle behavior and last-remaining guard
+- All 1472 tests pass, no regressions
+
+### Change Log
+- 2026-03-23: Implemented story 59.1 — unified gap position selector to grid buttons
 
 ### File List
+- Peach/Settings/GridToggleRow.swift (new)
+- Peach/Settings/SettingsScreen.swift (modified)
+- PeachTests/Settings/GridToggleRowTests.swift (new)

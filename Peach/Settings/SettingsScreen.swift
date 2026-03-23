@@ -268,47 +268,17 @@ struct SettingsScreen: View {
         }
     }
 
-    private var enabledGapPositions: Set<StepPosition> {
-        GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
+    private var gapPositionsBinding: Binding<Set<StepPosition>> {
+        Binding(
+            get: { GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded) },
+            set: { enabledGapPositionsEncoded = GapPositionEncoding.encode($0) }
+        )
     }
-
-    private func isGapPositionEnabled(_ position: StepPosition) -> Bool {
-        enabledGapPositions.contains(position)
-    }
-
-    private func isLastEnabledGapPosition(_ position: StepPosition) -> Bool {
-        enabledGapPositions.count == 1 && enabledGapPositions.contains(position)
-    }
-
-    private func toggleGapPosition(_ position: StepPosition) {
-        var positions = enabledGapPositions
-        if positions.contains(position) {
-            guard positions.count > 1 else { return }
-            positions.remove(position)
-        } else {
-            positions.insert(position)
-        }
-        enabledGapPositionsEncoded = GapPositionEncoding.encode(positions)
-    }
-
-    private static let gapPositionLabels: [(position: StepPosition, label: LocalizedStringResource)] = [
-        (.first, "1 — Beat"),
-        (.second, "2 — E"),
-        (.third, "3 — And"),
-        (.fourth, "4 — A"),
-    ]
 
     private var gapPositionsSection: some View {
         Section {
-            ForEach(Self.gapPositionLabels, id: \.position) { item in
-                Toggle(
-                    String(localized: item.label),
-                    isOn: Binding(
-                        get: { isGapPositionEnabled(item.position) },
-                        set: { _ in toggleGapPosition(item.position) }
-                    )
-                )
-                .disabled(isLastEnabledGapPosition(item.position))
+            GridToggleRow(selection: gapPositionsBinding) { position in
+                "\(position.rawValue + 1)"
             }
         } header: {
             Text(String(localized: "Gap Positions"))

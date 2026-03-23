@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 59.1 created
+# last_updated: 2026-03-23 # Story 59.1 in-progress
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -451,4 +451,4 @@ development_status:
 
   # Epic 59: Consistent Controls — Settings UI Unification
   epic-59: in-progress
-  59-1-unify-gap-position-selector-to-grid-buttons: ready-for-dev
+  59-1-unify-gap-position-selector-to-grid-buttons: review
