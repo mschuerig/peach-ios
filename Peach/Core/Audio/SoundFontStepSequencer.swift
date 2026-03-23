@@ -12,6 +12,8 @@ protocol StepSequencerEngine {
     func scheduleEvents(_ events: [ScheduledMIDIEvent])
     func clearSchedule()
     func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async
+    func immediateNoteOn(channel: SoundFontEngine.ChannelID, note: UInt8, velocity: UInt8)
+    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8)
 }
 
 extension SoundFontEngine: StepSequencerEngine {}
@@ -120,6 +122,16 @@ final class SoundFontStepSequencer: StepSequencer {
 
                 try await Task.sleep(for: Self.uiPollingInterval)
             }
+        }
+    }
+
+    func playImmediateNote(velocity: MIDIVelocity) throws {
+        let midiNoteRaw = UInt8(Self.clickNote.rawValue)
+        engine.immediateNoteOn(channel: channel, note: midiNoteRaw, velocity: velocity.rawValue)
+
+        Task {
+            try? await Task.sleep(for: Self.noteOffDuration)
+            engine.immediateNoteOff(channel: channel, note: midiNoteRaw)
         }
     }
 

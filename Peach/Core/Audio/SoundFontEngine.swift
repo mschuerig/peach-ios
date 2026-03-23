@@ -286,6 +286,16 @@ final class SoundFontEngine {
         }
     }
 
+    func immediateNoteOn(channel: ChannelID, note: UInt8, velocity: UInt8) {
+        guard let sampler = channels[channel] else { return }
+        sampler.startNote(note, withVelocity: velocity, onChannel: channel.rawValue)
+    }
+
+    func immediateNoteOff(channel: ChannelID, note: UInt8) {
+        guard let sampler = channels[channel] else { return }
+        sampler.stopNote(note, onChannel: channel.rawValue)
+    }
+
     func sendPitchBend(_ value: PitchBendValue, channel: ChannelID) {
         guard let sampler = channels[channel] else { return }
         sampler.sendPitchBend(value.rawValue, onChannel: channel.rawValue)

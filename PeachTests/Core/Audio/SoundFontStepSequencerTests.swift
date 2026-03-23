@@ -448,6 +448,37 @@ struct SoundFontStepSequencerTests {
         try await sequencer.stop()
     }
 
+    // MARK: - playImmediateNote
+
+    @Test("playImmediateNote sends immediate note-on with correct note and velocity")
+    func playImmediateNoteSendsNoteOn() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+
+        try sequencer.playImmediateNote(velocity: StepVelocity.normal)
+
+        #expect(engine.immediateNoteOnCallCount == 1)
+        #expect(engine.lastImmediateNoteOnNote == 76)
+        #expect(engine.lastImmediateNoteOnVelocity == StepVelocity.normal.rawValue)
+    }
+
+@Test("playImmediateNote does not disturb the schedule buffer")
+    func playImmediateNoteDoesNotDisturbSchedule() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+
+        // Pre-populate a schedule
+        let existingEvents = [ScheduledMIDIEvent(sampleOffset: 0, midiStatus: 0x90, midiNote: 76, velocity: 100)]
+        engine.scheduleEvents(existingEvents)
+        let scheduleCountBefore = engine.scheduleCallCount
+
+        try sequencer.playImmediateNote(velocity: StepVelocity.normal)
+
+        // scheduleEvents should NOT have been called again
+        #expect(engine.scheduleCallCount == scheduleCountBefore)
+        #expect(engine.scheduledEvents.count == existingEvents.count)
+    }
+
     @Test("start calls engine setup methods")
     func startCallsEngineSetup() async throws {
         let engine = MockStepSequencerEngine()

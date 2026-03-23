@@ -170,6 +170,14 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         if abs(offset) <= windowHalf {
             let rhythmOffset = RhythmOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
+
+            let velocity = gapPosition == .first ? StepVelocity.accent : StepVelocity.normal
+            do {
+                try stepSequencer.playImmediateNote(velocity: velocity)
+            } catch {
+                logger.warning("Failed to play tap note: \(error.localizedDescription)")
+            }
+
             recordGapResult(GapResult(position: gapPosition, offset: rhythmOffset))
             advanceCycleCount()
             showHitFeedback(rhythmOffset)

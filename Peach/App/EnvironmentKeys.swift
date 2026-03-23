@@ -113,6 +113,7 @@ private final class PreviewStepSequencer: StepSequencer {
     var currentCycle: CycleDefinition?
     func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws {}
     func stop() async throws {}
+    func playImmediateNote(velocity: MIDIVelocity) throws {}
 }
 
 private final class PreviewRhythmOffsetDetectionStrategy: NextRhythmOffsetDetectionStrategy {

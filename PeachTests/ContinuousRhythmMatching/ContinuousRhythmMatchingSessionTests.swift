@@ -497,4 +497,92 @@ struct ContinuousRhythmMatchingSessionTests {
 
         f.session.stop()
     }
+
+    // MARK: - Auditory Tap Feedback
+
+    @Test("tap within window plays immediate note on step sequencer")
+    func tapWithinWindowPlaysImmediateNote() async {
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapTime = f.mockTime + Double(3) * f.sixteenthDuration
+        setTime(gapTime + 0.005)
+        f.session.handleTap()
+
+        #expect(f.sequencer.playImmediateNoteCallCount == 1)
+
+        f.session.stop()
+    }
+
+    @Test("tap at beat one plays accent velocity, other positions play normal velocity")
+    func tapVelocityMatchesGapPosition() async {
+        let (f, setTime) = makeTimedSession()
+
+        // Test accent velocity for gap at .first
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.first]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+        let gapTimeFirst = f.mockTime + Double(0) * f.sixteenthDuration
+        setTime(gapTimeFirst + 0.005)
+        f.session.handleTap()
+
+        #expect(f.sequencer.lastPlayImmediateNoteVelocity == StepVelocity.accent)
+
+        f.session.stop()
+        f.sequencer.reset()
+
+        // Test normal velocity for gap at .fourth
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+        let gapTimeFourth = f.mockTime + Double(3) * f.sixteenthDuration
+        setTime(gapTimeFourth + 0.005)
+        f.session.handleTap()
+
+        #expect(f.sequencer.lastPlayImmediateNoteVelocity == StepVelocity.normal)
+
+        f.session.stop()
+    }
+
+    @Test("tap outside window does not play immediate note")
+    func tapOutsideWindowDoesNotPlayNote() async {
+        let (f, setTime) = makeTimedSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        // Tap way outside the window
+        setTime(f.mockTime + 2.0)
+        f.session.handleTap()
+
+        #expect(f.sequencer.playImmediateNoteCallCount == 0)
+
+        f.session.stop()
+    }
+
+    @Test("playImmediateNote error does not crash session")
+    func playImmediateNoteErrorDoesNotCrashSession() async {
+        let (f, setTime) = makeTimedSession()
+        f.sequencer.shouldThrowOnPlayImmediateNote = true
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapTime = f.mockTime + Double(3) * f.sixteenthDuration
+        setTime(gapTime + 0.005)
+        f.session.handleTap()
+
+        // Session should still be running and the hit should still be recorded
+        #expect(f.session.isRunning)
+        #expect(f.session.cyclesInCurrentTrial == 1)
+
+        f.session.stop()
+    }
 }

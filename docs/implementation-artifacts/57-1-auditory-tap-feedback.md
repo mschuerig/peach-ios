@@ -1,6 +1,6 @@
 # Story 57.1: Auditory Tap Feedback
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -39,25 +39,61 @@ This story adds immediate note playback on tap. The tap triggers the same MIDI n
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add immediate note playback to `StepSequencer` protocol
-  - [ ] Add `func playImmediateNote(velocity: MIDIVelocity) throws` to `StepSequencer`
-  - [ ] Update `MockStepSequencer` in tests to record calls
+- [x] Task 1: Add immediate note playback to `StepSequencer` protocol
+  - [x] Add `func playImmediateNote(velocity: MIDIVelocity) throws` to `StepSequencer`
+  - [x] Update `MockStepSequencer` in tests to record calls
 
-- [ ] Task 2: Implement in `SoundFontStepSequencer`
-  - [ ] Schedule a note-on event at `currentSamplePosition` (i.e., "now") via `engine.scheduleEvents()`
-  - [ ] Schedule the corresponding note-off at `currentSamplePosition + noteOffDelaySamples`
-  - [ ] Use the same MIDI note (76) and channel as the sequencer's regular notes
+- [x] Task 2: Implement in `SoundFontStepSequencer`
+  - [x] Schedule a note-on event at `currentSamplePosition` (i.e., "now") via `engine.scheduleEvents()`
+  - [x] Schedule the corresponding note-off at `currentSamplePosition + noteOffDelaySamples`
+  - [x] Use the same MIDI note (76) and channel as the sequencer's regular notes
 
-- [ ] Task 3: Call from `ContinuousRhythmMatchingSession.handleTap()`
-  - [ ] After confirming the tap is within the window, determine the velocity from the gap position
-  - [ ] Call `stepSequencer.playImmediateNote(velocity:)`
-  - [ ] Handle errors gracefully (log, don't crash — audio glitches shouldn't stop training)
+- [x] Task 3: Call from `ContinuousRhythmMatchingSession.handleTap()`
+  - [x] After confirming the tap is within the window, determine the velocity from the gap position
+  - [x] Call `stepSequencer.playImmediateNote(velocity:)`
+  - [x] Handle errors gracefully (log, don't crash — audio glitches shouldn't stop training)
 
-- [ ] Task 4: Update tests
-  - [ ] Test that `handleTap()` within window calls `playImmediateNote` with correct velocity
-  - [ ] Test accent velocity for gap at `.first`, normal velocity for other positions
-  - [ ] Test that taps outside the window do not trigger note playback
-  - [ ] Test that `playImmediateNote` schedules correct MIDI events at current sample position
+- [x] Task 4: Update tests
+  - [x] Test that `handleTap()` within window calls `playImmediateNote` with correct velocity
+  - [x] Test accent velocity for gap at `.first`, normal velocity for other positions
+  - [x] Test that taps outside the window do not trigger note playback
+  - [x] Test that `playImmediateNote` schedules correct MIDI events at current sample position
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Added `playImmediateNote(velocity:)` to the `StepSequencer` protocol as a synchronous throwing method
+- `StepSequencerEngine` protocol gained `immediateNoteOn`/`immediateNoteOff` for direct MIDI dispatch — these bypass the render-thread schedule buffer entirely, preventing schedule corruption
+- `SoundFontStepSequencer` implements `playImmediateNote` using direct MIDI dispatch: `immediateNoteOn` fires immediately, a fire-and-forget Task sends `immediateNoteOff` after 50ms
+- `SoundFontEngine` implements `immediateNoteOn`/`immediateNoteOff` by calling `AVAudioUnitSampler.startNote`/`stopNote` directly
+- `ContinuousRhythmMatchingSession.handleTap()` determines velocity from gap position (accent for `.first`, normal otherwise) and calls `playImmediateNote` with graceful error handling (log + continue)
+- TDD: wrote 6 new tests (4 session tests + 2 sequencer tests), confirmed RED then GREEN
+
+### Completion Notes
+
+- All 4 tasks completed with full test coverage
+- 1436 tests pass with zero regressions
+- Critical design decision: immediate note playback uses direct MIDI dispatch (`AVAudioUnitSampler.startNote`) rather than `engine.scheduleEvents()`, because `scheduleEvents()` replaces the entire schedule buffer — which would wipe out the pre-scheduled pattern events
+- `MockStepSequencer` tracks call count, last velocity, velocity history, and supports error injection
+- `PreviewStepSequencer` updated with no-op conformance
+- Error handling uses `logger.warning` — audio glitches don't interrupt training
+
+## File List
+
+- `Peach/Core/Audio/StepSequencer.swift` — added `playImmediateNote(velocity:)` to protocol
+- `Peach/Core/Audio/SoundFontStepSequencer.swift` — implemented `playImmediateNote(velocity:)`, added `immediateNoteOn`/`immediateNoteOff` to `StepSequencerEngine` protocol
+- `Peach/Core/Audio/SoundFontEngine.swift` — implemented `immediateNoteOn`/`immediateNoteOff` via direct `AVAudioUnitSampler` calls
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — call `playImmediateNote` from `handleTap()`
+- `Peach/App/EnvironmentKeys.swift` — added no-op `playImmediateNote` to `PreviewStepSequencer`
+- `PeachTests/Mocks/MockStepSequencer.swift` — added call tracking for `playImmediateNote`
+- `PeachTests/Mocks/MockStepSequencerEngine.swift` — added tracking for `immediateNoteOn`/`immediateNoteOff`
+- `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingSessionTests.swift` — 4 new tests for tap audio feedback
+- `PeachTests/Core/Audio/SoundFontStepSequencerTests.swift` — 2 new tests for immediate note (note-on + schedule non-interference)
+
+## Change Log
+
+- 2026-03-23: Implemented auditory tap feedback — taps within the gap window now play the click sound at position-appropriate velocity. Fixed initial implementation that used `scheduleEvents()` (which replaces the entire schedule buffer) — switched to direct MIDI dispatch via `AVAudioUnitSampler.startNote`/`stopNote`
 
 ## Technical Notes
 

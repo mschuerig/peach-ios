@@ -35,4 +35,5 @@ protocol StepSequencer {
     var currentCycle: CycleDefinition? { get }
     func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws
     func stop() async throws
+    func playImmediateNote(velocity: MIDIVelocity) throws
 }

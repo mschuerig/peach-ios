@@ -82,6 +82,33 @@ The spectrogram color bands (green/yellow/red) use `SpectrogramThresholds.defaul
 
 ---
 
+### Low-Latency Tap Sound for Continuous Rhythm Matching
+
+**Priority:** Medium
+**Category:** Audio Architecture
+**Date Added:** 2026-03-23
+
+**Observation:**
+Story 57.1 added auditory tap feedback using `AVAudioUnitSampler.startNote()` called from the MainActor. The tap sound works but has noticeable latency and jitter compared to the pre-scheduled pattern notes. The pattern notes are sample-accurate because they're dispatched inline during the render callback via `SoundFontEngine`'s pre-allocated schedule buffer. The tap sound takes a longer path: SwiftUI gesture → MainActor → `startNote()` API → audio render thread.
+
+**Impact:**
+- Tap sound feels slightly delayed relative to the actual tap, undermining the "judge timing by ear" goal
+- Jitter varies depending on MainActor load, making the feedback inconsistent
+- Pattern notes remain sample-accurate and unaffected
+
+**Root Cause:**
+`SoundFontEngine.scheduleEvents()` replaces the entire schedule buffer, so it can't be used to inject a single immediate event alongside the running pattern. The current `immediateNoteOn` path bypasses the schedule entirely, trading sample accuracy for non-interference.
+
+**Potential Approach:**
+Redesign `SoundFontEngine`'s scheduling to support **appending** events into the running schedule buffer (e.g., a lock-free ring buffer or a secondary "immediate" event slot checked by the render callback). This would allow tap notes to be dispatched at `currentSamplePosition` with the same sample-accurate timing as pattern notes, without disturbing the pre-scheduled batch.
+
+**Related Code:**
+- `Peach/Core/Audio/SoundFontEngine.swift` — schedule buffer, render callback
+- `Peach/Core/Audio/SoundFontStepSequencer.swift` — `playImmediateNote(velocity:)`
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — `handleTap()`
+
+---
+
 ## Data & Infrastructure
 
 ### Batch/Streaming Fetch for Discipline Registry Operations

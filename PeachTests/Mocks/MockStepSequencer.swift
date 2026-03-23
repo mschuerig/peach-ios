@@ -11,15 +11,20 @@ final class MockStepSequencer: StepSequencer {
 
     var startCallCount = 0
     var stopCallCount = 0
+    var playImmediateNoteCallCount = 0
+    var lastPlayImmediateNoteVelocity: MIDIVelocity?
+    var playImmediateNoteVelocities: [MIDIVelocity] = []
     var lastTempo: TempoBPM?
     var lastStepProvider: (any StepProvider)?
     var shouldThrowError = false
+    var shouldThrowOnPlayImmediateNote = false
     var errorToThrow: AudioError = .engineStartFailed("Mock error")
 
     // MARK: - Callbacks
 
     var onStartCalled: (() -> Void)?
     var onStopCalled: (() -> Void)?
+    var onPlayImmediateNoteCalled: (() -> Void)?
 
     // MARK: - Continuation-Based Wait
 
@@ -60,6 +65,18 @@ final class MockStepSequencer: StepSequencer {
         }
     }
 
+    func playImmediateNote(velocity: MIDIVelocity) throws {
+        playImmediateNoteCallCount += 1
+        lastPlayImmediateNoteVelocity = velocity
+        playImmediateNoteVelocities.append(velocity)
+
+        onPlayImmediateNoteCalled?()
+
+        if shouldThrowOnPlayImmediateNote {
+            throw errorToThrow
+        }
+    }
+
     func stop() async throws {
         stopCallCount += 1
         currentStep = nil
@@ -83,13 +100,18 @@ final class MockStepSequencer: StepSequencer {
     func reset() {
         startCallCount = 0
         stopCallCount = 0
+        playImmediateNoteCallCount = 0
+        lastPlayImmediateNoteVelocity = nil
+        playImmediateNoteVelocities = []
         lastTempo = nil
         lastStepProvider = nil
         shouldThrowError = false
+        shouldThrowOnPlayImmediateNote = false
         currentStep = nil
         currentCycle = nil
         onStartCalled = nil
         onStopCalled = nil
+        onPlayImmediateNoteCalled = nil
         startWaiters.removeAll()
         stopWaiters.removeAll()
     }

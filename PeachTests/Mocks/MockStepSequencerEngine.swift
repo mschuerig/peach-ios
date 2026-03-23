@@ -11,6 +11,11 @@ final class MockStepSequencerEngine: StepSequencerEngine {
     private(set) var scheduleCallCount = 0
     private(set) var clearScheduleCallCount = 0
     private(set) var stopNotesCallCount = 0
+    private(set) var immediateNoteOnCallCount = 0
+    private(set) var lastImmediateNoteOnVelocity: UInt8?
+    private(set) var lastImmediateNoteOnNote: UInt8?
+    private(set) var immediateNoteOffCallCount = 0
+    var onImmediateNoteOff: (() -> Void)?
 
     func ensureAudioSessionConfigured() throws {
         ensureAudioSessionConfiguredCallCount += 1
@@ -38,5 +43,16 @@ final class MockStepSequencerEngine: StepSequencerEngine {
 
     func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async {
         stopNotesCallCount += 1
+    }
+
+    func immediateNoteOn(channel: SoundFontEngine.ChannelID, note: UInt8, velocity: UInt8) {
+        immediateNoteOnCallCount += 1
+        lastImmediateNoteOnNote = note
+        lastImmediateNoteOnVelocity = velocity
+    }
+
+    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8) {
+        immediateNoteOffCallCount += 1
+        onImmediateNoteOff?()
     }
 }
