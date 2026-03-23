@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 58.2 review
+# last_updated: 2026-03-23 # Story 59.1 created
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -448,3 +448,7 @@ development_status:
   epic-58: in-progress
   58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: done
   58-2-extract-sessionlifecycle-helper: done
+
+  # Epic 59: Consistent Controls — Settings UI Unification
+  epic-59: in-progress
+  59-1-unify-gap-position-selector-to-grid-buttons: ready-for-dev
