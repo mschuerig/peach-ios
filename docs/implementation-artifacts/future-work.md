@@ -156,6 +156,29 @@ The project has no `VersionedSchema` or `SchemaMigrationPlan`. All schema change
 
 ---
 
+### Dynamic Type Support for Grid Toggle Cells
+
+**Priority:** Low
+**Category:** Accessibility
+**Date Added:** 2026-03-24
+
+**Observation:**
+`GridToggleRow` and `IntervalSelectorView` both use `.frame(width: 32, height: 32)` for toggle cells. These fixed dimensions ignore the user's Dynamic Type setting — with large accessibility font sizes, the `.caption2` text can overflow the frame and get clipped.
+
+**Impact:**
+- Users with large accessibility text sizes see clipped or illegible labels in both the gap position selector and the interval selector grid
+- Pre-existing pattern inherited from `IntervalSelectorView`; `GridToggleRow` copied the same approach per spec
+
+**Potential Approach:**
+- Use `@ScaledMetric` for the frame dimensions so they scale with Dynamic Type
+- Ensure the `HStack`/`Grid` layout still fits on screen at larger sizes (may need `ScrollView(.horizontal)`)
+
+**Related Code:**
+- `Peach/Settings/GridToggleRow.swift` — `.frame(width: 32, height: 32)`
+- `Peach/Settings/IntervalSelectorView.swift` — same pattern at line 53
+
+---
+
 ## UX & Onboarding
 
 ### No First-Run Onboarding Experience

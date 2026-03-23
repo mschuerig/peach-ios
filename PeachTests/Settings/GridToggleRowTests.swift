@@ -14,14 +14,6 @@ struct GridToggleRowTests {
         case cherry = 2
     }
 
-    private static func label(for fruit: Fruit) -> String {
-        switch fruit {
-        case .apple: "A"
-        case .banana: "B"
-        case .cherry: "C"
-        }
-    }
-
     // MARK: - Toggle Behavior
 
     @Test("Tapping inactive element activates it")

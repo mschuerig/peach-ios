@@ -6,7 +6,7 @@ struct GridToggleRow<Element: CaseIterable & Hashable>: View where Element.AllCa
 
     var body: some View {
         HStack(spacing: 4) {
-            ForEach(Array(Element.allCases), id: \.self) { element in
+            ForEach(Element.allCases, id: \.self) { element in
                 let isActive = selection.contains(element)
                 let isLast = Self.isLastRemaining(element, in: selection)
 
