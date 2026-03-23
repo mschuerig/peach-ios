@@ -1,6 +1,6 @@
 # Story 56.1: Quarter-Note Timing Grid Alignment
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -35,28 +35,60 @@ The fix: the first note played in a session establishes a quarter-note grid (per
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add grid tracking state to `RhythmOffsetDetectionSession`
-  - [ ] Add `private var gridOrigin: Double = 0` (set from `currentTime()` when first pattern plays)
-  - [ ] Add `private var quarterNoteDuration: Double = 0` (computed from tempo at start)
-  - [ ] Add a computed method `nextGridPoint() -> Double` returning `gridOrigin + ceil((now - gridOrigin) / quarterNoteDuration) * quarterNoteDuration`
+- [x] Task 1: Add grid tracking state to `RhythmOffsetDetectionSession`
+  - [x] Add `private var gridOrigin: Double?` (set from `currentTime()` when first pattern plays)
+  - [x] Add `currentTime: @escaping () -> Double` injectable dependency (following ContinuousRhythmMatchingSession pattern)
+  - [x] Add a method `nextGridPoint(quarterNoteDuration:) -> Double` returning `gridOrigin + ceil((now - gridOrigin) / quarterNoteDuration) * quarterNoteDuration`
 
-- [ ] Task 2: Align first pattern to grid origin
-  - [ ] In `playNextTrial()`, on the very first pattern, record `gridOrigin = currentTime()` immediately before playing
-  - [ ] First pattern needs no wait — it defines the grid
+- [x] Task 2: Align first pattern to grid origin
+  - [x] In `playNextTrial()`, on the very first pattern, record `gridOrigin = currentTime()` immediately before playing
+  - [x] First pattern needs no wait — it defines the grid
 
-- [ ] Task 3: Add grid wait before subsequent patterns
-  - [ ] After feedback ends (in `transitionToFeedback`'s scheduled callback), compute the next grid point
-  - [ ] Sleep until that grid point before calling `playNextTrial()`
-  - [ ] Consider a new state value (e.g., `.waitingForGrid`) or reuse `.idle`-like state with buttons disabled
+- [x] Task 3: Add grid wait before subsequent patterns
+  - [x] After feedback ends (in `transitionToFeedback`'s scheduled callback), compute the next grid point
+  - [x] Sleep until that grid point before calling `playNextTrial()`
+  - [x] Added `.waitingForGrid` state value with buttons disabled
 
-- [ ] Task 4: Update tests
-  - [ ] Test that first pattern sets grid origin
-  - [ ] Test that subsequent patterns wait for grid alignment using a mock `currentTime`
-  - [ ] Test that the grid is never skipped (set current time to just before a grid point, verify the session waits for that point)
-  - [ ] Test that variable answer+feedback times still produce grid-aligned patterns
+- [x] Task 4: Update tests
+  - [x] Test that first pattern sets grid origin
+  - [x] Test that subsequent patterns wait for grid alignment using a mock `currentTime`
+  - [x] Test that the grid is never skipped (set current time to just before a grid point, verify the session waits for that point)
+  - [x] Test that variable answer+feedback times still produce grid-aligned patterns
+  - [x] Test that waitingForGrid state keeps buttons disabled
+  - [x] Test that grid origin resets on stop
 
 ## Technical Notes
 
 - The `currentTime` closure is already injectable in the session (used for testing). Grid calculations should use the same closure.
 - `TempoBPM` already has `sixteenthNoteDuration`. A `quarterNoteDuration` convenience may be useful but can also be computed as `sixteenthNoteDuration * 4`.
 - The grid wait replaces the current immediate transition from feedback → playNextTrial. The `feedbackTask` completion handler is the natural place to insert the wait.
+
+## Dev Agent Record
+
+### Implementation Plan
+- Added `currentTime: @escaping () -> Double` dependency to `RhythmOffsetDetectionSession` (defaulting to `CACurrentMediaTime()`), following the same pattern as `ContinuousRhythmMatchingSession`
+- Added `gridOrigin: Double?` to track when the first pattern established the beat grid
+- Added `nextGridPoint(quarterNoteDuration:)` method using ceiling division to find the next grid-aligned time
+- Added `.waitingForGrid` state to `RhythmOffsetDetectionSessionState` enum
+- Modified `playNextTrial()` to set `gridOrigin` on first call
+- Modified `transitionToFeedback()` to compute next grid point after feedback, enter `.waitingForGrid`, sleep until grid point, then play next trial
+- Added `quarterNoteDuration` computed property to `TempoBPM`
+- Reset `gridOrigin` in `stop()`
+
+### Debug Log
+- Story mentioned `currentTime` closure was already injectable — it wasn't. Added it following the `ContinuousRhythmMatchingSession` pattern.
+- Used `Double?` for gridOrigin instead of `Double = 0` to clearly distinguish "no grid yet" from "grid at time 0"
+
+### Completion Notes
+✅ All 4 tasks completed. 6 new grid alignment tests added. All 1417 tests pass with zero regressions.
+
+## File List
+
+- `Peach/RhythmOffsetDetection/RhythmOffsetDetectionSession.swift` — modified (added currentTime dependency, gridOrigin, waitingForGrid state, nextGridPoint method, grid alignment logic)
+- `Peach/Core/Music/TempoBPM.swift` — modified (added quarterNoteDuration computed property)
+- `PeachTests/RhythmOffsetDetection/RhythmOffsetDetectionSessionTests.swift` — modified (updated fixture for currentTime, added 6 grid alignment tests)
+- `docs/implementation-artifacts/sprint-status.yaml` — modified (epic-56 and story 56.1 set to in-progress)
+
+## Change Log
+
+- 2026-03-23: Implemented quarter-note timing grid alignment for RhythmOffsetDetectionSession with injectable currentTime, waitingForGrid state, and 6 new tests

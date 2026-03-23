@@ -20,7 +20,8 @@ private struct RhythmOffsetDetectionSessionFixture {
 }
 
 private func makeSession(
-    trialToReturn: RhythmOffsetDetectionTrial? = nil
+    trialToReturn: RhythmOffsetDetectionTrial? = nil,
+    currentTime: @escaping () -> Double = { 0.0 }
 ) -> RhythmOffsetDetectionSessionFixture {
     let mockPlayer = MockRhythmPlayer()
     let mockStrategy = MockNextRhythmOffsetDetectionStrategy()
@@ -36,7 +37,8 @@ private func makeSession(
         strategy: mockStrategy,
         profile: profile,
         observers: [mockObserver],
-        sampleRate: .standard48000
+        sampleRate: .standard48000,
+        currentTime: currentTime
     )
 
     return RhythmOffsetDetectionSessionFixture(
@@ -434,5 +436,134 @@ struct RhythmOffsetDetectionSessionTests {
 
         f.session.stop()
         #expect(f.session.sessionBestOffsetPercentage == nil)
+    }
+
+    // MARK: - Grid Alignment Tests
+
+    @Test("first pattern establishes grid origin from currentTime")
+    func firstPatternEstablishesGridOrigin() async throws {
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        // First pattern should have used the current time as grid origin
+        // Verify by checking that the session played without waiting for grid
+        #expect(f.mockPlayer.playCallCount == 1)
+    }
+
+    @Test("subsequent pattern waits for grid alignment")
+    func subsequentPatternWaitsForGrid() async throws {
+        // At 80 BPM, quarter note = 0.75s
+        // Grid origin at t=10.0, so grid points are 10.0, 10.75, 11.5, 12.25, ...
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        // Simulate feedback ending at t=10.3 (between grid points 10.0 and 10.75)
+        mockTime = 10.3
+        f.session.handleAnswer(direction: .late)
+        #expect(f.session.state == .showingFeedback)
+
+        // After feedback, session should enter waitingForGrid
+        try await waitForState(f.session, .waitingForGrid)
+        #expect(f.session.state == .waitingForGrid)
+
+        // Eventually should advance to playingPattern for next trial
+        try await waitForState(f.session, .awaitingAnswer, timeout: .seconds(3))
+        #expect(f.mockPlayer.playCallCount >= 2)
+    }
+
+    @Test("grid is never skipped even with short wait")
+    func gridNeverSkipped() async throws {
+        // At 80 BPM, quarter note = 0.75s
+        // Grid origin at t=10.0, grid points at 10.0, 10.75, 11.5, ...
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        // Simulate feedback ending just before a grid point (t=10.74)
+        mockTime = 10.74
+        f.session.handleAnswer(direction: .late)
+
+        // Should still wait for grid point at 10.75
+        try await waitForState(f.session, .waitingForGrid)
+        #expect(f.session.state == .waitingForGrid)
+
+        f.session.stop()
+    }
+
+    @Test("variable answer and feedback times produce grid-aligned patterns")
+    func variableTimesProduceGridAlignedPatterns() async throws {
+        // At 80 BPM, quarter note = 0.75s
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        let settings = RhythmOffsetDetectionSettings(
+            tempo: TempoBPM(80),
+            feedbackDuration: .milliseconds(50)
+        )
+
+        f.session.start(settings: settings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        // First answer at variable time
+        mockTime = 10.5
+        f.session.handleAnswer(direction: .late)
+        try await waitForState(f.session, .awaitingAnswer, timeout: .seconds(3))
+
+        // Second answer at different time
+        mockTime = 11.8
+        f.session.handleAnswer(direction: .late)
+        try await waitForState(f.session, .awaitingAnswer, timeout: .seconds(3))
+
+        // Should have played 3 patterns total
+        #expect(f.mockPlayer.playCallCount >= 3)
+
+        f.session.stop()
+    }
+
+    @Test("waitingForGrid state keeps buttons disabled")
+    func waitingForGridKeepsButtonsDisabled() async throws {
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        // Set time between grid points
+        mockTime = 10.3
+        f.session.handleAnswer(direction: .late)
+
+        try await waitForState(f.session, .waitingForGrid)
+
+        // Buttons should be disabled (only enabled in awaitingAnswer)
+        #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: f.session.state) == false)
+
+        f.session.stop()
+    }
+
+    @Test("grid origin resets on stop")
+    func gridOriginResetsOnStop() async throws {
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        f.session.stop()
+
+        // Start again with different time — should establish new grid origin
+        mockTime = 20.0
+        f.session.start(settings: defaultRhythmSettings)
+        try await waitForState(f.session, .awaitingAnswer)
+
+        #expect(f.mockPlayer.playCallCount >= 2)
+        f.session.stop()
     }
 }

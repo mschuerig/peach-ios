@@ -11,6 +11,10 @@ struct TempoBPM: Hashable, Sendable, Codable, Comparable {
         .seconds(60.0 / (Double(value) * 4.0))
     }
 
+    var quarterNoteDuration: Duration {
+        .seconds(60.0 / Double(value))
+    }
+
     nonisolated init(_ value: Int) {
         precondition(value > 0, "TempoBPM must be positive, got \(value)")
         self.value = value

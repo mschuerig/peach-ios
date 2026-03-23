@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import QuartzCore
 import os
 
 enum RhythmOffsetDetectionSessionState {
@@ -7,6 +8,7 @@ enum RhythmOffsetDetectionSessionState {
     case playingPattern
     case awaitingAnswer
     case showingFeedback
+    case waitingForGrid
 }
 
 @Observable
@@ -31,6 +33,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     private let profile: TrainingProfile
     private let observers: [RhythmOffsetDetectionObserver]
     private let sampleRate: SampleRate
+    private let currentTime: () -> Double
     private var interruptionMonitor: AudioSessionInterruptionMonitor?
 
     // MARK: - Training State
@@ -41,6 +44,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     private var currentHandle: RhythmPlaybackHandle?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
+    private var gridOrigin: Double?
 
     var currentOffsetPercentage: Double? {
         guard let trial = currentTrial else { return nil }
@@ -64,13 +68,15 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         profile: TrainingProfile,
         observers: [RhythmOffsetDetectionObserver] = [],
         sampleRate: SampleRate,
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        currentTime: @escaping () -> Double = { CACurrentMediaTime() }
     ) {
         self.rhythmPlayer = rhythmPlayer
         self.strategy = strategy
         self.profile = profile
         self.observers = observers
         self.sampleRate = sampleRate
+        self.currentTime = currentTime
         self.interruptionMonitor = AudioSessionInterruptionMonitor(
             notificationCenter: notificationCenter,
             logger: logger,
@@ -158,6 +164,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         lastCompletedTrial = nil
         currentHandle = nil
         settings = nil
+        gridOrigin = nil
 
         showFeedback = false
         isLastAnswerCorrect = nil
@@ -167,6 +174,14 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     }
 
     // MARK: - Private Implementation
+
+    private func nextGridPoint(quarterNoteDuration: Double) -> Double {
+        guard let gridOrigin else { return currentTime() }
+        let now = currentTime()
+        let elapsed = now - gridOrigin
+        let n = ceil(elapsed / quarterNoteDuration)
+        return gridOrigin + n * quarterNoteDuration
+    }
 
     private func runTrainingLoop() async {
         logger.info("runTrainingLoop() started")
@@ -182,6 +197,12 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
     private func playNextTrial() async {
         guard let settings else { return }
+
+        // Record grid origin on first pattern
+        if gridOrigin == nil {
+            gridOrigin = currentTime()
+            logger.info("Grid origin established at \(self.gridOrigin!)")
+        }
 
         let trial = strategy.nextRhythmOffsetDetectionTrial(
             profile: profile,
@@ -272,11 +293,25 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
         feedbackTask = Task {
             try? await Task.sleep(for: settings.feedbackDuration)
-            if state == .showingFeedback && !Task.isCancelled {
-                showFeedback = false
-                logger.info("Feedback complete, starting next trial")
-                await playNextTrial()
+            guard state == .showingFeedback && !Task.isCancelled else { return }
+
+            showFeedback = false
+
+            // Wait for next grid point before playing next trial
+            let quarterDuration = settings.tempo.quarterNoteDuration.timeInterval
+            let gridPoint = nextGridPoint(quarterNoteDuration: quarterDuration)
+            let now = currentTime()
+            let waitTime = gridPoint - now
+
+            if waitTime > 0 {
+                state = .waitingForGrid
+                logger.info("Waiting \(waitTime)s for grid alignment")
+                try? await Task.sleep(for: .seconds(waitTime))
+                guard state == .waitingForGrid && !Task.isCancelled else { return }
             }
+
+            logger.info("Grid-aligned, starting next trial")
+            await playNextTrial()
         }
     }
 
