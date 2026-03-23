@@ -9,17 +9,6 @@
 
 ---
 
-## OPEN — Needs Story
-
-### CD-1: Session state machine boilerplate duplicated across 4 sessions
-
-**Source:** code-review-2026-03-05, Section 4
-**Severity:** MEDIUM
-**Details:** All four sessions (`PitchDiscriminationSession`, `PitchMatchingSession`, `RhythmOffsetDetectionSession`, `ContinuousRhythmMatchingSession`) duplicate `interruptionMonitor` wiring, `feedbackTask` lifecycle management, and `stop()` cleanup. ~15-20 duplicated lines per session × 4 sessions.
-**Action:** Story 58.2 — extract `SessionLifecycle` helper. Composition, not inheritance.
-
----
-
 ## WONT-FIX — Documented Exceptions
 
 ### CQ-3: `HapticFeedbackManager` imports UIKit

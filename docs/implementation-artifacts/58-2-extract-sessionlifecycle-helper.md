@@ -1,6 +1,6 @@
 # Story 58.2: Extract SessionLifecycle Helper
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,51 +22,50 @@ so that feedback task management and interruption monitor wiring are defined onc
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `SessionLifecycle` in `Core/Training/` (AC: #1)
-  - [ ] Define `SessionLifecycle` as a helper struct/class owned by each session
-  - [ ] Move `interruptionMonitor` property and its initialization here — accept `Logger`, `NotificationCenter`, optional background/foreground notification names, and `onStopRequired` closure
-  - [ ] Move `feedbackTask` property and its cancel/nil pattern here — provide `cancelFeedbackTask()` and `scheduleFeedbackTask(_:)` methods
-  - [ ] Move `trainingTask` property and its cancel/nil pattern here — provide `cancelTrainingTask()` and `scheduleTrainingTask(_:)` methods
-  - [ ] Provide a `cancelAllTasks()` method that cancels and nils both training and feedback tasks
-  - [ ] Include the guard-against-double-stop + logging pattern as a `guardNotIdle(state:logger:)` or similar helper
-  - [ ] `ContinuousRhythmMatchingSession` has 3 tasks (`startTask`, `trackingTask`, `feedbackTask`) — the helper must accommodate additional tasks or the session can manage its extra tasks alongside the helper
+- [x] Task 1: Create `SessionLifecycle` in `Core/Training/` (AC: #1)
+  - [x] Define `SessionLifecycle` as a helper struct/class owned by each session
+  - [x] Move `interruptionMonitor` property and its initialization here — accept `Logger`, `NotificationCenter`, optional background/foreground notification names, and `onStopRequired` closure
+  - [x] Move `feedbackTask` property and its cancel/nil pattern here — provide `cancelFeedbackTask()` and `setFeedbackTask(_:)` methods
+  - [x] Move `trainingTask` property and its cancel/nil pattern here — provide `cancelTrainingTask()` and `setTrainingTask(_:)` methods
+  - [x] Provide a `cancelAllTasks()` method that cancels and nils both training and feedback tasks
+  - [x] Include the guard-against-double-stop + logging pattern as a `guardNotIdle(isIdle:)` helper
+  - [x] `ContinuousRhythmMatchingSession` has 3 tasks (`startTask`, `trackingTask`, `feedbackTask`) — session manages extra tasks alongside the helper (Option A)
 
-- [ ] Task 2: Refactor `PitchDiscriminationSession` to use `SessionLifecycle` (AC: #2, #3)
-  - [ ] Replace `interruptionMonitor`, `trainingTask`, `feedbackTask` properties with a `SessionLifecycle` instance
-  - [ ] In `init()` (line 50–68): create `SessionLifecycle` with `notificationCenter`, `logger`, `onStopRequired: { [weak self] in self?.stop() }`
-  - [ ] In `stop()` (lines 139–166): delegate task cancellation to helper; keep domain state cleanup (`state = .idle`, `currentTrial = nil`, `showFeedback = false`, etc.) in session
-  - [ ] In `runTrainingLoop()` (line 170+): use helper's `scheduleTrainingTask` instead of direct `trainingTask = Task { ... }`
-  - [ ] In feedback scheduling (around line 294): use helper's `scheduleFeedbackTask` instead of direct `feedbackTask = Task { ... }`
-  - [ ] Keep `notePlayer.stopAll()` call in session's `stop()` — audio cleanup is session-specific
+- [x] Task 2: Refactor `PitchDiscriminationSession` to use `SessionLifecycle` (AC: #2, #3)
+  - [x] Replace `interruptionMonitor`, `trainingTask`, `feedbackTask` properties with a `SessionLifecycle` instance
+  - [x] In `init()`: create `SessionLifecycle` with `notificationCenter`, `logger`, `onStopRequired: { [weak self] in self?.stop() }`
+  - [x] In `stop()`: delegate task cancellation to helper; keep domain state cleanup in session
+  - [x] In `start()`: use helper's `setTrainingTask` instead of direct `trainingTask = Task { ... }`
+  - [x] In feedback scheduling: use helper's `setFeedbackTask` instead of direct `feedbackTask = Task { ... }`
+  - [x] Keep `notePlayer.stopAll()` call in session's `stop()` — audio cleanup is session-specific
 
-- [ ] Task 3: Refactor `PitchMatchingSession` to use `SessionLifecycle` (AC: #2, #3)
-  - [ ] Same pattern as Task 2
-  - [ ] This session passes `backgroundNotificationName` and `foregroundNotificationName` to `AudioSessionInterruptionMonitor` — ensure the helper accepts these optional parameters
-  - [ ] Keep session-specific `stop()` cleanup: `sliderTouchContinuation?.resume()`, `currentHandle` stop, frequency/trial state nil-outs
-  - [ ] Keep `notePlayer.stopAll()` and `handleToStop?.stop()` in session's `stop()`
+- [x] Task 3: Refactor `PitchMatchingSession` to use `SessionLifecycle` (AC: #2, #3)
+  - [x] Same pattern as Task 2
+  - [x] This session passes `backgroundNotificationName` and `foregroundNotificationName` to `AudioSessionInterruptionMonitor` — helper accepts these optional parameters
+  - [x] Keep session-specific `stop()` cleanup: `sliderTouchContinuation?.resume()`, `currentHandle` stop, frequency/trial state nil-outs
+  - [x] Keep `notePlayer.stopAll()` and `handleToStop?.stop()` in session's `stop()`
 
-- [ ] Task 4: Refactor `RhythmOffsetDetectionSession` to use `SessionLifecycle` (AC: #2, #3)
-  - [ ] Same pattern as Task 2
-  - [ ] Keep session-specific `stop()` cleanup: `currentHandle?.stop()`, `rhythmPlayer.stopAll()`, `gridOrigin = nil`, `litDotCount = 0`, offset state nil-outs
+- [x] Task 4: Refactor `RhythmOffsetDetectionSession` to use `SessionLifecycle` (AC: #2, #3)
+  - [x] Same pattern as Task 2
+  - [x] Keep session-specific `stop()` cleanup: `currentHandle?.stop()`, `rhythmPlayer.stopAll()`, `gridOrigin = nil`, `litDotCount = 0`, offset state nil-outs
 
-- [ ] Task 5: Refactor `ContinuousRhythmMatchingSession` to use `SessionLifecycle` (AC: #2, #3)
-  - [ ] This session has 3 tasks: `startTask`, `trackingTask`, `feedbackTask` — only `feedbackTask` is universally shared; `startTask`/`trackingTask` are session-specific
-  - [ ] Option A: helper manages `feedbackTask` only; session keeps `startTask`/`trackingTask` directly
-  - [ ] Option B: helper provides a generic "named task" registry — evaluate complexity vs benefit
-  - [ ] Keep `stepSequencer.stop()` in session's `stop()`
-  - [ ] Keep all timing state cleanup (`sequencerStartTime`, `sixteenthDuration`, etc.) in session
-  - [ ] Note: this session uses `isRunning: Bool` instead of a state enum — the guard pattern differs (`guard isRunning` vs `guard state != .idle`)
+- [x] Task 5: Refactor `ContinuousRhythmMatchingSession` to use `SessionLifecycle` (AC: #2, #3)
+  - [x] This session has 3 tasks: `startTask`, `trackingTask`, `feedbackTask` — only `feedbackTask` is universally shared; `startTask`/`trackingTask` are session-specific
+  - [x] Option A: helper manages `feedbackTask` only; session keeps `startTask`/`trackingTask` directly
+  - [x] Keep `stepSequencer.stop()` in session's `stop()`
+  - [x] Keep all timing state cleanup (`sequencerStartTime`, `sixteenthDuration`, etc.) in session
 
-- [ ] Task 6: Write tests for `SessionLifecycle` (AC: #4)
-  - [ ] Test `cancelAllTasks()` cancels and nils both tasks
-  - [ ] Test `scheduleFeedbackTask` replaces previous task (cancels old, starts new)
-  - [ ] Test `interruptionMonitor` calls `onStopRequired` on audio interruption
-  - [ ] Test guard-against-double-stop returns false when already idle
+- [x] Task 6: Write tests for `SessionLifecycle` (AC: #4)
+  - [x] Test `cancelAllTasks()` cancels and nils both tasks
+  - [x] Test `setFeedbackTask` replaces previous task (cancels old, starts new)
+  - [x] Test `setTrainingTask` replaces previous task (cancels old, starts new)
+  - [x] Test `interruptionMonitor` calls `onStopRequired` on audio interruption
+  - [x] Test guard-against-double-stop returns false when already idle
 
-- [ ] Task 7: Run full test suite and verify zero regressions (AC: #4)
+- [x] Task 7: Run full test suite and verify zero regressions (AC: #4)
 
-- [ ] Task 8: Close CD-1 in pre-existing findings catalog (AC: #5)
-  - [ ] Remove CD-1 entry from `docs/pre-existing-findings.md` (closed findings are removed per convention)
+- [x] Task 8: Close CD-1 in pre-existing findings catalog (AC: #5)
+  - [x] Remove CD-1 entry from `docs/pre-existing-findings.md` (closed findings are removed per convention)
 
 ## Dev Notes
 
@@ -137,10 +136,28 @@ All four sessions duplicate ~15–20 lines of identical boilerplate each:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
 ### Completion Notes List
 
+- Created `SessionLifecycle` final class in `Core/Training/` — owns `interruptionMonitor`, `trainingTask`, and `feedbackTask` with `setTrainingTask(_:)`, `setFeedbackTask(_:)`, `cancelAllTasks()`, and `guardNotIdle(isIdle:)` API
+- API uses `Task<Void, Never>` parameters (not `@Sendable` closures) to preserve MainActor isolation — Task creation stays in the caller's `@MainActor` scope where it can capture isolated session state
+- Refactored all 4 sessions to delegate lifecycle management via composition (`private var lifecycle: SessionLifecycle?`)
+- `ContinuousRhythmMatchingSession` uses Option A: helper manages `feedbackTask` only; session keeps `startTask`/`trackingTask` directly
+- Each session retains its domain-specific `stop()` cleanup (audio, state, UI)
+- 7 new tests in `SessionLifecycleTests` (cancelAllTasks, setFeedbackTask replacement, setTrainingTask replacement, interruption monitor callback, guardNotIdle true/false)
+- Full regression suite: 1468 tests pass, zero regressions
+- CD-1 removed from pre-existing findings catalog
+
 ### File List
+
+- `Peach/Core/Training/SessionLifecycle.swift` (new)
+- `PeachTests/Core/Training/SessionLifecycleTests.swift` (new)
+- `Peach/PitchDiscrimination/PitchDiscriminationSession.swift` (modified)
+- `Peach/PitchMatching/PitchMatchingSession.swift` (modified)
+- `Peach/RhythmOffsetDetection/RhythmOffsetDetectionSession.swift` (modified)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` (modified)
+- `docs/pre-existing-findings.md` (modified — CD-1 removed)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified)

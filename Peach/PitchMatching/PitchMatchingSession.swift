@@ -29,7 +29,7 @@ final class PitchMatchingSession: TrainingSession {
     private let notePlayer: NotePlayer
     private let profile: TrainingProfile
     private let observers: [PitchMatchingObserver]
-    private var interruptionMonitor: AudioSessionInterruptionMonitor?
+    private var lifecycle: SessionLifecycle?
 
     // MARK: - Settings
 
@@ -53,8 +53,6 @@ final class PitchMatchingSession: TrainingSession {
     private(set) var referenceFrequency: Frequency?
     private var pendingTunableFrequency: Frequency?
     private var sliderTouchContinuation: CheckedContinuation<Void, Never>?
-    private var trainingTask: Task<Void, Never>?
-    private var feedbackTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -70,9 +68,9 @@ final class PitchMatchingSession: TrainingSession {
         self.profile = profile
         self.observers = observers
 
-        self.interruptionMonitor = AudioSessionInterruptionMonitor(
-            notificationCenter: notificationCenter,
+        self.lifecycle = SessionLifecycle(
             logger: logger,
+            notificationCenter: notificationCenter,
             backgroundNotificationName: backgroundNotificationName,
             foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
@@ -93,9 +91,9 @@ final class PitchMatchingSession: TrainingSession {
         self.settings = settings
         logger.info("Starting training loop")
 
-        trainingTask = Task {
+        lifecycle?.setTrainingTask(Task {
             await playNextTrial()
-        }
+        })
     }
 
     func adjustPitch(_ value: Double) {
@@ -156,11 +154,11 @@ final class PitchMatchingSession: TrainingSession {
 
         state = .showingFeedback
 
-        feedbackTask = Task {
+        lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: settings.feedbackDuration)
             guard !Task.isCancelled else { return }
             await playNextTrial()
-        }
+        })
     }
 
     func stop() {
@@ -172,10 +170,7 @@ final class PitchMatchingSession: TrainingSession {
         Task {
             try? await notePlayer.stopAll()
         }
-        trainingTask?.cancel()
-        trainingTask = nil
-        feedbackTask?.cancel()
-        feedbackTask = nil
+        lifecycle?.cancelAllTasks()
         sliderTouchContinuation?.resume()
         sliderTouchContinuation = nil
         let handleToStop = currentHandle

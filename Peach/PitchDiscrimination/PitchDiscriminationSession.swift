@@ -31,15 +31,13 @@ final class PitchDiscriminationSession: TrainingSession {
     private let profile: TrainingProfile
     private let resettables: [Resettable]
     private let observers: [PitchDiscriminationObserver]
-    private var interruptionMonitor: AudioSessionInterruptionMonitor?
+    private var lifecycle: SessionLifecycle?
 
     // MARK: - Training State
 
     private var settings: PitchDiscriminationSettings?
     private var currentTrial: PitchDiscriminationTrial?
     private var lastCompletedTrial: CompletedPitchDiscriminationTrial?
-    private var trainingTask: Task<Void, Never>?
-    private var feedbackTask: Task<Void, Never>?
 
     var sessionTuningSystem: TuningSystem {
         settings?.tuningSystem ?? .equalTemperament
@@ -60,9 +58,9 @@ final class PitchDiscriminationSession: TrainingSession {
         self.profile = profile
         self.resettables = resettables
         self.observers = observers
-        self.interruptionMonitor = AudioSessionInterruptionMonitor(
-            notificationCenter: notificationCenter,
+        self.lifecycle = SessionLifecycle(
             logger: logger,
+            notificationCenter: notificationCenter,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -94,9 +92,9 @@ final class PitchDiscriminationSession: TrainingSession {
         self.settings = settings
 
         logger.info("Starting training loop")
-        trainingTask = Task {
+        lifecycle?.setTrainingTask(Task {
             await runTrainingLoop()
-        }
+        })
     }
 
     func handleAnswer(isHigher: Bool) {
@@ -149,10 +147,7 @@ final class PitchDiscriminationSession: TrainingSession {
             logger.info("NotePlayer stopped")
         }
 
-        trainingTask?.cancel()
-        trainingTask = nil
-        feedbackTask?.cancel()
-        feedbackTask = nil
+        lifecycle?.cancelAllTasks()
 
         state = .idle
         currentTrial = nil
@@ -291,14 +286,14 @@ final class PitchDiscriminationSession: TrainingSession {
         state = .showingFeedback
         logger.info("Entering feedback state")
 
-        feedbackTask = Task {
+        lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: settings.feedbackDuration)
             if state == .showingFeedback && !Task.isCancelled {
                 showFeedback = false
                 logger.info("Feedback complete, starting next comparison")
                 await playNextTrial()
             }
-        }
+        })
     }
 
     private func recordTrial(_ completed: CompletedPitchDiscriminationTrial) {

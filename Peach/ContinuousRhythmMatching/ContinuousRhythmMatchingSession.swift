@@ -35,7 +35,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private let stepSequencer: any StepSequencer
     private let observers: [ContinuousRhythmMatchingObserver]
     private let currentTime: () -> Double
-    private var interruptionMonitor: AudioSessionInterruptionMonitor?
+    private var lifecycle: SessionLifecycle?
 
     // MARK: - Training State
 
@@ -48,7 +48,6 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private var hitCycleIndices: Set<Int> = []
     private var startTask: Task<Void, Never>?
     private var trackingTask: Task<Void, Never>?
-    private var feedbackTask: Task<Void, Never>?
 
     /// Gap positions indexed by cycle number, populated by nextCycle() during batch scheduling.
     private var gapPositions: [StepPosition] = []
@@ -64,9 +63,9 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         self.stepSequencer = stepSequencer
         self.observers = observers
         self.currentTime = currentTime
-        self.interruptionMonitor = AudioSessionInterruptionMonitor(
-            notificationCenter: notificationCenter,
+        self.lifecycle = SessionLifecycle(
             logger: logger,
+            notificationCenter: notificationCenter,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -87,8 +86,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         startTask = nil
         trackingTask?.cancel()
         trackingTask = nil
-        feedbackTask?.cancel()
-        feedbackTask = nil
+        lifecycle?.cancelFeedbackTask()
 
         Task {
             try? await stepSequencer.stop()
@@ -253,12 +251,11 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         lastHitOffsetMs = offset.duration.timeInterval * 1000.0
         showFeedback = true
 
-        feedbackTask?.cancel()
-        feedbackTask = Task {
+        lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: Self.feedbackDuration)
             guard !Task.isCancelled else { return }
             showFeedback = false
-        }
+        })
     }
 
     // MARK: - Private Implementation

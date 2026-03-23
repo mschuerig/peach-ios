@@ -34,7 +34,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     private let observers: [RhythmOffsetDetectionObserver]
     private let sampleRate: SampleRate
     private let currentTime: () -> Double
-    private var interruptionMonitor: AudioSessionInterruptionMonitor?
+    private var lifecycle: SessionLifecycle?
 
     // MARK: - Training State
 
@@ -42,8 +42,6 @@ final class RhythmOffsetDetectionSession: TrainingSession {
     private var currentTrial: RhythmOffsetDetectionTrial?
     private var lastCompletedTrial: CompletedRhythmOffsetDetectionTrial?
     private var currentHandle: RhythmPlaybackHandle?
-    private var trainingTask: Task<Void, Never>?
-    private var feedbackTask: Task<Void, Never>?
     private var gridOrigin: Double?
 
     var currentOffsetPercentage: Double? {
@@ -77,9 +75,9 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         self.observers = observers
         self.sampleRate = sampleRate
         self.currentTime = currentTime
-        self.interruptionMonitor = AudioSessionInterruptionMonitor(
-            notificationCenter: notificationCenter,
+        self.lifecycle = SessionLifecycle(
             logger: logger,
+            notificationCenter: notificationCenter,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -97,9 +95,9 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         self.settings = settings
         logger.info("Starting rhythm offset detection training loop")
 
-        trainingTask = Task {
+        lifecycle?.setTrainingTask(Task {
             await runTrainingLoop()
-        }
+        })
     }
 
     func handleAnswer(direction: RhythmDirection) {
@@ -154,10 +152,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
             try? await rhythmPlayer.stopAll()
         }
 
-        trainingTask?.cancel()
-        trainingTask = nil
-        feedbackTask?.cancel()
-        feedbackTask = nil
+        lifecycle?.cancelAllTasks()
 
         state = .idle
         currentTrial = nil
@@ -292,7 +287,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         state = .showingFeedback
         logger.info("Entering feedback state")
 
-        feedbackTask = Task {
+        lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: settings.feedbackDuration)
             guard state == .showingFeedback && !Task.isCancelled else { return }
 
@@ -314,7 +309,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
             logger.info("Grid-aligned, starting next trial")
             await playNextTrial()
-        }
+        })
     }
 
     private func recordTrial(_ completed: CompletedRhythmOffsetDetectionTrial) {
