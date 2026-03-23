@@ -26,12 +26,12 @@ enum PitchMatchingCSVParser {
         }
 
         let refNoteStr = fields[refNoteIdx]
-        guard let referenceNote = Int(refNoteStr), (0...127).contains(referenceNote) else {
+        guard let referenceNote = Int(refNoteStr), MIDINote.validRange.contains(referenceNote) else {
             return .failure(.invalidRowData(row: rowNumber, column: "referenceNote", value: refNoteStr, reason: "must be an integer 0-127"))
         }
 
         let targetNoteStr = fields[targetNoteIdx]
-        guard let targetNote = Int(targetNoteStr), (0...127).contains(targetNote) else {
+        guard let targetNote = Int(targetNoteStr), MIDINote.validRange.contains(targetNote) else {
             return .failure(.invalidRowData(row: rowNumber, column: "targetNote", value: targetNoteStr, reason: "must be an integer 0-127"))
         }
 
