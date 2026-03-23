@@ -30,4 +30,27 @@ struct RhythmDotViewTests {
             #expect(RhythmDotView.diameter(forStepIndex: i) == 16)
         }
     }
+
+    @Test("tested note index is 2")
+    func testedNoteIndex() async {
+        #expect(RhythmDotView.testedNoteIndex == 2)
+    }
+
+    @Test("overlap offset is half the dot diameter")
+    func overlapOffset() async {
+        #expect(RhythmDotView.overlapOffset == RhythmDotView.dotDiameter / 2)
+    }
+
+    @Test("tested note frame width is dot diameter plus overlap offset")
+    func testedNoteFrameWidthIsDotDiameterPlusOverlapOffset() async {
+        #expect(RhythmDotView.testedNoteFrameWidth == 24)
+    }
+
+    @Test("isTestedNote returns true only for index 2")
+    func isTestedNote() async {
+        #expect(RhythmDotView.isTestedNote(index: 0) == false)
+        #expect(RhythmDotView.isTestedNote(index: 1) == false)
+        #expect(RhythmDotView.isTestedNote(index: 2) == true)
+        #expect(RhythmDotView.isTestedNote(index: 3) == false)
+    }
 }

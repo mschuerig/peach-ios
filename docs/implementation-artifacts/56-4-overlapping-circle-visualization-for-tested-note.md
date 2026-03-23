@@ -1,6 +1,6 @@
 # Story 56.4: Overlapping-Circle Visualization for Tested Note
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -34,18 +34,42 @@ The double-circle is always visible (dimmed when not playing, full opacity when 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Implement double-circle rendering in `RhythmDotView`
-  - [ ] At index 2, replace the single `Circle()` with two circles in a `ZStack` (or `HStack` with negative spacing)
-  - [ ] Each circle uses standard `dotDiameter` (16pt)
-  - [ ] Horizontal offset: ~8pt (half diameter) — first circle at -4pt, second at +4pt, or equivalent
-  - [ ] Both circles share the same `.fill(.primary)` and opacity
+- [x] Task 1: Implement double-circle rendering in `RhythmDotView`
+  - [x] At index 2, replace the single `Circle()` with two circles in a `ZStack` (or `HStack` with negative spacing)
+  - [x] Each circle uses standard `dotDiameter` (16pt)
+  - [x] Horizontal offset: ~8pt (half diameter) — first circle at -4pt, second at +4pt, or equivalent
+  - [x] Both circles share the same `.fill(.primary)` and opacity
 
-- [ ] Task 2: Ensure layout stability
-  - [ ] The composite shape should occupy a defined frame so the HStack spacing remains consistent
-  - [ ] Consider using `.frame(width: dotDiameter + overlapOffset, height: dotDiameter)` on the container
+- [x] Task 2: Ensure layout stability
+  - [x] The composite shape should occupy a defined frame so the HStack spacing remains consistent
+  - [x] Consider using `.frame(width: dotDiameter + overlapOffset, height: dotDiameter)` on the container
 
-- [ ] Task 3: Update previews
-  - [ ] Add previews showing the double-circle at various lit states (dimmed, lit, all lit)
+- [x] Task 3: Update previews
+  - [x] Add previews showing the double-circle at various lit states (dimmed, lit, all lit)
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Used ZStack with two circles offset by ±4pt (half of overlapOffset=8pt) at index 2. Container frame set to `testedNoteFrameWidth` (24pt) to maintain HStack spacing stability. Added `isTestedNote(index:)` and layout constants for testability.
+
+### Completion Notes
+
+- Implemented double-circle rendering at index 2 using ZStack with horizontal offsets
+- Both circles share identical `.fill(.primary)` and opacity from existing `litCount` logic
+- Container frame (24pt wide) ensures stable HStack layout
+- Added 4 new tests: testedNoteIndex, overlapOffset, testedNoteFrameWidth, isTestedNote
+- Added preview for "3 dots lit" state showing double circle illuminated
+- All 1430 tests pass with zero regressions
+
+## File List
+
+- `Peach/RhythmOffsetDetection/RhythmDotView.swift` — modified (double-circle rendering, layout constants, previews)
+- `PeachTests/RhythmOffsetDetection/RhythmDotViewTests.swift` — modified (4 new tests)
+
+## Change Log
+
+- 2026-03-23: Implemented overlapping-circle visualization for tested note (index 2)
 
 ## Technical Notes
 
