@@ -21,6 +21,11 @@
 **Source:** code-review-2026-03-05, Section 1
 **Reason:** The raw-to-domain boundary is already encapsulated by store adapters. Remaining raw field access is in contexts where raw types are natural (CSV export formatters, deduplication keys, metric extraction).
 
+### TQ-1: Tests use `Task.sleep` for async synchronization
+
+**Source:** story 58.2 code review
+**Reason:** Multiple test files use `Task.sleep(for: .milliseconds(...))` as synchronization barriers for concurrent work (notification delivery, task cancellation). On loaded CI machines these could be flaky. Replacing with deterministic synchronization (e.g., `AsyncStream`, continuations, or polling with timeout) would be more robust but is a cross-cutting concern across many test files.
+
 ### ST-2: Xcode AppIntents build warning
 
 **Source:** story 46-5

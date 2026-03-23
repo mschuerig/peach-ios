@@ -1,6 +1,6 @@
 # Story 58.2: Extract SessionLifecycle Helper
 
-Status: review
+Status: done
 
 ## Story
 

@@ -447,4 +447,4 @@ development_status:
   # Epic 58: Clean Slate — Pre-Existing Findings Cleanup
   epic-58: in-progress
   58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: done
-  58-2-extract-sessionlifecycle-helper: review
+  58-2-extract-sessionlifecycle-helper: done

@@ -102,11 +102,11 @@ struct SessionLifecycleTests {
     @Test("interruptionMonitor triggers onStopRequired on audio interruption")
     func interruptionMonitorCallsOnStopRequired() async {
         let notificationCenter = NotificationCenter()
-        var stopRequiredCalled = false
+        let stopRequiredCalled = Mutex(false)
 
         let lifecycle = Self.makeLifecycle(
             notificationCenter: notificationCenter,
-            onStopRequired: { stopRequiredCalled = true }
+            onStopRequired: { stopRequiredCalled.withLock { $0 = true } }
         )
 
         notificationCenter.post(
@@ -118,21 +118,8 @@ struct SessionLifecycleTests {
         // The notification handler hops to MainActor via Task, so give it a moment
         try? await Task.sleep(for: .milliseconds(50))
 
-        #expect(stopRequiredCalled)
+        #expect(stopRequiredCalled.withLock { $0 })
         _ = lifecycle // keep alive
     }
 
-    // MARK: - guardNotIdle
-
-    @Test("guardNotIdle returns true when not idle")
-    func guardNotIdleReturnsTrueWhenActive() async {
-        let lifecycle = Self.makeLifecycle()
-        #expect(lifecycle.guardNotIdle(isIdle: false))
-    }
-
-    @Test("guardNotIdle returns false when idle")
-    func guardNotIdleReturnsFalseWhenIdle() async {
-        let lifecycle = Self.makeLifecycle()
-        #expect(!lifecycle.guardNotIdle(isIdle: true))
-    }
 }

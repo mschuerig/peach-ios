@@ -58,16 +58,4 @@ final class SessionLifecycle {
         cancelTrainingTask()
         cancelFeedbackTask()
     }
-
-    // MARK: - Guard
-
-    /// Returns `true` if the session is active (not idle) and `stop()` should proceed.
-    /// Logs a debug message and returns `false` if already idle.
-    func guardNotIdle(isIdle: Bool) -> Bool {
-        guard !isIdle else {
-            logger.debug("stop() called but already idle")
-            return false
-        }
-        return true
-    }
 }
