@@ -72,7 +72,7 @@ struct SettingsScreen: View {
         ),
         HelpSection(
             title: String(localized: "Difficulty"),
-            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back.")
+            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
         ),
         HelpSection(
             title: String(localized: "Rhythm"),
@@ -259,7 +259,7 @@ struct SettingsScreen: View {
                 }
             }
             Stepper(
-                "Note Gap (Hear & Compare): \(noteGap, specifier: "%.1f")s",
+                "Note Gap (Compare): \(noteGap, specifier: "%.1f")s",
                 value: $noteGap,
                 in: 0.0...5.0,
                 step: 0.1

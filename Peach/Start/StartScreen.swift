@@ -139,7 +139,7 @@ struct StartScreen: View {
                 trainingCard("Match", systemImage: "target", mode: .intervalPitchMatching)
             }
             .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Match Interval")
+            .accessibilityLabel("Match Intervals")
         }
     }
 

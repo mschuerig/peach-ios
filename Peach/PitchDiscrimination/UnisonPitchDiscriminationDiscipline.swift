@@ -5,7 +5,7 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.unisonPitchDiscrimination
 
     let config = TrainingDisciplineConfig(
-        displayName: String(localized: "Hear & Compare – Single Notes"),
+        displayName: String(localized: "Compare Pitch"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 8.0,
         statistics: .default

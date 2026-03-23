@@ -5,7 +5,7 @@ struct IntervalPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.intervalPitchMatching
 
     let config = TrainingDisciplineConfig(
-        displayName: String(localized: "Tune & Match – Intervals"),
+        displayName: String(localized: "Match Intervals"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 8.0,
         statistics: .default

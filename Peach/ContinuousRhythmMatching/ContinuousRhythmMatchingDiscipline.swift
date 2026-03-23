@@ -5,7 +5,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.continuousRhythmMatching
 
     let config = TrainingDisciplineConfig(
-        displayName: String(localized: "Fill the Gap – Rhythm"),
+        displayName: String(localized: "Fill the Gap"),
         unitLabel: String(localized: "ms"),
         optimalBaseline: 20.0,
         statistics: .default

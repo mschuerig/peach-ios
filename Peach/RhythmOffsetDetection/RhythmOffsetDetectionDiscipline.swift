@@ -5,7 +5,7 @@ struct RhythmOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.rhythmOffsetDetection
 
     let config = TrainingDisciplineConfig(
-        displayName: String(localized: "Hear & Compare – Rhythm"),
+        displayName: String(localized: "Compare Timing"),
         unitLabel: String(localized: "ms"),
         optimalBaseline: 15.0,
         statistics: .default

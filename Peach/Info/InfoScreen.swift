@@ -15,7 +15,7 @@ struct InfoScreen: View {
     }()
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
 
-    static let trainingModesDescription = String(localized: "**Hear & Compare – Single Notes** – Listen to two notes and decide which one is higher.\n\n**Hear & Compare – Intervals** – The same idea, but with musical intervals between notes.\n\n**Tune & Match – Single Notes** – Hear a note and slide to match its pitch.\n\n**Tune & Match – Intervals** – Match pitches using musical intervals.")
+    static let trainingModesDescription = String(localized: "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.")
 
     static let gettingStartedText = String(localized: "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically.")
 

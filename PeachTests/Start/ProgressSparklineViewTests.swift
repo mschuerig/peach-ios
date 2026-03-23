@@ -52,12 +52,12 @@ struct ProgressSparklineViewTests {
     @Test("sparklineAccessibilityLabel combines mode name, value, and trend")
     func accessibilityLabelImproving() async {
         let label = ProgressSparklineView.sparklineAccessibilityLabel(
-            modeName: "Hear & Compare – Single Notes",
+            modeName: "Compare Pitch",
             ewma: 8.2,
             trend: .improving,
             unitLabel: "cents"
         )
-        #expect(label.contains("Hear & Compare – Single Notes"))
+        #expect(label.contains("Compare Pitch"))
         #expect(label.contains("8"))
         #expect(label.contains("cents"))
     }
@@ -65,12 +65,12 @@ struct ProgressSparklineViewTests {
     @Test("sparklineAccessibilityLabel works for stable trend")
     func accessibilityLabelStable() async {
         let label = ProgressSparklineView.sparklineAccessibilityLabel(
-            modeName: "Tune & Match – Intervals",
+            modeName: "Match Intervals",
             ewma: 12.0,
             trend: .stable,
             unitLabel: "cents"
         )
-        #expect(label.contains("Tune & Match – Intervals"))
+        #expect(label.contains("Match Intervals"))
         #expect(label.contains("12"))
     }
 }

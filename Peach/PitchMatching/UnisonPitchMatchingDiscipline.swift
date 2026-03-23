@@ -5,7 +5,7 @@ struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.unisonPitchMatching
 
     let config = TrainingDisciplineConfig(
-        displayName: String(localized: "Tune & Match – Single Notes"),
+        displayName: String(localized: "Match Pitch"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 5.0,
         statistics: .default

@@ -5,7 +5,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.intervalPitchDiscrimination
 
     let config = TrainingDisciplineConfig(
-        displayName: String(localized: "Hear & Compare – Intervals"),
+        displayName: String(localized: "Compare Intervals"),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 12.0,
         statistics: .default

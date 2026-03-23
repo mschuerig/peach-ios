@@ -130,7 +130,7 @@ struct ContinuousRhythmMatchingScreen: View {
                 Text(String(localized: "Rhythm"))
             }
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(String(localized: "Rhythm \u{2013} Fill"))
+            .accessibilityLabel(String(localized: "Rhythm \u{2013} Fill the Gap"))
         }
         ToolbarItem(placement: .navigationBarTrailing) {
             HStack(spacing: 20) {
