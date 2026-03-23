@@ -23,16 +23,16 @@ enum CSVImportParser {
             return ImportResult(records: [:], errors: [.missingVersion])
         }
 
-        guard firstLine.hasPrefix(CSVExportSchemaV2.metadataPrefix) else {
+        guard firstLine.hasPrefix(CSVExportSchema.metadataPrefix) else {
             return ImportResult(records: [:], errors: [.missingVersion])
         }
 
-        let versionString = String(firstLine.dropFirst(CSVExportSchemaV2.metadataPrefix.count))
+        let versionString = String(firstLine.dropFirst(CSVExportSchema.metadataPrefix.count))
         guard let version = Int(versionString) else {
             return ImportResult(records: [:], errors: [.invalidFormatMetadata(line: firstLine)])
         }
 
-        guard version == CSVExportSchemaV2.formatVersion else {
+        guard version == CSVExportSchema.formatVersion else {
             return ImportResult(records: [:], errors: [.unsupportedVersion(version: version)])
         }
 
@@ -47,12 +47,12 @@ enum CSVImportParser {
         var errors: [CSVImportError] = []
 
         guard let headerLine = lines.first, !headerLine.isEmpty else {
-            errors.append(.invalidHeader(expected: CSVExportSchemaV2.headerRow, actual: "(empty)"))
+            errors.append(.invalidHeader(expected: CSVExportSchema.headerRow, actual: "(empty)"))
             return ImportResult(records: [:], errors: errors)
         }
 
         let headerColumns = CSVParserHelpers.parseCSVLine(headerLine)
-        let expectedColumns = CSVExportSchemaV2.allColumns
+        let expectedColumns = CSVExportSchema.allColumns
 
         if headerColumns.count != expectedColumns.count {
             errors.append(.invalidHeader(

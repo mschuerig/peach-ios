@@ -34,7 +34,10 @@ struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     ]
 
     func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
-        guard let r = record as? PitchMatchingRecord else { return [] }
+        guard let r = record as? PitchMatchingRecord else {
+            assertionFailure("Expected PitchMatchingRecord, got \(type(of: record))")
+            return []
+        }
         return [
             ("referenceNote", "\(r.referenceNote)"),
             ("referenceNoteName", CSVParserHelpers.formatNoteName(r.referenceNote)),

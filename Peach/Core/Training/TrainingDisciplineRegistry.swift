@@ -28,6 +28,7 @@ final class TrainingDisciplineRegistry: Sendable {
         self.all = disciplines
         self.byID = Dictionary(uniqueKeysWithValues: disciplines.map { ($0.id, $0) })
 
+        let commonColumnSet = Set(CSVExportSchema.commonColumns)
         var parsers: [String: any TrainingDiscipline] = [:]
         var columns: [String] = []
         var seenColumns = Set<String>()
@@ -36,6 +37,8 @@ final class TrainingDisciplineRegistry: Sendable {
                 parsers[discipline.csvTrainingType] = discipline
             }
             for column in discipline.csvColumns where seenColumns.insert(column).inserted {
+                assert(!commonColumnSet.contains(column),
+                       "Discipline '\(discipline.csvTrainingType)' must not declare common column '\(column)'")
                 columns.append(column)
             }
         }

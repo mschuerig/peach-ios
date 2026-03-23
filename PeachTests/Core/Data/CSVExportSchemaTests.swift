@@ -2,26 +2,26 @@ import Testing
 import Foundation
 @testable import Peach
 
-@Suite("CSVExportSchemaV2 Tests")
-struct CSVExportSchemaV2Tests {
+@Suite("CSVExportSchema Tests")
+struct CSVExportSchemaTests {
 
     // MARK: - Format Version
 
     @Test("formatVersion is 3")
     func formatVersionIsThree() async {
-        #expect(CSVExportSchemaV2.formatVersion == 3)
+        #expect(CSVExportSchema.formatVersion == 3)
     }
 
     @Test("metadataLine uses shared prefix with version 3")
     func metadataLineDerived() async {
-        #expect(CSVExportSchemaV2.metadataLine == "# peach-export-format:3")
+        #expect(CSVExportSchema.metadataLine == "# peach-export-format:3")
     }
 
     // MARK: - Header Row
 
     @Test("headerRow contains 19 columns in correct order")
     func headerRowContains19Columns() async {
-        let header = CSVExportSchemaV2.headerRow
+        let header = CSVExportSchema.headerRow
         let columns = header.split(separator: ",").map(String.init)
 
         #expect(columns.count == 19)
@@ -53,7 +53,7 @@ struct CSVExportSchemaV2Tests {
 
     @Test("columnIndex maps all column names to correct indices")
     func columnIndexMapsCorrectly() async {
-        let index = CSVExportSchemaV2.columnIndex
+        let index = CSVExportSchema.columnIndex
         #expect(index["trainingType"] == 0)
         #expect(index["timestamp"] == 1)
         #expect(index["referenceNote"] == 2)
@@ -63,7 +63,7 @@ struct CSVExportSchemaV2Tests {
 
     @Test("allColumns are assembled dynamically from registry")
     func allColumnsFromRegistry() async {
-        let columns = CSVExportSchemaV2.allColumns
+        let columns = CSVExportSchema.allColumns
         // Common columns come first
         #expect(columns[0] == "trainingType")
         #expect(columns[1] == "timestamp")

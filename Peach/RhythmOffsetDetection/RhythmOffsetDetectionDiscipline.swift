@@ -40,7 +40,10 @@ struct RhythmOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
     let csvColumns = ["isCorrect", "tempoBPM", "offsetMs"]
 
     func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
-        guard let r = record as? RhythmOffsetDetectionRecord else { return [] }
+        guard let r = record as? RhythmOffsetDetectionRecord else {
+            assertionFailure("Expected RhythmOffsetDetectionRecord, got \(type(of: record))")
+            return []
+        }
         return [
             ("isCorrect", r.isCorrect ? "true" : "false"),
             ("tempoBPM", "\(r.tempoBPM)"),

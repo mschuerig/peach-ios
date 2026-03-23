@@ -48,8 +48,8 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(lines.count == 4)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
+        #expect(lines[0] == CSVExportSchema.metadataLine)
+        #expect(lines[1] == CSVExportSchema.headerRow)
         #expect(!csv.hasSuffix("\n"))
 
         // Verify pitch matching row (earlier timestamp — first data row)
@@ -85,8 +85,8 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(lines.count == 3)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
+        #expect(lines[0] == CSVExportSchema.metadataLine)
+        #expect(lines[1] == CSVExportSchema.headerRow)
         #expect(lines[2].hasPrefix("pitchDiscrimination"))
     }
 
@@ -106,8 +106,8 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(lines.count == 3)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
+        #expect(lines[0] == CSVExportSchema.metadataLine)
+        #expect(lines[1] == CSVExportSchema.headerRow)
         #expect(lines[2].hasPrefix("pitchMatching"))
     }
 
@@ -119,7 +119,7 @@ struct TrainingDataExporterTests {
 
         let csv = try TrainingDataExporter.export(from: store)
 
-        #expect(csv == CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow)
+        #expect(csv == CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow)
     }
 
     // MARK: - Timestamp Ordering Tests
@@ -202,8 +202,8 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(!lines.isEmpty)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
+        #expect(lines[0] == CSVExportSchema.metadataLine)
+        #expect(lines[1] == CSVExportSchema.headerRow)
     }
 
     // MARK: - Row Count Tests
@@ -250,8 +250,8 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(lines.count == 3)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
+        #expect(lines[0] == CSVExportSchema.metadataLine)
+        #expect(lines[1] == CSVExportSchema.headerRow)
         #expect(lines[2].hasPrefix("rhythmOffsetDetection"))
 
         let fields = lines[2].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
@@ -283,8 +283,8 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
         #expect(lines.count == 5)
-        #expect(lines[0] == CSVExportSchemaV2.metadataLine)
-        #expect(lines[1] == CSVExportSchemaV2.headerRow)
+        #expect(lines[0] == CSVExportSchema.metadataLine)
+        #expect(lines[1] == CSVExportSchema.headerRow)
         #expect(lines[2].hasPrefix("pitchDiscrimination"))
         #expect(lines[3].hasPrefix("rhythmOffsetDetection"))
         #expect(lines[4].hasPrefix("pitchMatching"))
@@ -358,7 +358,7 @@ struct TrainingDataExporterTests {
 
         let csv = try TrainingDataExporter.export(from: store)
 
-        #expect(csv == CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow)
+        #expect(csv == CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow)
     }
 
     @Test("all rows have exactly 19 fields matching column count")

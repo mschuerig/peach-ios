@@ -43,7 +43,10 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
     ]
 
     func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
-        guard let r = record as? ContinuousRhythmMatchingRecord else { return [] }
+        guard let r = record as? ContinuousRhythmMatchingRecord else {
+            assertionFailure("Expected ContinuousRhythmMatchingRecord, got \(type(of: record))")
+            return []
+        }
         return [
             ("tempoBPM", "\(r.tempoBPM)"),
             ("meanOffsetMs", CSVParserHelpers.formatDouble(r.meanOffsetMs)),

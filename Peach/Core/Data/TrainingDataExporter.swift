@@ -4,8 +4,8 @@ import SwiftData
 enum TrainingDataExporter {
 
     static func export(from store: TrainingDataStore) throws -> String {
-        let columns = CSVExportSchemaV2.allColumns
-        let columnIndex = CSVExportSchemaV2.columnIndex
+        let columns = CSVExportSchema.allColumns
+        let columnIndex = CSVExportSchema.columnIndex
 
         var merged: [(timestamp: Date, row: String)] = []
 
@@ -16,7 +16,11 @@ enum TrainingDataExporter {
                 fields[columnIndex["trainingType"]!] = discipline.csvTrainingType
                 fields[columnIndex["timestamp"]!] = CSVParserHelpers.formatTimestamp(timestamp)
                 for (key, value) in pairs {
-                    if let idx = columnIndex[key] { fields[idx] = value }
+                    guard let idx = columnIndex[key] else {
+                        assertionFailure("Unknown CSV column key '\(key)' from \(discipline.csvTrainingType)")
+                        continue
+                    }
+                    fields[idx] = value
                 }
                 let row = fields.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
                 merged.append((timestamp, row))
@@ -24,12 +28,12 @@ enum TrainingDataExporter {
         }
 
         guard !merged.isEmpty else {
-            return CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow
+            return CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow
         }
 
         merged.sort { $0.timestamp < $1.timestamp }
 
         let rows = merged.map(\.row)
-        return CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow + "\n" + rows.joined(separator: "\n")
+        return CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow + "\n" + rows.joined(separator: "\n")
     }
 }

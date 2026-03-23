@@ -427,4 +427,4 @@ development_status:
   epic-55: in-progress
   55-1-extract-observer-adapters-with-port-protocols: done
   55-2-protocol-based-discipline-registry: done
-  55-3-discipline-owned-csv-format: review
+  55-3-discipline-owned-csv-format: done

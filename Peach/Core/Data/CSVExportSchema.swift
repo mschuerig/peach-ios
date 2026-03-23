@@ -1,4 +1,4 @@
-enum CSVExportSchemaV2 {
+enum CSVExportSchema {
 
     // MARK: - Format Version
 
