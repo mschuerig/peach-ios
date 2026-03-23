@@ -128,7 +128,12 @@ struct RhythmOffsetDetectionSessionTests {
         // All events use click MIDI note
         for event in events {
             #expect(event.midiNote == MIDINote(76))
-            #expect(event.velocity == MIDIVelocity(100))
+        }
+
+        // First event uses accent velocity, others use normal
+        #expect(events[0].velocity == StepVelocity.accent)
+        for i in 1..<events.count {
+            #expect(events[i].velocity == StepVelocity.normal)
         }
     }
 

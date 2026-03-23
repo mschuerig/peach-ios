@@ -265,12 +265,12 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         let samplesPerSixteenth = Int64(sampleRate.rawValue * sixteenthDuration.timeInterval)
 
         let clickNote = MIDINote(76)
-        let velocity = MIDIVelocity(100)
         let offsetSamples = Int64(sampleRate.rawValue * trial.offset.duration.timeInterval)
 
         let events = (0..<Self.patternNoteCount).map { i in
             let base = Int64(i) * samplesPerSixteenth
             let offset = (i == Self.testedNoteIndex) ? offsetSamples : 0
+            let velocity = (i == 0) ? StepVelocity.accent : StepVelocity.normal
             return RhythmPattern.Event(
                 sampleOffset: base + offset,
                 midiNote: clickNote,
