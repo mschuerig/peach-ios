@@ -222,6 +222,12 @@ Never run only specific test files — always the complete suite.
 **The Boy Scout Rule (mandatory):**
 - **Leave the code cleaner than you found it** — if you encounter a failing test, a code smell, a type violation, or any other issue while working on a task, you must either fix it immediately or create a tracked issue (story/spec). "Pre-existing condition" is never an acceptable reason to ignore a problem. Dismissing issues as pre-existing is explicitly forbidden — every problem has an owner, and if you're looking at it, that owner is you
 
+**Pre-Existing Findings Catalog (`docs/pre-existing-findings.md`):**
+- The catalog is the single source of truth for all known pre-existing issues. Every finding has a disposition (CLOSED, WONT-FIX, or OPEN) and a unique ID.
+- **During implementation:** if you encounter an issue that is not caused by your current change, check the catalog. If it has an entry, cite the ID and move on. If it has no entry, it is a **new finding** — either fix it inline (Boy Scout Rule) or add it to the catalog with a disposition.
+- **During code review:** classifying a finding as "defer" or "pre-existing" requires citing a catalog entry ID. If no entry exists, the finding is new and must be added to the catalog with a disposition before it can be deferred. Untracked deferrals are not accepted.
+- **After completing a fix:** update the catalog entry to CLOSED with a reference to the commit or story.
+
 **Architectural Boundaries (hard rules):**
 - **Views contain zero business logic** — no computation, no conditional logic beyond rendering; derived values come from `PitchDiscriminationSession` or `PerceptualProfile` as computed properties
 - **`PitchDiscriminationSession` is the ONLY component that understands "pitch discriminations" as a training sequence** — `NotePlayer` knows frequencies, `NextPitchDiscriminationStrategy` knows note selection, neither knows about the loop
