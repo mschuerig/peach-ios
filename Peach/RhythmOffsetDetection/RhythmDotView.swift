@@ -38,9 +38,9 @@ struct RhythmDotView: View {
     static let dotDiameter: CGFloat = 16
     static let beatOneDotDiameter: CGFloat = 22
     static let dotSpacing: CGFloat = 24
-    static let testedNoteIndex = 2
+    static let testedNoteIndex = RhythmOffsetDetectionSession.testedNoteIndex
     static let overlapOffset: CGFloat = 8
-    static let testedNoteFrameWidth: CGFloat = 24
+    static let testedNoteFrameWidth: CGFloat = dotDiameter + overlapOffset
 
     static func diameter(forStepIndex index: Int) -> CGFloat {
         index == 0 ? beatOneDotDiameter : dotDiameter

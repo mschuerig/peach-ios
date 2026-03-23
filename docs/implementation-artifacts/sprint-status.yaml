@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 56.4 in-progress
+# last_updated: 2026-03-23 # Story 56.4 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -435,7 +435,7 @@ development_status:
   56-1-quarter-note-timing-grid-alignment: done
   56-2-move-tested-note-from-4th-to-3rd-position: done
   56-3-accented-and-enlarged-first-note: done
-  56-4-overlapping-circle-visualization-for-tested-note: review
+  56-4-overlapping-circle-visualization-for-tested-note: done
 
   # Epic 57: Feel the Beat — Continuous Rhythm Matching Tap Feedback
   # Work order: 57.1 before 57.2 (tap sound needed before feedback indicator references it); 57.3 after 57.2

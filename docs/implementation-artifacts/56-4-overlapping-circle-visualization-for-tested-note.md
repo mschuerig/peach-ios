@@ -1,6 +1,6 @@
 # Story 56.4: Overlapping-Circle Visualization for Tested Note
 
-Status: review
+Status: done
 
 ## Story
 
