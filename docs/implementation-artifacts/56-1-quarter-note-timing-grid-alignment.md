@@ -1,6 +1,6 @@
 # Story 56.1: Quarter-Note Timing Grid Alignment
 
-Status: review
+Status: done
 
 ## Story
 

@@ -442,7 +442,7 @@ struct RhythmOffsetDetectionSessionTests {
 
     @Test("first pattern establishes grid origin from currentTime")
     func firstPatternEstablishesGridOrigin() async throws {
-        var mockTime = 10.0
+        let mockTime = 10.0
         let f = makeSession(currentTime: { mockTime })
 
         f.session.start(settings: defaultRhythmSettings)
@@ -544,6 +544,8 @@ struct RhythmOffsetDetectionSessionTests {
 
         // Buttons should be disabled (only enabled in awaitingAnswer)
         #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: f.session.state) == false)
+        // Dots should be dimmed (litDotCount reset to 0)
+        #expect(f.session.litDotCount == 0)
 
         f.session.stop()
     }

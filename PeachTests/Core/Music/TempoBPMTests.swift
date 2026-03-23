@@ -59,4 +59,24 @@ struct TempoBPMTests {
         let tempo = TempoBPM(240)
         #expect(tempo.sixteenthNoteDuration == Duration.seconds(0.0625))
     }
+
+    // MARK: - quarterNoteDuration
+
+    @Test("120 BPM quarter note is 500ms")
+    func quarterNoteDurationAt120() async {
+        let tempo = TempoBPM(120)
+        #expect(tempo.quarterNoteDuration == Duration.milliseconds(500))
+    }
+
+    @Test("60 BPM quarter note is 1000ms")
+    func quarterNoteDurationAt60() async {
+        let tempo = TempoBPM(60)
+        #expect(tempo.quarterNoteDuration == Duration.milliseconds(1000))
+    }
+
+    @Test("quarter note is four times sixteenth note")
+    func quarterIsFourTimesSixteenth() async {
+        let tempo = TempoBPM(80)
+        #expect(tempo.quarterNoteDuration == tempo.sixteenthNoteDuration * 4)
+    }
 }

@@ -304,6 +304,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
             let waitTime = gridPoint - now
 
             if waitTime > 0 {
+                litDotCount = 0
                 state = .waitingForGrid
                 logger.info("Waiting \(waitTime)s for grid alignment")
                 try? await Task.sleep(for: .seconds(waitTime))
