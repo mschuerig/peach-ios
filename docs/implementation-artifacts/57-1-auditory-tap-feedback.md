@@ -1,6 +1,6 @@
 # Story 57.1: Auditory Tap Feedback
 
-Status: review
+Status: done
 
 ## Story
 

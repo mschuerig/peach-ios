@@ -479,6 +479,35 @@ struct SoundFontStepSequencerTests {
         #expect(engine.scheduledEvents.count == existingEvents.count)
     }
 
+    @Test("playImmediateNote sends note-off after delay")
+    func playImmediateNoteSendsNoteOff() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+
+        await withCheckedContinuation { continuation in
+            engine.onImmediateNoteOff = { continuation.resume() }
+            try! sequencer.playImmediateNote(velocity: StepVelocity.normal)
+        }
+
+        #expect(engine.immediateNoteOffCallCount == 1)
+    }
+
+    @Test("rapid playImmediateNote cancels previous note-off")
+    func rapidPlayImmediateNoteCancelsPreviousNoteOff() async throws {
+        let engine = MockStepSequencerEngine()
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+
+        await withCheckedContinuation { continuation in
+            engine.onImmediateNoteOff = { continuation.resume() }
+            try! sequencer.playImmediateNote(velocity: StepVelocity.normal)
+            try! sequencer.playImmediateNote(velocity: StepVelocity.accent)
+        }
+
+        // Only one note-off should fire (the second tap's); the first was cancelled
+        #expect(engine.immediateNoteOnCallCount == 2)
+        #expect(engine.immediateNoteOffCallCount == 1)
+    }
+
     @Test("start calls engine setup methods")
     func startCallsEngineSetup() async throws {
         let engine = MockStepSequencerEngine()
