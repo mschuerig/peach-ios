@@ -1,5 +1,5 @@
 import Foundation
-import OSLog
+import os
 
 /// Adaptive pitch discrimination selection using the Kazez difficulty adjustment formula.
 ///

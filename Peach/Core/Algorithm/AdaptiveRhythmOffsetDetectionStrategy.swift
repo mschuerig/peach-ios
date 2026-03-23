@@ -1,5 +1,5 @@
 import Foundation
-import OSLog
+import os
 
 final class AdaptiveRhythmOffsetDetectionStrategy: NextRhythmOffsetDetectionStrategy {
 

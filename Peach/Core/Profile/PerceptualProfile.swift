@@ -1,5 +1,5 @@
 import Foundation
-import OSLog
+import os
 
 @Observable
 final class PerceptualProfile: TrainingProfile {
