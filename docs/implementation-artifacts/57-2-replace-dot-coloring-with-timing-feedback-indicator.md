@@ -1,6 +1,6 @@
 # Story 57.2: Replace Dot Coloring with Timing Feedback Indicator
 
-Status: review
+Status: done
 
 ## Story
 

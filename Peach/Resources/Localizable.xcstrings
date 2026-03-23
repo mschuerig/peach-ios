@@ -21,6 +21,26 @@
         }
       }
     },
+    "%lld ms early" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ms zu früh"
+          }
+        }
+      }
+    },
+    "%lld ms late" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld ms zu spät"
+          }
+        }
+      }
+    },
     "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone." : {
       "localizations" : {
         "de" : {
@@ -1706,6 +1726,7 @@
       }
     },
     "milliseconds early" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1716,6 +1737,7 @@
       }
     },
     "milliseconds late" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

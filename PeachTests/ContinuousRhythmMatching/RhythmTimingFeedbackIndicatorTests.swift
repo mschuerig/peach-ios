@@ -130,13 +130,13 @@ struct RhythmTimingFeedbackIndicatorTests {
     @Test("accessibility label for early tap")
     func accessibilityLabelForEarlyTap() async {
         let label = RhythmTimingFeedbackIndicator.accessibilityLabel(offsetMs: -5.0)
-        #expect(label == "5 " + String(localized: "milliseconds early"))
+        #expect(label == String(localized: "\(5) ms early"))
     }
 
     @Test("accessibility label for late tap")
     func accessibilityLabelForLateTap() async {
         let label = RhythmTimingFeedbackIndicator.accessibilityLabel(offsetMs: 3.0)
-        #expect(label == "3 " + String(localized: "milliseconds late"))
+        #expect(label == String(localized: "\(3) ms late"))
     }
 
     @Test("accessibility label for dead center")
@@ -148,7 +148,7 @@ struct RhythmTimingFeedbackIndicatorTests {
     @Test("accessibility label rounds to nearest integer")
     func accessibilityLabelRoundsToNearestInteger() async {
         let label = RhythmTimingFeedbackIndicator.accessibilityLabel(offsetMs: 4.7)
-        #expect(label == "5 " + String(localized: "milliseconds late"))
+        #expect(label == String(localized: "\(5) ms late"))
     }
 
     @Test("accessibility label for value rounding to zero says dead center")

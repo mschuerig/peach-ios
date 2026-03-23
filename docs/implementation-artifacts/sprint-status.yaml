@@ -441,5 +441,5 @@ development_status:
   # Work order: 57.1 before 57.2 (tap sound needed before feedback indicator references it); 57.3 after 57.2
   epic-57: in-progress
   57-1-auditory-tap-feedback: done
-  57-2-replace-dot-coloring-with-timing-feedback-indicator: review
+  57-2-replace-dot-coloring-with-timing-feedback-indicator: done
   57-3-localization-for-rhythm-timing-feedback: backlog
