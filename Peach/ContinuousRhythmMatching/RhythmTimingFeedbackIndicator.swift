@@ -69,9 +69,9 @@ struct RhythmTimingFeedbackIndicator: View {
     static func accessibilityLabel(offsetMs: Double) -> String {
         let rounded = Int(offsetMs.rounded())
         if rounded < 0 {
-            return String(localized: "\(abs(rounded)) ms early")
+            return "\(abs(rounded)) " + String(localized: "milliseconds early")
         } else if rounded > 0 {
-            return String(localized: "\(rounded) ms late")
+            return "\(rounded) " + String(localized: "milliseconds late")
         } else {
             return String(localized: "Dead center")
         }

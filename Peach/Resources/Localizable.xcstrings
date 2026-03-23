@@ -22,6 +22,7 @@
       }
     },
     "%lld ms early" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -32,6 +33,7 @@
       }
     },
     "%lld ms late" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1726,23 +1728,21 @@
       }
     },
     "milliseconds early" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Millisekunden früh"
+            "value" : "Millisekunden zu früh"
           }
         }
       }
     },
     "milliseconds late" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Millisekunden spät"
+            "value" : "Millisekunden zu spät"
           }
         }
       }
