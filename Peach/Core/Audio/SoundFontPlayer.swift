@@ -53,6 +53,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
         try soundFontEngine.ensureAudioSessionConfigured()
         try soundFontEngine.ensureEngineRunning()
         let midiNote = startNote(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
+        logger.debug("play: \(frequency.rawValue, format: .fixed(precision: 1))Hz, vel=\(velocity.rawValue), amp=\(amplitudeDB.rawValue, format: .fixed(precision: 1))dB → MIDI \(midiNote.rawValue)")
         return SoundFontPlaybackHandle(engine: soundFontEngine, channel: channel, midiNote: midiNote, stopPropagationDelay: stopPropagationDelay)
     }
 
@@ -110,6 +111,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     // MARK: - stopAll (shared by both NotePlayer and RhythmPlayer)
 
     func stopAll() async throws {
+        logger.debug("stopAll: clearing schedule and stopping notes on channel \(self.channel.rawValue)")
         soundFontEngine.clearSchedule()
         await soundFontEngine.stopNotes(channel: channel, stopPropagationDelay: stopPropagationDelay)
     }

@@ -127,7 +127,7 @@ final class AudioSessionInterruptionMonitor {
 
         switch reason {
         case .oldDeviceUnavailable:
-            logger.info("Audio device disconnected - stopping")
+            logger.warning("Audio device disconnected - stopping")
             onStopRequired()
         case .newDeviceAvailable, .categoryChange, .override, .wakeFromSleep, .noSuitableRouteForCategory, .routeConfigurationChange, .unknown:
             logger.info("Audio route changed (reason: \(reason.rawValue)) - continuing")

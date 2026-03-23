@@ -105,7 +105,7 @@ final class PitchDiscriminationSession: TrainingSession {
             return
         }
         guard let trial = currentTrial else {
-            logger.error("handleAnswer() called but currentTrial is nil")
+            logger.warning("handleAnswer() called but currentTrial is nil")
             return
         }
 
