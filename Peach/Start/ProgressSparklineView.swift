@@ -21,9 +21,11 @@ struct ProgressSparklineView: View {
         let trend = progressTimeline.trend(for: mode)
 
         return HStack(spacing: 6) {
-            SparklinePath(values: buckets.map(\.mean))
-                .stroke(Self.sparklineColor(for: trend), lineWidth: 1.5)
-                .frame(width: 60, height: 24)
+            if buckets.count >= 2 {
+                SparklinePath(values: buckets.map(\.mean))
+                    .stroke(Self.sparklineColor(for: trend), lineWidth: 1.5)
+                    .frame(width: 60, height: 24)
+            }
             if let ewma {
                 Text(Self.formatCompactEWMA(ewma))
                     .font(.caption2)

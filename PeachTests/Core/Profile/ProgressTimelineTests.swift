@@ -190,7 +190,8 @@ struct ProgressTimelineTests {
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
-        #expect(!buckets.isEmpty)
+        let expectedCount = calendar.isDate(noon10DaysAgo, equalTo: noon20DaysAgo, toGranularity: .month) ? 1 : 2
+        #expect(buckets.count == expectedCount)
         for bucket in buckets {
             #expect(bucket.bucketSize == .month)
         }
@@ -846,8 +847,12 @@ struct ProgressTimelineTests {
 
         // buckets(for:) and allGranularityBuckets(for:) must return identical results
         #expect(buckets.count == allGranBuckets.count)
-        let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
-        #expect(totalRecords == 3)
+        for (b, a) in zip(buckets, allGranBuckets) {
+            #expect(b.periodStart == a.periodStart)
+            #expect(b.mean == a.mean)
+            #expect(b.bucketSize == a.bucketSize)
+            #expect(b.recordCount == a.recordCount)
+        }
     }
 
     // MARK: - Sub-Bucket Tests
@@ -904,6 +909,34 @@ struct ProgressTimelineTests {
         // All 3 should be in ONE session bucket
         #expect(buckets.count == 1, "All 3 records should merge into one session bucket")
         #expect(buckets.first?.recordCount == 3)
+    }
+
+    @Test("subBuckets session merging uses last record timestamp, not session start")
+    func subBucketsSessionMergingUsesEnd() async {
+        let calendar = Calendar.current
+        let now = Date()
+        // Place records 2 days ago so they land in a day bucket
+        let twoDaysAgo = calendar.startOfDay(for: now.addingTimeInterval(-2 * 86400))
+
+        // 3 records each 20 minutes apart (< 30 min sessionGap).
+        // Total span is 40 min — exceeds sessionGap from first record,
+        // but each consecutive gap is only 20 min.
+        let records = [
+            makePitchDiscriminationRecord(centOffset: 10.0, date: twoDaysAgo.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 12.0, date: twoDaysAgo.addingTimeInterval(60 + 20 * 60)),
+            makePitchDiscriminationRecord(centOffset: 14.0, date: twoDaysAgo.addingTimeInterval(60 + 40 * 60)),
+        ]
+        let timeline = makeTimeline(pitchDiscriminationRecords: records)
+        let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
+        guard let dayBucket = buckets.first(where: { $0.bucketSize == .day }) else {
+            Issue.record("Expected a day bucket for records 2 days ago")
+            return
+        }
+        let subs = timeline.subBuckets(for: .unisonPitchDiscrimination, expanding: dayBucket)
+
+        // All 3 should merge into ONE session sub-bucket
+        #expect(subs.count == 1, "All 3 records should merge into one session sub-bucket")
+        #expect(subs.first?.recordCount == 3)
     }
 
     // MARK: - Rhythm Mode Tests

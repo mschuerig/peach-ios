@@ -1,6 +1,6 @@
 # Story 58.1: Consolidate Sparkline Bucketing to Multi-Granularity Pipeline
 
-Status: review
+Status: done
 
 ## Story
 

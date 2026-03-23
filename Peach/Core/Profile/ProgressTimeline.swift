@@ -141,6 +141,7 @@ final class ProgressTimeline {
 
         let sessionGapSeconds = sessionGap / .seconds(1)
         var groups: [(key: Date, end: Date, size: BucketSize, points: [Double])] = []
+        var groupIndex: [Date: Int] = [:]
 
         for metric in metrics {
             let bucketInfo: (key: Date, end: Date, size: BucketSize)
@@ -170,9 +171,10 @@ final class ProgressTimeline {
                 }
             }
 
-            if let idx = groups.firstIndex(where: { $0.key == bucketInfo.key && $0.size == bucketInfo.size }) {
+            if let idx = groupIndex[bucketInfo.key] {
                 groups[idx].points.append(metric.value)
             } else {
+                groupIndex[bucketInfo.key] = groups.count
                 groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.value]))
             }
         }
@@ -216,6 +218,7 @@ final class ProgressTimeline {
         }
 
         var groups: [(key: Date, end: Date, points: [Double])] = []
+        var groupIndex: [Date: Int] = [:]
 
         for metric in metrics {
             let groupInfo: (key: Date, end: Date)
@@ -226,7 +229,7 @@ final class ProgressTimeline {
                 groupInfo = (key: dayStart, end: dayStart.addingTimeInterval(Self.secondsPerDay / .seconds(1)))
             case .session:
                 if let lastGroup = groups.last,
-                   metric.timestamp.timeIntervalSince(lastGroup.key) < sessionGapSeconds {
+                   metric.timestamp.timeIntervalSince(lastGroup.end) < sessionGapSeconds {
                     groups[groups.count - 1].points.append(metric.value)
                     groups[groups.count - 1].end = metric.timestamp
                     continue
@@ -236,9 +239,10 @@ final class ProgressTimeline {
                 return []
             }
 
-            if let idx = groups.firstIndex(where: { $0.key == groupInfo.key }) {
+            if let idx = groupIndex[groupInfo.key] {
                 groups[idx].points.append(metric.value)
             } else {
+                groupIndex[groupInfo.key] = groups.count
                 groups.append((key: groupInfo.key, end: groupInfo.end, points: [metric.value]))
             }
         }
