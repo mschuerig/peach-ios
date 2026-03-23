@@ -34,40 +34,40 @@ struct RhythmTimingFeedbackIndicatorTests {
 
     // MARK: - offsetText() Tests
 
-    @Test("formats early tap with left arrow and ms")
+    @Test("formats early tap as absolute ms value")
     func formatsEarlyTapText() async {
         let text = RhythmTimingFeedbackIndicator.offsetText(offsetMs: -5.0)
-        #expect(text == "← 5 " + String(localized: "ms"))
+        #expect(text == "5 " + String(localized: "ms"))
     }
 
-    @Test("formats late tap with right arrow and ms")
+    @Test("formats late tap as absolute ms value")
     func formatsLateTapText() async {
         let text = RhythmTimingFeedbackIndicator.offsetText(offsetMs: 3.0)
-        #expect(text == "→ 3 " + String(localized: "ms"))
+        #expect(text == "3 " + String(localized: "ms"))
     }
 
-    @Test("formats zero offset with dot")
+    @Test("formats zero offset")
     func formatsZeroOffsetText() async {
         let text = RhythmTimingFeedbackIndicator.offsetText(offsetMs: 0.0)
-        #expect(text == "• 0 " + String(localized: "ms"))
+        #expect(text == "0 " + String(localized: "ms"))
     }
 
     @Test("rounds to nearest integer for display")
     func roundsToNearestInteger() async {
         let text = RhythmTimingFeedbackIndicator.offsetText(offsetMs: 4.7)
-        #expect(text == "→ 5 " + String(localized: "ms"))
+        #expect(text == "5 " + String(localized: "ms"))
     }
 
     @Test("rounds negative value to nearest integer")
     func roundsNegativeToNearestInteger() async {
         let text = RhythmTimingFeedbackIndicator.offsetText(offsetMs: -12.3)
-        #expect(text == "← 12 " + String(localized: "ms"))
+        #expect(text == "12 " + String(localized: "ms"))
     }
 
     @Test("rounds 0.4 to zero")
     func roundsSmallValueToZero() async {
         let text = RhythmTimingFeedbackIndicator.offsetText(offsetMs: 0.4)
-        #expect(text == "• 0 " + String(localized: "ms"))
+        #expect(text == "0 " + String(localized: "ms"))
     }
 
     // MARK: - accuracyLevel() Tests

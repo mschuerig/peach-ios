@@ -45,15 +45,9 @@ struct RhythmTimingFeedbackIndicator: View {
     }
 
     static func offsetText(offsetMs: Double) -> String {
-        let rounded = Int(offsetMs.rounded())
+        let rounded = abs(Int(offsetMs.rounded()))
         let msUnit = String(localized: "ms")
-        if rounded < 0 {
-            return "← \(abs(rounded)) \(msUnit)"
-        } else if rounded > 0 {
-            return "→ \(rounded) \(msUnit)"
-        } else {
-            return "• 0 \(msUnit)"
-        }
+        return "\(rounded) \(msUnit)"
     }
 
     static func accuracyLevel(offsetMs: Double, tempo: TempoBPM) -> SpectrogramAccuracyLevel {
