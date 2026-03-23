@@ -443,3 +443,8 @@ development_status:
   57-1-auditory-tap-feedback: done
   57-2-replace-dot-coloring-with-timing-feedback-indicator: done
   57-3-localization-for-rhythm-timing-feedback: done
+
+  # Epic 58: Clean Slate — Pre-Existing Findings Cleanup
+  epic-58: backlog
+  58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: backlog
+  58-2-extract-sessionlifecycle-helper: backlog

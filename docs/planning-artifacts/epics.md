@@ -6169,3 +6169,65 @@ So that the new feedback is understandable in my language.
 **Then** no missing keys are reported for rhythm timing feedback strings
 
 ---
+
+## Epic 58: Clean Slate — Pre-Existing Findings Cleanup
+
+Addresses the two remaining open findings from the pre-existing findings catalog (`docs/pre-existing-findings.md`). ST-1 consolidates a buggy bucketing code path on the Start Screen sparkline. CD-1 extracts duplicated session lifecycle boilerplate across all four training sessions.
+
+### Story 58.1: Consolidate Sparkline Bucketing to Multi-Granularity Pipeline
+
+As a **user viewing the Start Screen sparkline**,
+I want the sparkline to use the same bucketing pipeline as the Profile chart,
+So that session grouping is correct and there is only one code path to maintain.
+
+**Acceptance Criteria:**
+
+**Given** `ProgressTimeline.buckets(for:)`
+**When** called by `ProgressSparklineView`
+**Then** it delegates to `allGranularityBuckets(for:)` instead of the separate `assignBuckets` method
+
+**Given** the private method `assignBuckets`
+**When** `buckets(for:)` is updated
+**Then** `assignBuckets` has zero callers and is deleted
+
+**Given** the sparkline on the Start Screen
+**When** training data exists
+**Then** it renders correctly using multi-granularity buckets (visual behavior may differ slightly due to finer bucketing — this is acceptable and expected)
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+**Given** `docs/pre-existing-findings.md`
+**When** this story is complete
+**Then** ST-1 is updated to CLOSED with a reference to this story
+
+### Story 58.2: Extract SessionLifecycle Helper
+
+As a **developer maintaining Peach**,
+I want shared session lifecycle boilerplate extracted into a reusable helper,
+So that feedback task management and interruption monitor wiring are defined once instead of duplicated across four sessions.
+
+**Acceptance Criteria:**
+
+**Given** a new `SessionLifecycle` struct (or similar helper) in `Core/Training/`
+**When** created
+**Then** it owns: `feedbackTask` (Task creation, cancellation, nil-out), `interruptionMonitor` (AudioSessionInterruptionMonitor setup and wiring), and the shared `stop()` cleanup sequence
+
+**Given** `PitchDiscriminationSession`, `PitchMatchingSession`, `RhythmOffsetDetectionSession`, and `ContinuousRhythmMatchingSession`
+**When** refactored
+**Then** each session delegates feedback task and interruption monitor management to `SessionLifecycle` via composition (not inheritance)
+
+**Given** each session's state machine and domain-specific logic
+**When** the helper is introduced
+**Then** they remain unchanged — the helper handles only the shared mechanical lifecycle, not training-specific behavior
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+**Given** `docs/pre-existing-findings.md`
+**When** this story is complete
+**Then** CD-1 is updated to CLOSED with a reference to this story
+
+---
