@@ -15,7 +15,7 @@ struct RhythmOffsetDetectionScreen: View {
     static let helpSections: [HelpSection] = [
         HelpSection(
             title: String(localized: "Goal"),
-            body: String(localized: "You'll hear four clicks — a short rhythmic pattern. The last click may arrive slightly **early** or **late**. Your job is to decide which one it was.")
+            body: String(localized: "You'll hear four clicks — a short rhythmic pattern. The **third** click may arrive slightly **early** or **late**. Your job is to decide which one it was.")
         ),
         HelpSection(
             title: String(localized: "Controls"),

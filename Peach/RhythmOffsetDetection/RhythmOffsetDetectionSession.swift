@@ -254,28 +254,28 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         }
     }
 
+    /// Index of the note that receives the timing offset (0-based among 4 sixteenth notes).
+    private static let testedNoteIndex = 2
+
     private func buildPattern(for trial: RhythmOffsetDetectionTrial, settings: RhythmOffsetDetectionSettings) -> RhythmPattern {
         let sixteenthDuration = settings.tempo.sixteenthNoteDuration
         let samplesPerSixteenth = Int64(sampleRate.rawValue * sixteenthDuration.timeInterval)
 
         let clickNote = MIDINote(76)
         let velocity = MIDIVelocity(100)
+        let offsetSamples = Int64(sampleRate.rawValue * trial.offset.duration.timeInterval)
 
-        var events = (0..<3).map { i in
-            RhythmPattern.Event(
-                sampleOffset: Int64(i) * samplesPerSixteenth,
+        var events = (0..<4).map { i in
+            let base = Int64(i) * samplesPerSixteenth
+            let offset = (i == Self.testedNoteIndex) ? offsetSamples : 0
+            return RhythmPattern.Event(
+                sampleOffset: base + offset,
                 midiNote: clickNote,
                 velocity: velocity
             )
         }
 
-        let baseOffset4 = 3 * samplesPerSixteenth
-        let offsetSamples = Int64(sampleRate.rawValue * trial.offset.duration.timeInterval)
-        events.append(RhythmPattern.Event(
-            sampleOffset: baseOffset4 + offsetSamples,
-            midiNote: clickNote,
-            velocity: velocity
-        ))
+        events.sort { $0.sampleOffset < $1.sampleOffset }
 
         return RhythmPattern(
             events: events,

@@ -3251,12 +3251,12 @@
         }
       }
     },
-    "You'll hear four clicks — a short rhythmic pattern. The last click may arrive slightly **early** or **late**. Your job is to decide which one it was." : {
+    "You'll hear four clicks — a short rhythmic pattern. The **third** click may arrive slightly **early** or **late**. Your job is to decide which one it was." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Du hörst vier Klicks — ein kurzes rhythmisches Muster. Der letzte Klick kann leicht **zu früh** oder **zu spät** kommen. Deine Aufgabe ist es, zu entscheiden, was es war."
+            "value" : "Du hörst vier Klicks — ein kurzes rhythmisches Muster. Der **dritte** Klick kann ein wenig **zu früh** oder **zu spät** kommen. Deine Aufgabe ist es, zu entscheiden, was es war."
           }
         }
       }

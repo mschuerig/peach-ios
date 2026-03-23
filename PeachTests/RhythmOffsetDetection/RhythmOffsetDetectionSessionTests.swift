@@ -99,7 +99,7 @@ struct RhythmOffsetDetectionSessionTests {
         #expect(f.mockStrategy.nextRhythmOffsetDetectionTrialCallCount >= 1)
     }
 
-    @Test("pattern has 4 events with correct sample offsets")
+    @Test("pattern has 4 events with 3rd note offset and others on grid")
     func patternHas4EventsWithCorrectOffsets() async {
         let f = makeSession()
 
@@ -116,21 +116,52 @@ struct RhythmOffsetDetectionSessionTests {
         let sixteenthDuration = tempo.sixteenthNoteDuration
         let samplesPerSixteenth = Int64(SampleRate.standard48000.rawValue * sixteenthDuration.timeInterval)
 
-        // Events 0-2: regular sixteenth-note intervals
+        // Events 0, 1, 3 on grid; event 2 shifted
         #expect(events[0].sampleOffset == 0)
         #expect(events[1].sampleOffset == samplesPerSixteenth)
-        #expect(events[2].sampleOffset == 2 * samplesPerSixteenth)
+        #expect(events[3].sampleOffset == 3 * samplesPerSixteenth)
 
-        // Event 3: base offset + trial offset
+        // Event 2: base offset at 2×sixteenth + trial offset
         let trialOffset = RhythmOffset(.milliseconds(50))
         let offsetSamples = Int64(SampleRate.standard48000.rawValue * trialOffset.duration.timeInterval)
-        #expect(events[3].sampleOffset == 3 * samplesPerSixteenth + offsetSamples)
+        #expect(events[2].sampleOffset == 2 * samplesPerSixteenth + offsetSamples)
 
-        // All events use hi-hat MIDI note
+        // All events use click MIDI note
         for event in events {
             #expect(event.midiNote == MIDINote(76))
             #expect(event.velocity == MIDIVelocity(100))
         }
+    }
+
+    @Test("pattern with early offset keeps events sorted by sample offset")
+    func patternWithEarlyOffsetSortedCorrectly() async {
+        let earlyTrial = RhythmOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: RhythmOffset(.milliseconds(-50))
+        )
+        let f = makeSession(trialToReturn: earlyTrial)
+
+        f.session.start(settings: defaultRhythmSettings)
+        await f.mockPlayer.waitForPlay()
+
+        guard let events = f.mockPlayer.lastPattern?.events else { return }
+
+        // Events should be sorted by sampleOffset
+        for i in 1..<events.count {
+            #expect(events[i].sampleOffset >= events[i - 1].sampleOffset)
+        }
+    }
+
+    @Test("pattern total duration unchanged at 4 sixteenth notes")
+    func patternTotalDurationUnchanged() async {
+        let f = makeSession()
+
+        f.session.start(settings: defaultRhythmSettings)
+        await f.mockPlayer.waitForPlay()
+
+        let pattern = f.mockPlayer.lastPattern
+        let expectedDuration = defaultRhythmSettings.tempo.sixteenthNoteDuration * 4
+        #expect(pattern?.totalDuration == expectedDuration)
     }
 
     @Test("transitions to awaitingAnswer after pattern completes")
