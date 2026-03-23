@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 58.1 done
+# last_updated: 2026-03-23 # Story 58.2 ready-for-dev
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -447,4 +447,4 @@ development_status:
   # Epic 58: Clean Slate — Pre-Existing Findings Cleanup
   epic-58: in-progress
   58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: done
-  58-2-extract-sessionlifecycle-helper: backlog
+  58-2-extract-sessionlifecycle-helper: ready-for-dev
