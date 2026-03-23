@@ -7,41 +7,28 @@ struct CSVExportSchemaV2Tests {
 
     // MARK: - Format Version
 
-    @Test("formatVersion is 2")
-    func formatVersionIsTwo() async {
-        #expect(CSVExportSchemaV2.formatVersion == 2)
+    @Test("formatVersion is 3")
+    func formatVersionIsThree() async {
+        #expect(CSVExportSchemaV2.formatVersion == 3)
     }
 
-    @Test("metadataLine uses shared prefix with version 2")
+    @Test("metadataLine uses shared prefix with version 3")
     func metadataLineDerived() async {
-        #expect(CSVExportSchemaV2.metadataLine == "# peach-export-format:2")
-    }
-
-    @Test("metadataPrefix is shared with V1")
-    func metadataPrefixSharedWithV1() async {
-        #expect(CSVExportSchemaV2.metadataPrefix == CSVExportSchema.metadataPrefix)
-    }
-
-    // MARK: - Training Type
-
-    @Test("TrainingType has four cases with correct csvValues")
-    func trainingTypeCsvValues() async {
-        #expect(CSVExportSchemaV2.TrainingType.pitchDiscrimination.csvValue == "pitchDiscrimination")
-        #expect(CSVExportSchemaV2.TrainingType.pitchMatching.csvValue == "pitchMatching")
-        #expect(CSVExportSchemaV2.TrainingType.rhythmOffsetDetection.csvValue == "rhythmOffsetDetection")
-        #expect(CSVExportSchemaV2.TrainingType.continuousRhythmMatching.csvValue == "continuousRhythmMatching")
+        #expect(CSVExportSchemaV2.metadataLine == "# peach-export-format:3")
     }
 
     // MARK: - Header Row
 
-    @Test("headerRow contains all 20 columns in correct order")
-    func headerRowContainsAll20Columns() async {
+    @Test("headerRow contains 19 columns in correct order")
+    func headerRowContains19Columns() async {
         let header = CSVExportSchemaV2.headerRow
         let columns = header.split(separator: ",").map(String.init)
 
-        #expect(columns.count == 20)
+        #expect(columns.count == 19)
+        // Common columns
         #expect(columns[0] == "trainingType")
         #expect(columns[1] == "timestamp")
+        // Pitch discrimination columns
         #expect(columns[2] == "referenceNote")
         #expect(columns[3] == "referenceNoteName")
         #expect(columns[4] == "targetNote")
@@ -50,30 +37,37 @@ struct CSVExportSchemaV2Tests {
         #expect(columns[7] == "tuningSystem")
         #expect(columns[8] == "centOffset")
         #expect(columns[9] == "isCorrect")
+        // Pitch matching adds
         #expect(columns[10] == "initialCentOffset")
         #expect(columns[11] == "userCentError")
+        // Rhythm offset detection adds (isCorrect/tempoBPM already present)
         #expect(columns[12] == "tempoBPM")
         #expect(columns[13] == "offsetMs")
-        #expect(columns[14] == "userOffsetMs")
-        #expect(columns[15] == "meanOffsetMs")
-        #expect(columns[16] == "meanOffsetMsPosition0")
-        #expect(columns[17] == "meanOffsetMsPosition1")
-        #expect(columns[18] == "meanOffsetMsPosition2")
-        #expect(columns[19] == "meanOffsetMsPosition3")
+        // Continuous rhythm matching adds
+        #expect(columns[14] == "meanOffsetMs")
+        #expect(columns[15] == "meanOffsetMsPosition0")
+        #expect(columns[16] == "meanOffsetMsPosition1")
+        #expect(columns[17] == "meanOffsetMsPosition2")
+        #expect(columns[18] == "meanOffsetMsPosition3")
     }
 
-    @Test("first 12 columns match V1 layout for backward compatibility")
-    func first12ColumnsMatchV1() async {
-        let v1Columns = CSVExportSchema.headerRow.split(separator: ",").map(String.init)
-        let v2Columns = CSVExportSchemaV2.headerRow.split(separator: ",").map(String.init)
-
-        for i in 0..<12 {
-            #expect(v2Columns[i] == v1Columns[i], "Column \(i) mismatch: V2=\(v2Columns[i]), V1=\(v1Columns[i])")
-        }
+    @Test("columnIndex maps all column names to correct indices")
+    func columnIndexMapsCorrectly() async {
+        let index = CSVExportSchemaV2.columnIndex
+        #expect(index["trainingType"] == 0)
+        #expect(index["timestamp"] == 1)
+        #expect(index["referenceNote"] == 2)
+        #expect(index["meanOffsetMsPosition3"] == 18)
+        #expect(index.count == 19)
     }
 
-    @Test("V1 schema has exactly 12 columns")
-    func v1SchemaHas12Columns() async {
-        #expect(CSVExportSchema.allColumns.count == 12)
+    @Test("allColumns are assembled dynamically from registry")
+    func allColumnsFromRegistry() async {
+        let columns = CSVExportSchemaV2.allColumns
+        // Common columns come first
+        #expect(columns[0] == "trainingType")
+        #expect(columns[1] == "timestamp")
+        // Remaining columns come from discipline registration order
+        #expect(columns.count == 2 + TrainingDisciplineRegistry.shared.csvDisciplineColumns.count)
     }
 }

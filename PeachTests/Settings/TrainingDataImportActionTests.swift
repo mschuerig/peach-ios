@@ -43,7 +43,7 @@ struct TrainingDataImportActionTests {
             PitchDiscriminationRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate()),
             PitchDiscriminationRecord(referenceNote: 64, targetNote: 66, centOffset: 30.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1))
         ]
-        let parseResult = CSVImportParser.ImportResult(pitchDiscriminations: comparisons, pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: [])
+        let parseResult = CSVImportParser.ImportResult(records: ["pitchDiscrimination": comparisons], errors: [])
 
         let summary = try performImportAction(
             parseResult: parseResult, mode: .replace,
@@ -70,7 +70,7 @@ struct TrainingDataImportActionTests {
             PitchDiscriminationRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate()),
             PitchDiscriminationRecord(referenceNote: 64, targetNote: 66, centOffset: 30.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1))
         ]
-        let parseResult = CSVImportParser.ImportResult(pitchDiscriminations: comparisons, pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: [])
+        let parseResult = CSVImportParser.ImportResult(records: ["pitchDiscrimination": comparisons], errors: [])
 
         let summary = try performImportAction(
             parseResult: parseResult, mode: .merge,
@@ -101,7 +101,7 @@ struct TrainingDataImportActionTests {
             PitchDiscriminationRecord(referenceNote: 67, targetNote: 69, centOffset: 15.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 10)),
             PitchDiscriminationRecord(referenceNote: 72, targetNote: 74, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 11))
         ]
-        let parseResult = CSVImportParser.ImportResult(pitchDiscriminations: comparisons, pitchMatchings: [], rhythmOffsetDetections: [], continuousRhythmMatchings: [], errors: [])
+        let parseResult = CSVImportParser.ImportResult(records: ["pitchDiscrimination": comparisons], errors: [])
 
         _ = try performImportAction(
             parseResult: parseResult, mode: .merge,

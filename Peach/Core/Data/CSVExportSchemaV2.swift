@@ -1,53 +1,26 @@
-nonisolated enum CSVExportSchemaV2 {
+enum CSVExportSchemaV2 {
 
     // MARK: - Format Version
 
-    static let formatVersion = 2
-    static let metadataPrefix = CSVExportSchema.metadataPrefix
+    static let formatVersion = 3
+    static let metadataPrefix = "# peach-export-format:"
     static let metadataLine = metadataPrefix + "\(formatVersion)"
 
-    // MARK: - Column Names (indices 12–14 are rhythm-specific, 15–19 are continuous rhythm matching)
+    // MARK: - Common Columns
 
-    static let columnTempoBPM = "tempoBPM"
-    static let columnOffsetMs = "offsetMs"
-    static let columnUserOffsetMs = "userOffsetMs"
-    static let columnMeanOffsetMs = "meanOffsetMs"
-    static let columnMeanOffsetMsPosition0 = "meanOffsetMsPosition0"
-    static let columnMeanOffsetMsPosition1 = "meanOffsetMsPosition1"
-    static let columnMeanOffsetMsPosition2 = "meanOffsetMsPosition2"
-    static let columnMeanOffsetMsPosition3 = "meanOffsetMsPosition3"
+    static let commonColumns = ["trainingType", "timestamp"]
 
-    // MARK: - Training Type
+    // MARK: - Column Assembly (from Registry)
 
-    enum TrainingType: Sendable {
-        case pitchDiscrimination
-        case pitchMatching
-        case rhythmOffsetDetection
-        case continuousRhythmMatching
-
-        var csvValue: String {
-            switch self {
-            case .pitchDiscrimination: "pitchDiscrimination"
-            case .pitchMatching: "pitchMatching"
-            case .rhythmOffsetDetection: "rhythmOffsetDetection"
-            case .continuousRhythmMatching: "continuousRhythmMatching"
-            }
-        }
+    static var allColumns: [String] {
+        commonColumns + TrainingDisciplineRegistry.shared.csvDisciplineColumns
     }
 
-    // MARK: - Header Row
+    static var headerRow: String {
+        allColumns.joined(separator: ",")
+    }
 
-    static let allColumns: [String] = CSVExportSchema.allColumns + [
-        columnTempoBPM,
-        columnOffsetMs,
-        columnUserOffsetMs,
-        columnMeanOffsetMs,
-        columnMeanOffsetMsPosition0,
-        columnMeanOffsetMsPosition1,
-        columnMeanOffsetMsPosition2,
-        columnMeanOffsetMsPosition3,
-    ]
-
-    static let headerRow: String = allColumns.joined(separator: ",")
-
+    static var columnIndex: [String: Int] {
+        Dictionary(uniqueKeysWithValues: allColumns.enumerated().map { ($1, $0) })
+    }
 }

@@ -158,10 +158,10 @@ struct TrainingDataTransferServiceTests {
         try dataStore.save(makeComparison(minutesOffset: 0))
 
         let parseResult = CSVImportParser.ImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 10), makeComparison(minutesOffset: 11)],
-            pitchMatchings: [makePitchMatching(minutesOffset: 12)],
-            rhythmOffsetDetections: [],
-            continuousRhythmMatchings: [],
+            records: [
+                "pitchDiscrimination": [makeComparison(minutesOffset: 10), makeComparison(minutesOffset: 11)],
+                "pitchMatching": [makePitchMatching(minutesOffset: 12)],
+            ],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
@@ -176,10 +176,9 @@ struct TrainingDataTransferServiceTests {
         try dataStore.save(makeComparison(minutesOffset: 0))
 
         let parseResult = CSVImportParser.ImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 0), makeComparison(minutesOffset: 5)],
-            pitchMatchings: [],
-            rhythmOffsetDetections: [],
-            continuousRhythmMatchings: [],
+            records: [
+                "pitchDiscrimination": [makeComparison(minutesOffset: 0), makeComparison(minutesOffset: 5)],
+            ],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .merge)
@@ -196,10 +195,10 @@ struct TrainingDataTransferServiceTests {
         }
 
         let parseResult = CSVImportParser.ImportResult(
-            pitchDiscriminations: [makeComparison()],
-            pitchMatchings: [makePitchMatching()],
-            rhythmOffsetDetections: [],
-            continuousRhythmMatchings: [],
+            records: [
+                "pitchDiscrimination": [makeComparison()],
+                "pitchMatching": [makePitchMatching()],
+            ],
             errors: []
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
@@ -213,10 +212,9 @@ struct TrainingDataTransferServiceTests {
         #expect(service.exportCSV == nil)
 
         let parseResult = CSVImportParser.ImportResult(
-            pitchDiscriminations: [makeComparison()],
-            pitchMatchings: [],
-            rhythmOffsetDetections: [],
-            continuousRhythmMatchings: [],
+            records: [
+                "pitchDiscrimination": [makeComparison()],
+            ],
             errors: []
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
@@ -278,10 +276,9 @@ struct TrainingDataTransferServiceTests {
         let rhythmOffset = RhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.3, isCorrect: true, timestamp: fixedDate())
 
         let parseResult = CSVImportParser.ImportResult(
-            pitchDiscriminations: [],
-            pitchMatchings: [],
-            rhythmOffsetDetections: [rhythmOffset],
-            continuousRhythmMatchings: [],
+            records: [
+                "rhythmOffsetDetection": [rhythmOffset],
+            ],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)

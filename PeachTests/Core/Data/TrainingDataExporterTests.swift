@@ -306,13 +306,13 @@ struct TrainingDataExporterTests {
         let result = CSVImportParser.parse(csv)
 
         #expect(result.errors.isEmpty)
-        #expect(result.pitchDiscriminations.count == 1)
+        #expect((result.records["pitchDiscrimination"] ?? []).count == 1)
     }
 
     // MARK: - V2 Comprehensive Tests
 
-    @Test("V2 header contains all 15 columns")
-    func v2HeaderInExport() async throws {
+    @Test("header contains all 19 columns")
+    func headerInExport() async throws {
         let store = try makeStore()
 
         let record = RhythmOffsetDetectionRecord(
@@ -324,10 +324,10 @@ struct TrainingDataExporterTests {
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
         let columns = lines[1].split(separator: ",").map(String.init)
 
-        #expect(columns.count == 20)
+        #expect(columns.count == 19)
         #expect(columns[12] == "tempoBPM")
         #expect(columns[13] == "offsetMs")
-        #expect(columns[14] == "userOffsetMs")
+        #expect(columns[14] == "meanOffsetMs")
     }
 
     @Test("rhythm-only export contains no pitch data")
@@ -361,8 +361,8 @@ struct TrainingDataExporterTests {
         #expect(csv == CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow)
     }
 
-    @Test("all rows have exactly 20 fields matching V2 column count")
-    func allRowsHave20Fields() async throws {
+    @Test("all rows have exactly 19 fields matching column count")
+    func allRowsHave19Fields() async throws {
         let store = try makeStore()
 
         let pitchDisc = PitchDiscriminationRecord(
@@ -387,7 +387,7 @@ struct TrainingDataExporterTests {
         // Skip metadata and header, check all data rows
         for i in 2..<lines.count {
             let fields = lines[i].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
-            #expect(fields.count == 20, "Row \(i) has \(fields.count) fields, expected 20")
+            #expect(fields.count == 19, "Row \(i) has \(fields.count) fields, expected 19")
         }
     }
 

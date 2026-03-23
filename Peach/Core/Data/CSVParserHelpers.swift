@@ -65,4 +65,79 @@ nonisolated enum CSVParserHelpers {
         }
         return map
     }()
+
+    // MARK: - Line Splitting (Handles Quoted Newlines)
+
+    static func splitIntoLines(_ content: String) -> [String] {
+        var lines: [String] = []
+        var current = ""
+        var inQuotes = false
+        var previousWasCR = false
+
+        for scalar in content.unicodeScalars {
+            if previousWasCR && scalar == "\n" && !inQuotes {
+                previousWasCR = false
+                continue
+            }
+            previousWasCR = false
+
+            if scalar == "\"" {
+                inQuotes.toggle()
+                current.unicodeScalars.append(scalar)
+            } else if scalar == "\r" && !inQuotes {
+                lines.append(current)
+                current = ""
+                previousWasCR = true
+            } else if scalar == "\n" && !inQuotes {
+                lines.append(current)
+                current = ""
+            } else {
+                current.unicodeScalars.append(scalar)
+            }
+        }
+
+        if !current.isEmpty {
+            lines.append(current)
+        }
+
+        return lines
+    }
+
+    // MARK: - Export Formatting Utilities
+
+    static func formatTimestamp(_ date: Date) -> String {
+        date.formatted(.iso8601)
+    }
+
+    static func formatNoteName(_ midiNote: Int) -> String {
+        MIDINote(midiNote).name
+    }
+
+    static func formatInterval(_ rawValue: Int) -> String {
+        Interval(rawValue: rawValue)?.abbreviation ?? ""
+    }
+
+    static func formatDouble(_ value: Double) -> String {
+        guard value.isFinite else { return "" }
+        let formatted = String(value)
+        if formatted.contains(".") {
+            return formatted
+        }
+        return formatted + ".0"
+    }
+
+    static func formatOptionalDouble(_ value: Double?) -> String {
+        guard let value else { return "" }
+        return formatDouble(value)
+    }
+
+    // MARK: - RFC 4180 Escaping
+
+    static func escapeField(_ field: String) -> String {
+        if field.contains(",") || field.contains("\"") || field.contains("\n") || field.contains("\r") {
+            let escaped = field.replacingOccurrences(of: "\"", with: "\"\"")
+            return "\"\(escaped)\""
+        }
+        return field
+    }
 }

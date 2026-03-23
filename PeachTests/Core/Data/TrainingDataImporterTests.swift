@@ -65,7 +65,7 @@ struct TrainingDataImporterTests {
         #expect(summary.totalSkipped == 3)
     }
 
-    // MARK: - Replace Mode Tests
+    // MARK: - Import Result Helpers
 
     private func makeImportResult(
         pitchDiscriminations: [PitchDiscriminationRecord] = [],
@@ -74,13 +74,12 @@ struct TrainingDataImporterTests {
         continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = [],
         errors: [CSVImportError] = []
     ) -> CSVImportParser.ImportResult {
-        CSVImportParser.ImportResult(
-            pitchDiscriminations: pitchDiscriminations,
-            pitchMatchings: pitchMatchings,
-            rhythmOffsetDetections: rhythmOffsetDetections,
-            continuousRhythmMatchings: continuousRhythmMatchings,
-            errors: errors
-        )
+        var records: [String: [any PersistentModel]] = [:]
+        if !pitchDiscriminations.isEmpty { records["pitchDiscrimination"] = pitchDiscriminations }
+        if !pitchMatchings.isEmpty { records["pitchMatching"] = pitchMatchings }
+        if !rhythmOffsetDetections.isEmpty { records["rhythmOffsetDetection"] = rhythmOffsetDetections }
+        if !continuousRhythmMatchings.isEmpty { records["continuousRhythmMatching"] = continuousRhythmMatchings }
+        return CSVImportParser.ImportResult(records: records, errors: errors)
     }
 
     private func makeComparison(minutesOffset: Double = 0, referenceNote: Int = 60, targetNote: Int = 64) -> PitchDiscriminationRecord {
@@ -111,13 +110,11 @@ struct TrainingDataImporterTests {
     func replaceModeDeletesAndInserts() async throws {
         let store = try makeStore()
 
-        // Pre-populate existing records
         try store.save(makeComparison(minutesOffset: 0))
         try store.save(makePitchMatching(minutesOffset: 1))
         #expect(try store.fetchAllPitchDiscriminations().count == 1)
         #expect(try store.fetchAllPitchMatchings().count == 1)
 
-        // Import new records
         let importResult = makeImportResult(
             pitchDiscriminations: [makeComparison(minutesOffset: 10), makeComparison(minutesOffset: 11)],
             pitchMatchings: [makePitchMatching(minutesOffset: 12)]
@@ -130,7 +127,6 @@ struct TrainingDataImporterTests {
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.skipped(for: .intervalPitchMatching) == 0)
 
-        // Verify only imported records exist
         let comparisons = try store.fetchAllPitchDiscriminations()
         let pitchMatchings = try store.fetchAllPitchMatchings()
         #expect(comparisons.count == 2)
@@ -180,10 +176,8 @@ struct TrainingDataImporterTests {
     func mergeInsertNonDuplicateComparison() async throws {
         let store = try makeStore()
 
-        // Existing record
         try store.save(makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64))
 
-        // Import: one duplicate (same timestamp+ref+target+type), one new
         let importResult = makeImportResult(
             pitchDiscriminations: [
                 makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64),
@@ -232,7 +226,6 @@ struct TrainingDataImporterTests {
         )
         try store.save(existing)
 
-        // Import a duplicate with different centOffset
         let duplicate = PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 99.9, isCorrect: false,
             interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
@@ -357,7 +350,6 @@ struct TrainingDataImporterTests {
     func mergeDeduplicatesWithinImportFile() async throws {
         let store = try makeStore()
 
-        // Import two identical comparison records in the same batch
         let importResult = makeImportResult(
             pitchDiscriminations: [
                 makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64),
@@ -384,14 +376,12 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let timestamp = fixedDate()
-        // Existing comparison
         let existing = PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
             interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
         )
         try store.save(existing)
 
-        // Import pitch matching with same timestamp, ref note, target note
         let imported = PitchMatchingRecord(
             referenceNote: 60, targetNote: 64, initialCentOffset: 25.0, userCentError: 3.2,
             interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
@@ -409,13 +399,11 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let timestamp = fixedDate()
-        // Existing comparison with ref=60, target=64
         try store.save(PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
             interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
         ))
 
-        // Import comparison with same timestamp but different notes
         let importResult = makeImportResult(pitchDiscriminations: [
             PitchDiscriminationRecord(
                 referenceNote: 60, targetNote: 67, centOffset: 10.0, isCorrect: false,
@@ -440,7 +428,6 @@ struct TrainingDataImporterTests {
     func mergeDetectsDuplicatesAfterRoundTrip() async throws {
         let store = try makeStore()
 
-        // Record with sub-second precision (like Date() produces)
         let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.999)
         let record = PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
@@ -448,7 +435,6 @@ struct TrainingDataImporterTests {
         )
         try store.save(record)
 
-        // Simulate export → import: format to ISO8601 without fractional seconds, parse back
         let exported = timestamp.formatted(.iso8601)
         let reimported = try Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(exported)
 

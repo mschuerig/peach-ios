@@ -33,13 +33,65 @@ struct RhythmOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
         }
     }
 
-    func fetchAndFormatRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, row: String)] {
+    // MARK: - CSV
+
+    let csvTrainingType = "rhythmOffsetDetection"
+
+    let csvColumns = ["isCorrect", "tempoBPM", "offsetMs"]
+
+    func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
+        guard let r = record as? RhythmOffsetDetectionRecord else { return [] }
+        return [
+            ("isCorrect", r.isCorrect ? "true" : "false"),
+            ("tempoBPM", "\(r.tempoBPM)"),
+            ("offsetMs", CSVParserHelpers.formatDouble(r.offsetMs)),
+        ]
+    }
+
+    func parseCSVRow(fields: [String], columnIndex: [String: Int], rowNumber: Int) -> Result<any PersistentModel, CSVImportError> {
+        guard let timestampIdx = columnIndex["timestamp"],
+              let isCorrectIdx = columnIndex["isCorrect"],
+              let tempoBPMIdx = columnIndex["tempoBPM"],
+              let offsetMsIdx = columnIndex["offsetMs"] else {
+            return .failure(.invalidRowData(row: rowNumber, column: "row", value: "", reason: "missing required columns"))
+        }
+
+        let timestampStr = fields[timestampIdx]
+        guard let timestamp = CSVParserHelpers.parseISO8601(timestampStr) else {
+            return .failure(.invalidRowData(row: rowNumber, column: "timestamp", value: timestampStr, reason: "not a valid ISO 8601 date"))
+        }
+
+        let isCorrectStr = fields[isCorrectIdx]
+        guard isCorrectStr == "true" || isCorrectStr == "false" else {
+            return .failure(.invalidRowData(row: rowNumber, column: "isCorrect", value: isCorrectStr, reason: "must be 'true' or 'false'"))
+        }
+
+        let tempoBPMStr = fields[tempoBPMIdx]
+        guard let tempoBPM = Int(tempoBPMStr), tempoBPM > 0 else {
+            return .failure(.invalidRowData(row: rowNumber, column: "tempoBPM", value: tempoBPMStr, reason: "must be a positive integer"))
+        }
+
+        let offsetMsStr = fields[offsetMsIdx]
+        guard let offsetMs = Double(offsetMsStr), offsetMs.isFinite else {
+            return .failure(.invalidRowData(row: rowNumber, column: "offsetMs", value: offsetMsStr, reason: "not a valid number"))
+        }
+
+        let record = RhythmOffsetDetectionRecord(
+            tempoBPM: tempoBPM,
+            offsetMs: offsetMs,
+            isCorrect: isCorrectStr == "true",
+            timestamp: timestamp
+        )
+        return .success(record)
+    }
+
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
         try store.fetchAllRhythmOffsetDetections()
-            .map { ($0.timestamp, CSVRecordFormatter.format($0)) }
+            .map { ($0.timestamp, $0 as any PersistentModel) }
     }
 
     func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel] {
-        parseResult.rhythmOffsetDetections
+        parseResult.records["rhythmOffsetDetection"] ?? []
     }
 
     func mergeImportRecords(
@@ -48,12 +100,13 @@ struct RhythmOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: "rhythmOffsetDetection")
         var imported = 0, skipped = 0
-        for record in parseResult.rhythmOffsetDetections {
-            let key = RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: "rhythmOffsetDetection")
+        for record in parsedRecords(from: parseResult) {
+            guard let r = record as? RhythmOffsetDetectionRecord else { continue }
+            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: "rhythmOffsetDetection")
             if existingKeys.contains(key) {
                 skipped += 1
             } else {
-                try store.save(record)
+                try store.save(r)
                 existingKeys.insert(key)
                 imported += 1
             }

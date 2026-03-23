@@ -74,9 +74,7 @@ final class TrainingDataTransferService {
         do {
             let csvString = try String(contentsOf: url, encoding: .utf8)
             let parseResult = CSVImportParser.parse(csvString)
-            if parseResult.pitchDiscriminations.isEmpty && parseResult.pitchMatchings.isEmpty &&
-               parseResult.rhythmOffsetDetections.isEmpty &&
-               parseResult.continuousRhythmMatchings.isEmpty {
+            if parseResult.isEmpty {
                 if parseResult.errors.isEmpty {
                     return .failure(String(localized: "The file contains no valid training data."))
                 } else {

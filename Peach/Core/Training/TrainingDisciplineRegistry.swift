@@ -27,6 +27,20 @@ final class TrainingDisciplineRegistry: Sendable {
         ]
         self.all = disciplines
         self.byID = Dictionary(uniqueKeysWithValues: disciplines.map { ($0.id, $0) })
+
+        var parsers: [String: any TrainingDiscipline] = [:]
+        var columns: [String] = []
+        var seenColumns = Set<String>()
+        for discipline in disciplines {
+            if parsers[discipline.csvTrainingType] == nil {
+                parsers[discipline.csvTrainingType] = discipline
+            }
+            for column in discipline.csvColumns where seenColumns.insert(column).inserted {
+                columns.append(column)
+            }
+        }
+        self.csvParsers = parsers
+        self.csvDisciplineColumns = columns
     }
 
     subscript(_ id: TrainingDisciplineID) -> any TrainingDiscipline {
@@ -49,4 +63,11 @@ final class TrainingDisciplineRegistry: Sendable {
             return discipline.recordType
         }
     }
+
+    /// Lookup: one discipline per CSV training type (first registered wins).
+    /// Used by the import parser to dispatch row parsing by training type string.
+    let csvParsers: [String: any TrainingDiscipline]
+
+    /// All unique discipline-specific CSV columns, in registration order (deduplicated).
+    let csvDisciplineColumns: [String]
 }

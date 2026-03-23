@@ -8,7 +8,7 @@ struct CSVImportParserTests {
     // MARK: - Test Helpers
 
     private func makeCSV(_ rows: [String]) -> String {
-        ([CSVExportSchema.metadataLine, CSVExportSchema.headerRow] + rows).joined(separator: "\n")
+        ([CSVExportSchemaV2.metadataLine, CSVExportSchemaV2.headerRow] + rows).joined(separator: "\n")
     }
 
     private func fixedDate() -> Date {
@@ -18,15 +18,38 @@ struct CSVImportParserTests {
         return calendar.date(from: components)!
     }
 
-    private var validComparisonRow: String {
-        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+    /// 19-column pitch discrimination row (V3 format).
+    private var validPitchDiscriminationRow: String {
+        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
     }
 
+    /// 19-column pitch matching row (V3 format).
     private var validPitchMatchingRow: String {
-        "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2"
+        "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,,,,,,,"
     }
 
-    // MARK: - Task 1: CSVImportError
+    /// 19-column rhythm offset detection row (V3 format).
+    private var validRhythmOffsetDetectionRow: String {
+        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,,,,"
+    }
+
+    private func pitchDiscriminations(from result: CSVImportParser.ImportResult) -> [PitchDiscriminationRecord] {
+        (result.records["pitchDiscrimination"] ?? []).compactMap { $0 as? PitchDiscriminationRecord }
+    }
+
+    private func pitchMatchings(from result: CSVImportParser.ImportResult) -> [PitchMatchingRecord] {
+        (result.records["pitchMatching"] ?? []).compactMap { $0 as? PitchMatchingRecord }
+    }
+
+    private func rhythmOffsetDetections(from result: CSVImportParser.ImportResult) -> [RhythmOffsetDetectionRecord] {
+        (result.records["rhythmOffsetDetection"] ?? []).compactMap { $0 as? RhythmOffsetDetectionRecord }
+    }
+
+    private func continuousRhythmMatchings(from result: CSVImportParser.ImportResult) -> [ContinuousRhythmMatchingRecord] {
+        (result.records["continuousRhythmMatching"] ?? []).compactMap { $0 as? ContinuousRhythmMatchingRecord }
+    }
+
+    // MARK: - CSVImportError
 
     @Test("invalidHeader error contains expected and actual column info")
     func invalidHeaderErrorDescription() async {
@@ -71,7 +94,7 @@ struct CSVImportParserTests {
         #expect(description!.contains("# peach-export-format:abc"))
     }
 
-    // MARK: - Task 2: CSVImportResult
+    // MARK: - ImportResult
 
     @Test("result holds both comparison and pitch matching records")
     func resultHoldsBothRecordTypes() async {
@@ -84,15 +107,15 @@ struct CSVImportParserTests {
             interval: 7, tuningSystem: "equalTemperament", timestamp: fixedDate()
         )
         let result = CSVImportParser.ImportResult(
-            pitchDiscriminations: [comparison],
-            pitchMatchings: [pitchMatching],
-            rhythmOffsetDetections: [],
-            continuousRhythmMatchings: [],
+            records: [
+                "pitchDiscrimination": [comparison],
+                "pitchMatching": [pitchMatching],
+            ],
             errors: []
         )
 
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
@@ -104,23 +127,20 @@ struct CSVImportParserTests {
         )
         let error = CSVImportError.invalidRowData(row: 3, column: "referenceNote", value: "abc", reason: "not an integer")
         let result = CSVImportParser.ImportResult(
-            pitchDiscriminations: [comparison],
-            pitchMatchings: [],
-            rhythmOffsetDetections: [],
-            continuousRhythmMatchings: [],
+            records: ["pitchDiscrimination": [comparison]],
             errors: [error]
         )
 
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.isEmpty)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
-    // MARK: - Task 3: Header Validation
+    // MARK: - Header Validation
 
     @Test("valid header passes validation")
     func validHeaderPassesValidation() async {
-        let csv = makeCSV([validComparisonRow])
+        let csv = makeCSV([validPitchDiscriminationRow])
         let result = CSVImportParser.parse(csv)
         #expect(result.errors.allSatisfy { error in
             if case .invalidHeader = error { return false }
@@ -131,20 +151,20 @@ struct CSVImportParserTests {
     @Test("missing column fails validation")
     func missingColumnFailsValidation() async {
         let incompleteHeader = "trainingType,timestamp,referenceNote"
-        let csv = CSVExportSchema.metadataLine + "\n" + incompleteHeader + "\n" + validComparisonRow
+        let csv = CSVExportSchemaV2.metadataLine + "\n" + incompleteHeader + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
         #expect(result.errors.contains { error in
             if case .invalidHeader = error { return true }
             return false
         })
-        #expect(result.pitchDiscriminations.isEmpty)
-        #expect(result.pitchMatchings.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
+        #expect(pitchMatchings(from: result).isEmpty)
     }
 
     @Test("wrong column name fails validation")
     func wrongColumnFailsValidation() async {
-        let wrongHeader = CSVExportSchema.headerRow.replacingOccurrences(of: "trainingType", with: "type")
-        let csv = CSVExportSchema.metadataLine + "\n" + wrongHeader + "\n" + validComparisonRow
+        let wrongHeader = CSVExportSchemaV2.headerRow.replacingOccurrences(of: "trainingType", with: "type")
+        let csv = CSVExportSchemaV2.metadataLine + "\n" + wrongHeader + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
         #expect(result.errors.contains { error in
             if case .invalidHeader = error { return true }
@@ -154,8 +174,8 @@ struct CSVImportParserTests {
 
     @Test("extra column fails validation")
     func extraColumnFailsValidation() async {
-        let extraHeader = CSVExportSchema.headerRow + ",extraColumn"
-        let csv = CSVExportSchema.metadataLine + "\n" + extraHeader + "\n" + validComparisonRow
+        let extraHeader = CSVExportSchemaV2.headerRow + ",extraColumn"
+        let csv = CSVExportSchemaV2.metadataLine + "\n" + extraHeader + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
         #expect(result.errors.contains { error in
             if case .invalidHeader = error { return true }
@@ -163,38 +183,38 @@ struct CSVImportParserTests {
         })
     }
 
-    // MARK: - Task 4: RFC 4180 CSV Line Parsing (via integration)
+    // MARK: - RFC 4180 CSV Line Parsing (via integration)
 
     @Test("handles quoted field with comma in note name column")
     func handlesQuotedFieldWithComma() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,\"C,4\",64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,\"C,4\",64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
     @Test("handles quoted field with embedded quotes in note name column")
     func handlesQuotedFieldWithEmbeddedQuotes() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,\"C\"\"4\",64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,\"C\"\"4\",64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
     @Test("handles Windows-style CRLF line endings")
     func handlesCRLFLineEndings() async {
-        let meta = CSVExportSchema.metadataLine
-        let header = CSVExportSchema.headerRow
-        let csv = meta + "\r\n" + header + "\r\n" + validComparisonRow + "\r\n" + validPitchMatchingRow
+        let meta = CSVExportSchemaV2.metadataLine
+        let header = CSVExportSchemaV2.headerRow
+        let csv = meta + "\r\n" + header + "\r\n" + validPitchDiscriminationRow + "\r\n" + validPitchMatchingRow
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
-    // MARK: - Task 5: Field-Level Parsing (via integration)
+    // MARK: - Field-Level Parsing (via integration)
 
     @Test("all 13 interval abbreviations parse successfully")
     func allIntervalAbbreviationsParse() async {
@@ -202,45 +222,47 @@ struct CSVImportParserTests {
         let expectedRawValues = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 
         let rows = abbreviations.map { abbr in
-            "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,\(abbr),equalTemperament,15.5,true,,"
+            "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,\(abbr),equalTemperament,15.5,true,,,,,,,,,"
         }
         let csv = makeCSV(rows)
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 13)
+        let discs = pitchDiscriminations(from: result)
+        #expect(discs.count == 13)
         #expect(result.errors.isEmpty)
         for (index, rawValue) in expectedRawValues.enumerated() {
-            #expect(result.pitchDiscriminations[index].interval == rawValue)
+            #expect(discs[index].interval == rawValue)
         }
     }
 
     @Test("invalid interval abbreviation produces error")
     func invalidIntervalAbbreviationProducesError() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,P6,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,P6,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("timestamp with fractional seconds parses successfully")
     func timestampWithFractionalSeconds() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00.000Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00.000Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
-    // MARK: - Task 6: Row-to-Record Conversion
+    // MARK: - Row-to-Record Conversion
 
-    @Test("parses valid comparison row")
-    func parsesValidComparison() async {
-        let csv = makeCSV([validComparisonRow])
+    @Test("parses valid pitch discrimination row")
+    func parsesValidPitchDiscrimination() async {
+        let csv = makeCSV([validPitchDiscriminationRow])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        let discs = pitchDiscriminations(from: result)
+        #expect(discs.count == 1)
         #expect(result.errors.isEmpty)
 
-        let record = result.pitchDiscriminations[0]
+        let record = discs[0]
         #expect(record.referenceNote == 60)
         #expect(record.targetNote == 64)
         #expect(record.centOffset == 15.5)
@@ -254,10 +276,11 @@ struct CSVImportParserTests {
     func parsesValidPitchMatching() async {
         let csv = makeCSV([validPitchMatchingRow])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchMatchings.count == 1)
+        let matchings = pitchMatchings(from: result)
+        #expect(matchings.count == 1)
         #expect(result.errors.isEmpty)
 
-        let record = result.pitchMatchings[0]
+        let record = matchings[0]
         #expect(record.referenceNote == 60)
         #expect(record.targetNote == 67)
         #expect(record.initialCentOffset == 25.0)
@@ -271,81 +294,63 @@ struct CSVImportParserTests {
     func rowWithWrongColumnCountProducesError() async {
         let csv = makeCSV(["pitchDiscrimination,2026-03-03T14:30:00Z,60"])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("row with invalid field produces error")
     func rowWithInvalidFieldProducesError() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,abc,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,abc,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
-    @Test("comparison row with non-empty pitch matching fields produces error")
-    func comparisonRowWithNonEmptyPitchMatchingFieldsProducesError() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,25.0,3.2"
-        let csv = makeCSV([row])
-        let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
-        #expect(result.errors.count == 1)
-    }
-
-    @Test("pitch matching row with non-empty comparison fields produces error")
-    func pitchMatchingRowWithNonEmptyComparisonFieldsProducesError() async {
-        let row = "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,15.5,true,25.0,3.2"
-        let csv = makeCSV([row])
-        let result = CSVImportParser.parse(csv)
-        #expect(result.pitchMatchings.isEmpty)
-        #expect(result.errors.count == 1)
-    }
-
-    // MARK: - Task 7: Top-Level Parse Method
+    // MARK: - Top-Level Parse Method
 
     @Test("parses complete CSV with mixed types")
     func parsesMixedTypes() async {
-        let csv = makeCSV([validComparisonRow, validPitchMatchingRow])
+        let csv = makeCSV([validPitchDiscriminationRow, validPitchMatchingRow])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
     @Test("header-only CSV returns empty result")
     func headerOnlyCSVReturnsEmptyResult() async {
-        let csv = CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow
+        let csv = CSVExportSchemaV2.metadataLine + "\n" + CSVExportSchemaV2.headerRow
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
-        #expect(result.pitchMatchings.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
+        #expect(pitchMatchings(from: result).isEmpty)
         #expect(result.errors.isEmpty)
     }
 
     @Test("invalid header CSV returns error with no records")
     func invalidHeaderCSVReturnsError() async {
-        let csv = CSVExportSchema.metadataLine + "\nwrong,headers\ndata,here"
+        let csv = CSVExportSchemaV2.metadataLine + "\nwrong,headers\ndata,here"
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
-        #expect(result.pitchMatchings.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
+        #expect(pitchMatchings(from: result).isEmpty)
         #expect(!result.errors.isEmpty)
     }
 
     @Test("CSV with mix of valid and invalid rows parses valid rows")
     func mixOfValidAndInvalidRows() async {
-        let invalidRow = "pitchDiscrimination,2026-03-03T14:30:00Z,999,C4,64,E4,M3,equalTemperament,15.5,true,,"
-        let csv = makeCSV([validComparisonRow, invalidRow, validPitchMatchingRow])
+        let invalidRow = "pitchDiscrimination,2026-03-03T14:30:00Z,999,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
+        let csv = makeCSV([validPitchDiscriminationRow, invalidRow, validPitchMatchingRow])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).count == 1)
         #expect(result.errors.count == 1)
     }
 
     @Test("empty string input returns missingVersion error")
     func emptyStringReturnsMissingVersionError() async {
         let result = CSVImportParser.parse("")
-        #expect(result.pitchDiscriminations.isEmpty)
-        #expect(result.pitchMatchings.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
+        #expect(pitchMatchings(from: result).isEmpty)
         #expect(result.errors.count == 1)
         if case .missingVersion = result.errors.first {} else {
             Issue.record("Expected missingVersion error")
@@ -354,110 +359,112 @@ struct CSVImportParserTests {
 
     @Test("MIDI note 0 is valid")
     func midiNote0IsValid() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,0,C-1,0,C-1,P1,equalTemperament,5.0,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,0,C-1,0,C-1,P1,equalTemperament,5.0,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
     @Test("MIDI note 127 is valid")
     func midiNote127IsValid() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,127,G9,127,G9,P1,equalTemperament,5.0,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,127,G9,127,G9,P1,equalTemperament,5.0,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
     @Test("MIDI note 128 is invalid")
     func midiNote128IsInvalid() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,128,X,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,128,X,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("negative MIDI note is invalid")
     func negativeMidiNoteIsInvalid() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,-1,X,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,-1,X,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("invalid training type produces error")
     func invalidTrainingTypeProducesError() async {
-        let row = "unknown,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "unknown,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("invalid timestamp produces error")
     func invalidTimestampProducesError() async {
-        let row = "pitchDiscrimination,not-a-date,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let row = "pitchDiscrimination,not-a-date,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("invalid tuning system produces error")
     func invalidTuningSystemProducesError() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,pythagorean,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,pythagorean,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("invalid isCorrect value produces error")
     func invalidIsCorrectProducesError() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,True,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,True,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
     @Test("non-numeric cent offset produces error")
     func nonNumericCentOffsetProducesError() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,abc,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,abc,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
     }
 
-    @Test("negative cent offset is valid for comparison")
+    @Test("negative cent offset is valid for pitch discrimination")
     func negativeCentOffsetIsValid() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,-8.3,false,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,-8.3,false,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchDiscriminations[0].centOffset == -8.3)
+        let discs = pitchDiscriminations(from: result)
+        #expect(discs.count == 1)
+        #expect(discs[0].centOffset == -8.3)
     }
 
     @Test("justIntonation tuning system is valid")
     func justIntonationIsValid() async {
-        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,justIntonation,15.5,true,,"
+        let row = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,justIntonation,15.5,true,,,,,,,,,"
         let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchDiscriminations[0].tuningSystem == "justIntonation")
+        let discs = pitchDiscriminations(from: result)
+        #expect(discs.count == 1)
+        #expect(discs[0].tuningSystem == "justIntonation")
     }
 
-    // MARK: - Orchestrator: Version Dispatch
+    // MARK: - Version Dispatch
 
     @Test("missing version metadata line is rejected")
     func missingVersionRejected() async {
-        let csv = CSVExportSchema.headerRow + "\n" + validComparisonRow
+        let csv = CSVExportSchemaV2.headerRow + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
         if case .missingVersion = result.errors.first {} else {
             Issue.record("Expected missingVersion error")
@@ -466,9 +473,9 @@ struct CSVImportParserTests {
 
     @Test("unknown version number is rejected")
     func unknownVersionRejected() async {
-        let csv = "# peach-export-format:99\n" + CSVExportSchema.headerRow + "\n" + validComparisonRow
+        let csv = "# peach-export-format:99\n" + CSVExportSchemaV2.headerRow + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
+        #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
         if case .unsupportedVersion(let version) = result.errors.first {
             #expect(version == 99)
@@ -477,156 +484,102 @@ struct CSVImportParserTests {
         }
     }
 
-    @Test("version 1 dispatches to v1 parser")
-    func version1DispatchesToV1Parser() async {
-        let csv = makeCSV([validComparisonRow])
+    // MARK: - Rhythm Types
+
+    @Test("parses rhythm offset detection row")
+    func parsesRhythmOffsetDetectionRow() async {
+        let csv = makeCSV([validRhythmOffsetDetectionRow])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
+        let rhythms = rhythmOffsetDetections(from: result)
+        #expect(rhythms.count == 1)
         #expect(result.errors.isEmpty)
+        #expect(rhythms[0].tempoBPM == 120)
+        #expect(rhythms[0].offsetMs == 5.3)
+        #expect(rhythms[0].isCorrect == true)
     }
 
-    // MARK: - V2 Dispatch
-
-    private func makeV2CSV(_ rows: [String]) -> String {
-        ([CSVExportSchemaV2.metadataLine, CSVExportSchemaV2.headerRow] + rows).joined(separator: "\n")
-    }
-
-    private var validV2PitchDiscriminationRow: String {
-        "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,,"
-    }
-
-    private var validV2RhythmOffsetDetectionRow: String {
-        "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,,,,,"
-    }
-
-    @Test("version 2 dispatches to v2 parser")
-    func version2DispatchesToV2Parser() async {
-        let csv = makeV2CSV([validV2PitchDiscriminationRow])
-        let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.errors.isEmpty)
-    }
-
-    @Test("version 2 parses rhythm offset detection types via top-level parse")
-    func v2ParsesRhythmTypes() async {
-        let csv = makeV2CSV([
-            validV2PitchDiscriminationRow,
-            validV2RhythmOffsetDetectionRow,
+    @Test("parses mixed pitch and rhythm types")
+    func parsesMixedPitchAndRhythmTypes() async {
+        let csv = makeCSV([
+            validPitchDiscriminationRow,
+            validRhythmOffsetDetectionRow,
         ])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.rhythmOffsetDetections.count == 1)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(rhythmOffsetDetections(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
-    // MARK: - V1 Backward Compatibility
-
-    @Test("V1 files still import via V1 parser after V2 registration")
-    func v1BackwardCompatibility() async {
-        let csv = makeCSV([validComparisonRow, validPitchMatchingRow])
-        let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.count == 1)
-        #expect(result.rhythmOffsetDetections.isEmpty)
-        #expect(result.errors.isEmpty)
-    }
-
-    // MARK: - Rhythm-Only File Validation
-
-    @Test("rhythm-only V2 file produces non-empty result")
+    @Test("rhythm-only file produces non-empty result")
     func rhythmOnlyFileIsValid() async {
-        let csv = makeV2CSV([validV2RhythmOffsetDetectionRow])
+        let csv = makeCSV([validRhythmOffsetDetectionRow])
         let result = CSVImportParser.parse(csv)
-        #expect(result.pitchDiscriminations.isEmpty)
-        #expect(result.pitchMatchings.isEmpty)
-        #expect(result.rhythmOffsetDetections.count == 1)
+        #expect(pitchDiscriminations(from: result).isEmpty)
+        #expect(pitchMatchings(from: result).isEmpty)
+        #expect(rhythmOffsetDetections(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
 
-    // MARK: - V2 Round-Trip
+    // MARK: - Round-Trip
 
-    @Test("export V2 then import V2 produces identical records for all types")
-    func v2RoundTrip() async {
-        let pitchDisc = PitchDiscriminationRecord(
-            referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate()
-        )
-        let pitchMatch = PitchMatchingRecord(
-            referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate()
-        )
-        let rhythmOffset = RhythmOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: 5.3, isCorrect: true, timestamp: fixedDate()
-        )
-        let continuousRhythm = ContinuousRhythmMatchingRecord(
-            tempoBPM: 100, meanOffsetMs: -2.5, meanOffsetMsPosition0: -1.0, meanOffsetMsPosition3: 3.5, timestamp: fixedDate()
-        )
+    @Test("round-trip preserves all record types")
+    func roundTrip() async {
+        let pitchDiscRow = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
+        let pitchMatchRow = "pitchMatching,2026-03-03T14:30:00Z,69,A4,72,C5,m3,equalTemperament,,,25.0,3.2,,,,,,,"
+        let rhythmRow = "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,,,,"
+        let continuousRow = "continuousRhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,100,,-2.5,-1.0,,,3.5"
+        let csv = makeCSV([pitchDiscRow, pitchMatchRow, rhythmRow, continuousRow])
 
-        // Export
-        let rows = [
-            CSVRecordFormatter.format(pitchDisc),
-            CSVRecordFormatter.format(pitchMatch),
-            CSVRecordFormatter.format(rhythmOffset),
-            CSVRecordFormatter.format(continuousRhythm),
-        ]
-        let csv = makeV2CSV(rows)
-
-        // Import
         let result = CSVImportParser.parse(csv)
         #expect(result.errors.isEmpty)
-        #expect(result.pitchDiscriminations.count == 1)
-        #expect(result.pitchMatchings.count == 1)
-        #expect(result.rhythmOffsetDetections.count == 1)
-        #expect(result.continuousRhythmMatchings.count == 1)
 
-        let importedPitchDisc = result.pitchDiscriminations[0]
-        #expect(importedPitchDisc.referenceNote == 60)
-        #expect(importedPitchDisc.targetNote == 64)
-        #expect(importedPitchDisc.centOffset == 15.5)
-        #expect(importedPitchDisc.isCorrect == true)
+        let discs = pitchDiscriminations(from: result)
+        #expect(discs.count == 1)
+        #expect(discs[0].referenceNote == 60)
+        #expect(discs[0].targetNote == 64)
+        #expect(discs[0].centOffset == 15.5)
+        #expect(discs[0].isCorrect == true)
 
-        let importedPitchMatch = result.pitchMatchings[0]
-        #expect(importedPitchMatch.referenceNote == 69)
-        #expect(importedPitchMatch.targetNote == 72)
-        #expect(importedPitchMatch.initialCentOffset == 25.0)
-        #expect(importedPitchMatch.userCentError == 3.2)
+        let matchings = pitchMatchings(from: result)
+        #expect(matchings.count == 1)
+        #expect(matchings[0].referenceNote == 69)
+        #expect(matchings[0].targetNote == 72)
+        #expect(matchings[0].initialCentOffset == 25.0)
+        #expect(matchings[0].userCentError == 3.2)
 
-        let importedRhythmOffset = result.rhythmOffsetDetections[0]
-        #expect(importedRhythmOffset.tempoBPM == 120)
-        #expect(importedRhythmOffset.offsetMs == 5.3)
-        #expect(importedRhythmOffset.isCorrect == true)
+        let rhythms = rhythmOffsetDetections(from: result)
+        #expect(rhythms.count == 1)
+        #expect(rhythms[0].tempoBPM == 120)
+        #expect(rhythms[0].offsetMs == 5.3)
+        #expect(rhythms[0].isCorrect == true)
 
-        let importedContinuous = result.continuousRhythmMatchings[0]
-        #expect(importedContinuous.tempoBPM == 100)
-        #expect(importedContinuous.meanOffsetMs == -2.5)
-        #expect(importedContinuous.meanOffsetMsPosition0 == -1.0)
-        #expect(importedContinuous.meanOffsetMsPosition1 == nil)
-        #expect(importedContinuous.meanOffsetMsPosition2 == nil)
-        #expect(importedContinuous.meanOffsetMsPosition3 == 3.5)
+        let continuous = continuousRhythmMatchings(from: result)
+        #expect(continuous.count == 1)
+        #expect(continuous[0].tempoBPM == 100)
+        #expect(continuous[0].meanOffsetMs == -2.5)
+        #expect(continuous[0].meanOffsetMsPosition0 == -1.0)
+        #expect(continuous[0].meanOffsetMsPosition1 == nil)
+        #expect(continuous[0].meanOffsetMsPosition2 == nil)
+        #expect(continuous[0].meanOffsetMsPosition3 == 3.5)
     }
 
     @Test("continuous rhythm matching round-trip preserves all fields")
     func continuousRhythmMatchingRoundTrip() async {
-        let record = ContinuousRhythmMatchingRecord(
-            tempoBPM: 140, meanOffsetMs: 1.23,
-            meanOffsetMsPosition0: -2.0, meanOffsetMsPosition1: 4.5,
-            meanOffsetMsPosition2: nil, meanOffsetMsPosition3: 0.0,
-            timestamp: fixedDate()
-        )
-
-        let csv = makeV2CSV([CSVRecordFormatter.format(record)])
+        let row = "continuousRhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,140,,1.23,-2.0,4.5,,0.0"
+        let csv = makeCSV([row])
         let result = CSVImportParser.parse(csv)
 
         #expect(result.errors.isEmpty)
-        #expect(result.continuousRhythmMatchings.count == 1)
+        let continuous = continuousRhythmMatchings(from: result)
+        #expect(continuous.count == 1)
 
-        let imported = result.continuousRhythmMatchings[0]
-        #expect(imported.tempoBPM == record.tempoBPM)
-        #expect(imported.meanOffsetMs == record.meanOffsetMs)
+        let imported = continuous[0]
+        #expect(imported.tempoBPM == 140)
+        #expect(imported.meanOffsetMs == 1.23)
         #expect(imported.meanOffsetMsPosition0 == -2.0)
         #expect(imported.meanOffsetMsPosition1 == 4.5)
         #expect(imported.meanOffsetMsPosition2 == nil)
         #expect(imported.meanOffsetMsPosition3 == 0.0)
-        #expect(imported.timestamp == record.timestamp)
+        #expect(imported.timestamp == fixedDate())
     }
 }
