@@ -1,7 +1,6 @@
 import Foundation
 import Observation
 import os
-import QuartzCore
 
 @Observable
 final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
@@ -34,16 +33,12 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     private let stepSequencer: any StepSequencer
     private let observers: [ContinuousRhythmMatchingObserver]
-    private let currentTime: () -> Double
     private var lifecycle: SessionLifecycle?
 
     // MARK: - Training State
 
     private var settings: ContinuousRhythmMatchingSettings?
     private var gapResults: [GapResult] = []
-    private var sequencerStartTime: Double = 0
-    private var sixteenthDuration: Double = 0
-    private var cycleDuration: Double = 0
     private var lastEvaluatedCycleIndex: Int = -1
     private var hitCycleIndices: Set<Int> = []
     private var startTask: Task<Void, Never>?
@@ -57,12 +52,10 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     init(
         stepSequencer: any StepSequencer,
         observers: [ContinuousRhythmMatchingObserver] = [],
-        notificationCenter: NotificationCenter = .default,
-        currentTime: @escaping () -> Double = { CACurrentMediaTime() }
+        notificationCenter: NotificationCenter = .default
     ) {
         self.stepSequencer = stepSequencer
         self.observers = observers
-        self.currentTime = currentTime
         self.lifecycle = SessionLifecycle(
             logger: logger,
             notificationCenter: notificationCenter,
@@ -102,9 +95,6 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         gapPositions = []
         hitCycleIndices = []
         settings = nil
-        sequencerStartTime = 0
-        sixteenthDuration = 0
-        cycleDuration = 0
         lastEvaluatedCycleIndex = -1
     }
 
@@ -123,8 +113,6 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         self.cyclesInCurrentTrial = 0
         self.lastEvaluatedCycleIndex = -1
         self.lastTrialResult = nil
-        self.sixteenthDuration = settings.tempo.sixteenthNoteDuration.timeInterval
-        self.cycleDuration = sixteenthDuration * 4.0
         self.isRunning = true
 
         logger.info("Starting continuous rhythm matching at \(settings.tempo.value) BPM")
@@ -132,7 +120,6 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         startTask = Task {
             do {
                 try await stepSequencer.start(tempo: settings.tempo, stepProvider: self)
-                sequencerStartTime = currentTime()
                 startTrackingLoop()
             } catch is CancellationError {
                 logger.info("Session task cancelled")
@@ -144,28 +131,30 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     }
 
     func handleTap() {
-        let tapTime = currentTime()
+        let tapSamplePosition = stepSequencer.currentSamplePosition
 
         guard isRunning else {
             logger.debug("handleTap() called but not running")
             return
         }
 
-        let elapsed = tapTime - sequencerStartTime
-        guard elapsed >= 0, cycleDuration > 0 else { return }
+        let samplesPerStep = stepSequencer.samplesPerStep
+        let samplesPerCycle = stepSequencer.samplesPerCycle
+        guard samplesPerStep > 0 else { return }
 
-        let playingCycleIndex = Int(elapsed / cycleDuration)
+        let playingCycleIndex = Int(tapSamplePosition / samplesPerCycle)
         guard playingCycleIndex < gapPositions.count else { return }
         guard !hitCycleIndices.contains(playingCycleIndex) else { return }
 
         let gapPosition = gapPositions[playingCycleIndex]
-        let gapTime = sequencerStartTime
-            + Double(playingCycleIndex * 4 + gapPosition.rawValue) * sixteenthDuration
-        let windowHalf = sixteenthDuration * 0.5
+        let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * samplesPerStep
+        let windowHalfSamples = samplesPerStep / 2
 
-        let offset = tapTime - gapTime
+        let offsetSamples = tapSamplePosition - gapSampleOffset
+        let sampleRate = stepSequencer.sampleRate
 
-        if abs(offset) <= windowHalf {
+        if abs(offsetSamples) <= windowHalfSamples {
+            let offset = Double(offsetSamples) / sampleRate.rawValue
             let rhythmOffset = RhythmOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
 
@@ -218,16 +207,16 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     /// Evaluates completed cycles and advances the cycle counter.
     /// Visible for testing.
     func evaluatePlaybackPosition() {
-        guard isRunning, cycleDuration > 0 else { return }
+        let samplesPerStep = stepSequencer.samplesPerStep
+        let samplesPerCycle = stepSequencer.samplesPerCycle
+        guard isRunning, samplesPerStep > 0 else { return }
 
-        let now = currentTime()
-        let elapsed = now - sequencerStartTime
-        guard elapsed >= 0 else { return }
+        let position = stepSequencer.currentSamplePosition
 
-        let playingCycleIndex = Int(elapsed / cycleDuration)
+        let playingCycleIndex = Int(position / samplesPerCycle)
 
         // Update observable step position
-        let globalStepIndex = Int(elapsed / sixteenthDuration)
+        let globalStepIndex = Int(position / samplesPerStep)
         currentStep = StepPosition(rawValue: globalStepIndex % 4)
 
         // Update observable gap position for the currently-playing cycle

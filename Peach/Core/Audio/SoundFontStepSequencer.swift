@@ -51,6 +51,14 @@ final class SoundFontStepSequencer: StepSequencer {
     private(set) var currentStep: StepPosition?
     private(set) var currentCycle: CycleDefinition?
 
+    // MARK: - Timing State (exposed via StepSequencer protocol)
+
+    private(set) var samplesPerStep: Int64 = 0
+    private(set) var samplesPerCycle: Int64 = 0
+
+    var currentSamplePosition: Int64 { engine.currentSamplePosition }
+    var sampleRate: SampleRate { engine.sampleRate }
+
     // MARK: - State
 
     private var runLoopTask: Task<Void, any Error>?
@@ -74,12 +82,15 @@ final class SoundFontStepSequencer: StepSequencer {
         try await engine.loadPreset(preset, channel: channel)
 
         let sampleRate = engine.sampleRate
-        let samplesPerStep = Self.samplesPerStep(tempo: tempo, sampleRate: sampleRate)
+        let computedSamplesPerStep = Self.samplesPerStep(tempo: tempo, sampleRate: sampleRate)
         let noteOffDelaySamples = Self.noteOffDelaySamples(
             sampleRate: sampleRate,
-            samplesPerStep: samplesPerStep
+            samplesPerStep: computedSamplesPerStep
         )
-        let samplesPerCycle = samplesPerStep * 4
+        let computedSamplesPerCycle = computedSamplesPerStep * 4
+
+        self.samplesPerStep = computedSamplesPerStep
+        self.samplesPerCycle = computedSamplesPerCycle
 
         let batch = Self.buildBatch(
             cycleCount: Self.cyclesPerBatch,
@@ -147,6 +158,8 @@ final class SoundFontStepSequencer: StepSequencer {
         runLoopTask = nil
         currentStep = nil
         currentCycle = nil
+        samplesPerStep = 0
+        samplesPerCycle = 0
         engine.clearSchedule()
         await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
         logger.info("Step sequencer stopped")

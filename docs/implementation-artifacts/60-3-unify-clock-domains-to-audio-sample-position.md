@@ -1,6 +1,6 @@
 # Story 60.3: Unify Clock Domains to Audio Sample Position
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -54,27 +54,27 @@ so that the hit/miss detection and offset calculation are jitter-free and accura
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Expose timing constants from StepSequencer (AC: 3)
-  - [ ] 1.1 Add `samplesPerStep: Int64` and `samplesPerCycle: Int64` readable properties to `StepSequencer` protocol
-  - [ ] 1.2 Implement in `SoundFontStepSequencer` — store the computed values from `start()` as instance state
-  - [ ] 1.3 Also expose `sampleRate: SampleRate` on the protocol (or reuse existing `StepSequencerEngine.sampleRate`)
-- [ ] Task 2: Refactor handleTap to use sample position (AC: 1, 2)
-  - [ ] 2.1 Replace `let tapTime = currentTime()` with `let tapSamplePosition = stepSequencer.currentSamplePosition`
-  - [ ] 2.2 Replace `let elapsed = tapTime - sequencerStartTime` / `let playingCycleIndex = Int(elapsed / cycleDuration)` with `let playingCycleIndex = Int(tapSamplePosition / stepSequencer.samplesPerCycle)`
-  - [ ] 2.3 Replace gap offset calculation: `let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * stepSequencer.samplesPerStep`; `let offsetSamples = tapSamplePosition - gapSampleOffset`; `let offset = Double(offsetSamples) / sampleRate.rawValue`
-  - [ ] 2.4 Replace window half: `let windowHalfSamples = stepSequencer.samplesPerStep / 2`
-- [ ] Task 3: Refactor evaluatePlaybackPosition (AC: 5)
-  - [ ] 3.1 Replace wall-clock elapsed time with `stepSequencer.currentSamplePosition` for step/cycle derivation
-  - [ ] 3.2 Verify UI tracking loop remains responsive (~120Hz polling is unchanged)
-- [ ] Task 4: Remove wall-clock state (AC: 4)
-  - [ ] 4.1 Remove `sequencerStartTime`, `sixteenthDuration`, `cycleDuration` instance properties
-  - [ ] 4.2 Remove `currentTime` closure from init and all usage
-  - [ ] 4.3 Remove `QuartzCore` import if `CACurrentMediaTime` was the only reason for it
-- [ ] Task 5: Update tests (AC: 6, 7)
-  - [ ] 5.1 Update `MockStepSequencer` (or equivalent) to provide controllable `currentSamplePosition`, `samplesPerStep`, `samplesPerCycle`
-  - [ ] 5.2 Rewrite handleTap tests to set sample position instead of `currentTime` mock
-  - [ ] 5.3 Rewrite evaluatePlaybackPosition tests similarly
-  - [ ] 5.4 Run full test suite, verify zero regressions
+- [x] Task 1: Expose timing constants from StepSequencer (AC: 3)
+  - [x] 1.1 Add `samplesPerStep: Int64` and `samplesPerCycle: Int64` readable properties to `StepSequencer` protocol
+  - [x] 1.2 Implement in `SoundFontStepSequencer` — store the computed values from `start()` as instance state
+  - [x] 1.3 Also expose `sampleRate: SampleRate` on the protocol (or reuse existing `StepSequencerEngine.sampleRate`)
+- [x] Task 2: Refactor handleTap to use sample position (AC: 1, 2)
+  - [x] 2.1 Replace `let tapTime = currentTime()` with `let tapSamplePosition = stepSequencer.currentSamplePosition`
+  - [x] 2.2 Replace `let elapsed = tapTime - sequencerStartTime` / `let playingCycleIndex = Int(elapsed / cycleDuration)` with `let playingCycleIndex = Int(tapSamplePosition / stepSequencer.samplesPerCycle)`
+  - [x] 2.3 Replace gap offset calculation: `let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * stepSequencer.samplesPerStep`; `let offsetSamples = tapSamplePosition - gapSampleOffset`; `let offset = Double(offsetSamples) / sampleRate.rawValue`
+  - [x] 2.4 Replace window half: `let windowHalfSamples = stepSequencer.samplesPerStep / 2`
+- [x] Task 3: Refactor evaluatePlaybackPosition (AC: 5)
+  - [x] 3.1 Replace wall-clock elapsed time with `stepSequencer.currentSamplePosition` for step/cycle derivation
+  - [x] 3.2 Verify UI tracking loop remains responsive (~120Hz polling is unchanged)
+- [x] Task 4: Remove wall-clock state (AC: 4)
+  - [x] 4.1 Remove `sequencerStartTime`, `sixteenthDuration`, `cycleDuration` instance properties
+  - [x] 4.2 Remove `currentTime` closure from init and all usage
+  - [x] 4.3 Remove `QuartzCore` import if `CACurrentMediaTime` was the only reason for it
+- [x] Task 5: Update tests (AC: 6, 7)
+  - [x] 5.1 Update `MockStepSequencer` (or equivalent) to provide controllable `currentSamplePosition`, `samplesPerStep`, `samplesPerCycle`
+  - [x] 5.2 Rewrite handleTap tests to set sample position instead of `currentTime` mock
+  - [x] 5.3 Rewrite evaluatePlaybackPosition tests similarly
+  - [x] 5.4 Run full test suite, verify zero regressions
 
 ## Dev Notes
 
@@ -113,3 +113,32 @@ session.handleTap()
 
 - [Architecture amendment v0.6](../planning-artifacts/architecture.md) — Single clock domain constraint
 - [Technical research report](../planning-artifacts/research/technical-ios-audio-latency-rhythm-training-research-2026-03-24.md) — Fix 3
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Unified `ContinuousRhythmMatchingSession` timing from two clock domains (wall-clock via `CACurrentMediaTime()` + audio sample position) to a single clock domain (audio sample position only). The approach:
+1. Extended `StepSequencer` protocol with `currentSamplePosition`, `samplesPerStep`, `samplesPerCycle`, `sampleRate`
+2. `SoundFontStepSequencer` stores computed timing values as instance state (previously local to `start()`)
+3. `handleTap()` and `evaluatePlaybackPosition()` rewritten as pure integer arithmetic in sample space
+4. Wall-clock state (`sequencerStartTime`, `sixteenthDuration`, `cycleDuration`, `currentTime` closure) and `QuartzCore` import removed
+5. Tests rewritten to control `MockStepSequencer.currentSamplePosition` directly instead of a `currentTime` closure
+
+### Completion Notes
+
+All 7 acceptance criteria satisfied. The offset calculation is now a simple integer subtraction (`tapSamplePosition - gapSampleOffset`) converted to seconds via `sampleRate`, eliminating all drift and jitter between the audio and UI clock domains. All 1472 tests pass with zero regressions.
+
+## File List
+
+- `Peach/Core/Audio/StepSequencer.swift` — Modified: added `currentSamplePosition`, `samplesPerStep`, `samplesPerCycle`, `sampleRate` to protocol
+- `Peach/Core/Audio/SoundFontStepSequencer.swift` — Modified: stored timing constants as instance state, exposed via protocol
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — Modified: rewrote `handleTap()` and `evaluatePlaybackPosition()` to sample domain; removed wall-clock state and `QuartzCore` import
+- `Peach/App/EnvironmentKeys.swift` — Modified: updated `PreviewStepSequencer` for new protocol requirements
+- `PeachTests/Mocks/MockStepSequencer.swift` — Modified: added controllable timing properties
+- `PeachTests/ContinuousRhythmMatching/ContinuousRhythmMatchingSessionTests.swift` — Modified: rewrote all tests to use sample positions
+- `docs/implementation-artifacts/sprint-status.yaml` — Modified: status update
+
+## Change Log
+
+- 2026-03-24: Unified clock domains — all timing in ContinuousRhythmMatchingSession now uses audio sample positions instead of wall-clock time

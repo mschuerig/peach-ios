@@ -33,6 +33,10 @@ protocol StepProvider {
 protocol StepSequencer {
     var currentStep: StepPosition? { get }
     var currentCycle: CycleDefinition? { get }
+    var currentSamplePosition: Int64 { get }
+    var samplesPerStep: Int64 { get }
+    var samplesPerCycle: Int64 { get }
+    var sampleRate: SampleRate { get }
     func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws
     func stop() async throws
     func playImmediateNote(velocity: MIDIVelocity) throws
