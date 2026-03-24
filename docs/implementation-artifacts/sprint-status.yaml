@@ -455,7 +455,7 @@ development_status:
 
   # Epic 60: Hear It Now — Audio Latency Fix for Continuous Rhythm Matching
   # Work order: 60.1 → 60.2 → 60.3
-  epic-60: in-progress
+  epic-60: done
   60-1-fix-audio-session-configuration-order: done
   60-2-touch-down-trigger-for-tap-button: done
-  60-3-unify-clock-domains-to-audio-sample-position: review
+  60-3-unify-clock-domains-to-audio-sample-position: done
