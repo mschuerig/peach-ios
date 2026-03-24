@@ -51,13 +51,19 @@ final class SoundFontStepSequencer: StepSequencer {
     private(set) var currentStep: StepPosition?
     private(set) var currentCycle: CycleDefinition?
 
-    // MARK: - Timing State (exposed via StepSequencer protocol)
+    // MARK: - Timing State
 
     private(set) var samplesPerStep: Int64 = 0
     private(set) var samplesPerCycle: Int64 = 0
 
-    var currentSamplePosition: Int64 { engine.currentSamplePosition }
-    var sampleRate: SampleRate { engine.sampleRate }
+    var timing: SequencerTiming {
+        SequencerTiming(
+            samplePosition: engine.currentSamplePosition,
+            samplesPerStep: samplesPerStep,
+            samplesPerCycle: samplesPerCycle,
+            sampleRate: engine.sampleRate
+        )
+    }
 
     // MARK: - State
 

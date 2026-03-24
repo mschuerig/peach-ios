@@ -111,10 +111,9 @@ private final class PreviewRhythmPlaybackHandle: RhythmPlaybackHandle {
 private final class PreviewStepSequencer: StepSequencer {
     var currentStep: StepPosition?
     var currentCycle: CycleDefinition?
-    var currentSamplePosition: Int64 = 0
-    var samplesPerStep: Int64 = 0
-    var samplesPerCycle: Int64 = 0
-    var sampleRate: SampleRate = .standard44100
+    var timing: SequencerTiming {
+        SequencerTiming(samplePosition: 0, samplesPerStep: 0, samplesPerCycle: 0, sampleRate: .standard44100)
+    }
     func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws {}
     func stop() async throws {}
     func playImmediateNote(velocity: MIDIVelocity) throws {}

@@ -131,30 +131,29 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     }
 
     func handleTap() {
-        let tapSamplePosition = stepSequencer.currentSamplePosition
+        let timing = stepSequencer.timing
 
         guard isRunning else {
             logger.debug("handleTap() called but not running")
             return
         }
 
-        let samplesPerStep = stepSequencer.samplesPerStep
-        let samplesPerCycle = stepSequencer.samplesPerCycle
-        guard samplesPerStep > 0 else { return }
+        guard timing.samplePosition >= 0,
+              timing.samplesPerStep > 0,
+              timing.samplesPerCycle > 0 else { return }
 
-        let playingCycleIndex = Int(tapSamplePosition / samplesPerCycle)
+        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerCycle)
         guard playingCycleIndex < gapPositions.count else { return }
         guard !hitCycleIndices.contains(playingCycleIndex) else { return }
 
         let gapPosition = gapPositions[playingCycleIndex]
-        let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * samplesPerStep
-        let windowHalfSamples = samplesPerStep / 2
+        let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * timing.samplesPerStep
+        let windowHalfSamples = timing.samplesPerStep / 2
 
-        let offsetSamples = tapSamplePosition - gapSampleOffset
-        let sampleRate = stepSequencer.sampleRate
+        let offsetSamples = timing.samplePosition - gapSampleOffset
 
         if abs(offsetSamples) <= windowHalfSamples {
-            let offset = Double(offsetSamples) / sampleRate.rawValue
+            let offset = Double(offsetSamples) / timing.sampleRate.rawValue
             let rhythmOffset = RhythmOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
 
@@ -207,16 +206,16 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     /// Evaluates completed cycles and advances the cycle counter.
     /// Visible for testing.
     func evaluatePlaybackPosition() {
-        let samplesPerStep = stepSequencer.samplesPerStep
-        let samplesPerCycle = stepSequencer.samplesPerCycle
-        guard isRunning, samplesPerStep > 0 else { return }
+        let timing = stepSequencer.timing
+        guard isRunning,
+              timing.samplePosition >= 0,
+              timing.samplesPerStep > 0,
+              timing.samplesPerCycle > 0 else { return }
 
-        let position = stepSequencer.currentSamplePosition
-
-        let playingCycleIndex = Int(position / samplesPerCycle)
+        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerCycle)
 
         // Update observable step position
-        let globalStepIndex = Int(position / samplesPerStep)
+        let globalStepIndex = Int(timing.samplePosition / timing.samplesPerStep)
         currentStep = StepPosition(rawValue: globalStepIndex % 4)
 
         // Update observable gap position for the currently-playing cycle

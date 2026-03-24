@@ -218,8 +218,9 @@ struct ContinuousRhythmMatchingSessionTests {
 
         _ = f.session.nextCycle() // cycle 0: gap at .fourth
 
-        // Tap way outside the window (at cycle 2+, beyond gapPositions count)
-        f.sequencer.currentSamplePosition = f.samplesPerCycle * 2
+        // Tap one full step away from the gap — within cycle 0 but outside the half-step window
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerStep
 
         f.session.handleTap()
 
@@ -503,10 +504,8 @@ struct ContinuousRhythmMatchingSessionTests {
 
         f.session.stop()
         f.sequencer.reset()
-        // Restore timing constants after reset
         f.sequencer.samplesPerStep = 5512
         f.sequencer.samplesPerCycle = 22050
-        f.sequencer.sampleRate = .standard44100
 
         // Test normal velocity for gap at .fourth
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
@@ -530,8 +529,9 @@ struct ContinuousRhythmMatchingSessionTests {
 
         _ = f.session.nextCycle()
 
-        // Tap way outside the window
-        f.sequencer.currentSamplePosition = f.samplesPerCycle * 2
+        // Tap one full step away from the gap — within cycle 0 but outside the half-step window
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerStep
         f.session.handleTap()
 
         #expect(f.sequencer.playImmediateNoteCallCount == 0)

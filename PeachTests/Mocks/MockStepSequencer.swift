@@ -7,12 +7,21 @@ final class MockStepSequencer: StepSequencer {
     var currentStep: StepPosition?
     var currentCycle: CycleDefinition?
 
-    // MARK: - Timing State (StepSequencer protocol)
+    // MARK: - Timing State
 
     var currentSamplePosition: Int64 = 0
-    var samplesPerStep: Int64 = 11025
-    var samplesPerCycle: Int64 = 44100
+    var samplesPerStep: Int64 = 0
+    var samplesPerCycle: Int64 = 0
     var sampleRate: SampleRate = .standard44100
+
+    var timing: SequencerTiming {
+        SequencerTiming(
+            samplePosition: currentSamplePosition,
+            samplesPerStep: samplesPerStep,
+            samplesPerCycle: samplesPerCycle,
+            sampleRate: sampleRate
+        )
+    }
 
     // MARK: - Test State Tracking
 
@@ -117,8 +126,8 @@ final class MockStepSequencer: StepSequencer {
         currentStep = nil
         currentCycle = nil
         currentSamplePosition = 0
-        samplesPerStep = 11025
-        samplesPerCycle = 44100
+        samplesPerStep = 0
+        samplesPerCycle = 0
         sampleRate = .standard44100
         onStartCalled = nil
         onStopCalled = nil

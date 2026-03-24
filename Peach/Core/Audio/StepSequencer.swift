@@ -28,15 +28,24 @@ protocol StepProvider {
     func nextCycle() -> CycleDefinition
 }
 
+// MARK: - SequencerTiming
+
+/// Snapshot of all timing state needed to interpret sample positions.
+/// Reading this as a single value avoids tearing when properties are
+/// mutated concurrently (e.g. during stop).
+struct SequencerTiming: Sendable {
+    let samplePosition: Int64
+    let samplesPerStep: Int64
+    let samplesPerCycle: Int64
+    let sampleRate: SampleRate
+}
+
 // MARK: - StepSequencer
 
 protocol StepSequencer {
     var currentStep: StepPosition? { get }
     var currentCycle: CycleDefinition? { get }
-    var currentSamplePosition: Int64 { get }
-    var samplesPerStep: Int64 { get }
-    var samplesPerCycle: Int64 { get }
-    var sampleRate: SampleRate { get }
+    var timing: SequencerTiming { get }
     func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws
     func stop() async throws
     func playImmediateNote(velocity: MIDIVelocity) throws
