@@ -1,6 +1,6 @@
 # Story 60.1: Fix Audio Session Configuration Order
 
-Status: review
+Status: done
 
 ## Story
 

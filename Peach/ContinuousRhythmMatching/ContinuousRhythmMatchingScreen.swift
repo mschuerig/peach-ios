@@ -8,6 +8,7 @@ struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var showHelpSheet = false
+    @State private var isTouchActive = false
 
     private let logger = Logger(subsystem: "com.peach.app", category: "ContinuousRhythmMatchingScreen")
 
@@ -102,24 +103,35 @@ struct ContinuousRhythmMatchingScreen: View {
     }
 
     private var tapButton: some View {
-        Button {
-            session.handleTap()
-        } label: {
-            VStack(spacing: 12) {
-                Image(systemName: "hand.tap")
-                    .font(.system(size: Self.buttonIconSize(isCompact: isCompactHeight)))
-                Text("Tap")
-                    .font(Self.buttonTextFont(isCompact: isCompactHeight))
-                    .fontWeight(.semibold)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .frame(minHeight: Self.buttonMinHeight(isCompact: isCompactHeight))
-            .contentShape(Rectangle())
+        VStack(spacing: 12) {
+            Image(systemName: "hand.tap")
+                .font(.system(size: Self.buttonIconSize(isCompact: isCompactHeight)))
+            Text("Tap")
+                .font(Self.buttonTextFont(isCompact: isCompactHeight))
+                .fontWeight(.semibold)
         }
-        .buttonStyle(.borderedProminent)
-        .buttonBorderShape(.roundedRectangle(radius: 12))
+        .foregroundStyle(.white)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(minHeight: Self.buttonMinHeight(isCompact: isCompactHeight))
+        .background(.tint, in: RoundedRectangle(cornerRadius: 12))
+        .opacity(isTouchActive ? 0.7 : 1.0)
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in
+                    guard !isTouchActive else { return }
+                    isTouchActive = true
+                    session.handleTap()
+                }
+                .onEnded { _ in
+                    isTouchActive = false
+                }
+        )
+        .onAppear { isTouchActive = false }
         .accessibilityLabel("Tap")
         .accessibilityHint(String(localized: "Tap to fill the gap in the rhythm"))
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(.default) { session.handleTap() }
     }
 
     @ToolbarContentBuilder
