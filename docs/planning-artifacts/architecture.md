@@ -3,7 +3,7 @@ stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
 lastStep: 8
 status: 'amended'
 completedAt: '2026-02-12'
-amendedAt: '2026-03-22'
+amendedAt: '2026-03-24'
 inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/brainstorming/brainstorming-session-2026-02-11.md']
 workflowType: 'architecture'
 project_name: 'Peach'
@@ -2961,3 +2961,63 @@ Peach/App/
 **Backward Compatibility:** No installed base for CSV format. V1/V2 parsers and version dispatch are safely deletable.
 
 **Risk Assessment:** The `TrainingDiscipline` protocol surface area is large (metadata, statistics keys, record type, profile feeding, CSV formatting, CSV parsing, duplicate detection). If the protocol becomes unwieldy, consider splitting into composed protocols (e.g., `CSVFormattable`, `ProfileFeedable`) that the discipline opts into. Monitor during 55.2 implementation.
+
+## v0.6 Architecture Amendment — Audio Latency Fix for Continuous Rhythm Matching
+
+*Amended: 2026-03-24*
+
+The continuous rhythm match discipline has perceptible tap-to-sound latency (estimated 100-300ms) making it unusable for rhythm training. Technical research ([technical research report](../planning-artifacts/research/technical-ios-audio-latency-rhythm-training-research-2026-03-24.md)) identified three root causes in the UI-to-engine integration layer. The audio engine itself (render-thread MIDI scheduling, pre-allocated buffers, `OSAllocatedUnfairLock` try-lock pattern, batch scheduling) is architecturally sound and requires no changes.
+
+**Supersedes:** Nothing. This amendment adds architectural constraints; it does not replace existing sections.
+
+**Implementation stories:** Epic 60 (60.1, 60.2, 60.3) in `docs/implementation-artifacts/`.
+
+### Problem: Three Integration-Layer Latency Sources
+
+| Source | Location | Estimated Impact |
+|--------|----------|-----------------|
+| SwiftUI `Button` fires on touch-up (finger lift), not touch-down (finger press) | `ContinuousRhythmMatchingScreen` | 50-200ms |
+| Dual clock domains: `CACurrentMediaTime()` for tap timing vs. `samplePosition` for audio scheduling | `ContinuousRhythmMatchingSession` | 10-30ms jitter + systematic offset |
+| `setPreferredIOBufferDuration` called after `setActive(true)` — preference may be ignored | `SoundFontEngine.configureAudioSession()` | 0-15ms (20ms buffer instead of 5ms) |
+
+### Architectural Constraint: Single Clock Domain
+
+All timing-critical code in rhythm training must use the audio render thread's `samplePosition` as the single source of truth. Wall-clock time (`CACurrentMediaTime`, `Date`, `ProcessInfo.systemUptime`) must not be used for tap offset calculations or cycle position determination.
+
+The render thread's sample counter is monotonic, jitter-free, and in the same domain as the scheduled MIDI events. `CACurrentMediaTime()` and the audio sample clock can drift, especially at 44.1kHz sample rates where internal resampling introduces rounding jitter.
+
+**Before (dual clock domains):**
+```
+Touch → CACurrentMediaTime() → compare against wall-clock-estimated gap time
+```
+
+**After (single clock domain):**
+```
+Touch → read currentSamplePosition → compare against gap event's sampleOffset
+```
+
+This eliminates `sequencerStartTime` and all associated `CACurrentMediaTime()` usage from `ContinuousRhythmMatchingSession`.
+
+### Architectural Constraint: Touch-Down for Audio Triggers
+
+Any UI control that triggers immediate audio playback must fire on touch-down (finger press), not touch-up (finger lift). SwiftUI `Button` fires on touch-up. The correct pattern is `DragGesture(minimumDistance: 0)` with `.onChanged` for the trigger and `.onEnded` for cleanup, or a `UIViewRepresentable` wrapping `touchesBegan`.
+
+This constraint applies to `ContinuousRhythmMatchingScreen`'s tap button and any future real-time instrument controls.
+
+### Architectural Constraint: Audio Session Configuration Order
+
+`AVAudioSession` preferences (`setPreferredIOBufferDuration`, `setPreferredSampleRate`) must be set *before* `setActive(true)`. The actual values must be logged after activation to verify they were honored. This is an Apple-documented requirement (QA1631).
+
+### Updated NFR: Audio Latency
+
+The existing NFR "Audio latency < 10ms" refers to the audio engine's buffer latency, which is already met (5ms buffer requested). This amendment adds a user-facing latency NFR:
+
+- **Tap-to-sound latency < 30ms** — measured from touch-down event delivery to `startNote()` call. This excludes unavoidable hardware latency (touch digitizer + DAC) which adds ~15-20ms on top.
+
+### v0.6 Architecture Validation
+
+**Decision Compatibility:** No new frameworks or technologies. Pure integration-layer fixes using existing SwiftUI gestures and AVAudioSession APIs.
+
+**Pattern Consistency:** The single-clock-domain pattern follows the same "single source of truth" principle already established for SwiftUI state management. Touch-down triggering is the universal standard in iOS music apps.
+
+**Risk Assessment:** `DragGesture(minimumDistance: 0)` fires `onChanged` continuously as the finger moves. The tap handler must be idempotent per cycle, which `ContinuousRhythmMatchingSession.handleTap()` already enforces via `hitCycleIndices`. An additional UI-level debounce (`@State isTouchActive` flag) prevents redundant `playImmediateNote()` calls.

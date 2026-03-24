@@ -6231,3 +6231,95 @@ So that feedback task management and interruption monitor wiring are defined onc
 **Then** CD-1 is updated to CLOSED with a reference to this story
 
 ---
+
+## Epic 60: Hear It Now — Audio Latency Fix for Continuous Rhythm Matching
+
+The continuous rhythm match discipline has perceptible tap-to-sound latency (estimated 100-300ms) making it unusable for rhythm training. Technical research identified three root causes in the UI-to-engine integration layer — the audio engine itself is sound. This epic fixes all three: touch-down triggering, audio session configuration order, and clock domain unification. See [architecture amendment v0.6](architecture.md) and [technical research report](research/technical-ios-audio-latency-rhythm-training-research-2026-03-24.md).
+
+Work order: 60.1 first (trivial, provides diagnostic data), then 60.2 (highest user impact), then 60.3 (requires test updates, depends on 60.2's touch-down pattern being in place).
+
+### Story 60.1: Fix Audio Session Configuration Order
+
+As a **user tapping along to the rhythm**,
+I want the audio engine to use the shortest possible buffer duration,
+so that the delay between my tap and the sound is minimized.
+
+**Acceptance Criteria:**
+
+**Given** `SoundFontEngine.configureAudioSession()`
+**When** it configures the audio session
+**Then** `setPreferredIOBufferDuration(0.005)` is called *before* `setActive(true)`, and the separate `setPreferredIOBufferDuration` call in `init` is removed
+
+**Given** the audio session is activated
+**When** the engine starts
+**Then** the actual `ioBufferDuration` is logged (e.g., "Requested 5ms buffer, got Xms") so we can verify the preference was honored
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 60.2: Touch-Down Trigger for Tap Button
+
+As a **user tapping along to the rhythm**,
+I want the tap sound to play the instant my finger touches the screen,
+so that the sound feels immediate and in time with my physical tap.
+
+**Acceptance Criteria:**
+
+**Given** `ContinuousRhythmMatchingScreen`'s tap button
+**When** the user presses down on it
+**Then** `session.handleTap()` fires on touch-down (finger press), not touch-up (finger lift)
+
+**Given** the user holds their finger down or drags
+**When** `onChanged` fires repeatedly
+**Then** `handleTap()` is called only once per press — a `@State` debounce flag (`isTouchActive`) prevents redundant calls, reset in `onEnded`
+
+**Given** the tap button's visual appearance
+**When** rendered
+**Then** it matches the current `.borderedProminent` style (accent background, white foreground, rounded rectangle)
+
+**Given** the tap button
+**When** VoiceOver is active
+**Then** it retains its accessibility label ("Tap") and hint
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 60.3: Unify Clock Domains to Audio Sample Position
+
+As a **user tapping along to the rhythm**,
+I want my tap timing to be measured against the audio engine's actual playback position,
+so that the hit/miss detection and offset calculation are jitter-free and accurate.
+
+**Acceptance Criteria:**
+
+**Given** `ContinuousRhythmMatchingSession.handleTap()`
+**When** it determines the current cycle and gap position
+**Then** it reads `currentSamplePosition` from the step sequencer instead of using `CACurrentMediaTime()`
+
+**Given** `ContinuousRhythmMatchingSession.handleTap()`
+**When** it calculates the tap offset from the gap
+**Then** the offset is computed in the sample domain (`tapSamplePosition - gapSampleOffset`) and converted to seconds via `sampleRate`, with no wall-clock time involved
+
+**Given** `SoundFontStepSequencer`
+**When** queried by the session
+**Then** it exposes `samplesPerStep` and `samplesPerCycle` (or equivalent) so the session can convert sample positions to cycle/step indices
+
+**Given** `ContinuousRhythmMatchingSession`
+**When** the clock domain unification is complete
+**Then** `sequencerStartTime`, `sixteenthDuration`, `cycleDuration`, and the `currentTime` closure are removed — all timing uses sample positions
+
+**Given** `evaluatePlaybackPosition()` (the ~120Hz tracking loop)
+**When** it determines the current step and cycle for UI updates
+**Then** it also uses `currentSamplePosition` instead of wall-clock elapsed time
+
+**Given** existing unit tests for `ContinuousRhythmMatchingSession`
+**When** updated for the new timing model
+**Then** they mock `currentSamplePosition` instead of `currentTime()`, and all assertions remain equivalent
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+---

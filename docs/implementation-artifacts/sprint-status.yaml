@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-23 # Story 59.1 in-progress
+# last_updated: 2026-03-24 # Epic 60 created
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -452,3 +452,10 @@ development_status:
   # Epic 59: Consistent Controls — Settings UI Unification
   epic-59: in-progress
   59-1-unify-gap-position-selector-to-grid-buttons: done
+
+  # Epic 60: Hear It Now — Audio Latency Fix for Continuous Rhythm Matching
+  # Work order: 60.1 → 60.2 → 60.3
+  epic-60: in-progress
+  60-1-fix-audio-session-configuration-order: ready-for-dev
+  60-2-touch-down-trigger-for-tap-button: ready-for-dev
+  60-3-unify-clock-domains-to-audio-sample-position: ready-for-dev
