@@ -6323,3 +6323,51 @@ so that the hit/miss detection and offset calculation are jitter-free and accura
 **Then** all tests pass with zero regressions
 
 ---
+
+## Epic 61: Sharp Edges — Architectural Clarity Improvements
+
+Two structural improvements surfaced during a cross-platform code reading review. The iOS codebase scatters ~26 port protocols across 12 directories, making it hard to answer "what does the domain need from the outside world?" — unlike the Rust codebase's discoverable `ports.rs`. Additionally, the `playingNote1`/`playingNote2` state enum cases are the last remnant of the deprecated numbered-note naming convention, requiring mental translation where `referenceNote`/`targetNote` would communicate intent directly.
+
+Work order: either story can be implemented independently; no ordering dependency.
+
+### Story 61.1: Consolidate Infrastructure Port Protocols into Core/Ports
+
+As a **developer navigating the codebase**,
+I want infrastructure boundary protocols collected in a single `Core/Ports/` directory,
+so that I can quickly discover what the domain layer requires from the outside world.
+
+**Acceptance Criteria:**
+
+**Given** the Xcode project
+**When** the developer looks at `Peach/Core/Ports/`
+**Then** it contains ~11 infrastructure boundary protocols: `NotePlayer`, `PlaybackHandle`, `RhythmPlayer`, `RhythmPlaybackHandle`, `StepSequencer`, `SoundSourceProvider`, `TrainingRecordPersisting`, `UserSettings`, `ProfileUpdating`, `TrainingProfile`, `HapticFeedback`
+
+**Given** observer protocols, internal domain contracts, and strategy protocols
+**When** the consolidation is complete
+**Then** they remain in their current locations — only infrastructure boundary protocols move
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+### Story 61.2: Rename State Enum to Reference/Target and Glossary Cleanup
+
+As a **developer reading the pitch discrimination session code**,
+I want state enum cases to carry semantic meaning (`playingReferenceNote` / `playingTargetNote`),
+so that I don't need to mentally translate ordinal names to their domain roles.
+
+**Acceptance Criteria:**
+
+**Given** `PitchDiscriminationSessionState`
+**When** the rename is complete
+**Then** `playingNote1` → `playingReferenceNote` and `playingNote2` → `playingTargetNote` across 5 Swift files (25 occurrences)
+
+**Given** `docs/planning-artifacts/glossary.md`, `docs/arc42.md`, and `docs/project-context.md`
+**When** the cleanup is complete
+**Then** they reflect the new state names; historical implementation artifacts are left as-is
+
+**Given** the full test suite
+**When** run
+**Then** all tests pass with zero regressions
+
+---

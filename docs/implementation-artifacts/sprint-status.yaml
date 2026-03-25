@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-24 # Epic 60 created
+# last_updated: 2026-03-25 # Epic 61 created
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -459,3 +459,10 @@ development_status:
   60-1-fix-audio-session-configuration-order: done
   60-2-touch-down-trigger-for-tap-button: done
   60-3-unify-clock-domains-to-audio-sample-position: done
+
+  # Epic 61: Sharp Edges — Architectural Clarity Improvements
+  # Work order: no dependency between stories; can be implemented in parallel
+  epic-61: in-progress
+  61-1-consolidate-infrastructure-port-protocols: ready-for-dev
+  61-2-rename-state-enum-to-reference-target-and-glossary-cleanup: ready-for-dev
+  epic-61-retrospective: optional
