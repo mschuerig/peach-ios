@@ -7,17 +7,20 @@ Creates training records at multiple time ranges so all bucket types appear:
   - 2-3 days ago    -> day buckets   (tap to expand into sessions)
   - Today           -> session buckets (finest level, not expandable)
 
-Supports 4 training disciplines:
+Supports 6 training disciplines:
   --discrimination-unison     pitchDiscrimination with P1 interval
   --discrimination-interval   pitchDiscrimination with random non-unison intervals
   --matching-unison           pitchMatching with P1 interval
   --matching-interval         pitchMatching with random non-unison intervals
+  --rhythm-offset-detection   rhythmOffsetDetection (early/late judgment)
+  --rhythm-matching           continuousRhythmMatching (tap timing accuracy)
 
-Without any discipline flags, generates records distributed across all 4 disciplines.
+Without any discipline flags, generates records distributed across all 6 disciplines.
 
 Usage:
     python3 bin/generate-test-data.py                              # 100 records, all disciplines
     python3 bin/generate-test-data.py --discrimination-unison      # 100 discrimination-unison
+    python3 bin/generate-test-data.py --rhythm-offset-detection    # 100 rhythm offset detection
     python3 bin/generate-test-data.py --count 50 output.csv        # 50 records to custom path
 
 Then import the CSV in the app via Settings > Import Training Data (merge mode).
@@ -28,8 +31,11 @@ import csv
 import random
 from datetime import datetime, timedelta, timezone
 
-METADATA_LINE = "# peach-export-format:1"
+METADATA_LINE = "# peach-export-format:3"
 
+# Full 19-column header matching CSVExportSchema column assembly order:
+# common (2) + pitch discrimination (8) + pitch matching (2)
+# + rhythm offset detection (2) + continuous rhythm matching (5)
 HEADER = [
     "trainingType", "timestamp",
     "referenceNote", "referenceNoteName",
@@ -37,7 +43,13 @@ HEADER = [
     "interval", "tuningSystem",
     "centOffset", "isCorrect",
     "initialCentOffset", "userCentError",
+    "tempoBPM", "offsetMs",
+    "meanOffsetMs",
+    "meanOffsetMsPosition0", "meanOffsetMsPosition1",
+    "meanOffsetMsPosition2", "meanOffsetMsPosition3",
 ]
+
+COLUMN_COUNT = len(HEADER)
 
 NOTE_NAMES = [
     "C", "C#", "D", "D#", "E", "F",
@@ -83,38 +95,83 @@ def random_user_cent_error() -> float:
     return round(random.uniform(1, 15), 1)
 
 
+def random_tempo_bpm() -> int:
+    return random.randint(60, 200)
+
+
+def random_offset_ms() -> float:
+    """Signed offset: negative = early, positive = late."""
+    magnitude = round(random.uniform(5, 150), 1)
+    return magnitude * random.choice([-1, 1])
+
+
+def random_mean_offset_ms() -> float:
+    """Mean offset across all positions in a continuous rhythm exercise."""
+    return round(random.uniform(-80, 80), 1)
+
+
+def random_position_offset_ms():
+    """Per-position mean offset; occasionally None to simulate missing data."""
+    if random.random() < 0.15:
+        return None
+    return round(random.uniform(-100, 100), 1)
+
+
+def empty_row(training_type: str, timestamp: datetime) -> list:
+    """Create a row pre-filled with empties for all 19 columns."""
+    row = [""] * COLUMN_COUNT
+    row[0] = training_type
+    row[1] = iso_timestamp(timestamp)
+    return row
+
+
 def pitch_discrimination_row(timestamp: datetime, cent_offset: float,
                              interval_abbrev: str, ref_note: int,
                              target_note: int) -> list:
-    return [
-        "pitchDiscrimination",
-        iso_timestamp(timestamp),
-        str(ref_note), midi_name(ref_note),
-        str(target_note), midi_name(target_note),
-        interval_abbrev,
-        "equalTemperament",
-        f"{cent_offset:.1f}",
-        random.choice(["true", "false"]),
-        "",  # initialCentOffset (pitchDiscrimination doesn't use)
-        "",  # userCentError (pitchDiscrimination doesn't use)
-    ]
+    row = empty_row("pitchDiscrimination", timestamp)
+    row[2] = str(ref_note)
+    row[3] = midi_name(ref_note)
+    row[4] = str(target_note)
+    row[5] = midi_name(target_note)
+    row[6] = interval_abbrev
+    row[7] = "equalTemperament"
+    row[8] = f"{cent_offset:.1f}"
+    row[9] = random.choice(["true", "false"])
+    return row
 
 
 def pitch_matching_row(timestamp: datetime, initial_cent_offset: float,
                        user_cent_error: float, interval_abbrev: str,
                        ref_note: int, target_note: int) -> list:
-    return [
-        "pitchMatching",
-        iso_timestamp(timestamp),
-        str(ref_note), midi_name(ref_note),
-        str(target_note), midi_name(target_note),
-        interval_abbrev,
-        "equalTemperament",
-        "",  # centOffset (pitchMatching doesn't use)
-        "",  # isCorrect (pitchMatching doesn't use)
-        f"{initial_cent_offset:.1f}",
-        f"{user_cent_error:.1f}",
-    ]
+    row = empty_row("pitchMatching", timestamp)
+    row[2] = str(ref_note)
+    row[3] = midi_name(ref_note)
+    row[4] = str(target_note)
+    row[5] = midi_name(target_note)
+    row[6] = interval_abbrev
+    row[7] = "equalTemperament"
+    row[10] = f"{initial_cent_offset:.1f}"
+    row[11] = f"{user_cent_error:.1f}"
+    return row
+
+
+def rhythm_offset_detection_row(timestamp: datetime) -> list:
+    row = empty_row("rhythmOffsetDetection", timestamp)
+    row[9] = random.choice(["true", "false"])  # isCorrect (shared column)
+    row[12] = str(random_tempo_bpm())
+    row[13] = f"{random_offset_ms():.1f}"
+    return row
+
+
+def continuous_rhythm_matching_row(timestamp: datetime) -> list:
+    row = empty_row("continuousRhythmMatching", timestamp)
+    row[12] = str(random_tempo_bpm())
+    row[14] = f"{random_mean_offset_ms():.1f}"
+    for i in range(4):
+        val = random_position_offset_ms()
+        if val is not None:
+            row[15 + i] = f"{val:.1f}"
+    return row
 
 
 def make_row(discipline: str, timestamp: datetime) -> list:
@@ -141,6 +198,12 @@ def make_row(discipline: str, timestamp: datetime) -> list:
             target = ref - semitones
         return pitch_matching_row(timestamp, random_initial_cent_offset(),
                                   random_user_cent_error(), abbrev, ref, target)
+
+    elif discipline == "rhythm-offset-detection":
+        return rhythm_offset_detection_row(timestamp)
+
+    elif discipline == "rhythm-matching":
+        return continuous_rhythm_matching_row(timestamp)
 
     else:
         raise ValueError(f"Unknown discipline: {discipline}")
@@ -190,6 +253,35 @@ def generate_records(disciplines: list[str], count: int) -> list:
     return rows
 
 
+ALL_DISCIPLINES = [
+    "discrimination-unison", "discrimination-interval",
+    "matching-unison", "matching-interval",
+    "rhythm-offset-detection", "rhythm-matching",
+]
+
+# Map from training type + distinguishing field to display name
+DISCIPLINE_CLASSIFIERS = {
+    ("pitchDiscrimination", "P1"): "discrimination-unison",
+    ("pitchDiscrimination", None): "discrimination-interval",
+    ("pitchMatching", "P1"): "matching-unison",
+    ("pitchMatching", None): "matching-interval",
+    ("rhythmOffsetDetection", None): "rhythm-offset-detection",
+    ("continuousRhythmMatching", None): "rhythm-matching",
+}
+
+
+def classify_row(row: list) -> str:
+    training_type = row[0]
+    interval = row[6]
+
+    if training_type in ("pitchDiscrimination", "pitchMatching"):
+        key = (training_type, "P1" if interval == "P1" else None)
+    else:
+        key = (training_type, None)
+
+    return DISCIPLINE_CLASSIFIERS.get(key, training_type)
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate CSV test data for Peach training disciplines.")
@@ -205,6 +297,10 @@ def main():
                         help="Generate pitch matching unison records")
     parser.add_argument("--matching-interval", action="store_true",
                         help="Generate pitch matching interval records")
+    parser.add_argument("--rhythm-offset-detection", action="store_true",
+                        help="Generate rhythm offset detection records")
+    parser.add_argument("--rhythm-matching", action="store_true",
+                        help="Generate continuous rhythm matching records")
     args = parser.parse_args()
 
     disciplines = []
@@ -216,10 +312,13 @@ def main():
         disciplines.append("matching-unison")
     if args.matching_interval:
         disciplines.append("matching-interval")
+    if args.rhythm_offset_detection:
+        disciplines.append("rhythm-offset-detection")
+    if args.rhythm_matching:
+        disciplines.append("rhythm-matching")
 
     if not disciplines:
-        disciplines = ["discrimination-unison", "discrimination-interval",
-                       "matching-unison", "matching-interval"]
+        disciplines = list(ALL_DISCIPLINES)
 
     rows = generate_records(disciplines, args.count)
 
@@ -232,16 +331,7 @@ def main():
     # Count per discipline
     discipline_counts = {}
     for row in rows:
-        training_type = row[0]
-        interval = row[6]
-        if training_type == "pitchDiscrimination" and interval == "P1":
-            key = "discrimination-unison"
-        elif training_type == "pitchDiscrimination":
-            key = "discrimination-interval"
-        elif training_type == "pitchMatching" and interval == "P1":
-            key = "matching-unison"
-        else:
-            key = "matching-interval"
+        key = classify_row(row)
         discipline_counts[key] = discipline_counts.get(key, 0) + 1
 
     print(f"Written {len(rows)} records to {args.output}")
