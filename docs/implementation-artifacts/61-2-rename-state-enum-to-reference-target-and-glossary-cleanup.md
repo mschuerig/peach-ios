@@ -1,6 +1,6 @@
 # Story 61.2: Rename State Enum to Reference/Target and Glossary Cleanup
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -73,25 +73,25 @@ Scope: 25 occurrences across 5 Swift files, plus glossary and living documentati
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Rename enum cases (AC: 1)
-  - [ ] 1.1 In `PitchDiscriminationSession.swift`, rename `case playingNote1` → `case playingReferenceNote`
-  - [ ] 1.2 In `PitchDiscriminationSession.swift`, rename `case playingNote2` → `case playingTargetNote`
-- [ ] Task 2: Update all Swift references (AC: 2, 3)
-  - [ ] 2.1 Update all `.playingNote1` → `.playingReferenceNote` references in `PitchDiscriminationSession.swift`
-  - [ ] 2.2 Update all `.playingNote2` → `.playingTargetNote` references in `PitchDiscriminationSession.swift`
-  - [ ] 2.3 Simplify or remove any translation comments/variables that are now redundant
-  - [ ] 2.4 Update references in `PitchDiscriminationScreen.swift`
-  - [ ] 2.5 Update references in `PitchDiscriminationSessionTests.swift`
-  - [ ] 2.6 Update references in `PitchDiscriminationSessionLifecycleTests.swift`
-  - [ ] 2.7 Update references in `PitchDiscriminationSessionAudioInterruptionTests.swift`
-- [ ] Task 3: Update glossary (AC: 4)
-  - [ ] 3.1 Update **Pitch Discrimination Session State** entry in `glossary.md`
-- [ ] Task 4: Update living documentation (AC: 5)
-  - [ ] 4.1 Update state machine description in `arc42.md`
-  - [ ] 4.2 Update enum case listing in `project-context.md`
-- [ ] Task 5: Build and test (AC: 7)
-  - [ ] 5.1 Build succeeds with no errors
-  - [ ] 5.2 Full test suite passes with zero regressions
+- [x] Task 1: Rename enum cases (AC: 1)
+  - [x] 1.1 In `PitchDiscriminationSession.swift`, rename `case playingNote1` → `case playingReferenceNote`
+  - [x] 1.2 In `PitchDiscriminationSession.swift`, rename `case playingNote2` → `case playingTargetNote`
+- [x] Task 2: Update all Swift references (AC: 2, 3)
+  - [x] 2.1 Update all `.playingNote1` → `.playingReferenceNote` references in `PitchDiscriminationSession.swift`
+  - [x] 2.2 Update all `.playingNote2` → `.playingTargetNote` references in `PitchDiscriminationSession.swift`
+  - [x] 2.3 Simplify or remove any translation comments/variables that are now redundant
+  - [x] 2.4 Update references in `PitchDiscriminationScreen.swift`
+  - [x] 2.5 Update references in `PitchDiscriminationSessionTests.swift`
+  - [x] 2.6 Update references in `PitchDiscriminationSessionLifecycleTests.swift`
+  - [x] 2.7 Update references in `PitchDiscriminationSessionAudioInterruptionTests.swift`
+- [x] Task 3: Update glossary (AC: 4)
+  - [x] 3.1 Update **Pitch Discrimination Session State** entry in `glossary.md`
+- [x] Task 4: Update living documentation (AC: 5)
+  - [x] 4.1 Update state machine description in `arc42.md`
+  - [x] 4.2 Update enum case listing in `project-context.md`
+- [x] Task 5: Build and test (AC: 7)
+  - [x] 5.1 Build succeeds with no errors
+  - [x] 5.2 Full test suite passes with zero regressions (2 pre-existing failures in ProgressTimelineTests, cataloged as TF-1)
 
 ## Dev Notes
 
@@ -99,3 +99,34 @@ Scope: 25 occurrences across 5 Swift files, plus glossary and living documentati
 - The compiler will catch every missed reference since enum case renames are exhaustively checked
 - Work order: rename the enum first (Task 1), then fix compiler errors (Task 2), then docs (Tasks 3-4)
 - Historical artifacts are explicitly excluded — they document past state, not current
+
+## Dev Agent Record
+
+### Completion Notes
+
+- Renamed `playingNote1` → `playingReferenceNote` and `playingNote2` → `playingTargetNote` across all 5 Swift files
+- Simplified `stopTargetNoteIfPlaying()`: removed the intermediate `wasPlayingTargetNote` translation variable since `.playingTargetNote` now communicates intent directly (AC 3)
+- Updated glossary, arc42, project-context, and architecture docs with new state names
+- Also updated `docs/planning-artifacts/architecture.md` which had a reference not listed in the story but is living documentation
+- Updated the enum case example in project-context.md naming conventions section
+- Historical implementation artifacts left untouched (AC 6)
+- Build succeeds; 1470 tests pass; 2 pre-existing flaky failures cataloged as TF-1 in `docs/pre-existing-findings.md`
+
+## File List
+
+- `Peach/PitchDiscrimination/PitchDiscriminationSession.swift` — renamed enum cases and all references
+- `Peach/PitchDiscrimination/PitchDiscriminationScreen.swift` — updated button enable guard
+- `PeachTests/PitchDiscrimination/PitchDiscriminationSessionTests.swift` — updated test references and descriptions
+- `PeachTests/PitchDiscrimination/PitchDiscriminationSessionLifecycleTests.swift` — updated test references and descriptions
+- `PeachTests/PitchDiscrimination/PitchDiscriminationSessionAudioInterruptionTests.swift` — updated test references and descriptions
+- `docs/planning-artifacts/glossary.md` — updated Pitch Discrimination Session State entry
+- `docs/arc42.md` — updated state machine flow description
+- `docs/project-context.md` — updated state machine listing and naming convention example
+- `docs/planning-artifacts/architecture.md` — updated state machine flow description
+- `docs/pre-existing-findings.md` — added TF-1 for flaky ProgressTimelineTests
+- `docs/implementation-artifacts/sprint-status.yaml` — status updates
+- `docs/implementation-artifacts/61-2-rename-state-enum-to-reference-target-and-glossary-cleanup.md` — this file
+
+## Change Log
+
+- 2026-03-26: Implemented story 61.2 — renamed state enum cases from playingNote1/playingNote2 to playingReferenceNote/playingTargetNote across all code and living documentation

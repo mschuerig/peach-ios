@@ -224,7 +224,7 @@ The four training sessions are the central orchestrators. Each is a state machin
 **Pitch Comparison:**
 
 ```
-idle → playingNote1 → playingNote2 → awaitingAnswer → showingFeedback → (loop)
+idle → playingReferenceNote → playingTargetNote → awaitingAnswer → showingFeedback → (loop)
 ```
 
 **Pitch Matching:**

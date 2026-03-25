@@ -13,8 +13,8 @@ struct PitchDiscriminationSessionTests {
         #expect(f.session.state == .idle)
     }
 
-    @Test("start transitions from idle to playingNote1")
-    func startTransitionsToPlayingNote1() async {
+    @Test("start transitions from idle to playingReferenceNote")
+    func startTransitionsToPlayingReferenceNote() async {
         let f = makePitchDiscriminationSession()
 
         var capturedState: PitchDiscriminationSessionState?
@@ -27,23 +27,23 @@ struct PitchDiscriminationSessionTests {
         f.session.start(settings: defaultTestSettings)
         await Task.yield()
 
-        #expect(capturedState == .playingNote1)
+        #expect(capturedState == .playingReferenceNote)
         #expect(f.mockPlayer.playCallCount >= 1)
     }
 
-    @Test("PitchDiscriminationSession transitions from playingNote1 to playingNote2")
-    func transitionsFromNote1ToNote2() async {
+    @Test("PitchDiscriminationSession transitions from playingReferenceNote to playingTargetNote")
+    func transitionsFromReferenceNoteToTargetNote() async {
         let f = makePitchDiscriminationSession()
 
         f.session.start(settings: defaultTestSettings)
         await f.mockPlayer.waitForPlay(minCount: 2)
 
         #expect(f.mockPlayer.playCallCount >= 2)
-        #expect(f.session.state == .playingNote2 || f.session.state == .awaitingAnswer)
+        #expect(f.session.state == .playingTargetNote || f.session.state == .awaitingAnswer)
     }
 
-    @Test("PitchDiscriminationSession transitions from playingNote2 to awaitingAnswer")
-    func transitionsFromNote2ToAwaitingAnswer() async throws {
+    @Test("PitchDiscriminationSession transitions from playingTargetNote to awaitingAnswer")
+    func transitionsFromTargetNoteToAwaitingAnswer() async throws {
         let f = makePitchDiscriminationSession()
 
         f.session.start(settings: defaultTestSettings)
@@ -64,7 +64,7 @@ struct PitchDiscriminationSessionTests {
         #expect(f.session.state == .showingFeedback)
     }
 
-    @Test("PitchDiscriminationSession loops back to playingNote1 after feedback")
+    @Test("PitchDiscriminationSession loops back to playingReferenceNote after feedback")
     func loopsBackAfterFeedback() async throws {
         let f = makePitchDiscriminationSession()
 
@@ -105,8 +105,8 @@ struct PitchDiscriminationSessionTests {
 
     // MARK: - Timing and Coordination Tests
 
-    @Test("Buttons disabled during playingNote1")
-    func buttonsDisabledDuringNote1() async {
+    @Test("Buttons disabled during playingReferenceNote")
+    func buttonsDisabledDuringReferenceNote() async {
         let f = makePitchDiscriminationSession()
 
         var capturedState: PitchDiscriminationSessionState?
@@ -119,7 +119,7 @@ struct PitchDiscriminationSessionTests {
         f.session.start(settings: defaultTestSettings)
         await Task.yield()
 
-        #expect(capturedState == .playingNote1)
+        #expect(capturedState == .playingReferenceNote)
     }
 
     @Test("Buttons enabled during awaitingAnswer")

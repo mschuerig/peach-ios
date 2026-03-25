@@ -7,8 +7,8 @@ struct PitchDiscriminationSessionLifecycleTests {
 
     // MARK: - Data Integrity Tests (AC#4)
 
-    @Test("stop() during playingNote1 discards incomplete comparison")
-    func stopDuringNote1DiscardsComparison() async {
+    @Test("stop() during playingReferenceNote discards incomplete comparison")
+    func stopDuringReferenceNoteDiscardsComparison() async {
         let f = makePitchDiscriminationSession()
 
         var stateWhenPlayCalled: PitchDiscriminationSessionState?
@@ -23,16 +23,16 @@ struct PitchDiscriminationSessionLifecycleTests {
         f.session.start(settings: defaultTestSettings)
         await Task.yield()  // Let training task start
 
-        // Verify we captured playingNote1 state
-        #expect(stateWhenPlayCalled == .playingNote1)
+        // Verify we captured playingReferenceNote state
+        #expect(stateWhenPlayCalled == .playingReferenceNote)
 
         // Verify no data was saved
         #expect(f.mockDataStore.saveCallCount == 0)
         #expect(f.session.state == .idle)
     }
 
-    @Test("stop() during playingNote2 discards incomplete comparison")
-    func stopDuringNote2DiscardsComparison() async throws {
+    @Test("stop() during playingTargetNote discards incomplete comparison")
+    func stopDuringTargetNoteDiscardsComparison() async throws {
         let f = makePitchDiscriminationSession()
 
         f.mockPlayer.instantPlayback = false

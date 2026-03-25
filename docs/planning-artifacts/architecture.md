@@ -143,7 +143,7 @@ For native iOS, the starter is Xcode 26's built-in iOS App template with SwiftUI
 
 `TrainingSession` is the central state machine coordinating the training loop. It owns the lifecycle of a comparison: ask strategy → play note 1 → play note 2 → await answer → record result → feedback → repeat.
 
-States: `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
+States: `idle` → `playingReferenceNote` → `playingTargetNote` → `awaitingAnswer` → `showingFeedback` → (loop)
 
 **Service Layer (protocol-based for testability):**
 

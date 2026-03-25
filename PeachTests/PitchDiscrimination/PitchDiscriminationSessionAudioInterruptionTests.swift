@@ -26,8 +26,8 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops training from playingNote1 state")
-    func audioInterruption_Began_StopsFromPlayingNote1() async throws {
+    @Test("Audio interruption began stops training from playingReferenceNote state")
+    func audioInterruption_Began_StopsFromPlayingReferenceNote() async throws {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
@@ -36,7 +36,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         mockPlayer.simulatedPlaybackDuration = .seconds(5)
 
         session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForState(session, .playingNote1)
+        try await waitForState(session, .playingReferenceNote)
 
         nc.post(
             name: AVAudioSession.interruptionNotification,
@@ -48,8 +48,8 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops training from playingNote2 state")
-    func audioInterruption_Began_StopsFromPlayingNote2() async throws {
+    @Test("Audio interruption began stops training from playingTargetNote state")
+    func audioInterruption_Began_StopsFromPlayingTargetNote() async throws {
         let nc = NotificationCenter()
         let f = makePitchDiscriminationSession(notificationCenter: nc)
         let session = f.session
@@ -61,7 +61,7 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         await mockPlayer.waitForPlay(minCount: 2)
         mockPlayer.simulatedPlaybackDuration = .seconds(5)
 
-        try await waitForState(session, .playingNote2)
+        try await waitForState(session, .playingTargetNote)
 
         nc.post(
             name: AVAudioSession.interruptionNotification,

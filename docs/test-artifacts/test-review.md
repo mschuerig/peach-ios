@@ -233,7 +233,7 @@ Long test files are harder to navigate, harder to maintain, and increase merge c
 @MainActor async func audioInterruptionBeganStopsTraining() async throws {
     let (session, _, _) = makeTrainingSession()
     session.startTraining()
-    try await waitForState(session, .playingNote1)
+    try await waitForState(session, .playingReferenceNote)
 
     session.handleAudioInterruption(
         typeValue: AVAudioSession.InterruptionType.began.rawValue
@@ -246,7 +246,7 @@ Long test files are harder to navigate, harder to maintain, and increase merge c
 @MainActor async func headphoneDisconnectStopsTraining() async throws {
     let (session, _, _) = makeTrainingSession()
     session.startTraining()
-    try await waitForState(session, .playingNote1)
+    try await waitForState(session, .playingReferenceNote)
 
     session.handleAudioRouteChange(
         reasonValue: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue

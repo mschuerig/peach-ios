@@ -84,7 +84,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents` in `Core/Music/`) and physical world (`Frequency` in `Core/Music/`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontPlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
 
 **State Management:**
-- **`PitchDiscriminationSession` state machine** — `idle` → `playingNote1` → `playingNote2` → `awaitingAnswer` → `showingFeedback` → (loop)
+- **`PitchDiscriminationSession` state machine** — `idle` → `playingReferenceNote` → `playingTargetNote` → `awaitingAnswer` → `showingFeedback` → (loop)
 - **`PitchMatchingSession` state machine** — `idle` → `playingReference` → `awaitingSliderTouch` → `playingTunable` → `showingFeedback` → (loop). Any state → `idle` via `stop()`
 - **Both sessions conform to `TrainingSession` protocol** — `stop()`, `isIdle`. `PeachApp` tracks `activeSession` to ensure only one runs at a time
 - **State transitions are guarded** — preconditions enforced; never skip states
@@ -151,7 +151,7 @@ Never run only specific test files — always the complete suite.
 - **Subviews:** `{Name}View.swift` — `PianoKeyboardView.swift`, `PitchDiscriminationFeedbackIndicator.swift`
 - **Mocks:** `Mock{Name}.swift` — not `{Name}Mock`, `Fake{Name}`, or `Stub{Name}`
 - **Boolean properties:** `is`/`has`/`should` prefix — `isCorrect`, `isCompact`, `shouldThrowError`
-- **Enum cases:** `lowerCamelCase` — `case playingNote1`, not `case PlayingNote1`
+- **Enum cases:** `lowerCamelCase` — `case playingReferenceNote`, not `case PlayingReferenceNote`
 - **SwiftData models:** singular noun — `PitchDiscriminationRecord`, not `PitchDiscriminationRecords`
 
 **File Placement (decision tree):**

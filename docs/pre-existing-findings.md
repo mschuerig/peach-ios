@@ -30,3 +30,11 @@
 
 **Source:** story 46-5
 **Reason:** Xcode build system artifact from `appintentsmetadataprocessor`. Project doesn't use AppIntents. Zero runtime impact, not our code.
+
+## OPEN — Needs Investigation
+
+### TF-1: `ProgressTimelineTests/subBucketsSessionEmpty()` and `sessionBuckets()` flaky failures
+
+**Source:** story 61-2 (observed pre-existing on clean `main` at commit 92998e7)
+**Symptom:** Both tests fail intermittently. Failures reproduce on clean `main` without any changes.
+**Likely cause:** Timing-dependent test logic (related to TQ-1) or date-boundary sensitivity in bucket calculations.

@@ -258,9 +258,9 @@ struct PitchDiscriminationScreen: View {
         intervals == [.prime] ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
     }
 
-    /// Buttons are enabled when in playingNote2 or awaitingAnswer states
+    /// Buttons are enabled when in playingTargetNote or awaitingAnswer states
     private var buttonsEnabled: Bool {
-        pitchDiscriminationSession.state == .playingNote2 || pitchDiscriminationSession.state == .awaitingAnswer
+        pitchDiscriminationSession.state == .playingTargetNote || pitchDiscriminationSession.state == .awaitingAnswer
     }
 
     /// Returns the animation for feedback indicator transitions

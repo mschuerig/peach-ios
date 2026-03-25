@@ -72,7 +72,7 @@
 | Term | Definition |
 |---|---|
 | **Pitch Discrimination Session** | The central orchestrator for the pitch discrimination training loop state machine. Coordinates trial generation, note playback, answer handling, observer notification, and feedback display. Manages graceful error handling and audio interruptions. Formerly "Pitch Comparison Session". |
-| **Pitch Discrimination Session State** | The current phase of the pitch discrimination training loop. Values: `idle`, `playingNote1`, `playingNote2`, `awaitingAnswer`, `showingFeedback`. Formerly "Pitch Comparison Session State". |
+| **Pitch Discrimination Session State** | The current phase of the pitch discrimination training loop. Values: `idle`, `playingReferenceNote`, `playingTargetNote`, `awaitingAnswer`, `showingFeedback`. Formerly "Pitch Comparison Session State". |
 | **Pitch Matching Session** | The orchestrator for the pitch matching training loop state machine. Coordinates reference note playback, tunable note playback with real-time frequency adjustment, result recording, and observer notification. Follows the same patterns as `PitchDiscriminationSession` (error boundary, observer injection, environment injection). |
 | **Pitch Matching Session State** | The current phase of the pitch matching loop. Values: `idle`, `playingReference`, `awaitingSliderTouch`, `playingTunable`, `showingFeedback`. |
 | **Training Session** | A protocol that both `PitchDiscriminationSession` and `PitchMatchingSession` conform to. Defines the common interface: `start(intervals:)`, `stop()`, `isIdle`. Enables the `activeSession` tracking in `PeachApp`. |

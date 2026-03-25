@@ -4,8 +4,8 @@ import os
 
 enum PitchDiscriminationSessionState {
     case idle
-    case playingNote1
-    case playingNote2
+    case playingReferenceNote
+    case playingTargetNote
     case awaitingAnswer
     case showingFeedback
 }
@@ -98,7 +98,7 @@ final class PitchDiscriminationSession: TrainingSession {
     }
 
     func handleAnswer(isHigher: Bool) {
-        guard state == .awaitingAnswer || state == .playingNote2 else {
+        guard state == .awaitingAnswer || state == .playingTargetNote else {
             logger.warning("handleAnswer() called but state is \(String(describing: self.state))")
             return
         }
@@ -225,11 +225,11 @@ final class PitchDiscriminationSession: TrainingSession {
         let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
 
-        state = .playingNote1
+        state = .playingReferenceNote
         try await notePlayer.play(frequency: freq1, duration: .seconds(settings.noteDuration.rawValue), velocity: settings.velocity, amplitudeDB: AmplitudeDB(0.0))
 
         guard state != .idle && !Task.isCancelled else {
-            logger.info("Training stopped during note 1, aborting comparison")
+            logger.info("Training stopped during reference note, aborting comparison")
             return
         }
 
@@ -241,26 +241,25 @@ final class PitchDiscriminationSession: TrainingSession {
             }
         }
 
-        state = .playingNote2
+        state = .playingTargetNote
         try await notePlayer.play(frequency: freq2, duration: .seconds(settings.noteDuration.rawValue), velocity: settings.velocity, amplitudeDB: amplitudeDB)
 
         guard state != .idle && !Task.isCancelled else {
-            logger.info("Training stopped during note 2, aborting comparison")
+            logger.info("Training stopped during target note, aborting comparison")
             return
         }
 
-        if state == .playingNote2 {
+        if state == .playingTargetNote {
             state = .awaitingAnswer
-            logger.info("Note 2 finished, awaiting answer")
+            logger.info("Target note finished, awaiting answer")
         } else {
-            logger.info("Note 2 finished, but user already answered (state: \(String(describing: self.state)))")
+            logger.info("Target note finished, but user already answered (state: \(String(describing: self.state)))")
         }
     }
 
     private func stopTargetNoteIfPlaying() {
-        let wasPlayingTargetNote = (state == .playingNote2)
-        if wasPlayingTargetNote {
-            logger.info("Stopping note 2 immediately")
+        if state == .playingTargetNote {
+            logger.info("Stopping target note immediately")
             Task {
                 try? await notePlayer.stopAll()
             }
