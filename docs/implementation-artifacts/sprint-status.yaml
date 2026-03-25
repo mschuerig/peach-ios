@@ -463,6 +463,6 @@ development_status:
   # Epic 61: Sharp Edges — Architectural Clarity Improvements
   # Work order: no dependency between stories; can be implemented in parallel
   epic-61: in-progress
-  61-1-consolidate-infrastructure-port-protocols: ready-for-dev
+  61-1-consolidate-infrastructure-port-protocols: review
   61-2-rename-state-enum-to-reference-target-and-glossary-cleanup: ready-for-dev
   epic-61-retrospective: optional
