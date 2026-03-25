@@ -110,7 +110,8 @@ Scope: 25 occurrences across 5 Swift files, plus glossary and living documentati
 - Also updated `docs/planning-artifacts/architecture.md` which had a reference not listed in the story but is living documentation
 - Updated the enum case example in project-context.md naming conventions section
 - Historical implementation artifacts left untouched (AC 6)
-- Build succeeds; 1470 tests pass; 2 pre-existing flaky failures cataloged as TF-1 in `docs/pre-existing-findings.md`
+- Fixed TF-1: `ProgressTimelineTests/subBucketsSessionEmpty()` and `sessionBuckets()` flaky near midnight — anchored test dates to `startOfDay(now)`
+- Build succeeds; 1472 tests pass with zero failures
 
 ## File List
 
@@ -123,7 +124,9 @@ Scope: 25 occurrences across 5 Swift files, plus glossary and living documentati
 - `docs/arc42.md` — updated state machine flow description
 - `docs/project-context.md` — updated state machine listing and naming convention example
 - `docs/planning-artifacts/architecture.md` — updated state machine flow description
-- `docs/pre-existing-findings.md` — added TF-1 for flaky ProgressTimelineTests
+- `PeachTests/Core/Profile/ProgressTimelineTests.swift` — fixed TF-1 midnight boundary flakiness
+- `docs/pre-existing-findings.md` — resolved TF-1
+- `docs/test-artifacts/test-review.md` — updated stale playingNote1 references
 - `docs/implementation-artifacts/sprint-status.yaml` — status updates
 - `docs/implementation-artifacts/61-2-rename-state-enum-to-reference-target-and-glossary-cleanup.md` — this file
 

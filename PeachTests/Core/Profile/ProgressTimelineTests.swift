@@ -148,11 +148,14 @@ struct ProgressTimelineTests {
 
     @Test("records within 24h are grouped by session proximity")
     func sessionBuckets() async {
+        // Use dates anchored after midnight today so records always land in the session zone,
+        // even when the test runs shortly after midnight.
+        let midnightToday = Calendar.current.startOfDay(for: Date())
         let records = [
-            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 2.0),
-            makePitchDiscriminationRecord(centOffset: 12.0, hoursAgo: 1.9),
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(120)),
             // Record 1 hour later should be in different session bucket
-            makePitchDiscriminationRecord(centOffset: 8.0, hoursAgo: 0.5),
+            makePitchDiscriminationRecord(centOffset: 8.0, date: midnightToday.addingTimeInterval(3660)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
@@ -542,9 +545,12 @@ struct ProgressTimelineTests {
 
     @Test("subBuckets returns empty for session buckets (finest level)")
     func subBucketsSessionEmpty() async {
+        // Use dates anchored after midnight today so records always land in the session zone,
+        // even when the test runs shortly after midnight.
+        let midnightToday = Calendar.current.startOfDay(for: Date())
         let records = [
-            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 1.0),
-            makePitchDiscriminationRecord(centOffset: 12.0, hoursAgo: 0.99),
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 12.0, date: midnightToday.addingTimeInterval(120)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)

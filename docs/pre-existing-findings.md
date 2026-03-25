@@ -31,10 +31,11 @@
 **Source:** story 46-5
 **Reason:** Xcode build system artifact from `appintentsmetadataprocessor`. Project doesn't use AppIntents. Zero runtime impact, not our code.
 
-## OPEN — Needs Investigation
+## RESOLVED
 
 ### TF-1: `ProgressTimelineTests/subBucketsSessionEmpty()` and `sessionBuckets()` flaky failures
 
 **Source:** story 61-2 (observed pre-existing on clean `main` at commit 92998e7)
-**Symptom:** Both tests fail intermittently. Failures reproduce on clean `main` without any changes.
-**Likely cause:** Timing-dependent test logic (related to TQ-1) or date-boundary sensitivity in bucket calculations.
+**Symptom:** Both tests fail intermittently when run between midnight and ~1 AM.
+**Root cause:** Tests used `hoursAgo` offsets (1.0, 0.99, etc.) which placed records before midnight when the test ran shortly after midnight. The bucketing algorithm uses `startOfDay(now)` as the session zone boundary, so records landed in the day zone instead of the session zone.
+**Fix:** Replaced `hoursAgo` with explicit dates anchored to `startOfDay(now) + offset`, guaranteeing records always land in the session zone.
