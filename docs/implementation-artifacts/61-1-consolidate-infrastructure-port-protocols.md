@@ -1,6 +1,6 @@
 # Story 61.1: Consolidate Infrastructure Port Protocols into Core/Ports
 
-Status: review
+Status: done
 
 ## Story
 

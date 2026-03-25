@@ -1,5 +1,3 @@
-import Foundation
-
 protocol StepSequencer {
     var currentStep: StepPosition? { get }
     var currentCycle: CycleDefinition? { get }

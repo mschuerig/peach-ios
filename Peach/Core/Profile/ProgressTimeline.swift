@@ -1,5 +1,25 @@
 import Foundation
 
+// MARK: - TrainingProfile Convenience
+
+private extension TrainingProfile {
+    /// Merges statistics from multiple keys into a single summary.
+    ///
+    /// Collects all metric points from the given keys, sorts them
+    /// chronologically, and rebuilds a unified `StatisticalSummary`.
+    /// Returns `nil` if none of the keys have data.
+    func mergedStatistics(for keys: [StatisticsKey]) -> StatisticalSummary? {
+        let allMetrics = keys.compactMap { statistics(for: $0) }
+            .flatMap { $0.metrics }
+            .sorted { $0.timestamp < $1.timestamp }
+        guard !allMetrics.isEmpty,
+              let config = keys.first?.statisticsConfig else { return nil }
+        var stats = TrainingDisciplineStatistics()
+        stats.rebuild(from: allMetrics, config: config)
+        return .continuous(stats)
+    }
+}
+
 // MARK: - Trend
 
 /// Direction of a user's detection threshold trend over time.
