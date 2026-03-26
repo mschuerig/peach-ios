@@ -1,6 +1,6 @@
 # Story 62.2: MIDIInput Port Protocol, Mock, and Composition Root Wiring
 
-Status: review
+Status: done
 
 ## Story
 
