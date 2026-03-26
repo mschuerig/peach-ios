@@ -1,6 +1,6 @@
 import Foundation
 
-struct MIDIVelocity: Hashable, Comparable, Sendable {
+nonisolated struct MIDIVelocity: Hashable, Comparable, Sendable {
     static let validRange: ClosedRange<UInt8> = 1...127
 
     let rawValue: UInt8

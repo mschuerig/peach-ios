@@ -1,6 +1,6 @@
 # Story 62.1: Add MIDIKit Dependency and Define MIDI Input Event Types
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,24 +20,24 @@ So that the MIDI input infrastructure has its foundation types and external depe
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add MIDIKit SPM dependency (AC: #1)
-  - [ ] 1.1 Add `https://github.com/orchetect/MIDIKit` package to `Peach.xcodeproj` via SPM
-  - [ ] 1.2 Link only the `MIDIKitIO` product to the `Peach` target (not `MIDIKitCore`, `MIDIKitSMF`, `MIDIKitSync`, etc.)
-  - [ ] 1.3 Do NOT link MIDIKit to the `PeachTests` target — tests use mocks, never import MIDIKit directly
-  - [ ] 1.4 Verify `import MIDIKitIO` compiles in a temporary test file, then remove the test file
-- [ ] Task 2: Create `MIDIInputEvent` enum (AC: #2)
-  - [ ] 2.1 Create `Peach/Core/Music/MIDIInputEvent.swift`
-  - [ ] 2.2 Define the enum with three cases using existing domain types: `MIDINote`, `MIDIVelocity`, `PitchBendValue`
-  - [ ] 2.3 Mark `nonisolated` (same pattern as all Core/Music types) and conform to `Sendable`
-  - [ ] 2.4 The `timestamp` parameter is `UInt64` (raw `MIDITimeStamp` host ticks) — do NOT wrap in a domain type yet
-- [ ] Task 3: Write tests for `MIDIInputEvent` (AC: #2)
-  - [ ] 3.1 Create `PeachTests/Core/Music/MIDIInputEventTests.swift`
-  - [ ] 3.2 Test construction of all three cases with valid domain types
-  - [ ] 3.3 Test `Sendable` conformance compiles (value type with all Sendable fields — implicit)
-- [ ] Task 4: Verify no regressions (AC: #3, #4)
-  - [ ] 4.1 Run full test suite via `bin/test.sh`
-  - [ ] 4.2 Verify build succeeds via `bin/build.sh` — no new warnings
-  - [ ] 4.3 Confirm no entitlement, Info.plist, or AVAudioSession changes in the diff
+- [x] Task 1: Add MIDIKit SPM dependency (AC: #1)
+  - [x] 1.1 Add `https://github.com/orchetect/MIDIKit` package to `Peach.xcodeproj` via SPM
+  - [x] 1.2 Link only the `MIDIKitIO` product to the `Peach` target (not `MIDIKitCore`, `MIDIKitSMF`, `MIDIKitSync`, etc.)
+  - [x] 1.3 Do NOT link MIDIKit to the `PeachTests` target — tests use mocks, never import MIDIKit directly
+  - [x] 1.4 Verify `import MIDIKitIO` compiles in a temporary test file, then remove the test file
+- [x] Task 2: Create `MIDIInputEvent` enum (AC: #2)
+  - [x] 2.1 Create `Peach/Core/Music/MIDIInputEvent.swift`
+  - [x] 2.2 Define the enum with three cases using existing domain types: `MIDINote`, `MIDIVelocity`, `PitchBendValue`
+  - [x] 2.3 Mark `nonisolated` (same pattern as all Core/Music types) and conform to `Sendable`
+  - [x] 2.4 The `timestamp` parameter is `UInt64` (raw `MIDITimeStamp` host ticks) — do NOT wrap in a domain type yet
+- [x] Task 3: Write tests for `MIDIInputEvent` (AC: #2)
+  - [x] 3.1 Create `PeachTests/Core/Music/MIDIInputEventTests.swift`
+  - [x] 3.2 Test construction of all three cases with valid domain types
+  - [x] 3.3 Test `Sendable` conformance compiles (value type with all Sendable fields — implicit)
+- [x] Task 4: Verify no regressions (AC: #3, #4)
+  - [x] 4.1 Run full test suite via `bin/test.sh`
+  - [x] 4.2 Verify build succeeds via `bin/build.sh` — no new warnings
+  - [x] 4.3 Confirm no entitlement, Info.plist, or AVAudioSession changes in the diff
 
 ## Dev Notes
 
@@ -120,8 +120,31 @@ Follow the exact pattern of existing `Core/Music/` types:
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+None required.
 
 ### Completion Notes List
 
+- Added MIDIKit v0.11.0 as the project's first SPM dependency, linking only `MIDIKitIO` to the Peach target (not PeachTests)
+- Created `MIDIInputEvent` enum with three cases (`.noteOn`, `.noteOff`, `.pitchBend`) using existing domain types (`MIDINote`, `MIDIVelocity`, `PitchBendValue`) and raw `UInt64` timestamps
+- Enum is `nonisolated`, conforms to `Hashable` and `Sendable`, following existing Core/Music patterns
+- Boy Scout fix: added missing `nonisolated` keyword to `MIDIVelocity` struct (was inconsistent with `MIDINote` and `PitchBendValue`)
+- 6 new tests for MIDIInputEvent covering construction, equality, and Sendable conformance
+- All 1478 tests pass, no regressions, no new warnings, no entitlement/Info.plist/AVAudioSession changes
+
+### Change Log
+
+- 2026-03-26: Implemented story 62.1 — MIDIKit dependency and MIDIInputEvent type
+
 ### File List
+
+- `Peach.xcodeproj/project.pbxproj` (modified — MIDIKit SPM dependency)
+- `Peach.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` (new — SPM lock file)
+- `Peach/Core/Music/MIDIInputEvent.swift` (new — domain enum)
+- `Peach/Core/Music/MIDIVelocity.swift` (modified — added `nonisolated` keyword)
+- `PeachTests/Core/Music/MIDIInputEventTests.swift` (new — 6 tests)
+- `docs/implementation-artifacts/sprint-status.yaml` (modified — status update)
+- `docs/implementation-artifacts/62-1-add-midikit-dependency-and-define-midi-input-event-types.md` (modified — task completion)

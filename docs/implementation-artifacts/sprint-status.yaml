@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-26 # Story 62.1 ready-for-dev
+# last_updated: 2026-03-26 # Story 62.1 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -470,7 +470,7 @@ development_status:
   # Epic 62: Plug In and Play — MIDI Controller Input
   # Work order: 62.1 → 62.2 → 62.3 → 62.4 (each builds on previous)
   epic-62: in-progress
-  62-1-add-midikit-dependency-and-define-midi-input-event-types: ready-for-dev
+  62-1-add-midikit-dependency-and-define-midi-input-event-types: review
   62-2-midiinput-port-protocol-mock-and-composition-root-wiring: backlog
   62-3-midikit-adapter-implementation: backlog
   62-4-midi-input-for-continuous-rhythm-matching-training: backlog
