@@ -1,6 +1,6 @@
 ---
-stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation', 'v0.2-step-01-validate-prerequisites', 'v0.2-step-02-design-epics', 'v0.2-step-03-create-stories', 'v0.2-step-04-final-validation', 'v0.3-step-01-validate-prerequisites', 'v0.3-step-02-design-epics', 'v0.3-step-03-create-stories', 'v0.3-step-04-final-validation', 'v0.4-step-01-validate-prerequisites', 'v0.4-step-02-design-epics', 'v0.4-step-03-create-stories', 'v0.4-step-04-final-validation', 'v0.5-sharing']
-inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/architecture.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/project-context.md', 'docs/planning-artifacts/research/technical-profile-screen-chart-ux-research-2026-03-11.md', 'docs/planning-artifacts/rhythm-training-spec.md']
+stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation', 'v0.2-step-01-validate-prerequisites', 'v0.2-step-02-design-epics', 'v0.2-step-03-create-stories', 'v0.2-step-04-final-validation', 'v0.3-step-01-validate-prerequisites', 'v0.3-step-02-design-epics', 'v0.3-step-03-create-stories', 'v0.3-step-04-final-validation', 'v0.4-step-01-validate-prerequisites', 'v0.4-step-02-design-epics', 'v0.4-step-03-create-stories', 'v0.4-step-04-final-validation', 'v0.5-sharing', 'v0.6-midi-input']
+inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/architecture.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/project-context.md', 'docs/planning-artifacts/research/technical-profile-screen-chart-ux-research-2026-03-11.md', 'docs/planning-artifacts/rhythm-training-spec.md', 'docs/planning-artifacts/research/technical-midi-input-ios-research-2026-03-26.md']
 ---
 
 # Peach - Epic Breakdown
@@ -130,6 +130,21 @@ FR110: System aggregates 16 consecutive gap evaluations into a single trial; inc
 FR111: System displays four dots showing current step position (highlighted) and gap position (outline); step-1 dot visually bolder; gap outline updates at cycle start
 FR112: System discards incomplete continuous rhythm matching trials on interruption (same rules as FR79)
 FR113: System stores continuous rhythm matching results with aggregate statistics: mean offset, hit rate, per-gap-position breakdown
+FR114: System receives MIDI note-on and note-off events from any connected MIDI device on any channel
+FR115: System receives MIDI events via USB and Bluetooth MIDI transports without transport-specific configuration
+FR116: System automatically detects MIDI device connection and disconnection (hot-plug) without user action
+FR117: System exposes MIDI events as an AsyncStream of typed MIDIInputEvent values consumable by training sessions
+FR118: System preserves CoreMIDI MIDITimeStamp with each event for sub-millisecond timing precision
+FR119: System bridges MIDI events from CoreMIDI's real-time thread to Swift concurrency safely (via MIDIKit's serial queue dispatch)
+FR120: System defines a MIDIInput port protocol in Core/Ports/ abstracting the MIDI infrastructure from training sessions
+FR121: System provides a MIDIInputEvent enum with cases for .noteOn, .noteOff, and .pitchBend from the start
+FR122: System wires the MIDI adapter in the composition root (PeachApp.swift) via @Entry
+FR123: System accepts MIDI note-on as tap input in rhythm matching training (any note triggers a tap)
+FR124: System uses the MIDI event's MIDITimeStamp (not wall-clock time) for rhythm matching hit detection when input comes from MIDI
+FR125: System plays immediate auditory tap feedback when a MIDI note-on is received during rhythm matching (same as screen tap)
+FR126: System records rhythm matching results from MIDI input identically to tap input (same RhythmOffset, same observer notifications)
+FR127: System requires no entitlements, Info.plist entries, permissions, or AVAudioSession configuration for MIDI input
+FR128: MIDI input port is testable via mock implementation — all domain logic tested without CoreMIDI or hardware dependencies
 
 ### NonFunctional Requirements
 
@@ -150,6 +165,11 @@ NFR14: Tuning system precision — interval frequency computations must be accur
 NFR-R1: Rhythm note scheduling jitter must not exceed 0.01ms as measured by comparing scheduled vs. actual sample positions in a test harness
 NFR-R2: Pre-calculated note schedules must complete before playback begins as verified by unit tests asserting no scheduling calls occur after playback start
 NFR-R3: Minimum audio buffer duration: 5ms (0.005s) on supported devices as configured via audio session and verified by measuring actual buffer callback intervals
+NFR-M1: MIDI input transport latency: USB ≤ 2ms, BLE ≤ 16ms (platform constraints, not application overhead)
+NFR-M2: Application-layer MIDI event processing overhead (MIDIKit dispatch + AsyncStream + Task scheduling) must not exceed 2ms
+NFR-M3: Inter-event timing precision via MIDITimeStamp deltas: sub-millisecond for USB, ~1ms for BLE
+NFR-M4: No CoreMIDI dependency in test target — all domain logic tested behind protocol boundary with mocks on Simulator
+NFR-M5: Zero third-party dependency policy exception: MIDIKit (MIDIKitIO only) is the sole approved external package
 
 ### Additional Requirements
 
@@ -394,6 +414,30 @@ UX-DR14: Landscape/iPad adaptive layouts for all rhythm screens and spectrogram
 | FR102 | Epic 52 | V1 backward compatibility |
 | FR103 | Epic 52 | Deduplication by timestamp + tempo + type |
 | FR104 | Epic 50 | Six training buttons on Start Screen |
+| FR105 | Epic 54 | Start continuous rhythm matching from Start Screen |
+| FR106 | Epic 54 | Continuous loop with accent and gap |
+| FR107 | Epic 54 | User fills gap by tapping |
+| FR108 | Epic 54 | Ignore taps outside evaluation window |
+| FR109 | Epic 54 | Configurable gap positions in settings |
+| FR110 | Epic 54 | 16-cycle trial aggregation |
+| FR111 | Epic 54 | Four dots with step/gap visualization |
+| FR112 | Epic 54 | Discard incomplete trials on interruption |
+| FR113 | Epic 54 | Aggregate statistics storage |
+| FR114 | Epic 62 | Receive MIDI note-on/off from any device, any channel |
+| FR115 | Epic 62 | USB and BLE transport without config |
+| FR116 | Epic 62 | Automatic hot-plug detection |
+| FR117 | Epic 62 | AsyncStream of typed MIDIInputEvent |
+| FR118 | Epic 62 | MIDITimeStamp preserved per event |
+| FR119 | Epic 62 | Safe RT thread → Swift concurrency bridge |
+| FR120 | Epic 62 | MIDIInput port protocol in Core/Ports/ |
+| FR121 | Epic 62 | MIDIInputEvent enum with noteOn/noteOff/pitchBend |
+| FR122 | Epic 62 | Composition root wiring via @Entry |
+| FR123 | Epic 62 | MIDI note-on as tap in rhythm matching |
+| FR124 | Epic 62 | Timestamp-based hit detection for MIDI input |
+| FR125 | Epic 62 | Immediate auditory feedback on MIDI tap |
+| FR126 | Epic 62 | Identical result recording for MIDI vs screen tap |
+| FR127 | Epic 62 | Zero configuration friction |
+| FR128 | Epic 62 | Testable via mock, no hardware dependency |
 
 ## Epic List
 
@@ -612,6 +656,17 @@ Continuous step-sequencer-style rhythm matching training, built as a new trainin
 Decouple `PerceptualProfile`, `TrainingDataStore`, `ProgressTimeline`, and the CSV pipeline from specific training disciplines using ports-and-adapters, a protocol-based registry, and discipline-owned CSV formats. Adding or removing a discipline becomes a single-point change with no modifications to shared infrastructure.
 **FRs covered:** None directly (architectural)
 **Depends on:** Epic 54 (all current disciplines must exist before decoupling)
+
+### Epic 62: Plug In and Play — MIDI Controller Input
+Users can plug in a USB or Bluetooth MIDI controller and use any key to tap rhythms during rhythm matching training, with the same timing precision and feedback as screen taps. The MIDI input infrastructure is designed broadly (MIDIInputEvent enum with noteOn/noteOff/pitchBend) to serve future training modes without rework.
+**FRs covered:** FR114–FR128
+**NFRs covered:** NFR-M1–NFR-M5
+**Design decisions:** MIDIKit (MIDIKitIO only, MIT) as first external SPM dependency; AsyncStream delivery; broad MIDIInputEvent enum; port protocol in Core/Ports/; any note, any channel
+
+### Epic 63: Update Planning Documents for MIDI Support
+Planning artifacts (PRD, rhythm spec, architecture, epics) are updated to reflect that MIDI input is no longer deferred — keeping documentation consistent with the implemented reality.
+**FRs covered:** None (housekeeping)
+**Depends on:** Epic 62
 
 ## Epic 1: Remember Every Note — Data Foundation
 
@@ -6369,5 +6424,187 @@ so that I don't need to mentally translate ordinal names to their domain roles.
 **Given** the full test suite
 **When** run
 **Then** all tests pass with zero regressions
+
+---
+
+## Epic 62: Plug In and Play — MIDI Controller Input
+
+Users can plug in a USB or Bluetooth MIDI controller and use any key to tap rhythms during continuous rhythm matching training, with the same timing precision and feedback as screen taps. The MIDI input infrastructure is designed broadly — the `MIDIInputEvent` enum includes `.noteOn`, `.noteOff`, and `.pitchBend` from the start — to serve future training modes (e.g., pitch bend for pitch matching) without rework.
+
+**Design decisions:**
+- **MIDIKit** (`MIDIKitIO` only) as SPM dependency — MIT license, Swift 6, modular
+- **AsyncStream** delivery mechanism — minimal overhead, no additional latency
+- **Broad `MIDIInputEvent` enum** — extensible without breaking existing consumers
+- **Port protocol** in `Core/Ports/` — follows existing architecture patterns
+- **Any note, any channel** — no filtering at the CoreMIDI or application level
+
+**Research basis:** `docs/planning-artifacts/research/technical-midi-input-ios-research-2026-03-26.md`
+
+Work order: stories 62.1 → 62.2 → 62.3 → 62.4 (each builds on the previous).
+
+### Story 62.1: Add MIDIKit Dependency and Define MIDI Input Event Types
+
+As a **developer**,
+I want the MIDIKit SPM package available and MIDI input event types defined,
+So that the MIDI input infrastructure has its foundation types and external dependency in place.
+
+**Acceptance Criteria:**
+
+**Given** the Xcode project
+**When** MIDIKit is added as an SPM dependency
+**Then** only the `MIDIKitIO` product is linked to the Peach target
+**And** `import MIDIKitIO` compiles successfully
+
+**Given** the `MIDIInputEvent` enum in `Core/Music/`
+**When** defined
+**Then** it has cases `.noteOn(note: MIDINote, velocity: MIDIVelocity, timestamp: UInt64)`, `.noteOff(note: MIDINote, velocity: MIDIVelocity, timestamp: UInt64)`, and `.pitchBend(value: UInt16, channel: UInt8, timestamp: UInt64)`
+**And** it conforms to `Sendable`
+**And** the timestamp is a raw `MIDITimeStamp` (host ticks) preserving sub-millisecond precision
+
+**Given** the project
+**When** built
+**Then** no entitlements, Info.plist entries, or AVAudioSession changes are required (FR127)
+
+**Given** the full test suite
+**When** run
+**Then** all existing tests pass with zero regressions
+
+### Story 62.2: MIDIInput Port Protocol, Mock, and Composition Root Wiring
+
+As a **developer**,
+I want a `MIDIInput` port protocol with a mock and composition root wiring,
+So that training sessions can consume MIDI events through the standard environment injection pattern and domain logic is fully testable without hardware.
+
+**Acceptance Criteria:**
+
+**Given** `Core/Ports/MIDIInput.swift`
+**When** defined
+**Then** the protocol declares `var events: AsyncStream<MIDIInputEvent> { get }` and `var isConnected: Bool { get }`
+
+**Given** `PeachTests/Core/Ports/MockMIDIInput.swift`
+**When** created
+**Then** it conforms to `MIDIInput`
+**And** it follows the project mock contract: supports yielding events on demand, tracks `isConnected`, provides `reset()`, and allows test-controlled event sequences
+
+**Given** `App/EnvironmentKeys.swift`
+**When** the `@Entry` is added
+**Then** it declares `var midiInput: (any MIDIInput)?` with `nil` default (not all sessions need MIDI)
+
+**Given** `PeachApp.swift`
+**When** built for device
+**Then** a production `MIDIInput` instance is created and injected via `.environment(\.midiInput, adapter)` (adapter created in Story 62.3; this story wires the `nil` default and `@Entry` only)
+
+**Given** the full test suite
+**When** run
+**Then** all existing tests pass with zero regressions
+
+### Story 62.3: MIDIKit Adapter Implementation
+
+As a **developer**,
+I want a production `MIDIInput` implementation wrapping MIDIKit,
+So that MIDI events from any connected device flow into the app as an `AsyncStream<MIDIInputEvent>`.
+
+**Acceptance Criteria:**
+
+**Given** the MIDIKit adapter (in `Core/Audio/` or `Core/MIDI/`)
+**When** initialized
+**Then** it creates an `ObservableMIDIManager` with client name "Peach"
+**And** starts the manager
+**And** adds an input connection with `.allOutputs` mode and `[.filterActiveSensingAndClock]` filter (FR114, FR115)
+
+**Given** a MIDI device connected via USB or Bluetooth
+**When** a note-on or note-off event is received
+**Then** the adapter maps it to a `MIDIInputEvent` with the correct `MIDINote`, `MIDIVelocity`, and raw `MIDITimeStamp` (FR118)
+**And** yields it into the `AsyncStream` continuation from MIDIKit's serial dispatch queue (FR117, FR119)
+
+**Given** a MIDI device is connected or disconnected
+**When** the setup changes
+**Then** `isConnected` reflects whether any MIDI source is currently connected (FR116)
+**And** MIDIKit's managed connection handles reconnection automatically — no manual re-enumeration
+
+**Given** `PeachApp.swift`
+**When** the adapter is wired
+**Then** it replaces the `nil` default with the production instance via `.environment(\.midiInput, adapter)`
+
+**Given** the adapter implementation
+**When** reviewed
+**Then** training sessions depend only on the `MIDIInput` protocol, never on `MIDIKitIO` directly
+**And** `import MIDIKitIO` appears only in the adapter file and `PeachApp.swift`
+
+**Given** the full test suite
+**When** run on Simulator
+**Then** all tests pass (adapter is not exercised on Simulator — domain logic tested via mock) (FR128, NFR-M4)
+
+### Story 62.4: MIDI Input for Continuous Rhythm Matching Training
+
+As a **musician with a MIDI controller**,
+I want to tap rhythms on my MIDI controller during continuous rhythm matching training,
+So that I can use a familiar instrument interface instead of the screen tap button.
+
+**Acceptance Criteria:**
+
+**Given** a MIDI controller is connected and continuous rhythm matching is active
+**When** the user plays any note on any channel
+**Then** the system treats the MIDI note-on as a tap (FR123)
+**And** the system uses the event's `MIDITimeStamp` for hit detection against the audio engine's sample-accurate timing, not wall-clock time (FR124)
+
+**Given** a MIDI note-on is received during active training
+**When** the tap falls within the evaluation window around the gap
+**Then** the system plays immediate auditory tap feedback via `stepSequencer.playImmediateNote()` (FR125)
+**And** visual feedback is shown (same as screen tap)
+
+**Given** a MIDI note-on tap is evaluated
+**When** the result is recorded
+**Then** it produces the same `RhythmOffset`, `GapResult`, observer notifications, and trial aggregation as a screen tap (FR126)
+
+**Given** a MIDI note-on is received outside the evaluation window
+**When** processing
+**Then** it is silently ignored (same behavior as screen taps outside the window)
+
+**Given** no MIDI controller is connected
+**When** training is active
+**Then** screen tap continues to work identically — MIDI input is additive, not a replacement
+
+**Given** the `ContinuousRhythmMatchingSession` MIDI integration
+**When** tested
+**Then** all timing logic is tested on Simulator using `MockMIDIInput` with controlled event sequences and timestamps (NFR-M4)
+**And** the tests verify timestamp-based hit detection, feedback triggering, and result recording
+
+**Given** the full test suite
+**When** run
+**Then** all existing tests pass with zero regressions
+
+---
+
+## Epic 63: Update Planning Documents for MIDI Support
+
+Planning artifacts are updated to reflect that MIDI input is no longer deferred, keeping documentation consistent with the implemented reality.
+
+### Story 63.1: Update Planning Documents for MIDI Support
+
+As a **developer reading the planning docs**,
+I want documentation to reflect that MIDI input is implemented,
+So that the docs remain a reliable source of truth and don't contradict the codebase.
+
+**Acceptance Criteria:**
+
+**Given** `docs/planning-artifacts/prd.md`
+**When** updated
+**Then** FR76 reflects that MIDI input is supported (not "reserved for future")
+**And** the "Deferred" section no longer lists "MIDI input for Rhythm Matching"
+
+**Given** `docs/planning-artifacts/rhythm-training-spec.md`
+**When** updated
+**Then** ADR-7 (Tap-Only Input for V1) is marked as superseded with reference to Epic 62
+**And** "MIDI input" is removed from the "Future Enhancements" section
+
+**Given** `docs/planning-artifacts/architecture.md`
+**When** updated
+**Then** the `inputMethod` field documentation reflects MIDI as a supported input method
+**And** the MIDIInput port protocol and MIDIKit adapter are documented in the architecture
+
+**Given** `docs/planning-artifacts/epics.md`
+**When** reviewed
+**Then** FR76 in the FR coverage map is updated to reflect MIDI support
 
 ---
