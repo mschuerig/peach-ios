@@ -1,6 +1,6 @@
 # Story 62.2: MIDIInput Port Protocol, Mock, and Composition Root Wiring
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,29 +20,29 @@ So that training sessions can consume MIDI events through the standard environme
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `MIDIInput` port protocol (AC: #1)
-  - [ ] 1.1 Create `Peach/Core/Ports/MIDIInput.swift`
-  - [ ] 1.2 Define `protocol MIDIInput` with `var events: AsyncStream<MIDIInputEvent> { get }` and `var isConnected: Bool { get }`
-  - [ ] 1.3 Protocol must be `nonisolated` — Core/Ports protocols do not require MainActor isolation
-- [ ] Task 2: Create `MockMIDIInput` (AC: #2)
-  - [ ] 2.1 Create `PeachTests/Mocks/MockMIDIInput.swift` (NOT `PeachTests/Core/Ports/` — epic AC has wrong path; project convention is `PeachTests/Mocks/`)
-  - [ ] 2.2 Follow the mock contract from `MockStepSequencer` pattern: `final class`, call tracking, callbacks, `reset()`
-  - [ ] 2.3 Implement `events` as `AsyncStream<MIDIInputEvent>` backed by an `AsyncStream.Continuation` stored as a property, so tests can yield events on demand via `send(_ event:)` and `finish()`
-  - [ ] 2.4 Implement `isConnected` as a mutable `Bool` property (default `true`) — tests set directly
-  - [ ] 2.5 Provide `reset()` to clear state
-- [ ] Task 3: Write tests for `MockMIDIInput` (AC: #2)
-  - [ ] 3.1 Create `PeachTests/Mocks/MockMIDIInputTests.swift`
-  - [ ] 3.2 Test yielding events via `send()` and consuming via `for await` loop
-  - [ ] 3.3 Test `finish()` terminates the stream
-  - [ ] 3.4 Test `isConnected` default and mutation
-  - [ ] 3.5 Test `reset()` resets state
-- [ ] Task 4: Add `@Entry` to EnvironmentKeys (AC: #3)
-  - [ ] 4.1 In `Peach/App/EnvironmentKeys.swift`, add `@Entry var midiInput: (any MIDIInput)? = nil` in the Core Environment Keys section
-  - [ ] 4.2 No preview stub needed — `nil` default means "no MIDI available"
-- [ ] Task 5: Verify no regressions (AC: #4)
-  - [ ] 5.1 Run full test suite via `bin/test.sh`
-  - [ ] 5.2 Verify build succeeds via `bin/build.sh` — no new warnings
-  - [ ] 5.3 Confirm no changes to PeachApp.swift — wiring the production instance is story 62.3
+- [x] Task 1: Create `MIDIInput` port protocol (AC: #1)
+  - [x] 1.1 Create `Peach/Core/Ports/MIDIInput.swift`
+  - [x] 1.2 Define `protocol MIDIInput` with `var events: AsyncStream<MIDIInputEvent> { get }` and `var isConnected: Bool { get }`
+  - [x] 1.3 Protocol must be `nonisolated` — Core/Ports protocols do not require MainActor isolation
+- [x] Task 2: Create `MockMIDIInput` (AC: #2)
+  - [x] 2.1 Create `PeachTests/Mocks/MockMIDIInput.swift` (NOT `PeachTests/Core/Ports/` — epic AC has wrong path; project convention is `PeachTests/Mocks/`)
+  - [x] 2.2 Follow the mock contract from `MockStepSequencer` pattern: `final class`, call tracking, callbacks, `reset()`
+  - [x] 2.3 Implement `events` as `AsyncStream<MIDIInputEvent>` backed by an `AsyncStream.Continuation` stored as a property, so tests can yield events on demand via `send(_ event:)` and `finish()`
+  - [x] 2.4 Implement `isConnected` as a mutable `Bool` property (default `true`) — tests set directly
+  - [x] 2.5 Provide `reset()` to clear state
+- [x] Task 3: Write tests for `MockMIDIInput` (AC: #2)
+  - [x] 3.1 Create `PeachTests/Mocks/MockMIDIInputTests.swift`
+  - [x] 3.2 Test yielding events via `send()` and consuming via `for await` loop
+  - [x] 3.3 Test `finish()` terminates the stream
+  - [x] 3.4 Test `isConnected` default and mutation
+  - [x] 3.5 Test `reset()` resets state
+- [x] Task 4: Add `@Entry` to EnvironmentKeys (AC: #3)
+  - [x] 4.1 In `Peach/App/EnvironmentKeys.swift`, add `@Entry var midiInput: (any MIDIInput)? = nil` in the Core Environment Keys section
+  - [x] 4.2 No preview stub needed — `nil` default means "no MIDI available"
+- [x] Task 5: Verify no regressions (AC: #4)
+  - [x] 5.1 Run full test suite via `bin/test.sh`
+  - [x] 5.2 Verify build succeeds via `bin/build.sh` — no new warnings
+  - [x] 5.3 Confirm no changes to PeachApp.swift — wiring the production instance is story 62.3
 
 ## Dev Notes
 
@@ -195,10 +195,29 @@ Recent commits show the MIDI epic is actively in progress:
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Initial test run crashed Clone 1 simulator due to `MIDIVelocity(0)` in noteOff test event — `MIDIVelocity` range is 1-127, not 0-127. Fixed by using `MIDIVelocity(64)` for noteOff release velocity.
+
 ### Completion Notes List
 
+- Created `MIDIInput` nonisolated protocol in `Core/Ports/` with `events: AsyncStream<MIDIInputEvent>` and `isConnected: Bool` — follows existing port protocol pattern (no imports, no `@MainActor`)
+- Created `MockMIDIInput` as `final class` with `AsyncStream.Continuation`-backed event injection: `send(_:)`, `finish()`, `reset()` — reset reinitializes stream/continuation pair for reusability
+- Used `nonisolated(unsafe)` for stream/continuation storage and `nonisolated` for `send`/`finish`/`events` to satisfy `nonisolated` protocol conformance while maintaining mutable state
+- 5 tests covering: event yielding via send/for-await, stream termination via finish, isConnected default/mutation, reset restoring fresh state with working new stream
+- Added `@Entry var midiInput: (any MIDIInput)? = nil` in EnvironmentKeys Core section — no preview stub needed
+- No changes to PeachApp.swift — production wiring deferred to story 62.3
+- All 1488 tests pass (1483 existing + 5 new), build clean (no new warnings)
+
+### Change Log
+
+- 2026-03-26: Implemented story 62.2 — MIDIInput port protocol, MockMIDIInput, tests, and @Entry environment key
+
 ### File List
+
+- Peach/Core/Ports/MIDIInput.swift (new)
+- PeachTests/Mocks/MockMIDIInput.swift (new)
+- PeachTests/Mocks/MockMIDIInputTests.swift (new)
+- Peach/App/EnvironmentKeys.swift (modified — added `@Entry var midiInput`)
