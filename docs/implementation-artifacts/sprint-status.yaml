@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-26 # Story 62.2 created
+# last_updated: 2026-03-26 # Story 62.3 created
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -472,7 +472,7 @@ development_status:
   epic-62: in-progress
   62-1-add-midikit-dependency-and-define-midi-input-event-types: done
   62-2-midiinput-port-protocol-mock-and-composition-root-wiring: done
-  62-3-midikit-adapter-implementation: backlog
+  62-3-midikit-adapter-implementation: ready-for-dev
   62-4-midi-input-for-continuous-rhythm-matching-training: backlog
   epic-62-retrospective: optional
 
