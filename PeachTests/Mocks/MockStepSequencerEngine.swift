@@ -55,4 +55,10 @@ final class MockStepSequencerEngine: StepSequencerEngine {
         immediateNoteOffCallCount += 1
         onImmediateNoteOff?()
     }
+
+    var samplePositionForHostTimeOverride: Int64?
+
+    func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
+        samplePositionForHostTimeOverride ?? currentSamplePosition
+    }
 }

@@ -30,6 +30,27 @@ struct ContinuousRhythmMatchingSessionTests {
         var samplesPerCycle: Int64 { sequencer.samplesPerCycle }
     }
 
+    private struct MIDIFixture {
+        let session: ContinuousRhythmMatchingSession
+        let sequencer: MockStepSequencer
+        let observer: MockContinuousRhythmMatchingObserver
+        let midiInput: MockMIDIInput
+        let notificationCenter: NotificationCenter
+
+        func defaultSettings(
+            tempo: TempoBPM = TempoBPM(120),
+            enabledGapPositions: Set<StepPosition> = [.fourth]
+        ) -> ContinuousRhythmMatchingSettings {
+            ContinuousRhythmMatchingSettings(
+                tempo: tempo,
+                enabledGapPositions: enabledGapPositions
+            )
+        }
+
+        var samplesPerStep: Int64 { sequencer.samplesPerStep }
+        var samplesPerCycle: Int64 { sequencer.samplesPerCycle }
+    }
+
     private func makeSession() -> Fixture {
         let sequencer = MockStepSequencer()
         // Set timing constants matching 120 BPM at 44100 Hz
@@ -50,6 +71,32 @@ struct ContinuousRhythmMatchingSessionTests {
             session: session,
             sequencer: sequencer,
             observer: observer,
+            notificationCenter: notificationCenter
+        )
+    }
+
+    private func makeSessionWithMIDI() -> MIDIFixture {
+        let sequencer = MockStepSequencer()
+        sequencer.samplesPerStep = 5512
+        sequencer.samplesPerCycle = 22050
+        sequencer.sampleRate = .standard44100
+
+        let observer = MockContinuousRhythmMatchingObserver()
+        let midiInput = MockMIDIInput()
+        let notificationCenter = NotificationCenter()
+
+        let session = ContinuousRhythmMatchingSession(
+            stepSequencer: sequencer,
+            observers: [observer],
+            midiInput: midiInput,
+            notificationCenter: notificationCenter
+        )
+
+        return MIDIFixture(
+            session: session,
+            sequencer: sequencer,
+            observer: observer,
+            midiInput: midiInput,
             notificationCenter: notificationCenter
         )
     }
@@ -614,6 +661,263 @@ struct ContinuousRhythmMatchingSessionTests {
         // Session should still be running and the hit should still be recorded
         #expect(f.session.isRunning)
         #expect(f.session.cyclesInCurrentTrial == 1)
+
+        f.session.stop()
+    }
+
+    // MARK: - MIDI Input
+
+    @Test("MIDI noteOn within evaluation window records a hit with correct offset")
+    func midiNoteOnWithinWindowRecordsHit() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let tapSamplePosition = gapSamplePosition + 441 // ~10ms late
+
+        f.sequencer.samplePositionForHostTimeOverride = tapSamplePosition
+        f.sequencer.currentSamplePosition = tapSamplePosition
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.session.cyclesInCurrentTrial == 1)
+        #expect(f.session.lastHitOffsetMs != nil)
+        let offsetMs = f.session.lastHitOffsetMs!
+        #expect(abs(offsetMs - 10.0) < 0.1)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI noteOn within evaluation window triggers playImmediateNote with correct velocity")
+    func midiNoteOnTriggersPlayImmediateNote() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
+        f.sequencer.currentSamplePosition = gapSamplePosition + 220
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.sequencer.playImmediateNoteCallCount == 1)
+        #expect(f.sequencer.lastPlayImmediateNoteVelocity == StepVelocity.normal)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI noteOn within evaluation window shows visual feedback")
+    func midiNoteOnShowsVisualFeedback() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
+        f.sequencer.currentSamplePosition = gapSamplePosition + 220
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.session.showFeedback)
+        #expect(f.session.lastHitOffsetMs != nil)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI noteOn outside evaluation window is silently ignored")
+    func midiNoteOnOutsideWindowIsIgnored() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        // Position one full step away from gap — outside the half-step window
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let farPosition = gapSamplePosition + f.samplesPerStep
+        f.sequencer.samplePositionForHostTimeOverride = farPosition
+        f.sequencer.currentSamplePosition = farPosition
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.session.cyclesInCurrentTrial == 0)
+        #expect(f.sequencer.playImmediateNoteCallCount == 0)
+        #expect(!f.session.showFeedback)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI noteOn in already-hit cycle is ignored (double-tap prevention)")
+    func midiNoteOnDoubleTapPrevention() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
+        f.sequencer.currentSamplePosition = gapSamplePosition + 220
+
+        // First tap via screen
+        f.session.handleTap()
+        #expect(f.session.cyclesInCurrentTrial == 1)
+
+        // Second tap via MIDI — should be ignored
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.session.cyclesInCurrentTrial == 1)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI noteOff and pitchBend events are ignored")
+    func midiNoteOffAndPitchBendIgnored() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
+        f.sequencer.currentSamplePosition = gapSamplePosition + 220
+
+        f.midiInput.send(.noteOff(note: MIDINote(60), velocity: MIDIVelocity(1), timestamp: 12345))
+        f.midiInput.send(.pitchBend(value: PitchBendValue(8192), channel: MIDIChannel(0), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.session.cyclesInCurrentTrial == 0)
+        #expect(f.sequencer.playImmediateNoteCallCount == 0)
+
+        f.session.stop()
+    }
+
+    @Test("session with nil midiInput works identically to before")
+    func sessionWithNilMidiInputWorksIdentically() async {
+        let f = makeSession() // no MIDI input
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.currentSamplePosition = gapSamplePosition + 220
+        f.session.handleTap()
+
+        #expect(f.session.cyclesInCurrentTrial == 1)
+        #expect(f.sequencer.playImmediateNoteCallCount == 1)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI tap uses converted sample position, not current position")
+    func midiTapUsesConvertedSamplePosition() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        // Override returns a position within the window
+        f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
+        // But currentSamplePosition is far away — outside the window
+        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerStep
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        // Should use the converted position (within window), not currentSamplePosition (outside window)
+        #expect(f.session.cyclesInCurrentTrial == 1)
+
+        f.session.stop()
+    }
+
+    @Test("MIDI listening task is cancelled when stop is called")
+    func midiListeningCancelledOnStop() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        f.session.stop()
+
+        // Send MIDI event after stop — should be ignored
+        _ = f.session.nextCycle()
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
+        f.sequencer.currentSamplePosition = gapSamplePosition + 220
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.session.cyclesInCurrentTrial == 0)
+        #expect(!f.session.isRunning)
+    }
+
+    @Test("MIDI noteOn while session is not running is ignored")
+    func midiNoteOnWhileNotRunningIsIgnored() async {
+        let f = makeSessionWithMIDI()
+        // Do not start the session
+
+        f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
+
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(!f.session.isRunning)
+        #expect(f.session.cyclesInCurrentTrial == 0)
+    }
+
+    @Test("trial completion with mix of screen taps and MIDI taps produces correct aggregation")
+    func mixedScreenAndMidiTapsProduceCorrectTrial() async {
+        let f = makeSessionWithMIDI()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        for i in 0..<16 {
+            _ = f.session.nextCycle()
+            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            let tapPosition = gapSamplePosition + 220
+
+            f.sequencer.samplePositionForHostTimeOverride = tapPosition
+            f.sequencer.currentSamplePosition = tapPosition
+
+            if i % 2 == 0 {
+                // Even cycles: screen tap
+                f.session.handleTap()
+            } else {
+                // Odd cycles: MIDI tap
+                f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: UInt64(i)))
+                try? await Task.sleep(for: .milliseconds(20))
+            }
+        }
+
+        // Allow any remaining async MIDI events to process
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(f.observer.completedCallCount == 1)
+        #expect(f.observer.lastResult?.gapResults.count == 16)
+        #expect(f.observer.lastResult?.tempo == TempoBPM(120))
 
         f.session.stop()
     }

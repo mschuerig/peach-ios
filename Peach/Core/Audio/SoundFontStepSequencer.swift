@@ -14,6 +14,7 @@ protocol StepSequencerEngine {
     func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async
     func immediateNoteOn(channel: SoundFontEngine.ChannelID, note: UInt8, velocity: UInt8)
     func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8)
+    func samplePosition(forHostTime hostTime: UInt64) -> Int64
 }
 
 extension SoundFontEngine: StepSequencerEngine {}
@@ -154,6 +155,10 @@ final class SoundFontStepSequencer: StepSequencer {
             guard !Task.isCancelled else { return }
             engine.immediateNoteOff(channel: channel, note: midiNoteRaw)
         }
+    }
+
+    func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
+        engine.samplePosition(forHostTime: hostTime)
     }
 
     func stop() async throws {

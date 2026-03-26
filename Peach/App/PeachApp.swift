@@ -111,14 +111,16 @@ struct PeachApp: App {
             )
             _stepSequencer = State(wrappedValue: soundFontStepSequencer)
 
+            let midiAdapter = MIDIKitAdapter()
+            _midiAdapter = State(wrappedValue: midiAdapter)
+
             _continuousRhythmMatchingSession = State(wrappedValue: Self.createContinuousRhythmMatchingSession(
                 stepSequencer: soundFontStepSequencer,
                 profile: profile,
-                dataStore: dataStore
+                dataStore: dataStore,
+                midiInput: midiAdapter
             ))
             try? Tips.configure()
-
-            _midiAdapter = State(wrappedValue: MIDIKitAdapter())
         } catch {
             fatalError("Failed to initialize app: \(error)")
         }
@@ -286,14 +288,16 @@ struct PeachApp: App {
     private static func createContinuousRhythmMatchingSession(
         stepSequencer: StepSequencer,
         profile: PerceptualProfile,
-        dataStore: TrainingDataStore
+        dataStore: TrainingDataStore,
+        midiInput: (any MIDIInput)? = nil
     ) -> ContinuousRhythmMatchingSession {
         let profileAdapter = ContinuousRhythmMatchingProfileAdapter(profile: profile)
         let storeAdapter = ContinuousRhythmMatchingStoreAdapter(store: dataStore)
         let observers: [ContinuousRhythmMatchingObserver] = [storeAdapter, profileAdapter]
         return ContinuousRhythmMatchingSession(
             stepSequencer: stepSequencer,
-            observers: observers
+            observers: observers,
+            midiInput: midiInput
         )
     }
 

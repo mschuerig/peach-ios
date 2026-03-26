@@ -32,6 +32,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     // MARK: - Dependencies
 
     private let stepSequencer: any StepSequencer
+    private let midiInput: (any MIDIInput)?
     private let observers: [ContinuousRhythmMatchingObserver]
     private var lifecycle: SessionLifecycle?
 
@@ -43,6 +44,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private var hitCycleIndices: Set<Int> = []
     private var startTask: Task<Void, Never>?
     private var trackingTask: Task<Void, Never>?
+    private var midiListeningTask: Task<Void, Never>?
 
     /// Gap positions indexed by cycle number, populated by nextCycle() during batch scheduling.
     private var gapPositions: [StepPosition] = []
@@ -52,9 +54,11 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     init(
         stepSequencer: any StepSequencer,
         observers: [ContinuousRhythmMatchingObserver] = [],
+        midiInput: (any MIDIInput)? = nil,
         notificationCenter: NotificationCenter = .default
     ) {
         self.stepSequencer = stepSequencer
+        self.midiInput = midiInput
         self.observers = observers
         self.lifecycle = SessionLifecycle(
             logger: logger,
@@ -79,6 +83,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         startTask = nil
         trackingTask?.cancel()
         trackingTask = nil
+        midiListeningTask?.cancel()
+        midiListeningTask = nil
         lifecycle?.cancelFeedbackTask()
 
         Task {
@@ -121,6 +127,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             do {
                 try await stepSequencer.start(tempo: settings.tempo, stepProvider: self)
                 startTrackingLoop()
+                startMIDIListening()
             } catch is CancellationError {
                 logger.info("Session task cancelled")
             } catch {
@@ -130,19 +137,20 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         }
     }
 
-    func handleTap() {
+    func handleTap(atSamplePosition overrideSamplePosition: Int64? = nil) {
         let timing = stepSequencer.timing
+        let samplePosition = overrideSamplePosition ?? timing.samplePosition
 
         guard isRunning else {
             logger.debug("handleTap() called but not running")
             return
         }
 
-        guard timing.samplePosition >= 0,
+        guard samplePosition >= 0,
               timing.samplesPerStep > 0,
               timing.samplesPerCycle > 0 else { return }
 
-        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerCycle)
+        let playingCycleIndex = Int(samplePosition / timing.samplesPerCycle)
         guard playingCycleIndex < gapPositions.count else { return }
         guard !hitCycleIndices.contains(playingCycleIndex) else { return }
 
@@ -150,7 +158,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * timing.samplesPerStep
         let windowHalfSamples = timing.samplesPerStep / 2
 
-        let offsetSamples = timing.samplePosition - gapSampleOffset
+        let offsetSamples = samplePosition - gapSampleOffset
 
         if abs(offsetSamples) <= windowHalfSamples {
             let offset = Double(offsetSamples) / timing.sampleRate.rawValue
@@ -190,6 +198,24 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
         gapPositions.append(selectedPosition)
         return CycleDefinition(gapPosition: selectedPosition)
+    }
+
+    // MARK: - MIDI Listening
+
+    private func startMIDIListening() {
+        guard let midiInput else { return }
+        midiListeningTask = Task {
+            for await event in midiInput.events {
+                guard !Task.isCancelled, isRunning else { continue }
+                switch event {
+                case .noteOn(_, _, let timestamp):
+                    let samplePos = stepSequencer.samplePosition(forHostTime: timestamp)
+                    handleTap(atSamplePosition: samplePos)
+                case .noteOff, .pitchBend:
+                    break
+                }
+            }
+        }
     }
 
     // MARK: - Real-Time Tracking

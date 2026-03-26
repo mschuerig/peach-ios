@@ -23,6 +23,14 @@ final class MockStepSequencer: StepSequencer {
         )
     }
 
+    // MARK: - Host Time Conversion
+
+    var samplePositionForHostTimeOverride: Int64?
+
+    func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
+        samplePositionForHostTimeOverride ?? currentSamplePosition
+    }
+
     // MARK: - Test State Tracking
 
     var startCallCount = 0
@@ -129,6 +137,7 @@ final class MockStepSequencer: StepSequencer {
         samplesPerStep = 0
         samplesPerCycle = 0
         sampleRate = .standard44100
+        samplePositionForHostTimeOverride = nil
         onStartCalled = nil
         onStopCalled = nil
         onPlayImmediateNoteCalled = nil

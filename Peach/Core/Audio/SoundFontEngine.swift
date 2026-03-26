@@ -21,6 +21,7 @@ nonisolated private struct ScheduleData: @unchecked Sendable {
     var count: Int = 0
     var nextIndex: Int = 0
     var samplePosition: Int64 = 0
+    var hostTimeAtSample: UInt64 = 0
     var midiBlocks: [UInt8: AUScheduleMIDIEventBlock] = [:]
 }
 
@@ -163,6 +164,7 @@ final class SoundFontEngine {
                 }
 
                 data.samplePosition = windowEnd
+                data.hostTimeAtSample = timestamp.pointee.mHostTime
             }
 
             return noErr
@@ -366,6 +368,7 @@ final class SoundFontEngine {
             data.count = 0
             data.nextIndex = 0
             data.samplePosition = 0
+            data.hostTimeAtSample = 0
         }
     }
 
@@ -376,6 +379,24 @@ final class SoundFontEngine {
     var currentSamplePosition: Int64 {
         scheduleLockState.withLock { data in data.samplePosition }
     }
+
+    func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
+        let (knownHostTime, knownSamplePos) = scheduleLockState.withLock { data in
+            (data.hostTimeAtSample, data.samplePosition)
+        }
+        guard knownHostTime != 0 else { return knownSamplePos }
+
+        let deltaTicks = Int64(hostTime) - Int64(knownHostTime)
+        let deltaNanos = deltaTicks * Int64(Self.timebaseInfo.numer) / Int64(Self.timebaseInfo.denom)
+        let deltaSeconds = Double(deltaNanos) / 1_000_000_000.0
+        return knownSamplePos + Int64(deltaSeconds * sampleRate.rawValue)
+    }
+
+    private nonisolated static let timebaseInfo: mach_timebase_info_data_t = {
+        var info = mach_timebase_info_data_t()
+        mach_timebase_info(&info)
+        return info
+    }()
 
     // MARK: - Schedule Scanning (testable pure function)
 
