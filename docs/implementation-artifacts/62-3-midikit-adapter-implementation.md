@@ -1,6 +1,6 @@
 # Story 62.3: MIDIKit Adapter Implementation
 
-Status: review
+Status: done
 
 ## Story
 

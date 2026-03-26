@@ -50,24 +50,24 @@ final class MIDIKitAdapter: MIDIInput {
                         switch event {
                         case .noteOn(let payload):
                             let velocity = payload.velocity.midi1Value
+                            let note = MIDINote(Int(payload.note.number))
                             if velocity == 0 {
                                 cont.yield(.noteOff(
-                                    note: MIDINote(Int(payload.note.number)),
-                                    velocity: MIDIVelocity(1),
+                                    note: note,
+                                    velocity: MIDIVelocity(max(1, UInt8(velocity))),
                                     timestamp: timeStamp
                                 ))
                             } else {
                                 cont.yield(.noteOn(
-                                    note: MIDINote(Int(payload.note.number)),
+                                    note: note,
                                     velocity: MIDIVelocity(UInt8(velocity)),
                                     timestamp: timeStamp
                                 ))
                             }
                         case .noteOff(let payload):
-                            let velocity = max(1, UInt8(payload.velocity.midi1Value))
                             cont.yield(.noteOff(
                                 note: MIDINote(Int(payload.note.number)),
-                                velocity: MIDIVelocity(velocity),
+                                velocity: MIDIVelocity(max(1, UInt8(payload.velocity.midi1Value))),
                                 timestamp: timeStamp
                             ))
                         case .pitchBend(let payload):
@@ -92,6 +92,10 @@ final class MIDIKitAdapter: MIDIInput {
             }
         }
         updateConnectionStatus()
+    }
+
+    deinit {
+        continuation.finish()
     }
 
     private func updateConnectionStatus() {
