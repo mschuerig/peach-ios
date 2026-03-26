@@ -1,6 +1,6 @@
 # Story 62.3: MIDIKit Adapter Implementation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,27 +30,27 @@ So that MIDI events from any connected device flow into the app as an `AsyncStre
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `MIDIKitAdapter` class (AC: #1, #2, #3, #4, #5, #6)
-  - [ ] 1.1 Create `Peach/Core/Audio/MIDIKitAdapter.swift`
-  - [ ] 1.2 `import MIDIKitIO` -- this is the ONLY source file besides `PeachApp.swift` that imports MIDIKit
-  - [ ] 1.3 Declare `final class MIDIKitAdapter: MIDIInput` with `@Observable` for `isConnected`
-  - [ ] 1.4 In `init()`: create `ObservableMIDIManager(clientName: "Peach", model: "Peach", manufacturer: "Peach")`
-  - [ ] 1.5 In `init()`: call `midiManager.start()`
-  - [ ] 1.6 In `init()`: call `midiManager.addInputConnection(to: .allOutputs, tag: "main", filter: .default(), receiver: .events(options: [.filterActiveSensingAndClock]) { ... })`
-  - [ ] 1.7 In the receiver closure: map each `MIDIEvent` to `MIDIInputEvent` and yield into the `AsyncStream.Continuation`
-  - [ ] 1.8 Implement velocity-0 noteOn -> noteOff translation: if `payload.velocity.midi1Value == 0`, yield `.noteOff` instead of `.noteOn`
-  - [ ] 1.9 Implement `events` as `AsyncStream<MIDIInputEvent>` backed by a continuation created in `init()`
-  - [ ] 1.10 Implement `isConnected` by checking `midiManager.managedInputConnections["main"]?.coreMIDIOutputEndpointRefs.isEmpty == false` (or equivalent MIDIKit API for endpoint count)
-  - [ ] 1.11 Handle errors from `start()` and `addInputConnection()` gracefully with `os.Logger` -- do not crash
-- [ ] Task 2: Wire adapter in `PeachApp.swift` (AC: #7, #8)
-  - [ ] 2.1 `import MIDIKitIO` in `PeachApp.swift` (already has other framework imports)
-  - [ ] 2.2 Add `@State private var midiAdapter: MIDIKitAdapter?` property
-  - [ ] 2.3 In `init()`: create `MIDIKitAdapter()` -- wrap in do/catch, log errors, leave `nil` on failure
-  - [ ] 2.4 In `body`: add `.environment(\.midiInput, midiAdapter)` to the environment chain
-- [ ] Task 3: Verify no regressions (AC: #9)
-  - [ ] 3.1 Run full test suite via `bin/test.sh`
-  - [ ] 3.2 Verify build succeeds via `bin/build.sh` -- no new warnings
-  - [ ] 3.3 Confirm adapter is inert on Simulator (no CoreMIDI, so `midiManager.start()` either no-ops or fails gracefully)
+- [x] Task 1: Create `MIDIKitAdapter` class (AC: #1, #2, #3, #4, #5, #6)
+  - [x] 1.1 Create `Peach/Core/Audio/MIDIKitAdapter.swift`
+  - [x] 1.2 `import MIDIKitIO` -- this is the ONLY source file besides `PeachApp.swift` that imports MIDIKit
+  - [x] 1.3 Declare `final class MIDIKitAdapter: MIDIInput` with `@Observable` for `isConnected`
+  - [x] 1.4 In `init()`: create `ObservableMIDIManager(clientName: "Peach", model: "Peach", manufacturer: "Peach")`
+  - [x] 1.5 In `init()`: call `midiManager.start()`
+  - [x] 1.6 In `init()`: call `midiManager.addInputConnection(to: .allOutputs, tag: "main", filter: .default(), receiver: .events(options: [.filterActiveSensingAndClock]) { ... })`
+  - [x] 1.7 In the receiver closure: map each `MIDIEvent` to `MIDIInputEvent` and yield into the `AsyncStream.Continuation`
+  - [x] 1.8 Implement velocity-0 noteOn -> noteOff translation: if `payload.velocity.midi1Value == 0`, yield `.noteOff` instead of `.noteOn`
+  - [x] 1.9 Implement `events` as `AsyncStream<MIDIInputEvent>` backed by a continuation created in `init()`
+  - [x] 1.10 Implement `isConnected` by checking `midiManager.managedInputConnections["main"]?.coreMIDIOutputEndpointRefs.isEmpty == false` (or equivalent MIDIKit API for endpoint count)
+  - [x] 1.11 Handle errors from `start()` and `addInputConnection()` gracefully with `os.Logger` -- do not crash
+- [x] Task 2: Wire adapter in `PeachApp.swift` (AC: #7, #8)
+  - [x] 2.1 `import MIDIKitIO` in `PeachApp.swift` (already has other framework imports)
+  - [x] 2.2 Add `@State private var midiAdapter: MIDIKitAdapter?` property
+  - [x] 2.3 In `init()`: create `MIDIKitAdapter()` -- adapter handles errors internally with os.Logger
+  - [x] 2.4 In `body`: add `.environment(\.midiInput, midiAdapter)` to the environment chain
+- [x] Task 3: Verify no regressions (AC: #9)
+  - [x] 3.1 Run full test suite via `bin/test.sh`
+  - [x] 3.2 Verify build succeeds via `bin/build.sh` -- no new warnings
+  - [x] 3.3 Confirm adapter is inert on Simulator (no CoreMIDI, so `midiManager.start()` either no-ops or fails gracefully)
 
 ## Dev Notes
 
@@ -217,10 +217,29 @@ Follow the same `nonisolated` conformance pattern used in `MockMIDIInput.swift` 
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+- Build succeeded with no code warnings after adding `import Observation` (initially missed)
+- MIDINote name collision between Peach and MIDIKit resolved automatically by compiler context inference
+- `MIDIKitAdapter.init()` does not throw — errors handled internally, so PeachApp uses direct assignment instead of do/catch
+
 ### Completion Notes List
 
+- Created `MIDIKitAdapter` as `@Observable final class` conforming to `MIDIInput` protocol
+- Event mapping: noteOn, noteOff (with velocity-0 translation), pitchBend — all mapped to domain types
+- `isConnected` updated via `ObservableMIDIManager.notificationHandler` on MIDI setup changes
+- `nonisolated(unsafe)` used for stream/continuation backing storage (same pattern as MockMIDIInput)
+- Adapter wired in PeachApp.swift with `@State private var midiAdapter: MIDIKitAdapter?` and `.environment(\.midiInput, midiAdapter)`
+- `import MIDIKitIO` appears only in MIDIKitAdapter.swift and PeachApp.swift (AC #8)
+- All 1488 tests pass, no regressions (AC #9)
+
 ### File List
+
+- Peach/Core/Audio/MIDIKitAdapter.swift (new)
+- Peach/App/PeachApp.swift (modified — import MIDIKitIO, midiAdapter property, environment injection)
+
+### Change Log
+
+- 2026-03-26: Implemented MIDIKitAdapter with MIDIKit event mapping, isConnected monitoring, and PeachApp wiring

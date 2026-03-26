@@ -1,3 +1,4 @@
+import MIDIKitIO
 import SwiftUI
 import SwiftData
 import TipKit
@@ -19,6 +20,7 @@ struct PeachApp: App {
     @State private var notePlayer: any NotePlayer
     @State private var rhythmPlayer: any RhythmPlayer
     @State private var stepSequencer: SoundFontStepSequencer
+    @State private var midiAdapter: MIDIKitAdapter?
     @State private var activeSession: (any TrainingSession)?
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
@@ -115,6 +117,8 @@ struct PeachApp: App {
                 dataStore: dataStore
             ))
             try? Tips.configure()
+
+            _midiAdapter = State(wrappedValue: MIDIKitAdapter())
         } catch {
             fatalError("Failed to initialize app: \(error)")
         }
@@ -163,6 +167,7 @@ struct PeachApp: App {
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
                 .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
+                .environment(\.midiInput, midiAdapter)
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
                     let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
