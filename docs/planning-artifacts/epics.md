@@ -6457,7 +6457,7 @@ So that the MIDI input infrastructure has its foundation types and external depe
 
 **Given** the `MIDIInputEvent` enum in `Core/Music/`
 **When** defined
-**Then** it has cases `.noteOn(note: MIDINote, velocity: MIDIVelocity, timestamp: UInt64)`, `.noteOff(note: MIDINote, velocity: MIDIVelocity, timestamp: UInt64)`, and `.pitchBend(value: UInt16, channel: UInt8, timestamp: UInt64)`
+**Then** it has cases `.noteOn(note: MIDINote, velocity: MIDIVelocity, timestamp: UInt64)`, `.noteOff(note: MIDINote, velocity: MIDIVelocity, timestamp: UInt64)`, and `.pitchBend(value: PitchBendValue, channel: MIDIChannel, timestamp: UInt64)`
 **And** it conforms to `Sendable`
 **And** the timestamp is a raw `MIDITimeStamp` (host ticks) preserving sub-millisecond precision
 
@@ -6514,7 +6514,8 @@ So that MIDI events from any connected device flow into the app as an `AsyncStre
 
 **Given** a MIDI device connected via USB or Bluetooth
 **When** a note-on or note-off event is received
-**Then** the adapter maps it to a `MIDIInputEvent` with the correct `MIDINote`, `MIDIVelocity`, and raw `MIDITimeStamp` (FR118)
+**Then** the adapter maps it to a `MIDIInputEvent` with the correct `MIDINote`, `MIDIVelocity`, `MIDIChannel`, and raw `MIDITimeStamp` (FR118)
+**And** a MIDI note-on with velocity 0 is translated to `.noteOff` (MIDI convention; `MIDIVelocity` enforces range 1–127)
 **And** yields it into the `AsyncStream` continuation from MIDIKit's serial dispatch queue (FR117, FR119)
 
 **Given** a MIDI device is connected or disconnected

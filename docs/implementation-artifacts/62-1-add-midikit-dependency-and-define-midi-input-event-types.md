@@ -1,6 +1,6 @@
 # Story 62.1: Add MIDIKit Dependency and Define MIDI Input Event Types
 
-Status: review
+Status: done
 
 ## Story
 
@@ -134,17 +134,26 @@ None required.
 - Boy Scout fix: added missing `nonisolated` keyword to `MIDIVelocity` struct (was inconsistent with `MIDINote` and `PitchBendValue`)
 - 6 new tests for MIDIInputEvent covering construction, equality, and Sendable conformance
 - All 1478 tests pass, no regressions, no new warnings, no entitlement/Info.plist/AVAudioSession changes
+- Code review fix: created `MIDIChannel` domain type (range 0-15) replacing raw `UInt8` in `.pitchBend` case
+- Code review fix: tightened MIDIKit SPM pin from `upToNextMajorVersion` to `upToNextMinorVersion` for 0.x safety
+- Code review fix: added velocity-0 → `.noteOff` translation requirement to story 62.3 AC
+- Code review fix: corrected epic 62.1 AC to use `PitchBendValue` and `MIDIChannel` domain types
+- 5 new MIDIChannel tests, all 1483 tests pass
 
 ### Change Log
 
 - 2026-03-26: Implemented story 62.1 — MIDIKit dependency and MIDIInputEvent type
+- 2026-03-26: Code review fixes — MIDIChannel domain type, version pinning, epic AC corrections
 
 ### File List
 
-- `Peach.xcodeproj/project.pbxproj` (modified — MIDIKit SPM dependency)
+- `Peach.xcodeproj/project.pbxproj` (modified — MIDIKit SPM dependency, upToNextMinorVersion)
 - `Peach.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved` (new — SPM lock file)
+- `Peach/Core/Music/MIDIChannel.swift` (new — domain type, range 0-15)
 - `Peach/Core/Music/MIDIInputEvent.swift` (new — domain enum)
 - `Peach/Core/Music/MIDIVelocity.swift` (modified — added `nonisolated` keyword)
+- `PeachTests/Core/Music/MIDIChannelTests.swift` (new — 5 tests)
 - `PeachTests/Core/Music/MIDIInputEventTests.swift` (new — 6 tests)
 - `docs/implementation-artifacts/sprint-status.yaml` (modified — status update)
 - `docs/implementation-artifacts/62-1-add-midikit-dependency-and-define-midi-input-event-types.md` (modified — task completion)
+- `docs/planning-artifacts/epics.md` (modified — corrected AC types, added velocity-0 constraint to 62.3)

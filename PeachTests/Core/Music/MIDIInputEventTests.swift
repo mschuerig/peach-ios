@@ -32,11 +32,11 @@ struct MIDIInputEventTests {
 
     @Test("Creates pitchBend event with valid domain types")
     func pitchBend() async {
-        let event = MIDIInputEvent.pitchBend(value: PitchBendValue.center, channel: 0, timestamp: 555555555)
+        let event = MIDIInputEvent.pitchBend(value: PitchBendValue.center, channel: MIDIChannel(0), timestamp: 555555555)
 
         if case .pitchBend(let value, let channel, let timestamp) = event {
             #expect(value == PitchBendValue.center)
-            #expect(channel == 0)
+            #expect(channel == MIDIChannel(0))
             #expect(timestamp == 555555555)
         } else {
             Issue.record("Expected pitchBend case")
