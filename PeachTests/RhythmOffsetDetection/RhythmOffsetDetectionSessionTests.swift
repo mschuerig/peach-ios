@@ -334,8 +334,8 @@ struct RhythmOffsetDetectionSessionTests {
         f.session.start(settings: defaultRhythmSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(f.session.currentOffsetPercentage != nil)
-        #expect(f.session.currentOffsetPercentage! > 0)
+        let currentOffset = try #require(f.session.currentOffsetPercentage)
+        #expect(currentOffset > 0)
 
         f.session.stop()
 
@@ -412,9 +412,8 @@ struct RhythmOffsetDetectionSessionTests {
 
         f.session.handleAnswer(direction: .late)
 
-        let percentage = f.session.lastCompletedOffsetPercentage
-        #expect(percentage != nil)
-        #expect(percentage! > 0)
+        let percentage = try #require(f.session.lastCompletedOffsetPercentage)
+        #expect(percentage > 0)
     }
 
     @Test("lastCompletedOffsetPercentage resets on stop")
@@ -452,8 +451,8 @@ struct RhythmOffsetDetectionSessionTests {
 
         f.session.handleAnswer(direction: .late) // correct answer
 
-        #expect(f.session.sessionBestOffsetPercentage != nil)
-        #expect(f.session.sessionBestOffsetPercentage! > 0)
+        let sessionBest = try #require(f.session.sessionBestOffsetPercentage)
+        #expect(sessionBest > 0)
     }
 
     @Test("sessionBestOffsetPercentage does not update on incorrect answer")

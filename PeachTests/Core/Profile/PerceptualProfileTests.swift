@@ -404,7 +404,7 @@ struct PerceptualProfileTests {
     // MARK: - Rhythm Overall Accuracy
 
     @Test("rhythmOverallAccuracy computes combined accuracy")
-    func rhythmOverallAccuracyComputesCombined() async {
+    func rhythmOverallAccuracyComputesCombined() async throws {
         let profile = PerceptualProfile()
 
         // 2 samples at tempo 120 early, mean offset 20ms
@@ -423,10 +423,9 @@ struct PerceptualProfileTests {
             ]
         ))
 
-        let accuracy = profile.rhythmOverallAccuracy
+        let accuracy = try #require(profile.rhythmOverallAccuracy)
         // weighted mean: (20*2 + 10*1) / 3 = 50/3 ≈ 16.67
-        #expect(accuracy != nil)
-        #expect(abs(accuracy! - 50.0 / 3.0) < 0.01)
+        #expect(abs(accuracy - 50.0 / 3.0) < 0.01)
     }
 
     @Test("rhythmOverallAccuracy returns nil with no data")

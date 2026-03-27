@@ -86,8 +86,8 @@ struct TrainingDataTransferServiceTests {
         let (service, dataStore) = try makeService()
         try dataStore.save(makeComparison())
         service.refreshExport()
-        #expect(service.exportCSV != nil)
-        #expect(service.exportCSV!.contains("pitchDiscrimination"))
+        let csv = try #require(service.exportCSV)
+        #expect(csv.contains("pitchDiscrimination"))
     }
 
     @Test("refreshExport returns nil when store is empty")

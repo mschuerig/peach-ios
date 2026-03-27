@@ -57,7 +57,8 @@ struct PitchMatchingScreen: View {
                 },
                 onCommit: { value in
                     pitchMatchingSession.commitPitch(value)
-                }
+                },
+                externalValue: pitchMatchingSession.midiPitchBendValue
             )
             .padding()
         }

@@ -261,10 +261,9 @@ struct PitchDiscriminationSessionTests {
 
         session.handleAnswer(isHigher: true)
 
-        let record = mockDataStore.lastSavedRecord
-        #expect(record != nil)
+        let record = try #require(mockDataStore.lastSavedRecord)
         // Target note should be 7 semitones above reference note
-        #expect(record!.targetNote == record!.referenceNote + 7)
+        #expect(record.targetNote == record.referenceNote + 7)
     }
 
     @Test("start with perfectFifth sets currentInterval to perfectFifth")

@@ -29,6 +29,7 @@ final class PitchMatchingSession: TrainingSession {
     private let notePlayer: NotePlayer
     private let profile: TrainingProfile
     private let observers: [PitchMatchingObserver]
+    private let midiInput: (any MIDIInput)?
     private var lifecycle: SessionLifecycle?
 
     // MARK: - Settings
@@ -47,6 +48,12 @@ final class PitchMatchingSession: TrainingSession {
         return current.interval != .prime
     }
 
+    // MARK: - MIDI State
+
+    private var midiListeningTask: Task<Void, Never>?
+    private var hasBeenDeflected = false
+    private(set) var midiPitchBendValue: Double?
+
     // MARK: - Internal State
 
     private var currentHandle: PlaybackHandle?
@@ -60,6 +67,7 @@ final class PitchMatchingSession: TrainingSession {
         notePlayer: NotePlayer,
         profile: TrainingProfile,
         observers: [PitchMatchingObserver] = [],
+        midiInput: (any MIDIInput)? = nil,
         notificationCenter: NotificationCenter = .default,
         backgroundNotificationName: Notification.Name? = nil,
         foregroundNotificationName: Notification.Name? = nil
@@ -67,6 +75,7 @@ final class PitchMatchingSession: TrainingSession {
         self.notePlayer = notePlayer
         self.profile = profile
         self.observers = observers
+        self.midiInput = midiInput
 
         self.lifecycle = SessionLifecycle(
             logger: logger,
@@ -90,6 +99,8 @@ final class PitchMatchingSession: TrainingSession {
         precondition(!settings.intervals.isEmpty, "intervals must not be empty")
         self.settings = settings
         logger.info("Starting training loop")
+
+        startMIDIListening()
 
         lifecycle?.setTrainingTask(Task {
             await playNextTrial()
@@ -171,6 +182,10 @@ final class PitchMatchingSession: TrainingSession {
             try? await notePlayer.stopAll()
         }
         lifecycle?.cancelAllTasks()
+        midiListeningTask?.cancel()
+        midiListeningTask = nil
+        hasBeenDeflected = false
+        midiPitchBendValue = nil
         sliderTouchContinuation?.resume()
         sliderTouchContinuation = nil
         let handleToStop = currentHandle
@@ -225,10 +240,52 @@ final class PitchMatchingSession: TrainingSession {
         return AmplitudeDB(offset)
     }
 
+    // MARK: - MIDI Listening
+
+    private func startMIDIListening() {
+        guard let midiInput else { return }
+        midiListeningTask = Task {
+            for await event in midiInput.events {
+                guard !Task.isCancelled else { break }
+                switch event {
+                case .pitchBend(let value, _, _):
+                    let normalized = value.normalizedSliderValue
+                    await handlePitchBendInput(value: value, normalized: normalized)
+                case .noteOn, .noteOff:
+                    break
+                }
+            }
+        }
+    }
+
+    private func handlePitchBendInput(value: PitchBendValue, normalized: Double) async {
+        guard state == .awaitingSliderTouch || state == .playingTunable else { return }
+
+        midiPitchBendValue = normalized
+
+        if !value.isInNeutralZone {
+            hasBeenDeflected = true
+        }
+
+        if state == .awaitingSliderTouch {
+            adjustPitch(normalized)
+            return
+        }
+
+        if value.isInNeutralZone && hasBeenDeflected {
+            commitPitch(normalized)
+            hasBeenDeflected = false
+            midiPitchBendValue = nil
+        } else if let frequency = sliderFrequency(for: normalized) {
+            try? await currentHandle?.adjustFrequency(Frequency(frequency))
+        }
+    }
+
     // MARK: - Training Loop
 
     private func playNextTrial() async {
         guard let settings else { return }
+        hasBeenDeflected = false
 
         guard let interval = settings.intervals.randomElement() else { return }
         currentInterval = interval

@@ -22,7 +22,7 @@ set -euo pipefail
 
 # --- Configuration (edit these if your project changes) ---
 SCHEME="Peach"
-DESTINATION="platform=iOS Simulator,name=iPhone 17"
+DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
 SCHEME_PATH="Peach.xcodeproj/xcshareddata/xcschemes/Peach.xcscheme"
 
 # --- Parse arguments ---

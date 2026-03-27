@@ -103,8 +103,9 @@ struct PitchDiscriminationSessionFeedbackTests {
         f.session.handleAnswer(isHigher: !isSecondHigher)
 
         // Verify observer was notified with incorrect comparison
-        #expect(f.mockHaptic!.pitchDiscriminationCompletedCallCount == 1)
-        #expect(f.mockHaptic!.lastTrial?.isCorrect == false)
+        let haptic1 = try #require(f.mockHaptic)
+        #expect(haptic1.pitchDiscriminationCompletedCallCount == 1)
+        #expect(haptic1.lastTrial?.isCorrect == false)
     }
 
     @Test("Haptic does NOT fire on correct answer")
@@ -124,8 +125,9 @@ struct PitchDiscriminationSessionFeedbackTests {
         f.session.handleAnswer(isHigher: isSecondHigher)
 
         // Verify observer was notified with correct comparison
-        #expect(f.mockHaptic!.pitchDiscriminationCompletedCallCount == 1)
-        #expect(f.mockHaptic!.lastTrial?.isCorrect == true)
+        let haptic2 = try #require(f.mockHaptic)
+        #expect(haptic2.pitchDiscriminationCompletedCallCount == 1)
+        #expect(haptic2.lastTrial?.isCorrect == true)
     }
 
     @Test("Feedback state clears when training stops")

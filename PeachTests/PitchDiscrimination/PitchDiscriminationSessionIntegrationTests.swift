@@ -25,9 +25,9 @@ struct PitchDiscriminationSessionIntegrationTests {
         f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(f.mockPlayer.lastFrequency != nil)
-        #expect(f.mockPlayer.lastFrequency! > 0)
-        #expect(f.mockPlayer.lastFrequency! >= 100 && f.mockPlayer.lastFrequency! <= 1200)
+        let lastFreq = try #require(f.mockPlayer.lastFrequency)
+        #expect(lastFreq > 0)
+        #expect(lastFreq >= 100 && lastFreq <= 1200)
     }
 
     @Test("PitchDiscriminationSession passes correct duration to NotePlayer")

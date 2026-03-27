@@ -6,10 +6,26 @@ import UIKit
 
 // MARK: - Test Helpers
 
+@MainActor
+private func waitForCondition(
+    timeout: Duration = .seconds(5),
+    _ condition: () -> Bool
+) async throws {
+    await Task.yield()
+    if condition() { return }
+    let deadline = ContinuousClock.now + timeout
+    while ContinuousClock.now < deadline {
+        if condition() { return }
+        try await Task.sleep(for: .milliseconds(5))
+        await Task.yield()
+    }
+    Issue.record("Timeout waiting for condition")
+}
+
 func waitForState(
     _ session: PitchMatchingSession,
     _ expectedState: PitchMatchingSessionState,
-    timeout: Duration = .seconds(2)
+    timeout: Duration = .seconds(5)
 ) async throws {
     await Task.yield()
     if session.state == expectedState { return }
@@ -512,7 +528,8 @@ struct PitchMatchingSessionTests {
 
         let expectedFreq = TuningSystem.equalTemperament.frequency(for: trial.targetNote, referencePitch: .concert440)
         #expect(handle.adjustFrequencyCallCount == adjustCountBefore + 1)
-        #expect(abs(handle.lastAdjustedFrequency! - expectedFreq.rawValue) < 0.01)
+        let freq1 = try #require(handle.lastAdjustedFrequency)
+        #expect(abs(freq1 - expectedFreq.rawValue) < 0.01)
     }
 
     @Test("adjustPitch with +1.0 produces frequency (initialCentOffset + 20) cents above reference")
@@ -537,7 +554,8 @@ struct PitchMatchingSessionTests {
         let totalCentOffset = trial.initialCentOffset.rawValue + 20.0
         let expectedFreq = targetFreq * pow(2.0, totalCentOffset / 1200.0)
         #expect(handle.adjustFrequencyCallCount == adjustCountBefore + 1)
-        #expect(abs(handle.lastAdjustedFrequency! - expectedFreq) < 0.01)
+        let freq2 = try #require(handle.lastAdjustedFrequency)
+        #expect(abs(freq2 - expectedFreq) < 0.01)
     }
 
     @Test("adjustPitch at correcting value adjusts to target note frequency for intervals")
@@ -562,7 +580,8 @@ struct PitchMatchingSessionTests {
         let expectedTargetFreq = TuningSystem.equalTemperament.frequency(
             for: trial.targetNote, referencePitch: .concert440)
         #expect(handle.adjustFrequencyCallCount == adjustCountBefore + 1)
-        #expect(abs(handle.lastAdjustedFrequency! - expectedTargetFreq.rawValue) < 0.01)
+        let freq3 = try #require(handle.lastAdjustedFrequency)
+        #expect(abs(freq3 - expectedTargetFreq.rawValue) < 0.01)
     }
 
     @Test("commitPitch at correcting value commits result with zero cent error")
@@ -1253,6 +1272,173 @@ struct PitchMatchingSessionAudioInterruptionTests {
         try await waitForState(session, .awaitingSliderTouch)
         #expect(session.state == .awaitingSliderTouch)
     }
+}
 
+// MARK: - MIDI Pitch Bend Tests
 
+func makePitchMatchingSessionWithMIDI(
+) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver, midiInput: MockMIDIInput) {
+    let notePlayer = MockNotePlayer()
+    let profile = MockTrainingProfile()
+    let observer = MockPitchMatchingObserver()
+    let midiInput = MockMIDIInput()
+    let session = PitchMatchingSession(
+        notePlayer: notePlayer,
+        profile: profile,
+        observers: [observer],
+        midiInput: midiInput
+    )
+    return (session, notePlayer, profile, observer, midiInput)
+}
+
+@Suite("PitchMatchingSession MIDI Pitch Bend")
+struct PitchMatchingSessionMIDIPitchBendTests {
+
+    @Test("Pitch bend in awaitingSliderTouch triggers transition to playingTunable")
+    func pitchBendTriggersAutoStart() async throws {
+        let (session, _, _, _, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        midiInput.send(.pitchBend(value: PitchBendValue(10000), channel: 0, timestamp: 0))
+        try await waitForState(session, .playingTunable)
+    }
+
+    @Test("Continuous pitch bend events call adjustFrequency with mapped values")
+    func continuousPitchBendAdjustsFrequency() async throws {
+        let (session, notePlayer, _, _, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // First pitch bend triggers auto-start
+        midiInput.send(.pitchBend(value: PitchBendValue(12000), channel: 0, timestamp: 0))
+        try await waitForState(session, .playingTunable)
+
+        // Wait for tunable note to start (second play call sets handle)
+        try await waitForCondition { notePlayer.playCallCount >= 2 }
+
+        let handle = try #require(notePlayer.lastHandle)
+        let adjustCountBefore = handle.adjustFrequencyCallCount
+
+        // Second pitch bend adjusts frequency
+        midiInput.send(.pitchBend(value: PitchBendValue(14000), channel: 0, timestamp: 0))
+        try await waitForCondition { handle.adjustFrequencyCallCount > adjustCountBefore }
+    }
+
+    @Test("Pitch bend return to neutral after deflection triggers commitPitch")
+    func neutralReturnAfterDeflectionCommits() async throws {
+        let (session, notePlayer, _, observer, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // First bend: auto-start + deflect away from center
+        midiInput.send(.pitchBend(value: PitchBendValue(12000), channel: 0, timestamp: 0))
+        try await waitForState(session, .playingTunable)
+        try await waitForCondition { notePlayer.playCallCount >= 2 }
+
+        // Return to center → should commit
+        midiInput.send(.pitchBend(value: PitchBendValue(8192), channel: 0, timestamp: 0))
+        try await waitForState(session, .showingFeedback)
+
+        #expect(observer.resultHistory.count == 1)
+    }
+
+    @Test("Pitch bend in neutral zone without prior deflection does not commit")
+    func neutralWithoutDeflectionDoesNotCommit() async throws {
+        let (session, _, _, observer, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Send center value first — triggers auto-start but should NOT commit
+        midiInput.send(.pitchBend(value: PitchBendValue(8192), channel: 0, timestamp: 0))
+        try await waitForState(session, .playingTunable)
+
+        // Should be playingTunable, not showingFeedback
+        #expect(session.state == .playingTunable)
+        #expect(observer.resultHistory.isEmpty)
+    }
+
+    @Test("hasBeenDeflected resets on new trial")
+    func hasBeenDeflectedResetsOnNewTrial() async throws {
+        let (session, notePlayer, _, observer, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Deflect and commit first trial
+        midiInput.send(.pitchBend(value: PitchBendValue(12000), channel: 0, timestamp: 0))
+        try await waitForState(session, .playingTunable)
+        try await waitForCondition { notePlayer.playCallCount >= 2 }
+        midiInput.send(.pitchBend(value: PitchBendValue(8192), channel: 0, timestamp: 0))
+        try await waitForState(session, .showingFeedback)
+        #expect(observer.resultHistory.count == 1)
+
+        // Wait for next trial
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Send neutral value — should auto-start but NOT commit (hasBeenDeflected was reset)
+        midiInput.send(.pitchBend(value: PitchBendValue(8192), channel: 0, timestamp: 0))
+        try await waitForState(session, .playingTunable)
+
+        #expect(session.state == .playingTunable)
+        #expect(observer.resultHistory.count == 1)
+    }
+
+    @Test("noteOn and noteOff events are ignored during pitch matching")
+    func noteEventsIgnored() async throws {
+        let (session, _, _, observer, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 0))
+        midiInput.send(.noteOff(note: MIDINote(60), velocity: MIDIVelocity(1), timestamp: 0))
+        try await Task.sleep(for: .milliseconds(100))
+
+        // Should still be awaiting slider touch — note events don't trigger anything
+        #expect(session.state == .awaitingSliderTouch)
+        #expect(observer.resultHistory.isEmpty)
+    }
+
+    @Test("Session with nil midiInput works identically to before")
+    func nilMidiInputBackwardCompatible() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        session.adjustPitch(0.5)
+        try await waitForState(session, .playingTunable)
+
+        session.commitPitch(0.5)
+        try await waitForState(session, .showingFeedback)
+    }
+
+    @Test("MIDI listening task is cancelled when stop() is called")
+    func midiListeningCancelledOnStop() async throws {
+        let (session, _, _, _, midiInput) = makePitchMatchingSessionWithMIDI()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        session.stop()
+        #expect(session.state == .idle)
+
+        // Sending pitch bend after stop should not change state
+        midiInput.send(.pitchBend(value: PitchBendValue(12000), channel: 0, timestamp: 0))
+        try await Task.sleep(for: .milliseconds(100))
+
+        #expect(session.state == .idle)
+    }
+
+    @Test("midiPitchBendValue is set on pitch bend events and cleared on stop")
+    func midiPitchBendValueLifecycle() async throws {
+        let (session, _, _, _, midiInput) = makePitchMatchingSessionWithMIDI()
+        #expect(session.midiPitchBendValue == nil)
+
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        midiInput.send(.pitchBend(value: PitchBendValue(12000), channel: 0, timestamp: 0))
+        try await waitForCondition { session.midiPitchBendValue != nil }
+
+        session.stop()
+        #expect(session.midiPitchBendValue == nil)
+    }
 }

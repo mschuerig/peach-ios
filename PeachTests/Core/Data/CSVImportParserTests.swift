@@ -72,26 +72,24 @@ struct CSVImportParserTests {
     // MARK: - Version Error Cases
 
     @Test("missingVersion error provides a description")
-    func missingVersionErrorDescription() async {
+    func missingVersionErrorDescription() async throws {
         let error = CSVImportError.missingVersion
-        #expect(error.errorDescription != nil)
-        #expect(!error.errorDescription!.isEmpty)
+        let desc = try #require(error.errorDescription)
+        #expect(!desc.isEmpty)
     }
 
     @Test("unsupportedVersion error description contains the version number")
-    func unsupportedVersionErrorDescription() async {
+    func unsupportedVersionErrorDescription() async throws {
         let error = CSVImportError.unsupportedVersion(version: 99)
-        let description = error.errorDescription
-        #expect(description != nil)
-        #expect(description!.contains("99"))
+        let description = try #require(error.errorDescription)
+        #expect(description.contains("99"))
     }
 
     @Test("invalidFormatMetadata error description contains the malformed line")
-    func invalidFormatMetadataErrorDescription() async {
+    func invalidFormatMetadataErrorDescription() async throws {
         let error = CSVImportError.invalidFormatMetadata(line: "# peach-export-format:abc")
-        let description = error.errorDescription
-        #expect(description != nil)
-        #expect(description!.contains("# peach-export-format:abc"))
+        let description = try #require(error.errorDescription)
+        #expect(description.contains("# peach-export-format:abc"))
     }
 
     // MARK: - ImportResult

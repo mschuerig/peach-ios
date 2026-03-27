@@ -91,10 +91,14 @@ struct PeachApp: App {
                 dataStore: dataStore
             ))
 
+            let midiAdapter = MIDIKitAdapter()
+            _midiAdapter = State(wrappedValue: midiAdapter)
+
             _pitchMatchingSession = State(wrappedValue: Self.createPitchMatchingSession(
                 notePlayer: notePlayer,
                 profile: profile,
-                dataStore: dataStore
+                dataStore: dataStore,
+                midiInput: midiAdapter
             ))
 
             _rhythmOffsetDetectionSession = State(wrappedValue: Self.createRhythmOffsetDetectionSession(
@@ -110,9 +114,6 @@ struct PeachApp: App {
                 channel: percussionChannel
             )
             _stepSequencer = State(wrappedValue: soundFontStepSequencer)
-
-            let midiAdapter = MIDIKitAdapter()
-            _midiAdapter = State(wrappedValue: midiAdapter)
 
             _continuousRhythmMatchingSession = State(wrappedValue: Self.createContinuousRhythmMatchingSession(
                 stepSequencer: soundFontStepSequencer,
@@ -304,7 +305,8 @@ struct PeachApp: App {
     private static func createPitchMatchingSession(
         notePlayer: NotePlayer,
         profile: PerceptualProfile,
-        dataStore: TrainingDataStore
+        dataStore: TrainingDataStore,
+        midiInput: (any MIDIInput)? = nil
     ) -> PitchMatchingSession {
         let profileAdapter = PitchMatchingProfileAdapter(profile: profile)
         let storeAdapter = PitchMatchingStoreAdapter(store: dataStore)
@@ -312,6 +314,7 @@ struct PeachApp: App {
             notePlayer: notePlayer,
             profile: profile,
             observers: [storeAdapter, profileAdapter],
+            midiInput: midiInput,
             backgroundNotificationName: UIApplication.didEnterBackgroundNotification,
             foregroundNotificationName: UIApplication.willEnterForegroundNotification
         )

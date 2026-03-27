@@ -14,6 +14,10 @@ struct PitchSlider: View {
     /// Called when the user releases the slider with the final value
     var onCommit: (Double) -> Void
 
+    /// When non-nil, drives the slider thumb position externally (e.g., from MIDI pitch bend).
+    /// Touch input still works as fallback when nil.
+    var externalValue: Double? = nil
+
     // MARK: - Internal State
 
     @State private var currentValue: Double = 0
@@ -47,11 +51,11 @@ struct PitchSlider: View {
                     .frame(width: Self.thumbDiameter, height: Self.thumbDiameter)
                     .position(
                         x: isHorizontal
-                            ? Self.thumbPosition(value: currentValue, trackLength: trackLength, isHorizontal: true)
+                            ? Self.thumbPosition(value: externalValue ?? currentValue, trackLength: trackLength, isHorizontal: true)
                             : geometry.size.width / 2,
                         y: isHorizontal
                             ? geometry.size.height / 2
-                            : Self.thumbPosition(value: currentValue, trackLength: trackLength, isHorizontal: false)
+                            : Self.thumbPosition(value: externalValue ?? currentValue, trackLength: trackLength, isHorizontal: false)
                     )
             }
             .gesture(

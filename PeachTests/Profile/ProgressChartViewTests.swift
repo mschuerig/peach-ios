@@ -419,7 +419,7 @@ struct ProgressChartViewTests {
     // MARK: - Zone Accessibility Summary
 
     @Test("produces VoiceOver summary for monthly zone")
-    func zoneAccessibilitySummaryMonthly() async {
+    func zoneAccessibilitySummaryMonthly() async throws {
         let calendar = Calendar.current
         let nov2025 = calendar.date(from: DateComponents(year: 2025, month: 11, day: 1))!
         let dec2025 = calendar.date(from: DateComponents(year: 2025, month: 12, day: 1))!
@@ -436,14 +436,14 @@ struct ProgressChartViewTests {
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
-        #expect(summary != nil)
-        #expect(summary!.contains("15.2") || summary!.contains("15,2"))
-        #expect(summary!.contains("11") || summary!.contains("11,0"))
-        #expect(summary!.contains("3 data points") || summary!.contains("3 Datenpunkte"))
+        let s = try #require(summary)
+        #expect(s.contains("15.2") || s.contains("15,2"))
+        #expect(s.contains("11") || s.contains("11,0"))
+        #expect(s.contains("3 data points") || s.contains("3 Datenpunkte"))
     }
 
     @Test("produces VoiceOver summary for daily zone")
-    func zoneAccessibilitySummaryDaily() async {
+    func zoneAccessibilitySummaryDaily() async throws {
         let calendar = Calendar.current
         let mar5 = calendar.date(from: DateComponents(year: 2026, month: 3, day: 5))!
         let mar6 = calendar.date(from: DateComponents(year: 2026, month: 3, day: 6))!
@@ -458,12 +458,12 @@ struct ProgressChartViewTests {
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
-        #expect(summary != nil)
-        #expect(summary!.contains("2 data points") || summary!.contains("2 Datenpunkte"))
+        let s2 = try #require(summary)
+        #expect(s2.contains("2 data points") || s2.contains("2 Datenpunkte"))
     }
 
     @Test("single-zone data returns one summary")
-    func zoneAccessibilitySummarySingleBucket() async {
+    func zoneAccessibilitySummarySingleBucket() async throws {
         let date = Date()
         let buckets = [
             TimeBucket(periodStart: date, periodEnd: date.addingTimeInterval(3600), bucketSize: .session, mean: 8.5, stddev: 0.5, recordCount: 3),
@@ -473,8 +473,8 @@ struct ProgressChartViewTests {
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
-        #expect(summary != nil)
-        #expect(summary!.contains("1 data points") || summary!.contains("1 Datenpunkte"))
+        let s3 = try #require(summary)
+        #expect(s3.contains("1 data points") || s3.contains("1 Datenpunkte"))
     }
 
     @Test("empty zone returns nil accessibility summary")

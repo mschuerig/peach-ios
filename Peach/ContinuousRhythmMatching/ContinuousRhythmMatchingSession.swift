@@ -123,11 +123,12 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
         logger.info("Starting continuous rhythm matching at \(settings.tempo.value) BPM")
 
+        startMIDIListening()
+
         startTask = Task {
             do {
                 try await stepSequencer.start(tempo: settings.tempo, stepProvider: self)
                 startTrackingLoop()
-                startMIDIListening()
             } catch is CancellationError {
                 logger.info("Session task cancelled")
             } catch {
@@ -213,9 +214,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
                 switch event {
                 case .noteOn(_, _, let timestamp):
                     let samplePos = stepSequencer.samplePosition(forHostTime: timestamp)
-                    await MainActor.run {
-                        handleTap(atSamplePosition: samplePos)
-                    }
+                    handleTap(atSamplePosition: samplePos)
                 case .noteOff, .pitchBend:
                     break
                 }

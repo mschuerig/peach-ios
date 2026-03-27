@@ -17,7 +17,7 @@ set -euo pipefail
 
 # --- Configuration ---
 SCHEME="Peach"
-DESTINATION="platform=iOS Simulator,name=iPhone 17"
+DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
 
 # --- Parse arguments ---
 VERBOSE=false

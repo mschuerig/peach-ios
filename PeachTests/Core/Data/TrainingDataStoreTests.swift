@@ -662,13 +662,13 @@ struct TrainingDataStoreTests {
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
 
         // Position 0 (.first): mean of -10 and -8 = -9.0
-        #expect(fetched[0].meanOffsetMsPosition0 != nil)
-        #expect(abs(fetched[0].meanOffsetMsPosition0! - (-9.0)) < 0.001)
+        let pos0 = try #require(fetched[0].meanOffsetMsPosition0)
+        #expect(abs(pos0 - (-9.0)) < 0.001)
         // Position 1 (.second): not used
         #expect(fetched[0].meanOffsetMsPosition1 == nil)
         // Position 2 (.third): single value 5.0
-        #expect(fetched[0].meanOffsetMsPosition2 != nil)
-        #expect(abs(fetched[0].meanOffsetMsPosition2! - 5.0) < 0.001)
+        let pos2 = try #require(fetched[0].meanOffsetMsPosition2)
+        #expect(abs(pos2 - 5.0) < 0.001)
         // Position 3 (.fourth): not used
         #expect(fetched[0].meanOffsetMsPosition3 == nil)
     }
