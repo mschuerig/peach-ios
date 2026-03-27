@@ -1,6 +1,6 @@
 # Story 64.6: Cache Help Markdown Parsing and DateFormatter Allocation
 
-Status: review
+Status: done
 
 ## Story
 

@@ -490,7 +490,7 @@ development_status:
   64-3-make-merge-import-transactional: done
   64-4-fix-population-variance-to-sample-variance: done
   64-5-deduplicate-chart-line-data-computation: done
-  64-6-cache-help-markdown-and-dateformatter: review
+  64-6-cache-help-markdown-and-dateformatter: done
   64-7-isolate-sparkline-observation-fan-out: ready-for-dev
   64-8-fix-swiftdata-dependency-boundary-violations: ready-for-dev
   64-9-fix-spectrogram-bimodal-mean-hiding: ready-for-dev
