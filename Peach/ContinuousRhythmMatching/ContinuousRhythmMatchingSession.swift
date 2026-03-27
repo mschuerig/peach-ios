@@ -272,7 +272,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
         lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: Self.feedbackDuration)
-            guard !Task.isCancelled else { return }
+            guard isRunning, !Task.isCancelled else { return }
             showFeedback = false
         })
     }

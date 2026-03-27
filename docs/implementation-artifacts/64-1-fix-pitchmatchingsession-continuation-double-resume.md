@@ -1,6 +1,6 @@
 # Story 64.1: Fix PitchMatchingSession Continuation Double-Resume
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,24 +24,49 @@ so that the app never crashes from a double-resume on `CheckedContinuation`.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Fix continuation double-resume in `PitchMatchingSession` (AC: #1, #2, #3)
-  - [ ] 1.1 In both `adjustPitch()` and `commitPitch()`, extract the continuation-resume into a single private method (e.g., `resumeSliderContinuationIfNeeded()`) that checks `state == .awaitingSliderTouch`, transitions state, resumes the continuation, and nils it — all in one call site
-  - [ ] 1.2 Both `adjustPitch()` and `commitPitch()` call this method instead of duplicating the check-transition-resume sequence
-  - [ ] 1.3 Verify the method is idempotent: second call is a no-op because state is no longer `.awaitingSliderTouch`
+- [x] Task 1: Fix continuation double-resume in `PitchMatchingSession` (AC: #1, #2, #3)
+  - [x] 1.1 In both `adjustPitch()` and `commitPitch()`, extract the continuation-resume into a single private method (e.g., `resumeSliderContinuationIfNeeded()`) that checks `state == .awaitingSliderTouch`, transitions state, resumes the continuation, and nils it — all in one call site
+  - [x] 1.2 Both `adjustPitch()` and `commitPitch()` call this method instead of duplicating the check-transition-resume sequence
+  - [x] 1.3 Verify the method is idempotent: second call is a no-op because state is no longer `.awaitingSliderTouch`
 
-- [ ] Task 2: Add missing feedback-task state guard in `PitchMatchingSession` (AC: #4)
-  - [ ] 2.1 In `commitResult()`, change the feedback task from `guard !Task.isCancelled` to `guard state == .showingFeedback, !Task.isCancelled` before calling `playNextTrial()`
-  - [ ] 2.2 Verify this matches the pattern in `PitchDiscriminationSession` and `RhythmOffsetDetectionSession`
+- [x] Task 2: Add missing feedback-task state guard in `PitchMatchingSession` (AC: #4)
+  - [x] 2.1 In `commitResult()`, change the feedback task from `guard !Task.isCancelled` to `guard state == .showingFeedback, !Task.isCancelled` before calling `playNextTrial()`
+  - [x] 2.2 Verify this matches the pattern in `PitchDiscriminationSession` and `RhythmOffsetDetectionSession`
 
-- [ ] Task 3: Add missing feedback-task state guard in `ContinuousRhythmMatchingSession` (AC: #5)
-  - [ ] 3.1 Locate the feedback task that sleeps then proceeds — add `guard !Task.isCancelled` (or the appropriate state guard for this session's state model, e.g., `isRunning`) before continuing
+- [x] Task 3: Add missing feedback-task state guard in `ContinuousRhythmMatchingSession` (AC: #5)
+  - [x] 3.1 Locate the feedback task that sleeps then proceeds — add `guard isRunning, !Task.isCancelled` before continuing
 
-- [ ] Task 4: Write tests for continuation safety (AC: #1, #6)
-  - [ ] 4.1 Test: call `adjustPitch()` and `commitPitch()` rapidly in sequence while in `.awaitingSliderTouch` — session transitions cleanly, no crash
-  - [ ] 4.2 Test: call `commitPitch()` when already in `.playingTunable` (continuation already resumed) — no-op, no crash
-  - [ ] 4.3 Test: `stop()` during `.showingFeedback` followed by feedback task completing — session stays idle, does not call `playNextTrial()`
+- [x] Task 4: Write tests for continuation safety (AC: #1, #6)
+  - [x] 4.1 Test: call `adjustPitch()` and `commitPitch()` rapidly in sequence while in `.awaitingSliderTouch` — session transitions cleanly, no crash
+  - [x] 4.2 Test: call `commitPitch()` when already in `.playingTunable` (continuation already resumed) — no-op, no crash
+  - [x] 4.3 Test: `stop()` during `.showingFeedback` followed by feedback task completing — session stays idle, does not call `playNextTrial()`
 
-- [ ] Task 5: Run full test suite (AC: #6)
+- [x] Task 5: Run full test suite (AC: #6)
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Extracted `resumeSliderContinuationIfNeeded()` as a `@discardableResult private func` returning `Bool`. Both `adjustPitch()` and `commitPitch()` call it — state guard ensures only the first succeeds. Added `state == .showingFeedback` guard to PitchMatchingSession feedback task and `isRunning` guard to ContinuousRhythmMatchingSession feedback task, matching established patterns.
+
+### Completion Notes
+
+- Extracted `resumeSliderContinuationIfNeeded()` — eliminates duplicate check-transition-resume code in `adjustPitch()` and `commitPitch()`
+- Added `state == .showingFeedback` guard in `PitchMatchingSession.commitResult()` feedback task
+- Added `isRunning` guard in `ContinuousRhythmMatchingSession.showHitFeedback()` feedback task
+- 3 new tests: rapid adjust+commit sequence, commit when already playingTunable, stop during showingFeedback
+- All 1520 tests pass, zero regressions
+
+## File List
+
+- `Peach/PitchMatching/PitchMatchingSession.swift` — modified (extracted resumeSliderContinuationIfNeeded, added feedback state guard)
+- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — modified (added isRunning guard in feedback task)
+- `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` — modified (3 new continuation safety tests)
+
+## Change Log
+
+- Fix: Eliminate double-resume crash risk by extracting shared `resumeSliderContinuationIfNeeded()` method (2026-03-27)
+- Fix: Add state guards to feedback tasks in PitchMatchingSession and ContinuousRhythmMatchingSession (2026-03-27)
 
 ## Dev Notes
 

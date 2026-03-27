@@ -108,12 +108,7 @@ final class PitchMatchingSession: TrainingSession {
     }
 
     func adjustPitch(_ value: Double) {
-        if state == .awaitingSliderTouch {
-            state = .playingTunable
-            sliderTouchContinuation?.resume()
-            sliderTouchContinuation = nil
-            return
-        }
+        if resumeSliderContinuationIfNeeded() { return }
         guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
         Task {
             try? await currentHandle?.adjustFrequency(Frequency(frequency))
@@ -121,14 +116,23 @@ final class PitchMatchingSession: TrainingSession {
     }
 
     func commitPitch(_ value: Double) {
-        if state == .awaitingSliderTouch {
-            state = .playingTunable
+        if resumeSliderContinuationIfNeeded() {
             pendingTunableFrequency = nil
-            sliderTouchContinuation?.resume()
-            sliderTouchContinuation = nil
         }
         guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
         commitResult(userFrequency: frequency)
+    }
+
+    /// Resumes the slider-touch continuation if the session is still awaiting a touch.
+    /// Returns `true` if the continuation was resumed (state transitioned to `.playingTunable`),
+    /// `false` if the state had already moved on (idempotent no-op).
+    @discardableResult
+    private func resumeSliderContinuationIfNeeded() -> Bool {
+        guard state == .awaitingSliderTouch else { return false }
+        state = .playingTunable
+        sliderTouchContinuation?.resume()
+        sliderTouchContinuation = nil
+        return true
     }
 
     private func sliderFrequency(for value: Double) -> Double? {
@@ -167,7 +171,7 @@ final class PitchMatchingSession: TrainingSession {
 
         lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: settings.feedbackDuration)
-            guard !Task.isCancelled else { return }
+            guard state == .showingFeedback, !Task.isCancelled else { return }
             await playNextTrial()
         })
     }

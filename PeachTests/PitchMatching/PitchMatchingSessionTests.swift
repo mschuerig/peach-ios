@@ -955,6 +955,63 @@ struct PitchMatchingSessionTests {
         session.stop()
         #expect(session.sessionTuningSystem == .equalTemperament)
     }
+
+    // MARK: - Continuation Safety Tests (Story 64.1)
+
+    @Test("adjustPitch then commitPitch in rapid sequence does not crash")
+    func adjustThenCommitRapidSequence() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        notePlayer.instantPlayback = true
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Both call resumeSliderContinuationIfNeeded — only the first should succeed
+        session.adjustPitch(0.5)
+        session.commitPitch(0.5)
+
+        // Session should not be idle (still running) and should not have crashed
+        #expect(session.state != .idle)
+        session.stop()
+    }
+
+    @Test("commitPitch when already in playingTunable is a no-op for continuation")
+    func commitPitchWhenAlreadyPlayingTunable() async throws {
+        let (session, notePlayer, _, observer) = makePitchMatchingSession()
+        notePlayer.instantPlayback = true
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await transitionToPlayingTunable(session)
+
+        #expect(session.state == .playingTunable)
+
+        // commitPitch should commit the result, not crash from double-resume
+        session.commitPitch(0.0)
+
+        try await waitForState(session, .showingFeedback)
+        #expect(observer.pitchMatchingCompletedCallCount == 1)
+        session.stop()
+    }
+
+    @Test("stop during showingFeedback prevents playNextTrial from running")
+    func stopDuringFeedbackPreventsNextTrial() async throws {
+        let (session, notePlayer, _, observer) = makePitchMatchingSession()
+        notePlayer.instantPlayback = true
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await transitionToPlayingTunable(session)
+
+        session.commitPitch(0.0)
+        try await waitForState(session, .showingFeedback)
+
+        // Stop during feedback phase
+        session.stop()
+        #expect(session.state == .idle)
+
+        // Wait long enough for the feedback timer to have fired if the guard were missing
+        try await Task.sleep(for: .milliseconds(600))
+
+        // Session must remain idle — playNextTrial should not have run
+        #expect(session.state == .idle)
+        #expect(observer.pitchMatchingCompletedCallCount == 1)
+    }
 }
 
 // MARK: - Audio Interruption and Lifecycle Tests
