@@ -152,7 +152,7 @@
 
 **Trade-offs accepted:** New V2 exports are not backwards-compatible with older app versions — acceptable for a format bump. This follows the chain-of-responsibility pattern already in place.
 
-### ADR-7: Tap-Only Input for V1
+### ADR-7: Tap-Only Input for V1 (Superseded)
 
 > **Superseded by Epic 62** (2026-03): MIDI input implemented for both rhythm matching (62.4) and pitch matching (62.5). MIDI note-on serves as tap input; MIDI pitch bend drives the pitch slider. Results are recorded identically to tap input — no `inputMethod` discriminator was needed. Clap detection remains deferred.
 

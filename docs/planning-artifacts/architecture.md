@@ -3048,7 +3048,7 @@ A `MIDIInput` protocol in `Core/Ports/` abstracts MIDI infrastructure from train
 
 - **`ContinuousRhythmMatchingSession`** — consumes `.noteOn` events as tap input, using `MIDITimeStamp` for sample-accurate hit detection against the audio engine's clock domain
 - **`PitchMatchingSession`** — consumes `.pitchBend` events to drive the pitch slider, routed through `adjustPitch()` for consistent behavior with touch input
-- Results from MIDI input are recorded identically to tap/touch input — same `RhythmOffset`, same observer notifications, no `inputMethod` discriminator
+- Results from MIDI input are recorded identically to tap/touch input — same `RhythmOffset`, same observer notifications, no `inputMethod` discriminator needed for MIDI (field reserved for future clap detection only)
 
 ### v0.7 Architecture Validation
 
