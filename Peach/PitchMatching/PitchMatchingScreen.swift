@@ -21,7 +21,7 @@ struct PitchMatchingScreen: View {
         ),
         HelpSection(
             title: String(localized: "Controls"),
-            body: String(localized: "**Touch** the slider to hear your note, then **drag** to adjust the pitch. When you think you've matched the reference, **release** the slider to lock in your answer.")
+            body: String(localized: "**Touch** the slider to hear your note, then **drag** to adjust the pitch. When you think you've matched the reference, **release** the slider to lock in your answer.\n\nYou can also use a **MIDI controller** — move the pitch bend wheel to adjust the pitch continuously.")
         ),
         HelpSection(
             title: String(localized: "Feedback"),

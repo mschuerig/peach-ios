@@ -19,7 +19,7 @@ struct ContinuousRhythmMatchingScreen: View {
         ),
         HelpSection(
             title: String(localized: "Controls"),
-            body: String(localized: "Tap the **Tap** button when the outlined note should sound. The bold first dot marks beat one.")
+            body: String(localized: "Tap the **Tap** button when the outlined note should sound. The bold first dot marks beat one.\n\nYou can also play any key on a connected **MIDI keyboard** instead of tapping.")
         ),
         HelpSection(
             title: String(localized: "Feedback"),
