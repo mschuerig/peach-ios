@@ -38,7 +38,21 @@
 **Source:** story 62.5 code review (D1)
 **Symptom:** Both `PitchMatchingSession` and `ContinuousRhythmMatchingSession` are `@Observable` but not `@MainActor`-isolated. Multiple unstructured `Task`s (MIDI listening, tracking loop, training loop) mutate shared observable state (`hitCycleIndices`, `cyclesInCurrentTrial`, `showFeedback`, `midiPitchBendValue`, etc.) without synchronization. During 62.5 development, removing an `await MainActor.run` wrapper from `ContinuousRhythmMatchingSession` fixed a real Clone 1 scheduling bottleneck but also removed the one place that serialized access.
 **Risk:** Data races under concurrent task scheduling. Currently masked by typical single-core simulator execution, but could surface on device or under heavy contention.
-**Disposition:** Needs a decision on isolation strategy for training sessions — either `@MainActor` annotation (if all callers are already MainActor) or targeted synchronization. Cross-cutting concern affecting both session classes.
+**Disposition:** Tracked as story 65.2 in Epic 65.
+
+### PF-1: SoundFontEngine render-thread try-lock silently drops MIDI events
+
+**Source:** adversarial review 2026-03-27
+**Symptom:** The audio render callback uses `withLockIfAvailable` (try-lock). When the main thread holds the lock during a schedule update, the entire audio frame skips MIDI dispatch. Events are lost, not deferred.
+**Risk:** Audible note dropouts in fast-tempo rhythm patterns when schedule updates are frequent.
+**Disposition:** Tracked as story 65.1 in Epic 65.
+
+### PF-2: No forward migration path for CSV format versions
+
+**Source:** adversarial review 2026-03-27
+**Symptom:** `CSVImportParser` hard-rejects any format version ≠ current (`CSVExportSchema.formatVersion`, currently 3). No degradation, partial parsing, or version migration exists.
+**Risk:** Data portability risk — users exporting from newer Peach and importing into older Peach (or vice versa) get a hard error with no recovery.
+**Disposition:** Tracked as story 65.3 in Epic 65.
 
 ## RESOLVED
 

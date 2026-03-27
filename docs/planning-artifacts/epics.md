@@ -6653,3 +6653,71 @@ So that the docs remain a reliable source of truth and don't contradict the code
 **Then** FR76 in the FR coverage map is updated to reflect MIDI support
 
 ---
+
+## Epic 64: Solid Foundations — Adversarial Review Fixes
+
+A comprehensive adversarial review and SwiftUI performance audit surfaced 24 findings across concurrency safety, data integrity, statistical correctness, SwiftUI rendering efficiency, and architectural boundary enforcement. This epic addresses all actionable findings in priority order: crash-level concurrency bugs first, then data integrity, statistics, performance, and finally architecture and test coverage.
+
+### Story 64.1: Fix PitchMatchingSession Continuation Double-Resume
+
+Fix the crash-level bug where `adjustPitch()` and `commitPitch()` can both resume the same `CheckedContinuation`. Extract a single `resumeSliderContinuationIfNeeded()` method gated on state. Also add the missing `state == .showingFeedback` guard in the feedback task (matching the pattern in PitchDiscriminationSession and RhythmOffsetDetectionSession), and apply the same fix to ContinuousRhythmMatchingSession.
+
+### Story 64.2: Fix SoundFontPlaybackHandle Stop Race Condition
+
+Fix `SoundFontPlaybackHandle.stop()` so that concurrent calls cannot both pass the `hasStopped` guard, which would unbalance `SoundFontEngine.activeMuteCount`. Also fix `ContinuousRhythmMatchingSession.nextCycle()` which appends to `gapPositions` in the fallback path even after `stop()` has cleared the array.
+
+### Story 64.3: Make Merge-Mode Import Transactional
+
+Wrap merge-mode imports in a `modelContext.transaction` so that a failure in discipline C rolls back records already saved by disciplines A and B. Also fix duplicate-key timestamp precision from integer seconds to milliseconds to prevent false-positive deduplication of records created < 1 second apart.
+
+### Story 64.4: Fix Population Variance to Sample Variance
+
+Change `ProgressTimeline.makeBucket()` and `SpectrogramData` cell variance from population variance (÷N) to sample variance (÷N-1, Bessel's correction). With N=2, reported stddev was 71% of true sample stddev — systematically understating training variability.
+
+### Story 64.5: Deduplicate Chart Line Data Computation and Fix Unstable ForEach Identity
+
+Compute `lineDataWithSessionBridge()` once per render instead of twice (stddev band + EWMA line). Replace `ForEach(Array(...enumerated()), id: \.offset)` with stable identifiers in ProgressChartView (3 loops) and RhythmSpectrogramView (3 loops). Cache `SpectrogramData.compute()` so cell tap doesn't recompute the full grid.
+
+### Story 64.6: Cache Help Markdown Parsing and DateFormatter Allocation
+
+Pre-parse `AttributedString(markdown:)` in `HelpContentView` instead of parsing on every render. Make `ChartImageRenderer.exportFileName()` use a static `DateFormatter`. Fix `SettingsScreen.gapPositionsBinding` to avoid creating a new Binding with decode/encode on every body evaluation.
+
+### Story 64.7: Isolate Sparkline Observation Fan-Out on Start Screen
+
+Pass precomputed values to `ProgressSparklineView` instead of having all 6 instances read `@Environment(\.progressTimeline)`. A single training record change currently invalidates all 6 sparklines (18 method calls) instead of just the affected one (3 calls).
+
+### Story 64.8: Fix SwiftData Dependency Boundary Violations
+
+Remove `import SwiftData` from 9 files outside `Core/Data/` and `App/` — the project's own `bin/check-dependencies.sh` flags these violations. Split `TrainingDiscipline` protocol so domain logic stays SwiftData-free in `Core/Training/` and data-layer concerns move to `Core/Data/`.
+
+### Story 64.9: Fix Spectrogram Combined Mean Hiding Bimodal Distributions
+
+Change `SpectrogramData.combinedMeanPercent()` from signed mean to mean-of-absolute-offsets. Currently, a user hitting 50ms early and 50ms late shows 0% mean (falsely perfect). The detail overlay already shows separate early/late stats — only the cell-level metric is affected.
+
+### Story 64.10: Add Tests for Untested Critical Paths
+
+Add dedicated tests for the 6 discipline implementations (CSV round-trip, duplicate detection, filtering), 8 observer adapters (routing to correct profile keys and store records), `AppUserSettings` (defaults, validation), and `TrainingDisciplineRegistry` (registration completeness, column overlap, parser dispatch).
+
+### Story 64.11: Extract Session Lifecycle Orchestration from Views
+
+Extract `session.start(settings:)`, `session.stop()`, help-sheet stop/restart, app backgrounding/foregrounding, and settings import orchestration from views into composition-root-owned closures injected via `@Environment`. Reduces `SettingsScreen` from 7 `@Environment` dependencies to at most 3.
+
+---
+
+## Epic 65: Architectural Hardening — Lock-Free Audio, Actor Isolation, Format Migration
+
+Three architectural concerns surfaced during the adversarial review that each require non-trivial design work: the audio render thread's try-lock drops MIDI events under contention, training session classes lack actor isolation creating data race risk, and the CSV import system has no version migration path. Each story is independent and can be worked in parallel.
+
+### Story 65.1: Lock-Free MIDI Event Scheduling in SoundFontEngine
+
+Replace the `withLockIfAvailable` try-lock in the audio render callback with a lock-free mechanism (double-buffered event arrays, lock-free ring buffer, or atomic pointer swap) so the render thread never blocks and never skips a frame. At 200 BPM with 4 events per beat, zero events may be lost.
+
+### Story 65.2: Resolve Training Session Actor Isolation
+
+Add explicit `@MainActor` isolation to `PitchMatchingSession` and `ContinuousRhythmMatchingSession` to eliminate data races between unstructured tasks mutating shared observable state. Verify no audio scheduling regression from the isolation (the Clone 1 bottleneck from story 62.5 must not resurface).
+
+### Story 65.3: CSV Format Version Migration Support
+
+Replace the hard version equality check in `CSVImportParser` with a migration chain architecture. Implement v1→v2 and v2→v3 migrations so older exports can be imported. Future versions produce a clear error suggesting the user update. Follows the chain-of-responsibility pattern for format-dependent processing.
+
+---

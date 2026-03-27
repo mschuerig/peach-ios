@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-27 # Story 63.1 done
+# last_updated: 2026-03-27 # Epic 64 created from adversarial review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -480,3 +480,28 @@ development_status:
   # Epic 63: Update Planning Documents for MIDI Support
   epic-63: in-progress
   63-1-update-planning-documents-for-midi-support: done
+
+  # Epic 64: Solid Foundations — Adversarial Review Fixes
+  # Work order: 64.1 → 64.2 (concurrency crashes), then 64.3 → 64.4 (data/stats),
+  #             then 64.5 → 64.6 → 64.7 (performance), then 64.8 → 64.9 → 64.10 (architecture/tests)
+  epic-64: backlog
+  64-1-fix-pitchmatchingsession-continuation-double-resume: ready-for-dev
+  64-2-fix-soundfontplaybackhandle-stop-race: ready-for-dev
+  64-3-make-merge-import-transactional: ready-for-dev
+  64-4-fix-population-variance-to-sample-variance: ready-for-dev
+  64-5-deduplicate-chart-line-data-computation: ready-for-dev
+  64-6-cache-help-markdown-and-dateformatter: ready-for-dev
+  64-7-isolate-sparkline-observation-fan-out: ready-for-dev
+  64-8-fix-swiftdata-dependency-boundary-violations: ready-for-dev
+  64-9-fix-spectrogram-bimodal-mean-hiding: ready-for-dev
+  64-10-add-tests-for-untested-critical-paths: ready-for-dev
+  64-11-extract-session-lifecycle-from-views: ready-for-dev
+  epic-64-retrospective: optional
+
+  # Epic 65: Architectural Hardening — Lock-Free Audio, Actor Isolation, Format Migration
+  # Work order: 65.1 (audio), 65.2 (concurrency), 65.3 (data) — independent, can be parallel
+  epic-65: backlog
+  65-1-lock-free-midi-event-scheduling: ready-for-dev
+  65-2-resolve-session-actor-isolation: ready-for-dev
+  65-3-csv-format-version-migration: ready-for-dev
+  epic-65-retrospective: optional
