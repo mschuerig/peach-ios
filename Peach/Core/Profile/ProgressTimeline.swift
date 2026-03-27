@@ -210,7 +210,7 @@ final class ProgressTimeline {
         let mean = points.reduce(0.0, +) / Double(points.count)
         let stddev: Double
         if points.count > 1 {
-            let variance = points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(points.count)
+            let variance = points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(points.count - 1)
             stddev = sqrt(variance)
         } else {
             stddev = 0

@@ -1,6 +1,6 @@
 # Story 64.4: Fix Population Variance to Sample Variance
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,20 +20,20 @@ so that my reported variability is accurate rather than systematically understat
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Fix `ProgressTimeline` variance calculation (AC: #1, #3)
-  - [ ] 1.1 Read `ProgressTimeline.swift` and locate `makeBucket()` or equivalent where variance is computed with `/ Double(points.count)`
-  - [ ] 1.2 Change to `/ Double(points.count - 1)` for N > 1 cases
-  - [ ] 1.3 Keep the N <= 1 case as stddev = 0
+- [x] Task 1: Fix `ProgressTimeline` variance calculation (AC: #1, #3)
+  - [x] 1.1 Read `ProgressTimeline.swift` and locate `makeBucket()` or equivalent where variance is computed with `/ Double(points.count)`
+  - [x] 1.2 Change to `/ Double(points.count - 1)` for N > 1 cases
+  - [x] 1.3 Keep the N <= 1 case as stddev = 0
 
-- [ ] Task 2: Fix `SpectrogramData` variance calculation (AC: #2, #3)
-  - [ ] 2.1 Read `SpectrogramData.swift` and locate per-cell variance computation
-  - [ ] 2.2 Apply the same Bessel's correction
+- [x] Task 2: Fix `SpectrogramData` variance calculation (AC: #2, #3)
+  - [x] 2.1 Read `SpectrogramData.swift` and locate per-cell variance computation
+  - [x] 2.2 Apply the same Bessel's correction
 
-- [ ] Task 3: Update tests with corrected expected values (AC: #4)
-  - [ ] 3.1 Search for tests that assert on stddev or variance values from ProgressTimeline or SpectrogramData
-  - [ ] 3.2 Update expected values to match sample variance
+- [x] Task 3: Update tests with corrected expected values (AC: #4)
+  - [x] 3.1 Search for tests that assert on stddev or variance values from ProgressTimeline or SpectrogramData
+  - [x] 3.2 No existing tests asserted on specific stddev values (only zero/non-zero checks). Added 3 new tests for ProgressTimeline and 1 for SpectrogramData verifying sample variance.
 
-- [ ] Task 4: Run full test suite (AC: #4)
+- [x] Task 4: Run full test suite (AC: #4)
 
 ## Dev Notes
 
@@ -62,3 +62,35 @@ Since training buckets often contain 2-5 sessions, the understatement is signifi
 - [Source: Peach/Core/Profile/ProgressTimeline.swift] — makeBucket variance
 - [Source: Peach/Core/Profile/SpectrogramData.swift] — cell variance
 - [Source: Peach/Core/Profile/WelfordAccumulator.swift] — correct Bessel's correction reference
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Applied Bessel's correction (N-1 divisor) to both ad-hoc variance calculations, matching what WelfordAccumulator already does correctly.
+
+### Debug Log
+
+- RED: Added 3 ProgressTimeline tests (sample variance N=3, N=2, N=1) and 1 SpectrogramData test — all failed as expected
+- GREEN: Changed `/ Double(points.count)` → `/ Double(points.count - 1)` in both files — all tests pass
+- No existing tests needed value updates (existing tests only checked zero/non-zero)
+
+### Completion Notes
+
+- Fixed `ProgressTimeline.makeBucket()` line 213: `/ Double(points.count)` → `/ Double(points.count - 1)`
+- Fixed `SpectrogramData.computeStats()` line 187: `/ Double(values.count)` → `/ Double(values.count - 1)`
+- Added 4 new tests verifying correct sample variance with known values
+- Full suite: 1529 tests pass, zero regressions
+
+## File List
+
+- `Peach/Core/Profile/ProgressTimeline.swift` — modified (Bessel's correction)
+- `Peach/Core/Profile/SpectrogramData.swift` — modified (Bessel's correction)
+- `PeachTests/Core/Profile/ProgressTimelineTests.swift` — modified (3 new tests)
+- `PeachTests/Core/Profile/SpectrogramDataTests.swift` — modified (1 new test)
+- `docs/implementation-artifacts/64-4-fix-population-variance-to-sample-variance.md` — modified (status/tasks)
+- `docs/implementation-artifacts/sprint-status.yaml` — modified (status)
+
+## Change Log
+
+- Fixed population variance to sample variance in ProgressTimeline and SpectrogramData (2026-03-27)

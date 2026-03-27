@@ -228,6 +228,46 @@ struct SpectrogramDataTests {
         }
     }
 
+    // MARK: - Sample Variance (Bessel's Correction)
+
+    @Test("cell stddev uses sample variance not population variance")
+    func cellStdDevUsesSampleVariance() async {
+        // Three early metrics at slow tempo: 10ms, 20ms, 30ms
+        // Mean = 20ms, sample variance = ((10-20)²+(20-20)²+(30-20)²)/(3-1) = 200/2 = 100
+        // Sample stddev = 10ms
+        // As % of sixteenth at 60 BPM (250ms): 10/250*100 = 4.0%
+        // Population stddev would be √(200/3) ≈ 8.165ms → 3.27%
+        let profile = PerceptualProfile { builder in
+            let now = Date()
+            builder.addPoint(
+                MetricPoint(timestamp: now, value: 10.0),
+                for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+            )
+            builder.addPoint(
+                MetricPoint(timestamp: now.addingTimeInterval(60), value: 20.0),
+                for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+            )
+            builder.addPoint(
+                MetricPoint(timestamp: now.addingTimeInterval(120), value: 30.0),
+                for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+            )
+        }
+        let timeline = ProgressTimeline(profile: profile)
+        let data = SpectrogramData.compute(
+            mode: .rhythmOffsetDetection,
+            profile: profile,
+            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+        )
+        guard let column = data.columns.first,
+              let cell = column.cells.first(where: { $0.tempoRange == .slow }),
+              let earlyStats = cell.earlyStats else {
+            Issue.record("Expected a column with slow cell and early stats")
+            return
+        }
+        // Sample stddev = 10ms → 4.0% of 250ms sixteenth
+        #expect(abs(earlyStats.stdDevPercent - 4.0) < 0.01)
+    }
+
     // MARK: - TempoRange displayName
 
     @Test("tempo range display names are localized")

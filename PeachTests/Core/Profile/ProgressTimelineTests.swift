@@ -277,6 +277,56 @@ struct ProgressTimelineTests {
         }
     }
 
+    @Test("stddev uses sample variance (Bessel's correction) not population variance")
+    func stddevUsesSampleVariance() async {
+        // Values: 10, 20, 30 → mean = 20
+        // Sample variance = ((10-20)² + (20-20)² + (30-20)²) / (3-1) = 200/2 = 100
+        // Sample stddev = 10.0
+        // Population stddev would be √(200/3) ≈ 8.165
+        let records = [
+            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 1.0),
+            makePitchDiscriminationRecord(centOffset: 20.0, hoursAgo: 0.99),
+            makePitchDiscriminationRecord(centOffset: 30.0, hoursAgo: 0.98),
+        ]
+        let timeline = makeTimeline(pitchDiscriminationRecords: records)
+        let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
+        #expect(buckets.count == 1)
+        if let bucket = buckets.first {
+            #expect(abs(bucket.stddev - 10.0) < 0.01)
+        }
+    }
+
+    @Test("stddev is zero for single data point")
+    func stddevZeroForSinglePoint() async {
+        let records = [
+            makePitchDiscriminationRecord(centOffset: 42.0, hoursAgo: 1.0),
+        ]
+        let timeline = makeTimeline(pitchDiscriminationRecords: records)
+        let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
+        #expect(buckets.count == 1)
+        if let bucket = buckets.first {
+            #expect(bucket.stddev == 0)
+        }
+    }
+
+    @Test("stddev with two data points uses N-1 divisor")
+    func stddevTwoPointsBessels() async {
+        // Values: 0, 10 → mean = 5
+        // Sample variance = ((0-5)² + (10-5)²) / (2-1) = 50/1 = 50
+        // Sample stddev = √50 ≈ 7.071
+        // Population stddev would be √(50/2) = 5.0
+        let records = [
+            makePitchDiscriminationRecord(centOffset: 0.0, hoursAgo: 1.0),
+            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 0.99),
+        ]
+        let timeline = makeTimeline(pitchDiscriminationRecords: records)
+        let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
+        #expect(buckets.count == 1)
+        if let bucket = buckets.first {
+            #expect(abs(bucket.stddev - 7.071) < 0.01)
+        }
+    }
+
     // MARK: - Profile-Driven Incremental Tests
 
     @Test("profile observer update reflects in timeline buckets")

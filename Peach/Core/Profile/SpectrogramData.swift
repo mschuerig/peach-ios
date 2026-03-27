@@ -184,7 +184,7 @@ struct SpectrogramData: Sendable {
         let mean = values.reduce(0.0, +) / Double(values.count)
         let variance: Double
         if values.count > 1 {
-            variance = values.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(values.count)
+            variance = values.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(values.count - 1)
         } else {
             variance = 0
         }
