@@ -188,9 +188,10 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         }
 
         let enabledPositions = settings.enabledGapPositions
+        precondition(!enabledPositions.isEmpty, "enabledGapPositions must not be empty")
         let selectedPosition: StepPosition
         if enabledPositions.count == 1 {
-            selectedPosition = enabledPositions.first!
+            selectedPosition = enabledPositions[enabledPositions.startIndex]
         } else {
             selectedPosition = enabledPositions.randomElement()!
         }
