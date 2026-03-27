@@ -16,16 +16,46 @@ Use these scripts instead of writing inline xcodebuild commands:
 If a script's output doesn't contain what you need, use the `-r` (raw) flag as a fallback. Do not reinvent the parsing.
 
 
-## iOS Skills
+## Skills
 
-When writing, reviewing, or modifying code, invoke the relevant installed skills as part of your workflow:
+Invoke the relevant installed skills proactively as part of your workflow. Do not wait for the user to invoke these — if the task touches a skill's domain, use it.
+
+### Core (use during any implementation work)
 
 - `/swiftui-pro` — When working with SwiftUI views or modifiers
 - `/swiftdata-pro` — When working with SwiftData models or queries
 - `/swift-concurrency` — When working with async/await, actors, or Sendable types
 - `/swift-testing-pro` — When writing or reviewing tests
 
-Do not wait for the user to invoke these. If the task touches a skill's domain, use it proactively.
+### SwiftUI Specialized (use alongside `/swiftui-pro` when relevant)
+
+- `/swiftui-performance-audit` — When profiling or optimizing SwiftUI view invalidation and rendering
+- `/swiftui-liquid-glass` — When implementing iOS 26 Liquid Glass UI effects
+- `/swiftui-view-refactor` — When restructuring views into modular components with improved data flow
+- `/swiftui-ui-patterns` — When building screens with navigation, state management, or reusable patterns
+
+### Concurrency (complementary perspectives)
+
+- `/swift-concurrency-expert` — Dimillian's Swift 6.2+ concurrency skill for actor isolation and data-race diagnostics
+- `/avdlee-swift-concurrency` — Antoine van der Lee's concurrency skill with migration guides and common diagnostics table
+
+### Accessibility
+
+- `/ios-accessibility` — When building or reviewing UI for VoiceOver, Dynamic Type, Voice Control, Switch Control, or Full Keyboard Access
+
+### Code Quality
+
+- `/simplify-code` — After implementation, review diffs for reuse, quality, and efficiency
+- `/orchestrate-batch-refactor` — When planning larger refactoring efforts across multiple files
+
+### Debugging
+
+- `/ios-debugger-agent` — When building, launching, and debugging on iOS Simulator with UI inspection
+
+### Release
+
+- `/appstore-review` — Before App Store submission, audit against Apple's Review Guidelines
+- `/app-store-changelog` — Generate user-facing release notes from git history
 
 
 ## Code Audit Tools
