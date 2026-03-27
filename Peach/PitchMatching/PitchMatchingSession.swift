@@ -250,7 +250,7 @@ final class PitchMatchingSession: TrainingSession {
                 switch event {
                 case .pitchBend(let value, _, _):
                     let normalized = value.normalizedSliderValue
-                    await handlePitchBendInput(value: value, normalized: normalized)
+                    handlePitchBendInput(value: value, normalized: normalized)
                 case .noteOn, .noteOff:
                     break
                 }
@@ -258,7 +258,7 @@ final class PitchMatchingSession: TrainingSession {
         }
     }
 
-    private func handlePitchBendInput(value: PitchBendValue, normalized: Double) async {
+    private func handlePitchBendInput(value: PitchBendValue, normalized: Double) {
         guard state == .awaitingSliderTouch || state == .playingTunable else { return }
 
         midiPitchBendValue = normalized
@@ -276,8 +276,8 @@ final class PitchMatchingSession: TrainingSession {
             commitPitch(normalized)
             hasBeenDeflected = false
             midiPitchBendValue = nil
-        } else if let frequency = sliderFrequency(for: normalized) {
-            try? await currentHandle?.adjustFrequency(Frequency(frequency))
+        } else {
+            adjustPitch(normalized)
         }
     }
 
@@ -286,6 +286,7 @@ final class PitchMatchingSession: TrainingSession {
     private func playNextTrial() async {
         guard let settings else { return }
         hasBeenDeflected = false
+        midiPitchBendValue = nil
 
         guard let interval = settings.intervals.randomElement() else { return }
         currentInterval = interval

@@ -31,6 +31,15 @@
 **Source:** story 46-5
 **Reason:** Xcode build system artifact from `appintentsmetadataprocessor`. Project doesn't use AppIntents. Zero runtime impact, not our code.
 
+## OPEN — Needs Architectural Decision
+
+### CQ-4: Training session classes lack actor isolation
+
+**Source:** story 62.5 code review (D1)
+**Symptom:** Both `PitchMatchingSession` and `ContinuousRhythmMatchingSession` are `@Observable` but not `@MainActor`-isolated. Multiple unstructured `Task`s (MIDI listening, tracking loop, training loop) mutate shared observable state (`hitCycleIndices`, `cyclesInCurrentTrial`, `showFeedback`, `midiPitchBendValue`, etc.) without synchronization. During 62.5 development, removing an `await MainActor.run` wrapper from `ContinuousRhythmMatchingSession` fixed a real Clone 1 scheduling bottleneck but also removed the one place that serialized access.
+**Risk:** Data races under concurrent task scheduling. Currently masked by typical single-core simulator execution, but could surface on device or under heavy contention.
+**Disposition:** Needs a decision on isolation strategy for training sessions — either `@MainActor` annotation (if all callers are already MainActor) or targeted synchronization. Cross-cutting concern affecting both session classes.
+
 ## RESOLVED
 
 ### TF-1: `ProgressTimelineTests/subBucketsSessionEmpty()` and `sessionBuckets()` flaky failures

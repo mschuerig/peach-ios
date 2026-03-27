@@ -102,6 +102,11 @@ struct PitchSlider: View {
                 currentValue = 0
             }
         }
+        .onChange(of: externalValue) { oldValue, newValue in
+            if oldValue != nil, newValue == nil, let oldValue {
+                currentValue = oldValue
+            }
+        }
     }
 
     // MARK: - Static Calculation Methods (testable)

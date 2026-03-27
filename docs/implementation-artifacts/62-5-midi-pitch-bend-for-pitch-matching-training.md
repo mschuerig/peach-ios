@@ -1,6 +1,6 @@
 # Story 62.5: MIDI Pitch Bend for Pitch Matching Training
 
-Status: review
+Status: done
 
 ## Story
 
@@ -233,12 +233,28 @@ Claude Opus 4.6
 - 7 unit tests for `PitchBendValue` mapping, 9 integration tests for MIDI pitch bend in `PitchMatchingSession`
 - All test failures in suite are pre-existing "Clone 1" simulator parallelism issues only
 
+### Code Review Fixes
+
+- **P1**: `handlePitchBendInput` was calling `currentHandle?.adjustFrequency()` directly instead of routing through `adjustPitch()`. This violated AC5 ("drive `adjustPitch()` exactly like slider drag") and the dev notes constraint ("route through the existing public API"). Also caused MIDI event loop serialization (await vs fire-and-forget). Fixed to call `adjustPitch(normalized)`. Method no longer needs to be `async`.
+- **P2**: `midiPitchBendValue` was not reset in `playNextTrial()`, causing the slider thumb to show a stale position from the previous trial. Added `midiPitchBendValue = nil` alongside the existing `hasBeenDeflected` reset.
+- **P3**: When `externalValue` transitioned from non-nil to nil (MIDI commit/stop), the slider thumb snapped to the stale touch-driven `currentValue`. Added `onChange(of: externalValue)` to sync `currentValue` to the last external value on that transition.
+- **P4**: Duplicate `waitForCondition` helper in two test files. Extracted to `PeachTests/Helpers/AsyncTestHelpers.swift`.
+
+### Deferred Findings
+
+- **D1: Training session classes lack actor isolation.** Cataloged as CQ-4 in `docs/pre-existing-findings.md`.
+
+### Intent Gaps
+
+- **I1: No defined behavior for simultaneous touch + MIDI input.** AC7 says "MIDI pitch bend is additive, not a replacement," but the implementation is `externalValue ?? currentValue` — either/or, not additive. When MIDI is active, the slider thumb follows MIDI regardless of touch. If the user touches the slider while MIDI is sending, the visual position is MIDI-driven but `onCommit` sends the touch value. The spec should define precedence when both inputs are active. In practice, users typically use one input at a time, so this is low-risk.
+
 ### File List
 
 - `Peach/Core/Music/PitchBendValue.swift` — Added `normalizedSliderValue` and `isInNeutralZone` computed properties
 - `Peach/PitchMatching/PitchMatchingSession.swift` — Added `midiInput` parameter, MIDI listening task, `hasBeenDeflected`, `midiPitchBendValue`, `handlePitchBendInput`
-- `Peach/PitchMatching/PitchSlider.swift` — Added `externalValue: Double?` parameter for MIDI-driven thumb position
+- `Peach/PitchMatching/PitchSlider.swift` — Added `externalValue: Double?` parameter for MIDI-driven thumb position; `onChange` sync on nil transition
 - `Peach/PitchMatching/PitchMatchingScreen.swift` — Wired `midiPitchBendValue` to `PitchSlider.externalValue`
 - `Peach/App/PeachApp.swift` — Passed `midiAdapter` to `createPitchMatchingSession`, reordered init
 - `PeachTests/Core/Music/PitchBendValueTests.swift` — New: 7 tests for mapping and neutral zone
 - `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` — Added `makePitchMatchingSessionWithMIDI` factory, `PitchMatchingSessionMIDIPitchBendTests` suite with 9 tests
+- `PeachTests/Helpers/AsyncTestHelpers.swift` — New: shared `waitForCondition` helper extracted from duplicates
