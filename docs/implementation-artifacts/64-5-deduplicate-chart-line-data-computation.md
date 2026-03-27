@@ -1,6 +1,6 @@
 # Story 64.5: Deduplicate Chart Line Data Computation and Fix Unstable ForEach Identity
 
-Status: review
+Status: done
 
 ## Story
 

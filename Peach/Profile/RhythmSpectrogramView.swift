@@ -25,7 +25,11 @@ struct RhythmSpectrogramView: View {
 
     private var activeCard: some View {
         let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let data = cachedData ?? SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
+        let data = if let cachedData, cachedData.columns.count == buckets.count {
+            cachedData
+        } else {
+            SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
+        }
 
         return Group {
             if !data.trainedRanges.isEmpty {
