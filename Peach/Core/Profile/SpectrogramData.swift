@@ -180,18 +180,11 @@ struct SpectrogramData: Sendable {
 
     private static func computeStats(_ metrics: [MetricPoint], sixteenthMs: Double) -> SpectrogramCellStats? {
         guard !metrics.isEmpty else { return nil }
-        let values = metrics.map(\.value)
-        let mean = values.reduce(0.0, +) / Double(values.count)
-        let variance: Double
-        if values.count > 1 {
-            variance = values.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(values.count - 1)
-        } else {
-            variance = 0
-        }
+        let accumulator = WelfordAccumulator(metrics.map(\.value))
         return SpectrogramCellStats(
-            meanPercent: msToPercent(mean, sixteenthMs: sixteenthMs),
-            stdDevPercent: msToPercent(sqrt(variance), sixteenthMs: sixteenthMs),
-            count: values.count
+            meanPercent: msToPercent(accumulator.mean, sixteenthMs: sixteenthMs),
+            stdDevPercent: msToPercent(accumulator.sampleStdDev ?? 0, sixteenthMs: sixteenthMs),
+            count: accumulator.count
         )
     }
 

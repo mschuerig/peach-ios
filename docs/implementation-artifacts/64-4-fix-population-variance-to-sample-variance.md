@@ -1,6 +1,6 @@
 # Story 64.4: Fix Population Variance to Sample Variance
 
-Status: review
+Status: done
 
 ## Story
 

@@ -52,3 +52,12 @@ struct WelfordAccumulator: Sendable {
         count >= 2 ? sqrt(m2 / Double(count)) : nil
     }
 }
+
+extension WelfordAccumulator {
+    init<S: Sequence<Double>>(_ values: S) {
+        self.init()
+        for value in values {
+            update(value)
+        }
+    }
+}

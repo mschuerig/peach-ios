@@ -207,21 +207,14 @@ final class ProgressTimeline {
     // MARK: - Bucket Aggregation
 
     private static func makeBucket(periodStart: Date, periodEnd: Date, bucketSize: BucketSize, points: [Double]) -> TimeBucket {
-        let mean = points.reduce(0.0, +) / Double(points.count)
-        let stddev: Double
-        if points.count > 1 {
-            let variance = points.map { pow($0 - mean, 2) }.reduce(0.0, +) / Double(points.count - 1)
-            stddev = sqrt(variance)
-        } else {
-            stddev = 0
-        }
+        let accumulator = WelfordAccumulator(points)
         return TimeBucket(
             periodStart: periodStart,
             periodEnd: periodEnd,
             bucketSize: bucketSize,
-            mean: mean,
-            stddev: stddev,
-            recordCount: points.count
+            mean: accumulator.mean,
+            stddev: accumulator.sampleStdDev ?? 0,
+            recordCount: accumulator.count
         )
     }
 
