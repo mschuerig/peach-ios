@@ -91,7 +91,7 @@ FR73: System discards incomplete rhythm comparison exercises on interruption (na
 FR73a: System returns to the Start Screen when the app is foregrounded after being backgrounded during rhythm comparison
 FR74: User can start rhythm matching training from the Start Screen via a dedicated button
 FR75: System plays 3 sixteenth notes at the user's chosen metronome tempo; user taps to produce the 4th note at the correct moment
-FR76: System accepts tap input only (clap and MIDI reserved for future; inputMethod field reserved in data model)
+FR76: System accepts tap and MIDI input for rhythm matching and pitch matching training (clap detection deferred; MIDI results recorded identically to tap — no inputMethod discriminator needed)
 FR77: System records rhythm matching results: tempoBPM, userOffsetMs, timestamp
 FR78: System tracks separate mean and stdDev for early vs. late errors in rhythm matching
 FR79: System discards incomplete rhythm matching exercises on interruption (same rules as FR73)
@@ -384,7 +384,7 @@ UX-DR14: Landscape/iPad adaptive layouts for all rhythm screens and spectrogram
 | FR73a | Epic 48 | Return to Start Screen on foreground after backgrounding |
 | FR74 | Epic 49 | Start rhythm matching from Start Screen |
 | FR75 | Epic 49 | Play 3 sixteenth notes, user taps 4th |
-| FR76 | Epic 49 | Tap input only (clap/MIDI reserved) |
+| FR76 | Epic 49, Epic 62 | Tap and MIDI input supported (clap detection deferred) |
 | FR77 | Epic 49 | Record rhythm matching results |
 | FR78 | Epic 49 | Separate early/late mean and stdDev |
 | FR79 | Epic 49 | Discard incomplete rhythm matching on interruption |

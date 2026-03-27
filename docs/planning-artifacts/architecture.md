@@ -2150,12 +2150,13 @@ final class RhythmMatchingRecord {
     var tempoBPM: Int
     var userOffsetMs: Double        // signed — negative=early, positive=late
     var timestamp: Date
-    // inputMethod field reserved for future (clap detection, MIDI input)
+    // MIDI input implemented (Epic 62) — results recorded identically to tap, no inputMethod discriminator needed
+    // inputMethod field reserved for future clap detection only
 }
 ```
 
 **Design notes:**
-- `inputMethod` reserved as a comment, not a field — add the field when the first non-tap input is implemented
+- `inputMethod` not added as a field — MIDI input (Epic 62) records results identically to tap (same `RhythmOffset`, same observer notifications), so no discriminator is needed. The field remains reserved as a comment for future clap detection, which may require different latency calibration
 - File location: `Core/Data/RhythmMatchingRecord.swift`
 
 ### TrainingDataStore Extension
@@ -3021,3 +3022,36 @@ The existing NFR "Audio latency < 10ms" refers to the audio engine's buffer late
 **Pattern Consistency:** The single-clock-domain pattern follows the same "single source of truth" principle already established for SwiftUI state management. Touch-down triggering is the universal standard in iOS music apps.
 
 **Risk Assessment:** `DragGesture(minimumDistance: 0)` fires `onChanged` continuously as the finger moves. The tap handler must be idempotent per cycle, which `ContinuousRhythmMatchingSession.handleTap()` already enforces via `hitCycleIndices`. An additional UI-level debounce (`@State isTouchActive` flag) prevents redundant `playImmediateNote()` calls.
+
+## v0.7 Architecture Amendment — MIDI Controller Input
+
+Epic 62 adds MIDI controller input for rhythm matching and pitch matching training. MIDI events are abstracted behind a port protocol, following the same ports-and-adapters pattern used for other infrastructure boundaries.
+
+### MIDIInput Port Protocol
+
+A `MIDIInput` protocol in `Core/Ports/` abstracts MIDI infrastructure from training sessions:
+
+- **`MIDIInputEvent`** — enum with cases `.noteOn`, `.noteOff`, `.pitchBend`, carrying typed domain values (`MIDINote`, `MIDIVelocity`, `MIDIChannel`, `PitchBendValue`, `MIDITimeStamp`)
+- **`MIDIInput`** — protocol exposing an `AsyncStream<MIDIInputEvent>` and connection status
+- **`MockMIDIInput`** — test double for domain logic testing without CoreMIDI or hardware
+
+### MIDIKit Adapter
+
+`MIDIKitAdapter` implements the `MIDIInput` protocol, bridging MIDIKit's CoreMIDI wrapper to the domain:
+
+- Supports USB and Bluetooth MIDI transports
+- Automatic hot-plug device detection (no user configuration required)
+- Bridges events from MIDIKit's serial dispatch queue into the `AsyncStream` continuation
+- Composition root wiring via `@Entry` in `PeachApp.swift`
+
+### MIDI Integration Points
+
+- **`ContinuousRhythmMatchingSession`** — consumes `.noteOn` events as tap input, using `MIDITimeStamp` for sample-accurate hit detection against the audio engine's clock domain
+- **`PitchMatchingSession`** — consumes `.pitchBend` events to drive the pitch slider, routed through `adjustPitch()` for consistent behavior with touch input
+- Results from MIDI input are recorded identically to tap/touch input — same `RhythmOffset`, same observer notifications, no `inputMethod` discriminator
+
+### v0.7 Architecture Validation
+
+**Decision Compatibility:** MIDIKit is the only new dependency. It wraps CoreMIDI with a Swift-friendly API. No entitlements, Info.plist entries, or AVAudioSession changes required.
+
+**Pattern Consistency:** `MIDIInput` follows the same port protocol pattern as `NotePlayer`, `HapticFeedback`, and `StepSequencer` — domain code depends on the protocol, infrastructure implements it, composition root wires it.

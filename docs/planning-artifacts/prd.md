@@ -164,7 +164,7 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 - CSV export/import format version 2 with new `trainingType` discriminators and chain-of-responsibility parser
 
 **Deferred to subsequent iteration:**
-- Clap detection (audio input) and MIDI input for Rhythm Matching
+- Clap detection (audio input) for Rhythm Matching
 - Per-input-method latency calibration
 - Subdivisions beyond sixteenth notes (eighth, triplet)
 - Softer-attack sounds as additional difficulty lever
@@ -549,7 +549,7 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 
 - **FR74:** User can start rhythm matching training from the Start Screen via a dedicated button
 - **FR75:** System plays 3 sixteenth notes at the user's chosen metronome tempo; user taps to produce the 4th note at the correct moment
-- **FR76:** System accepts tap input only (clap and MIDI reserved for future; inputMethod field reserved in data model)
+- **FR76:** System accepts tap and MIDI input for rhythm matching and pitch matching training (clap detection deferred; MIDI results recorded identically to tap — no inputMethod discriminator needed)
 - **FR77:** System records rhythm matching results: tempoBPM, userOffsetMs, timestamp
 - **FR78:** System tracks separate mean and stdDev for early vs. late errors in rhythm matching
 - **FR79:** System discards incomplete rhythm matching exercises on interruption (same rules as FR73)

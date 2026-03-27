@@ -14,7 +14,7 @@
 ## Mode 2: Rhythm Matching (Production/Accuracy)
 
 - 3 sixteenth notes played, user taps the 4th at the correct moment
-- Tap only for v1. Clap (audio input) and MIDI documented as future enhancements
+- Tap and MIDI input supported. Clap detection (audio input) documented as future enhancement
 - Separate mean/stdDev tracked for early vs. late errors
 
 ## Visualization During Training
@@ -154,6 +154,8 @@
 
 ### ADR-7: Tap-Only Input for V1
 
+> **Superseded by Epic 62** (2026-03): MIDI input implemented for both rhythm matching (62.4) and pitch matching (62.5). MIDI note-on serves as tap input; MIDI pitch bend drives the pitch slider. Results are recorded identically to tap input — no `inputMethod` discriminator was needed. Clap detection remains deferred.
+
 **Context:** Mode 2 could support tap, clap (audio input), and MIDI. Each adds implementation complexity.
 
 **Decision:** Ship with tap input only. Reserve `inputMethod` field in data model for future.
@@ -166,8 +168,8 @@
 
 ## Future Enhancements (Documented, Not In Scope)
 
-- Clap detection (audio input) and MIDI input for Mode 2
-- Per-input-method latency calibration (when clap/MIDI added)
+- Clap detection (audio input) for Mode 2
+- Per-input-method latency calibration (when clap detection added)
 - Subdivisions beyond sixteenth notes (eighth, triplet)
 - Softer-attack sounds as additional difficulty lever
 - Progressive tempo suggestions based on mastery
