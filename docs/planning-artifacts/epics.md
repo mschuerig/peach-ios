@@ -6440,7 +6440,7 @@ Users can plug in a USB or Bluetooth MIDI controller and use any key to tap rhyt
 
 **Research basis:** `docs/planning-artifacts/research/technical-midi-input-ios-research-2026-03-26.md`
 
-Work order: stories 62.1 → 62.2 → 62.3 → 62.4 (each builds on the previous).
+Work order: stories 62.1 → 62.2 → 62.3 → 62.4 → 62.5 (each builds on the previous).
 
 ### Story 62.1: Add MIDIKit Dependency and Define MIDI Input Event Types
 
@@ -6570,6 +6570,50 @@ So that I can use a familiar instrument interface instead of the screen tap butt
 **When** tested
 **Then** all timing logic is tested on Simulator using `MockMIDIInput` with controlled event sequences and timestamps (NFR-M4)
 **And** the tests verify timestamp-based hit detection, feedback triggering, and result recording
+
+**Given** the full test suite
+**When** run
+**Then** all existing tests pass with zero regressions
+
+### Story 62.5: MIDI Pitch Bend for Pitch Matching Training
+
+As a **musician with a MIDI controller**,
+I want to use my controller's pitch bend wheel to adjust pitch during pitch matching training,
+So that I can use a familiar, tactile input instead of the on-screen slider.
+
+**Acceptance Criteria:**
+
+**Given** a MIDI controller is connected and pitch matching training is active
+**When** any pitch bend message is received (status `0xE0`-`0xEF`, 14-bit value 0-16383, center 8192)
+**Then** the system recognises it regardless of MIDI channel
+
+**Given** a pitch bend value is received
+**When** mapped to the slider domain
+**Then** the full pitch bend range maps linearly to `[-1.0, +1.0]`: 0 -> -1.0, 8192 -> 0.0, 16383 -> +1.0
+
+**Given** pitch bend messages are received continuously
+**When** the session is in `.awaitingSliderTouch` or `.playingTunable` state
+**Then** the on-screen slider thumb moves in real-time to reflect the current pitch bend position
+
+**Given** the session is in `.awaitingSliderTouch` state
+**When** the first pitch bend message arrives
+**Then** the tunable note starts playing — identical to the first slider touch
+
+**Given** the session is in `.playingTunable` state
+**When** continuous pitch bend messages arrive
+**Then** they drive `adjustPitch()` on the session exactly like slider drag, producing real-time frequency changes
+
+**Given** the session is in `.playingTunable` state
+**When** the pitch bend returns to the neutral zone (center +/- 256 out of 8192, approximately +/-3%) after having been deflected
+**Then** the pitch is committed — equivalent to slider release
+
+**Given** no MIDI controller is connected
+**When** training is active
+**Then** the on-screen slider continues to work identically — MIDI pitch bend is additive, not a replacement
+
+**Given** the `PitchMatchingSession` MIDI integration
+**When** tested
+**Then** all pitch bend logic is tested on Simulator using `MockMIDIInput` with controlled event sequences
 
 **Given** the full test suite
 **When** run
