@@ -1,6 +1,6 @@
 # Story 64.3: Make Merge-Mode Import Transactional
 
-Status: review
+Status: done
 
 ## Story
 
