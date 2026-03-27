@@ -150,11 +150,13 @@ struct ProgressChartView: View {
         separatorData: ZoneSeparatorData,
         yearLabels: [YearLabel]
     ) -> some View {
+        let lineData = Self.lineDataWithSessionBridge(for: buckets)
+
         return Chart {
             Self.zoneBackgrounds(separatorData: separatorData, yDomain: yDomain, isIncreaseContrast: isIncreaseContrast)
             Self.zoneDividers(separatorData: separatorData, isIncreaseContrast: isIncreaseContrast)
-            Self.stddevBand(buckets: buckets, isIncreaseContrast: isIncreaseContrast)
-            Self.ewmaLine(buckets: buckets)
+            Self.stddevBand(lineData: lineData, isIncreaseContrast: isIncreaseContrast)
+            Self.ewmaLine(lineData: lineData)
             Self.sessionDots(buckets: buckets)
 
             // Layer 6: Baseline
@@ -197,7 +199,7 @@ struct ProgressChartView: View {
                     let plotFrame = geometry[plotAreaFrame]
 
                     // Year labels below X-axis
-                    ForEach(Array(yearLabels.enumerated()), id: \.offset) { _, label in
+                    ForEach(yearLabels) { label in
                         if let xFirst = proxy.position(forX: Double(label.firstIndex)),
                            let xLast = proxy.position(forX: Double(label.lastIndex)) {
                             Text(String(label.year))
@@ -211,7 +213,7 @@ struct ProgressChartView: View {
                     }
 
                     // Zone accessibility containers
-                    ForEach(Array(separatorData.zones.enumerated()), id: \.offset) { _, zone in
+                    ForEach(separatorData.zones) { zone in
                         if let summary = Self.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config),
                            let xStart = proxy.position(forX: Double(zone.startIndex) - 0.5),
                            let xEnd = proxy.position(forX: Double(zone.endIndex) + 0.5) {
@@ -246,7 +248,7 @@ struct ProgressChartView: View {
     // MARK: - Chart Content Layers
 
     static func zoneBackgrounds(separatorData: ZoneSeparatorData, yDomain: ClosedRange<Double>, isIncreaseContrast: Bool) -> some ChartContent {
-        ForEach(Array(separatorData.zones.enumerated()), id: \.offset) { _, zone in
+        ForEach(separatorData.zones) { zone in
             RectangleMark(
                 xStart: .value("ZS", Double(zone.startIndex) - 0.5),
                 xEnd: .value("ZE", Double(zone.endIndex) + 0.5),
@@ -265,8 +267,8 @@ struct ProgressChartView: View {
         }
     }
 
-    static func stddevBand(buckets: [TimeBucket], isIncreaseContrast: Bool) -> some ChartContent {
-        ForEach(lineDataWithSessionBridge(for: buckets), id: \.position) { point in
+    static func stddevBand(lineData: [LinePoint], isIncreaseContrast: Bool) -> some ChartContent {
+        ForEach(lineData, id: \.position) { point in
             AreaMark(
                 x: .value("Index", point.position),
                 yStart: .value("Low", max(0, point.mean - point.stddev)),
@@ -276,8 +278,8 @@ struct ProgressChartView: View {
         }
     }
 
-    static func ewmaLine(buckets: [TimeBucket]) -> some ChartContent {
-        ForEach(lineDataWithSessionBridge(for: buckets), id: \.position) { point in
+    static func ewmaLine(lineData: [LinePoint]) -> some ChartContent {
+        ForEach(lineData, id: \.position) { point in
             LineMark(
                 x: .value("Index", point.position),
                 y: .value("EWMA", point.mean)
@@ -359,16 +361,20 @@ struct ProgressChartView: View {
 
     // MARK: - Zone Separator Data
 
-    struct ZoneInfo {
+    struct ZoneInfo: Identifiable {
         let bucketSize: BucketSize
         let startIndex: Int
         let endIndex: Int
+
+        var id: String { "\(bucketSize):\(startIndex)" }
     }
 
-    struct YearLabel {
+    struct YearLabel: Identifiable {
         let year: Int
         let firstIndex: Int
         let lastIndex: Int
+
+        var id: String { "\(year):\(firstIndex)" }
     }
 
     struct ZoneSeparatorData {

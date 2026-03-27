@@ -74,10 +74,13 @@ struct SpectrogramCell: Sendable {
 // MARK: - Column
 
 /// A vertical slice of the spectrogram grid representing one time bucket.
-struct SpectrogramColumn: Sendable {
+struct SpectrogramColumn: Sendable, Identifiable {
+    let index: Int
     let date: Date
     let bucketSize: BucketSize
     let cells: [SpectrogramCell]
+
+    var id: Date { date }
 }
 
 // MARK: - SpectrogramData
@@ -130,7 +133,7 @@ struct SpectrogramData: Sendable {
                     lateMetrics: metricsMap[range]?[.late] ?? []
                 )
             }
-            return SpectrogramColumn(date: bucket.periodStart, bucketSize: bucket.bucketSize, cells: cells)
+            return SpectrogramColumn(index: columnIndex, date: bucket.periodStart, bucketSize: bucket.bucketSize, cells: cells)
         }
 
         return SpectrogramData(columns: columns, trainedRanges: trainedRanges)

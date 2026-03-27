@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-27 # Story 64.3 done
+# last_updated: 2026-03-28 # Story 64.5 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -489,7 +489,7 @@ development_status:
   64-2-fix-soundfontplaybackhandle-stop-race: done
   64-3-make-merge-import-transactional: done
   64-4-fix-population-variance-to-sample-variance: done
-  64-5-deduplicate-chart-line-data-computation: ready-for-dev
+  64-5-deduplicate-chart-line-data-computation: review
   64-6-cache-help-markdown-and-dateformatter: ready-for-dev
   64-7-isolate-sparkline-observation-fan-out: ready-for-dev
   64-8-fix-swiftdata-dependency-boundary-violations: ready-for-dev

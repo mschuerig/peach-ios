@@ -1,6 +1,6 @@
 # Story 64.5: Deduplicate Chart Line Data Computation and Fix Unstable ForEach Identity
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,27 +22,49 @@ so that scrolling is smooth and tapping a cell doesn't cause the entire grid to 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Deduplicate `lineDataWithSessionBridge()` call (AC: #1)
-  - [ ] 1.1 In `chartContent()`, call `lineDataWithSessionBridge(for: buckets)` once and store in a local `let lineData`
-  - [ ] 1.2 Pass `lineData` to both `stddevBand()` and `ewmaLine()` as a parameter instead of having each call the function independently
-  - [ ] 1.3 Update the static method signatures to accept `[LinePoint]` instead of `[TimeBucket]`
+- [x] Task 1: Deduplicate `lineDataWithSessionBridge()` call (AC: #1)
+  - [x] 1.1 In `chartContent()`, call `lineDataWithSessionBridge(for: buckets)` once and store in a local `let lineData`
+  - [x] 1.2 Pass `lineData` to both `stddevBand()` and `ewmaLine()` as a parameter instead of having each call the function independently
+  - [x] 1.3 Update the static method signatures to accept `[LinePoint]` instead of `[TimeBucket]`
 
-- [ ] Task 2: Fix unstable ForEach identity in `ProgressChartView` (AC: #2)
-  - [ ] 2.1 For `yearLabels`: add a stable `id` property to `YearLabel` (e.g., combining year + firstIndex) or make `YearLabel` Identifiable. Replace `ForEach(Array(...enumerated()), id: \.offset)` with `ForEach(yearLabels)`
-  - [ ] 2.2 For `separatorData.zones`: add a stable `id` property to `ZoneInfo` (e.g., combining bucketSize + startIndex) or make `ZoneInfo` Identifiable. Replace enumerated ForEach
-  - [ ] 2.3 For zone backgrounds in `zoneBackgrounds()`: same fix — use `ZoneInfo.id` instead of enumeration offset
+- [x] Task 2: Fix unstable ForEach identity in `ProgressChartView` (AC: #2)
+  - [x] 2.1 For `yearLabels`: add a stable `id` property to `YearLabel` (e.g., combining year + firstIndex) or make `YearLabel` Identifiable. Replace `ForEach(Array(...enumerated()), id: \.offset)` with `ForEach(yearLabels)`
+  - [x] 2.2 For `separatorData.zones`: add a stable `id` property to `ZoneInfo` (e.g., combining bucketSize + startIndex) or make `ZoneInfo` Identifiable. Replace enumerated ForEach
+  - [x] 2.3 For zone backgrounds in `zoneBackgrounds()`: same fix — use `ZoneInfo.id` instead of enumeration offset
 
-- [ ] Task 3: Cache `SpectrogramData.compute()` in `RhythmSpectrogramView` (AC: #3)
-  - [ ] 3.1 Add a `@State private var cachedData: SpectrogramData?` and a `@State private var cachedRecordCount: Int = 0`
-  - [ ] 3.2 In `activeCard`, check if `progressTimeline.recordCount(for: mode)` has changed since last computation. If not, use cached data. If yes, recompute and cache
-  - [ ] 3.3 Alternatively, use `.task(id: progressTimeline.recordCount(for: mode))` to recompute only when record count changes, storing result in @State
+- [x] Task 3: Cache `SpectrogramData.compute()` in `RhythmSpectrogramView` (AC: #3)
+  - [x] 3.1 Add a `@State private var cachedData: SpectrogramData?`
+  - [x] 3.3 Use `.task(id: progressTimeline.recordCount(for: mode))` to recompute only when record count changes, storing result in @State
 
-- [ ] Task 4: Fix unstable ForEach identity in `RhythmSpectrogramView` (AC: #4)
-  - [ ] 4.1 For `data.columns`: use `TimeBucket.periodStart` (Date) as the id since columns correspond 1:1 with time buckets. Replace `ForEach(Array(data.columns.enumerated()), id: \.offset)` with a stable identifier
-  - [ ] 4.2 For x-axis labels (`buckets`): same approach — use `bucket.periodStart` as id
-  - [ ] 4.3 For accessibility elements: same approach
+- [x] Task 4: Fix unstable ForEach identity in `RhythmSpectrogramView` (AC: #4)
+  - [x] 4.1 For `data.columns`: made `SpectrogramColumn` Identifiable using `date` (from `periodStart`). Added `index` property. Replaced all enumerated ForEach
+  - [x] 4.2 For x-axis labels: use `data.columns` ForEach with `column.index` to look up bucket
+  - [x] 4.3 For accessibility elements: same approach — use `column.index` instead of enumeration offset
 
-- [ ] Task 5: Run full test suite (AC: #5)
+- [x] Task 5: Run full test suite (AC: #5)
+
+## Dev Agent Record
+
+### Implementation Plan
+- Task 1: Compute lineData once, pass to stddevBand/ewmaLine. Updated both ProgressChartView and ExportChartView.
+- Task 2: Made YearLabel and ZoneInfo Identifiable with composite string IDs. Replaced 3 enumerated ForEach patterns.
+- Task 3: Added @State cachedData with .task(id: recordCount) pattern. Falls back to inline compute for initial render.
+- Task 4: Added `index` property to SpectrogramColumn, made it Identifiable via `date`. Replaced 3 enumerated ForEach patterns.
+- Task 5: Full suite passes — 1529 tests, zero regressions.
+
+### Completion Notes
+All 5 ACs satisfied. Performance improvements: lineDataWithSessionBridge computed once instead of twice per chart render; SpectrogramData.compute() cached so cell taps don't trigger recomputation; all ForEach loops use stable identifiers preventing unnecessary view teardown.
+
+## File List
+
+- `Peach/Profile/ProgressChartView.swift` — deduplicated lineData, made YearLabel/ZoneInfo Identifiable, replaced enumerated ForEach
+- `Peach/Profile/ExportChartView.swift` — updated stddevBand/ewmaLine calls to pass lineData
+- `Peach/Profile/RhythmSpectrogramView.swift` — cached SpectrogramData, replaced enumerated ForEach with column.id
+- `Peach/Core/Profile/SpectrogramData.swift` — added index property and Identifiable conformance to SpectrogramColumn
+
+## Change Log
+
+- 2026-03-28: Implemented story 64.5 — deduplicated chart line data computation, fixed unstable ForEach identity in both chart views, cached spectrogram data
 
 ## Dev Notes
 

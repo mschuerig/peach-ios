@@ -68,11 +68,13 @@ struct ExportChartView: View {
         let separatorData = ProgressChartView.zoneSeparatorData(for: buckets)
         let labels = ProgressChartView.yearLabels(for: buckets)
 
+        let lineData = ProgressChartView.lineDataWithSessionBridge(for: buckets)
+
         return Chart {
             ProgressChartView.zoneBackgrounds(separatorData: separatorData, yDomain: yDomain, isIncreaseContrast: false)
             ProgressChartView.zoneDividers(separatorData: separatorData, isIncreaseContrast: false)
-            ProgressChartView.stddevBand(buckets: buckets, isIncreaseContrast: false)
-            ProgressChartView.ewmaLine(buckets: buckets)
+            ProgressChartView.stddevBand(lineData: lineData, isIncreaseContrast: false)
+            ProgressChartView.ewmaLine(lineData: lineData)
             ProgressChartView.sessionDots(buckets: buckets)
 
             RuleMark(y: .value("Baseline", config.optimalBaseline))

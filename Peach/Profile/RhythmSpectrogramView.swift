@@ -7,6 +7,7 @@ struct RhythmSpectrogramView: View {
     @Environment(\.perceptualProfile) private var perceptualProfile
 
     @State private var selectedCell: SelectedCell?
+    @State private var cachedData: SpectrogramData?
 
     private let thresholds = SpectrogramThresholds.default
 
@@ -24,7 +25,7 @@ struct RhythmSpectrogramView: View {
 
     private var activeCard: some View {
         let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let data = SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
+        let data = cachedData ?? SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
 
         return Group {
             if !data.trainedRanges.isEmpty {
@@ -36,6 +37,13 @@ struct RhythmSpectrogramView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(String(localized: "Rhythm spectrogram for \(mode.config.displayName)"))
+        .task(id: progressTimeline.recordCount(for: mode)) {
+            cachedData = SpectrogramData.compute(
+                mode: mode,
+                profile: perceptualProfile,
+                timeBuckets: progressTimeline.allGranularityBuckets(for: mode)
+            )
+        }
     }
 
     // MARK: - Grid
@@ -55,7 +63,7 @@ struct RhythmSpectrogramView: View {
                             .padding(.trailing, 4)
 
                         // Cells for this range
-                        ForEach(Array(data.columns.enumerated()), id: \.offset) { columnIndex, column in
+                        ForEach(data.columns) { column in
                             if let cell = column.cells.first(where: { $0.tempoRange == range }) {
                                 cellView(cell: cell, size: cellSize)
                             }
@@ -66,19 +74,19 @@ struct RhythmSpectrogramView: View {
                 // VoiceOver: per-column accessibility elements (spatially aligned with grid columns)
                 HStack(spacing: 0) {
                     Color.clear.frame(width: 48)
-                    ForEach(Array(data.columns.enumerated()), id: \.offset) { columnIndex, column in
+                    ForEach(data.columns) { column in
                         Color.clear
                             .frame(width: cellSize, height: 1)
                             .accessibilityElement()
                             .accessibilityLabel(Self.columnAccessibilityLabel(
                                 column: column,
                                 buckets: buckets,
-                                columnIndex: columnIndex,
+                                columnIndex: column.index,
                                 thresholds: thresholds
                             ))
                             .accessibilityAddTraits(.isButton)
                             .accessibilityAction {
-                                selectedCell = SelectedCell(tempoRange: column.cells.first?.tempoRange ?? .slow, columnIndex: columnIndex)
+                                selectedCell = SelectedCell(tempoRange: column.cells.first?.tempoRange ?? .slow, columnIndex: column.index)
                             }
                     }
                 }
@@ -86,8 +94,8 @@ struct RhythmSpectrogramView: View {
                 // X-axis labels
                 HStack(spacing: 0) {
                     Color.clear.frame(width: 48)
-                    ForEach(Array(buckets.enumerated()), id: \.offset) { index, bucket in
-                        Text(Self.columnLabel(bucket, index: index, buckets: buckets))
+                    ForEach(data.columns) { column in
+                        Text(Self.columnLabel(buckets[column.index], index: column.index, buckets: buckets))
                             .font(.caption2)
                             .frame(width: cellSize, alignment: .center)
                             .lineLimit(1)
