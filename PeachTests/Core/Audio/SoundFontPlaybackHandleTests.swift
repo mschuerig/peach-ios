@@ -113,4 +113,18 @@ struct SoundFontPlaybackHandleTests {
         let handle2 = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
         try await handle2.stop()
     }
+
+    @Test("double stop keeps mute count balanced — third handle plays normally")
+    func doubleStopKeepsMuteCountBalanced() async throws {
+        let player = try makePlayer()
+        let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        try await handle.stop()
+        try await handle.stop()
+        // If the second stop() decremented activeMuteCount again, it would go negative
+        // and a subsequent play+stop cycle would leave volume permanently at 0.
+        let handle2 = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        try await handle2.stop()
+        let handle3 = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        try await handle3.stop()
+    }
 }

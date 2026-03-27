@@ -184,9 +184,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     func nextCycle() -> CycleDefinition {
         guard isRunning, let settings else {
-            let fallback = StepPosition.fourth
-            gapPositions.append(fallback)
-            return CycleDefinition(gapPosition: fallback)
+            return CycleDefinition(gapPosition: .fourth)
         }
 
         let enabledPositions = settings.enabledGapPositions

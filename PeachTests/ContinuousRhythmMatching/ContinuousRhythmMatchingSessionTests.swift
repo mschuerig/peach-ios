@@ -236,6 +236,27 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
+    @Test("nextCycle after stop does not mutate session state")
+    func nextCycleAfterStopDoesNotMutateState() async {
+        let f = makeSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        f.session.stop()
+        #expect(f.session.currentGapPosition == nil)
+
+        // Simulate the step sequencer's provider calling nextCycle after stop.
+        let fallback = f.session.nextCycle()
+        #expect(fallback.gapPosition == .fourth)
+
+        // currentGapPosition must stay nil — the fallback cycle must not be tracked.
+        // evaluatePlaybackPosition uses gapPositions to set currentGapPosition,
+        // so if nextCycle appended, evaluatePlaybackPosition would observe the stale entry.
+        f.sequencer.currentSamplePosition = 0
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.currentGapPosition == nil)
+    }
+
     // MARK: - Tap Evaluation
 
     @Test("tap inside evaluation window records hit with correct offset")
