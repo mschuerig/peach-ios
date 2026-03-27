@@ -191,7 +191,8 @@ struct PeachApp: App {
                     pitchMatchingSession = Self.createPitchMatchingSession(
                         notePlayer: newNotePlayer,
                         profile: profile,
-                        dataStore: dataStore
+                        dataStore: dataStore,
+                        midiInput: midiAdapter
                     )
                 }
                 .onChange(of: pitchDiscriminationSession.isIdle) { _, isIdle in
@@ -290,7 +291,7 @@ struct PeachApp: App {
         stepSequencer: StepSequencer,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore,
-        midiInput: (any MIDIInput)? = nil
+        midiInput: (any MIDIInput)?
     ) -> ContinuousRhythmMatchingSession {
         let profileAdapter = ContinuousRhythmMatchingProfileAdapter(profile: profile)
         let storeAdapter = ContinuousRhythmMatchingStoreAdapter(store: dataStore)
@@ -306,7 +307,7 @@ struct PeachApp: App {
         notePlayer: NotePlayer,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore,
-        midiInput: (any MIDIInput)? = nil
+        midiInput: (any MIDIInput)?
     ) -> PitchMatchingSession {
         let profileAdapter = PitchMatchingProfileAdapter(profile: profile)
         let storeAdapter = PitchMatchingStoreAdapter(store: dataStore)
