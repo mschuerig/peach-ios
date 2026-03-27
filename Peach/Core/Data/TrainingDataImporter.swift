@@ -69,9 +69,11 @@ enum TrainingDataImporter {
     ) throws -> ImportSummary {
         var perDiscipline: [TrainingDisciplineID: (imported: Int, skipped: Int)] = [:]
 
-        for discipline in TrainingDisciplineRegistry.shared.all {
-            let result = try discipline.mergeImportRecords(from: parseResult, into: store)
-            perDiscipline[discipline.id] = result
+        try store.withinTransaction { scope in
+            for discipline in TrainingDisciplineRegistry.shared.all {
+                let result = try discipline.mergeImportRecords(from: parseResult, existingIn: store, into: scope)
+                perDiscipline[discipline.id] = result
+            }
         }
 
         return ImportSummary(perDiscipline: perDiscipline, parseErrorCount: parseResult.errors.count)

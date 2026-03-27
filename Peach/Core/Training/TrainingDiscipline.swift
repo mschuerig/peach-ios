@@ -46,8 +46,10 @@ protocol TrainingDiscipline: Sendable {
     func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel]
 
     /// Merges imported records, skipping duplicates that already exist in the store.
+    /// Reads existing records from `store` for duplicate detection; writes new records through `scope`.
     func mergeImportRecords(
         from parseResult: CSVImportParser.ImportResult,
-        into store: TrainingDataStore
+        existingIn store: TrainingDataStore,
+        into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int)
 }

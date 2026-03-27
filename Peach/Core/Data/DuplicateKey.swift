@@ -2,13 +2,13 @@ import Foundation
 
 /// Duplicate detection key for pitch-based training records (discrimination and matching).
 struct PitchDuplicateKey: Hashable, Sendable {
-    let timestampSeconds: Int64
+    let timestampMillis: Int64
     let referenceNote: Int
     let targetNote: Int
     let trainingType: String
 
     init(timestamp: Date, referenceNote: Int, targetNote: Int, trainingType: String) {
-        self.timestampSeconds = Int64(timestamp.timeIntervalSinceReferenceDate)
+        self.timestampMillis = Int64(timestamp.timeIntervalSinceReferenceDate * 1000)
         self.referenceNote = referenceNote
         self.targetNote = targetNote
         self.trainingType = trainingType
@@ -35,12 +35,12 @@ struct PitchDuplicateKey: Hashable, Sendable {
 
 /// Duplicate detection key for rhythm-based training records.
 struct RhythmDuplicateKey: Hashable, Sendable {
-    let timestampSeconds: Int64
+    let timestampMillis: Int64
     let tempoBPM: Int
     let trainingType: String
 
     init(timestamp: Date, tempoBPM: Int, trainingType: String) {
-        self.timestampSeconds = Int64(timestamp.timeIntervalSinceReferenceDate)
+        self.timestampMillis = Int64(timestamp.timeIntervalSinceReferenceDate * 1000)
         self.tempoBPM = tempoBPM
         self.trainingType = trainingType
     }

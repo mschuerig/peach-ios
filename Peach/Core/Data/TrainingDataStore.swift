@@ -12,6 +12,36 @@ final class TrainingDataStore {
         self.modelContext = modelContext
     }
 
+    // MARK: - Transaction Support
+
+    /// Scoped context available only inside `withinTransaction` closures.
+    /// Provides `insert` without committing — the enclosing transaction handles commit/rollback.
+    struct TransactionScope {
+        private let modelContext: ModelContext
+
+        fileprivate init(modelContext: ModelContext) {
+            self.modelContext = modelContext
+        }
+
+        func insert(_ record: some PersistentModel) {
+            modelContext.insert(record)
+        }
+    }
+
+    /// Executes a closure inside a single `modelContext.transaction`, providing atomicity.
+    /// If the closure throws, the transaction rolls back and the error propagates.
+    func withinTransaction(_ work: (TransactionScope) throws -> Void) throws {
+        let scope = TransactionScope(modelContext: modelContext)
+        do {
+            try modelContext.transaction {
+                try work(scope)
+            }
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+    }
+
     // MARK: - Generic CRUD
 
     func save(_ record: some PersistentModel) throws {

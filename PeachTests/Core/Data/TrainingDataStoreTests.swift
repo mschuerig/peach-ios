@@ -672,4 +672,43 @@ struct TrainingDataStoreTests {
         // Position 3 (.fourth): not used
         #expect(fetched[0].meanOffsetMsPosition3 == nil)
     }
+
+    // MARK: - Transaction Rollback
+
+    @Test("withinTransaction rolls back all inserts when closure throws")
+    func transactionRollbackOnError() async throws {
+        let container = try makeFileBasedContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let committed = PitchDiscriminationRecord(
+            referenceNote: 60, targetNote: 64, centOffset: 10.0, isCorrect: true,
+            interval: 4, tuningSystem: "equalTemperament", timestamp: Date()
+        )
+        try store.save(committed)
+        #expect(try store.fetchAllPitchDiscriminations().count == 1)
+
+        struct TestError: Error {}
+        do {
+            try store.withinTransaction { scope in
+                scope.insert(PitchDiscriminationRecord(
+                    referenceNote: 72, targetNote: 76, centOffset: 5.0, isCorrect: false,
+                    interval: 4, tuningSystem: "equalTemperament", timestamp: Date()
+                ))
+                scope.insert(PitchMatchingRecord(
+                    referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
+                    interval: 3, tuningSystem: "equalTemperament", timestamp: Date()
+                ))
+                throw TestError()
+            }
+        } catch {
+            #expect(error is TestError)
+        }
+
+        let comparisons = try store.fetchAllPitchDiscriminations()
+        let matchings = try store.fetchAllPitchMatchings()
+        #expect(comparisons.count == 1)
+        #expect(comparisons[0].referenceNote == 60)
+        #expect(matchings.count == 0)
+    }
 }

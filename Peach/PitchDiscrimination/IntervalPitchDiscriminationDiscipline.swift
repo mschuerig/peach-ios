@@ -69,7 +69,8 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
 
     func mergeImportRecords(
         from parseResult: CSVImportParser.ImportResult,
-        into store: TrainingDataStore
+        existingIn store: TrainingDataStore,
+        into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildPitchDuplicateKeys(from: store)
         var imported = 0, skipped = 0
@@ -79,7 +80,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
             if existingKeys.contains(key) {
                 skipped += 1
             } else {
-                try store.save(r)
+                scope.insert(r)
                 existingKeys.insert(key)
                 imported += 1
             }

@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-27 # Story 64.2 review
+# last_updated: 2026-03-27 # Story 64.3 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -487,7 +487,7 @@ development_status:
   epic-64: in-progress
   64-1-fix-pitchmatchingsession-continuation-double-resume: done
   64-2-fix-soundfontplaybackhandle-stop-race: done
-  64-3-make-merge-import-transactional: ready-for-dev
+  64-3-make-merge-import-transactional: review
   64-4-fix-population-variance-to-sample-variance: ready-for-dev
   64-5-deduplicate-chart-line-data-computation: ready-for-dev
   64-6-cache-help-markdown-and-dateformatter: ready-for-dev

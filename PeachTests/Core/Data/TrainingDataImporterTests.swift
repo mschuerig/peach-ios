@@ -424,11 +424,12 @@ struct TrainingDataImporterTests {
 
     // MARK: - CSV Round-Trip Duplicate Detection
 
-    @Test("merge detects duplicates after export-import round-trip with sub-second timestamps")
+    @Test("merge detects duplicates after export-import round-trip with whole-second timestamps")
     func mergeDetectsDuplicatesAfterRoundTrip() async throws {
         let store = try makeStore()
 
-        let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.999)
+        // Use a whole-second timestamp since CSV export uses ISO8601 without fractional seconds
+        let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.0)
         let record = PitchDiscriminationRecord(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
             interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
@@ -582,5 +583,52 @@ struct TrainingDataImporterTests {
 
         #expect(summary.totalSkipped == 1)
         #expect(summary.totalImported == 0)
+    }
+
+    // MARK: - Millisecond Timestamp Precision
+
+    @Test("two records 500ms apart with same key fields are both imported")
+    func subSecondRecordsNotFalselyDeduplicated() async throws {
+        let store = try makeStore()
+
+        let base = Date(timeIntervalSinceReferenceDate: 794_394_000.0)
+        let record1 = PitchDiscriminationRecord(
+            referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
+            interval: 4, tuningSystem: "equalTemperament", timestamp: base
+        )
+        let record2 = PitchDiscriminationRecord(
+            referenceNote: 60, targetNote: 64, centOffset: 12.0, isCorrect: false,
+            interval: 4, tuningSystem: "equalTemperament",
+            timestamp: base.addingTimeInterval(0.5)
+        )
+
+        let importResult = makeImportResult(pitchDiscriminations: [record1, record2])
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
+        #expect(try store.fetchAllPitchDiscriminations().count == 2)
+    }
+
+    @Test("two records at the exact same millisecond with same key fields are deduplicated")
+    func exactMillisecondDuplicateDetected() async throws {
+        let store = try makeStore()
+
+        let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.123)
+        let record1 = PitchDiscriminationRecord(
+            referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
+            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+        )
+        let record2 = PitchDiscriminationRecord(
+            referenceNote: 60, targetNote: 64, centOffset: 99.0, isCorrect: false,
+            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+        )
+
+        let importResult = makeImportResult(pitchDiscriminations: [record1, record2])
+        let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
+
+        #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
+        #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
+        #expect(try store.fetchAllPitchDiscriminations().count == 1)
     }
 }
