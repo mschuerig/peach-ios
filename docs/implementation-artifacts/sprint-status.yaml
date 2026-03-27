@@ -485,7 +485,7 @@ development_status:
   # Work order: 64.1 → 64.2 (concurrency crashes), then 64.3 → 64.4 (data/stats),
   #             then 64.5 → 64.6 → 64.7 (performance), then 64.8 → 64.9 → 64.10 (architecture/tests)
   epic-64: in-progress
-  64-1-fix-pitchmatchingsession-continuation-double-resume: review
+  64-1-fix-pitchmatchingsession-continuation-double-resume: done
   64-2-fix-soundfontplaybackhandle-stop-race: ready-for-dev
   64-3-make-merge-import-transactional: ready-for-dev
   64-4-fix-population-variance-to-sample-variance: ready-for-dev

@@ -1,6 +1,6 @@
 # Story 64.1: Fix PitchMatchingSession Continuation Double-Resume
 
-Status: review
+Status: done
 
 ## Story
 
