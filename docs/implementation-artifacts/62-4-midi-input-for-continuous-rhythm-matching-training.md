@@ -1,6 +1,6 @@
 # Story 62.4: MIDI Input for Continuous Rhythm Matching Training
 
-Status: done
+Status: done (reviewed)
 
 ## Story
 

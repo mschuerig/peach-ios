@@ -22,6 +22,7 @@ nonisolated private struct ScheduleData: @unchecked Sendable {
     var nextIndex: Int = 0
     var samplePosition: Int64 = 0
     var hostTimeAtSample: UInt64 = 0
+    var hostTimeSamplePosition: Int64 = 0
     var midiBlocks: [UInt8: AUScheduleMIDIEventBlock] = [:]
 }
 
@@ -165,6 +166,7 @@ final class SoundFontEngine {
 
                 data.samplePosition = windowEnd
                 data.hostTimeAtSample = timestamp.pointee.mHostTime
+                data.hostTimeSamplePosition = windowStart
             }
 
             return noErr
@@ -369,6 +371,7 @@ final class SoundFontEngine {
             data.nextIndex = 0
             data.samplePosition = 0
             data.hostTimeAtSample = 0
+            data.hostTimeSamplePosition = 0
         }
     }
 
@@ -382,12 +385,16 @@ final class SoundFontEngine {
 
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
         let (knownHostTime, knownSamplePos) = scheduleLockState.withLock { data in
-            (data.hostTimeAtSample, data.samplePosition)
+            (data.hostTimeAtSample, data.hostTimeSamplePosition)
         }
-        guard knownHostTime != 0 else { return knownSamplePos }
+        guard knownHostTime != 0 else {
+            return scheduleLockState.withLock { data in data.samplePosition }
+        }
 
         let deltaTicks = Int64(hostTime) - Int64(knownHostTime)
-        let deltaNanos = deltaTicks * Int64(Self.timebaseInfo.numer) / Int64(Self.timebaseInfo.denom)
+        let numer = Int64(Self.timebaseInfo.numer)
+        let denom = Int64(Self.timebaseInfo.denom)
+        let deltaNanos = deltaTicks / denom * numer + (deltaTicks % denom) * numer / denom
         let deltaSeconds = Double(deltaNanos) / 1_000_000_000.0
         return knownSamplePos + Int64(deltaSeconds * sampleRate.rawValue)
     }

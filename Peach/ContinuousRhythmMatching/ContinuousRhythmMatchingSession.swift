@@ -202,19 +202,25 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     // MARK: - MIDI Listening
 
+    /// Iterates the MIDI input stream and routes note-on events to `handleTap`.
+    /// The stream lives for the adapter's lifetime (not tied to device connection),
+    /// so this task only ends on cancellation or adapter deallocation.
     private func startMIDIListening() {
         guard let midiInput else { return }
         midiListeningTask = Task {
             for await event in midiInput.events {
-                guard !Task.isCancelled, isRunning else { continue }
+                guard !Task.isCancelled, isRunning else { break }
                 switch event {
                 case .noteOn(_, _, let timestamp):
                     let samplePos = stepSequencer.samplePosition(forHostTime: timestamp)
-                    handleTap(atSamplePosition: samplePos)
+                    await MainActor.run {
+                        handleTap(atSamplePosition: samplePos)
+                    }
                 case .noteOff, .pitchBend:
                     break
                 }
             }
+            logger.debug("MIDI listening ended")
         }
     }
 
