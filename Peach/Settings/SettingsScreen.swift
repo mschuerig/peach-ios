@@ -43,10 +43,7 @@ struct SettingsScreen: View {
     @Environment(\.executeImport) private var executeImport
     @Environment(\.trainingDataTransferService) private var transferService
 
-    @State private var enabledGapPositions: Set<StepPosition> = GapPositionEncoding.decodeWithDefault(
-        UserDefaults.standard.string(forKey: SettingsKeys.enabledGapPositions)
-        ?? GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
-    )
+    @State private var enabledGapPositions: Set<StepPosition> = []
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
@@ -102,12 +99,12 @@ struct SettingsScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar { settingsToolbar }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
-        .onAppear { transferService.refreshExport() }
+        .onAppear {
+            enabledGapPositions = GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
+            transferService.refreshExport()
+        }
         .onChange(of: enabledGapPositions) {
             enabledGapPositionsEncoded = GapPositionEncoding.encode(enabledGapPositions)
-        }
-        .onChange(of: enabledGapPositionsEncoded) {
-            enabledGapPositions = GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
         }
         .fileImporter(
             isPresented: $showFileImporter,

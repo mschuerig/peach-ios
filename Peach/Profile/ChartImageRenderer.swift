@@ -1,6 +1,7 @@
 import SwiftUI
 import os
 
+@MainActor
 enum ChartImageRenderer {
 
     private static let logger = Logger(subsystem: "Peach", category: "ChartImageRenderer")

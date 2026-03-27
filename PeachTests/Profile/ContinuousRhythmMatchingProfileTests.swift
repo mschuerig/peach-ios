@@ -112,6 +112,7 @@ struct ContinuousRhythmMatchingProfileTests {
     // MARK: - Share Image File Name
 
     @Test("Export file name contains continuous-rhythm-matching slug")
+    @MainActor
     func exportFileNameContainsSlug() async {
         let date = Date()
         let fileName = ChartImageRenderer.exportFileName(for: date, mode: .continuousRhythmMatching)

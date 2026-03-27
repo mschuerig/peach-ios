@@ -3,6 +3,7 @@ import Foundation
 @testable import Peach
 
 @Suite("ChartImageRenderer Tests")
+@MainActor
 struct ChartImageRendererTests {
 
     // MARK: - Export Filename

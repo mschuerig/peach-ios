@@ -4,6 +4,7 @@ import SwiftUI
 @testable import Peach
 
 @Suite("ExportChartView Tests")
+@MainActor
 struct ExportChartViewTests {
 
     private func makeTimeline(records: [PitchDiscriminationRecord]) -> ProgressTimeline {
