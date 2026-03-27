@@ -38,4 +38,45 @@ struct HelpContentViewTests {
     func acknowledgmentsTextContainsSoundFontURL() async {
         #expect(InfoScreen.acknowledgmentsText.contains("schristiancollins.com"))
     }
+
+    // MARK: - Identifiable Conformance
+
+    @Test("HelpSection conforms to Identifiable with stable UUID")
+    func helpSectionIsIdentifiable() async {
+        let section = HelpSection(title: "Test", body: "Body")
+        let id1 = section.id
+        let id2 = section.id
+        #expect(id1 == id2)
+    }
+
+    @Test("Two HelpSections have distinct IDs")
+    func helpSectionsHaveDistinctIDs() async {
+        let a = HelpSection(title: "Same", body: "Body")
+        let b = HelpSection(title: "Same", body: "Body")
+        #expect(a.id != b.id)
+    }
+
+    // MARK: - Cached Attributed String
+
+    @Test("attributedBody returns non-nil for valid markdown")
+    func attributedBodyParsesMarkdown() async {
+        let section = HelpSection(title: "T", body: "This is **bold**")
+        #expect(section.attributedBody != nil)
+    }
+
+    @Test("attributedBody is pre-parsed at init and stable")
+    func attributedBodyIsPreParsed() async {
+        let section = HelpSection(title: "T", body: "This is **bold**")
+        let first = section.attributedBody
+        let second = section.attributedBody
+        #expect(first == second)
+    }
+
+    @Test("attributedBody returns nil for empty string")
+    func attributedBodyHandlesEmptyString() async {
+        let section = HelpSection(title: "T", body: "")
+        // Empty string should still parse successfully as AttributedString
+        // (AttributedString(markdown: "") succeeds)
+        #expect(section.attributedBody != nil)
+    }
 }

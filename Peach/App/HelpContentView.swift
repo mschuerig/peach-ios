@@ -1,8 +1,19 @@
 import SwiftUI
 
-struct HelpSection {
+struct HelpSection: Identifiable {
+    let id = UUID()
     let title: String
     let body: String
+    let attributedBody: AttributedString?
+
+    init(title: String, body: String) {
+        self.title = title
+        self.body = body
+        self.attributedBody = try? AttributedString(
+            markdown: body,
+            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        )
+    }
 }
 
 struct HelpContentView: View {
@@ -10,26 +21,16 @@ struct HelpContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            ForEach(Array(sections.enumerated()), id: \.offset) { _, section in
+            ForEach(sections) { section in
                 VStack(alignment: .leading, spacing: 8) {
                     Text(section.title)
                         .font(.headline)
-                    markdownText(section.body)
+                    Text(section.attributedBody ?? AttributedString(section.body))
                         .font(.body)
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    private func markdownText(_ string: String) -> Text {
-        if let attributed = try? AttributedString(
-            markdown: string,
-            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        ) {
-            return Text(attributed)
-        }
-        return Text(string)
     }
 }
 

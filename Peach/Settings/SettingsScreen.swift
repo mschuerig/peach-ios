@@ -43,6 +43,10 @@ struct SettingsScreen: View {
     @Environment(\.executeImport) private var executeImport
     @Environment(\.trainingDataTransferService) private var transferService
 
+    @State private var enabledGapPositions: Set<StepPosition> = GapPositionEncoding.decodeWithDefault(
+        UserDefaults.standard.string(forKey: SettingsKeys.enabledGapPositions)
+        ?? GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
+    )
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
@@ -99,6 +103,12 @@ struct SettingsScreen: View {
         .toolbar { settingsToolbar }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onAppear { transferService.refreshExport() }
+        .onChange(of: enabledGapPositions) {
+            enabledGapPositionsEncoded = GapPositionEncoding.encode(enabledGapPositions)
+        }
+        .onChange(of: enabledGapPositionsEncoded) {
+            enabledGapPositions = GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
+        }
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.commaSeparatedText]
@@ -268,16 +278,9 @@ struct SettingsScreen: View {
         }
     }
 
-    private var gapPositionsBinding: Binding<Set<StepPosition>> {
-        Binding(
-            get: { GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded) },
-            set: { enabledGapPositionsEncoded = GapPositionEncoding.encode($0) }
-        )
-    }
-
     private var gapPositionsSection: some View {
         Section {
-            GridToggleRow(selection: gapPositionsBinding) { position in
+            GridToggleRow(selection: $enabledGapPositions) { position in
                 "\(position.rawValue + 1)"
             }
         } header: {

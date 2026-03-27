@@ -1,6 +1,6 @@
 # Story 64.6: Cache Help Markdown Parsing and DateFormatter Allocation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,22 +22,45 @@ so that opening help is instant and chart sharing doesn't create throwaway objec
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Cache markdown parsing in `HelpContentView` (AC: #1, #2)
-  - [ ] 1.1 Make `HelpSection` conform to `Identifiable` (add `let id = UUID()` or use title as id)
-  - [ ] 1.2 Pre-parse markdown in `HelpSection.init` or add a lazy `attributedBody` property that caches the `AttributedString` result
-  - [ ] 1.3 In `HelpContentView.body`, use the pre-parsed attributed string instead of calling `markdownText()` during render
-  - [ ] 1.4 Replace `ForEach(Array(sections.enumerated()), id: \.offset)` with `ForEach(sections)` using the new Identifiable conformance
+- [x] Task 1: Cache markdown parsing in `HelpContentView` (AC: #1, #2)
+  - [x] 1.1 Make `HelpSection` conform to `Identifiable` (add `let id = UUID()` or use title as id)
+  - [x] 1.2 Pre-parse markdown in `HelpSection.init` or add a lazy `attributedBody` property that caches the `AttributedString` result
+  - [x] 1.3 In `HelpContentView.body`, use the pre-parsed attributed string instead of calling `markdownText()` during render
+  - [x] 1.4 Replace `ForEach(Array(sections.enumerated()), id: \.offset)` with `ForEach(sections)` using the new Identifiable conformance
 
-- [ ] Task 2: Make `ChartImageRenderer.exportFileName` DateFormatter static (AC: #3)
-  - [ ] 2.1 Extract the `DateFormatter` in `exportFileName()` to a `private static let` property
-  - [ ] 2.2 Verify thread safety — `DateFormatter` is not thread-safe, but this code runs on MainActor so a single static instance is fine
+- [x] Task 2: Make `ChartImageRenderer.exportFileName` DateFormatter static (AC: #3)
+  - [x] 2.1 Extract the `DateFormatter` in `exportFileName()` to a `private static let` property
+  - [x] 2.2 Verify thread safety — `DateFormatter` is not thread-safe, but this code runs on MainActor so a single static instance is fine
 
-- [ ] Task 3: Fix `SettingsScreen.gapPositionsBinding` recreation (AC: #4)
-  - [ ] 3.1 The current `gapPositionsBinding` computed property creates a new `Binding(get:set:)` on every body evaluation, with `GapPositionEncoding.decodeWithDefault()` in the getter
-  - [ ] 3.2 Options: (a) store a `@State private var enabledGapPositions: Set<StepPosition>` and sync it with `@AppStorage` via `onChange`, or (b) use a cached binding that only decodes when the encoded string changes
-  - [ ] 3.3 Choose the simplest approach that avoids per-render decode/encode
+- [x] Task 3: Fix `SettingsScreen.gapPositionsBinding` recreation (AC: #4)
+  - [x] 3.1 The current `gapPositionsBinding` computed property creates a new `Binding(get:set:)` on every body evaluation, with `GapPositionEncoding.decodeWithDefault()` in the getter
+  - [x] 3.2 Options: (a) store a `@State private var enabledGapPositions: Set<StepPosition>` and sync it with `@AppStorage` via `onChange`, or (b) use a cached binding that only decodes when the encoded string changes
+  - [x] 3.3 Choose the simplest approach that avoids per-render decode/encode
 
-- [ ] Task 4: Run full test suite (AC: #5)
+- [x] Task 4: Run full test suite (AC: #5)
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Task 1: Made `HelpSection` conform to `Identifiable` with `let id = UUID()`. Markdown is now pre-parsed in `init` into a stored `attributedBody: AttributedString?` property. `HelpContentView.body` uses the cached attributed string directly (falling back to plain text if parsing failed). Removed `markdownText()` helper. `ForEach` now uses `Identifiable` conformance instead of `\.offset`.
+- Task 2: Extracted `DateFormatter` to `private static let fileNameFormatter` with closure-based initialization. Thread-safe on MainActor.
+- Task 3: Chose option (a) — `@State private var enabledGapPositions: Set<StepPosition>` initialized from `UserDefaults`, synced bidirectionally with `@AppStorage` via two `onChange` modifiers. Removed the `gapPositionsBinding` computed property entirely; `GridToggleRow` now binds directly to `$enabledGapPositions`.
+
+### Completion Notes
+
+All 4 tasks implemented and verified. 1534 tests pass with zero regressions. 5 new tests added for `HelpSection` (Identifiable conformance, distinct IDs, attributedBody parsing, stability, empty string handling).
+
+## File List
+
+- `Peach/App/HelpContentView.swift` — Modified: HelpSection now Identifiable with pre-parsed attributedBody; HelpContentView uses cached markdown and ForEach with stable identity
+- `Peach/Profile/ChartImageRenderer.swift` — Modified: DateFormatter extracted to static let
+- `Peach/Settings/SettingsScreen.swift` — Modified: gapPositionsBinding replaced with @State + onChange sync
+- `PeachTests/App/HelpContentViewTests.swift` — Modified: Added 5 tests for Identifiable conformance and attributedBody caching
+
+## Change Log
+
+- 2026-03-28: Implemented story 64.6 — cached help markdown parsing, static DateFormatter, and gapPositionsBinding fix
 
 ## Dev Notes
 

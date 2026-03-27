@@ -29,12 +29,16 @@ enum ChartImageRenderer {
         }
     }
 
-    static func exportFileName(for date: Date = Date(), mode: TrainingDisciplineID) -> String {
+    private static let fileNameFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd-HHmm"
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current
-        let timestamp = formatter.string(from: date)
+        return formatter
+    }()
+
+    static func exportFileName(for date: Date = Date(), mode: TrainingDisciplineID) -> String {
+        let timestamp = fileNameFormatter.string(from: date)
         return "peach-\(mode.slug)-\(timestamp).png"
     }
 }
