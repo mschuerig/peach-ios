@@ -58,7 +58,9 @@ struct InfoScreen: View {
                 .padding()
             }
             .navigationTitle("Info")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {

@@ -1,3 +1,4 @@
+#if os(iOS)
 import Foundation
 import Testing
 import AVFoundation
@@ -211,3 +212,4 @@ struct AudioSessionInterruptionMonitorTests {
         _ = _monitor
     }
 }
+#endif

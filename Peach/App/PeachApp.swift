@@ -6,6 +6,14 @@ import os
 
 @main
 struct PeachApp: App {
+    #if os(iOS)
+    private static let backgroundNotificationName: Notification.Name? = UIApplication.didEnterBackgroundNotification
+    private static let foregroundNotificationName: Notification.Name? = UIApplication.willEnterForegroundNotification
+    #else
+    private static let backgroundNotificationName: Notification.Name? = nil
+    private static let foregroundNotificationName: Notification.Name? = nil
+    #endif
+
     @State private var modelContainer: ModelContainer
     @State private var dataStore: TrainingDataStore
     @State private var pitchDiscriminationSession: PitchDiscriminationSession
@@ -266,10 +274,16 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
     ) -> PitchDiscriminationSession {
+        #if os(iOS)
         let hapticManager = HapticFeedbackManager()
+        #endif
         let profileAdapter = PitchDiscriminationProfileAdapter(profile: profile)
         let storeAdapter = PitchDiscriminationStoreAdapter(store: dataStore)
+        #if os(iOS)
         let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter, hapticManager]
+        #else
+        let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter]
+        #endif
         return PitchDiscriminationSession(
             notePlayer: notePlayer,
             strategy: strategy,
@@ -284,10 +298,16 @@ struct PeachApp: App {
         dataStore: TrainingDataStore,
         sampleRate: SampleRate
     ) -> RhythmOffsetDetectionSession {
+        #if os(iOS)
         let hapticManager = HapticFeedbackManager()
+        #endif
         let profileAdapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
         let storeAdapter = RhythmOffsetDetectionStoreAdapter(store: dataStore)
+        #if os(iOS)
         let observers: [RhythmOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticManager]
+        #else
+        let observers: [RhythmOffsetDetectionObserver] = [storeAdapter, profileAdapter]
+        #endif
         return RhythmOffsetDetectionSession(
             rhythmPlayer: rhythmPlayer,
             strategy: AdaptiveRhythmOffsetDetectionStrategy(),
@@ -326,8 +346,8 @@ struct PeachApp: App {
             profile: profile,
             observers: [storeAdapter, profileAdapter],
             midiInput: midiInput,
-            backgroundNotificationName: UIApplication.didEnterBackgroundNotification,
-            foregroundNotificationName: UIApplication.willEnterForegroundNotification
+            backgroundNotificationName: PeachApp.backgroundNotificationName,
+            foregroundNotificationName: PeachApp.foregroundNotificationName
         )
     }
 }

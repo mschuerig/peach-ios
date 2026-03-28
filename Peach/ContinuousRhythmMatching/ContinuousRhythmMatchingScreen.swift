@@ -43,7 +43,9 @@ struct ContinuousRhythmMatchingScreen: View {
             tapButton
         }
         .padding()
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
@@ -145,7 +147,7 @@ struct ContinuousRhythmMatchingScreen: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "Rhythm \u{2013} Fill the Gap"))
         }
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: .automatic) {
             HStack(spacing: 20) {
                 Button {
                     showHelpSheet = true
@@ -177,7 +179,9 @@ struct ContinuousRhythmMatchingScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Training Help"))
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

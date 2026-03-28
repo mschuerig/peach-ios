@@ -1,3 +1,4 @@
+#if os(iOS)
 import Testing
 import AVFoundation
 @testable import Peach
@@ -245,3 +246,4 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         #expect(session.state == .awaitingAnswer)
     }
 }
+#endif

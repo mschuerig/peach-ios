@@ -3,10 +3,17 @@
 # bin/build.sh — Build Peach and produce a clean summary.
 #
 # Usage:
-#   bin/build.sh            # build, show errors/warnings summary
+#   bin/build.sh            # build for iOS Simulator (default)
+#   bin/build.sh -p mac     # build for macOS
+#   bin/build.sh -p ipad    # build for iPad Simulator
 #   bin/build.sh -v         # verbose: show full xcodebuild output
 #   bin/build.sh -w         # treat warnings as errors (exit 1 if any)
 #   bin/build.sh -r         # raw: just run xcodebuild, no parsing
+#
+# Platforms:
+#   ios (default)  — iPhone 17 Pro Simulator
+#   ipad           — iPad Pro 13-inch (M4) Simulator
+#   mac            — native macOS
 #
 # Exit codes:
 #   0  build succeeded (and no warnings if -w)
@@ -17,21 +24,30 @@ set -euo pipefail
 
 # --- Configuration ---
 SCHEME="Peach"
-DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
+PLATFORM="ios"
 
 # --- Parse arguments ---
 VERBOSE=false
 WARNINGS_AS_ERRORS=false
 RAW=false
 
-while getopts "vwr" opt; do
+while getopts "vwrp:" opt; do
     case $opt in
         v) VERBOSE=true ;;
         w) WARNINGS_AS_ERRORS=true ;;
         r) RAW=true ;;
-        *) echo "Usage: $0 [-v] [-w] [-r]" >&2; exit 1 ;;
+        p) PLATFORM="$OPTARG" ;;
+        *) echo "Usage: $0 [-v] [-w] [-r] [-p ios|ipad|mac]" >&2; exit 1 ;;
     esac
 done
+
+# --- Resolve destination from platform ---
+case "$PLATFORM" in
+    ios)  DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro" ;;
+    ipad) DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4)" ;;
+    mac)  DESTINATION="platform=macOS" ;;
+    *)    echo "Unknown platform: $PLATFORM (use ios, ipad, or mac)" >&2; exit 1 ;;
+esac
 
 # --- Build command ---
 CMD=(xcodebuild build -scheme "$SCHEME" -destination "$DESTINATION")

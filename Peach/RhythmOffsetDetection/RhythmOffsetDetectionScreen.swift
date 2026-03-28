@@ -43,7 +43,9 @@ struct RhythmOffsetDetectionScreen: View {
             answerButtonsGroup
         }
         .padding()
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
@@ -108,7 +110,7 @@ struct RhythmOffsetDetectionScreen: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(String(localized: "Rhythm \u{2013} Compare"))
         }
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: .automatic) {
             HStack(spacing: 20) {
                 Button {
                     showHelpSheet = true
@@ -140,7 +142,9 @@ struct RhythmOffsetDetectionScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Training Help"))
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

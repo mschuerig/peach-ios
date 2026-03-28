@@ -493,6 +493,7 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
+    #if os(iOS)
     // MARK: - Interruption Handling
 
     @Test("audio interruption stops session and discards incomplete trial")
@@ -522,6 +523,7 @@ struct ContinuousRhythmMatchingSessionTests {
         #expect(f.session.isIdle)
         #expect(f.observer.completedCallCount == 0)
     }
+    #endif
 
     // MARK: - StepProvider Conformance
 

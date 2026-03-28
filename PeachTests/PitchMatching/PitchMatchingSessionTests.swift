@@ -1,7 +1,9 @@
 import Foundation
 import Testing
 import AVFoundation
+#if os(iOS)
 import UIKit
+#endif
 @testable import Peach
 
 // MARK: - Test Helpers
@@ -39,8 +41,8 @@ let defaultPitchMatchingTestSettings = PitchMatchingSettings(
 
 func makePitchMatchingSession(
     notificationCenter: NotificationCenter = .default,
-    backgroundNotificationName: Notification.Name? = UIApplication.didEnterBackgroundNotification,
-    foregroundNotificationName: Notification.Name? = UIApplication.willEnterForegroundNotification
+    backgroundNotificationName: Notification.Name? = nil,
+    foregroundNotificationName: Notification.Name? = nil
 ) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver) {
     let notePlayer = MockNotePlayer()
     let profile = MockTrainingProfile()
@@ -1238,12 +1240,16 @@ struct PitchMatchingSessionAudioInterruptionTests {
         #expect(session.state == .idle)
     }
 
+    #if os(iOS)
     // MARK: - Background Notification Tests
 
     @Test("Background notification stops from playingTunable")
     func backgroundNotificationStopsFromPlayingTunable() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+        )
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
@@ -1256,7 +1262,10 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Background notification stops from awaitingSliderTouch")
     func backgroundNotificationStopsFromAwaitingSliderTouch() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+        )
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1269,7 +1278,10 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Background notification on idle is safe")
     func backgroundNotificationOnIdleIsSafe() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+        )
         #expect(session.state == .idle)
 
         nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
@@ -1322,7 +1334,10 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Training can restart after background stop")
     func canRestartAfterBackgroundStop() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+        )
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1333,6 +1348,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
         try await waitForState(session, .awaitingSliderTouch)
         #expect(session.state == .awaitingSliderTouch)
     }
+    #endif
 }
 
 // MARK: - MIDI Pitch Bend Tests

@@ -51,6 +51,7 @@ final class AudioSessionInterruptionMonitor {
         backgroundNotificationName: Notification.Name?,
         foregroundNotificationName: Notification.Name?
     ) {
+        #if os(iOS)
         audioInterruptionObserver = notificationCenter.addObserver(
             forName: AVAudioSession.interruptionNotification,
             object: AVAudioSession.sharedInstance(),
@@ -72,6 +73,7 @@ final class AudioSessionInterruptionMonitor {
                 self?.handleAudioRouteChange(reasonValue: reasonValue)
             }
         }
+        #endif
 
         if let backgroundNotificationName {
             backgroundObserver = notificationCenter.addObserver(
@@ -100,6 +102,7 @@ final class AudioSessionInterruptionMonitor {
         logger.info("Audio interruption observers setup complete")
     }
 
+    #if os(iOS)
     private func handleAudioInterruption(typeValue: UInt?) {
         guard let typeValue = typeValue,
               let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
@@ -135,4 +138,5 @@ final class AudioSessionInterruptionMonitor {
             logger.warning("Unknown audio route change reason: \(reasonValue)")
         }
     }
+    #endif
 }

@@ -108,8 +108,15 @@ struct RhythmProfileCardView: View {
         let renderer = ImageRenderer(content: content)
         renderer.scale = 2.0
         guard let cgImage = renderer.cgImage else { return nil }
-        let uiImage = UIImage(cgImage: cgImage)
-        guard let pngData = uiImage.pngData() else { return nil }
+        #if os(iOS)
+        let image = UIImage(cgImage: cgImage)
+        guard let pngData = image.pngData() else { return nil }
+        #else
+        let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
+        guard let tiffData = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData),
+              let pngData = bitmap.representation(using: .png, properties: [:]) else { return nil }
+        #endif
         let fileName = ChartImageRenderer.exportFileName(mode: mode)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {

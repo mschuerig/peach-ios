@@ -61,7 +61,9 @@ struct PitchDiscriminationScreen: View {
             answerButtonsGroup
         }
         .padding()
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
@@ -148,7 +150,7 @@ struct PitchDiscriminationScreen: View {
                 ? String(localized: "Intervals \u{2013} Compare")
                 : String(localized: "Pitch \u{2013} Compare"))
         }
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: .automatic) {
             HStack(spacing: 20) {
                 Button {
                     showHelpSheet = true
@@ -180,7 +182,9 @@ struct PitchDiscriminationScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Training Help"))
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

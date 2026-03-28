@@ -97,6 +97,7 @@ struct SessionLifecycleTests {
         #expect(secondTaskRan.withLock { $0 })
     }
 
+    #if os(iOS)
     // MARK: - interruptionMonitor calls onStopRequired
 
     @Test("interruptionMonitor triggers onStopRequired on audio interruption")
@@ -121,5 +122,6 @@ struct SessionLifecycleTests {
         #expect(stopRequiredCalled.withLock { $0 })
         _ = lifecycle // keep alive
     }
+    #endif
 
 }

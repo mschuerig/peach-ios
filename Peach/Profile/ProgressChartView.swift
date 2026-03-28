@@ -449,9 +449,15 @@ struct ProgressChartView: View {
 
     private static func zoneTint(for bucketSize: BucketSize) -> Color {
         switch bucketSize {
+        #if os(iOS)
         case .month: Color(.systemBackground)
         case .day: Color(.secondarySystemBackground)
         case .session: Color(.systemBackground)
+        #else
+        case .month: Color(.windowBackgroundColor)
+        case .day: Color(.controlBackgroundColor)
+        case .session: Color(.windowBackgroundColor)
+        #endif
         }
     }
 

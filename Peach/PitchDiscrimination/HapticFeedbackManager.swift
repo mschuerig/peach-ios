@@ -1,3 +1,4 @@
+#if os(iOS)
 import UIKit
 
 /// Manages haptic feedback for training interactions
@@ -59,3 +60,4 @@ extension HapticFeedbackManager: RhythmOffsetDetectionObserver {
         }
     }
 }
+#endif

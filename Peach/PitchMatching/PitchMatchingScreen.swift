@@ -63,7 +63,9 @@ struct PitchMatchingScreen: View {
             )
             .padding()
         }
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
@@ -134,7 +136,7 @@ struct PitchMatchingScreen: View {
                 ? String(localized: "Intervals \u{2013} Match")
                 : String(localized: "Pitch \u{2013} Match"))
         }
-        ToolbarItem(placement: .navigationBarTrailing) {
+        ToolbarItem(placement: .automatic) {
             HStack(spacing: 20) {
                 Button {
                     showHelpSheet = true
@@ -166,7 +168,9 @@ struct PitchMatchingScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Training Help"))
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

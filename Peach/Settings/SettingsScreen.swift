@@ -91,7 +91,9 @@ struct SettingsScreen: View {
             dataSection
         }
         .navigationTitle("Settings")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar { settingsToolbar }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onAppear {
@@ -125,7 +127,7 @@ struct SettingsScreen: View {
 
     @ToolbarContentBuilder
     private var settingsToolbar: some ToolbarContent {
-        ToolbarItem(placement: .topBarTrailing) {
+        ToolbarItem(placement: .automatic) {
             Button {
                 showHelpSheet = true
             } label: {
@@ -143,7 +145,9 @@ struct SettingsScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Settings Help"))
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

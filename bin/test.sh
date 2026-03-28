@@ -3,7 +3,9 @@
 # bin/test.sh — Run Peach tests and produce a clean summary.
 #
 # Usage:
-#   bin/test.sh                  # run all tests, show summary
+#   bin/test.sh                  # run all tests on iOS Simulator (default)
+#   bin/test.sh -p mac           # run tests on macOS
+#   bin/test.sh -p ipad          # run tests on iPad Simulator
 #   bin/test.sh -f               # show only failures (quiet on success)
 #   bin/test.sh -v               # verbose: show full xcodebuild output
 #   bin/test.sh -s SuiteName     # filter: only run tests matching SuiteName
@@ -11,6 +13,11 @@
 #                                  (useful when this script's parsing breaks)
 #   bin/test.sh -S               # run ONLY stress tests (sets RUN_STRESS_TESTS=1)
 #   bin/test.sh -a               # run ALL tests including stress tests
+#
+# Platforms:
+#   ios (default)  — iPhone 17 Pro Simulator
+#   ipad           — iPad Pro 13-inch (M4) Simulator
+#   mac            — native macOS
 #
 # Exit codes:
 #   0  all tests passed
@@ -22,7 +29,7 @@ set -euo pipefail
 
 # --- Configuration (edit these if your project changes) ---
 SCHEME="Peach"
-DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro"
+PLATFORM="ios"
 SCHEME_PATH="Peach.xcodeproj/xcshareddata/xcschemes/Peach.xcscheme"
 
 # --- Parse arguments ---
@@ -33,7 +40,7 @@ FILTER=""
 STRESS_ONLY=false
 ALL_TESTS=false
 
-while getopts "fvrs:Sa" opt; do
+while getopts "fvrs:Sap:" opt; do
     case $opt in
         f) FAILURES_ONLY=true ;;
         v) VERBOSE=true ;;
@@ -41,9 +48,18 @@ while getopts "fvrs:Sa" opt; do
         s) FILTER="$OPTARG" ;;
         S) STRESS_ONLY=true ;;
         a) ALL_TESTS=true ;;
-        *) echo "Usage: $0 [-f] [-v] [-r] [-s SuiteName] [-S] [-a]" >&2; exit 1 ;;
+        p) PLATFORM="$OPTARG" ;;
+        *) echo "Usage: $0 [-f] [-v] [-r] [-s SuiteName] [-S] [-a] [-p ios|ipad|mac]" >&2; exit 1 ;;
     esac
 done
+
+# --- Resolve destination from platform ---
+case "$PLATFORM" in
+    ios)  DESTINATION="platform=iOS Simulator,name=iPhone 17 Pro" ;;
+    ipad) DESTINATION="platform=iOS Simulator,name=iPad Pro 13-inch (M4)" ;;
+    mac)  DESTINATION="platform=macOS" ;;
+    *)    echo "Unknown platform: $PLATFORM (use ios, ipad, or mac)" >&2; exit 1 ;;
+esac
 
 # --- Stress test env var injection ---
 # xcodebuild does not forward shell env vars to the simulator test host.

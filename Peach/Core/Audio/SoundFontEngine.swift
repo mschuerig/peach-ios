@@ -436,12 +436,16 @@ final class SoundFontEngine {
     private static let audioSessionLogger = Logger(subsystem: "com.peach.app", category: "SoundFontEngine")
 
     private static func configureAudioSession() throws {
+        #if os(iOS)
         let session = AVAudioSession.sharedInstance()
         try session.setCategory(.playback, mode: .default, options: [])
         try session.setPreferredIOBufferDuration(0.005)
         try session.setActive(true)
         let actualMs = session.ioBufferDuration * 1000
         audioSessionLogger.info("Requested 5ms buffer, got \(actualMs, format: .fixed(precision: 1))ms")
+        #else
+        audioSessionLogger.info("Audio session configuration skipped on macOS")
+        #endif
     }
 
     // MARK: - Render-Thread Scheduling

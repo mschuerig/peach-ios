@@ -31,13 +31,15 @@ struct StartScreen: View {
         }
         .padding()
         .navigationTitle("Peach")
+        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
         .toolbar {
             ToolbarItem(placement: .principal) {
                 Text("Peach")
                     .font(.headline)
             }
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem(placement: .automatic) {
                 Button {
                     showInfoSheet = true
                 } label: {
@@ -45,7 +47,7 @@ struct StartScreen: View {
                 }
                 .accessibilityLabel("Info")
             }
-            ToolbarItemGroup(placement: .topBarTrailing) {
+            ToolbarItemGroup(placement: .automatic) {
                 NavigationLink(value: NavigationDestination.profile) {
                     Image(systemName: "chart.xyaxis.line")
                 }
