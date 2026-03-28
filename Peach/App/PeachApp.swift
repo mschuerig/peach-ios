@@ -276,14 +276,12 @@ struct PeachApp: App {
     ) -> PitchDiscriminationSession {
         #if os(iOS)
         let hapticManager = HapticFeedbackManager()
+        #else
+        let hapticManager = NoOpHapticFeedbackManager()
         #endif
         let profileAdapter = PitchDiscriminationProfileAdapter(profile: profile)
         let storeAdapter = PitchDiscriminationStoreAdapter(store: dataStore)
-        #if os(iOS)
         let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter, hapticManager]
-        #else
-        let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter]
-        #endif
         return PitchDiscriminationSession(
             notePlayer: notePlayer,
             strategy: strategy,
@@ -302,14 +300,12 @@ struct PeachApp: App {
     ) -> RhythmOffsetDetectionSession {
         #if os(iOS)
         let hapticManager = HapticFeedbackManager()
+        #else
+        let hapticManager = NoOpHapticFeedbackManager()
         #endif
         let profileAdapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
         let storeAdapter = RhythmOffsetDetectionStoreAdapter(store: dataStore)
-        #if os(iOS)
         let observers: [RhythmOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticManager]
-        #else
-        let observers: [RhythmOffsetDetectionObserver] = [storeAdapter, profileAdapter]
-        #endif
         return RhythmOffsetDetectionSession(
             rhythmPlayer: rhythmPlayer,
             strategy: AdaptiveRhythmOffsetDetectionStrategy(),

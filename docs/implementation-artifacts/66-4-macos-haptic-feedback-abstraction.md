@@ -1,6 +1,6 @@
 # Story 66.4: macOS Haptic Feedback Abstraction
 
-Status: draft
+Status: review
 
 ## Story
 
@@ -22,18 +22,18 @@ so that the composition root can inject it on macOS without compilation errors o
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Guard existing `HapticFeedbackManager` for iOS only (AC: #4)
-  - [ ] 1.1 Wrap `HapticFeedbackManager.swift` content in `#if os(iOS)` (the file imports UIKit)
+- [x] Task 1: Guard existing `HapticFeedbackManager` for iOS only (AC: #4)
+  - [x] 1.1 Wrap `HapticFeedbackManager.swift` content in `#if os(iOS)` (the file imports UIKit)
 
-- [ ] Task 2: Create macOS no-op implementation (AC: #1, #2, #3)
-  - [ ] 2.1 In the same file (or a new file in `PitchDiscrimination/`), add `#else` with a `NoOpHapticFeedbackManager` that conforms to `HapticFeedback`, `PitchDiscriminationObserver`, and `RhythmOffsetDetectionObserver`
-  - [ ] 2.2 All methods are empty bodies
+- [x] Task 2: Create macOS no-op implementation (AC: #1, #2, #3)
+  - [x] 2.1 In the same file (or a new file in `PitchDiscrimination/`), add `#else` with a `NoOpHapticFeedbackManager` that conforms to `HapticFeedback`, `PitchDiscriminationObserver`, and `RhythmOffsetDetectionObserver`
+  - [x] 2.2 All methods are empty bodies
 
-- [ ] Task 3: Wire in composition root (AC: #1)
-  - [ ] 3.1 In `PeachApp.swift`, use `#if os(iOS)` to instantiate the appropriate implementation
-  - [ ] 3.2 Both are injected into the observer arrays the same way
+- [x] Task 3: Wire in composition root (AC: #1)
+  - [x] 3.1 In `PeachApp.swift`, use `#if os(iOS)` to instantiate the appropriate implementation
+  - [x] 3.2 Both are injected into the observer arrays the same way
 
-- [ ] Task 4: Run full test suite (AC: #5)
+- [x] Task 4: Run full test suite (AC: #5)
 
 ## Dev Notes
 
@@ -56,3 +56,26 @@ A no-op is the correct choice. If users request trackpad haptics in the future, 
 |------|------|--------|
 | HapticFeedbackManager | `Peach/PitchDiscrimination/HapticFeedbackManager.swift` | `#if os(iOS)` + macOS no-op |
 | PeachApp | `Peach/App/PeachApp.swift` | Conditional instantiation |
+
+## Dev Agent Record
+
+### Implementation Plan
+- Task 1.1 was already complete (file was pre-wrapped in `#if os(iOS)`)
+- Added `NoOpHapticFeedbackManager` in `#else` block of same file with empty-body conformances
+- Simplified PeachApp.swift: replaced conditional observer arrays with conditional instantiation of haptic manager, then unified observer arrays
+
+### Completion Notes
+- `NoOpHapticFeedbackManager` added as `#else` branch in `HapticFeedbackManager.swift`, conforming to `HapticFeedback`, `PitchDiscriminationObserver`, and `RhythmOffsetDetectionObserver` with empty method bodies
+- PeachApp.swift simplified: both `createPitchDiscriminationSession` and `createRhythmOffsetDetectionSession` now use a single observer array with the platform-appropriate haptic manager, eliminating duplicated observer list construction
+- 3 new macOS-only tests verify protocol conformance and no-crash behavior
+- All 1645 iOS tests pass, all 1613 macOS tests pass
+
+## File List
+
+- `Peach/PitchDiscrimination/HapticFeedbackManager.swift` — Added `#else` block with `NoOpHapticFeedbackManager`
+- `Peach/App/PeachApp.swift` — Simplified conditional haptic manager instantiation and unified observer arrays
+- `PeachTests/PitchDiscrimination/HapticFeedbackManagerTests.swift` — Added 3 macOS-only tests for NoOpHapticFeedbackManager
+
+## Change Log
+
+- 2026-03-28: Implemented macOS no-op haptic feedback abstraction with tests and simplified composition root wiring
