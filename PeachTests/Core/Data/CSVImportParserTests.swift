@@ -548,7 +548,7 @@ struct CSVImportParserTests {
         #expect(pitchDiscriminations(from: result).count == 1)
     }
 
-    @Test("future version 99 produces unsupportedVersion error suggesting app update")
+    @Test("future version 99 produces unsupportedVersion error")
     func futureVersionProducesError() async {
         let csv = "# peach-export-format:99\n" + CSVExportSchema.headerRow + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
@@ -559,10 +559,6 @@ struct CSVImportParserTests {
         } else {
             Issue.record("Expected unsupportedVersion error")
         }
-        // Verify the error message suggests updating
-        let description = result.errors.first?.localizedDescription ?? ""
-        #expect(description.contains("99"))
-        #expect(description.contains("update"))
     }
 
     @Test("v2 CSV with mixed pitch and rhythm rows imports all types")

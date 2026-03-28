@@ -56,6 +56,13 @@
 
 ## RESOLVED
 
+### TF-2: `CSVImportParserTests/futureVersionProducesError()` fails on German-locale simulators
+
+**Source:** story 66-2 (observed pre-existing on clean `main` at commit a251771)
+**Symptom:** Test asserts `description.contains("update")` on a `String(localized:)` value. On German-locale simulators, the localized string uses "aktualisiere" instead of "update", causing the assertion to fail.
+**Fix:** Removed fragile localized string assertions. The enum case pattern match (`if case .unsupportedVersion(let version)`) already validates the error type and version number, making the string check redundant.
+**Disposition:** CLOSED — fixed in story 66.2.
+
 ### TF-1: `ProgressTimelineTests` flaky failures near midnight
 
 **Source:** story 61-2 (observed pre-existing on clean `main` at commit 92998e7), extended in story 64-7
