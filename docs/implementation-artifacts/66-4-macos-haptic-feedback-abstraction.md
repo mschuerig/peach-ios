@@ -1,6 +1,6 @@
 # Story 66.4: macOS Haptic Feedback Abstraction
 
-Status: review
+Status: done
 
 ## Story
 
