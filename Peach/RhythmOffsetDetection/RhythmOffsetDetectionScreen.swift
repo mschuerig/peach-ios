@@ -234,4 +234,5 @@ struct RhythmOffsetDetectionScreen: View {
     NavigationStack {
         RhythmOffsetDetectionScreen()
     }
+    .previewEnvironment()
 }

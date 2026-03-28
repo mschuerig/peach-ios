@@ -5,116 +5,113 @@ import Testing
 @Suite("TrainingLifecycleCoordinator")
 struct TrainingLifecycleCoordinatorTests {
 
-    // MARK: - Nil Safety
+    // MARK: - Scene Phase
 
-    @Test("start methods are safe when no sessions are set")
-    func startMethodsSafeWithoutSessions() {
-        let coordinator = TrainingLifecycleCoordinator(
-            userSettings: TestLifecycleUserSettings()
-        )
-
-        coordinator.startPitchDiscrimination(intervals: [.up(.perfectFifth)])
-        coordinator.startPitchMatching(intervals: [.up(.perfectFifth)])
-        coordinator.startRhythmOffsetDetection()
-        coordinator.startContinuousRhythmMatching()
-    }
-
-    @Test("stop methods are safe when no sessions are set")
-    func stopMethodsSafeWithoutSessions() {
-        let coordinator = TrainingLifecycleCoordinator()
-
-        coordinator.stopPitchDiscrimination()
-        coordinator.stopPitchMatching()
-        coordinator.stopRhythmOffsetDetection()
-        coordinator.stopContinuousRhythmMatching()
-    }
-
-    @Test("start methods are no-ops when userSettings is nil")
-    func startMethodsNoOpWithoutUserSettings() {
-        let coordinator = TrainingLifecycleCoordinator()
-
-        coordinator.startPitchDiscrimination(intervals: [.up(.perfectFifth)])
-        coordinator.startPitchMatching(intervals: [.up(.perfectFifth)])
-        coordinator.startRhythmOffsetDetection()
-        coordinator.startContinuousRhythmMatching()
-    }
-
-    // MARK: - App Lifecycle (handleScenePhaseChange)
-
-    @Test("handleScenePhaseChange stops active session on background")
+    @Test("stops active session on background")
     func backgroundStopsActiveSession() {
-        var sessionStopped = false
+        let coordinator = makeCoordinator()
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
 
-        let handleScenePhaseChange: (ScenePhase, ScenePhase, () -> Void) -> Void = { _, new, _ in
-            if new == .background {
-                sessionStopped = true
-            }
-        }
+        coordinator.handleScenePhase(old: .active, new: .background) {}
 
-        handleScenePhaseChange(.active, .background, {})
-
-        #expect(sessionStopped)
+        #expect(mockSession.stopCallCount == 1)
     }
 
-    @Test("handleScenePhaseChange calls clearNavigation on foreground from background")
+    @Test("does not stop session when no active session")
+    func backgroundWithNoActiveSession() {
+        let coordinator = makeCoordinator()
+
+        coordinator.handleScenePhase(old: .active, new: .background) {}
+        // No crash — nil activeSession is safe
+    }
+
+    @Test("calls clearNavigation on foreground from background")
     func foregroundClearsNavigation() {
+        let coordinator = makeCoordinator()
         var navigationCleared = false
 
-        let handleScenePhaseChange: (ScenePhase, ScenePhase, () -> Void) -> Void = { old, new, clearNavigation in
-            if old == .background && new == .active {
-                clearNavigation()
-            }
-        }
-
-        handleScenePhaseChange(.background, .active) {
+        coordinator.handleScenePhase(old: .background, new: .active) {
             navigationCleared = true
         }
 
         #expect(navigationCleared)
     }
 
-    @Test("handleScenePhaseChange does not clear navigation when not coming from background")
-    func noNavigationClearWhenNotFromBackground() {
+    @Test("clears navigation when returning from inactive (e.g. phone call)")
+    func inactiveToActiveClearsNavigation() {
+        let coordinator = makeCoordinator()
         var navigationCleared = false
 
-        let handleScenePhaseChange: (ScenePhase, ScenePhase, () -> Void) -> Void = { old, new, clearNavigation in
-            if old == .background && new == .active {
-                clearNavigation()
-            }
-        }
-
-        handleScenePhaseChange(.inactive, .active) {
+        coordinator.handleScenePhase(old: .inactive, new: .active) {
             navigationCleared = true
         }
 
+        #expect(navigationCleared)
+    }
+
+    @Test("does not stop session when transitioning to inactive")
+    func inactiveDoesNotStopSession() {
+        let coordinator = makeCoordinator()
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+
+        coordinator.handleScenePhase(old: .active, new: .inactive) {}
+
+        #expect(mockSession.stopCallCount == 0)
+    }
+
+    @Test("backgrounds both stops session and does not clear navigation")
+    func backgroundStopsButDoesNotClear() {
+        let coordinator = makeCoordinator()
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+        var navigationCleared = false
+
+        coordinator.handleScenePhase(old: .active, new: .background) {
+            navigationCleared = true
+        }
+
+        #expect(mockSession.stopCallCount == 1)
         #expect(!navigationCleared)
     }
 
-    @Test("handleScenePhaseChange does not stop session when transitioning to inactive")
-    func inactiveDoesNotStopSession() {
-        var sessionStopped = false
+    // MARK: - Helpers
 
-        let handleScenePhaseChange: (ScenePhase, ScenePhase, () -> Void) -> Void = { _, new, _ in
-            if new == .background {
-                sessionStopped = true
-            }
-        }
-
-        handleScenePhaseChange(.active, .inactive, {})
-
-        #expect(!sessionStopped)
+    private func makeCoordinator() -> TrainingLifecycleCoordinator {
+        let notePlayer = MockNotePlayer()
+        notePlayer.instantPlayback = true
+        let profile = PerceptualProfile()
+        return TrainingLifecycleCoordinator(
+            pitchDiscriminationSession: PitchDiscriminationSession(
+                notePlayer: notePlayer,
+                strategy: MockNextPitchDiscriminationStrategy(),
+                profile: profile,
+                observers: []
+            ),
+            pitchMatchingSession: PitchMatchingSession(
+                notePlayer: notePlayer,
+                profile: profile
+            ),
+            rhythmOffsetDetectionSession: RhythmOffsetDetectionSession(
+                rhythmPlayer: MockRhythmPlayer(),
+                strategy: MockNextRhythmOffsetDetectionStrategy(),
+                profile: profile,
+                sampleRate: .standard48000
+            ),
+            continuousRhythmMatchingSession: ContinuousRhythmMatchingSession(
+                stepSequencer: MockStepSequencer()
+            ),
+            userSettings: MockUserSettings()
+        )
     }
 }
 
-private struct TestLifecycleUserSettings: UserSettings {
-    let noteRange = NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84))
-    let noteDuration = NoteDuration(0.75)
-    let referencePitch = Frequency(440.0)
-    let soundSource: any SoundSourceID = SoundSourceTag(rawValue: SettingsKeys.defaultSoundSource)
-    let varyLoudness = UnitInterval(0.0)
-    let intervals: Set<DirectedInterval> = [.up(.perfectFifth)]
-    let tuningSystem: TuningSystem = .equalTemperament
-    let noteGap: Duration = SettingsKeys.defaultNoteGap
-    let tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM
-    let enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions
+private final class MockTrainingSession: TrainingSession {
+    var isIdle: Bool = true
+    var stopCallCount = 0
+
+    func stop() {
+        stopCallCount += 1
+    }
 }

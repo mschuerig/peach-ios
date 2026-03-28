@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
-    @Environment(\.handleScenePhaseChange) private var handleScenePhaseChange
+    @Environment(\.trainingLifecycle) private var lifecycle
 
     @State private var navigationPath: [NavigationDestination] = []
 
@@ -11,7 +11,7 @@ struct ContentView: View {
             StartScreen()
         }
         .onChange(of: scenePhase) { oldPhase, newPhase in
-            handleScenePhaseChange(oldPhase, newPhase) {
+            lifecycle.handleScenePhase(old: oldPhase, new: newPhase) {
                 navigationPath.removeAll()
             }
         }
@@ -20,4 +20,5 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+        .previewEnvironment()
 }

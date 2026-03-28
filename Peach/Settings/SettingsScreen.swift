@@ -36,7 +36,6 @@ struct SettingsScreen: View {
     private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
 
     @Environment(\.soundSourceProvider) private var soundSourceProvider
-    @Environment(\.trainingDataTransferService) private var transferService
     @Environment(\.settingsCoordinator) private var coordinator
 
     @State private var enabledGapPositions: Set<StepPosition> = []
@@ -97,7 +96,7 @@ struct SettingsScreen: View {
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onAppear {
             enabledGapPositions = GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
-            transferService.refreshExport()
+            coordinator.refreshExport()
         }
         .onChange(of: enabledGapPositions) {
             enabledGapPositionsEncoded = GapPositionEncoding.encode(enabledGapPositions)
@@ -168,7 +167,7 @@ struct SettingsScreen: View {
     @ViewBuilder
     private var importSummaryMessage: some View {
         if let summary = importSummary {
-            Text(transferService.formatImportSummary(summary))
+            Text(coordinator.formatImportSummary(summary))
         }
     }
 
@@ -298,7 +297,7 @@ struct SettingsScreen: View {
 
     private var dataSection: some View {
         Section("Data") {
-            if let url = transferService.exportFileURL {
+            if let url = coordinator.exportFileURL {
                 ShareLink(
                     item: url,
                     preview: SharePreview("Peach Training Data")
@@ -366,8 +365,7 @@ struct SettingsScreen: View {
     private func handleImportFileResult(_ result: Result<URL, any Error>) {
         switch result {
         case .success(let url):
-            guard let importResult = coordinator.prepareImport(url: url) else { break }
-            switch importResult {
+            switch coordinator.prepareImport(url: url) {
             case .success(let parseResult):
                 importParseResult = parseResult
                 showImportModeChoice = true
@@ -383,7 +381,7 @@ struct SettingsScreen: View {
     private func completeImport(mode: TrainingDataImporter.ImportMode) {
         guard let parseResult = importParseResult else { return }
         do {
-            guard let summary = try coordinator.executeImport(parseResult: parseResult, mode: mode) else { return }
+            let summary = try coordinator.executeImport(parseResult: parseResult, mode: mode)
             importSummary = summary
             showImportSummary = true
         } catch {
@@ -398,4 +396,5 @@ struct SettingsScreen: View {
     NavigationStack {
         SettingsScreen()
     }
+    .previewEnvironment()
 }

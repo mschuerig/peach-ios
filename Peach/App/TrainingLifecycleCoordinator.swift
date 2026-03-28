@@ -1,18 +1,22 @@
-import Foundation
+import SwiftUI
+import os
 
 final class TrainingLifecycleCoordinator {
-    let pitchDiscriminationSession: PitchDiscriminationSession?
-    let pitchMatchingSession: PitchMatchingSession?
-    let rhythmOffsetDetectionSession: RhythmOffsetDetectionSession?
-    let continuousRhythmMatchingSession: ContinuousRhythmMatchingSession?
-    let userSettings: (any UserSettings)?
+    private let pitchDiscriminationSession: PitchDiscriminationSession
+    private let pitchMatchingSession: PitchMatchingSession
+    private let rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
+    private let continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
+    private let userSettings: any UserSettings
+    var activeSession: (any TrainingSession)?
+
+    private static let logger = Logger(subsystem: "com.peach.app", category: "Lifecycle")
 
     init(
-        pitchDiscriminationSession: PitchDiscriminationSession? = nil,
-        pitchMatchingSession: PitchMatchingSession? = nil,
-        rhythmOffsetDetectionSession: RhythmOffsetDetectionSession? = nil,
-        continuousRhythmMatchingSession: ContinuousRhythmMatchingSession? = nil,
-        userSettings: (any UserSettings)? = nil
+        pitchDiscriminationSession: PitchDiscriminationSession,
+        pitchMatchingSession: PitchMatchingSession,
+        rhythmOffsetDetectionSession: RhythmOffsetDetectionSession,
+        continuousRhythmMatchingSession: ContinuousRhythmMatchingSession,
+        userSettings: any UserSettings
     ) {
         self.pitchDiscriminationSession = pitchDiscriminationSession
         self.pitchMatchingSession = pitchMatchingSession
@@ -21,39 +25,56 @@ final class TrainingLifecycleCoordinator {
         self.userSettings = userSettings
     }
 
+    // MARK: - Scene Phase
+
+    func handleScenePhase(old: ScenePhase, new: ScenePhase, clearNavigation: () -> Void) {
+        if new == .background {
+            Self.logger.info("App backgrounded — stopping active session")
+            activeSession?.stop()
+        }
+        if new == .active && (old == .background || old == .inactive) {
+            Self.logger.info("App returned to active from \(String(describing: old)) — clearing navigation")
+            clearNavigation()
+        }
+    }
+
+    // MARK: - Pitch Discrimination
+
     func startPitchDiscrimination(intervals: Set<DirectedInterval>) {
-        guard let userSettings else { return }
-        pitchDiscriminationSession?.start(settings: .from(userSettings, intervals: intervals))
+        pitchDiscriminationSession.start(settings: .from(userSettings, intervals: intervals))
     }
 
     func stopPitchDiscrimination() {
-        pitchDiscriminationSession?.stop()
+        pitchDiscriminationSession.stop()
     }
 
+    // MARK: - Pitch Matching
+
     func startPitchMatching(intervals: Set<DirectedInterval>) {
-        guard let userSettings else { return }
-        pitchMatchingSession?.start(settings: .from(userSettings, intervals: intervals))
+        pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
     }
 
     func stopPitchMatching() {
-        pitchMatchingSession?.stop()
+        pitchMatchingSession.stop()
     }
 
+    // MARK: - Rhythm Offset Detection
+
     func startRhythmOffsetDetection() {
-        guard let userSettings else { return }
-        rhythmOffsetDetectionSession?.start(settings: .from(userSettings))
+        rhythmOffsetDetectionSession.start(settings: .from(userSettings))
     }
 
     func stopRhythmOffsetDetection() {
-        rhythmOffsetDetectionSession?.stop()
+        rhythmOffsetDetectionSession.stop()
     }
 
+    // MARK: - Continuous Rhythm Matching
+
     func startContinuousRhythmMatching() {
-        guard let userSettings else { return }
-        continuousRhythmMatchingSession?.start(settings: .from(userSettings))
+        continuousRhythmMatchingSession.start(settings: .from(userSettings))
     }
 
     func stopContinuousRhythmMatching() {
-        continuousRhythmMatchingSession?.stop()
+        continuousRhythmMatchingSession.stop()
     }
 }

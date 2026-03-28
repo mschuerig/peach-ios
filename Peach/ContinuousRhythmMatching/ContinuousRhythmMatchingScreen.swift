@@ -215,4 +215,5 @@ struct ContinuousRhythmMatchingScreen: View {
     NavigationStack {
         ContinuousRhythmMatchingScreen()
     }
+    .previewEnvironment()
 }

@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 64.11 review
+# last_updated: 2026-03-28 # Story 64.11 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -495,7 +495,7 @@ development_status:
   64-8-fix-swiftdata-dependency-boundary-violations: done
   64-9-fix-spectrogram-bimodal-mean-hiding: done
   64-10-add-tests-for-untested-critical-paths: done
-  64-11-extract-session-lifecycle-from-views: review
+  64-11-extract-session-lifecycle-from-views: done
   epic-64-retrospective: optional
 
   # Epic 65: Architectural Hardening — Lock-Free Audio, Actor Isolation, Format Migration

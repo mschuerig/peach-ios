@@ -196,4 +196,5 @@ struct PitchMatchingScreen: View {
     NavigationStack {
         PitchMatchingScreen(isIntervalMode: false)
     }
+    .previewEnvironment()
 }

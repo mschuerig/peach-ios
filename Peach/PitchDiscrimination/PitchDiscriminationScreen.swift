@@ -272,4 +272,5 @@ struct PitchDiscriminationScreen: View {
     NavigationStack {
         PitchDiscriminationScreen(isIntervalMode: false)
     }
+    .previewEnvironment()
 }

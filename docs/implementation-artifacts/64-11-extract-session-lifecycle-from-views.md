@@ -1,6 +1,6 @@
 # Story 64.11: Extract Session Lifecycle Orchestration from Views
 
-Status: review
+Status: done
 
 ## Story
 
@@ -149,30 +149,26 @@ No issues encountered. Build succeeded cleanly. All 1618 tests pass.
 
 ### Completion Notes
 
-- `TrainingLifecycleCoordinator`: reference-based coordinator replaces 8 individual closure `@Entry` keys with 1 stable coordinator entry
-- `SettingsCoordinator`: reference-based coordinator with direct service references (not closures) — avoids per-body-evaluation re-creation
-- `DependencyGraphModifier`: extracts 16 `.environment()` calls from PeachApp body into a reusable modifier
+- `TrainingLifecycleCoordinator`: reference-based coordinator with required deps, `activeSession` var, and `handleScenePhase` method
+- `SettingsCoordinator`: reference-based coordinator with required deps — encapsulates all settings actions including export/import formatting
 - Both coordinators stored as `@State` in PeachApp — stable identity prevents unnecessary child re-renders
-- `handleScenePhaseChange` remains as a single closure entry (captures `activeSession` which changes)
-- SettingsScreen @Environment: 7 → 3
+- SettingsScreen @Environment: 7 → 2 (soundSourceProvider + settingsCoordinator)
 - ContentView: ~55 lines → ~18 lines
-- All 1618 tests pass, zero regressions
 
 ## File List
 
-- `Peach/App/EnvironmentKeys.swift` — Replaced 13 closure/service entries with 2 coordinator entries + 1 scene phase closure
-- `Peach/App/SettingsCoordinator.swift` — Reference-based coordinator wrapping settings-related actions
-- `Peach/App/TrainingLifecycleCoordinator.swift` — **New** — Reference-based coordinator for session start/stop lifecycle
-- `Peach/App/DependencyGraphModifier.swift` — **New** — ViewModifier bundling 16 environment injections
-- `Peach/App/PeachApp.swift` — Wired coordinators as `@State`, uses DependencyGraphModifier, updates coordinator refs on sound source change
+- `Peach/App/EnvironmentKeys.swift` — Replaced closure/service entries with 2 coordinator entries; preview factories use existing stubs
+- `Peach/App/SettingsCoordinator.swift` — Coordinator wrapping all settings-related actions (reset, preview, import/export)
+- `Peach/App/TrainingLifecycleCoordinator.swift` — **New** — Coordinator for session start/stop lifecycle and scene phase handling
+- `Peach/App/PeachApp.swift` — Wired coordinators as `@State`, syncs activeSession to coordinator
 - `Peach/App/ContentView.swift` — Replaced lifecycle logic with single coordinator call
 - `Peach/PitchDiscrimination/PitchDiscriminationScreen.swift` — Uses `trainingLifecycle` coordinator for start/stop
 - `Peach/PitchMatching/PitchMatchingScreen.swift` — Uses `trainingLifecycle` coordinator for start/stop
 - `Peach/RhythmOffsetDetection/RhythmOffsetDetectionScreen.swift` — Uses `trainingLifecycle` coordinator for start/stop
 - `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` — Uses `trainingLifecycle` coordinator for start/stop
 - `Peach/Settings/SettingsScreen.swift` — Uses `settingsCoordinator` for all settings actions
-- `PeachTests/App/SettingsCoordinatorTests.swift` — 7 tests for reference-based SettingsCoordinator
-- `PeachTests/App/TrainingLifecycleCoordinatorTests.swift` — **New** — 7 tests for TrainingLifecycleCoordinator + scene phase logic
+- `PeachTests/App/SettingsCoordinatorTests.swift` — Tests for SettingsCoordinator using MockUserSettings
+- `PeachTests/App/TrainingLifecycleCoordinatorTests.swift` — **New** — Tests for scene phase handling with MockTrainingSession
 - `docs/implementation-artifacts/64-11-extract-session-lifecycle-from-views.md` — Story file updates
 - `docs/implementation-artifacts/sprint-status.yaml` — Status: done
 

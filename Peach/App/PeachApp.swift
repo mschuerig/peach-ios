@@ -22,8 +22,8 @@ struct PeachApp: App {
     @State private var stepSequencer: SoundFontStepSequencer
     @State private var midiAdapter: MIDIKitAdapter?
     @State private var activeSession: (any TrainingSession)?
-    @State private var trainingLifecycle = TrainingLifecycleCoordinator()
-    @State private var settingsCoordinator = SettingsCoordinator()
+    @State private var trainingLifecycle: TrainingLifecycleCoordinator
+    @State private var settingsCoordinator: SettingsCoordinator
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
 
@@ -75,40 +75,44 @@ struct PeachApp: App {
             let progressTimeline = ProgressTimeline(profile: profile)
             _progressTimeline = State(wrappedValue: progressTimeline)
 
-            _transferService = State(wrappedValue: TrainingDataTransferService(
+            let transferService = TrainingDataTransferService(
                 dataStore: dataStore,
                 onDataChanged: { [dataStore, profile] in
                     profile.replaceAll { builder in
                         try? TrainingDisciplineRegistry.shared.feedAllRecords(from: dataStore, into: builder)
                     }
                 }
-            ))
+            )
+            _transferService = State(wrappedValue: transferService)
 
             let strategy = KazezNoteStrategy()
 
-            _pitchDiscriminationSession = State(wrappedValue: Self.createPitchDiscriminationSession(
+            let pdSession = Self.createPitchDiscriminationSession(
                 notePlayer: notePlayer,
                 strategy: strategy,
                 profile: profile,
                 dataStore: dataStore
-            ))
+            )
+            _pitchDiscriminationSession = State(wrappedValue: pdSession)
 
             let midiAdapter = MIDIKitAdapter()
             _midiAdapter = State(wrappedValue: midiAdapter)
 
-            _pitchMatchingSession = State(wrappedValue: Self.createPitchMatchingSession(
+            let pmSession = Self.createPitchMatchingSession(
                 notePlayer: notePlayer,
                 profile: profile,
                 dataStore: dataStore,
                 midiInput: midiAdapter
-            ))
+            )
+            _pitchMatchingSession = State(wrappedValue: pmSession)
 
-            _rhythmOffsetDetectionSession = State(wrappedValue: Self.createRhythmOffsetDetectionSession(
+            let rodSession = Self.createRhythmOffsetDetectionSession(
                 rhythmPlayer: rhythmPlayer,
                 profile: profile,
                 dataStore: dataStore,
                 sampleRate: soundFontEngine.sampleRate
-            ))
+            )
+            _rhythmOffsetDetectionSession = State(wrappedValue: rodSession)
 
             let soundFontStepSequencer = SoundFontStepSequencer(
                 engine: soundFontEngine,
@@ -117,25 +121,25 @@ struct PeachApp: App {
             )
             _stepSequencer = State(wrappedValue: soundFontStepSequencer)
 
-            let continuousRhythmMatchingSession = Self.createContinuousRhythmMatchingSession(
+            let crmSession = Self.createContinuousRhythmMatchingSession(
                 stepSequencer: soundFontStepSequencer,
                 profile: profile,
                 dataStore: dataStore,
                 midiInput: midiAdapter
             )
-            _continuousRhythmMatchingSession = State(wrappedValue: continuousRhythmMatchingSession)
+            _continuousRhythmMatchingSession = State(wrappedValue: crmSession)
 
             _trainingLifecycle = State(wrappedValue: TrainingLifecycleCoordinator(
-                pitchDiscriminationSession: pitchDiscriminationSession,
-                pitchMatchingSession: pitchMatchingSession,
-                rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
-                continuousRhythmMatchingSession: continuousRhythmMatchingSession,
+                pitchDiscriminationSession: pdSession,
+                pitchMatchingSession: pmSession,
+                rhythmOffsetDetectionSession: rodSession,
+                continuousRhythmMatchingSession: crmSession,
                 userSettings: userSettings
             ))
 
             _settingsCoordinator = State(wrappedValue: SettingsCoordinator(
                 dataStore: dataStore,
-                pitchDiscriminationSession: pitchDiscriminationSession,
+                pitchDiscriminationSession: pdSession,
                 profile: profile,
                 transferService: transferService,
                 notePlayer: notePlayer,
@@ -162,103 +166,86 @@ struct PeachApp: App {
                 .environment(\.userSettings, userSettings)
                 .environment(\.settingsCoordinator, settingsCoordinator)
                 .environment(\.trainingLifecycle, trainingLifecycle)
-                .environment(\.trainingDataTransferService, transferService)
                 .environment(\.rhythmPlayer, rhythmPlayer)
                 .environment(\.stepSequencer, stepSequencer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.midiInput, midiAdapter)
-                .environment(\.handleScenePhaseChange, { [activeSession] old, new, clearNavigation in
-                    if new == .background {
-                        activeSession?.stop()
-                    }
-                    if old == .background && new == .active {
-                        clearNavigation()
-                    }
-                })
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
-                    let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
-                    let newNotePlayer = SoundFontPlayer(
-                        engine: soundFontEngine,
-                        preset: preset,
-                        stopPropagationDelay: .zero
-                    )
-                    notePlayer = newNotePlayer
-
-                    let strategy = KazezNoteStrategy()
-                    let newPDSession = Self.createPitchDiscriminationSession(
-                        notePlayer: newNotePlayer,
-                        strategy: strategy,
-                        profile: profile,
-                        dataStore: dataStore
-                    )
-                    pitchDiscriminationSession = newPDSession
-
-                    let newPMSession = Self.createPitchMatchingSession(
-                        notePlayer: newNotePlayer,
-                        profile: profile,
-                        dataStore: dataStore,
-                        midiInput: midiAdapter
-                    )
-                    pitchMatchingSession = newPMSession
-
-                    trainingLifecycle = TrainingLifecycleCoordinator(
-                        pitchDiscriminationSession: newPDSession,
-                        pitchMatchingSession: newPMSession,
-                        rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
-                        continuousRhythmMatchingSession: continuousRhythmMatchingSession,
-                        userSettings: userSettings
-                    )
-                    settingsCoordinator = SettingsCoordinator(
-                        dataStore: dataStore,
-                        pitchDiscriminationSession: newPDSession,
-                        profile: profile,
-                        transferService: transferService,
-                        notePlayer: newNotePlayer,
-                        userSettings: userSettings
-                    )
+                    handleSoundSourceChanged(newSource)
                 }
                 .onChange(of: pitchDiscriminationSession.isIdle) { _, isIdle in
-                    if !isIdle {
-                        if activeSession !== pitchDiscriminationSession {
-                            activeSession?.stop()
-                        }
-                        activeSession = pitchDiscriminationSession
-                    } else if activeSession === pitchDiscriminationSession {
-                        activeSession = nil
-                    }
+                    trackActiveSession(pitchDiscriminationSession, isIdle: isIdle)
                 }
                 .onChange(of: pitchMatchingSession.isIdle) { _, isIdle in
-                    if !isIdle {
-                        if activeSession !== pitchMatchingSession {
-                            activeSession?.stop()
-                        }
-                        activeSession = pitchMatchingSession
-                    } else if activeSession === pitchMatchingSession {
-                        activeSession = nil
-                    }
+                    trackActiveSession(pitchMatchingSession, isIdle: isIdle)
                 }
                 .onChange(of: rhythmOffsetDetectionSession.isIdle) { _, isIdle in
-                    if !isIdle {
-                        if activeSession !== rhythmOffsetDetectionSession {
-                            activeSession?.stop()
-                        }
-                        activeSession = rhythmOffsetDetectionSession
-                    } else if activeSession === rhythmOffsetDetectionSession {
-                        activeSession = nil
-                    }
+                    trackActiveSession(rhythmOffsetDetectionSession, isIdle: isIdle)
                 }
                 .onChange(of: continuousRhythmMatchingSession.isIdle) { _, isIdle in
-                    if !isIdle {
-                        if activeSession !== continuousRhythmMatchingSession {
-                            activeSession?.stop()
-                        }
-                        activeSession = continuousRhythmMatchingSession
-                    } else if activeSession === continuousRhythmMatchingSession {
-                        activeSession = nil
-                    }
+                    trackActiveSession(continuousRhythmMatchingSession, isIdle: isIdle)
                 }
         }
+    }
+
+    // MARK: - Active Session Tracking
+
+    private func trackActiveSession(_ session: some TrainingSession, isIdle: Bool) {
+        if !isIdle {
+            if activeSession !== session {
+                activeSession?.stop()
+            }
+            activeSession = session
+        } else if activeSession === session {
+            activeSession = nil
+        }
+        trainingLifecycle.activeSession = activeSession
+    }
+
+    // MARK: - Sound Source Change
+
+    private func handleSoundSourceChanged(_ newSource: String) {
+        let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
+        let newNotePlayer = SoundFontPlayer(
+            engine: soundFontEngine,
+            preset: preset,
+            stopPropagationDelay: .zero
+        )
+        notePlayer = newNotePlayer
+
+        let strategy = KazezNoteStrategy()
+        pitchDiscriminationSession = Self.createPitchDiscriminationSession(
+            notePlayer: newNotePlayer,
+            strategy: strategy,
+            profile: profile,
+            dataStore: dataStore
+        )
+        pitchMatchingSession = Self.createPitchMatchingSession(
+            notePlayer: newNotePlayer,
+            profile: profile,
+            dataStore: dataStore,
+            midiInput: midiAdapter
+        )
+        rebuildCoordinators()
+    }
+
+    private func rebuildCoordinators() {
+        trainingLifecycle = TrainingLifecycleCoordinator(
+            pitchDiscriminationSession: pitchDiscriminationSession,
+            pitchMatchingSession: pitchMatchingSession,
+            rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
+            continuousRhythmMatchingSession: continuousRhythmMatchingSession,
+            userSettings: userSettings
+        )
+        settingsCoordinator = SettingsCoordinator(
+            dataStore: dataStore,
+            pitchDiscriminationSession: pitchDiscriminationSession,
+            profile: profile,
+            transferService: transferService,
+            notePlayer: notePlayer,
+            userSettings: userSettings
+        )
     }
 
     // MARK: - Init Helpers
