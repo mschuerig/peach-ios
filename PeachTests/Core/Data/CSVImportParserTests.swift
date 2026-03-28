@@ -456,6 +456,128 @@ struct CSVImportParserTests {
         #expect(discs[0].tuningSystem == "justIntonation")
     }
 
+    // MARK: - Version Migration
+
+    /// V1 format: 12 columns, pitchComparison training type.
+    private static let v1Header = "trainingType,timestamp,referenceNote,referenceNoteName,targetNote,targetNoteName,interval,tuningSystem,centOffset,isCorrect,initialCentOffset,userCentError"
+
+    private func makeV1CSV(_ rows: [String]) -> String {
+        (["# peach-export-format:1", Self.v1Header] + rows).joined(separator: "\n")
+    }
+
+    /// V2 format: 15 columns, pitchDiscrimination training type, rhythm columns added.
+    private static let v2Header = "trainingType,timestamp,referenceNote,referenceNoteName,targetNote,targetNoteName,interval,tuningSystem,centOffset,isCorrect,initialCentOffset,userCentError,tempoBPM,offsetMs,userOffsetMs"
+
+    private func makeV2CSV(_ rows: [String]) -> String {
+        (["# peach-export-format:2", Self.v2Header] + rows).joined(separator: "\n")
+    }
+
+    @Test("v2 pitch discrimination CSV imports successfully after migration")
+    func v2PitchDiscriminationImports() async {
+        let csv = makeV2CSV(["pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,"])
+        let result = CSVImportParser.parse(csv)
+        let discs = pitchDiscriminations(from: result)
+        #expect(result.errors.isEmpty)
+        #expect(discs.count == 1)
+        #expect(discs[0].referenceNote == 60)
+        #expect(discs[0].targetNote == 64)
+        #expect(discs[0].centOffset == 15.5)
+        #expect(discs[0].isCorrect == true)
+        #expect(discs[0].interval == 4)
+        #expect(discs[0].tuningSystem == "equalTemperament")
+    }
+
+    @Test("v2 pitch matching CSV imports successfully after migration")
+    func v2PitchMatchingImports() async {
+        let csv = makeV2CSV(["pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,,,"])
+        let result = CSVImportParser.parse(csv)
+        let matchings = pitchMatchings(from: result)
+        #expect(result.errors.isEmpty)
+        #expect(matchings.count == 1)
+        #expect(matchings[0].initialCentOffset == 25.0)
+        #expect(matchings[0].userCentError == 3.2)
+    }
+
+    @Test("v2 rhythm offset detection CSV imports successfully after migration")
+    func v2RhythmOffsetDetectionImports() async {
+        let csv = makeV2CSV(["rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"])
+        let result = CSVImportParser.parse(csv)
+        let rhythms = rhythmOffsetDetections(from: result)
+        #expect(result.errors.isEmpty)
+        #expect(rhythms.count == 1)
+        #expect(rhythms[0].tempoBPM == 120)
+        #expect(rhythms[0].offsetMs == 5.3)
+    }
+
+    @Test("v2 rhythmMatching CSV migrates to continuousRhythmMatching with meanOffsetMs")
+    func v2RhythmMatchingMigratesToContinuous() async {
+        // V2 format: 15 columns; rhythmMatching row has empty pitch fields, tempoBPM at 12, offsetMs at 13 (empty), userOffsetMs at 14
+        let csv = makeV2CSV(["rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,,120,,5.3"])
+        let result = CSVImportParser.parse(csv)
+        let continuous = continuousRhythmMatchings(from: result)
+        #expect(result.errors.isEmpty)
+        #expect(continuous.count == 1)
+        #expect(continuous[0].tempoBPM == 120)
+        #expect(continuous[0].meanOffsetMs == 5.3)
+    }
+
+    @Test("v1 CSV imports successfully through v1→v2→v3 migration chain")
+    func v1ImportsThroughFullChain() async {
+        let csv = makeV1CSV([
+            "pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,",
+            "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2",
+        ])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.errors.isEmpty)
+
+        let discs = pitchDiscriminations(from: result)
+        #expect(discs.count == 1)
+        #expect(discs[0].referenceNote == 60)
+        #expect(discs[0].centOffset == 15.5)
+
+        let matchings = pitchMatchings(from: result)
+        #expect(matchings.count == 1)
+        #expect(matchings[0].initialCentOffset == 25.0)
+    }
+
+    @Test("v1 pitchComparison training type is migrated to pitchDiscrimination")
+    func v1TrainingTypeRenamed() async {
+        let csv = makeV1CSV(["pitchComparison,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.errors.isEmpty)
+        #expect(pitchDiscriminations(from: result).count == 1)
+    }
+
+    @Test("future version 99 produces unsupportedVersion error suggesting app update")
+    func futureVersionProducesError() async {
+        let csv = "# peach-export-format:99\n" + CSVExportSchema.headerRow + "\n" + validPitchDiscriminationRow
+        let result = CSVImportParser.parse(csv)
+        #expect(pitchDiscriminations(from: result).isEmpty)
+        #expect(result.errors.count == 1)
+        if case .unsupportedVersion(let version) = result.errors.first {
+            #expect(version == 99)
+        } else {
+            Issue.record("Expected unsupportedVersion error")
+        }
+        // Verify the error message suggests updating
+        let description = result.errors.first?.localizedDescription ?? ""
+        #expect(description.contains("99"))
+    }
+
+    @Test("v2 CSV with mixed pitch and rhythm rows imports all types")
+    func v2MixedTypesImport() async {
+        let csv = makeV2CSV([
+            "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,",
+            "pitchMatching,2026-03-03T14:30:00Z,60,C4,67,G4,P5,equalTemperament,,,25.0,3.2,,,",
+            "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,",
+        ])
+        let result = CSVImportParser.parse(csv)
+        #expect(result.errors.isEmpty)
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).count == 1)
+        #expect(rhythmOffsetDetections(from: result).count == 1)
+    }
+
     // MARK: - Version Dispatch
 
     @Test("missing version metadata line is rejected")
@@ -469,15 +591,13 @@ struct CSVImportParserTests {
         }
     }
 
-    @Test("unknown version number is rejected")
-    func unknownVersionRejected() async {
-        let csv = "# peach-export-format:99\n" + CSVExportSchema.headerRow + "\n" + validPitchDiscriminationRow
+    @Test("version 0 produces unsupportedVersion error")
+    func version0Rejected() async {
+        let csv = "# peach-export-format:0\n" + CSVExportSchema.headerRow + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
         #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(result.errors.count == 1)
-        if case .unsupportedVersion(let version) = result.errors.first {
-            #expect(version == 99)
-        } else {
+        if case .unsupportedVersion = result.errors.first {} else {
             Issue.record("Expected unsupportedVersion error")
         }
     }

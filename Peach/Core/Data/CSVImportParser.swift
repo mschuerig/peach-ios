@@ -32,12 +32,57 @@ enum CSVImportParser {
             return ImportResult(records: [:], errors: [.invalidFormatMetadata(line: firstLine)])
         }
 
-        guard version == CSVExportSchema.formatVersion else {
+        let currentVersion = CSVExportSchema.formatVersion
+
+        guard version >= 1, version <= currentVersion else {
             return ImportResult(records: [:], errors: [.unsupportedVersion(version: version)])
         }
 
         let remainingLines = Array(lines.dropFirst())
+
+        if version < currentVersion {
+            return parseMigratedLines(remainingLines, fromVersion: version)
+        }
+
         return parseLines(remainingLines)
+    }
+
+    // MARK: - Migration
+
+    private static func parseMigratedLines(_ lines: [String], fromVersion: Int) -> ImportResult {
+        guard let headerLine = lines.first, !headerLine.isEmpty else {
+            return ImportResult(records: [:], errors: [.invalidHeader(expected: "(header)", actual: "(empty)")])
+        }
+
+        let headerColumns = CSVParserHelpers.parseCSVLine(headerLine)
+        let dataLines = lines.dropFirst()
+
+        var rowDicts: [[String: String]] = []
+        for line in dataLines where !line.isEmpty {
+            let fields = CSVParserHelpers.parseCSVLine(line)
+            var dict: [String: String] = [:]
+            for (index, column) in headerColumns.enumerated() where index < fields.count {
+                dict[column] = fields[index]
+            }
+            rowDicts.append(dict)
+        }
+
+        let migratedRows = CSVMigrationChain.migrate(
+            from: fromVersion,
+            to: CSVExportSchema.formatVersion,
+            rows: rowDicts
+        )
+
+        let currentColumns = CSVExportSchema.allColumns
+        let headerRow = currentColumns.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
+
+        var reconstructedLines = [headerRow]
+        for dict in migratedRows {
+            let fields = currentColumns.map { CSVParserHelpers.escapeField(dict[$0] ?? "") }
+            reconstructedLines.append(fields.joined(separator: ","))
+        }
+
+        return parseLines(reconstructedLines)
     }
 
     // MARK: - Line Parsing

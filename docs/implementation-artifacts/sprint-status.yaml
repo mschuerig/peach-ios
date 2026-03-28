@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 65.2 review
+# last_updated: 2026-03-28 # Story 65.3 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -503,5 +503,5 @@ development_status:
   epic-65: in-progress
   65-1-lock-free-midi-event-scheduling: done
   65-2-resolve-session-actor-isolation: done
-  65-3-csv-format-version-migration: ready-for-dev
+  65-3-csv-format-version-migration: review
   epic-65-retrospective: optional
