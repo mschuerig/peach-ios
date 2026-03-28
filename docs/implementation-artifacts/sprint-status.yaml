@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 64.11 done
+# last_updated: 2026-03-28 # Story 65.1 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -500,8 +500,8 @@ development_status:
 
   # Epic 65: Architectural Hardening — Lock-Free Audio, Actor Isolation, Format Migration
   # Work order: 65.1 (audio), 65.2 (concurrency), 65.3 (data) — independent, can be parallel
-  epic-65: backlog
-  65-1-lock-free-midi-event-scheduling: ready-for-dev
+  epic-65: in-progress
+  65-1-lock-free-midi-event-scheduling: review
   65-2-resolve-session-actor-isolation: ready-for-dev
   65-3-csv-format-version-migration: ready-for-dev
   epic-65-retrospective: optional

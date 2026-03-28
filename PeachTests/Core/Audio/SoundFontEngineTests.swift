@@ -281,4 +281,148 @@ struct SoundFontEngineTests {
         engine.stopNote(MIDINote(60), channel: SoundFontEngine.ChannelID(0))
     }
 
+    // MARK: - Lock-Free Dispatch Verification
+
+    @Test("all scheduled events are dispatched by the render thread")
+    func allEventsDispatched() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        // Schedule 500 note-on/note-off pairs = 1000 events, spread across sample positions
+        var events: [ScheduledMIDIEvent] = []
+        for i in 0..<500 {
+            let offset = Int64(i * 256) // ~5.8ms apart at 44.1kHz
+            events.append(ScheduledMIDIEvent(
+                sampleOffset: offset,
+                midiStatus: SoundFontEngine.noteOnBase,
+                midiNote: 60,
+                velocity: 80
+            ))
+            events.append(ScheduledMIDIEvent(
+                sampleOffset: offset + 128,
+                midiStatus: SoundFontEngine.noteOffBase,
+                midiNote: 60,
+                velocity: 0
+            ))
+        }
+        engine.scheduleEvents(events)
+        #expect(engine.scheduledEventCount == 1000)
+
+        // Wait for the render thread to process all events
+        // Last event is at sample offset 499*256+128 = 127,872
+        // At 44.1kHz this is ~2.9 seconds
+        let lastEventOffset = Int64(499 * 256 + 128)
+        for _ in 0..<400 {
+            if engine.currentSamplePosition > lastEventOffset { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(engine.dispatchedEventCount == 1000)
+    }
+
+    @Test("schedule replacement does not lose events from new schedule")
+    func scheduleReplacementDispatchesNewEvents() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        // Schedule initial events
+        let firstBatch = (0..<10).map { i in
+            ScheduledMIDIEvent(
+                sampleOffset: Int64(i * 512),
+                midiStatus: SoundFontEngine.noteOnBase,
+                midiNote: 60,
+                velocity: 80
+            )
+        }
+        engine.scheduleEvents(firstBatch)
+
+        // Immediately replace with a new schedule (simulates step sequencer refill)
+        let secondBatch = (0..<20).map { i in
+            ScheduledMIDIEvent(
+                sampleOffset: Int64(i * 256),
+                midiStatus: SoundFontEngine.noteOnBase,
+                midiNote: 64,
+                velocity: 90
+            )
+        }
+        engine.scheduleEvents(secondBatch)
+        #expect(engine.scheduledEventCount == 20)
+
+        // Wait for all events from the new schedule to be processed
+        let lastOffset = Int64(19 * 256)
+        for _ in 0..<200 {
+            if engine.currentSamplePosition > lastOffset { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        #expect(engine.dispatchedEventCount == 20)
+    }
+
+    @Test("rapid schedule updates at 200 BPM equivalent timing dispatch all events")
+    func stressTestRapidScheduleUpdates() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        // 200 BPM with 4 events per beat = 13.3 events/sec
+        // Simulate by scheduling small batches rapidly
+        let eventsPerBatch = 4
+        let batchCount = 50
+        var totalExpected = 0
+
+        for batch in 0..<batchCount {
+            let events = (0..<eventsPerBatch).map { i in
+                ScheduledMIDIEvent(
+                    sampleOffset: Int64(i * 128),
+                    midiStatus: SoundFontEngine.noteOnBase,
+                    midiNote: UInt8(60 + (batch % 12)),
+                    velocity: 80
+                )
+            }
+            engine.scheduleEvents(events)
+            totalExpected = eventsPerBatch // Each schedule replaces the previous
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        // Wait for the last batch to complete
+        let lastOffset = Int64((eventsPerBatch - 1) * 128)
+        for _ in 0..<100 {
+            if engine.currentSamplePosition > lastOffset { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        // The last batch's events should all be dispatched
+        #expect(engine.dispatchedEventCount == totalExpected)
+    }
+
+    @Test("dispatchedEventCount resets when render thread detects new schedule")
+    func dispatchCounterResetsOnNewSchedule() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        let events = [
+            ScheduledMIDIEvent(sampleOffset: 0, midiStatus: 0x90, midiNote: 60, velocity: 100),
+        ]
+        engine.scheduleEvents(events)
+
+        // Wait for the first schedule's event to be dispatched
+        for _ in 0..<100 {
+            if engine.dispatchedEventCount >= 1 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(engine.dispatchedEventCount >= 1)
+
+        // Schedule new events — counter resets when render thread detects generation change
+        engine.scheduleEvents(events)
+
+        // Wait for the render thread to process the new generation
+        // (samplePosition resets to 0 then advances past the event)
+        for _ in 0..<100 {
+            if engine.currentSamplePosition > 0 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        // Counter was reset to 0 by the render thread, then incremented for the new event
+        #expect(engine.dispatchedEventCount == 1)
+    }
+
 }

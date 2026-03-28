@@ -1,5 +1,6 @@
 @preconcurrency import AVFoundation
 import os
+import Synchronization
 
 // MARK: - Scheduled MIDI Event
 
@@ -11,19 +12,102 @@ struct ScheduledMIDIEvent: Sendable {
     let velocity: UInt8
 }
 
-// MARK: - Schedule Data
+// MARK: - Double-Buffered Schedule State
 
-/// All mutable state shared between the render thread and the main thread.
-/// Access is synchronized via `OSAllocatedUnfairLock`.
-nonisolated private struct ScheduleData: @unchecked Sendable {
-    let buffer: UnsafeMutablePointer<ScheduledMIDIEvent>
+/// Lock-free double-buffered state shared between the main thread and the audio render thread.
+///
+/// **Safety invariant:** The active slot (read by the render thread) is never written by the
+/// main thread. The main thread writes only to the inactive slot, then atomically increments
+/// the generation counter (with release ordering) to swap. The render thread loads the
+/// generation (with acquire ordering) before reading slot data, ensuring all writes are visible.
+///
+/// The active slot index is `generation % 2`. This single atomic operation publishes both the
+/// generation change and the slot swap, eliminating any window where the render thread could
+/// see a partially-written schedule.
+nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable {
+
+    // MARK: - Generation Counter
+
+    /// Monotonically increasing counter. Active slot = `generation % 2`.
+    let generation: Atomic<Int>
+
+    // MARK: - Event Buffers (two slots)
+
+    private let eventBuffer0: UnsafeMutablePointer<ScheduledMIDIEvent>
+    private let eventBuffer1: UnsafeMutablePointer<ScheduledMIDIEvent>
     let capacity: Int
-    var count: Int = 0
+
+    /// Event counts per slot. No concurrent access to the same slot due to double-buffering;
+    /// visibility guaranteed by the generation counter's release/acquire fence.
+    private var count0: Int = 0
+    private var count1: Int = 0
+
+    // MARK: - MIDI Blocks (two slots × 16 channels)
+
+    /// Pre-allocated 16-element arrays for MIDI dispatch blocks, one per slot.
+    /// Copied from the main thread's authoritative dictionary on each schedule update.
+    private let midiBlocks0: UnsafeMutablePointer<AUScheduleMIDIEventBlock?>
+    private let midiBlocks1: UnsafeMutablePointer<AUScheduleMIDIEventBlock?>
+
+    // MARK: - Render-Thread Cursor (only accessed by the single audio render thread)
+
     var nextIndex: Int = 0
-    var samplePosition: Int64 = 0
-    var hostTimeAtSample: UInt64 = 0
-    var hostTimeSamplePosition: Int64 = 0
-    var midiBlocks: [UInt8: AUScheduleMIDIEventBlock] = [:]
+    var lastGeneration: Int = 0
+
+    // MARK: - Cross-Thread Timing (written by render thread, read by main thread)
+
+    let samplePosition: Atomic<Int64>
+    let hostTimeAtSample: Atomic<UInt64>
+    let hostTimeSamplePosition: Atomic<Int64>
+
+    // MARK: - Dispatch Counter (for test verification of AC#4)
+
+    let dispatchedEventCount: Atomic<Int>
+
+    // MARK: - Lifecycle
+
+    init(capacity: Int) {
+        self.capacity = capacity
+        self.generation = Atomic<Int>(0)
+        self.samplePosition = Atomic<Int64>(0)
+        self.hostTimeAtSample = Atomic<UInt64>(0)
+        self.hostTimeSamplePosition = Atomic<Int64>(0)
+        self.dispatchedEventCount = Atomic<Int>(0)
+
+        eventBuffer0 = .allocate(capacity: capacity)
+        eventBuffer1 = .allocate(capacity: capacity)
+        midiBlocks0 = .allocate(capacity: 16)
+        midiBlocks1 = .allocate(capacity: 16)
+        midiBlocks0.initialize(repeating: nil, count: 16)
+        midiBlocks1.initialize(repeating: nil, count: 16)
+    }
+
+    deinit {
+        eventBuffer0.deallocate()
+        eventBuffer1.deallocate()
+        midiBlocks0.deinitialize(count: 16)
+        midiBlocks0.deallocate()
+        midiBlocks1.deinitialize(count: 16)
+        midiBlocks1.deallocate()
+    }
+
+    // MARK: - Slot Accessors
+
+    func eventBuffer(forSlot slot: Int) -> UnsafeMutablePointer<ScheduledMIDIEvent> {
+        slot == 0 ? eventBuffer0 : eventBuffer1
+    }
+
+    func count(forSlot slot: Int) -> Int {
+        slot == 0 ? count0 : count1
+    }
+
+    func setCount(_ count: Int, forSlot slot: Int) {
+        if slot == 0 { count0 = count } else { count1 = count }
+    }
+
+    func midiBlocks(forSlot slot: Int) -> UnsafeMutablePointer<AUScheduleMIDIEventBlock?> {
+        slot == 0 ? midiBlocks0 : midiBlocks1
+    }
 }
 
 final class SoundFontEngine {
@@ -72,15 +156,16 @@ final class SoundFontEngine {
 
     private let sf2URL: URL
 
-    // MARK: - Render-Thread Schedule Storage
+    // MARK: - Lock-Free Schedule State
 
-    /// Pre-allocated event buffer, owned by SoundFontEngine for deallocation.
-    private let scheduleBuffer: UnsafeMutablePointer<ScheduledMIDIEvent>
+    /// Double-buffered schedule state for lock-free render-thread access.
+    /// The render thread reads the active slot without blocking; the main thread
+    /// writes to the inactive slot and atomically swaps via the generation counter.
+    private let scheduleState: DoubleBufferedScheduleState
 
-    /// Synchronized access to schedule state. The render thread uses `withLockIfAvailable`
-    /// (try-lock, non-blocking) so it never stalls the audio pipeline. The main thread
-    /// uses `withLock` (blocking, acceptable off the render thread).
-    private let scheduleLockState: OSAllocatedUnfairLock<ScheduleData>
+    /// Main-thread authoritative MIDI block dictionary. Copied into the inactive slot
+    /// on each `scheduleEvents` call so the render thread has a consistent snapshot.
+    private var mainThreadMidiBlocks: [UInt8: AUScheduleMIDIEventBlock] = [:]
 
     // MARK: - Initialization
 
@@ -90,18 +175,8 @@ final class SoundFontEngine {
         let engine = AVAudioEngine()
         self.engine = engine
 
-        // Pre-allocate event buffer — deallocate on throw since deinit won't run
-        let scheduleBuffer = UnsafeMutablePointer<ScheduledMIDIEvent>.allocate(capacity: Self.scheduleCapacity)
-        self.scheduleBuffer = scheduleBuffer
-        var didFinishInit = false
-        defer { if !didFinishInit { scheduleBuffer.deallocate() } }
-
-        // Create lock state (no MIDI blocks yet — added when channels are created)
-        let lockState = OSAllocatedUnfairLock(initialState: ScheduleData(
-            buffer: scheduleBuffer,
-            capacity: Self.scheduleCapacity
-        ))
-        self.scheduleLockState = lockState
+        let shared = DoubleBufferedScheduleState(capacity: Self.scheduleCapacity)
+        self.scheduleState = shared
 
         // Pre-create channel 0 for backward compatibility
         let channel0 = ChannelID(0)
@@ -114,9 +189,11 @@ final class SoundFontEngine {
         try engine.start()
 
         // Register MIDI block for channel 0 (available after engine start)
-        lockState.withLock { data in
-            data.midiBlocks[channel0.rawValue] = sampler0.auAudioUnit.scheduleMIDIEventBlock
-        }
+        let block0 = sampler0.auAudioUnit.scheduleMIDIEventBlock
+        mainThreadMidiBlocks[channel0.rawValue] = block0
+        // Write to both slots so channel 0 is available regardless of active slot
+        shared.midiBlocks(forSlot: 0)[Int(channel0.rawValue)] = block0
+        shared.midiBlocks(forSlot: 1)[Int(channel0.rawValue)] = block0
 
         // Create source node (outputs silence, serves as render-thread clock)
         let sampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
@@ -133,41 +210,53 @@ final class SoundFontEngine {
                 }
             }
 
-            // Try-lock: if the main thread is updating the schedule, skip this frame
-            // rather than blocking the audio render thread.
-            _ = lockState.withLockIfAvailable { data in
-                guard data.count > 0 else { return }
+            // Load generation with acquire ordering — ensures all slot writes
+            // from the main thread's release store are visible.
+            let gen = shared.generation.load(ordering: .acquiring)
+            let slotIndex = gen % 2
 
-                let windowStart = data.samplePosition
-                let windowEnd = windowStart + Int64(frameCount)
-
-                while data.nextIndex < data.count {
-                    let event = data.buffer[data.nextIndex]
-                    if event.sampleOffset >= windowEnd { break }
-                    if event.sampleOffset >= windowStart {
-                        let channel = event.midiStatus & Self.channelMask
-                        guard let midiBlock = data.midiBlocks[channel] else {
-                            data.nextIndex += 1
-                            continue
-                        }
-                        // Use AUEventSampleTimeImmediate + offset so the sampler
-                        // always interprets events relative to "now" rather than
-                        // as absolute timestamps that may already be past.
-                        let intraBufferOffset = event.sampleOffset - windowStart
-                        let eventTime = AUEventSampleTimeImmediate
-                            + AUEventSampleTime(intraBufferOffset)
-                        var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
-                        withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                            midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
-                        }
-                    }
-                    data.nextIndex += 1
-                }
-
-                data.samplePosition = windowEnd
-                data.hostTimeAtSample = timestamp.pointee.mHostTime
-                data.hostTimeSamplePosition = windowStart
+            // Detect schedule change — reset cursor and dispatch counter
+            if gen != shared.lastGeneration {
+                shared.lastGeneration = gen
+                shared.nextIndex = 0
+                shared.samplePosition.store(0, ordering: .relaxed)
+                shared.dispatchedEventCount.store(0, ordering: .relaxed)
             }
+
+            let count = shared.count(forSlot: slotIndex)
+            guard count > 0 else { return noErr }
+
+            let events = shared.eventBuffer(forSlot: slotIndex)
+            let midiBlocks = shared.midiBlocks(forSlot: slotIndex)
+            var nextIdx = shared.nextIndex
+            let windowStart = shared.samplePosition.load(ordering: .relaxed)
+            let windowEnd = windowStart + Int64(frameCount)
+
+            while nextIdx < count {
+                let event = events[nextIdx]
+                if event.sampleOffset >= windowEnd { break }
+                if event.sampleOffset >= windowStart {
+                    let channel = event.midiStatus & Self.channelMask
+                    guard let midiBlock = midiBlocks[Int(channel)] else {
+                        nextIdx += 1
+                        continue
+                    }
+                    let intraBufferOffset = event.sampleOffset - windowStart
+                    let eventTime = AUEventSampleTimeImmediate
+                        + AUEventSampleTime(intraBufferOffset)
+                    var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
+                    withUnsafeBytes(of: &midiBytes) { rawBuffer in
+                        midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                    }
+                    shared.dispatchedEventCount.wrappingAdd(1, ordering: .relaxed)
+                }
+                nextIdx += 1
+            }
+
+            shared.nextIndex = nextIdx
+            shared.samplePosition.store(windowEnd, ordering: .releasing)
+            shared.hostTimeAtSample.store(timestamp.pointee.mHostTime, ordering: .relaxed)
+            shared.hostTimeSamplePosition.store(windowStart, ordering: .relaxed)
 
             return noErr
         }
@@ -176,14 +265,11 @@ final class SoundFontEngine {
         engine.attach(sourceNode)
         engine.connect(sourceNode, to: engine.mainMixerNode, format: sourceFormat)
 
-        didFinishInit = true
-
         logger.info("SoundFontEngine initialized with \(sf2URL.lastPathComponent)")
     }
 
     isolated deinit {
         engine.stop()
-        scheduleBuffer.deallocate()
     }
 
     // MARK: - Sample Rate
@@ -202,9 +288,11 @@ final class SoundFontEngine {
         engine.connect(sampler, to: engine.mainMixerNode, format: nil)
         channels[id] = sampler
 
-        scheduleLockState.withLock { data in
-            data.midiBlocks[id.rawValue] = sampler.auAudioUnit.scheduleMIDIEventBlock
-        }
+        let block = sampler.auAudioUnit.scheduleMIDIEventBlock
+        mainThreadMidiBlocks[id.rawValue] = block
+        // Write to both slots so the block is available regardless of active slot
+        scheduleState.midiBlocks(forSlot: 0)[Int(id.rawValue)] = block
+        scheduleState.midiBlocks(forSlot: 1)[Int(id.rawValue)] = block
 
         logger.info("Created channel \(id.rawValue)")
     }
@@ -354,41 +442,60 @@ final class SoundFontEngine {
                 sampler.auAudioUnit.reset()
             }
         }
-        scheduleLockState.withLock { data in
-            let count = min(events.count, data.capacity)
-            for i in 0..<count {
-                data.buffer[i] = events[i]
-            }
-            data.count = count
-            data.nextIndex = 0
-            data.samplePosition = 0
+
+        // Write to the inactive slot, then atomically swap via generation increment
+        let currentGen = scheduleState.generation.load(ordering: .relaxed)
+        let inactiveIndex = (currentGen + 1) % 2
+        let buffer = scheduleState.eventBuffer(forSlot: inactiveIndex)
+        let count = min(events.count, scheduleState.capacity)
+        for i in 0..<count {
+            buffer[i] = events[i]
         }
+        scheduleState.setCount(count, forSlot: inactiveIndex)
+
+        // Copy current MIDI blocks into the inactive slot
+        let inactiveBlocks = scheduleState.midiBlocks(forSlot: inactiveIndex)
+        for ch in 0..<16 {
+            inactiveBlocks[ch] = mainThreadMidiBlocks[UInt8(ch)]
+        }
+
+        // Atomic publish — release fence ensures all writes above are visible
+        // to the render thread's acquire load of the generation counter.
+        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
     }
 
     func clearSchedule() {
-        scheduleLockState.withLock { data in
-            data.count = 0
-            data.nextIndex = 0
-            data.samplePosition = 0
-            data.hostTimeAtSample = 0
-            data.hostTimeSamplePosition = 0
-        }
+        let currentGen = scheduleState.generation.load(ordering: .relaxed)
+        let inactiveIndex = (currentGen + 1) % 2
+        scheduleState.setCount(0, forSlot: inactiveIndex)
+
+        // Reset timing atomics (render thread will also reset on generation change)
+        scheduleState.samplePosition.store(0, ordering: .relaxed)
+        scheduleState.hostTimeAtSample.store(0, ordering: .relaxed)
+        scheduleState.hostTimeSamplePosition.store(0, ordering: .relaxed)
+
+        // Atomic publish
+        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
     }
 
     var scheduledEventCount: Int {
-        scheduleLockState.withLock { data in data.count }
+        let gen = scheduleState.generation.load(ordering: .acquiring)
+        return scheduleState.count(forSlot: gen % 2)
+    }
+
+    var dispatchedEventCount: Int {
+        scheduleState.dispatchedEventCount.load(ordering: .acquiring)
     }
 
     var currentSamplePosition: Int64 {
-        scheduleLockState.withLock { data in data.samplePosition }
+        scheduleState.samplePosition.load(ordering: .acquiring)
     }
 
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
-        let (knownHostTime, knownSamplePos) = scheduleLockState.withLock { data in
-            (data.hostTimeAtSample, data.hostTimeSamplePosition)
-        }
+        let knownHostTime = scheduleState.hostTimeAtSample.load(ordering: .acquiring)
+        let knownSamplePos = scheduleState.hostTimeSamplePosition.load(ordering: .relaxed)
         guard knownHostTime != 0 else {
-            return scheduleLockState.withLock { data in data.samplePosition }
+            return scheduleState.samplePosition.load(ordering: .relaxed)
         }
 
         let deltaTicks = Int64(hostTime) - Int64(knownHostTime)
