@@ -188,10 +188,11 @@ final class SoundFontEngine {
         try Self.configureAudioSession()
         try engine.start()
 
-        // Register MIDI block for channel 0 (available after engine start)
+        // Register MIDI block for channel 0 (available after engine start).
+        // Safe to write both slots here — the source node (render thread) is not
+        // yet attached to the engine, so no concurrent reader exists.
         let block0 = sampler0.auAudioUnit.scheduleMIDIEventBlock
         mainThreadMidiBlocks[channel0.rawValue] = block0
-        // Write to both slots so channel 0 is available regardless of active slot
         shared.midiBlocks(forSlot: 0)[Int(channel0.rawValue)] = block0
         shared.midiBlocks(forSlot: 1)[Int(channel0.rawValue)] = block0
 
@@ -254,9 +255,11 @@ final class SoundFontEngine {
             }
 
             shared.nextIndex = nextIdx
-            shared.samplePosition.store(windowEnd, ordering: .releasing)
+            // Store timing values BEFORE the releasing samplePosition store so that
+            // a reader who acquires samplePosition sees consistent timing state.
             shared.hostTimeAtSample.store(timestamp.pointee.mHostTime, ordering: .relaxed)
             shared.hostTimeSamplePosition.store(windowStart, ordering: .relaxed)
+            shared.samplePosition.store(windowEnd, ordering: .releasing)
 
             return noErr
         }
@@ -290,9 +293,26 @@ final class SoundFontEngine {
 
         let block = sampler.auAudioUnit.scheduleMIDIEventBlock
         mainThreadMidiBlocks[id.rawValue] = block
-        // Write to both slots so the block is available regardless of active slot
-        scheduleState.midiBlocks(forSlot: 0)[Int(id.rawValue)] = block
-        scheduleState.midiBlocks(forSlot: 1)[Int(id.rawValue)] = block
+
+        // Publish the new MIDI block via the double-buffer protocol: write to the
+        // inactive slot and bump generation. This respects the invariant that the
+        // active slot (read by the render thread) is never written by the main thread.
+        let currentGen = scheduleState.generation.load(ordering: .relaxed)
+        let inactiveIndex = (currentGen + 1) % 2
+        let inactiveBlocks = scheduleState.midiBlocks(forSlot: inactiveIndex)
+        // Copy all current MIDI blocks into the inactive slot
+        for ch in 0..<16 {
+            inactiveBlocks[ch] = mainThreadMidiBlocks[UInt8(ch)]
+        }
+        // Preserve the inactive slot's event count (carry forward from current active slot)
+        let activeCount = scheduleState.count(forSlot: currentGen % 2)
+        let activeEvents = scheduleState.eventBuffer(forSlot: currentGen % 2)
+        let inactiveEvents = scheduleState.eventBuffer(forSlot: inactiveIndex)
+        for i in 0..<activeCount {
+            inactiveEvents[i] = activeEvents[i]
+        }
+        scheduleState.setCount(activeCount, forSlot: inactiveIndex)
+        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
 
         logger.info("Created channel \(id.rawValue)")
     }
@@ -469,12 +489,10 @@ final class SoundFontEngine {
         let inactiveIndex = (currentGen + 1) % 2
         scheduleState.setCount(0, forSlot: inactiveIndex)
 
-        // Reset timing atomics (render thread will also reset on generation change)
-        scheduleState.samplePosition.store(0, ordering: .relaxed)
-        scheduleState.hostTimeAtSample.store(0, ordering: .relaxed)
-        scheduleState.hostTimeSamplePosition.store(0, ordering: .relaxed)
-
-        // Atomic publish
+        // Atomic publish — render thread resets samplePosition to 0 on generation change
+        // detection. Do NOT reset timing atomics here: the render thread may be mid-callback
+        // reading them on the old generation, and a zeroed samplePosition could cause
+        // re-dispatch of events in the current schedule.
         scheduleState.generation.store(currentGen + 1, ordering: .releasing)
     }
 
@@ -492,10 +510,15 @@ final class SoundFontEngine {
     }
 
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
-        let knownHostTime = scheduleState.hostTimeAtSample.load(ordering: .acquiring)
+        // Load samplePosition first with acquire ordering — this pairs with the
+        // render thread's releasing store and guarantees that the subsequent relaxed
+        // loads of hostTimeAtSample and hostTimeSamplePosition see values that were
+        // stored before the release fence.
+        let currentPos = scheduleState.samplePosition.load(ordering: .acquiring)
+        let knownHostTime = scheduleState.hostTimeAtSample.load(ordering: .relaxed)
         let knownSamplePos = scheduleState.hostTimeSamplePosition.load(ordering: .relaxed)
         guard knownHostTime != 0 else {
-            return scheduleState.samplePosition.load(ordering: .relaxed)
+            return currentPos
         }
 
         let deltaTicks = Int64(hostTime) - Int64(knownHostTime)
