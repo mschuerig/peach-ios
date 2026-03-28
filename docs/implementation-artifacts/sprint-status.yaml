@@ -505,3 +505,17 @@ development_status:
   65-2-resolve-session-actor-isolation: done
   65-3-csv-format-version-migration: done
   epic-65-retrospective: optional
+
+  # Epic 66: Desktop Citizen — macOS Support via SwiftUI Multiplatform
+  # Work order: 66.1 first (compilation foundation), then 66.2–66.4 (platform conditionals, parallel),
+  #             then 66.5–66.7 (Mac-native polish, parallel), then 66.8 (integration test & polish)
+  epic-66: backlog
+  66-1-add-macos-destination-and-fix-compilation: ready-for-dev
+  66-2-platform-conditional-audio-session: ready-for-dev
+  66-3-platform-conditional-lifecycle-notifications: ready-for-dev
+  66-4-macos-haptic-feedback-abstraction: ready-for-dev
+  66-5-keyboard-shortcuts-for-training: ready-for-dev
+  66-6-native-macos-settings-scene: ready-for-dev
+  66-7-menu-bar-integration: ready-for-dev
+  66-8-macos-testing-and-layout-polish: ready-for-dev
+  epic-66-retrospective: optional
