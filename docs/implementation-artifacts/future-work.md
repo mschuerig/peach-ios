@@ -202,6 +202,31 @@ The project has no `VersionedSchema` or `SchemaMigrationPlan`. All schema change
 
 ---
 
+### macOS App-Switch Behavior: Resume vs. Reset
+
+**Priority:** Medium
+**Category:** Platform UX
+**Date Added:** 2026-03-28
+
+**Observation:**
+Story 66.3 implemented app-switch lifecycle handling on macOS: when the user Cmd+Tabs away, all training sessions stop, and when returning, the navigation clears back to the Start Screen. This mirrors the iOS backgrounding behavior, but on macOS "switching away" is much more frequent and lightweight (e.g., checking a tuner, reading sheet music, replying to a message). Forcing the user back to the Start Screen on every return may feel heavy-handed.
+
+**Consideration:**
+- On iOS, backgrounding is a strong signal the user is done — returning may be minutes or hours later
+- On macOS, losing focus is routine — the user may intend to continue the same training session seconds later
+- Stopping playback on focus loss is correct (audio shouldn't bleed into other work), but discarding session state and navigating away may not be
+
+**Potential Approaches:**
+1. **Stop but don't navigate:** stop the active session on focus loss, but leave the user on the training screen so they can restart with one tap
+2. **Grace period:** only clear navigation if the app was inactive for more than N seconds
+3. **Keep current behavior:** always return to Start Screen — simple, predictable, consistent with iOS
+
+**Related Code:**
+- `Peach/App/ContentView.swift` — macOS `didBecomeActiveNotification` observer clears navigation
+- `Peach/App/TrainingLifecycleCoordinator.swift` — `handleScenePhase` stops sessions on `.inactive` on macOS
+
+---
+
 ## UX & Onboarding
 
 ### No First-Run Onboarding Experience
