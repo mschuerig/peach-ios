@@ -1,6 +1,6 @@
 # Story 64.10: Add Tests for Untested Critical Paths
 
-Status: review
+Status: done
 
 ## Story
 
@@ -91,7 +91,7 @@ Follow existing conventions:
 
 ### Completion Notes
 
-All 5 tasks complete. Added 49 new tests across 4 test files. Full test suite passes (1597 tests).
+All 5 tasks complete. Added 56 new tests across 4 test files. Full test suite passes (1603 tests).
 
 ## File List
 
@@ -99,7 +99,13 @@ All 5 tasks complete. Added 49 new tests across 4 test files. Full test suite pa
 - PeachTests/Core/Training/ObserverAdapterTests.swift (new)
 - PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift (new)
 - PeachTests/Settings/AppUserSettingsTests.swift (new)
+- Peach/Settings/AppUserSettings.swift (modified — injectable UserDefaults)
+- Peach/PitchDiscrimination/PitchDiscriminationProfileAdapter.swift (modified — fix interval misclassification)
+- Peach/PitchDiscrimination/PitchDiscriminationStoreAdapter.swift (modified — fix interval misclassification)
+- Peach/PitchMatching/PitchMatchingProfileAdapter.swift (modified — fix interval misclassification)
+- Peach/PitchMatching/PitchMatchingStoreAdapter.swift (modified — fix interval misclassification)
 
 ## Change Log
 
 - 2026-03-28: Implemented all tasks — 4 new test files, 49 tests covering discipline implementations, observer adapters, AppUserSettings, and TrainingDisciplineRegistry
+- 2026-03-28: Code review fixes — added 7 tests (2 interval round-trips, 1 interval merge, 4 store error-path), added timestamp assertions to round-trips, replaced force-unwraps with `try #require`, added `.serialized` to settings tests, injectable UserDefaults for test isolation, fixed silent interval misclassification (>12 semitones) in all 4 pitch adapters

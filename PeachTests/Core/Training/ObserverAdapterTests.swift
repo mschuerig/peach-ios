@@ -18,8 +18,10 @@ private final class MockProfileUpdating: ProfileUpdating {
 private final class MockRecordPersisting: TrainingRecordPersisting {
     var savedRecords: [any PersistentModel] = []
     var saveCallCount = 0
+    var errorToThrow: (any Error)?
 
     func save(_ record: some PersistentModel) throws {
+        if let error = errorToThrow { throw error }
         saveCallCount += 1
         savedRecords.append(record)
     }
@@ -256,7 +258,7 @@ struct StoreAdapterTests {
     // MARK: - PitchDiscriminationStoreAdapter
 
     @Test("PitchDiscrimination store adapter creates and saves correct record")
-    func pitchDiscriminationStoreAdapter() async {
+    func pitchDiscriminationStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = PitchDiscriminationStoreAdapter(store: store)
 
@@ -274,7 +276,7 @@ struct StoreAdapterTests {
         adapter.pitchDiscriminationCompleted(completed)
 
         #expect(store.saveCallCount == 1)
-        let saved = store.savedRecords[0] as! PitchDiscriminationRecord
+        let saved = try #require(store.savedRecords[0] as? PitchDiscriminationRecord)
         #expect(saved.referenceNote == 60)
         #expect(saved.targetNote == 67)
         #expect(saved.centOffset == 15.0)
@@ -286,7 +288,7 @@ struct StoreAdapterTests {
     // MARK: - PitchMatchingStoreAdapter
 
     @Test("PitchMatching store adapter creates and saves correct record")
-    func pitchMatchingStoreAdapter() async {
+    func pitchMatchingStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = PitchMatchingStoreAdapter(store: store)
 
@@ -302,7 +304,7 @@ struct StoreAdapterTests {
         adapter.pitchMatchingCompleted(completed)
 
         #expect(store.saveCallCount == 1)
-        let saved = store.savedRecords[0] as! PitchMatchingRecord
+        let saved = try #require(store.savedRecords[0] as? PitchMatchingRecord)
         #expect(saved.referenceNote == 60)
         #expect(saved.targetNote == 67)
         #expect(saved.initialCentOffset == 25.0)
@@ -315,7 +317,7 @@ struct StoreAdapterTests {
     // MARK: - RhythmOffsetDetectionStoreAdapter
 
     @Test("RhythmOffsetDetection store adapter creates and saves correct record")
-    func rhythmOffsetDetectionStoreAdapter() async {
+    func rhythmOffsetDetectionStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = RhythmOffsetDetectionStoreAdapter(store: store)
 
@@ -329,7 +331,7 @@ struct StoreAdapterTests {
         adapter.rhythmOffsetDetectionCompleted(result)
 
         #expect(store.saveCallCount == 1)
-        let saved = store.savedRecords[0] as! RhythmOffsetDetectionRecord
+        let saved = try #require(store.savedRecords[0] as? RhythmOffsetDetectionRecord)
         #expect(saved.tempoBPM == 120)
         #expect(saved.offsetMs == -8.5)
         #expect(saved.isCorrect == true)
@@ -339,7 +341,7 @@ struct StoreAdapterTests {
     // MARK: - ContinuousRhythmMatchingStoreAdapter
 
     @Test("ContinuousRhythmMatching store adapter creates record with position means")
-    func continuousRhythmMatchingStoreAdapter() async {
+    func continuousRhythmMatchingStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = ContinuousRhythmMatchingStoreAdapter(store: store)
 
@@ -356,12 +358,84 @@ struct StoreAdapterTests {
         adapter.continuousRhythmMatchingCompleted(result)
 
         #expect(store.saveCallCount == 1)
-        let saved = store.savedRecords[0] as! ContinuousRhythmMatchingRecord
+        let saved = try #require(store.savedRecords[0] as? ContinuousRhythmMatchingRecord)
         #expect(saved.tempoBPM == 100)
         #expect(saved.meanOffsetMsPosition0 == 15.0)
         #expect(saved.meanOffsetMsPosition1 == -5.0)
         #expect(saved.meanOffsetMsPosition2 == nil)
         #expect(saved.meanOffsetMsPosition3 == nil)
         #expect(saved.timestamp == fixedDate())
+    }
+
+    // MARK: - Store Adapter Error Handling
+
+    @Test("PitchDiscrimination store adapter does not throw on save error")
+    func pitchDiscriminationStoreAdapterSaveError() async {
+        let store = MockRecordPersisting()
+        store.errorToThrow = DataStoreError.saveFailed("test")
+        let adapter = PitchDiscriminationStoreAdapter(store: store)
+
+        let trial = PitchDiscriminationTrial(
+            referenceNote: MIDINote(60),
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(15))
+        )
+        let completed = CompletedPitchDiscriminationTrial(
+            trial: trial, userAnsweredHigher: true,
+            tuningSystem: .equalTemperament, timestamp: fixedDate()
+        )
+
+        adapter.pitchDiscriminationCompleted(completed)
+
+        #expect(store.saveCallCount == 0)
+    }
+
+    @Test("PitchMatching store adapter does not throw on save error")
+    func pitchMatchingStoreAdapterSaveError() async {
+        let store = MockRecordPersisting()
+        store.errorToThrow = DataStoreError.saveFailed("test")
+        let adapter = PitchMatchingStoreAdapter(store: store)
+
+        let completed = CompletedPitchMatchingTrial(
+            referenceNote: MIDINote(60), targetNote: MIDINote(67),
+            initialCentOffset: Cents(25), userCentError: Cents(-3.5),
+            tuningSystem: .equalTemperament, timestamp: fixedDate()
+        )
+
+        adapter.pitchMatchingCompleted(completed)
+
+        #expect(store.saveCallCount == 0)
+    }
+
+    @Test("RhythmOffsetDetection store adapter does not throw on save error")
+    func rhythmOffsetDetectionStoreAdapterSaveError() async {
+        let store = MockRecordPersisting()
+        store.errorToThrow = DataStoreError.saveFailed("test")
+        let adapter = RhythmOffsetDetectionStoreAdapter(store: store)
+
+        let result = CompletedRhythmOffsetDetectionTrial(
+            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-8.5)),
+            isCorrect: true, timestamp: fixedDate()
+        )
+
+        adapter.rhythmOffsetDetectionCompleted(result)
+
+        #expect(store.saveCallCount == 0)
+    }
+
+    @Test("ContinuousRhythmMatching store adapter does not throw on save error")
+    func continuousRhythmMatchingStoreAdapterSaveError() async {
+        let store = MockRecordPersisting()
+        store.errorToThrow = DataStoreError.saveFailed("test")
+        let adapter = ContinuousRhythmMatchingStoreAdapter(store: store)
+
+        let result = CompletedContinuousRhythmMatchingTrial(
+            tempo: TempoBPM(100),
+            gapResults: [GapResult(position: .first, offset: RhythmOffset(.milliseconds(10)))],
+            timestamp: fixedDate()
+        )
+
+        adapter.continuousRhythmMatchingCompleted(result)
+
+        #expect(store.saveCallCount == 0)
     }
 }

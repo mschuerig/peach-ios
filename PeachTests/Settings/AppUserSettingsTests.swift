@@ -2,119 +2,78 @@ import Testing
 import Foundation
 @testable import Peach
 
-@Suite("AppUserSettings")
+@Suite("AppUserSettings", .serialized)
 struct AppUserSettingsTests {
 
-    private let settings = AppUserSettings()
+    private static let suiteName = "com.peach.tests.AppUserSettingsTests"
 
-    private func setAndCleanup(_ key: String, value: Any) -> () -> Void {
-        let hadValue = UserDefaults.standard.object(forKey: key) != nil
-        let oldValue = UserDefaults.standard.object(forKey: key)
-        UserDefaults.standard.set(value, forKey: key)
-        return {
-            if hadValue {
-                UserDefaults.standard.set(oldValue, forKey: key)
-            } else {
-                UserDefaults.standard.removeObject(forKey: key)
-            }
-        }
-    }
-
-    private func removeAndCleanup(_ keys: [String]) -> () -> Void {
-        let saved = keys.map { (key: $0, value: UserDefaults.standard.object(forKey: $0)) }
-        for key in keys {
-            UserDefaults.standard.removeObject(forKey: key)
-        }
-        return {
-            for entry in saved {
-                if let value = entry.value {
-                    UserDefaults.standard.set(value, forKey: entry.key)
-                } else {
-                    UserDefaults.standard.removeObject(forKey: entry.key)
-                }
-            }
-        }
+    private func makeSettings() -> AppUserSettings {
+        let testDefaults = UserDefaults(suiteName: Self.suiteName)!
+        testDefaults.removePersistentDomain(forName: Self.suiteName)
+        let settings = AppUserSettings()
+        settings.defaults = testDefaults
+        return settings
     }
 
     // MARK: - Default Values (AC #3.2)
 
     @Test("noteRange returns default when no UserDefaults value set")
     func noteRangeDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.noteRangeMin, SettingsKeys.noteRangeMax])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.noteRange == SettingsKeys.defaultNoteRange)
     }
 
     @Test("noteDuration returns default when no UserDefaults value set")
     func noteDurationDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.noteDuration])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.noteDuration == SettingsKeys.defaultNoteDuration)
     }
 
     @Test("referencePitch returns default when no UserDefaults value set")
     func referencePitchDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.referencePitch])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.referencePitch == SettingsKeys.defaultReferencePitch)
     }
 
     @Test("soundSource returns default when no UserDefaults value set")
     func soundSourceDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.soundSource])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.soundSource.rawValue == SettingsKeys.defaultSoundSource)
     }
 
     @Test("varyLoudness returns default when no UserDefaults value set")
     func varyLoudnessDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.varyLoudness])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.varyLoudness == SettingsKeys.defaultVaryLoudness)
     }
 
     @Test("intervals returns default when no UserDefaults value set")
     func intervalsDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.intervals])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.intervals == IntervalSelection.default.intervals)
     }
 
     @Test("tuningSystem returns default when no UserDefaults value set")
     func tuningSystemDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.tuningSystem])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.tuningSystem == SettingsKeys.defaultTuningSystem)
     }
 
     @Test("noteGap returns default when no UserDefaults value set")
     func noteGapDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.noteGap])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.noteGap == SettingsKeys.defaultNoteGap)
     }
 
     @Test("tempoBPM returns default when no UserDefaults value set")
     func tempoBPMDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.tempoBPM])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.tempoBPM == SettingsKeys.defaultTempoBPM)
     }
 
     @Test("enabledGapPositions returns default when no UserDefaults value set")
     func enabledGapPositionsDefault() async {
-        let cleanup = removeAndCleanup([SettingsKeys.enabledGapPositions])
-        defer { cleanup() }
-
+        let settings = makeSettings()
         #expect(settings.enabledGapPositions == SettingsKeys.defaultEnabledGapPositions)
     }
 
@@ -122,49 +81,49 @@ struct AppUserSettingsTests {
 
     @Test("noteRange returns default when span is less than minimum")
     func noteRangeTooSmall() async {
-        let cleanup1 = setAndCleanup(SettingsKeys.noteRangeMin, value: 60)
-        let cleanup2 = setAndCleanup(SettingsKeys.noteRangeMax, value: 65)
-        defer { cleanup1(); cleanup2() }
+        let settings = makeSettings()
+        settings.defaults.set(60, forKey: SettingsKeys.noteRangeMin)
+        settings.defaults.set(65, forKey: SettingsKeys.noteRangeMax)
 
         #expect(settings.noteRange == SettingsKeys.defaultNoteRange)
     }
 
     @Test("tempoBPM clamps above maximum to maximum")
     func tempoBPMClampedAboveMax() async {
-        let cleanup = setAndCleanup(SettingsKeys.tempoBPM, value: 999)
-        defer { cleanup() }
+        let settings = makeSettings()
+        settings.defaults.set(999, forKey: SettingsKeys.tempoBPM)
 
         #expect(settings.tempoBPM == SettingsKeys.maximumTempoBPM)
     }
 
     @Test("tempoBPM clamps below minimum to minimum")
     func tempoBPMClampedBelowMin() async {
-        let cleanup = setAndCleanup(SettingsKeys.tempoBPM, value: 5)
-        defer { cleanup() }
+        let settings = makeSettings()
+        settings.defaults.set(5, forKey: SettingsKeys.tempoBPM)
 
         #expect(settings.tempoBPM == SettingsKeys.minimumTempoBPM)
     }
 
     @Test("tempoBPM returns default for zero value")
     func tempoBPMZero() async {
-        let cleanup = setAndCleanup(SettingsKeys.tempoBPM, value: 0)
-        defer { cleanup() }
+        let settings = makeSettings()
+        settings.defaults.set(0, forKey: SettingsKeys.tempoBPM)
 
         #expect(settings.tempoBPM == SettingsKeys.defaultTempoBPM)
     }
 
     @Test("tuningSystem returns default for invalid identifier")
     func tuningSystemInvalid() async {
-        let cleanup = setAndCleanup(SettingsKeys.tuningSystem, value: "nonexistentTuning")
-        defer { cleanup() }
+        let settings = makeSettings()
+        settings.defaults.set("nonexistentTuning", forKey: SettingsKeys.tuningSystem)
 
         #expect(settings.tuningSystem == SettingsKeys.defaultTuningSystem)
     }
 
     @Test("intervals returns default for invalid raw value")
     func intervalsInvalid() async {
-        let cleanup = setAndCleanup(SettingsKeys.intervals, value: ";;;garbage;;;")
-        defer { cleanup() }
+        let settings = makeSettings()
+        settings.defaults.set(";;;garbage;;;", forKey: SettingsKeys.intervals)
 
         #expect(settings.intervals == IntervalSelection.default.intervals)
     }

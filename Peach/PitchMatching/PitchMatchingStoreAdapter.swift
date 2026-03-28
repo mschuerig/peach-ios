@@ -10,7 +10,7 @@ struct PitchMatchingStoreAdapter: PitchMatchingObserver {
     }
 
     func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
-        let interval = (try? Interval.between(result.referenceNote, result.targetNote))?.rawValue ?? 0
+        let interval = abs(result.referenceNote.rawValue - result.targetNote.rawValue)
         let record = PitchMatchingRecord(
             referenceNote: result.referenceNote.rawValue,
             targetNote: result.targetNote.rawValue,
