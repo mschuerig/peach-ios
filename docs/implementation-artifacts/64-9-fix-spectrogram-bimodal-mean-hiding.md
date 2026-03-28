@@ -1,6 +1,6 @@
 # Story 64.9: Fix Spectrogram Combined Mean Hiding Bimodal Distributions
 
-Status: review
+Status: done
 
 ## Story
 

@@ -47,6 +47,13 @@
 **Risk:** Audible note dropouts in fast-tempo rhythm patterns when schedule updates are frequent.
 **Disposition:** Tracked as story 65.1 in Epic 65.
 
+### PF-3: CSV import accepts negative rhythm offset values without validation
+
+**Source:** story 64.9 code review (D1)
+**Symptom:** `RhythmOffsetDetectionDiscipline.parseCSVRow` and `ContinuousRhythmMatchingDiscipline.parseCSVRow` only check `isFinite` on `offsetMs`, not that values are non-negative. A malformed CSV could introduce negative offsets that bypass the adapter's `abs()` calls. The `abs()` in `combinedMeanPercent` happens to guard against this at the computation layer, but the validation gap remains at the import boundary.
+**Risk:** Negative offsets stored in SwiftData could produce incorrect statistics if any future code path reads `record.offsetMs` directly without `abs()`.
+**Disposition:** Open — needs import validation fix (`offsetMs >= 0` or `abs()` at parse time).
+
 ### PF-2: No forward migration path for CSV format versions
 
 **Source:** adversarial review 2026-03-27
