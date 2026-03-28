@@ -502,6 +502,6 @@ development_status:
   # Work order: 65.1 (audio), 65.2 (concurrency), 65.3 (data) — independent, can be parallel
   epic-65: in-progress
   65-1-lock-free-midi-event-scheduling: done
-  65-2-resolve-session-actor-isolation: review
+  65-2-resolve-session-actor-isolation: done
   65-3-csv-format-version-migration: ready-for-dev
   epic-65-retrospective: optional

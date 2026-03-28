@@ -1,6 +1,6 @@
 # Story 65.2: Resolve Training Session Actor Isolation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -101,7 +101,7 @@ The audit confirmed:
 - **All unstructured Tasks** inside both sessions inherit MainActor isolation from their enclosing class
 - **No `MainActor.run` wrappers** exist anywhere in the codebase
 - **No off-MainActor work** is needed — `nextCycle()` is lightweight, and actual audio playback runs on the Core Audio render thread via the lock-free event buffer
-- **No scheduling regression risk** — the historical bottleneck (62.5) was caused by `MainActor.run` creating scheduling hops in a tight loop; class-level isolation avoids hops entirely
+- **No scheduling regression risk** — the historical bottleneck (62.5) was caused by `MainActor.run` creating scheduling hops in a tight loop; class-level isolation avoids hops entirely. `SoundFontEngine`'s render-thread callback uses a lock-free event buffer (story 65.1) that runs on the Core Audio render thread, bypassing MainActor. `ContinuousRhythmMatchingSession.nextCycle()` only writes to that buffer — no audio work runs on MainActor
 
 ### Completion Notes
 
