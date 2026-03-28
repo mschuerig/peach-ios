@@ -1,6 +1,6 @@
 # Story 64.7: Isolate Sparkline Observation Fan-Out on Start Screen
 
-Status: review
+Status: done
 
 ## Story
 
