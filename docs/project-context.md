@@ -26,7 +26,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **@AppStorage** — user preferences; keys centralized in `SettingsKeys.swift`
 - **String Catalogs** — English + German localization via `Localizable.xcstrings`
 - **Zero third-party dependencies** — do not add external packages without explicit approval
-- **Universal app** — iPhone + iPad, portrait + landscape
+- **Universal app** — iPhone + iPad + Mac (native, not Catalyst), portrait + landscape
 
 ## Critical Implementation Rules
 

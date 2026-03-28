@@ -183,8 +183,8 @@ struct PitchDiscriminationScreen: View {
             }
             .navigationTitle(String(localized: "Training Help"))
             #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

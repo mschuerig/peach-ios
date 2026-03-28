@@ -57,8 +57,8 @@ struct ProfileScreen: View {
                 }
                 .navigationTitle(String(localized: "Chart Help"))
                 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(String(localized: "Done")) {

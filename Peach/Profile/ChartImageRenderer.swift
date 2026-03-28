@@ -12,16 +12,8 @@ enum ChartImageRenderer {
         let view = ExportChartView(mode: mode, progressTimeline: progressTimeline, date: date)
         let renderer = ImageRenderer(content: view)
         renderer.scale = 2.0
-        guard let cgImage = renderer.cgImage else { return nil }
-        #if os(iOS)
-        let image = UIImage(cgImage: cgImage)
-        guard let pngData = image.pngData() else { return nil }
-        #else
-        let image = NSImage(cgImage: cgImage, size: NSSize(width: cgImage.width, height: cgImage.height))
-        guard let tiffData = image.tiffRepresentation,
-              let bitmap = NSBitmapImageRep(data: tiffData),
-              let pngData = bitmap.representation(using: .png, properties: [:]) else { return nil }
-        #endif
+        guard let cgImage = renderer.cgImage,
+              let pngData = pngData(from: cgImage, scale: renderer.scale) else { return nil }
         let fileName = exportFileName(for: date, mode: mode)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {
@@ -44,6 +36,18 @@ enum ChartImageRenderer {
         formatter.timeZone = .current
         return formatter
     }()
+
+    static func pngData(from cgImage: CGImage, scale: CGFloat) -> Data? {
+        #if os(iOS)
+        UIImage(cgImage: cgImage).pngData()
+        #else
+        let size = NSSize(width: CGFloat(cgImage.width) / scale, height: CGFloat(cgImage.height) / scale)
+        let image = NSImage(cgImage: cgImage, size: size)
+        guard let tiffData = image.tiffRepresentation,
+              let bitmap = NSBitmapImageRep(data: tiffData) else { return nil }
+        return bitmap.representation(using: .png, properties: [:])
+        #endif
+    }
 
     static func exportFileName(for date: Date = Date(), mode: TrainingDisciplineID) -> String {
         let timestamp = fileNameFormatter.string(from: date)

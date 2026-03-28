@@ -146,8 +146,8 @@ struct SettingsScreen: View {
             }
             .navigationTitle(String(localized: "Settings Help"))
             #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

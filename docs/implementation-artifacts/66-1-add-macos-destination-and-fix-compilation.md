@@ -1,6 +1,6 @@
 # Story 66.1: Add macOS Destination and Fix Compilation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -45,9 +45,9 @@ so that the app builds and launches on macOS as the foundation for all subsequen
 - [x] Task 4: Verify iOS tests still pass (AC: #5)
   - [x] 4.1 Run full test suite on iOS Simulator
 
-- [ ] Task 5: Smoke test macOS launch (AC: #6)
-  - [ ] 5.1 Build and run on Mac
-  - [ ] 5.2 Verify Start Screen appears in a window
+- [x] Task 5: Smoke test macOS launch (AC: #6)
+  - [x] 5.1 Build and run on Mac
+  - [x] 5.2 Verify Start Screen appears in a window
 
 ## Dev Notes
 

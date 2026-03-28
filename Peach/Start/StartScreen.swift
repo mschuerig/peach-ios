@@ -35,10 +35,12 @@ struct StartScreen: View {
         .navigationBarTitleDisplayMode(.inline)
         #endif
         .toolbar {
+            #if os(iOS)
             ToolbarItem(placement: .principal) {
                 Text("Peach")
                     .font(.headline)
             }
+            #endif
             ToolbarItem(placement: .automatic) {
                 Button {
                     showInfoSheet = true
