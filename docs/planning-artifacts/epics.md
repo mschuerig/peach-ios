@@ -6721,3 +6721,43 @@ Add explicit `@MainActor` isolation to `PitchMatchingSession` and `ContinuousRhy
 Replace the hard version equality check in `CSVImportParser` with a migration chain architecture. Implement v1→v2 and v2→v3 migrations so older exports can be imported. Future versions produce a clear error suggesting the user update. Follows the chain-of-responsibility pattern for format-dependent processing.
 
 ---
+
+## Epic 66: Desktop Citizen — macOS Support via SwiftUI Multiplatform
+
+Bring Peach to macOS as a first-class native app using SwiftUI multiplatform (not Mac Catalyst). The codebase is 100% SwiftUI with platform dependencies behind protocol abstractions, making this a surgical addition. Core work: add the Mac destination, platform-conditionalise 3 iOS-only API usages (`AVAudioSession`, `UIApplication` notifications, `UIImpactFeedbackGenerator`), and add Mac-native affordances (keyboard shortcuts, Settings scene, menu bar). All stories are independent unless noted.
+
+**Reference:** `docs/planning-artifacts/research/technical-macos-compatibility-research-2026-03-28.md`
+
+### Story 66.1: Add macOS Destination and Fix Compilation
+
+Add a native "Mac" (not Catalyst) supported destination to the Xcode project. Resolve all compilation errors from iOS-only API usage so the app builds and launches on macOS.
+
+### Story 66.2: Platform-Conditional Audio Session Configuration
+
+Wrap `AVAudioSession` usage in `#if os(iOS)` so the app compiles and audio plays correctly on macOS where `AVAudioSession` does not exist.
+
+### Story 66.3: Platform-Conditional Lifecycle Notifications
+
+Replace `UIApplication.didEnterBackgroundNotification` and `UIApplication.willEnterForegroundNotification` with macOS equivalents (`NSApplication.didResignActiveNotification` / `NSApplication.didBecomeActiveNotification`) using platform conditionals in the composition root.
+
+### Story 66.4: macOS Haptic Feedback Abstraction
+
+Provide a macOS implementation of the `HapticFeedback` protocol that gracefully handles the absence of `UIImpactFeedbackGenerator`, and inject it from the composition root on macOS.
+
+### Story 66.5: Keyboard Shortcuts for Training
+
+Add keyboard shortcuts for core training interactions: starting training, answering higher/lower and early/late, and committing pitch via spacebar. Mac users expect keyboard-driven workflows.
+
+### Story 66.6: Native macOS Settings Scene
+
+Add a SwiftUI `Settings` scene so Cmd+, opens a native macOS Settings window, following Mac platform conventions. Reuse the existing `SettingsScreen` content.
+
+### Story 66.7: Menu Bar Integration
+
+Add a macOS menu bar with standard items (Help, File > Export) and training-relevant commands, following Mac Human Interface Guidelines.
+
+### Story 66.8: macOS Testing and Layout Polish
+
+Test the full app on macOS hardware. Fix any layout issues with window resizing, size class behaviour, and macOS-specific SwiftUI rendering differences. Verify audio playback and MIDI input work correctly.
+
+---
