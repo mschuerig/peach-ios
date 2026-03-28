@@ -1,3 +1,4 @@
+#if os(iOS)
 import Testing
 import Foundation
 @testable import Peach
@@ -41,3 +42,4 @@ struct HapticFeedbackManagerRhythmTests {
         #expect(mock.lastRhythmOffsetDetection != nil)
     }
 }
+#endif

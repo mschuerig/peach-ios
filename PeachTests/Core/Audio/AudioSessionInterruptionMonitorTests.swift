@@ -213,3 +213,67 @@ struct AudioSessionInterruptionMonitorTests {
     }
 }
 #endif
+
+#if os(macOS)
+import AppKit
+import Foundation
+import Testing
+@testable import Peach
+
+@Suite("AudioSessionInterruptionMonitor macOS")
+struct AudioSessionInterruptionMonitorMacOSTests {
+
+    @Test("macOS resignActive notification calls onStopRequired when backgroundNotificationName is provided")
+    func resignActiveCallsOnStopRequired() async {
+        let nc = NotificationCenter()
+        var stopCalled = false
+        let _monitor = AudioSessionInterruptionMonitor(
+            notificationCenter: nc,
+            logger: .init(subsystem: "test", category: "test"),
+            backgroundNotificationName: NSApplication.didResignActiveNotification,
+            onStopRequired: { stopCalled = true }
+        )
+
+        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
+
+        await Task.yield()
+        #expect(stopCalled)
+        _ = _monitor
+    }
+
+    @Test("macOS becomeActive notification calls onStopRequired when foregroundNotificationName is provided")
+    func becomeActiveCallsOnStopRequired() async {
+        let nc = NotificationCenter()
+        var stopCalled = false
+        let _monitor = AudioSessionInterruptionMonitor(
+            notificationCenter: nc,
+            logger: .init(subsystem: "test", category: "test"),
+            foregroundNotificationName: NSApplication.didBecomeActiveNotification,
+            onStopRequired: { stopCalled = true }
+        )
+
+        nc.post(name: NSApplication.didBecomeActiveNotification, object: nil)
+
+        await Task.yield()
+        #expect(stopCalled)
+        _ = _monitor
+    }
+
+    @Test("macOS resignActive notification does not call onStopRequired when backgroundNotificationName is nil")
+    func resignActiveDoesNotCallOnStopRequiredWhenDisabled() async {
+        let nc = NotificationCenter()
+        var stopCalled = false
+        let _monitor = AudioSessionInterruptionMonitor(
+            notificationCenter: nc,
+            logger: .init(subsystem: "test", category: "test"),
+            onStopRequired: { stopCalled = true }
+        )
+
+        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
+
+        await Task.yield()
+        #expect(!stopCalled)
+        _ = _monitor
+    }
+}
+#endif

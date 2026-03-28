@@ -3,6 +3,8 @@ import Testing
 import AVFoundation
 #if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
 #endif
 @testable import Peach
 
@@ -1036,6 +1038,7 @@ struct PitchMatchingSessionTests {
     }
 }
 
+#if os(iOS)
 // MARK: - Audio Interruption and Lifecycle Tests
 
 @Suite("PitchMatchingSession Audio Interruption Tests", .serialized)
@@ -1240,7 +1243,6 @@ struct PitchMatchingSessionAudioInterruptionTests {
         #expect(session.state == .idle)
     }
 
-    #if os(iOS)
     // MARK: - Background Notification Tests
 
     @Test("Background notification stops from playingTunable")
@@ -1348,8 +1350,82 @@ struct PitchMatchingSessionAudioInterruptionTests {
         try await waitForState(session, .awaitingSliderTouch)
         #expect(session.state == .awaitingSliderTouch)
     }
-    #endif
 }
+#endif
+
+#if os(macOS)
+// MARK: - macOS Background Notification Tests
+
+@Suite("PitchMatchingSession macOS Lifecycle Tests", .serialized)
+struct PitchMatchingSessionMacOSLifecycleTests {
+
+    @Test("macOS resignActive notification stops from playingTunable")
+    func macOSResignActiveStopsFromPlayingTunable() async throws {
+        let nc = NotificationCenter()
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: NSApplication.didResignActiveNotification
+        )
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await transitionToPlayingTunable(session)
+
+        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
+
+        try await waitForState(session, .idle)
+        #expect(session.state == .idle)
+    }
+
+    @Test("macOS resignActive notification stops from awaitingSliderTouch")
+    func macOSResignActiveStopsFromAwaitingSliderTouch() async throws {
+        let nc = NotificationCenter()
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: NSApplication.didResignActiveNotification
+        )
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
+
+        try await waitForState(session, .idle)
+        #expect(session.state == .idle)
+    }
+
+    @Test("macOS resignActive notification on idle is safe")
+    func macOSResignActiveOnIdleIsSafe() async throws {
+        let nc = NotificationCenter()
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: NSApplication.didResignActiveNotification
+        )
+        #expect(session.state == .idle)
+
+        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
+
+        try await Task.sleep(for: .milliseconds(50))
+        await Task.yield()
+        #expect(session.state == .idle)
+    }
+
+    @Test("Training can restart after macOS resignActive stop")
+    func canRestartAfterMacOSResignActiveStop() async throws {
+        let nc = NotificationCenter()
+        let (session, _, _, _) = makePitchMatchingSession(
+            notificationCenter: nc,
+            backgroundNotificationName: NSApplication.didResignActiveNotification
+        )
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
+        try await waitForState(session, .idle)
+
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+        #expect(session.state == .awaitingSliderTouch)
+    }
+}
+#endif
 
 // MARK: - MIDI Pitch Bend Tests
 

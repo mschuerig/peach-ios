@@ -10,8 +10,8 @@ struct PeachApp: App {
     private static let backgroundNotificationName: Notification.Name? = UIApplication.didEnterBackgroundNotification
     private static let foregroundNotificationName: Notification.Name? = UIApplication.willEnterForegroundNotification
     #else
-    private static let backgroundNotificationName: Notification.Name? = nil
-    private static let foregroundNotificationName: Notification.Name? = nil
+    private static let backgroundNotificationName: Notification.Name? = NSApplication.didResignActiveNotification
+    private static let foregroundNotificationName: Notification.Name? = NSApplication.didBecomeActiveNotification
     #endif
 
     @State private var modelContainer: ModelContainer
