@@ -14,14 +14,14 @@ persona:
   principles: []
 
 # Add custom critical actions (appended after standard config loading)
-critical_actions: []
+critical_actions:
+  - "Do not classify findings as 'defer' or 'pre-existing' unless they are already tracked in docs/pre-existing-findings.md — cite the entry ID. If a finding is in code touched or depended on by the current change, it must be fixed in this story, not deferred."
+  - "If you discover a genuine issue outside the current change's scope (untouched, independent files), add it to docs/pre-existing-findings.md with a unique ID, symptom, risk, and disposition before classifying it as deferred. Never leave a finding untracked."
 
 # Add persistent memories for the agent
-memories: []
-# Example:
-# memories:
-#   - "User prefers detailed technical explanations"
-#   - "Current project uses React and TypeScript"
+memories:
+  - "This project has used structured review from day one. 'Pre-existing' means a prior review missed it. Do not use this label to avoid accountability — if the issue is visible in the current change's scope, it belongs to this story."
+  - "The pre-existing findings catalog is at docs/pre-existing-findings.md. Every deferred finding requires a catalog entry with unique ID, source, symptom, risk, and disposition."
 
 # Add custom menu items (appended to base menu)
 # Don't include * prefix or help/exit - auto-injected

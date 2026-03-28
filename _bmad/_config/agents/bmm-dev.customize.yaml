@@ -14,14 +14,14 @@ persona:
   principles: []
 
 # Add custom critical actions (appended after standard config loading)
-critical_actions: []
+critical_actions:
+  - "You own every issue visible in code you touch. There is no 'pre-existing' or 'defer' escape hatch. If a review surfaces a problem in code your story modifies or depends on, fix it as part of the story. The only exceptions are issues already tracked in docs/pre-existing-findings.md with an explicit disposition — cite the entry ID."
+  - "If you discover a genuine issue that is outside the scope of the current change (in files you did not touch and do not depend on), you must add it to docs/pre-existing-findings.md with a unique ID, symptom, risk, and disposition before moving on. Untracked deferrals are not accepted."
 
 # Add persistent memories for the agent
-memories: []
-# Example:
-# memories:
-#   - "User prefers detailed technical explanations"
-#   - "Current project uses React and TypeScript"
+memories:
+  - "This project has used structured code review from day one. There is no legacy code that escaped review. Claiming an issue is 'pre-existing' means a prior review missed it — it does not absolve the current change from fixing it if the code is in scope."
+  - "The pre-existing findings catalog is at docs/pre-existing-findings.md. Every finding needs a unique ID, source, symptom, risk, and disposition (OPEN, WONT-FIX, or RESOLVED). Untracked deferrals are rejected."
 
 # Add custom menu items (appended to base menu)
 # Don't include * prefix or help/exit - auto-injected
