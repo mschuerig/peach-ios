@@ -50,8 +50,9 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(navigationCleared)
     }
 
-    @Test("does not stop session when transitioning to inactive")
-    func inactiveDoesNotStopSession() {
+    #if os(iOS)
+    @Test("does not stop session when transitioning to inactive on iOS")
+    func inactiveDoesNotStopSessionOnIOS() {
         let coordinator = makeCoordinator()
         let mockSession = MockTrainingSession()
         coordinator.activeSession = mockSession
@@ -60,6 +61,20 @@ struct TrainingLifecycleCoordinatorTests {
 
         #expect(mockSession.stopCallCount == 0)
     }
+    #endif
+
+    #if os(macOS)
+    @Test("stops active session when transitioning to inactive on macOS")
+    func inactiveStopsSessionOnMacOS() {
+        let coordinator = makeCoordinator()
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+
+        coordinator.handleScenePhase(old: .active, new: .inactive) {}
+
+        #expect(mockSession.stopCallCount == 1)
+    }
+    #endif
 
     @Test("backgrounds both stops session and does not clear navigation")
     func backgroundStopsButDoesNotClear() {

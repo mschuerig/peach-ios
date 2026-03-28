@@ -75,12 +75,15 @@ Note: macOS `didResignActiveNotification` fires when the app loses focus (not ju
 - ✅ Added 4 macOS tests for `PitchMatchingSession` lifecycle (stop from playingTunable, awaitingSliderTouch, idle safety, restart)
 - ✅ Boy Scout: Wrapped `PitchMatchingSessionAudioInterruptionTests` suite in `#if os(iOS)` (was unguarded, used `AVAudioSession`)
 - ✅ Boy Scout: Wrapped `HapticFeedbackManagerTests` in `#if os(iOS)` (referenced iOS-only `HapticFeedbackManager`)
+- ✅ Fixed `TrainingLifecycleCoordinator.handleScenePhase` to also stop sessions on `.inactive` on macOS (switching apps fires `.inactive`, not `.background`)
 - ✅ All tests pass: iOS 1645, macOS 1610
 - Task 4 (manual macOS test) left unchecked — requires manual testing by developer
 
 ## File List
 
 - `Peach/App/PeachApp.swift` — Changed `nil` to macOS notification names in `#else` block
+- `Peach/App/TrainingLifecycleCoordinator.swift` — Stop sessions on `.inactive` on macOS (not just `.background`)
+- `PeachTests/App/TrainingLifecycleCoordinatorTests.swift` — Platform-conditional tests for inactive behavior
 - `PeachTests/PitchMatching/PitchMatchingSessionTests.swift` — Added `import AppKit` for macOS, wrapped audio interruption suite in `#if os(iOS)`, added macOS lifecycle test suite
 - `PeachTests/Core/Audio/AudioSessionInterruptionMonitorTests.swift` — Added `#if os(macOS)` test suite for NSApplication notifications
 - `PeachTests/PitchDiscrimination/HapticFeedbackManagerTests.swift` — Wrapped in `#if os(iOS)`

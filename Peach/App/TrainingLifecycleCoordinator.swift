@@ -28,8 +28,14 @@ final class TrainingLifecycleCoordinator {
     // MARK: - Scene Phase
 
     func handleScenePhase(old: ScenePhase, new: ScenePhase, clearNavigation: () -> Void) {
-        if new == .background {
-            Self.logger.info("App backgrounded — stopping active session")
+        #if os(iOS)
+        let shouldStop = new == .background
+        #else
+        let shouldStop = new == .background || new == .inactive
+        #endif
+
+        if shouldStop {
+            Self.logger.info("App leaving active state (\(String(describing: new))) — stopping active session")
             activeSession?.stop()
         }
         if new == .active && (old == .background || old == .inactive) {
