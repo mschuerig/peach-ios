@@ -31,21 +31,25 @@ Known rough edges include a profile visualization that needs redesign, no onboar
 ## Requirements
 
 - Xcode 26.3+
-- iOS 26.0+
+- iOS 26.0+ / macOS 26.0+
 
 ## Building
 
 Open `Peach.xcodeproj` in Xcode and run (Cmd+R), or build from the command line:
 
 ```bash
-xcodebuild build -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'
+bin/build.sh            # iOS Simulator (default)
+bin/build.sh -p mac     # macOS
 ```
 
 ## Running Tests
 
 ```bash
-xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'
+bin/test.sh             # iOS Simulator (default)
+bin/test.sh -p mac      # macOS
 ```
+
+Both platforms must pass before committing.
 
 ### Stress Tests
 

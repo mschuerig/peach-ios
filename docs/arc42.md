@@ -428,7 +428,7 @@ graph TB
 | **Storage** | SwiftData/SQLite for training records (4 record types); UserDefaults for settings |
 | **Audio** | AVAudioEngine with bundled GM SoundFont (~25MB); channel 0 for pitched instruments, channel 1 for percussion |
 | **Distribution** | App Store / TestFlight (not yet submitted) |
-| **CI/CD** | Local `xcodebuild test` before each commit; no pipeline yet |
+| **CI/CD** | Local `bin/test.sh` (iOS + macOS) before each commit; no pipeline yet |
 
 ---
 
@@ -786,7 +786,7 @@ Quality
 | Item | Severity | Notes |
 |------|---------|-------|
 | **Original architecture document partially outdated** | Low | `docs/planning-artifacts/architecture.md` predates implementation and uses some names/types that have since evolved. This arc42 document is the current source of truth. |
-| **No CI/CD pipeline** | Low | Pre-commit gate is local `xcodebuild test`. Acceptable for solo developer; would need automation before team collaboration. |
+| **No CI/CD pipeline** | Low | Pre-commit gate is local `bin/test.sh` on both iOS and macOS. Acceptable for solo developer; would need automation before team collaboration. |
 
 ---
 

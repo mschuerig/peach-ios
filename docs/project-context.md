@@ -105,9 +105,12 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 ### Testing Rules
 
-**Run the full suite before every commit:**
-`xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-Never run only specific test files — always the complete suite.
+**Run the full suite on both platforms before every commit:**
+```
+bin/test.sh            # iOS (default)
+bin/test.sh -p mac     # macOS
+```
+Never run only specific test files — always the complete suite. Both platforms must pass.
 
 **Framework & Structure:**
 - **Swift Testing only** — `@Test("behavioral description")`, `@Suite("name")`, `#expect()`
@@ -209,8 +212,8 @@ Never run only specific test files — always the complete suite.
 - **Do not push to remote** unless explicitly asked
 
 **Pre-Commit Gate:**
-- Run full test suite: `xcodebuild test -scheme Peach -destination 'platform=iOS Simulator,name=iPhone 17'`
-- **All tests must pass** — do not commit with failing tests
+- Run full test suite on both platforms: `bin/test.sh && bin/test.sh -p mac`
+- **All tests must pass on both iOS and macOS** — do not commit with failing tests
 - **Never run only specific test files** — always the complete suite
 
 **Tool Scripts:**

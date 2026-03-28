@@ -13,6 +13,8 @@ Use these scripts instead of writing inline xcodebuild commands:
 - `bin/build.sh` — Build the project and get a formatted error/warning summary. Do NOT run raw xcodebuild build.
 - `bin/add-localization.swift` — Add German translations. Single: `bin/add-localization.swift "Key" "German"`. Batch: `--batch file.json`. Check existing: `--list`, `--missing`.
 
+**Both iOS and macOS must pass before committing.** Run `bin/test.sh && bin/test.sh -p mac` (or `bin/build.sh` / `bin/build.sh -p mac` for build-only checks).
+
 If a script's output doesn't contain what you need, use the `-r` (raw) flag as a fallback. Do not reinvent the parsing.
 
 
