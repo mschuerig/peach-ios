@@ -492,7 +492,7 @@ development_status:
   64-5-deduplicate-chart-line-data-computation: done
   64-6-cache-help-markdown-and-dateformatter: done
   64-7-isolate-sparkline-observation-fan-out: done
-  64-8-fix-swiftdata-dependency-boundary-violations: review
+  64-8-fix-swiftdata-dependency-boundary-violations: done
   64-9-fix-spectrogram-bimodal-mean-hiding: ready-for-dev
   64-10-add-tests-for-untested-critical-paths: ready-for-dev
   64-11-extract-session-lifecycle-from-views: ready-for-dev

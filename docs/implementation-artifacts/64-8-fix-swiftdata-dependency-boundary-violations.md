@@ -1,6 +1,6 @@
 # Story 64.8: Fix SwiftData Dependency Boundary Violations
 
-Status: review
+Status: done
 
 ## Story
 

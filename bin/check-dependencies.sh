@@ -4,12 +4,11 @@
 #
 # Rules enforced:
 #   1. Core/ must not import SwiftUI, UIKit, or Charts
-#   2. SwiftData imports only allowed in Core/Data/ and App/
-#   3. UIKit imports only allowed in PitchComparison/HapticFeedbackManager.swift and App/
-#   4. Feature views must not import SwiftData directly
+#   2. SwiftData only in Core/Data/, App/, and TrainingDiscipline chain
+#   3. UIKit only in PitchDiscrimination/HapticFeedbackManager.swift and App/
+#   4. No Combine in production code (use async/await)
 #   5. No cross-feature type references between feature directories
 #   6. No print() in production code (use Logger)
-#   7. No Combine in production code (use async/await)
 
 set -euo pipefail
 
@@ -62,26 +61,36 @@ check_import "$SRC_DIR/Core" "Charts" \
 # ─── Rule 2: SwiftData only in Core/Data/, App/, and TrainingDiscipline chain ─
 # TrainingDiscipline protocol and its implementations need SwiftData because
 # PersistentModel cannot be type-erased without losing compile-time safety.
-# Accepted exception: Core/Training/, Core/Ports/, and *Discipline.swift files.
+# Accepted exception: TrainingDiscipline.swift, TrainingDisciplineRegistry.swift,
+# TrainingRecordPersisting.swift, and *Discipline.swift in feature directories.
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "App" ]] && continue
     [[ "$dirname" == "Resources" ]] && continue
 
     if [[ "$dirname" == "Core" ]]; then
-        # Within Core, only Core/Data/, Core/Training/, and Core/Ports/ may import SwiftData
         for coredir in "$SRC_DIR/Core"/*/; do
             core_subdir=$(basename "$coredir")
             [[ "$core_subdir" == "Data" ]] && continue
-            [[ "$core_subdir" == "Training" ]] && continue
-            [[ "$core_subdir" == "Ports" ]] && continue
+            if [[ "$core_subdir" == "Training" ]]; then
+                check_import "$coredir" "SwiftData" \
+                    "Core/Training/ must not import SwiftData (except TrainingDiscipline chain)" \
+                    "TrainingDiscipline\|TrainingDisciplineRegistry"
+                continue
+            fi
+            if [[ "$core_subdir" == "Ports" ]]; then
+                check_import "$coredir" "SwiftData" \
+                    "Core/Ports/ must not import SwiftData (except TrainingRecordPersisting)" \
+                    "TrainingRecordPersisting"
+                continue
+            fi
             check_import "$coredir" "SwiftData" \
-                "Core/$core_subdir/ must not import SwiftData (only Core/Data/ may)"
+                "Core/$core_subdir/ must not import SwiftData (only Core/Data/ and discipline chain may)"
         done
     else
         check_import "$dir" "SwiftData" \
             "$dirname/ must not import SwiftData (access SwiftData through TrainingDataStore)" \
-            "Discipline\\.swift"
+            "Discipline\\.swift:"
     fi
 done
 
@@ -116,8 +125,8 @@ done
 # EXCEPT: Start/ is the navigation router and legitimately references all screens.
 # Only App/, Start/ (router), and the feature's own directory may reference its Screen.
 
-FEATURES=("PitchComparison" "PitchMatching" "Profile" "Settings" "Start" "Info")
-SCREEN_TYPES=("PitchComparisonScreen" "PitchMatchingScreen" "ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
+FEATURES=("PitchDiscrimination" "PitchMatching" "RhythmOffsetDetection" "ContinuousRhythmMatching" "Profile" "Settings" "Start" "Info")
+SCREEN_TYPES=("PitchDiscriminationScreen" "PitchMatchingScreen" "RhythmOffsetDetectionScreen" "ContinuousRhythmMatchingScreen" "ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
 
 for i in "${!FEATURES[@]}"; do
     feature="${FEATURES[$i]}"
@@ -142,10 +151,10 @@ for i in "${!FEATURES[@]}"; do
 done
 
 # ─── Rule 6: Feature types used in other features (known patterns) ───────
-# ComparisonFeedbackIndicator should not be referenced from PitchMatching/
-matches=$(grep -rn "ComparisonFeedbackIndicator" "$SRC_DIR/PitchMatching/" --include="*.swift" 2>/dev/null || true)
+# PitchDiscriminationFeedbackIndicator should not be referenced from PitchMatching/
+matches=$(grep -rn "PitchDiscriminationFeedbackIndicator" "$SRC_DIR/PitchMatching/" --include="*.swift" 2>/dev/null || true)
 if [[ -n "$matches" ]]; then
-    red "VIOLATION: PitchMatching/ references ComparisonFeedbackIndicator (cross-feature dependency)"
+    red "VIOLATION: PitchMatching/ references PitchDiscriminationFeedbackIndicator (cross-feature dependency)"
     echo "$matches" | while IFS= read -r line; do
         echo "  $line"
     done

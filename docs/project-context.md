@@ -167,7 +167,10 @@ Never run only specific test files — always the complete suite.
 
 **Dependency Direction Rules (enforced by `bin/check-dependencies.sh`):**
 - **Core/ is framework-free** — no `import SwiftUI`, `import UIKit`, or `import Charts` in any Core/ file
-- **SwiftData is encapsulated** — `import SwiftData` only in `Core/Data/`, `App/`, and the `TrainingDiscipline` protocol chain (`Core/Training/`, `Core/Ports/`, and `*Discipline.swift` files); all other code accesses persistence through `TrainingDataStore`. The discipline exception exists because `PersistentModel` cannot be type-erased without losing compile-time safety — see architecture.md "Accepted Exception" for rationale.
+- **SwiftData is encapsulated** — `import SwiftData` only in `Core/Data/`, `App/`, and the TrainingDiscipline protocol chain
+  (`TrainingDiscipline.swift`, `TrainingDisciplineRegistry.swift`, `TrainingRecordPersisting.swift`, and `*Discipline.swift` in feature directories);
+  all other code accesses persistence through `TrainingDataStore`.
+  The discipline exception exists because `PersistentModel` cannot be type-erased without losing compile-time safety — see architecture.md "Accepted Exception" for rationale.
 - **UIKit is injected** — `import UIKit` only in `PitchDiscrimination/HapticFeedbackManager.swift` (protocol abstraction) and `App/` (composition root); nowhere else
 - **No cross-feature coupling** — feature directories (`PitchDiscrimination/`, `PitchMatching/`, `Profile/`, `Settings/`, `Info/`) must not reference types from other feature directories; shared types belong in `Core/`; `Start/` is exempt as the navigation router
 - **No Combine** — use `async/await` throughout; `import Combine` is forbidden
