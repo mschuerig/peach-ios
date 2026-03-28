@@ -3,6 +3,7 @@ import SwiftUI
 struct StartScreen: View {
     @State private var showInfoSheet = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
+    @Environment(\.progressTimeline) private var progressTimeline
 
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
@@ -173,7 +174,14 @@ struct StartScreen: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Label(title, systemImage: systemImage)
-            ProgressSparklineView(mode: mode)
+            ProgressSparklineView(
+                state: progressTimeline.state(for: mode),
+                bucketMeans: progressTimeline.buckets(for: mode).map(\.mean),
+                ewma: progressTimeline.currentEWMA(for: mode),
+                trend: progressTimeline.trend(for: mode),
+                modeName: mode.config.displayName,
+                unitLabel: mode.config.unitLabel
+            )
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
         .padding(.vertical, 12)

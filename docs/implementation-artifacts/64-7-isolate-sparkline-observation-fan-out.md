@@ -1,6 +1,6 @@
 # Story 64.7: Isolate Sparkline Observation Fan-Out on Start Screen
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,18 +18,18 @@ so that completing a rhythm training doesn't cause all six sparklines to re-rend
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Isolate sparkline observation (AC: #1)
-  - [ ] 1.1 Read `StartScreen.swift` and `ProgressSparklineView.swift`
-  - [ ] 1.2 The root issue: all 6 sparklines read `@Environment(\.progressTimeline)`, and `ProgressTimeline` is `@Observable`. Any mutation to the timeline (any mode) invalidates all 6 views
-  - [ ] 1.3 Option A: Make each `ProgressSparklineView` read only the properties it needs (buckets, ewma, trend for its specific mode) and pass them as value-type parameters from StartScreen, so the sparkline doesn't observe the full timeline
-  - [ ] 1.4 Option B: Keep the Environment read but wrap each sparkline in an `EquatableView` or use `.equatable()` with value-semantic inputs
-  - [ ] 1.5 Choose the simpler option that achieves per-mode isolation
+- [x] Task 1: Isolate sparkline observation (AC: #1)
+  - [x] 1.1 Read `StartScreen.swift` and `ProgressSparklineView.swift`
+  - [x] 1.2 The root issue: all 6 sparklines read `@Environment(\.progressTimeline)`, and `ProgressTimeline` is `@Observable`. Any mutation to the timeline (any mode) invalidates all 6 views
+  - [x] 1.3 Option A: Make each `ProgressSparklineView` read only the properties it needs (buckets, ewma, trend for its specific mode) and pass them as value-type parameters from StartScreen, so the sparkline doesn't observe the full timeline
+  - [x] 1.4 Option B: Keep the Environment read but wrap each sparkline in an `EquatableView` or use `.equatable()` with value-semantic inputs
+  - [x] 1.5 Choose the simpler option that achieves per-mode isolation
 
-- [ ] Task 2: Eliminate `buckets.map(\.mean)` in body (AC: #2)
-  - [ ] 2.1 If Option A is chosen (parameters), the parent computes `buckets.map(\.mean)` and passes `[Double]` as a parameter
-  - [ ] 2.2 If the sparkline keeps the Environment read, extract the map to a computed value outside body or have `SparklinePath` accept `[TimeBucket]` and extract means internally (only once in `path(in:)`)
+- [x] Task 2: Eliminate `buckets.map(\.mean)` in body (AC: #2)
+  - [x] 2.1 If Option A is chosen (parameters), the parent computes `buckets.map(\.mean)` and passes `[Double]` as a parameter
+  - [x] 2.2 If the sparkline keeps the Environment read, extract the map to a computed value outside body or have `SparklinePath` accept `[TimeBucket]` and extract means internally (only once in `path(in:)`)
 
-- [ ] Task 3: Run full test suite (AC: #3)
+- [x] Task 3: Run full test suite (AC: #3)
 
 ## Dev Notes
 
@@ -69,3 +69,35 @@ This way, `ProgressSparklineView` is a pure view with no Environment dependencie
 
 - [Source: Peach/Start/ProgressSparklineView.swift:7,19-21,25] — Environment read and body computation
 - [Source: Peach/Start/StartScreen.swift] — 6 sparkline instances
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Option A chosen: pass precomputed value-type parameters from `StartScreen` to `ProgressSparklineView`. This is simpler and more effective than `EquatableView` (Option B) because it eliminates the `@Environment` dependency entirely, making `ProgressSparklineView` a pure leaf view with zero observation overhead.
+
+### Debug Log
+
+No issues encountered.
+
+### Completion Notes
+
+- Refactored `ProgressSparklineView` from environment-dependent to pure value-type parameters: `state`, `bucketMeans`, `ewma`, `trend`, `modeName`, `unitLabel`
+- Removed `@Environment(\.progressTimeline)` from `ProgressSparklineView` — it no longer observes `ProgressTimeline` directly
+- `StartScreen` now reads `@Environment(\.progressTimeline)` and passes precomputed values to each sparkline
+- `buckets.map(\.mean)` is now computed in `StartScreen.trainingCard()`, not in the sparkline view body
+- Added two new tests verifying the value-type parameter initializer works for both `.active` and `.noData` states
+- Boy Scout: Fixed 5 flaky stddev tests in `ProgressTimelineTests` (same midnight boundary issue as TF-1) — updated pre-existing findings catalog
+
+## File List
+
+- `Peach/Start/ProgressSparklineView.swift` — removed `@Environment`, replaced `mode` parameter with value-type parameters
+- `Peach/Start/StartScreen.swift` — added `@Environment(\.progressTimeline)`, pass precomputed values to sparkline
+- `PeachTests/Start/ProgressSparklineViewTests.swift` — added value-type initializer tests
+- `PeachTests/Core/Profile/ProgressTimelineTests.swift` — fixed 5 flaky stddev tests (midnight boundary)
+- `docs/pre-existing-findings.md` — updated TF-1 to cover stddev test fixes
+- `docs/implementation-artifacts/sprint-status.yaml` — status updated
+
+## Change Log
+
+- 2026-03-28: Implemented story 64.7 — isolated sparkline observation fan-out via value-type parameters (Option A). Fixed 5 pre-existing flaky stddev tests (TF-1 extension).

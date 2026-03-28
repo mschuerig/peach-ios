@@ -56,9 +56,9 @@
 
 ## RESOLVED
 
-### TF-1: `ProgressTimelineTests/subBucketsSessionEmpty()` and `sessionBuckets()` flaky failures
+### TF-1: `ProgressTimelineTests` flaky failures near midnight
 
-**Source:** story 61-2 (observed pre-existing on clean `main` at commit 92998e7)
-**Symptom:** Both tests fail intermittently when run between midnight and ~1 AM.
-**Root cause:** Tests used `hoursAgo` offsets (1.0, 0.99, etc.) which placed records before midnight when the test ran shortly after midnight. The bucketing algorithm uses `startOfDay(now)` as the session zone boundary, so records landed in the day zone instead of the session zone.
-**Fix:** Replaced `hoursAgo` with explicit dates anchored to `startOfDay(now) + offset`, guaranteeing records always land in the session zone.
+**Source:** story 61-2 (observed pre-existing on clean `main` at commit 92998e7), extended in story 64-7
+**Symptom:** Tests using `hoursAgo` offsets fail intermittently when run between midnight and ~1 AM. Originally found in `subBucketsSessionEmpty()` and `sessionBuckets()`, also affected five stddev tests (`stddevZero`, `stddevNonZero`, `stddevUsesSampleVariance`, `stddevZeroForSinglePoint`, `stddevTwoPointsBessels`).
+**Root cause:** Tests used `hoursAgo` offsets (1.0, 0.99, etc.) which placed records before midnight when the test ran shortly after midnight. The bucketing algorithm uses `startOfDay(now)` as the session zone boundary, so records landed in the day zone instead of the session zone, splitting records across buckets.
+**Fix:** Replaced `hoursAgo` with explicit dates anchored to `startOfDay(now) + offset`, guaranteeing records always land in the session zone. Story 64-7 applied the same fix to the remaining stddev tests.

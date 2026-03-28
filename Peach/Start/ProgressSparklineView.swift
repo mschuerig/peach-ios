@@ -1,12 +1,14 @@
 import SwiftUI
 
 struct ProgressSparklineView: View {
-    let mode: TrainingDisciplineID
-
-    @Environment(\.progressTimeline) private var progressTimeline
+    let state: TrainingDisciplineState
+    let bucketMeans: [Double]
+    let ewma: Double?
+    let trend: Trend?
+    let modeName: String
+    let unitLabel: String
 
     var body: some View {
-        let state = progressTimeline.state(for: mode)
         switch state {
         case .noData:
             EmptyView()
@@ -16,13 +18,9 @@ struct ProgressSparklineView: View {
     }
 
     private var sparklineContent: some View {
-        let buckets = progressTimeline.buckets(for: mode)
-        let ewma = progressTimeline.currentEWMA(for: mode)
-        let trend = progressTimeline.trend(for: mode)
-
-        return HStack(spacing: 6) {
-            if buckets.count >= 2 {
-                SparklinePath(values: buckets.map(\.mean))
+        HStack(spacing: 6) {
+            if bucketMeans.count >= 2 {
+                SparklinePath(values: bucketMeans)
                     .stroke(Self.sparklineColor(for: trend), lineWidth: 1.5)
                     .frame(width: 60, height: 24)
             }
@@ -34,10 +32,10 @@ struct ProgressSparklineView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Self.sparklineAccessibilityLabel(
-            modeName: mode.config.displayName,
+            modeName: modeName,
             ewma: ewma ?? 0,
             trend: trend ?? .stable,
-            unitLabel: mode.config.unitLabel
+            unitLabel: unitLabel
         ))
     }
 

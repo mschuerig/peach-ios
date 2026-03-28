@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 64.6 review
+# last_updated: 2026-03-28 # Story 64.7 in-progress
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -491,7 +491,7 @@ development_status:
   64-4-fix-population-variance-to-sample-variance: done
   64-5-deduplicate-chart-line-data-computation: done
   64-6-cache-help-markdown-and-dateformatter: done
-  64-7-isolate-sparkline-observation-fan-out: ready-for-dev
+  64-7-isolate-sparkline-observation-fan-out: review
   64-8-fix-swiftdata-dependency-boundary-violations: ready-for-dev
   64-9-fix-spectrogram-bimodal-mean-hiding: ready-for-dev
   64-10-add-tests-for-untested-critical-paths: ready-for-dev

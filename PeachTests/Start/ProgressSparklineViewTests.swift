@@ -73,4 +73,32 @@ struct ProgressSparklineViewTests {
         #expect(label.contains("Match Intervals"))
         #expect(label.contains("12"))
     }
+
+    // MARK: - Value-type parameter isolation
+
+    @Test("initializer accepts precomputed value-type parameters without environment dependency")
+    func initializerAcceptsValueTypes() async {
+        // Verifies the view can be created with value-type parameters
+        // and does not require @Environment(\.progressTimeline)
+        let _ = ProgressSparklineView(
+            state: .active,
+            bucketMeans: [10.0, 8.0, 6.0],
+            ewma: 8.0,
+            trend: .improving,
+            modeName: "Compare Pitch",
+            unitLabel: "cents"
+        )
+    }
+
+    @Test("initializer accepts noData state")
+    func initializerAcceptsNoDataState() async {
+        let _ = ProgressSparklineView(
+            state: .noData,
+            bucketMeans: [],
+            ewma: nil,
+            trend: nil,
+            modeName: "Compare Pitch",
+            unitLabel: "cents"
+        )
+    }
 }

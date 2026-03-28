@@ -252,8 +252,9 @@ struct ProgressTimelineTests {
 
     @Test("stddev is zero when all values in bucket are identical")
     func stddevZero() async {
+        let midnightToday = Calendar.current.startOfDay(for: now)
         let records = (0..<5).map { i in
-            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 1.0 + Double(i) * 0.01)
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60 + Double(i) * 0.01))
         }
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
@@ -265,10 +266,11 @@ struct ProgressTimelineTests {
 
     @Test("stddev is non-zero for varying values")
     func stddevNonZero() async {
+        let midnightToday = Calendar.current.startOfDay(for: now)
         let records = [
-            makePitchDiscriminationRecord(centOffset: 5.0, hoursAgo: 1.0),
-            makePitchDiscriminationRecord(centOffset: 15.0, hoursAgo: 0.99),
-            makePitchDiscriminationRecord(centOffset: 25.0, hoursAgo: 0.98),
+            makePitchDiscriminationRecord(centOffset: 5.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 15.0, date: midnightToday.addingTimeInterval(61)),
+            makePitchDiscriminationRecord(centOffset: 25.0, date: midnightToday.addingTimeInterval(62)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
@@ -283,10 +285,11 @@ struct ProgressTimelineTests {
         // Sample variance = ((10-20)² + (20-20)² + (30-20)²) / (3-1) = 200/2 = 100
         // Sample stddev = 10.0
         // Population stddev would be √(200/3) ≈ 8.165
+        let midnightToday = Calendar.current.startOfDay(for: now)
         let records = [
-            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 1.0),
-            makePitchDiscriminationRecord(centOffset: 20.0, hoursAgo: 0.99),
-            makePitchDiscriminationRecord(centOffset: 30.0, hoursAgo: 0.98),
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 20.0, date: midnightToday.addingTimeInterval(61)),
+            makePitchDiscriminationRecord(centOffset: 30.0, date: midnightToday.addingTimeInterval(62)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
@@ -298,8 +301,9 @@ struct ProgressTimelineTests {
 
     @Test("stddev is zero for single data point")
     func stddevZeroForSinglePoint() async {
+        let midnightToday = Calendar.current.startOfDay(for: now)
         let records = [
-            makePitchDiscriminationRecord(centOffset: 42.0, hoursAgo: 1.0),
+            makePitchDiscriminationRecord(centOffset: 42.0, date: midnightToday.addingTimeInterval(60)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
@@ -315,9 +319,10 @@ struct ProgressTimelineTests {
         // Sample variance = ((0-5)² + (10-5)²) / (2-1) = 50/1 = 50
         // Sample stddev = √50 ≈ 7.071
         // Population stddev would be √(50/2) = 5.0
+        let midnightToday = Calendar.current.startOfDay(for: now)
         let records = [
-            makePitchDiscriminationRecord(centOffset: 0.0, hoursAgo: 1.0),
-            makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: 0.99),
+            makePitchDiscriminationRecord(centOffset: 0.0, date: midnightToday.addingTimeInterval(60)),
+            makePitchDiscriminationRecord(centOffset: 10.0, date: midnightToday.addingTimeInterval(61)),
         ]
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.buckets(for: .unisonPitchDiscrimination)
