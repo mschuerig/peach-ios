@@ -11,13 +11,13 @@ enum CSVMigrationChain {
         V2ToV3Migration(),
     ]
 
-    static func migrate(from sourceVersion: Int, to targetVersion: Int, rows: [[String: String]]) -> [[String: String]] {
+    static func migrate(from sourceVersion: Int, to targetVersion: Int, rows: [[String: String]]) -> [[String: String]]? {
         var currentRows = rows
         var currentVersion = sourceVersion
 
         while currentVersion < targetVersion {
             guard let migration = migrations.first(where: { $0.sourceVersion == currentVersion }) else {
-                break
+                return nil
             }
             currentRows = migration.migrate(rows: currentRows)
             currentVersion = migration.targetVersion

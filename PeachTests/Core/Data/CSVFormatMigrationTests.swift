@@ -148,7 +148,7 @@ struct CSVFormatMigrationTests {
     // MARK: - Migration Chain
 
     @Test("migration chain applies v1 through v3 sequentially")
-    func chainAppliesSequentially() async {
+    func chainAppliesSequentially() async throws {
         let rows: [[String: String]] = [
             ["trainingType": "pitchComparison", "timestamp": "2026-03-03T14:30:00Z",
              "referenceNote": "60", "referenceNoteName": "C4", "targetNote": "64",
@@ -157,7 +157,7 @@ struct CSVFormatMigrationTests {
              "userCentError": ""],
         ]
 
-        let migrated = CSVMigrationChain.migrate(from: 1, to: 3, rows: rows)
+        let migrated = try #require(CSVMigrationChain.migrate(from: 1, to: 3, rows: rows))
         // V1→V2: pitchComparison→pitchDiscrimination, adds rhythm columns
         // V2→V3: removes userOffsetMs, adds meanOffsetMs + positions
         #expect(migrated[0]["trainingType"] == "pitchDiscrimination")
@@ -167,7 +167,7 @@ struct CSVFormatMigrationTests {
     }
 
     @Test("migration chain from v2 to v3 applies only one migration")
-    func chainV2ToV3() async {
+    func chainV2ToV3() async throws {
         let rows: [[String: String]] = [
             ["trainingType": "pitchDiscrimination", "timestamp": "2026-03-03T14:30:00Z",
              "referenceNote": "60", "referenceNoteName": "C4", "targetNote": "64",
@@ -177,19 +177,19 @@ struct CSVFormatMigrationTests {
              "userOffsetMs": ""],
         ]
 
-        let migrated = CSVMigrationChain.migrate(from: 2, to: 3, rows: rows)
+        let migrated = try #require(CSVMigrationChain.migrate(from: 2, to: 3, rows: rows))
         #expect(migrated[0]["trainingType"] == "pitchDiscrimination")
         #expect(migrated[0]["meanOffsetMs"] == "")
         #expect(migrated[0]["userOffsetMs"] == nil)
     }
 
     @Test("migration chain with same source and target returns rows unchanged")
-    func chainNoOp() async {
+    func chainNoOp() async throws {
         let rows: [[String: String]] = [
             ["trainingType": "pitchDiscrimination", "foo": "bar"],
         ]
 
-        let migrated = CSVMigrationChain.migrate(from: 3, to: 3, rows: rows)
+        let migrated = try #require(CSVMigrationChain.migrate(from: 3, to: 3, rows: rows))
         #expect(migrated[0]["trainingType"] == "pitchDiscrimination")
         #expect(migrated[0]["foo"] == "bar")
     }

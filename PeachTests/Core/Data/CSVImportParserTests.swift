@@ -512,7 +512,7 @@ struct CSVImportParserTests {
     @Test("v2 rhythmMatching CSV migrates to continuousRhythmMatching with meanOffsetMs")
     func v2RhythmMatchingMigratesToContinuous() async {
         // V2 format: 15 columns; rhythmMatching row has empty pitch fields, tempoBPM at 12, offsetMs at 13 (empty), userOffsetMs at 14
-        let csv = makeV2CSV(["rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,,120,,5.3"])
+        let csv = makeV2CSV(["rhythmMatching,2026-03-03T14:30:00Z,,,,,,,,,,,120,,5.3"])
         let result = CSVImportParser.parse(csv)
         let continuous = continuousRhythmMatchings(from: result)
         #expect(result.errors.isEmpty)
@@ -562,6 +562,7 @@ struct CSVImportParserTests {
         // Verify the error message suggests updating
         let description = result.errors.first?.localizedDescription ?? ""
         #expect(description.contains("99"))
+        #expect(description.contains("update"))
     }
 
     @Test("v2 CSV with mixed pitch and rhythm rows imports all types")

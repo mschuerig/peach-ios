@@ -67,11 +67,13 @@ enum CSVImportParser {
             rowDicts.append(dict)
         }
 
-        let migratedRows = CSVMigrationChain.migrate(
+        guard let migratedRows = CSVMigrationChain.migrate(
             from: fromVersion,
             to: CSVExportSchema.formatVersion,
             rows: rowDicts
-        )
+        ) else {
+            return ImportResult(records: [:], errors: [.unsupportedVersion(version: fromVersion)])
+        }
 
         let currentColumns = CSVExportSchema.allColumns
         let headerRow = currentColumns.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
