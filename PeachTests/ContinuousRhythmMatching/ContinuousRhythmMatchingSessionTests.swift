@@ -932,4 +932,30 @@ struct ContinuousRhythmMatchingSessionTests {
 
         f.session.stop()
     }
+
+    // MARK: - Actor Isolation Tests
+
+    @Test("observable state from handleTap is readable on MainActor without await")
+    func stateUpdatesOnMainActor() async throws {
+        let f = makeSession()
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        _ = f.session.nextCycle()
+        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        f.sequencer.currentSamplePosition = gapSamplePosition
+        f.session.handleTap(atSamplePosition: gapSamplePosition)
+
+        // Synchronous reads prove shared MainActor isolation between
+        // the test (MainActor) and the session's internal state.
+        // If the session were on a different actor, the compiler
+        // would require `await` for these reads.
+        MainActor.assertIsolated()
+        #expect(f.session.isRunning)
+        #expect(f.session.showFeedback)
+        #expect(f.session.lastHitOffsetMs != nil)
+        #expect(f.session.cyclesInCurrentTrial == 1)
+
+        f.session.stop()
+    }
 }

@@ -1482,4 +1482,24 @@ struct PitchMatchingSessionMIDIPitchBendTests {
         session.stop()
         #expect(session.midiPitchBendValue == nil)
     }
+
+    // MARK: - Actor Isolation Tests
+
+    @Test("observable state from training loop is readable on MainActor without await")
+    func stateUpdatesOnMainActor() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Synchronous reads prove shared MainActor isolation between
+        // the test (MainActor) and the session's internal Task that
+        // mutated these properties. If the session were on a different
+        // actor, the compiler would require `await` for these reads.
+        MainActor.assertIsolated()
+        #expect(session.state == .awaitingSliderTouch)
+        #expect(session.currentTrial != nil)
+        #expect(session.referenceFrequency != nil)
+
+        session.stop()
+    }
 }
