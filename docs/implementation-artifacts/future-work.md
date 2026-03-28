@@ -179,6 +179,29 @@ The project has no `VersionedSchema` or `SchemaMigrationPlan`. All schema change
 
 ---
 
+### macOS Audio Device Disconnect Handling
+
+**Priority:** Low
+**Category:** Platform Support
+**Date Added:** 2026-03-28
+
+**Observation:**
+`AudioSessionInterruptionMonitor` uses `AVAudioSession.routeChangeNotification` to detect audio device disconnects (e.g., headphones unplugged) on iOS and automatically stop playback. On macOS, `AVAudioSession` does not exist, so after the `#if os(iOS)` guards introduced in story 66.1, there is no equivalent device-change monitoring.
+
+**Impact:**
+- On macOS, unplugging headphones or switching audio output devices mid-training will not trigger an automatic playback stop
+- Audio may route to unexpected output (e.g., built-in speakers after unplugging headphones) without the user being notified
+- iOS behavior is unaffected
+
+**Potential Approach:**
+- Use CoreAudio's `AudioObjectAddPropertyListener` on `kAudioHardwarePropertyDefaultOutputDevice` to detect output device changes on macOS
+- Wire the callback into `AudioSessionInterruptionMonitor` via a `#if os(macOS)` block that calls the existing `onStopRequired` closure
+
+**Related Code:**
+- `Peach/Core/Audio/AudioSessionInterruptionMonitor.swift` — `setupObservers()`, `#if os(iOS)` at line 54
+
+---
+
 ## UX & Onboarding
 
 ### No First-Run Onboarding Experience

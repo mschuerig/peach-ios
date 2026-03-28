@@ -1,6 +1,6 @@
 # Story 66.2: Platform-Conditional Audio Session Configuration
 
-Status: review
+Status: done
 
 ## Story
 
