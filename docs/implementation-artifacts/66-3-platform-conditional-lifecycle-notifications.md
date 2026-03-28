@@ -1,6 +1,6 @@
 # Story 66.3: Platform-Conditional Lifecycle Notifications
 
-Status: review
+Status: done
 
 ## Story
 

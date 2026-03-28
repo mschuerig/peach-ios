@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 66.3 review
+# last_updated: 2026-03-28 # Story 66.3 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -512,7 +512,7 @@ development_status:
   epic-66: in-progress
   66-1-add-macos-destination-and-fix-compilation: done
   66-2-platform-conditional-audio-session: done
-  66-3-platform-conditional-lifecycle-notifications: review
+  66-3-platform-conditional-lifecycle-notifications: done
   66-4-macos-haptic-feedback-abstraction: ready-for-dev
   66-5-keyboard-shortcuts-for-training: ready-for-dev
   66-6-native-macos-settings-scene: ready-for-dev
