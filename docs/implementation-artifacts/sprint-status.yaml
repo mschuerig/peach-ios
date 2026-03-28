@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 66.4 done
+# last_updated: 2026-03-28 # Story 66.5 in-progress
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -514,7 +514,7 @@ development_status:
   66-2-platform-conditional-audio-session: done
   66-3-platform-conditional-lifecycle-notifications: done
   66-4-macos-haptic-feedback-abstraction: done
-  66-5-keyboard-shortcuts-for-training: ready-for-dev
+  66-5-keyboard-shortcuts-for-training: review
   66-6-native-macos-settings-scene: ready-for-dev
   66-7-menu-bar-integration: ready-for-dev
   66-8-macos-testing-and-layout-polish: ready-for-dev

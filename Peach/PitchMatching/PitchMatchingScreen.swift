@@ -11,7 +11,18 @@ struct PitchMatchingScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+    @Environment(\.dismiss) private var dismiss
+
+    @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
+
+    /// Tracks the current pitch slider value from all input sources (touch, keyboard, MIDI).
+    /// Used for keyboard commit (Space/Return) so the correct value is sent to the session.
+    @State private var currentPitchValue: Double = 0.0
+
+    /// Non-nil when keyboard arrow keys are driving the slider. Fed into PitchSlider's
+    /// `externalValue` so the thumb moves visually. Cleared when touch input begins.
+    @State private var keyboardPitchValue: Double?
 
     private let logger = Logger(subsystem: "com.peach.app", category: "PitchMatchingScreen")
 
@@ -54,14 +65,23 @@ struct PitchMatchingScreen: View {
                 isHorizontal: isCompactHeight,
                 isActive: pitchMatchingSession.state == .awaitingSliderTouch || pitchMatchingSession.state == .playingTunable,
                 onValueChange: { value in
+                    keyboardPitchValue = nil
+                    currentPitchValue = value
                     pitchMatchingSession.adjustPitch(value)
                 },
                 onCommit: { value in
+                    keyboardPitchValue = nil
+                    currentPitchValue = value
                     pitchMatchingSession.commitPitch(value)
                 },
-                externalValue: pitchMatchingSession.midiPitchBendValue
+                externalValue: pitchMatchingSession.midiPitchBendValue ?? keyboardPitchValue
             )
             .padding()
+        }
+        .onChange(of: pitchMatchingSession.state) { _, newState in
+            if newState == .awaitingSliderTouch {
+                currentPitchValue = 0.0
+            }
         }
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
@@ -77,8 +97,43 @@ struct PitchMatchingScreen: View {
                 lifecycle.startPitchMatching(intervals: intervals)
             }
         }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onKeyPress(.upArrow) {
+            guard pitchMatchingSession.state == .awaitingSliderTouch || pitchMatchingSession.state == .playingTunable else { return .ignored }
+            currentPitchValue = min(currentPitchValue + Self.finePitchStep, 1.0)
+            keyboardPitchValue = currentPitchValue
+            pitchMatchingSession.adjustPitch(currentPitchValue)
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            guard pitchMatchingSession.state == .awaitingSliderTouch || pitchMatchingSession.state == .playingTunable else { return .ignored }
+            currentPitchValue = max(currentPitchValue - Self.finePitchStep, -1.0)
+            keyboardPitchValue = currentPitchValue
+            pitchMatchingSession.adjustPitch(currentPitchValue)
+            return .handled
+        }
+        .onKeyPress(.space) {
+            guard pitchMatchingSession.state == .playingTunable else { return .ignored }
+            keyboardPitchValue = 0
+            pitchMatchingSession.commitPitch(currentPitchValue)
+            return .handled
+        }
+        .onKeyPress(.return) {
+            guard pitchMatchingSession.state == .playingTunable else { return .ignored }
+            keyboardPitchValue = 0
+            pitchMatchingSession.commitPitch(currentPitchValue)
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            lifecycle.stopPitchMatching()
+            dismiss()
+            return .handled
+        }
         .onAppear {
             logger.info("PitchMatchingScreen appeared - (re)starting pitch matching")
+            isFocused = true
             lifecycle.stopPitchMatching()
             lifecycle.startPitchMatching(intervals: intervals)
         }
@@ -186,6 +241,9 @@ struct PitchMatchingScreen: View {
     static func trainingDiscipline(for intervals: Set<DirectedInterval>) -> TrainingDisciplineID {
         intervals == [.prime] ? .unisonPitchMatching : .intervalPitchMatching
     }
+
+    /// Fine pitch adjustment step for keyboard arrow keys (fraction of slider range, ~1 cent at ±20 cent range)
+    private static let finePitchStep: Double = 0.05
 
     // MARK: - Layout Parameters (extracted for testability)
 

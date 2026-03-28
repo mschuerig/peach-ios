@@ -8,6 +8,9 @@ struct RhythmOffsetDetectionScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+    @Environment(\.dismiss) private var dismiss
+
+    @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
 
     private let logger = Logger(subsystem: "com.peach.app", category: "RhythmOffsetDetectionScreen")
@@ -57,8 +60,44 @@ struct RhythmOffsetDetectionScreen: View {
                 lifecycle.startRhythmOffsetDetection()
             }
         }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onKeyPress(.leftArrow) {
+            guard buttonsEnabled else { return .ignored }
+            session.handleAnswer(direction: .early)
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            guard buttonsEnabled else { return .ignored }
+            session.handleAnswer(direction: .late)
+            return .handled
+        }
+        .onKeyPress(characters: .letters, phases: .down) { keyPress in
+            guard buttonsEnabled else { return .ignored }
+            guard !keyPress.modifiers.contains(.command),
+                  !keyPress.modifiers.contains(.control),
+                  !keyPress.modifiers.contains(.option) else { return .ignored }
+            let char = keyPress.characters.lowercased()
+            let earlyKey = String(localized: "shortcut.early").lowercased()
+            let lateKey = String(localized: "shortcut.late").lowercased()
+            if char == earlyKey {
+                session.handleAnswer(direction: .early)
+                return .handled
+            } else if char == lateKey {
+                session.handleAnswer(direction: .late)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.escape) {
+            lifecycle.stopRhythmOffsetDetection()
+            dismiss()
+            return .handled
+        }
         .onAppear {
             logger.info("RhythmOffsetDetectionScreen appeared - (re)starting training")
+            isFocused = true
             lifecycle.stopRhythmOffsetDetection()
             lifecycle.startRhythmOffsetDetection()
         }

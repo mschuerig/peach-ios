@@ -15,6 +15,9 @@ struct PitchDiscriminationScreen: View {
     /// Vertical size class: .compact in landscape iPhone, .regular in portrait and iPad
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+    @Environment(\.dismiss) private var dismiss
+
+    @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
 
     /// Logger for debugging lifecycle events
@@ -75,8 +78,44 @@ struct PitchDiscriminationScreen: View {
                 lifecycle.startPitchDiscrimination(intervals: intervals)
             }
         }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onKeyPress(.upArrow) {
+            guard buttonsEnabled else { return .ignored }
+            pitchDiscriminationSession.handleAnswer(isHigher: true)
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            guard buttonsEnabled else { return .ignored }
+            pitchDiscriminationSession.handleAnswer(isHigher: false)
+            return .handled
+        }
+        .onKeyPress(characters: .letters, phases: .down) { keyPress in
+            guard buttonsEnabled else { return .ignored }
+            guard !keyPress.modifiers.contains(.command),
+                  !keyPress.modifiers.contains(.control),
+                  !keyPress.modifiers.contains(.option) else { return .ignored }
+            let char = keyPress.characters.lowercased()
+            let higherKey = String(localized: "shortcut.higher").lowercased()
+            let lowerKey = String(localized: "shortcut.lower").lowercased()
+            if char == higherKey {
+                pitchDiscriminationSession.handleAnswer(isHigher: true)
+                return .handled
+            } else if char == lowerKey {
+                pitchDiscriminationSession.handleAnswer(isHigher: false)
+                return .handled
+            }
+            return .ignored
+        }
+        .onKeyPress(.escape) {
+            lifecycle.stopPitchDiscrimination()
+            dismiss()
+            return .handled
+        }
         .onAppear {
             logger.info("PitchDiscriminationScreen appeared - (re)starting training")
+            isFocused = true
             lifecycle.stopPitchDiscrimination()
             lifecycle.startPitchDiscrimination(intervals: intervals)
         }

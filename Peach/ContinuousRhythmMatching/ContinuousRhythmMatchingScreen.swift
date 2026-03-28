@@ -8,6 +8,9 @@ struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    @Environment(\.dismiss) private var dismiss
+
+    @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
     @State private var isTouchActive = false
 
@@ -57,8 +60,25 @@ struct ContinuousRhythmMatchingScreen: View {
                 lifecycle.startContinuousRhythmMatching()
             }
         }
+        .focusable()
+        .focusEffectDisabled()
+        .focused($isFocused)
+        .onKeyPress(.space) {
+            session.handleTap()
+            return .handled
+        }
+        .onKeyPress(.return) {
+            session.handleTap()
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            lifecycle.stopContinuousRhythmMatching()
+            dismiss()
+            return .handled
+        }
         .onAppear {
             logger.info("ContinuousRhythmMatchingScreen appeared - (re)starting training")
+            isFocused = true
             lifecycle.stopContinuousRhythmMatching()
             lifecycle.startContinuousRhythmMatching()
         }
