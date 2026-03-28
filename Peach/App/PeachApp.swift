@@ -288,7 +288,9 @@ struct PeachApp: App {
             notePlayer: notePlayer,
             strategy: strategy,
             profile: profile,
-            observers: observers
+            observers: observers,
+            backgroundNotificationName: PeachApp.backgroundNotificationName,
+            foregroundNotificationName: PeachApp.foregroundNotificationName
         )
     }
 
@@ -313,7 +315,9 @@ struct PeachApp: App {
             strategy: AdaptiveRhythmOffsetDetectionStrategy(),
             profile: profile,
             observers: observers,
-            sampleRate: sampleRate
+            sampleRate: sampleRate,
+            backgroundNotificationName: PeachApp.backgroundNotificationName,
+            foregroundNotificationName: PeachApp.foregroundNotificationName
         )
     }
 
@@ -329,7 +333,9 @@ struct PeachApp: App {
         return ContinuousRhythmMatchingSession(
             stepSequencer: stepSequencer,
             observers: observers,
-            midiInput: midiInput
+            midiInput: midiInput,
+            backgroundNotificationName: PeachApp.backgroundNotificationName,
+            foregroundNotificationName: PeachApp.foregroundNotificationName
         )
     }
 

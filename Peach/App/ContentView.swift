@@ -15,6 +15,14 @@ struct ContentView: View {
                 navigationPath.removeAll()
             }
         }
+        #if os(macOS)
+        .task {
+            let notifications = NotificationCenter.default.notifications(named: NSApplication.didBecomeActiveNotification)
+            for await _ in notifications {
+                navigationPath.removeAll()
+            }
+        }
+        #endif
     }
 }
 

@@ -67,6 +67,8 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         observers: [RhythmOffsetDetectionObserver] = [],
         sampleRate: SampleRate,
         notificationCenter: NotificationCenter = .default,
+        backgroundNotificationName: Notification.Name? = nil,
+        foregroundNotificationName: Notification.Name? = nil,
         currentTime: @escaping () -> Double = { CACurrentMediaTime() }
     ) {
         self.rhythmPlayer = rhythmPlayer
@@ -78,6 +80,8 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         self.lifecycle = SessionLifecycle(
             logger: logger,
             notificationCenter: notificationCenter,
+            backgroundNotificationName: backgroundNotificationName,
+            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }

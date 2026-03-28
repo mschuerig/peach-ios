@@ -55,7 +55,9 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         stepSequencer: any StepSequencer,
         observers: [ContinuousRhythmMatchingObserver] = [],
         midiInput: (any MIDIInput)? = nil,
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        backgroundNotificationName: Notification.Name? = nil,
+        foregroundNotificationName: Notification.Name? = nil
     ) {
         self.stepSequencer = stepSequencer
         self.midiInput = midiInput
@@ -63,6 +65,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         self.lifecycle = SessionLifecycle(
             logger: logger,
             notificationCenter: notificationCenter,
+            backgroundNotificationName: backgroundNotificationName,
+            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }

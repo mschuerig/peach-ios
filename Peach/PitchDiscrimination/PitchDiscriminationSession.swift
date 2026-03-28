@@ -51,7 +51,9 @@ final class PitchDiscriminationSession: TrainingSession {
         profile: TrainingProfile,
         resettables: [Resettable] = [],
         observers: [PitchDiscriminationObserver] = [],
-        notificationCenter: NotificationCenter = .default
+        notificationCenter: NotificationCenter = .default,
+        backgroundNotificationName: Notification.Name? = nil,
+        foregroundNotificationName: Notification.Name? = nil
     ) {
         self.notePlayer = notePlayer
         self.strategy = strategy
@@ -61,6 +63,8 @@ final class PitchDiscriminationSession: TrainingSession {
         self.lifecycle = SessionLifecycle(
             logger: logger,
             notificationCenter: notificationCenter,
+            backgroundNotificationName: backgroundNotificationName,
+            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
