@@ -196,7 +196,7 @@ struct SpectrogramData: Sendable {
         lateMs: [Double],
         sixteenthMs: Double
     ) -> Double? {
-        let all = earlyMs + lateMs
+        let all = earlyMs.map { abs($0) } + lateMs.map { abs($0) }
         guard !all.isEmpty else { return nil }
         let mean = all.reduce(0.0, +) / Double(all.count)
         return msToPercent(mean, sixteenthMs: sixteenthMs)

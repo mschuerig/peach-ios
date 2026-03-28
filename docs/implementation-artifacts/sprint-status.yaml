@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-28 # Story 64.8 review
+# last_updated: 2026-03-28 # Story 64.9 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -493,7 +493,7 @@ development_status:
   64-6-cache-help-markdown-and-dateformatter: done
   64-7-isolate-sparkline-observation-fan-out: done
   64-8-fix-swiftdata-dependency-boundary-violations: done
-  64-9-fix-spectrogram-bimodal-mean-hiding: ready-for-dev
+  64-9-fix-spectrogram-bimodal-mean-hiding: review
   64-10-add-tests-for-untested-critical-paths: ready-for-dev
   64-11-extract-session-lifecycle-from-views: ready-for-dev
   epic-64-retrospective: optional

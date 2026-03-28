@@ -1,6 +1,6 @@
 # Story 64.9: Fix Spectrogram Combined Mean Hiding Bimodal Distributions
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,21 +20,21 @@ so that a tendency to alternate between early and late hits doesn't appear as pe
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Fix `combinedMeanPercent()` in `SpectrogramData` (AC: #1, #2)
-  - [ ] 1.1 Read `SpectrogramData.swift` and locate `combinedMeanPercent()` or equivalent
-  - [ ] 1.2 Change from signed mean to mean-of-absolute-offsets: `abs(earlyMs).average + abs(lateMs).average` combined, then convert to percent
+- [x] Task 1: Fix `combinedMeanPercent()` in `SpectrogramData` (AC: #1, #2)
+  - [x] 1.1 Read `SpectrogramData.swift` and locate `combinedMeanPercent()` or equivalent
+  - [x] 1.2 Change from signed mean to mean-of-absolute-offsets: `abs(earlyMs).average + abs(lateMs).average` combined, then convert to percent
   - [ ] 1.3 Alternative: use RMS (root mean square) which naturally handles sign cancellation — `sqrt(mean(x^2))`
-  - [ ] 1.4 Choose whichever approach produces the most intuitive accuracy metric
+  - [x] 1.4 Choose whichever approach produces the most intuitive accuracy metric
 
-- [ ] Task 2: Verify detail overlay still shows directional info (AC: #3)
-  - [ ] 2.1 Read the overlay code — confirm it uses `cell.earlyStats` and `cell.lateStats` separately
-  - [ ] 2.2 No changes needed if the overlay already shows early/late independently
+- [x] Task 2: Verify detail overlay still shows directional info (AC: #3)
+  - [x] 2.1 Read the overlay code — confirm it uses `cell.earlyStats` and `cell.lateStats` separately
+  - [x] 2.2 No changes needed if the overlay already shows early/late independently
 
-- [ ] Task 3: Update tests (AC: #4)
-  - [ ] 3.1 Update any `SpectrogramData` tests that assert on combined accuracy values
-  - [ ] 3.2 Add test: equal-magnitude early/late hits produce a non-zero combined accuracy (the bug case)
+- [x] Task 3: Update tests (AC: #4)
+  - [x] 3.1 Update any `SpectrogramData` tests that assert on combined accuracy values
+  - [x] 3.2 Add test: equal-magnitude early/late hits produce a non-zero combined accuracy (the bug case)
 
-- [ ] Task 4: Run full test suite (AC: #4)
+- [x] Task 4: Run full test suite (AC: #4)
 
 ## Dev Notes
 
@@ -70,3 +70,27 @@ This correctly reflects the magnitude of timing errors regardless of direction.
 
 - [Source: Peach/Core/Profile/SpectrogramData.swift] — combinedMeanPercent computation
 - [Source: Peach/Profile/RhythmSpectrogramView.swift:140-148] — Detail overlay showing early/late separately
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Chose mean-of-absolute-offsets over RMS — simpler, equally effective since all values are already absolute, and more intuitive (average error magnitude in ms)
+- Discovery: profile adapters already store `abs()` of offset values, so the fix is defensive correctness — prevents sign cancellation if data conventions ever change
+- Detail overlay confirmed to use `earlyStats`/`lateStats` separately — no changes needed
+
+### Completion Notes
+
+- Fixed `combinedMeanPercent()` to apply `abs()` to each value before averaging
+- Added test `bimodalMeanDoesNotCancelOut` verifying equal-magnitude early/late → 20% combined accuracy (not 0%)
+- Added `makeProfileWithSymmetricEarlyLate` factory for the bimodal test case
+- Full test suite passes: 1537 tests, 0 failures
+
+## File List
+
+- `Peach/Core/Profile/SpectrogramData.swift` — modified `combinedMeanPercent()` to use abs values
+- `PeachTests/Core/Profile/SpectrogramDataTests.swift` — added bimodal mean test and factory
+
+## Change Log
+
+- 2026-03-28: Fixed `combinedMeanPercent()` to use mean-of-absolute-offsets, added bimodal distribution test

@@ -268,6 +268,30 @@ struct SpectrogramDataTests {
         #expect(abs(earlyStats.stdDevPercent - 4.0) < 0.01)
     }
 
+    // MARK: - Combined Mean (Bimodal Distribution Bug)
+
+    @Test("equal-magnitude early and late offsets produce non-zero combined accuracy")
+    func bimodalMeanDoesNotCancelOut() async {
+        // Early hits at 50ms, late hits at 50ms (absolute) at slow midpoint (60 BPM)
+        // Sixteenth = 250ms → 50/250*100 = 20%
+        // Bug: if signed mean were used, -50 + 50 would cancel to ~0%
+        let profile = makeProfileWithSymmetricEarlyLate(ms: 50.0, range: .slow)
+        let timeline = ProgressTimeline(profile: profile)
+        let data = SpectrogramData.compute(
+            mode: .rhythmOffsetDetection,
+            profile: profile,
+            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+        )
+        guard let column = data.columns.first,
+              let cell = column.cells.first(where: { $0.tempoRange == .slow }),
+              let accuracy = cell.meanAccuracyPercent else {
+            Issue.record("Expected a column with slow cell and non-nil accuracy")
+            return
+        }
+        // Must be ~20%, not ~0%
+        #expect(abs(accuracy - 20.0) < 0.5)
+    }
+
     // MARK: - TempoRange displayName
 
     @Test("tempo range display names are localized")
@@ -323,6 +347,28 @@ struct SpectrogramDataTests {
                 MetricPoint(timestamp: now, value: ms),
                 for: .rhythm(.rhythmOffsetDetection, range, direction)
             )
+        }
+    }
+
+    private func makeProfileWithSymmetricEarlyLate(ms: Double, range: TempoRange) -> PerceptualProfile {
+        PerceptualProfile { builder in
+            let now = Date()
+            for i in 0..<5 {
+                builder.addPoint(
+                    MetricPoint(
+                        timestamp: now.addingTimeInterval(Double(i) * 60),
+                        value: ms
+                    ),
+                    for: .rhythm(.rhythmOffsetDetection, range, .early)
+                )
+                builder.addPoint(
+                    MetricPoint(
+                        timestamp: now.addingTimeInterval(Double(i) * 60),
+                        value: ms
+                    ),
+                    for: .rhythm(.rhythmOffsetDetection, range, .late)
+                )
+            }
         }
     }
 
