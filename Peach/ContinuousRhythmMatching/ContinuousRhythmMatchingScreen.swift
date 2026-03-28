@@ -4,6 +4,7 @@ import os
 struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.continuousRhythmMatchingSession) private var session
     @Environment(\.userSettings) private var userSettings
+    @Environment(\.trainingLifecycle) private var lifecycle
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -48,20 +49,20 @@ struct ContinuousRhythmMatchingScreen: View {
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
                 logger.info("Help sheet shown - stopping training")
-                session.stop()
+                lifecycle.stopContinuousRhythmMatching()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
-                session.start(settings: .from(userSettings))
+                lifecycle.startContinuousRhythmMatching()
             }
         }
         .onAppear {
             logger.info("ContinuousRhythmMatchingScreen appeared - (re)starting training")
-            session.stop()
-            session.start(settings: .from(userSettings))
+            lifecycle.stopContinuousRhythmMatching()
+            lifecycle.startContinuousRhythmMatching()
         }
         .onDisappear {
             logger.info("ContinuousRhythmMatchingScreen disappeared - stopping training")
-            session.stop()
+            lifecycle.stopContinuousRhythmMatching()
         }
     }
 

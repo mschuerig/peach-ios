@@ -4,7 +4,7 @@ import os
 struct RhythmOffsetDetectionScreen: View {
     @Environment(\.rhythmOffsetDetectionSession) private var session
     @Environment(\.progressTimeline) private var progressTimeline
-    @Environment(\.userSettings) private var userSettings
+    @Environment(\.trainingLifecycle) private var lifecycle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -49,20 +49,20 @@ struct RhythmOffsetDetectionScreen: View {
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
                 logger.info("Help sheet shown - stopping training")
-                session.stop()
+                lifecycle.stopRhythmOffsetDetection()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
-                session.start(settings: .from(userSettings))
+                lifecycle.startRhythmOffsetDetection()
             }
         }
         .onAppear {
             logger.info("RhythmOffsetDetectionScreen appeared - (re)starting training")
-            session.stop()
-            session.start(settings: .from(userSettings))
+            lifecycle.stopRhythmOffsetDetection()
+            lifecycle.startRhythmOffsetDetection()
         }
         .onDisappear {
             logger.info("RhythmOffsetDetectionScreen disappeared - stopping training")
-            session.stop()
+            lifecycle.stopRhythmOffsetDetection()
         }
     }
 

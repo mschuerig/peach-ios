@@ -35,13 +35,9 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.enabledGapPositions)
     private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
 
-    @Environment(\.dataStoreResetter) private var dataStoreResetter
     @Environment(\.soundSourceProvider) private var soundSourceProvider
-    @Environment(\.soundPreviewPlay) private var soundPreviewPlay
-    @Environment(\.soundPreviewStop) private var soundPreviewStop
-    @Environment(\.prepareImport) private var prepareImport
-    @Environment(\.executeImport) private var executeImport
     @Environment(\.trainingDataTransferService) private var transferService
+    @Environment(\.settingsCoordinator) private var coordinator
 
     @State private var enabledGapPositions: Set<StepPosition> = []
     @State private var showHelpSheet = false
@@ -221,6 +217,7 @@ struct SettingsScreen: View {
                     Image(systemName: isPreviewPlaying ? "stop.fill" : "speaker.wave.2")
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel(isPreviewPlaying ? String(localized: "Stop Preview") : String(localized: "Play Preview"))
             }
             Stepper(
                 "Duration: \(noteDuration, specifier: "%.1f")s",
@@ -342,10 +339,10 @@ struct SettingsScreen: View {
         if let task = previewTask {
             task.cancel()
             previewTask = nil
-            Task { await soundPreviewStop?() }
+            Task { await coordinator.stopSoundPreview() }
         } else {
             previewTask = Task {
-                await soundPreviewPlay?(Self.previewDuration)
+                await coordinator.playSoundPreview(duration: Self.previewDuration)
                 previewTask = nil
             }
         }
@@ -355,12 +352,12 @@ struct SettingsScreen: View {
         guard previewTask != nil else { return }
         previewTask?.cancel()
         previewTask = nil
-        Task { await soundPreviewStop?() }
+        Task { await coordinator.stopSoundPreview() }
     }
 
     private func resetAllTrainingData() {
         do {
-            try dataStoreResetter?()
+            try coordinator.resetAllData()
         } catch {
             showResetError = true
         }
@@ -369,8 +366,8 @@ struct SettingsScreen: View {
     private func handleImportFileResult(_ result: Result<URL, any Error>) {
         switch result {
         case .success(let url):
-            guard let prepareImport else { break }
-            switch prepareImport(url) {
+            guard let importResult = coordinator.prepareImport(url: url) else { break }
+            switch importResult {
             case .success(let parseResult):
                 importParseResult = parseResult
                 showImportModeChoice = true
@@ -384,9 +381,9 @@ struct SettingsScreen: View {
     }
 
     private func completeImport(mode: TrainingDataImporter.ImportMode) {
-        guard let parseResult = importParseResult, let executeImport else { return }
+        guard let parseResult = importParseResult else { return }
         do {
-            let summary = try executeImport(parseResult, mode)
+            guard let summary = try coordinator.executeImport(parseResult: parseResult, mode: mode) else { return }
             importSummary = summary
             showImportSummary = true
         } catch {

@@ -7,6 +7,7 @@ struct PitchMatchingScreen: View {
     @Environment(\.pitchMatchingSession) private var pitchMatchingSession
     @Environment(\.userSettings) private var userSettings
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.trainingLifecycle) private var lifecycle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
@@ -68,20 +69,20 @@ struct PitchMatchingScreen: View {
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
                 logger.info("Help sheet shown - stopping pitch matching")
-                pitchMatchingSession.stop()
+                lifecycle.stopPitchMatching()
             } else {
                 logger.info("Help sheet dismissed - restarting pitch matching")
-                pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
+                lifecycle.startPitchMatching(intervals: intervals)
             }
         }
         .onAppear {
             logger.info("PitchMatchingScreen appeared - (re)starting pitch matching")
-            pitchMatchingSession.stop()
-            pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
+            lifecycle.stopPitchMatching()
+            lifecycle.startPitchMatching(intervals: intervals)
         }
         .onDisappear {
             logger.info("PitchMatchingScreen disappeared - stopping pitch matching")
-            pitchMatchingSession.stop()
+            lifecycle.stopPitchMatching()
         }
     }
 

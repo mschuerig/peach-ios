@@ -22,6 +22,8 @@ struct PeachApp: App {
     @State private var stepSequencer: SoundFontStepSequencer
     @State private var midiAdapter: MIDIKitAdapter?
     @State private var activeSession: (any TrainingSession)?
+    @State private var trainingLifecycle = TrainingLifecycleCoordinator()
+    @State private var settingsCoordinator = SettingsCoordinator()
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
 
@@ -115,12 +117,31 @@ struct PeachApp: App {
             )
             _stepSequencer = State(wrappedValue: soundFontStepSequencer)
 
-            _continuousRhythmMatchingSession = State(wrappedValue: Self.createContinuousRhythmMatchingSession(
+            let continuousRhythmMatchingSession = Self.createContinuousRhythmMatchingSession(
                 stepSequencer: soundFontStepSequencer,
                 profile: profile,
                 dataStore: dataStore,
                 midiInput: midiAdapter
+            )
+            _continuousRhythmMatchingSession = State(wrappedValue: continuousRhythmMatchingSession)
+
+            _trainingLifecycle = State(wrappedValue: TrainingLifecycleCoordinator(
+                pitchDiscriminationSession: pitchDiscriminationSession,
+                pitchMatchingSession: pitchMatchingSession,
+                rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
+                continuousRhythmMatchingSession: continuousRhythmMatchingSession,
+                userSettings: userSettings
             ))
+
+            _settingsCoordinator = State(wrappedValue: SettingsCoordinator(
+                dataStore: dataStore,
+                pitchDiscriminationSession: pitchDiscriminationSession,
+                profile: profile,
+                transferService: transferService,
+                notePlayer: notePlayer,
+                userSettings: userSettings
+            ))
+
             try? Tips.configure()
         } catch {
             fatalError("Failed to initialize app: \(error)")
@@ -132,45 +153,28 @@ struct PeachApp: App {
             ContentView()
                 .environment(\.pitchDiscriminationSession, pitchDiscriminationSession)
                 .environment(\.pitchMatchingSession, pitchMatchingSession)
+                .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
+                .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
                 .environment(\.activeSession, activeSession)
                 .environment(\.perceptualProfile, profile)
                 .environment(\.progressTimeline, progressTimeline)
                 .environment(\.soundSourceProvider, soundFontLibrary)
                 .environment(\.userSettings, userSettings)
-                .environment(\.soundPreviewPlay, { [notePlayer] (duration: Duration) in
-                    let frequency = TuningSystem.equalTemperament.frequency(
-                        for: MIDINote(69),
-                        referencePitch: userSettings.referencePitch
-                    )
-                    try? await notePlayer.play(
-                        frequency: frequency,
-                        duration: duration,
-                        velocity: MIDIVelocity(63),
-                        amplitudeDB: AmplitudeDB(0)
-                    )
-                })
-                .environment(\.soundPreviewStop, { [notePlayer] in
-                    try? await notePlayer.stopAll()
-                })
-                .environment(\.dataStoreResetter, { [dataStore, pitchDiscriminationSession, profile, transferService] in
-                    try dataStore.deleteAll()
-                    try pitchDiscriminationSession.resetTrainingData()
-                    profile.resetAll()
-                    transferService.refreshExport()
-                })
-                .environment(\.prepareImport, { [transferService] url in
-                    transferService.readFileForImport(url: url)
-                })
-                .environment(\.executeImport, { [transferService] parseResult, mode in
-                    try transferService.performImport(parseResult: parseResult, mode: mode)
-                })
+                .environment(\.settingsCoordinator, settingsCoordinator)
+                .environment(\.trainingLifecycle, trainingLifecycle)
                 .environment(\.trainingDataTransferService, transferService)
                 .environment(\.rhythmPlayer, rhythmPlayer)
                 .environment(\.stepSequencer, stepSequencer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
-                .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
-                .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
                 .environment(\.midiInput, midiAdapter)
+                .environment(\.handleScenePhaseChange, { [activeSession] old, new, clearNavigation in
+                    if new == .background {
+                        activeSession?.stop()
+                    }
+                    if old == .background && new == .active {
+                        clearNavigation()
+                    }
+                })
                 .modelContainer(modelContainer)
                 .onChange(of: soundSource) { _, newSource in
                     let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
@@ -182,17 +186,36 @@ struct PeachApp: App {
                     notePlayer = newNotePlayer
 
                     let strategy = KazezNoteStrategy()
-                    pitchDiscriminationSession = Self.createPitchDiscriminationSession(
+                    let newPDSession = Self.createPitchDiscriminationSession(
                         notePlayer: newNotePlayer,
                         strategy: strategy,
                         profile: profile,
                         dataStore: dataStore
                     )
-                    pitchMatchingSession = Self.createPitchMatchingSession(
+                    pitchDiscriminationSession = newPDSession
+
+                    let newPMSession = Self.createPitchMatchingSession(
                         notePlayer: newNotePlayer,
                         profile: profile,
                         dataStore: dataStore,
                         midiInput: midiAdapter
+                    )
+                    pitchMatchingSession = newPMSession
+
+                    trainingLifecycle = TrainingLifecycleCoordinator(
+                        pitchDiscriminationSession: newPDSession,
+                        pitchMatchingSession: newPMSession,
+                        rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
+                        continuousRhythmMatchingSession: continuousRhythmMatchingSession,
+                        userSettings: userSettings
+                    )
+                    settingsCoordinator = SettingsCoordinator(
+                        dataStore: dataStore,
+                        pitchDiscriminationSession: newPDSession,
+                        profile: profile,
+                        transferService: transferService,
+                        notePlayer: newNotePlayer,
+                        userSettings: userSettings
                     )
                 }
                 .onChange(of: pitchDiscriminationSession.isIdle) { _, isIdle in

@@ -7,17 +7,25 @@ extension EnvironmentValues {
     @Entry var progressTimeline = ProgressTimeline(profile: PerceptualProfile())
     @Entry var activeSession: (any TrainingSession)? = nil
     @Entry var perceptualProfile = PerceptualProfile()
-    @Entry var dataStoreResetter: (() throws -> Void)? = nil
-    @Entry var soundPreviewPlay: ((Duration) async -> Void)? = nil
-    @Entry var soundPreviewStop: (() async -> Void)? = nil
-    @Entry var prepareImport: ((URL) -> TrainingDataTransferService.FileReadResult)? = nil
-    @Entry var executeImport: ((CSVImportParser.ImportResult, TrainingDataImporter.ImportMode) throws -> TrainingDataImporter.ImportSummary)? = nil
     @Entry var trainingDataTransferService: TrainingDataTransferService = TrainingDataTransferService.preview()
+    @Entry var settingsCoordinator = SettingsCoordinator()
     @Entry var userSettings: any UserSettings = PreviewUserSettings()
     @Entry var rhythmPlayer: (any RhythmPlayer)? = nil
     @Entry var stepSequencer: (any StepSequencer)? = nil
     @Entry var midiInput: (any MIDIInput)? = nil
     @Entry var audioSampleRate: SampleRate = .standard48000
+}
+
+// MARK: - Training Lifecycle Environment Keys
+
+extension EnvironmentValues {
+    @Entry var trainingLifecycle = TrainingLifecycleCoordinator()
+}
+
+// MARK: - App Lifecycle Environment Keys
+
+extension EnvironmentValues {
+    @Entry var handleScenePhaseChange: (_ old: ScenePhase, _ new: ScenePhase, _ clearNavigation: () -> Void) -> Void = { _, _, _ in }
 }
 
 // MARK: - Session Environment Keys

@@ -4,14 +4,10 @@ import os
 struct PitchDiscriminationScreen: View {
     let isIntervalMode: Bool
 
-    /// Training session injected via environment
     @Environment(\.pitchDiscriminationSession) private var pitchDiscriminationSession
-
-    /// User settings for building training configuration
     @Environment(\.userSettings) private var userSettings
-
-    /// Progress timeline for accuracy summary
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.trainingLifecycle) private var lifecycle
 
     /// Whether the user has enabled Reduce Motion in system accessibility settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -71,20 +67,20 @@ struct PitchDiscriminationScreen: View {
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
                 logger.info("Help sheet shown - stopping training")
-                pitchDiscriminationSession.stop()
+                lifecycle.stopPitchDiscrimination()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
-                pitchDiscriminationSession.start(settings: .from(userSettings, intervals: intervals))
+                lifecycle.startPitchDiscrimination(intervals: intervals)
             }
         }
         .onAppear {
             logger.info("PitchDiscriminationScreen appeared - (re)starting training")
-            pitchDiscriminationSession.stop()
-            pitchDiscriminationSession.start(settings: .from(userSettings, intervals: intervals))
+            lifecycle.stopPitchDiscrimination()
+            lifecycle.startPitchDiscrimination(intervals: intervals)
         }
         .onDisappear {
             logger.info("PitchDiscriminationScreen disappeared - stopping training")
-            pitchDiscriminationSession.stop()
+            lifecycle.stopPitchDiscrimination()
         }
     }
 
