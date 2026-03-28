@@ -2827,6 +2827,24 @@ func deleteAll<T: PersistentModel>(_ type: T.Type) throws
 - `deleteAll()` (all disciplines) iterates registered discipline record types via the registry.
 - `replaceAllRecords()` accepts type-erased record groups via the registry.
 
+### Accepted Exception: SwiftData in the TrainingDiscipline Chain
+
+*Added: 2026-03-28*
+
+The `TrainingDiscipline` protocol, `TrainingRecordPersisting` port, and all discipline implementations import SwiftData directly. This is an accepted exception to the "SwiftData only in `Core/Data/` and `App/`" rule.
+
+**Why the exception exists:** `PersistentModel` (inherited from `Identifiable`) has an associated type (`ID`), which prevents Swift from opening existentials. This means `any PersistentModel` cannot be passed to APIs that accept `some PersistentModel` — there is no type-erased wrapper that preserves compile-time safety. An attempt to introduce a `TrainingRecord` marker protocol (story 64.8) eliminated the imports but required manual per-type dispatch (`switch` on every concrete `@Model` type) for both insertion and deletion. This traded compile-time type safety for runtime `preconditionFailure`, making the codebase harder to maintain for the sake of a rule that the type system cannot support here.
+
+**What is allowed:**
+- `Core/Training/TrainingDiscipline.swift` — protocol uses `some PersistentModel` in method signatures
+- `Core/Training/TrainingDisciplineRegistry.swift` — accesses `recordType` from disciplines
+- `Core/Ports/TrainingRecordPersisting.swift` — uses `some PersistentModel` constraint
+- `*Discipline.swift` files in feature directories — reference `@Model` record types
+
+**What is NOT allowed:** Any other file outside `Core/Data/` and `App/` importing SwiftData. The exception is scoped to the discipline protocol chain only. `bin/check-dependencies.sh` enforces this boundary.
+
+**Architectural principle:** Rules serve the codebase — not the other way around. When enforcing a rule makes the code less safe (runtime failures replacing compile-time errors), update the rule.
+
 ### Eliminated Central Dispatchers
 
 **`MetricPointMapper`** — exists solely to enumerate all record types and map each to metric points for the profile builder. When each discipline declares its own mapping via the `TrainingDiscipline` protocol, the caller iterates the registry. `MetricPointMapper` is deleted.

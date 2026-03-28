@@ -59,38 +59,43 @@ check_import "$SRC_DIR/Core" "UIKit" \
 check_import "$SRC_DIR/Core" "Charts" \
     "Core/ must not import Charts (UI framework belongs in feature layer)"
 
-# ─── Rule 2: SwiftData only in Core/Data/ and App/ ──────────────────────
-# Check all of Peach/ except Core/Data/ and App/
+# ─── Rule 2: SwiftData only in Core/Data/, App/, and TrainingDiscipline chain ─
+# TrainingDiscipline protocol and its implementations need SwiftData because
+# PersistentModel cannot be type-erased without losing compile-time safety.
+# Accepted exception: Core/Training/, Core/Ports/, and *Discipline.swift files.
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "App" ]] && continue
     [[ "$dirname" == "Resources" ]] && continue
 
     if [[ "$dirname" == "Core" ]]; then
-        # Within Core, only Core/Data/ may import SwiftData
+        # Within Core, only Core/Data/, Core/Training/, and Core/Ports/ may import SwiftData
         for coredir in "$SRC_DIR/Core"/*/; do
             core_subdir=$(basename "$coredir")
             [[ "$core_subdir" == "Data" ]] && continue
+            [[ "$core_subdir" == "Training" ]] && continue
+            [[ "$core_subdir" == "Ports" ]] && continue
             check_import "$coredir" "SwiftData" \
                 "Core/$core_subdir/ must not import SwiftData (only Core/Data/ may)"
         done
     else
         check_import "$dir" "SwiftData" \
-            "$dirname/ must not import SwiftData (access SwiftData through TrainingDataStore)"
+            "$dirname/ must not import SwiftData (access SwiftData through TrainingDataStore)" \
+            "Discipline\\.swift"
     fi
 done
 
 # ─── Rule 3: UIKit only in allowed files ─────────────────────────────────
-# Allowed: App/ (composition root), PitchComparison/HapticFeedbackManager.swift
+# Allowed: App/ (composition root), PitchDiscrimination/HapticFeedbackManager.swift
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "App" ]] && continue
     [[ "$dirname" == "Core" ]] && continue
     [[ "$dirname" == "Resources" ]] && continue
 
-    if [[ "$dirname" == "PitchComparison" ]]; then
+    if [[ "$dirname" == "PitchDiscrimination" ]]; then
         check_import "$dir" "UIKit" \
-            "PitchComparison/ must not import UIKit (except HapticFeedbackManager.swift)" \
+            "PitchDiscrimination/ must not import UIKit (except HapticFeedbackManager.swift)" \
             "HapticFeedbackManager.swift"
     else
         check_import "$dir" "UIKit" \
