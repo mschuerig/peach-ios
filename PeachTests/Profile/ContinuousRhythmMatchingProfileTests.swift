@@ -32,7 +32,7 @@ struct ContinuousRhythmMatchingProfileTests {
                         timestamp: Date().addingTimeInterval(Double(i - 10) * 3600),
                         value: Double(15 + i)
                     ),
-                    for: .rhythm(.continuousRhythmMatching, .medium, .early)
+                    for: .rhythm(.continuousRhythmMatching, .moderate, .early)
                 )
             }
         }
@@ -68,7 +68,7 @@ struct ContinuousRhythmMatchingProfileTests {
                         timestamp: Date().addingTimeInterval(Double(i - 10) * 3600),
                         value: Double(15 + i)
                     ),
-                    for: .rhythm(.continuousRhythmMatching, .medium, .early)
+                    for: .rhythm(.continuousRhythmMatching, .moderate, .early)
                 )
             }
         }
@@ -90,14 +90,14 @@ struct ContinuousRhythmMatchingProfileTests {
                         timestamp: Date().addingTimeInterval(Double(i - 10) * 3600),
                         value: Double(15 + i)
                     ),
-                    for: .rhythm(.continuousRhythmMatching, .medium, .early)
+                    for: .rhythm(.continuousRhythmMatching, .moderate, .early)
                 )
                 builder.addPoint(
                     MetricPoint(
                         timestamp: Date().addingTimeInterval(Double(i - 10) * 3600),
                         value: Double(10 + i)
                     ),
-                    for: .rhythm(.continuousRhythmMatching, .medium, .late)
+                    for: .rhythm(.continuousRhythmMatching, .moderate, .late)
                 )
             }
         }
@@ -105,9 +105,7 @@ struct ContinuousRhythmMatchingProfileTests {
         let buckets = timeline.allGranularityBuckets(for: .continuousRhythmMatching)
         let data = SpectrogramData.compute(mode: .continuousRhythmMatching, profile: profile, timeBuckets: buckets)
 
-        // Medium coarse range maps to 2 fine spectrogram ranges (80-99, 100-119)
-        #expect(data.trainedRanges.count == 2)
-        #expect(data.trainedRanges.allSatisfy { $0.enclosingDefaultRange == .medium })
+        #expect(data.trainedRanges == [.moderate])
         #expect(!data.columns.isEmpty)
     }
 

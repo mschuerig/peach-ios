@@ -1,6 +1,6 @@
 # Story 68.1: Spectrogram Refinement — More Tempo Bands, Finer Color Gradations
 
-Status: review
+Status: done
 
 ## Story
 
@@ -90,14 +90,13 @@ This means `SpectrogramData.compute()` needs to iterate the finer ranges and loo
 Claude Opus 4.6
 ### Debug Log References
 ### Completion Notes List
-- Implemented 6 fine-grained spectrogram ranges (40-59, 60-79, 80-99, 100-119, 120-159, 160-200) via `TempoRange.spectrogramRanges`, aligned with coarse `defaultRanges` boundaries
-- Added `enclosingDefaultRange` to map fine ranges to coarse ranges for data lookup
+- Replaced 3 coarse `defaultRanges` (slow/medium/fast) with 6 fine-grained ranges: verySlow (40-59), slow (60-79), moderate (80-99), brisk (100-119), fast (120-159), veryFast (160-200)
 - Redesigned `SpectrogramThresholds` with `Boundary` struct; 4 boundaries yield 5 levels: excellent/precise/moderate/loose/erratic
-- Updated `SpectrogramData.compute()` to iterate fine ranges, looking up metrics from the enclosing coarse range
+- No coarse/fine mapping needed — data flows through the existing generic pipeline unchanged
 - Updated view with 5-color gradient (teal/green/yellow/orange/red), 5 legend items, and accessibility labels
-- Updated `RhythmTimingFeedbackIndicator.feedbackColor` for new accuracy levels
-- Added German translations for "excellent"/"Excellent"/"loose"/"Loose"
-- All 1658 iOS and 1651 macOS tests pass; 8 new tests added, multiple existing tests updated
+- Fixed `RhythmTimingFeedbackIndicator.feedbackColor` to use teal for excellent (matching spectrogram)
+- Added German translations for new range and accuracy level display names
+- All iOS and 1648 macOS tests pass; tests updated across 7 test files
 
 ### File List
 - Peach/Core/Music/TempoRange.swift
@@ -107,6 +106,10 @@ Claude Opus 4.6
 - Peach/Resources/Localizable.xcstrings
 - PeachTests/Core/Music/TempoRangeTests.swift
 - PeachTests/Core/Profile/SpectrogramDataTests.swift
+- PeachTests/Core/Profile/TrainingDisciplineIDTests.swift
+- PeachTests/Core/Profile/StatisticsKeyTests.swift
+- PeachTests/Core/Profile/PerceptualProfileTests.swift
+- PeachTests/Core/Training/ObserverAdapterTests.swift
 - PeachTests/ContinuousRhythmMatching/RhythmTimingFeedbackIndicatorTests.swift
 - PeachTests/Profile/ContinuousRhythmMatchingProfileTests.swift
 
@@ -114,3 +117,4 @@ Claude Opus 4.6
 
 - 2026-03-29: Story created
 - 2026-03-29: Implementation complete — 6 fine tempo bands, 5 accuracy levels, all tests green on both platforms
+- 2026-03-29: Code review fix — replaced coarse/fine mapping with direct 6-range defaultRanges; removed spectrogramRanges/enclosingDefaultRange indirection; fixed feedbackColor consistency

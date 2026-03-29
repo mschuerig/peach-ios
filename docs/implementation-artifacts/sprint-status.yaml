@@ -530,7 +530,7 @@ development_status:
   # Epic 68: Quality of Life — Spectrogram, Accessibility, Schema, Audio & macOS Polish
   # Six independent stories; can be worked in any order.
   epic-68: in-progress
-  68-1-spectrogram-refinement: review
+  68-1-spectrogram-refinement: done
   68-2-low-latency-tap-sound: ready-for-dev
   68-3-swiftdata-versioned-schema: ready-for-dev
   68-4-dynamic-type-grid-toggles: ready-for-dev

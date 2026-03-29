@@ -166,7 +166,7 @@ struct ProfileAdapterTests {
         adapter.rhythmOffsetDetectionCompleted(result)
 
         #expect(profile.updates.count == 1)
-        #expect(profile.updates[0].key == .rhythm(.rhythmOffsetDetection, .medium, .late))
+        #expect(profile.updates[0].key == .rhythm(.rhythmOffsetDetection, .brisk, .late))
         #expect(profile.updates[0].value == 12.5)
     }
 
@@ -225,7 +225,7 @@ struct ProfileAdapterTests {
         adapter.continuousRhythmMatchingCompleted(result)
 
         #expect(profile.updates.count == 1)
-        #expect(profile.updates[0].key == .rhythm(.continuousRhythmMatching, .medium, .late))
+        #expect(profile.updates[0].key == .rhythm(.continuousRhythmMatching, .brisk, .late))
         #expect(profile.updates[0].value == 15.0)
     }
 

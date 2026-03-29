@@ -28,8 +28,8 @@ struct StatisticsKeyTests {
 
     @Test("identical keys are equal")
     func identicalKeysEqual() async {
-        let key1 = StatisticsKey.rhythm(.continuousRhythmMatching, .medium, .late)
-        let key2 = StatisticsKey.rhythm(.continuousRhythmMatching, .medium, .late)
+        let key1 = StatisticsKey.rhythm(.continuousRhythmMatching, .moderate, .late)
+        let key2 = StatisticsKey.rhythm(.continuousRhythmMatching, .moderate, .late)
         #expect(key1 == key2)
     }
 

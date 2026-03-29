@@ -41,11 +41,11 @@ struct TrainingDisciplineTests {
         }
     }
 
-    @Test("rhythm modes return 6 keys (3 tempo ranges x 2 directions)")
-    func rhythmModesReturn6Keys() async {
+    @Test("rhythm modes return 12 keys (6 tempo ranges x 2 directions)")
+    func rhythmModesReturn12Keys() async {
         for mode in [TrainingDisciplineID.rhythmOffsetDetection, .continuousRhythmMatching] {
             let keys = mode.statisticsKeys
-            #expect(keys.count == 6)
+            #expect(keys.count == 12)
             for range in TempoRange.defaultRanges {
                 for direction in RhythmDirection.allCases {
                     #expect(keys.contains(.rhythm(mode, range, direction)))

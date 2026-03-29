@@ -398,7 +398,7 @@ struct PerceptualProfileTests {
         ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(medium)
 
         let ranges = profile.trainedTempoRanges
-        #expect(Set(ranges) == Set([TempoRange.fast, TempoRange.medium]))
+        #expect(Set(ranges) == Set([TempoRange.fast, TempoRange.moderate]))
     }
 
     // MARK: - Rhythm Overall Accuracy
@@ -467,7 +467,7 @@ struct PerceptualProfileTests {
         )
         ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(trial)
 
-        let stats = profile.statistics(for: .rhythm(.continuousRhythmMatching, .medium, .early))
+        let stats = profile.statistics(for: .rhythm(.continuousRhythmMatching, .brisk, .early))
         #expect(stats?.recordCount == 1)
         #expect(abs((stats?.welfordMean ?? 0) - 10.0) < 0.01) // abs(mean of -15, -5 = -10) = 10
     }

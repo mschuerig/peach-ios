@@ -26,84 +26,84 @@ struct SpectrogramDataTests {
 
     @Test("accuracy level returns nil for nil input")
     func accuracyLevelNil() async {
-        let level = SpectrogramThresholds.default.accuracyLevel(for: nil, tempoRange: .medium)
+        let level = SpectrogramThresholds.default.accuracyLevel(for: nil, tempoRange: .brisk)
         #expect(level == nil)
     }
 
-    @Test("at medium tempo, very low percentage is excellent")
-    func excellentAtMediumTempo() async {
-        // Medium midpoint = 100 BPM, sixteenth = 150ms
-        // excellent = clamp(150 * 0.04, 8, 15) = clamp(6, 8, 15) = 8ms → 5.33%
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 3.0, tempoRange: .medium)
+    @Test("at brisk tempo, very low percentage is excellent")
+    func excellentAtBriskTempo() async {
+        // Brisk midpoint = 110 BPM, sixteenth = 136.4ms
+        // excellent = clamp(136.4 * 0.04, 8, 15) = clamp(5.45, 8, 15) = 8ms → 5.87%
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 3.0, tempoRange: .brisk)
         #expect(level == .excellent)
     }
 
-    @Test("at medium tempo, 7% is precise")
-    func preciseAtMediumTempo() async {
-        // precise = clamp(150 * 0.08, 12, 30) = clamp(12, 12, 30) = 12ms → 8.0%
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 7.0, tempoRange: .medium)
+    @Test("at brisk tempo, 7% is precise")
+    func preciseAtBriskTempo() async {
+        // precise = clamp(136.4 * 0.08, 12, 30) = clamp(10.9, 12, 30) = 12ms → 8.8%
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 7.0, tempoRange: .brisk)
         #expect(level == .precise)
     }
 
-    @Test("at medium tempo, 12% is moderate")
-    func moderateAtMediumTempo() async {
-        // moderate = clamp(150 * 0.15, 20, 40) = clamp(22.5, 20, 40) = 22.5ms → 15.0%
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 12.0, tempoRange: .medium)
+    @Test("at brisk tempo, 12% is moderate")
+    func moderateAtBriskTempo() async {
+        // moderate = clamp(136.4 * 0.15, 20, 40) = clamp(20.45, 20, 40) = 20.45ms → 15.0%
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 12.0, tempoRange: .brisk)
         #expect(level == .moderate)
     }
 
-    @Test("at medium tempo, 20% is loose")
-    func looseAtMediumTempo() async {
-        // loose = clamp(150 * 0.25, 30, 55) = clamp(37.5, 30, 55) = 37.5ms → 25.0%
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 20.0, tempoRange: .medium)
+    @Test("at brisk tempo, 20% is loose")
+    func looseAtBriskTempo() async {
+        // loose = clamp(136.4 * 0.25, 30, 55) = clamp(34.1, 30, 55) = 34.1ms → 25.0%
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 20.0, tempoRange: .brisk)
         #expect(level == .loose)
     }
 
-    @Test("at medium tempo, 30% is erratic")
-    func erraticAtMediumTempo() async {
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 30.0, tempoRange: .medium)
+    @Test("at brisk tempo, 30% is erratic")
+    func erraticAtBriskTempo() async {
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 30.0, tempoRange: .brisk)
         #expect(level == .erratic)
     }
 
-    @Test("at fast tempo, floor clamps precise threshold upward")
-    func floorClampsAtFastTempo() async {
-        // Fast midpoint = 160 BPM, sixteenth = 93.75ms
-        // precise = clamp(93.75 * 0.08, 12, 30) = clamp(7.5, 12, 30) = 12ms → 12.8%
-        // 10% of 93.75ms = 9.375ms < 12ms floor → still precise
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 10.0, tempoRange: .fast)
+    @Test("at veryFast tempo, floor clamps precise threshold upward")
+    func floorClampsAtVeryFastTempo() async {
+        // VeryFast midpoint = 180 BPM, sixteenth = 83.3ms
+        // precise = clamp(83.3 * 0.08, 12, 30) = clamp(6.67, 12, 30) = 12ms → 14.4%
+        // 10% of 83.3ms = 8.33ms < 12ms floor → still precise
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 10.0, tempoRange: .veryFast)
         #expect(level == .precise)
     }
 
-    @Test("at fast tempo, moderate floor clamps upward")
-    func moderateFloorClampsAtFastTempo() async {
-        // moderate = clamp(93.75 * 0.15, 20, 40) = clamp(14.06, 20, 40) = 20ms → 21.3%
-        // 18% of 93.75ms = 16.875ms < 20ms floor → still moderate
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 18.0, tempoRange: .fast)
+    @Test("at veryFast tempo, moderate floor clamps upward")
+    func moderateFloorClampsAtVeryFastTempo() async {
+        // moderate = clamp(83.3 * 0.15, 20, 40) = clamp(12.5, 20, 40) = 20ms → 24.0%
+        // 18% of 83.3ms = 15ms < 20ms floor → still moderate
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 18.0, tempoRange: .veryFast)
         #expect(level == .moderate)
     }
 
-    @Test("at slow tempo, ceiling binds at moderate boundary")
-    func ceilingBindsAtSlowTempo() async {
-        // Slow midpoint = 60 BPM, sixteenth = 250ms
-        // moderate = clamp(250 * 0.15, 20, 40) = clamp(37.5, 20, 40) = 37.5ms → 15.0%
-        // 12% of 250ms = 30ms < 37.5ms → moderate
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 12.0, tempoRange: .slow)
+    @Test("at verySlow tempo, ceiling binds at moderate boundary")
+    func ceilingBindsAtVerySlowTempo() async {
+        // VerySlow midpoint = 50 BPM, sixteenth = 300ms
+        // moderate = clamp(300 * 0.15, 20, 40) = clamp(45, 20, 40) = 40ms → 13.3%
+        // 12% of 300ms = 36ms < 40ms ceiling → moderate
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 12.0, tempoRange: .verySlow)
         #expect(level == .moderate)
     }
 
-    @Test("at fast tempo, floor widens precise band beyond base 8%")
+    @Test("at veryFast tempo, floor widens precise band beyond base 8%")
     func floorWidensPreciseBand() async {
-        // Fast midpoint = 160 BPM, sixteenth = 93.75ms
-        // precise = 12ms → 12.8%
-        // 12% is above base 8% but below floor-adjusted 12.8% → still precise
-        let level = SpectrogramThresholds.default.accuracyLevel(for: 12.0, tempoRange: .fast)
+        // VeryFast midpoint = 180 BPM, sixteenth = 83.3ms
+        // precise = 12ms → 14.4%
+        // 12% is above base 8% but below floor-adjusted 14.4% → still precise
+        let level = SpectrogramThresholds.default.accuracyLevel(for: 12.0, tempoRange: .veryFast)
         #expect(level == .precise)
     }
 
     @Test("five distinct accuracy levels are returned across the range")
     func fiveDistinctLevels() async {
         let t = SpectrogramThresholds.default
-        let range = TempoRange.medium
+        let range = TempoRange.brisk
         #expect(t.accuracyLevel(for: 1.0, tempoRange: range) == .excellent)
         #expect(t.accuracyLevel(for: 7.0, tempoRange: range) == .precise)
         #expect(t.accuracyLevel(for: 12.0, tempoRange: range) == .moderate)
@@ -113,19 +113,19 @@ struct SpectrogramDataTests {
 
     // MARK: - TempoRange midpointTempo
 
-    @Test("midpoint tempo for slow range is 60 BPM")
+    @Test("midpoint tempo for verySlow range is 50 BPM")
+    func verySlowMidpoint() async {
+        #expect(TempoRange.verySlow.midpointTempo == TempoBPM(50))
+    }
+
+    @Test("midpoint tempo for slow range is 70 BPM")
     func slowMidpoint() async {
-        #expect(TempoRange.slow.midpointTempo == TempoBPM(60))
+        #expect(TempoRange.slow.midpointTempo == TempoBPM(70))
     }
 
-    @Test("midpoint tempo for medium range is 100 BPM")
-    func mediumMidpoint() async {
-        #expect(TempoRange.medium.midpointTempo == TempoBPM(100))
-    }
-
-    @Test("midpoint tempo for fast range is 160 BPM")
+    @Test("midpoint tempo for fast range is 140 BPM")
     func fastMidpoint() async {
-        #expect(TempoRange.fast.midpointTempo == TempoBPM(160))
+        #expect(TempoRange.fast.midpointTempo == TempoBPM(140))
     }
 
     // MARK: - SpectrogramData computation
@@ -143,7 +143,7 @@ struct SpectrogramDataTests {
         #expect(data.trainedRanges.isEmpty)
     }
 
-    @Test("single coarse range with data produces two fine trained ranges")
+    @Test("single tempo range with data produces one trained range")
     func singleTempoRange() async {
         let profile = makeProfileWithSlowData()
         let timeline = ProgressTimeline(profile: profile)
@@ -152,13 +152,11 @@ struct SpectrogramDataTests {
             profile: profile,
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
-        // Slow coarse range maps to 2 fine spectrogram ranges (40-59, 60-79)
-        #expect(data.trainedRanges.count == 2)
-        #expect(data.trainedRanges.allSatisfy { $0.enclosingDefaultRange == .slow })
+        #expect(data.trainedRanges == [.slow])
         #expect(!data.columns.isEmpty)
     }
 
-    @Test("multiple coarse ranges produce all mapped fine ranges")
+    @Test("multiple tempo ranges produce sorted trained ranges")
     func multipleTempoRanges() async {
         let profile = makeProfileWithSlowAndFastData()
         let timeline = ProgressTimeline(profile: profile)
@@ -167,13 +165,10 @@ struct SpectrogramDataTests {
             profile: profile,
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
-        // Slow (2 fine) + Fast (2 fine) = 4 fine ranges
-        #expect(data.trainedRanges.count == 4)
-        let coarseRanges = Set(data.trainedRanges.compactMap(\.enclosingDefaultRange))
-        #expect(coarseRanges == [.slow, .fast])
+        #expect(data.trainedRanges == [.slow, .fast])
     }
 
-    @Test("untrained coarse ranges produce no fine ranges")
+    @Test("untrained ranges are excluded from trainedRanges")
     func untrainedRangesExcluded() async {
         let profile = makeProfileWithSlowAndFastData()
         let timeline = ProgressTimeline(profile: profile)
@@ -182,18 +177,16 @@ struct SpectrogramDataTests {
             profile: profile,
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
-        // Medium coarse range has no data — its fine ranges must not appear
-        let mediumFines = data.trainedRanges.filter { $0.enclosingDefaultRange == .medium }
-        #expect(mediumFines.isEmpty)
+        // moderate range has no data — must not appear in trainedRanges or any cell
+        #expect(!data.trainedRanges.contains(.moderate))
         for column in data.columns {
-            #expect(!column.cells.contains(where: { $0.tempoRange.enclosingDefaultRange == .medium }))
+            #expect(!column.cells.contains(where: { $0.tempoRange == .moderate }))
         }
     }
 
-    @Test("cell accuracy is computed as percentage of sixteenth note at fine range midpoint")
+    @Test("cell accuracy is computed as percentage of sixteenth note")
     func cellAccuracyIsPercentage() async {
-        // Slow data at fine range 60-79 (midpoint 70 BPM): sixteenth = 60/(70*4) ≈ 214.3ms
-        // 10ms / 214.3ms * 100 ≈ 4.67%
+        // 10ms at slow midpoint (70 BPM): sixteenth ≈ 214.3ms → 10/214.3*100 ≈ 4.67%
         let profile = makeProfileWithKnownValue(ms: 10.0, range: .slow, direction: .early)
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
@@ -202,16 +195,15 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
         guard let column = data.columns.first,
-              let cell = column.cells.first(where: { $0.tempoRange.enclosingDefaultRange == .slow }) else {
-            Issue.record("Expected a column with a slow-enclosing cell")
+              let cell = column.cells.first(where: { $0.tempoRange == .slow }) else {
+            Issue.record("Expected a column with a slow cell")
             return
         }
         guard let accuracy = cell.meanAccuracyPercent else {
             Issue.record("Expected non-nil accuracy")
             return
         }
-        // Accuracy varies by fine range midpoint; verify it's a plausible percentage of sixteenth note
-        let sixteenthMs = cell.tempoRange.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
+        let sixteenthMs = TempoRange.slow.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
         let expectedPercent = (10.0 / sixteenthMs) * 100.0
         #expect(abs(accuracy - expectedPercent) < 0.01)
     }
@@ -226,8 +218,8 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
         guard let column = data.columns.first,
-              let cell = column.cells.first(where: { $0.tempoRange.enclosingDefaultRange == .slow }) else {
-            Issue.record("Expected a column with a slow-enclosing cell")
+              let cell = column.cells.first(where: { $0.tempoRange == .slow }) else {
+            Issue.record("Expected a column with a slow cell")
             return
         }
         #expect(cell.earlyStats != nil)
@@ -259,8 +251,9 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
         for column in data.columns {
-            let cellRanges = Set(column.cells.map(\.tempoRange))
-            #expect(cellRanges == Set(data.trainedRanges))
+            let ranges = column.cells.map(\.tempoRange)
+            #expect(ranges.contains(.slow))
+            #expect(ranges.contains(.fast))
         }
     }
 
@@ -271,8 +264,6 @@ struct SpectrogramDataTests {
         // Three early metrics at slow tempo: 10ms, 20ms, 30ms
         // Mean = 20ms, sample variance = ((10-20)²+(20-20)²+(30-20)²)/(3-1) = 200/2 = 100
         // Sample stddev = 10ms
-        // As % of sixteenth at 60 BPM (250ms): 10/250*100 = 4.0%
-        // Population stddev would be √(200/3) ≈ 8.165ms → 3.27%
         let profile = PerceptualProfile { builder in
             let now = Date()
             builder.addPoint(
@@ -295,13 +286,13 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
         guard let column = data.columns.first,
-              let cell = column.cells.first(where: { $0.tempoRange.enclosingDefaultRange == .slow }),
+              let cell = column.cells.first(where: { $0.tempoRange == .slow }),
               let earlyStats = cell.earlyStats else {
-            Issue.record("Expected a column with slow-enclosing cell and early stats")
+            Issue.record("Expected a column with slow cell and early stats")
             return
         }
-        // Sample stddev = 10ms, expressed as % of sixteenth note at fine range midpoint
-        let sixteenthMs = cell.tempoRange.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
+        // Sample stddev = 10ms, expressed as % of sixteenth note at slow midpoint
+        let sixteenthMs = TempoRange.slow.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
         let expectedStdDevPercent = (10.0 / sixteenthMs) * 100.0
         #expect(abs(earlyStats.stdDevPercent - expectedStdDevPercent) < 0.01)
     }
@@ -310,9 +301,6 @@ struct SpectrogramDataTests {
 
     @Test("equal-magnitude early and late offsets produce non-zero combined accuracy")
     func bimodalMeanDoesNotCancelOut() async {
-        // Early hits at 50ms, late hits at 50ms (absolute) at slow midpoint (60 BPM)
-        // Sixteenth = 250ms → 50/250*100 = 20%
-        // Bug: if signed mean were used, -50 + 50 would cancel to ~0%
         let profile = makeProfileWithSymmetricEarlyLate(ms: 50.0, range: .slow)
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
@@ -321,13 +309,13 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
         )
         guard let column = data.columns.first,
-              let cell = column.cells.first(where: { $0.tempoRange.enclosingDefaultRange == .slow }),
+              let cell = column.cells.first(where: { $0.tempoRange == .slow }),
               let accuracy = cell.meanAccuracyPercent else {
-            Issue.record("Expected a column with slow-enclosing cell and non-nil accuracy")
+            Issue.record("Expected a column with slow cell and non-nil accuracy")
             return
         }
-        // 50ms at fine range midpoint: must be significant, not ~0% (bimodal cancellation bug)
-        let sixteenthMs = cell.tempoRange.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
+        // 50ms at slow midpoint: must be significant, not ~0% (bimodal cancellation bug)
+        let sixteenthMs = TempoRange.slow.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
         let expectedPercent = (50.0 / sixteenthMs) * 100.0
         #expect(abs(accuracy - expectedPercent) < 0.5)
     }
@@ -336,37 +324,15 @@ struct SpectrogramDataTests {
 
     @Test("tempo range display names are localized")
     func tempoRangeDisplayNames() async {
-        #expect(!TempoRange.slow.displayName.isEmpty)
-        #expect(!TempoRange.medium.displayName.isEmpty)
-        #expect(!TempoRange.fast.displayName.isEmpty)
-    }
-
-    // MARK: - Fine-grained tempo bands
-
-    @Test("trainedRanges filters correctly with finer-grained ranges")
-    func trainedRangesFilterWithFineRanges() async {
-        // Profile with only medium data → should produce exactly the 2 fine ranges for medium
-        let profile = PerceptualProfile { builder in
-            let now = Date()
-            for i in 0..<5 {
-                builder.addPoint(
-                    MetricPoint(timestamp: now.addingTimeInterval(Double(i) * 60), value: 10.0),
-                    for: .rhythm(.rhythmOffsetDetection, .medium, .early)
-                )
-            }
+        for range in TempoRange.defaultRanges {
+            #expect(!range.displayName.isEmpty)
         }
-        let timeline = ProgressTimeline(profile: profile)
-        let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
-            profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
-        )
-        #expect(data.trainedRanges.count == 2)
-        #expect(data.trainedRanges.allSatisfy { $0.enclosingDefaultRange == .medium })
     }
 
-    @Test("continuous rhythm matching mode produces valid fine-range classifications")
-    func continuousRhythmMatchingFineRanges() async {
+    // MARK: - Continuous rhythm matching
+
+    @Test("continuous rhythm matching mode produces valid classifications")
+    func continuousRhythmMatchingClassifications() async {
         let profile = PerceptualProfile { builder in
             let now = Date()
             for i in 0..<5 {
@@ -386,10 +352,7 @@ struct SpectrogramDataTests {
             profile: profile,
             timeBuckets: timeline.allGranularityBuckets(for: .continuousRhythmMatching)
         )
-        // Fast coarse range maps to 2 fine ranges
-        #expect(data.trainedRanges.count == 2)
-        #expect(data.trainedRanges.allSatisfy { $0.enclosingDefaultRange == .fast })
-        // Each cell should have non-nil accuracy
+        #expect(data.trainedRanges == [.fast])
         for column in data.columns {
             for cell in column.cells {
                 #expect(cell.meanAccuracyPercent != nil)
@@ -397,31 +360,26 @@ struct SpectrogramDataTests {
         }
     }
 
-    // MARK: - Threshold behavior across fine tempo bands
+    // MARK: - Threshold behavior across tempo bands
 
     @Test("12 ms precise floor is effective for fast tempo bands")
     func preciseFloorAtFastBands() async {
         let thresholds = SpectrogramThresholds.default
-        // At 160-200 band, midpoint = 180 BPM, sixteenth ≈ 83ms
+        // VeryFast: midpoint = 180 BPM, sixteenth ≈ 83ms
         // precise base = 83 * 0.08 = 6.64ms → floor clamps to 12ms → 14.5%
-        let fastBand = TempoRange.spectrogramRanges.last!
-        let sixteenthMs = fastBand.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
+        let sixteenthMs = TempoRange.veryFast.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
         let rawPreciseMs = sixteenthMs * 8.0 / 100.0
         #expect(rawPreciseMs < 12.0, "Raw value must be below floor for this test to be meaningful")
-        // 10ms → 12.0% is below the floor-adjusted precise threshold
-        let level = thresholds.accuracyLevel(for: (10.0 / sixteenthMs) * 100.0, tempoRange: fastBand)
+        let level = thresholds.accuracyLevel(for: (10.0 / sixteenthMs) * 100.0, tempoRange: .veryFast)
         #expect(level == .precise)
     }
 
-    @Test("unified thresholds produce sensible classifications for continuous rhythm matching")
-    func continuousRhythmMatchingClassifications() async {
+    @Test("unified thresholds produce sensible classifications across all ranges")
+    func sensibleClassificationsAcrossAllRanges() async {
         let thresholds = SpectrogramThresholds.default
-        // Verify all 5 levels are reachable at a representative fine tempo band
-        for fineRange in TempoRange.spectrogramRanges {
-            // 0ms should be excellent
-            #expect(thresholds.accuracyLevel(for: 0.0, tempoRange: fineRange) == .excellent)
-            // Very high percentage should be erratic
-            #expect(thresholds.accuracyLevel(for: 80.0, tempoRange: fineRange) == .erratic)
+        for range in TempoRange.defaultRanges {
+            #expect(thresholds.accuracyLevel(for: 0.0, tempoRange: range) == .excellent)
+            #expect(thresholds.accuracyLevel(for: 80.0, tempoRange: range) == .erratic)
         }
     }
 

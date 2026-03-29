@@ -104,39 +104,34 @@ struct SpectrogramData: Sendable {
             return SpectrogramData(columns: [], trainedRanges: [])
         }
 
-        // Collect all metrics per coarse (default) TempoRange × Direction
-        var coarseMetrics: [TempoRange: [RhythmDirection: [MetricPoint]]] = [:]
+        // Collect all metrics per (TempoRange, Direction)
+        var metricsMap: [TempoRange: [RhythmDirection: [MetricPoint]]] = [:]
         for range in TempoRange.defaultRanges {
             for direction in RhythmDirection.allCases {
                 let key = StatisticsKey.rhythm(mode, range, direction)
                 if let summary = profile.statistics(for: key) {
                     let metrics = summary.metrics
                     if !metrics.isEmpty {
-                        coarseMetrics[range, default: [:]][direction] = metrics
+                        metricsMap[range, default: [:]][direction] = metrics
                     }
                 }
             }
         }
 
-        // Map fine spectrogram ranges to coarse ranges; include only those with data
-        let trainedRanges = TempoRange.spectrogramRanges.filter { fine in
-            guard let coarse = fine.enclosingDefaultRange else { return false }
-            return coarseMetrics[coarse] != nil
-        }
+        let trainedRanges = TempoRange.defaultRanges.filter { metricsMap[$0] != nil }
         guard !trainedRanges.isEmpty else {
             return SpectrogramData(columns: [], trainedRanges: [])
         }
 
-        // Build columns — each fine range uses its enclosing coarse range's metrics
+        // Build columns
         let columns = timeBuckets.enumerated().map { columnIndex, bucket in
-            let cells = trainedRanges.map { fineRange in
-                let coarse = fineRange.enclosingDefaultRange ?? fineRange
-                return makeCell(
-                    range: fineRange,
+            let cells = trainedRanges.map { range in
+                makeCell(
+                    range: range,
                     columnIndex: columnIndex,
                     bucket: bucket,
-                    earlyMetrics: coarseMetrics[coarse]?[.early] ?? [],
-                    lateMetrics: coarseMetrics[coarse]?[.late] ?? []
+                    earlyMetrics: metricsMap[range]?[.early] ?? [],
+                    lateMetrics: metricsMap[range]?[.late] ?? []
                 )
             }
             return SpectrogramColumn(index: columnIndex, date: bucket.periodStart, bucketSize: bucket.bucketSize, cells: cells)

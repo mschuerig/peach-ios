@@ -30,36 +30,26 @@ struct TempoRange: Hashable, Sendable, Comparable {
     /// Localized display name for this tempo range.
     var displayName: String {
         switch self {
+        case .verySlow: String(localized: "Very Slow")
         case .slow: String(localized: "Slow")
-        case .medium: String(localized: "Medium")
+        case .moderate: String(localized: "Moderate")
+        case .brisk: String(localized: "Brisk")
         case .fast: String(localized: "Fast")
+        case .veryFast: String(localized: "Very Fast")
         default: "\(lowerBound.value)–\(upperBound.value)"
         }
     }
 
     // MARK: - Default Ranges
 
-    static let slow   = TempoRange(lowerBound: TempoBPM(40),  upperBound: TempoBPM(79))
-    static let medium = TempoRange(lowerBound: TempoBPM(80),  upperBound: TempoBPM(119))
-    static let fast   = TempoRange(lowerBound: TempoBPM(120), upperBound: TempoBPM(200))
+    static let verySlow = TempoRange(lowerBound: TempoBPM(40),  upperBound: TempoBPM(59))
+    static let slow     = TempoRange(lowerBound: TempoBPM(60),  upperBound: TempoBPM(79))
+    static let moderate = TempoRange(lowerBound: TempoBPM(80),  upperBound: TempoBPM(99))
+    static let brisk    = TempoRange(lowerBound: TempoBPM(100), upperBound: TempoBPM(119))
+    static let fast     = TempoRange(lowerBound: TempoBPM(120), upperBound: TempoBPM(159))
+    static let veryFast = TempoRange(lowerBound: TempoBPM(160), upperBound: TempoBPM(200))
 
-    static let defaultRanges: [TempoRange] = [.slow, .medium, .fast]
-
-    // MARK: - Spectrogram Ranges
-
-    static let spectrogramRanges: [TempoRange] = [
-        TempoRange(lowerBound: TempoBPM(40),  upperBound: TempoBPM(59)),
-        TempoRange(lowerBound: TempoBPM(60),  upperBound: TempoBPM(79)),
-        TempoRange(lowerBound: TempoBPM(80),  upperBound: TempoBPM(99)),
-        TempoRange(lowerBound: TempoBPM(100), upperBound: TempoBPM(119)),
-        TempoRange(lowerBound: TempoBPM(120), upperBound: TempoBPM(159)),
-        TempoRange(lowerBound: TempoBPM(160), upperBound: TempoBPM(200)),
-    ]
-
-    /// Returns the coarse default range that fully encloses this range, or nil if none.
-    var enclosingDefaultRange: TempoRange? {
-        Self.defaultRanges.first { $0.contains(lowerBound) && $0.contains(upperBound) }
-    }
+    static let defaultRanges: [TempoRange] = [.verySlow, .slow, .moderate, .brisk, .fast, .veryFast]
 
     /// Returns the range containing the given tempo, or nil if no range matches.
     static func range(for tempo: TempoBPM, in ranges: [TempoRange] = defaultRanges) -> TempoRange? {
