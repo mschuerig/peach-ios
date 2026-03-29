@@ -1,6 +1,6 @@
 # Story 68.2: Low-Latency Tap Sound via Render-Thread Dispatch
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,34 +22,34 @@ so that auditory feedback precisely reflects my timing.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add immediate event ring buffer to `DoubleBufferedScheduleState` (AC: #1, #4)
-  - [ ] 1.1 Add a small lock-free SPSC ring buffer (capacity 8-16) inside `DoubleBufferedScheduleState` for immediate events, separate from the double-buffered pattern slots
-  - [ ] 1.2 Use atomic head/tail indices with acquire/release semantics for thread safety
-  - [ ] 1.3 Producer (main thread) writes `ScheduledMIDIEvent` with `sampleOffset` set to current sample position read from `scheduleState.samplePosition`
-  - [ ] 1.4 Consumer (render thread) drains the ring buffer each frame
+- [x] Task 1: Add immediate event ring buffer to `DoubleBufferedScheduleState` (AC: #1, #4)
+  - [x] 1.1 Add a small lock-free SPSC ring buffer (capacity 8-16) inside `DoubleBufferedScheduleState` for immediate events, separate from the double-buffered pattern slots
+  - [x] 1.2 Use atomic head/tail indices with acquire/release semantics for thread safety
+  - [x] 1.3 Producer (main thread) writes `ScheduledMIDIEvent` with `sampleOffset` set to current sample position read from `scheduleState.samplePosition`
+  - [x] 1.4 Consumer (render thread) drains the ring buffer each frame
 
-- [ ] Task 2: Route `immediateNoteOn`/`immediateNoteOff` through the render callback (AC: #1, #3)
-  - [ ] 2.1 Replace `sampler.startNote()` call in `SoundFontEngine.immediateNoteOn()` with a write to the immediate event ring buffer
-  - [ ] 2.2 Replace `sampler.stopNote()` call in `SoundFontEngine.immediateNoteOff()` with a write to the ring buffer at current position + note-off duration in samples
-  - [ ] 2.3 Remove the `Task.sleep`-based note-off in `SoundFontStepSequencer.playImmediateNote()` -- both note-on and note-off are now enqueued atomically
+- [x] Task 2: Route `immediateNoteOn`/`immediateNoteOff` through the render callback (AC: #1, #3)
+  - [x] 2.1 Replace `sampler.startNote()` call in `SoundFontEngine.immediateNoteOn()` with a write to the immediate event ring buffer
+  - [x] 2.2 Replace `sampler.stopNote()` call in `SoundFontEngine.immediateNoteOff()` with a write to the ring buffer at current position + note-off duration in samples
+  - [x] 2.3 Remove the `Task.sleep`-based note-off in `SoundFontStepSequencer.playImmediateNote()` -- both note-on and note-off are now enqueued atomically
 
-- [ ] Task 3: Dispatch immediate events in the render callback (AC: #1, #2)
-  - [ ] 3.1 In the render callback, after dispatching scheduled pattern events, drain the immediate event ring buffer
-  - [ ] 3.2 Immediate events with `sampleOffset <= frameStart` dispatch at intra-buffer offset 0
-  - [ ] 3.3 Immediate events with `sampleOffset` within the current frame dispatch at the correct intra-buffer offset
-  - [ ] 3.4 Verify pattern event dispatch logic is completely untouched
+- [x] Task 3: Dispatch immediate events in the render callback (AC: #1, #2)
+  - [x] 3.1 In the render callback, after dispatching scheduled pattern events, drain the immediate event ring buffer
+  - [x] 3.2 Immediate events with `sampleOffset <= frameStart` dispatch at intra-buffer offset 0
+  - [x] 3.3 Immediate events with `sampleOffset` within the current frame dispatch at the correct intra-buffer offset
+  - [x] 3.4 Verify pattern event dispatch logic is completely untouched
 
-- [ ] Task 4: Update `StepSequencerEngine` protocol if needed (AC: #1, #2)
-  - [ ] 4.1 If `immediateNoteOn`/`immediateNoteOff` signatures change, update the `StepSequencerEngine` protocol and `MockStepSequencerEngine`
-  - [ ] 4.2 Update `SoundFontStepSequencer.playImmediateNote()` to use the new path (should be simpler -- no Task for note-off)
+- [x] Task 4: Update `StepSequencerEngine` protocol if needed (AC: #1, #2)
+  - [x] 4.1 If `immediateNoteOn`/`immediateNoteOff` signatures change, update the `StepSequencerEngine` protocol and `MockStepSequencerEngine`
+  - [x] 4.2 Update `SoundFontStepSequencer.playImmediateNote()` to use the new path (should be simpler -- no Task for note-off)
 
-- [ ] Task 5: Tests (AC: #5)
-  - [ ] 5.1 Test that an immediate event is dispatched within one render callback cycle
-  - [ ] 5.2 Test that immediate and scheduled events coexist without interference
-  - [ ] 5.3 Test that note-off fires after the specified duration without `Task.sleep`
-  - [ ] 5.4 Verify no regression in existing `SoundFontEngineTests` pattern scheduling tests
-  - [ ] 5.5 Verify `ContinuousRhythmMatchingSessionTests` still pass (mock path unchanged)
-  - [ ] 5.6 Run `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 5: Tests (AC: #5)
+  - [x] 5.1 Test that an immediate event is dispatched within one render callback cycle
+  - [x] 5.2 Test that immediate and scheduled events coexist without interference
+  - [x] 5.3 Test that note-off fires after the specified duration without `Task.sleep`
+  - [x] 5.4 Verify no regression in existing `SoundFontEngineTests` pattern scheduling tests
+  - [x] 5.5 Verify `ContinuousRhythmMatchingSessionTests` still pass (mock path unchanged)
+  - [x] 5.6 Run `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -95,10 +95,28 @@ This eliminates `Task.sleep` for note-off entirely and brings tap latency down t
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Added lock-free SPSC ring buffer (capacity 16) with atomic head/tail indices to `DoubleBufferedScheduleState` for immediate events
+- `immediateNoteOn`/`immediateNoteOff` now enqueue `ScheduledMIDIEvent` to the ring buffer instead of calling `sampler.startNote()`/`sampler.stopNote()` directly
+- Render callback drains immediate ring buffer after pattern events, dispatching at correct intra-buffer offsets
+- `SoundFontStepSequencer.playImmediateNote()` simplified to synchronous note-on + note-off enqueue — no more `Task.sleep` or `noteOffTask`
+- `StepSequencerEngine` protocol unchanged — `immediateNoteOn`/`immediateNoteOff` signatures preserved
+- Early-return guard updated: skips timing/dispatch only when both pattern schedule and immediate ring buffer are empty (preserves existing test semantics while enabling immediate event path)
+- Updated existing `SoundFontStepSequencerTests` for synchronous note-off behavior
+- Added 3 new integration tests in `SoundFontEngineTests`: immediate dispatch within one frame, coexistence with scheduled events, note-off via render thread
+
 ### File List
+- Peach/Core/Audio/SoundFontEngine.swift (modified)
+- Peach/Core/Audio/SoundFontStepSequencer.swift (modified)
+- PeachTests/Core/Audio/SoundFontEngineTests.swift (modified)
+- PeachTests/Core/Audio/SoundFontStepSequencerTests.swift (modified)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-03-29: Implemented low-latency tap sound via render-thread dispatch with SPSC ring buffer

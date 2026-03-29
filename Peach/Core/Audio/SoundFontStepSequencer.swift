@@ -69,7 +69,6 @@ final class SoundFontStepSequencer: StepSequencer {
     // MARK: - State
 
     private var runLoopTask: Task<Void, any Error>?
-    private var noteOffTask: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -147,14 +146,8 @@ final class SoundFontStepSequencer: StepSequencer {
     func playImmediateNote(velocity: MIDIVelocity) throws {
         let midiNoteRaw = UInt8(Self.clickNote.rawValue)
 
-        noteOffTask?.cancel()
         engine.immediateNoteOn(channel: channel, note: midiNoteRaw, velocity: velocity.rawValue)
-
-        noteOffTask = Task { [engine, channel] in
-            try? await Task.sleep(for: Self.noteOffDuration)
-            guard !Task.isCancelled else { return }
-            engine.immediateNoteOff(channel: channel, note: midiNoteRaw)
-        }
+        engine.immediateNoteOff(channel: channel, note: midiNoteRaw)
     }
 
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 {
@@ -162,8 +155,6 @@ final class SoundFontStepSequencer: StepSequencer {
     }
 
     func stop() async throws {
-        noteOffTask?.cancel()
-        noteOffTask = nil
         runLoopTask?.cancel()
         _ = await runLoopTask?.result
         runLoopTask = nil

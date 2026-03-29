@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-29 # Story 68.1 review
+# last_updated: 2026-03-29 # Story 68.2 in-progress
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -531,7 +531,7 @@ development_status:
   # Six independent stories; can be worked in any order.
   epic-68: in-progress
   68-1-spectrogram-refinement: done
-  68-2-low-latency-tap-sound: ready-for-dev
+  68-2-low-latency-tap-sound: review
   68-3-swiftdata-versioned-schema: ready-for-dev
   68-4-dynamic-type-grid-toggles: ready-for-dev
   68-5-macos-app-switch-stop-not-navigate: ready-for-dev

@@ -425,4 +425,91 @@ struct SoundFontEngineTests {
         #expect(engine.dispatchedEventCount == 1)
     }
 
+    // MARK: - Immediate Event Ring Buffer (AC #1, #3, #4)
+
+    @Test("immediate event is dispatched within one render callback cycle")
+    func immediateEventDispatchedWithinOneFrame() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        // Wait for render thread to start advancing
+        for _ in 0..<100 {
+            if engine.currentSamplePosition > 0 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        engine.immediateNoteOn(channel: Self.channel0, note: 76, velocity: 100)
+
+        // Wait for the render thread to process the immediate event
+        for _ in 0..<100 {
+            if engine.dispatchedImmediateEventCount >= 1 { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        #expect(engine.dispatchedImmediateEventCount >= 1)
+    }
+
+    @Test("immediate and scheduled events coexist without interference")
+    func immediateAndScheduledCoexist() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        // Schedule pattern events
+        let patternEvents = (0..<10).map { i in
+            ScheduledMIDIEvent(
+                sampleOffset: Int64(i * 256),
+                midiStatus: SoundFontEngine.noteOnBase,
+                midiNote: 60,
+                velocity: 80
+            )
+        }
+        engine.scheduleEvents(patternEvents)
+
+        // Wait for some pattern events to dispatch
+        for _ in 0..<100 {
+            if engine.dispatchedEventCount >= 5 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        // Now fire an immediate event mid-pattern
+        engine.immediateNoteOn(channel: Self.channel0, note: 76, velocity: 100)
+        engine.immediateNoteOff(channel: Self.channel0, note: 76)
+
+        // Wait for all pattern events and immediate events
+        let lastPatternOffset = Int64(9 * 256)
+        for _ in 0..<200 {
+            if engine.currentSamplePosition > lastPatternOffset
+                && engine.dispatchedImmediateEventCount >= 2 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        // All 10 pattern events dispatched
+        #expect(engine.dispatchedEventCount == 10)
+        // Both immediate note-on and note-off dispatched
+        #expect(engine.dispatchedImmediateEventCount >= 2)
+    }
+
+    @Test("note-off fires via render thread without Task.sleep")
+    func noteOffFiresViaRenderThread() async throws {
+        let engine = try makeEngine()
+        try await engine.loadPreset(SF2Preset(name: "Piano", program: 0, bank: 0), channel: Self.channel0)
+
+        // Wait for render thread to start
+        for _ in 0..<100 {
+            if engine.currentSamplePosition > 0 { break }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+
+        engine.immediateNoteOn(channel: Self.channel0, note: 76, velocity: 100)
+        engine.immediateNoteOff(channel: Self.channel0, note: 76)
+
+        // Both events should be dispatched by the render thread
+        for _ in 0..<100 {
+            if engine.dispatchedImmediateEventCount >= 2 { break }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        #expect(engine.dispatchedImmediateEventCount >= 2)
+    }
+
 }

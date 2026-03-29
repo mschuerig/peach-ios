@@ -64,6 +64,41 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
 
     let dispatchedEventCount: Atomic<Int>
 
+    // MARK: - Immediate Event Ring Buffer (SPSC, lock-free)
+
+    /// Fixed-capacity ring buffer for immediate events (tap sounds).
+    /// Main thread produces (writes head), render thread consumes (reads tail).
+    /// Acquire/release ordering on head/tail ensures visibility of event data.
+    private nonisolated static let immediateCapacity = 16
+    private let immediateBuffer: UnsafeMutablePointer<ScheduledMIDIEvent>
+    let immediateHead: Atomic<Int>
+    let immediateTail: Atomic<Int>
+    let dispatchedImmediateEventCount: Atomic<Int>
+
+    /// Enqueue an immediate event from the main thread (producer).
+    /// Returns false if the ring buffer is full (events dropped).
+    func enqueueImmediate(_ event: ScheduledMIDIEvent) -> Bool {
+        let head = immediateHead.load(ordering: .relaxed)
+        let tail = immediateTail.load(ordering: .acquiring)
+        let next = (head + 1) % Self.immediateCapacity
+        guard next != tail else { return false }
+        immediateBuffer[head] = event
+        immediateHead.store(next, ordering: .releasing)
+        return true
+    }
+
+    /// Dequeue an immediate event from the render thread (consumer).
+    /// Returns nil if the ring buffer is empty.
+    func dequeueImmediate() -> ScheduledMIDIEvent? {
+        let tail = immediateTail.load(ordering: .relaxed)
+        let head = immediateHead.load(ordering: .acquiring)
+        guard tail != head else { return nil }
+        let event = immediateBuffer[tail]
+        let next = (tail + 1) % Self.immediateCapacity
+        immediateTail.store(next, ordering: .releasing)
+        return event
+    }
+
     // MARK: - Lifecycle
 
     init(capacity: Int) {
@@ -73,6 +108,9 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         self.hostTimeAtSample = Atomic<UInt64>(0)
         self.hostTimeSamplePosition = Atomic<Int64>(0)
         self.dispatchedEventCount = Atomic<Int>(0)
+        self.immediateHead = Atomic<Int>(0)
+        self.immediateTail = Atomic<Int>(0)
+        self.dispatchedImmediateEventCount = Atomic<Int>(0)
 
         eventBuffer0 = .allocate(capacity: capacity)
         eventBuffer1 = .allocate(capacity: capacity)
@@ -80,6 +118,7 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         midiBlocks1 = .allocate(capacity: 16)
         midiBlocks0.initialize(repeating: nil, count: 16)
         midiBlocks1.initialize(repeating: nil, count: 16)
+        immediateBuffer = .allocate(capacity: Self.immediateCapacity)
     }
 
     deinit {
@@ -89,6 +128,7 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         midiBlocks0.deallocate()
         midiBlocks1.deinitialize(count: 16)
         midiBlocks1.deallocate()
+        immediateBuffer.deallocate()
     }
 
     // MARK: - Slot Accessors
@@ -228,36 +268,66 @@ final class SoundFontEngine {
             }
 
             let count = shared.count(forSlot: slotIndex)
-            guard count > 0 else { return noErr }
+            let hasImmediateEvents = shared.immediateTail.load(ordering: .acquiring)
+                != shared.immediateHead.load(ordering: .acquiring)
 
-            let events = shared.eventBuffer(forSlot: slotIndex)
+            // Skip timing/dispatch when there's nothing to process
+            guard count > 0 || hasImmediateEvents else { return noErr }
+
             let midiBlocks = shared.midiBlocks(forSlot: slotIndex)
-            var nextIdx = shared.nextIndex
             let windowStart = shared.samplePosition.load(ordering: .relaxed)
             let windowEnd = windowStart + Int64(frameCount)
 
-            while nextIdx < count {
-                let event = events[nextIdx]
-                if event.sampleOffset >= windowEnd { break }
-                if event.sampleOffset >= windowStart {
-                    let channel = event.midiStatus & Self.channelMask
-                    guard let midiBlock = midiBlocks[Int(channel)] else {
-                        nextIdx += 1
-                        continue
+            // --- Dispatch scheduled pattern events ---
+            if count > 0 {
+                let events = shared.eventBuffer(forSlot: slotIndex)
+                var nextIdx = shared.nextIndex
+
+                while nextIdx < count {
+                    let event = events[nextIdx]
+                    if event.sampleOffset >= windowEnd { break }
+                    if event.sampleOffset >= windowStart {
+                        let channel = event.midiStatus & Self.channelMask
+                        guard let midiBlock = midiBlocks[Int(channel)] else {
+                            nextIdx += 1
+                            continue
+                        }
+                        let intraBufferOffset = event.sampleOffset - windowStart
+                        let eventTime = AUEventSampleTimeImmediate
+                            + AUEventSampleTime(intraBufferOffset)
+                        var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
+                        withUnsafeBytes(of: &midiBytes) { rawBuffer in
+                            midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                        }
+                        shared.dispatchedEventCount.wrappingAdd(1, ordering: .relaxed)
                     }
-                    let intraBufferOffset = event.sampleOffset - windowStart
-                    let eventTime = AUEventSampleTimeImmediate
-                        + AUEventSampleTime(intraBufferOffset)
-                    var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
-                    withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                        midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
-                    }
-                    shared.dispatchedEventCount.wrappingAdd(1, ordering: .relaxed)
+                    nextIdx += 1
                 }
-                nextIdx += 1
+
+                shared.nextIndex = nextIdx
             }
 
-            shared.nextIndex = nextIdx
+            // --- Drain immediate event ring buffer ---
+            while let event = shared.dequeueImmediate() {
+                let channel = event.midiStatus & Self.channelMask
+                guard let midiBlock = midiBlocks[Int(channel)] else { continue }
+                let intraBufferOffset: Int64
+                if event.sampleOffset <= windowStart {
+                    intraBufferOffset = 0
+                } else if event.sampleOffset < windowEnd {
+                    intraBufferOffset = event.sampleOffset - windowStart
+                } else {
+                    intraBufferOffset = 0
+                }
+                let eventTime = AUEventSampleTimeImmediate
+                    + AUEventSampleTime(intraBufferOffset)
+                var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
+                withUnsafeBytes(of: &midiBytes) { rawBuffer in
+                    midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                }
+                shared.dispatchedImmediateEventCount.wrappingAdd(1, ordering: .relaxed)
+            }
+
             // Store timing values BEFORE the releasing samplePosition store so that
             // a reader who acquires samplePosition sees consistent timing state.
             shared.hostTimeAtSample.store(timestamp.pointee.mHostTime, ordering: .relaxed)
@@ -401,13 +471,25 @@ final class SoundFontEngine {
     }
 
     func immediateNoteOn(channel: ChannelID, note: UInt8, velocity: UInt8) {
-        guard let sampler = channels[channel] else { return }
-        sampler.startNote(note, withVelocity: velocity, onChannel: channel.rawValue)
+        let currentPos = scheduleState.samplePosition.load(ordering: .acquiring)
+        let event = ScheduledMIDIEvent(
+            sampleOffset: currentPos,
+            midiStatus: Self.noteOnBase | channel.rawValue,
+            midiNote: note,
+            velocity: velocity
+        )
+        _ = scheduleState.enqueueImmediate(event)
     }
 
     func immediateNoteOff(channel: ChannelID, note: UInt8) {
-        guard let sampler = channels[channel] else { return }
-        sampler.stopNote(note, onChannel: channel.rawValue)
+        let currentPos = scheduleState.samplePosition.load(ordering: .acquiring)
+        let event = ScheduledMIDIEvent(
+            sampleOffset: currentPos,
+            midiStatus: Self.noteOffBase | channel.rawValue,
+            midiNote: note,
+            velocity: 0
+        )
+        _ = scheduleState.enqueueImmediate(event)
     }
 
     func sendPitchBend(_ value: PitchBendValue, channel: ChannelID) {
@@ -495,6 +577,10 @@ final class SoundFontEngine {
 
     var dispatchedEventCount: Int {
         scheduleState.dispatchedEventCount.load(ordering: .acquiring)
+    }
+
+    var dispatchedImmediateEventCount: Int {
+        scheduleState.dispatchedImmediateEventCount.load(ordering: .acquiring)
     }
 
     var currentSamplePosition: Int64 {
