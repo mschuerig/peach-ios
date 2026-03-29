@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-29 # Story 66.6 review
+# last_updated: 2026-03-29 # Story 66.7 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -516,6 +516,6 @@ development_status:
   66-4-macos-haptic-feedback-abstraction: done
   66-5-keyboard-shortcuts-for-training: done
   66-6-native-macos-settings-scene: done
-  66-7-menu-bar-integration: ready-for-dev
+  66-7-menu-bar-integration: done
   66-8-macos-testing-and-layout-polish: ready-for-dev
   epic-66-retrospective: optional

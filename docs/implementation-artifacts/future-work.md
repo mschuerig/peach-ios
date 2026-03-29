@@ -227,6 +227,42 @@ Story 66.3 implemented app-switch lifecycle handling on macOS: when the user Cmd
 
 ---
 
+### Menu Navigation State Machine
+
+**Priority:** Medium
+**Category:** Architecture
+**Date Added:** 2026-03-29
+
+**Observation:**
+When macOS menu commands navigate between training screens, the departing screen's `onDisappear` fires *after* the arriving screen's `onAppear`. Both screens share the same `NotePlayer`/`StepSequencer`, so the old screen's teardown (stop/stopAll) kills playback that the new screen just started. The current workaround in `ContentView` clears the navigation path, waits 50 ms for the old screen to fully disappear, then pushes the new destination:
+
+```swift
+navigationPath.removeAll()
+Task {
+    try? await Task.sleep(for: .milliseconds(50))
+    navigationPath = [request.destination]
+}
+```
+
+This is fragile — the delay is a guess, and the sequencing logic lives in the view instead of a model.
+
+**Impact:**
+- Timing-dependent: a slower device or heavier view hierarchy could break the 50 ms assumption
+- Navigation coordination logic belongs in a model, not in `ContentView`
+- Any future navigation trigger (deep links, URL schemes) would need to duplicate the same workaround
+
+**Potential Approaches:**
+1. **Navigation state machine in a model:** a coordinator that sequences stop → await idle → navigate → start, driven by explicit states rather than sleep delays
+2. **Session-owned resource scoping:** each session acquires/releases audio resources explicitly, so a departing session's cleanup cannot affect a session it doesn't own
+3. **NavigationPath diffing:** intercept path changes at the model level, ensure the old destination's session is fully stopped before the new path is committed
+
+**Related Code:**
+- `Peach/App/ContentView.swift` — `onChange(of: commandState.navigationRequest)` workaround
+- `Peach/App/PeachCommands.swift` — `NavigationRequest`, `MenuCommandState`
+- `Peach/App/PeachApp.swift` — `trackActiveSession` active-session tracking
+
+---
+
 ## UX & Onboarding
 
 ### No First-Run Onboarding Experience

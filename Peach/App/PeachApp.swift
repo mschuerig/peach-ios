@@ -38,6 +38,10 @@ struct PeachApp: App {
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
     init() {
+        #if os(macOS)
+        configureSingleWindowApp()
+        #endif
+
         do {
             let container = try ModelContainer(
                 for: PitchDiscriminationRecord.self,
@@ -195,6 +199,12 @@ struct PeachApp: App {
                     trackActiveSession(continuousRhythmMatchingSession, isIdle: isIdle)
                 }
         }
+        #if os(macOS)
+        .commands {
+            PeachCommands()
+        }
+        #endif
+
         #if os(macOS)
         Settings {
             SettingsScreen()
