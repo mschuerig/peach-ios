@@ -6,13 +6,16 @@ import os
 
 @main
 struct PeachApp: App {
-    #if os(iOS)
-    private static let backgroundNotificationName: Notification.Name? = UIApplication.didEnterBackgroundNotification
-    private static let foregroundNotificationName: Notification.Name? = UIApplication.willEnterForegroundNotification
-    #else
-    private static let backgroundNotificationName: Notification.Name? = NSApplication.didResignActiveNotification
-    private static let foregroundNotificationName: Notification.Name? = NSApplication.didBecomeActiveNotification
-    #endif
+    private static let backgroundNotificationName: Notification.Name? = PlatformNotifications.background
+    private static let foregroundNotificationName: Notification.Name? = PlatformNotifications.foreground
+
+    private static func makeAudioInterruptionObserver() -> AudioInterruptionObserving {
+        #if os(iOS)
+        IOSAudioInterruptionObserver()
+        #else
+        NoOpAudioInterruptionObserver()
+        #endif
+    }
 
     @State private var modelContainer: ModelContainer
     @State private var dataStore: TrainingDataStore
@@ -59,7 +62,13 @@ struct PeachApp: App {
             _soundFontLibrary = State(wrappedValue: soundFontLibrary)
             SettingsKeys.validateSoundSource(against: soundFontLibrary)
 
-            let soundFontEngine = try SoundFontEngine(sf2URL: sf2URL)
+            #if os(iOS)
+            let audioSessionConfigurator: AudioSessionConfiguring = IOSAudioSessionConfigurator()
+            #else
+            let audioSessionConfigurator: AudioSessionConfiguring = MacOSAudioSessionConfigurator()
+            #endif
+
+            let soundFontEngine = try SoundFontEngine(sf2URL: sf2URL, audioSessionConfigurator: audioSessionConfigurator)
             _soundFontEngine = State(wrappedValue: soundFontEngine)
 
             let preset = soundFontLibrary.resolve(userSettings.soundSource)
@@ -141,12 +150,19 @@ struct PeachApp: App {
             )
             _continuousRhythmMatchingSession = State(wrappedValue: crmSession)
 
+            #if os(iOS)
+            let backgroundPolicy: BackgroundPolicy = IOSBackgroundPolicy()
+            #else
+            let backgroundPolicy: BackgroundPolicy = MacOSBackgroundPolicy()
+            #endif
+
             _trainingLifecycle = State(wrappedValue: TrainingLifecycleCoordinator(
                 pitchDiscriminationSession: pdSession,
                 pitchMatchingSession: pmSession,
                 rhythmOffsetDetectionSession: rodSession,
                 continuousRhythmMatchingSession: crmSession,
-                userSettings: userSettings
+                userSettings: userSettings,
+                backgroundPolicy: backgroundPolicy
             ))
 
             _settingsCoordinator = State(wrappedValue: SettingsCoordinator(
@@ -263,12 +279,19 @@ struct PeachApp: App {
     }
 
     private func rebuildCoordinators() {
+        #if os(iOS)
+        let backgroundPolicy: BackgroundPolicy = IOSBackgroundPolicy()
+        #else
+        let backgroundPolicy: BackgroundPolicy = MacOSBackgroundPolicy()
+        #endif
+
         trainingLifecycle = TrainingLifecycleCoordinator(
             pitchDiscriminationSession: pitchDiscriminationSession,
             pitchMatchingSession: pitchMatchingSession,
             rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
             continuousRhythmMatchingSession: continuousRhythmMatchingSession,
-            userSettings: userSettings
+            userSettings: userSettings,
+            backgroundPolicy: backgroundPolicy
         )
         settingsCoordinator = SettingsCoordinator(
             dataStore: dataStore,
@@ -311,6 +334,7 @@ struct PeachApp: App {
             strategy: strategy,
             profile: profile,
             observers: observers,
+            audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
             backgroundNotificationName: PeachApp.backgroundNotificationName,
             foregroundNotificationName: PeachApp.foregroundNotificationName
         )
@@ -336,6 +360,7 @@ struct PeachApp: App {
             profile: profile,
             observers: observers,
             sampleRate: sampleRate,
+            audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
             backgroundNotificationName: PeachApp.backgroundNotificationName,
             foregroundNotificationName: PeachApp.foregroundNotificationName
         )
@@ -354,6 +379,7 @@ struct PeachApp: App {
             stepSequencer: stepSequencer,
             observers: observers,
             midiInput: midiInput,
+            audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
             backgroundNotificationName: PeachApp.backgroundNotificationName,
             foregroundNotificationName: PeachApp.foregroundNotificationName
         )
@@ -372,6 +398,7 @@ struct PeachApp: App {
             profile: profile,
             observers: [storeAdapter, profileAdapter],
             midiInput: midiInput,
+            audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
             backgroundNotificationName: PeachApp.backgroundNotificationName,
             foregroundNotificationName: PeachApp.foregroundNotificationName
         )

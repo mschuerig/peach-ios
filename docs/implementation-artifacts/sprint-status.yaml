@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-29 # Story files created for all backlog items (epics 68–74 + hotfix)
+# last_updated: 2026-03-29 # Story 67.1 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -523,7 +523,7 @@ development_status:
   # Push platform differences behind Core/Ports/ protocols, centralize view modifiers,
   # harden bare #else branches. Work order: 67.1 first (protocols), then 67.2 (view cleanup).
   epic-67: in-progress
-  67-1-push-platform-behavior-behind-protocol-ports: ready-for-dev
+  67-1-push-platform-behavior-behind-protocol-ports: review
   67-2-centralize-view-modifiers-and-harden-else-branches: ready-for-dev
   epic-67-retrospective: optional
 

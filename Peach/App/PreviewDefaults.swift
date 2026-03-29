@@ -96,7 +96,8 @@ extension PitchDiscriminationSession {
             notePlayer: StubNotePlayer(),
             strategy: StubPitchDiscriminationStrategy(),
             profile: PerceptualProfile(),
-            observers: [StubPitchDiscriminationDataStore()]
+            observers: [StubPitchDiscriminationDataStore()],
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
     }()
 }
@@ -105,7 +106,8 @@ extension PitchMatchingSession {
     static let stub: PitchMatchingSession = {
         PitchMatchingSession(
             notePlayer: StubNotePlayer(),
-            profile: PerceptualProfile()
+            profile: PerceptualProfile(),
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
     }()
 }
@@ -116,7 +118,8 @@ extension RhythmOffsetDetectionSession {
             rhythmPlayer: StubRhythmPlayer(),
             strategy: StubRhythmOffsetDetectionStrategy(),
             profile: PerceptualProfile(),
-            sampleRate: .standard48000
+            sampleRate: .standard48000,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
     }()
 }
@@ -124,7 +127,8 @@ extension RhythmOffsetDetectionSession {
 extension ContinuousRhythmMatchingSession {
     static let stub: ContinuousRhythmMatchingSession = {
         ContinuousRhythmMatchingSession(
-            stepSequencer: StubStepSequencer()
+            stepSequencer: StubStepSequencer(),
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
     }()
 }
@@ -138,7 +142,8 @@ extension TrainingLifecycleCoordinator {
             pitchMatchingSession: .stub,
             rhythmOffsetDetectionSession: .stub,
             continuousRhythmMatchingSession: .stub,
-            userSettings: StubUserSettings()
+            userSettings: StubUserSettings(),
+            backgroundPolicy: IOSBackgroundPolicy()
         )
     }()
 }

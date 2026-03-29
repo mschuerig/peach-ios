@@ -14,7 +14,8 @@ struct PitchDiscriminationSessionResetTests {
         let session = PitchDiscriminationSession(
             notePlayer: MockNotePlayer(),
             strategy: MockNextPitchDiscriminationStrategy(),
-            profile: profile
+            profile: profile,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
 
         // Simulate converged state via observer
@@ -43,7 +44,8 @@ struct PitchDiscriminationSessionResetTests {
         let session = PitchDiscriminationSession(
             notePlayer: MockNotePlayer(),
             strategy: strategy,
-            profile: profile
+            profile: profile,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
 
         // Simulate converged state via observer
@@ -73,7 +75,8 @@ struct PitchDiscriminationSessionResetTests {
         let session = PitchDiscriminationSession(
             notePlayer: MockNotePlayer(),
             strategy: strategy,
-            profile: profile
+            profile: profile,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
 
         // Set up trained data via observer
@@ -127,7 +130,8 @@ struct PitchDiscriminationSessionResetTests {
         let session = PitchDiscriminationSession(
             notePlayer: mockPlayer,
             strategy: MockNextPitchDiscriminationStrategy(),
-            profile: profile
+            profile: profile,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
 
         // Start training and wait for non-idle state

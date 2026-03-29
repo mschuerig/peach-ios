@@ -52,6 +52,7 @@ final class PitchDiscriminationSession: TrainingSession {
         resettables: [Resettable] = [],
         observers: [PitchDiscriminationObserver] = [],
         notificationCenter: NotificationCenter = .default,
+        audioInterruptionObserver: AudioInterruptionObserving,
         backgroundNotificationName: Notification.Name? = nil,
         foregroundNotificationName: Notification.Name? = nil
     ) {
@@ -63,6 +64,7 @@ final class PitchDiscriminationSession: TrainingSession {
         self.lifecycle = SessionLifecycle(
             logger: logger,
             notificationCenter: notificationCenter,
+            audioInterruptionObserver: audioInterruptionObserver,
             backgroundNotificationName: backgroundNotificationName,
             foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }

@@ -1,4 +1,4 @@
-import AVFoundation
+import Foundation
 import Synchronization
 import Testing
 @testable import Peach
@@ -15,6 +15,7 @@ struct SessionLifecycleTests {
         SessionLifecycle(
             logger: .init(subsystem: "test", category: "SessionLifecycleTests"),
             notificationCenter: notificationCenter,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver(),
             onStopRequired: onStopRequired
         )
     }
@@ -97,31 +98,42 @@ struct SessionLifecycleTests {
         #expect(secondTaskRan.withLock { $0 })
     }
 
-    #if os(iOS)
     // MARK: - interruptionMonitor calls onStopRequired
 
-    @Test("interruptionMonitor triggers onStopRequired on audio interruption")
+    @Test("interruptionMonitor triggers onStopRequired via injected observer")
     func interruptionMonitorCallsOnStopRequired() async {
         let notificationCenter = NotificationCenter()
         let stopRequiredCalled = Mutex(false)
+        let mockObserver = CallbackAudioInterruptionObserver()
 
-        let lifecycle = Self.makeLifecycle(
+        let lifecycle = SessionLifecycle(
+            logger: .init(subsystem: "test", category: "SessionLifecycleTests"),
             notificationCenter: notificationCenter,
+            audioInterruptionObserver: mockObserver,
             onStopRequired: { stopRequiredCalled.withLock { $0 = true } }
         )
 
-        notificationCenter.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
-
-        // The notification handler hops to MainActor via Task, so give it a moment
-        try? await Task.sleep(for: .milliseconds(50))
+        mockObserver.simulateInterruption()
 
         #expect(stopRequiredCalled.withLock { $0 })
         _ = lifecycle // keep alive
     }
-    #endif
+}
 
+// MARK: - Test Helpers
+
+private final class CallbackAudioInterruptionObserver: AudioInterruptionObserving {
+    private var storedOnStopRequired: (() -> Void)?
+
+    func setupObservers(
+        notificationCenter: NotificationCenter,
+        onStopRequired: @escaping () -> Void
+    ) -> [NSObjectProtocol] {
+        storedOnStopRequired = onStopRequired
+        return []
+    }
+
+    func simulateInterruption() {
+        storedOnStopRequired?()
+    }
 }

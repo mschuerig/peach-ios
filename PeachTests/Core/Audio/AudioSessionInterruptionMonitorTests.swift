@@ -1,174 +1,102 @@
-#if os(iOS)
 import Foundation
 import Testing
-import AVFoundation
-import UIKit
 @testable import Peach
+
+// MARK: - Mock Audio Interruption Observer
+
+private final class MockAudioInterruptionObservingForMonitor: AudioInterruptionObserving {
+    var setupCallCount = 0
+    private var storedOnStopRequired: (() -> Void)?
+
+    func setupObservers(
+        notificationCenter: NotificationCenter,
+        onStopRequired: @escaping () -> Void
+    ) -> [NSObjectProtocol] {
+        setupCallCount += 1
+        storedOnStopRequired = onStopRequired
+        return []
+    }
+
+    func simulateInterruption() {
+        storedOnStopRequired?()
+    }
+}
+
+// MARK: - Tests
 
 @Suite("AudioSessionInterruptionMonitor")
 struct AudioSessionInterruptionMonitorTests {
 
-    // MARK: - Audio Interruption Tests
+    // MARK: - Audio Interruption Observer Integration
 
-    @Test("Interruption began calls onStopRequired")
-    func interruptionBeganCallsOnStopRequired() async {
+    @Test("delegates audio interruption setup to injected observer")
+    func delegatesToInjectedObserver() async {
         let nc = NotificationCenter()
+        let mockObserver = MockAudioInterruptionObservingForMonitor()
+        let _monitor = AudioSessionInterruptionMonitor(
+            notificationCenter: nc,
+            logger: .init(subsystem: "test", category: "test"),
+            audioInterruptionObserver: mockObserver,
+            onStopRequired: {}
+        )
+
+        #expect(mockObserver.setupCallCount == 1)
+        _ = _monitor
+    }
+
+    @Test("injected observer interruption calls onStopRequired")
+    func injectedObserverInterruptionCallsOnStopRequired() async {
+        let nc = NotificationCenter()
+        let mockObserver = MockAudioInterruptionObservingForMonitor()
         var stopCalled = false
         let _monitor = AudioSessionInterruptionMonitor(
             notificationCenter: nc,
             logger: .init(subsystem: "test", category: "test"),
+            audioInterruptionObserver: mockObserver,
             onStopRequired: { stopCalled = true }
         )
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mockObserver.simulateInterruption()
 
-        await Task.yield()
         #expect(stopCalled)
-        _ = _monitor
-    }
-
-    @Test("Interruption ended does not call onStopRequired")
-    func interruptionEndedDoesNotCallOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue]
-        )
-
-        await Task.yield()
-        #expect(!stopCalled)
-        _ = _monitor
-    }
-
-    @Test("Nil interruption type does not call onStopRequired")
-    func nilInterruptionTypeDoesNotCallOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: nil
-        )
-
-        await Task.yield()
-        #expect(!stopCalled)
-        _ = _monitor
-    }
-
-    // MARK: - Route Change Tests
-
-    @Test("Route change oldDeviceUnavailable calls onStopRequired")
-    func routeChangeOldDeviceUnavailableCallsOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
-
-        await Task.yield()
-        #expect(stopCalled)
-        _ = _monitor
-    }
-
-    @Test("Non-stop route changes do not call onStopRequired")
-    func nonStopRouteChangesDoNotCallOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.newDeviceAvailable.rawValue]
-        )
-
-        await Task.yield()
-        #expect(!stopCalled)
-        _ = _monitor
-    }
-
-    @Test("Nil route change reason does not call onStopRequired")
-    func nilRouteChangeReasonDoesNotCallOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: nil
-        )
-
-        await Task.yield()
-        #expect(!stopCalled)
         _ = _monitor
     }
 
     // MARK: - Background Notification Tests
 
-    @Test("Background notification calls onStopRequired when backgroundNotificationName is provided")
-    func backgroundNotificationCallsOnStopRequiredWhenEnabled() async {
+    @Test("background notification calls onStopRequired when name is provided")
+    func backgroundNotificationCallsOnStopRequired() async {
         let nc = NotificationCenter()
+        let testNotification = Notification.Name("test.background")
         var stopCalled = false
         let _monitor = AudioSessionInterruptionMonitor(
             notificationCenter: nc,
             logger: .init(subsystem: "test", category: "test"),
-            backgroundNotificationName: UIApplication.didEnterBackgroundNotification,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver(),
+            backgroundNotificationName: testNotification,
             onStopRequired: { stopCalled = true }
         )
 
-        nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        nc.post(name: testNotification, object: nil)
 
         await Task.yield()
         #expect(stopCalled)
         _ = _monitor
     }
 
-    @Test("Background notification does not call onStopRequired when backgroundNotificationName is nil")
-    func backgroundNotificationDoesNotCallOnStopRequiredWhenDisabled() async {
+    @Test("background notification does not call onStopRequired when name is nil")
+    func backgroundNotificationDoesNotCallWhenNil() async {
         let nc = NotificationCenter()
+        let testNotification = Notification.Name("test.background")
         var stopCalled = false
         let _monitor = AudioSessionInterruptionMonitor(
             notificationCenter: nc,
             logger: .init(subsystem: "test", category: "test"),
+            audioInterruptionObserver: NoOpAudioInterruptionObserver(),
             onStopRequired: { stopCalled = true }
         )
 
-        nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        nc.post(name: testNotification, object: nil)
 
         await Task.yield()
         #expect(!stopCalled)
@@ -177,103 +105,42 @@ struct AudioSessionInterruptionMonitorTests {
 
     // MARK: - Foreground Notification Tests
 
-    @Test("Foreground notification calls onStopRequired when foregroundNotificationName is provided")
-    func foregroundNotificationCallsOnStopRequiredWhenEnabled() async {
+    @Test("foreground notification calls onStopRequired when name is provided")
+    func foregroundNotificationCallsOnStopRequired() async {
         let nc = NotificationCenter()
+        let testNotification = Notification.Name("test.foreground")
         var stopCalled = false
         let _monitor = AudioSessionInterruptionMonitor(
             notificationCenter: nc,
             logger: .init(subsystem: "test", category: "test"),
-            foregroundNotificationName: UIApplication.willEnterForegroundNotification,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver(),
+            foregroundNotificationName: testNotification,
             onStopRequired: { stopCalled = true }
         )
 
-        nc.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        nc.post(name: testNotification, object: nil)
 
         await Task.yield()
         #expect(stopCalled)
         _ = _monitor
     }
 
-    @Test("Foreground notification does not call onStopRequired when foregroundNotificationName is nil")
-    func foregroundNotificationDoesNotCallOnStopRequiredWhenDisabled() async {
+    @Test("foreground notification does not call onStopRequired when name is nil")
+    func foregroundNotificationDoesNotCallWhenNil() async {
         let nc = NotificationCenter()
+        let testNotification = Notification.Name("test.foreground")
         var stopCalled = false
         let _monitor = AudioSessionInterruptionMonitor(
             notificationCenter: nc,
             logger: .init(subsystem: "test", category: "test"),
+            audioInterruptionObserver: NoOpAudioInterruptionObserver(),
             onStopRequired: { stopCalled = true }
         )
 
-        nc.post(name: UIApplication.willEnterForegroundNotification, object: nil)
+        nc.post(name: testNotification, object: nil)
 
         await Task.yield()
         #expect(!stopCalled)
         _ = _monitor
     }
 }
-#endif
-
-#if os(macOS)
-import AppKit
-import Foundation
-import Testing
-@testable import Peach
-
-@Suite("AudioSessionInterruptionMonitor macOS")
-struct AudioSessionInterruptionMonitorMacOSTests {
-
-    @Test("macOS resignActive notification calls onStopRequired when backgroundNotificationName is provided")
-    func resignActiveCallsOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            backgroundNotificationName: NSApplication.didResignActiveNotification,
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
-
-        await Task.yield()
-        #expect(stopCalled)
-        _ = _monitor
-    }
-
-    @Test("macOS becomeActive notification calls onStopRequired when foregroundNotificationName is provided")
-    func becomeActiveCallsOnStopRequired() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            foregroundNotificationName: NSApplication.didBecomeActiveNotification,
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(name: NSApplication.didBecomeActiveNotification, object: nil)
-
-        await Task.yield()
-        #expect(stopCalled)
-        _ = _monitor
-    }
-
-    @Test("macOS resignActive notification does not call onStopRequired when backgroundNotificationName is nil")
-    func resignActiveDoesNotCallOnStopRequiredWhenDisabled() async {
-        let nc = NotificationCenter()
-        var stopCalled = false
-        let _monitor = AudioSessionInterruptionMonitor(
-            notificationCenter: nc,
-            logger: .init(subsystem: "test", category: "test"),
-            onStopRequired: { stopCalled = true }
-        )
-
-        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
-
-        await Task.yield()
-        #expect(!stopCalled)
-        _ = _monitor
-    }
-}
-#endif

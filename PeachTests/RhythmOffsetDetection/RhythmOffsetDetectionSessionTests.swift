@@ -38,6 +38,7 @@ private func makeSession(
         profile: profile,
         observers: [mockObserver],
         sampleRate: .standard48000,
+        audioInterruptionObserver: NoOpAudioInterruptionObserver(),
         currentTime: currentTime
     )
 

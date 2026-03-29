@@ -169,8 +169,11 @@ final class SoundFontEngine {
 
     // MARK: - Initialization
 
-    init(sf2URL: URL) throws {
+    private let audioSessionConfigurator: AudioSessionConfiguring
+
+    init(sf2URL: URL, audioSessionConfigurator: AudioSessionConfiguring) throws {
         self.sf2URL = sf2URL
+        self.audioSessionConfigurator = audioSessionConfigurator
 
         let engine = AVAudioEngine()
         self.engine = engine
@@ -185,7 +188,7 @@ final class SoundFontEngine {
         engine.connect(sampler0, to: engine.mainMixerNode, format: nil)
         channels[channel0] = sampler0
 
-        try Self.configureAudioSession()
+        try audioSessionConfigurator.configure(logger: Self.audioSessionLogger)
         try engine.start()
 
         // Register MIDI block for channel 0 (available after engine start).
@@ -320,7 +323,7 @@ final class SoundFontEngine {
     // MARK: - Audio Session & Engine Lifecycle
 
     func ensureAudioSessionConfigured() throws {
-        try Self.configureAudioSession()
+        try audioSessionConfigurator.configure(logger: Self.audioSessionLogger)
     }
 
     func ensureEngineRunning() throws {
@@ -431,22 +434,7 @@ final class SoundFontEngine {
         }
     }
 
-    // MARK: - Audio Session
-
     private static let audioSessionLogger = Logger(subsystem: "com.peach.app", category: "SoundFontEngine")
-
-    private static func configureAudioSession() throws {
-        #if os(iOS)
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playback, mode: .default, options: [])
-        try session.setPreferredIOBufferDuration(0.005)
-        try session.setActive(true)
-        let actualMs = session.ioBufferDuration * 1000
-        audioSessionLogger.info("Requested 5ms buffer, got \(actualMs, format: .fixed(precision: 1))ms")
-        #else
-        audioSessionLogger.info("Audio session configuration skipped on macOS")
-        #endif
-    }
 
     // MARK: - Render-Thread Scheduling
 

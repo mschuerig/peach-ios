@@ -43,6 +43,7 @@ let defaultPitchMatchingTestSettings = PitchMatchingSettings(
 
 func makePitchMatchingSession(
     notificationCenter: NotificationCenter = .default,
+    audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver(),
     backgroundNotificationName: Notification.Name? = nil,
     foregroundNotificationName: Notification.Name? = nil
 ) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver) {
@@ -54,6 +55,7 @@ func makePitchMatchingSession(
         profile: profile,
         observers: [observer],
         notificationCenter: notificationCenter,
+        audioInterruptionObserver: audioInterruptionObserver,
         backgroundNotificationName: backgroundNotificationName,
         foregroundNotificationName: foregroundNotificationName
     )
@@ -1049,7 +1051,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Audio interruption began stops from playingTunable")
     func audioInterruptionBeganStopsFromPlayingTunable() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
@@ -1066,7 +1068,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Audio interruption began stops from awaitingSliderTouch")
     func audioInterruptionBeganStopsFromAwaitingSliderTouch() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1083,7 +1085,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Audio interruption ended does not restart")
     func audioInterruptionEndedDoesNotRestart() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1108,7 +1110,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Nil interruption type handled gracefully")
     func nilInterruptionTypeHandledGracefully() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1126,7 +1128,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Audio interruption on idle is safe")
     func audioInterruptionOnIdleIsSafe() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         #expect(session.state == .idle)
 
         nc.post(
@@ -1143,7 +1145,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Audio interruption began stops from playingReference")
     func audioInterruptionBeganStopsFromPlayingReference() async throws {
         let nc = NotificationCenter()
-        let (session, notePlayer, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, notePlayer, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         notePlayer.instantPlayback = false
         notePlayer.simulatedPlaybackDuration = .seconds(5)
         session.start(settings: defaultPitchMatchingTestSettings)
@@ -1162,7 +1164,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Audio interruption began stops from showingFeedback")
     func audioInterruptionBeganStopsFromShowingFeedback() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
@@ -1184,7 +1186,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Route change oldDeviceUnavailable stops session")
     func routeChangeOldDeviceUnavailableStops() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1208,7 +1210,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
 
         for reason in nonStopReasons {
             let nc = NotificationCenter()
-            let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+            let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
             session.start(settings: defaultPitchMatchingTestSettings)
             try await waitForState(session, .awaitingSliderTouch)
 
@@ -1229,7 +1231,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Route change on idle is safe")
     func routeChangeOnIdleIsSafe() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         #expect(session.state == .idle)
 
         nc.post(
@@ -1298,7 +1300,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Training can restart after interruption stop")
     func canRestartAfterInterruptionStop() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1317,7 +1319,7 @@ struct PitchMatchingSessionAudioInterruptionTests {
     @Test("Training can restart after route change stop")
     func canRestartAfterRouteChangeStop() async throws {
         let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc)
+        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
@@ -1439,7 +1441,8 @@ func makePitchMatchingSessionWithMIDI(
         notePlayer: notePlayer,
         profile: profile,
         observers: [observer],
-        midiInput: midiInput
+        midiInput: midiInput,
+        audioInterruptionObserver: NoOpAudioInterruptionObserver()
     )
     return (session, notePlayer, profile, observer, midiInput)
 }

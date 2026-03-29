@@ -81,6 +81,7 @@ final class PitchMatchingSession: TrainingSession {
         observers: [PitchMatchingObserver] = [],
         midiInput: (any MIDIInput)? = nil,
         notificationCenter: NotificationCenter = .default,
+        audioInterruptionObserver: AudioInterruptionObserving,
         backgroundNotificationName: Notification.Name? = nil,
         foregroundNotificationName: Notification.Name? = nil
     ) {
@@ -92,6 +93,7 @@ final class PitchMatchingSession: TrainingSession {
         self.lifecycle = SessionLifecycle(
             logger: logger,
             notificationCenter: notificationCenter,
+            audioInterruptionObserver: audioInterruptionObserver,
             backgroundNotificationName: backgroundNotificationName,
             foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }

@@ -51,7 +51,7 @@ struct ContinuousRhythmMatchingSessionTests {
         var samplesPerCycle: Int64 { sequencer.samplesPerCycle }
     }
 
-    private func makeSession() -> Fixture {
+    private func makeSession(audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver()) -> Fixture {
         let sequencer = MockStepSequencer()
         // Set timing constants matching 120 BPM at 44100 Hz
         sequencer.samplesPerStep = 5512
@@ -64,7 +64,8 @@ struct ContinuousRhythmMatchingSessionTests {
         let session = ContinuousRhythmMatchingSession(
             stepSequencer: sequencer,
             observers: [observer],
-            notificationCenter: notificationCenter
+            notificationCenter: notificationCenter,
+            audioInterruptionObserver: audioInterruptionObserver
         )
 
         return Fixture(
@@ -89,7 +90,8 @@ struct ContinuousRhythmMatchingSessionTests {
             stepSequencer: sequencer,
             observers: [observer],
             midiInput: midiInput,
-            notificationCenter: notificationCenter
+            notificationCenter: notificationCenter,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
 
         return MIDIFixture(
@@ -498,7 +500,7 @@ struct ContinuousRhythmMatchingSessionTests {
 
     @Test("audio interruption stops session and discards incomplete trial")
     func audioInterruptionStopsSession() async {
-        let f = makeSession()
+        let f = makeSession(audioInterruptionObserver: IOSAudioInterruptionObserver())
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 

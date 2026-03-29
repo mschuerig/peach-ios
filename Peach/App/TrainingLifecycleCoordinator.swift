@@ -1,12 +1,24 @@
 import SwiftUI
 import os
 
+extension AppScenePhase {
+    init(_ scenePhase: ScenePhase) {
+        switch scenePhase {
+        case .active: self = .active
+        case .inactive: self = .inactive
+        case .background: self = .background
+        @unknown default: self = .inactive
+        }
+    }
+}
+
 final class TrainingLifecycleCoordinator {
     private let pitchDiscriminationSession: PitchDiscriminationSession
     private let pitchMatchingSession: PitchMatchingSession
     private let rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
     private let continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
     private let userSettings: any UserSettings
+    private let backgroundPolicy: BackgroundPolicy
     var activeSession: (any TrainingSession)?
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "Lifecycle")
@@ -16,25 +28,22 @@ final class TrainingLifecycleCoordinator {
         pitchMatchingSession: PitchMatchingSession,
         rhythmOffsetDetectionSession: RhythmOffsetDetectionSession,
         continuousRhythmMatchingSession: ContinuousRhythmMatchingSession,
-        userSettings: any UserSettings
+        userSettings: any UserSettings,
+        backgroundPolicy: BackgroundPolicy
     ) {
         self.pitchDiscriminationSession = pitchDiscriminationSession
         self.pitchMatchingSession = pitchMatchingSession
         self.rhythmOffsetDetectionSession = rhythmOffsetDetectionSession
         self.continuousRhythmMatchingSession = continuousRhythmMatchingSession
         self.userSettings = userSettings
+        self.backgroundPolicy = backgroundPolicy
     }
 
     // MARK: - Scene Phase
 
     func handleScenePhase(old: ScenePhase, new: ScenePhase, clearNavigation: () -> Void) {
-        #if os(iOS)
-        let shouldStop = new == .background
-        #else
-        let shouldStop = new == .background || new == .inactive
-        #endif
-
-        if shouldStop {
+        let appPhase = AppScenePhase(new)
+        if backgroundPolicy.shouldStopTraining(newPhase: appPhase) {
             Self.logger.info("App leaving active state (\(String(describing: new))) — stopping active session")
             activeSession?.stop()
         }

@@ -9,7 +9,7 @@ struct TrainingLifecycleCoordinatorTests {
 
     @Test("stops active session on background")
     func backgroundStopsActiveSession() {
-        let coordinator = makeCoordinator()
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         let mockSession = MockTrainingSession()
         coordinator.activeSession = mockSession
 
@@ -20,7 +20,7 @@ struct TrainingLifecycleCoordinatorTests {
 
     @Test("does not stop session when no active session")
     func backgroundWithNoActiveSession() {
-        let coordinator = makeCoordinator()
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
 
         coordinator.handleScenePhase(old: .active, new: .background) {}
         // No crash — nil activeSession is safe
@@ -28,7 +28,7 @@ struct TrainingLifecycleCoordinatorTests {
 
     @Test("calls clearNavigation on foreground from background")
     func foregroundClearsNavigation() {
-        let coordinator = makeCoordinator()
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         var navigationCleared = false
 
         coordinator.handleScenePhase(old: .background, new: .active) {
@@ -40,7 +40,7 @@ struct TrainingLifecycleCoordinatorTests {
 
     @Test("clears navigation when returning from inactive (e.g. phone call)")
     func inactiveToActiveClearsNavigation() {
-        let coordinator = makeCoordinator()
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         var navigationCleared = false
 
         coordinator.handleScenePhase(old: .inactive, new: .active) {
@@ -50,35 +50,9 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(navigationCleared)
     }
 
-    #if os(iOS)
-    @Test("does not stop session when transitioning to inactive on iOS")
-    func inactiveDoesNotStopSessionOnIOS() {
-        let coordinator = makeCoordinator()
-        let mockSession = MockTrainingSession()
-        coordinator.activeSession = mockSession
-
-        coordinator.handleScenePhase(old: .active, new: .inactive) {}
-
-        #expect(mockSession.stopCallCount == 0)
-    }
-    #endif
-
-    #if os(macOS)
-    @Test("stops active session when transitioning to inactive on macOS")
-    func inactiveStopsSessionOnMacOS() {
-        let coordinator = makeCoordinator()
-        let mockSession = MockTrainingSession()
-        coordinator.activeSession = mockSession
-
-        coordinator.handleScenePhase(old: .active, new: .inactive) {}
-
-        #expect(mockSession.stopCallCount == 1)
-    }
-    #endif
-
     @Test("backgrounds both stops session and does not clear navigation")
     func backgroundStopsButDoesNotClear() {
-        let coordinator = makeCoordinator()
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         let mockSession = MockTrainingSession()
         coordinator.activeSession = mockSession
         var navigationCleared = false
@@ -91,9 +65,46 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(!navigationCleared)
     }
 
+    // MARK: - iOS Background Policy
+
+    @Test("iOS policy does not stop session when transitioning to inactive")
+    func iosPolicyDoesNotStopOnInactive() {
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+
+        coordinator.handleScenePhase(old: .active, new: .inactive) {}
+
+        #expect(mockSession.stopCallCount == 0)
+    }
+
+    // MARK: - macOS Background Policy
+
+    @Test("macOS policy stops active session when transitioning to inactive")
+    func macosPolicyStopsOnInactive() {
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+
+        coordinator.handleScenePhase(old: .active, new: .inactive) {}
+
+        #expect(mockSession.stopCallCount == 1)
+    }
+
+    @Test("macOS policy stops active session on background")
+    func macosPolicyStopsOnBackground() {
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+
+        coordinator.handleScenePhase(old: .active, new: .background) {}
+
+        #expect(mockSession.stopCallCount == 1)
+    }
+
     // MARK: - Helpers
 
-    private func makeCoordinator() -> TrainingLifecycleCoordinator {
+    private func makeCoordinator(policy: BackgroundPolicy) -> TrainingLifecycleCoordinator {
         let notePlayer = MockNotePlayer()
         notePlayer.instantPlayback = true
         let profile = PerceptualProfile()
@@ -102,22 +113,27 @@ struct TrainingLifecycleCoordinatorTests {
                 notePlayer: notePlayer,
                 strategy: MockNextPitchDiscriminationStrategy(),
                 profile: profile,
-                observers: []
+                observers: [],
+                audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
             pitchMatchingSession: PitchMatchingSession(
                 notePlayer: notePlayer,
-                profile: profile
+                profile: profile,
+                audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
             rhythmOffsetDetectionSession: RhythmOffsetDetectionSession(
                 rhythmPlayer: MockRhythmPlayer(),
                 strategy: MockNextRhythmOffsetDetectionStrategy(),
                 profile: profile,
-                sampleRate: .standard48000
+                sampleRate: .standard48000,
+                audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
             continuousRhythmMatchingSession: ContinuousRhythmMatchingSession(
-                stepSequencer: MockStepSequencer()
+                stepSequencer: MockStepSequencer(),
+                audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
-            userSettings: MockUserSettings()
+            userSettings: MockUserSettings(),
+            backgroundPolicy: policy
         )
     }
 }

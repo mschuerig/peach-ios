@@ -8,7 +8,7 @@ struct SoundFontEngineTests {
     private static let channel0 = SoundFontEngine.ChannelID(0)
 
     private func makeEngine() throws -> SoundFontEngine {
-        try SoundFontEngine(sf2URL: TestSoundFont.url)
+        try SoundFontEngine(sf2URL: TestSoundFont.url, audioSessionConfigurator: MockAudioSessionConfigurator())
     }
 
     // MARK: - Initialization

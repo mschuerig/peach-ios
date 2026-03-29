@@ -8,7 +8,7 @@ struct SoundFontPlaybackHandleTests {
     private static let testLibrary = TestSoundFont.makeLibrary()
 
     private func makePlayer() throws -> SoundFontPlayer {
-        let engine = try SoundFontEngine(sf2URL: TestSoundFont.url)
+        let engine = try SoundFontEngine(sf2URL: TestSoundFont.url, audioSessionConfigurator: MockAudioSessionConfigurator())
         let preset = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:0"))
         return SoundFontPlayer(engine: engine, preset: preset)
     }

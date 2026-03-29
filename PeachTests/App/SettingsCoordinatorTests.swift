@@ -84,7 +84,8 @@ struct SettingsCoordinatorTests {
                 notePlayer: notePlayer,
                 strategy: MockNextPitchDiscriminationStrategy(),
                 profile: profile,
-                observers: []
+                observers: [],
+                audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
             profile: profile,
             transferService: transferService,

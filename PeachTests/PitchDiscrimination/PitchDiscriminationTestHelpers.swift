@@ -29,6 +29,7 @@ func makePitchDiscriminationSession(
     ],
     resettables: [Resettable] = [],
     includeHaptic: Bool = false,
+    audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver(),
     notificationCenter: NotificationCenter? = nil
 ) -> PitchDiscriminationSessionFixture {
     let mockPlayer = MockNotePlayer()
@@ -53,7 +54,8 @@ func makePitchDiscriminationSession(
         profile: profile,
         resettables: resettables,
         observers: observers,
-        notificationCenter: notificationCenter ?? .default
+        notificationCenter: notificationCenter ?? .default,
+        audioInterruptionObserver: audioInterruptionObserver
     )
 
     return PitchDiscriminationSessionFixture(
