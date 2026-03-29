@@ -195,6 +195,13 @@ struct PeachApp: App {
                     trackActiveSession(continuousRhythmMatchingSession, isIdle: isIdle)
                 }
         }
+        #if os(macOS)
+        Settings {
+            SettingsScreen()
+                .environment(\.soundSourceProvider, soundFontLibrary)
+                .environment(\.settingsCoordinator, settingsCoordinator)
+        }
+        #endif
     }
 
     // MARK: - Active Session Tracking

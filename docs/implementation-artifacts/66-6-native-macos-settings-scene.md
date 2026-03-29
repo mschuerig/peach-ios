@@ -1,6 +1,6 @@
 # Story 66.6: Native macOS Settings Scene
 
-Status: draft
+Status: review
 
 ## Story
 
@@ -24,17 +24,17 @@ so that I can configure the app using the native macOS Settings window.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add a `Settings` scene to `PeachApp` (AC: #1, #4)
-  - [ ] 1.1 In `PeachApp.body`, add a `#if os(macOS)` block containing a `Settings { ... }` scene
-  - [ ] 1.2 The Settings scene content wraps `SettingsScreen()` with necessary environment injection
-  - [ ] 1.3 Verify Cmd+, works out of the box (SwiftUI provides this automatically for `Settings` scenes)
+- [x] Task 1: Add a `Settings` scene to `PeachApp` (AC: #1, #4)
+  - [x] 1.1 In `PeachApp.body`, add a `#if os(macOS)` block containing a `Settings { ... }` scene
+  - [x] 1.2 The Settings scene content wraps `SettingsScreen()` with necessary environment injection
+  - [x] 1.3 Verify Cmd+, works out of the box (SwiftUI provides this automatically for `Settings` scenes)
 
-- [ ] Task 2: Ensure environment values are available (AC: #2, #3)
-  - [ ] 2.1 The `Settings` scene needs the same `@Environment` values as the in-app SettingsScreen
-  - [ ] 2.2 Inject `userSettings`, `soundSourceProvider`, and `settingsCoordinator` (check current SettingsScreen dependencies)
-  - [ ] 2.3 Test that changes in the Settings window reflect immediately in the main window
+- [x] Task 2: Ensure environment values are available (AC: #2, #3)
+  - [x] 2.1 The `Settings` scene needs the same `@Environment` values as the in-app SettingsScreen
+  - [x] 2.2 Inject `soundSourceProvider` and `settingsCoordinator` (the two `@Environment` dependencies of SettingsScreen)
+  - [x] 2.3 Test that changes in the Settings window reflect immediately in the main window
 
-- [ ] Task 3: Verify iOS unchanged (AC: #4) and run tests (AC: #6)
+- [x] Task 3: Verify iOS unchanged (AC: #4) and run tests (AC: #6)
 
 ## Dev Notes
 
@@ -69,3 +69,34 @@ The `Settings` scene is a separate scene from the `WindowGroup`, so it gets its 
 | File | Path | Change |
 |------|------|--------|
 | PeachApp | `Peach/App/PeachApp.swift` | Add `Settings` scene in `#if os(macOS)` |
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Add a `Settings` scene in `#if os(macOS)` after the `WindowGroup` in PeachApp.body, injecting the two `@Environment` values that `SettingsScreen` depends on: `soundSourceProvider` and `settingsCoordinator`. `@AppStorage` values are shared automatically via `UserDefaults.standard`.
+
+### Debug Log
+
+No issues encountered with the Settings scene. During test validation, discovered and fixed a bug in `PitchMatchingSession.commitResult()` — see Boy Scout Rule fix below.
+
+### Completion Notes
+
+- Added `Settings` scene to `PeachApp.body` wrapped in `#if os(macOS)` conditional compilation
+- Injected `soundSourceProvider` (SoundFontLibrary) and `settingsCoordinator` (SettingsCoordinator) into the Settings scene
+- SettingsScreen's `@AppStorage` properties automatically share state with the main window via `UserDefaults.standard`
+- Cmd+, shortcut is provided automatically by SwiftUI's `Settings` scene type
+- iOS build verified unchanged — the `#if os(macOS)` block compiles out entirely
+- Full test suite passes on both iOS and macOS with zero regressions (1644 iOS, 1612 macOS)
+
+**Boy Scout Rule fix:** `PitchMatchingSession.commitResult()` had a `guard currentHandle != nil` that prevented committing results when the user submitted from `awaitingSliderTouch` (before the tunable note played). The handle was always nil in this path because `playNextTrial()` hadn't resumed yet. Removed the hard guard — handle stop is now conditional. This fixed the flaky `commitPitchFromAwaitingSliderTouchProducesResult` test which was timing out waiting for `.showingFeedback` that could never be reached.
+
+## File List
+
+- `Peach/App/PeachApp.swift` — Added `Settings` scene in `#if os(macOS)` block
+- `Peach/PitchMatching/PitchMatchingSession.swift` — Fixed `commitResult()` to allow commit without active playback handle
+
+## Change Log
+
+- 2026-03-29: Implemented native macOS Settings scene with Cmd+, shortcut support
+- 2026-03-29: Fixed PitchMatchingSession.commitResult() early return when currentHandle is nil (Boy Scout Rule)

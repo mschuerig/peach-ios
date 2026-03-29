@@ -188,12 +188,13 @@ final class PitchMatchingSession: TrainingSession {
     private func commitResult(userFrequency: Double) {
         guard state == .playingTunable else { return }
         guard let trial = currentTrial, let settings else { return }
-        guard currentHandle != nil else { return }
 
         let handleToStop = currentHandle
         currentHandle = nil
-        Task {
-            try? await handleToStop?.stop()
+        if let handleToStop {
+            Task {
+                try? await handleToStop.stop()
+            }
         }
 
         guard let referenceFrequency else { return }
