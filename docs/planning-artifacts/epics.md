@@ -1,6 +1,6 @@
 ---
-stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation', 'v0.2-step-01-validate-prerequisites', 'v0.2-step-02-design-epics', 'v0.2-step-03-create-stories', 'v0.2-step-04-final-validation', 'v0.3-step-01-validate-prerequisites', 'v0.3-step-02-design-epics', 'v0.3-step-03-create-stories', 'v0.3-step-04-final-validation', 'v0.4-step-01-validate-prerequisites', 'v0.4-step-02-design-epics', 'v0.4-step-03-create-stories', 'v0.4-step-04-final-validation', 'v0.5-sharing', 'v0.6-midi-input']
-inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/architecture.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/project-context.md', 'docs/planning-artifacts/research/technical-profile-screen-chart-ux-research-2026-03-11.md', 'docs/planning-artifacts/rhythm-training-spec.md', 'docs/planning-artifacts/research/technical-midi-input-ios-research-2026-03-26.md']
+stepsCompleted: ['step-01-validate-prerequisites', 'step-02-design-epics', 'step-03-create-stories', 'step-04-final-validation', 'v0.2-step-01-validate-prerequisites', 'v0.2-step-02-design-epics', 'v0.2-step-03-create-stories', 'v0.2-step-04-final-validation', 'v0.3-step-01-validate-prerequisites', 'v0.3-step-02-design-epics', 'v0.3-step-03-create-stories', 'v0.3-step-04-final-validation', 'v0.4-step-01-validate-prerequisites', 'v0.4-step-02-design-epics', 'v0.4-step-03-create-stories', 'v0.4-step-04-final-validation', 'v0.5-sharing', 'v0.6-midi-input', 'v0.7-release-step-01', 'v0.7-release-step-02', 'v0.7-release-step-03', 'v0.7-release-step-04']
+inputDocuments: ['docs/planning-artifacts/prd.md', 'docs/planning-artifacts/architecture.md', 'docs/planning-artifacts/ux-design-specification.md', 'docs/planning-artifacts/glossary.md', 'docs/project-context.md', 'docs/planning-artifacts/research/technical-profile-screen-chart-ux-research-2026-03-11.md', 'docs/planning-artifacts/rhythm-training-spec.md', 'docs/planning-artifacts/research/technical-midi-input-ios-research-2026-03-26.md', 'docs/planning-artifacts/research/technical-ios-app-store-submission-readiness-research-2026-03-09.md', 'docs/reports/appstore-review-2026-03-28.md']
 ---
 
 # Peach - Epic Breakdown
@@ -6925,3 +6925,483 @@ so that playback doesn't break on any device speed.
 6. **Given** the full test suite **When** run on both platforms **Then** all tests pass with zero regressions.
 
 ---
+
+## Epic 69: Clear to Launch — Privacy, Compliance & Code Fixes
+
+All code-level and infrastructure changes required for Apple to accept the binary and for legal compliance. After this epic, the app meets every Apple technical requirement and has a live privacy policy URL.
+
+**Reference:** `docs/planning-artifacts/research/technical-ios-app-store-submission-readiness-research-2026-03-09.md`, `docs/reports/appstore-review-2026-03-28.md`
+
+### Story 69.1: Create Privacy Manifest (PrivacyInfo.xcprivacy)
+
+As a **developer submitting to the App Store**,
+I want the app to include a privacy manifest declaring all required-reason API usage,
+so that Apple does not reject the binary for missing privacy declarations.
+
+**Acceptance Criteria:**
+
+1. **Given** the Peach target **When** building for distribution **Then** `Peach/Resources/PrivacyInfo.xcprivacy` is included in the bundle.
+
+2. **Given** the privacy manifest **When** inspected **Then** it declares `NSPrivacyAccessedAPICategoryUserDefaults` with reason code `CA92.1`.
+
+3. **Given** the privacy manifest **When** inspected **Then** `NSPrivacyTracking` is `false`, `NSPrivacyTrackingDomains` is empty, and `NSPrivacyCollectedDataTypes` is empty.
+
+4. **Given** MIDIKit as a dependency **When** reviewing its API usage **Then** verify whether MIDIKit uses any required-reason APIs and add entries to the manifest if needed.
+
+5. **Given** the project **When** built for both iOS and macOS **Then** builds succeed with no warnings related to privacy manifests.
+
+### Story 69.2: Add Export Compliance Declaration
+
+As a **developer uploading builds**,
+I want the export compliance key set in Info.plist,
+so that TestFlight and App Store builds don't show "Missing Compliance" warnings requiring manual confirmation.
+
+**Acceptance Criteria:**
+
+1. **Given** the app's Info.plist configuration **When** built **Then** `ITSAppUsesNonExemptEncryption` is set to `NO`.
+
+2. **Given** a build uploaded to App Store Connect **When** processed **Then** no "Missing Compliance" banner appears.
+
+### Story 69.3: Fix App Icon Alpha Channel
+
+As a **developer preparing for submission**,
+I want the app icon exported without an alpha channel,
+so that Apple does not reject it for containing transparency.
+
+**Acceptance Criteria:**
+
+1. **Given** the AppIcon asset **When** inspected **Then** the PNG has no alpha channel (RGB, not RGBA).
+
+2. **Given** the icon **When** viewed on a home screen **Then** it renders identically to the current icon (no visual change).
+
+3. **Given** the project **When** built for both iOS and macOS **Then** no icon-related build warnings appear.
+
+### Story 69.4: Bump Version to 1.0
+
+As a **user downloading from the App Store**,
+I want the app version to be 1.0,
+so that it reflects a polished first public release rather than a pre-release.
+
+**Acceptance Criteria:**
+
+1. **Given** the Xcode project **When** inspected **Then** `MARKETING_VERSION` is `1.0` for all targets.
+
+2. **Given** the Info screen **When** displayed **Then** it shows version `1.0`.
+
+### Story 69.5: Fix Force Unwraps Flagged in Compliance Report
+
+As a **developer ensuring crash safety**,
+I want force unwraps in production code replaced with safe alternatives,
+so that the app does not crash from unexpected nil values during App Store review.
+
+**Acceptance Criteria:**
+
+1. **Given** `PeachApp.swift` **When** loading the SoundFont bundle resource **Then** it uses `guard let` with a descriptive `fatalError` or graceful fallback instead of `!`.
+
+2. **Given** `MIDIKitAdapter.swift` **When** accessing the continuation **Then** it uses safe unwrapping instead of implicitly unwrapped optionals.
+
+3. **Given** the full test suite **When** run on both iOS and macOS **Then** all tests pass.
+
+### Story 69.6: Write and Host Privacy Policy on GitHub Pages
+
+As a **first-time App Store submitter**,
+I want a privacy policy hosted at a stable URL with automated deployment,
+so that I can link it in App Store Connect and in-app, and it stays live without manual hosting.
+
+**Acceptance Criteria:**
+
+1. **Given** the privacy policy content **When** reviewed **Then** it states: Peach collects no personal data, all training data is stored locally on-device, no third-party analytics/advertising/tracking SDKs are used, no data is shared with third parties, and includes developer contact information.
+
+2. **Given** the GitHub Pages site **When** accessed at the configured URL **Then** the privacy policy page renders correctly and is publicly accessible.
+
+3. **Given** the repository **When** a change to the privacy policy is pushed to main **Then** a GitHub Actions pipeline deploys it automatically to GitHub Pages.
+
+4. **Given** the privacy policy page **When** viewed on mobile or desktop **Then** it is readable with no broken layout.
+
+**Implementation notes:** Manual-heavy story. Create a `docs/` or `gh-pages` branch with a simple HTML/Markdown page, configure GitHub Pages in repository settings, and add a GitHub Actions workflow for deployment.
+
+### Story 69.7: Add Privacy Policy and Support Contact In-App
+
+As a **user wanting to know how their data is handled**,
+I want to see a privacy policy link and a support contact on the Info screen,
+so that I can review the policy and reach the developer if needed.
+
+**Acceptance Criteria:**
+
+1. **Given** the Info screen **When** displayed **Then** it shows a tappable link to the hosted privacy policy URL.
+
+2. **Given** the Info screen **When** displayed **Then** it shows a support contact method (email link or support URL).
+
+3. **Given** the privacy policy link **When** tapped **Then** it opens the privacy policy in the system browser.
+
+4. **Given** the support contact **When** tapped **Then** it opens the mail client or system browser as appropriate.
+
+5. **Given** the Info screen **When** viewed in German locale **Then** the labels for the privacy policy and support links are localized.
+
+---
+
+## Epic 70: Native Everywhere — Platform Polish & Real-Device Testing
+
+Ensures the app feels native and works correctly on all three platforms before public release. Covers real-device testing, platform-specific UX issues, and documentation updates. After this epic, every supported platform delivers a polished experience.
+
+### Story 70.1: Platform Polish Audit — iOS & iPadOS
+
+As a **musician using Peach on iPhone or iPad**,
+I want the app to feel like a native iOS/iPadOS app with no rough edges,
+so that training is seamless and professional on my device.
+
+**Acceptance Criteria:**
+
+1. **Given** iPhone in portrait and landscape **When** using all six training modes **Then** layouts render correctly with no clipped text, overlapping controls, or broken scrolling.
+
+2. **Given** iPad in all size classes (full screen, Split View, Slide Over) **When** using the app **Then** layouts adapt properly and remain usable.
+
+3. **Given** iPad with pointer (trackpad/mouse) **When** hovering over interactive elements **Then** hover effects appear where appropriate.
+
+4. **Given** any training screen **When** audio is playing and the user rotates the device **Then** audio continues uninterrupted and the UI adapts smoothly.
+
+5. **Given** the app **When** tested with Dynamic Type at the largest accessibility size **Then** all screens remain usable (no truncated labels blocking interaction).
+
+**Implementation notes:** Manual testing story. Test on real iPhone and iPad hardware, document issues found, and file follow-up fixes in Story 70.3.
+
+### Story 70.2: Platform Polish Audit — macOS
+
+As a **musician using Peach on Mac**,
+I want the app to follow Mac conventions and feel like a native desktop app,
+so that it integrates naturally with my Mac workflow.
+
+**Acceptance Criteria:**
+
+1. **Given** the Mac app **When** resizing the window **Then** all layouts adapt fluidly with no broken constraints or overlapping elements.
+
+2. **Given** the Mac app **When** using keyboard shortcuts **Then** all training interactions (higher/lower, early/late, pitch commit) respond correctly.
+
+3. **Given** the Mac app **When** pressing Cmd+, **Then** the Settings window opens natively.
+
+4. **Given** the Mac app **When** switching away and back (Cmd+Tab) **Then** the training session stops but the user remains on the training screen (per Epic 68 story 68.5 behavior).
+
+5. **Given** the Mac app **When** using menu bar items **Then** all menu commands work and are correctly enabled/disabled based on app state.
+
+6. **Given** the Mac app **When** using MIDI input **Then** MIDI devices connect and events are received identically to iOS.
+
+**Implementation notes:** Manual testing on Mac hardware. Document issues and fix in Story 70.3.
+
+### Story 70.3: Fix Platform Issues Found in Audit
+
+As a **developer**,
+I want all issues discovered during platform testing fixed before release,
+so that no platform ships with known UX defects.
+
+**Acceptance Criteria:**
+
+1. **Given** the issues list from Stories 70.1 and 70.2 **When** triaged **Then** all issues classified as "must fix before release" are resolved.
+
+2. **Given** each fix **When** applied **Then** it is verified on the affected platform and does not regress other platforms.
+
+3. **Given** the full test suite **When** run on both iOS and macOS **Then** all tests pass.
+
+**Implementation notes:** Catch-all story. Scope depends on audit findings. If no issues are found, this story is marked done immediately.
+
+### Story 70.4: Update Project Documentation for Three-Platform Release
+
+As a **developer maintaining the project**,
+I want project documentation to accurately describe the release strategy and supported platforms,
+so that future contributors understand the distribution model.
+
+**Acceptance Criteria:**
+
+1. **Given** `docs/project-context.md` **When** read **Then** it documents all three platforms (iOS, iPadOS, macOS) and their distribution channels (App Store for iOS/iPadOS, App Store + Homebrew for macOS).
+
+2. **Given** the architecture documentation **When** read **Then** it reflects the current platform abstraction approach (ports/adapters for platform concerns, per Epic 67).
+
+3. **Given** the PRD **When** read **Then** platform scope is updated to include macOS as a first-class target.
+
+---
+
+## Epic 71: Face of Peach — App Store Metadata & Screenshots
+
+Creates all marketing content for the App Store listing. After this epic, every piece of metadata and visual asset is ready for upload.
+
+### Story 71.1: Write App Store Description and Keywords
+
+As a **potential user browsing the App Store**,
+I want a compelling description and relevant keywords,
+so that I can find Peach and understand what it offers before downloading.
+
+**Acceptance Criteria:**
+
+1. **Given** the App Store description **When** reviewed **Then** it is under 4,000 characters, describes all training modes (pitch comparison, pitch matching, interval training, rhythm training), mentions key features (adaptive difficulty, perceptual profile, multiple tuning systems, MIDI input), and communicates who the app is for.
+
+2. **Given** the subtitle **When** reviewed **Then** it is under 30 characters and clearly communicates the app's purpose (e.g., "Ear Training for Musicians").
+
+3. **Given** the keywords **When** reviewed **Then** they are under 100 characters total, comma-separated, and cover relevant search terms (ear training, pitch, intervals, rhythm, music, tuning, intonation).
+
+4. **Given** the description **When** read in both English and German **Then** both versions are natural and compelling (not machine-translated).
+
+**Implementation notes:** Claude drafts, developer reviews and refines. Store the final text in `docs/planning-artifacts/appstore-metadata.md` for easy copy-paste into App Store Connect.
+
+### Story 71.2: Write App Store Review Notes
+
+As a **developer submitting for the first time**,
+I want clear review notes explaining the app to Apple's review team,
+so that they understand the app's purpose and can test it efficiently.
+
+**Acceptance Criteria:**
+
+1. **Given** the review notes **When** read by a reviewer with no music background **Then** they clearly explain: what Peach is, the six training modes, that no account is needed, and that all data is local.
+
+2. **Given** the review notes **When** reviewed **Then** they mention any non-obvious interactions (e.g., MIDI input optional, slider-based pitch matching).
+
+3. **Given** the review notes **When** measured **Then** they are concise (under 500 words).
+
+### Story 71.3: Capture iPhone and iPad Screenshots
+
+As a **potential user browsing the App Store**,
+I want polished screenshots showing the app in action,
+so that I can see what the app looks like before downloading.
+
+**Acceptance Criteria:**
+
+1. **Given** iPhone screenshots **When** captured on iPhone 16 Pro Max Simulator (6.9") **Then** at least 3 screenshots are captured at 1320×2868 px covering: Start Screen, a training session in progress, and the Profile Screen.
+
+2. **Given** iPad screenshots **When** captured on iPad Pro 13" Simulator **Then** at least 3 screenshots are captured at 2064×2752 px covering the same screens.
+
+3. **Given** all screenshots **When** reviewed **Then** they show realistic training data (not empty states) and represent the app's actual appearance.
+
+4. **Given** the screenshots **When** compared across device sizes **Then** the app looks good at both sizes (not just scaled-up phone UI on iPad).
+
+**Implementation notes:** Manual task. Use Simulator Cmd+S to capture. Consider whether text overlays add value — optional polish. Store screenshots in a `marketing/screenshots/` folder.
+
+### Story 71.4: Capture macOS Screenshots
+
+As a **potential Mac user browsing the Mac App Store**,
+I want screenshots showing Peach as a Mac app,
+so that I can see it's a real desktop app, not a blown-up phone app.
+
+**Acceptance Criteria:**
+
+1. **Given** macOS screenshots **When** captured **Then** at least 3 screenshots show the app in a Mac window at an appropriate resolution.
+
+2. **Given** the screenshots **When** reviewed **Then** they show Mac-native chrome (title bar, window controls) and demonstrate the app looks at home on macOS.
+
+3. **Given** the Mac App Store requirements **When** checked **Then** screenshot dimensions meet Apple's specifications.
+
+**Implementation notes:** Manual. Run the Mac app, resize the window to a good size, and capture with Cmd+Shift+4.
+
+---
+
+## Epic 72: Trust the Build — TestFlight Beta
+
+Sets up TestFlight and runs a beta test before public submission. After this epic, the app has been used by real testers on real devices.
+
+### Story 72.1: Archive and Upload First Build to TestFlight
+
+As a **developer preparing for beta testing**,
+I want to archive the app and upload it to App Store Connect,
+so that I can distribute it to testers via TestFlight.
+
+**Acceptance Criteria:**
+
+1. **Given** the Xcode project with all Epic 69 fixes applied **When** archived for "Any iOS Device (arm64)" via Product → Archive **Then** the archive succeeds without errors.
+
+2. **Given** the archive **When** distributed via "TestFlight & App Store" → Upload **Then** the upload succeeds and Apple sends a processing confirmation email.
+
+3. **Given** the uploaded build **When** viewed in App Store Connect **Then** it shows as processed with no "Missing Compliance" warning.
+
+**Implementation notes:** Manual — step-by-step guided. Requires a minimal App Store Connect app record (bundle ID, app name, SKU). The agent will walk you through creating the minimal record needed for TestFlight before the first upload.
+
+### Story 72.2: Configure TestFlight and Distribute Beta
+
+As a **developer seeking feedback**,
+I want to invite testers via TestFlight,
+so that real users can try the app and report issues before public launch.
+
+**Acceptance Criteria:**
+
+1. **Given** the processed build in App Store Connect **When** configuring TestFlight **Then** beta test information is filled in (what to test, contact email).
+
+2. **Given** TestFlight configuration **When** adding internal testers **Then** at least one tester is invited and receives the TestFlight invitation.
+
+3. **Given** a tester **When** they open the TestFlight link **Then** they can install and launch Peach on their device.
+
+4. **Given** external testers (optional) **When** a public TestFlight link is created **Then** up to 10,000 users can join via the link.
+
+**Implementation notes:** Manual — guided through App Store Connect's TestFlight section. Internal testers (Apple Developer team members) don't need Beta App Review. External testers require Beta App Review (usually < 24h).
+
+### Story 72.3: Collect Feedback and Fix Critical Issues
+
+As a **developer preparing a quality release**,
+I want to act on beta tester feedback,
+so that critical issues are fixed before public submission.
+
+**Acceptance Criteria:**
+
+1. **Given** beta tester feedback **When** triaged **Then** issues are classified as critical (blocks release), important (should fix), or nice-to-have (defer).
+
+2. **Given** critical issues **When** identified **Then** they are fixed, a new build is uploaded, and testers verify the fix.
+
+3. **Given** the final beta build **When** tested for at least 48 hours **Then** no new critical issues are reported.
+
+**Implementation notes:** Iterative. May produce multiple TestFlight builds. Scope depends on feedback received.
+
+---
+
+## Epic 73: Into the Wild — iOS App Store Submission
+
+The actual App Store submission process. After this epic, Peach is live on the iOS App Store.
+
+### Story 73.1: Complete App Store Connect App Record
+
+As a **developer submitting for the first time**,
+I want the App Store Connect app record fully configured,
+so that all required metadata is in place for submission.
+
+**Acceptance Criteria:**
+
+1. **Given** App Store Connect **When** the app record is opened **Then** the following are set: app name ("Peach"), primary language (English), primary category (Music or Education), secondary category.
+
+2. **Given** the age rating questionnaire **When** completed **Then** the result is 4+ (all answers "None"/"No").
+
+3. **Given** the pricing section **When** configured **Then** the app is set to Free with availability in all territories (or as chosen).
+
+4. **Given** the app information section **When** reviewed **Then** copyright is set (e.g., "2026 Michael Schürig").
+
+**Implementation notes:** Manual — guided step-by-step through App Store Connect. May be partially done from Epic 72 (TestFlight required a minimal app record).
+
+### Story 73.2: Upload Metadata and Screenshots
+
+As a **developer completing the App Store listing**,
+I want all metadata and screenshots uploaded to App Store Connect,
+so that the listing is complete and ready for review.
+
+**Acceptance Criteria:**
+
+1. **Given** the App Store version page **When** metadata is entered **Then** description, subtitle, keywords, and promotional text (optional) from Story 71.1 are filled in.
+
+2. **Given** the screenshots section **When** screenshots are uploaded **Then** iPhone 6.9" and iPad 13" screenshots from Story 71.3 are present.
+
+3. **Given** the support URL field **When** filled in **Then** it points to a working URL (GitHub issues page or support site).
+
+4. **Given** the privacy policy URL field **When** filled in **Then** it points to the live GitHub Pages privacy policy from Story 69.6.
+
+5. **Given** the App Review information section **When** filled in **Then** review notes from Story 71.2 are entered and contact information is provided.
+
+**Implementation notes:** Manual — copy-paste from prepared files and upload screenshots.
+
+### Story 73.3: Set Privacy Nutrition Labels
+
+As a **developer declaring data practices**,
+I want privacy nutrition labels configured in App Store Connect,
+so that users see accurate data collection disclosures.
+
+**Acceptance Criteria:**
+
+1. **Given** the App Privacy section in App Store Connect **When** completing the questionnaire **Then** "Data Not Collected" is selected.
+
+2. **Given** the declaration **When** saved **Then** App Store Connect shows the privacy section as complete.
+
+**Implementation notes:** Manual — single screen in App Store Connect. Takes 2 minutes.
+
+### Story 73.4: Submit for App Store Review
+
+As a **developer launching Peach**,
+I want to submit the app for Apple's review,
+so that it can be approved and published on the App Store.
+
+**Acceptance Criteria:**
+
+1. **Given** App Store Connect **When** all sections show green checkmarks **Then** the "Submit for Review" button is enabled.
+
+2. **Given** submission **When** confirmed **Then** the app status changes to "Waiting for Review."
+
+3. **Given** App Store review **When** feedback is received **Then** if approved, the app goes live (or manual release is configured). If rejected, the rejection reason is documented and addressed.
+
+**Implementation notes:** Manual. After clicking Submit, expect review within 24 hours (first-time apps may take a few days). If rejected, fix the cited issues, upload a new build, and resubmit.
+
+---
+
+## Epic 74: Desktop Delivery — macOS Distribution
+
+Makes Peach available to Mac users via the Mac App Store and Homebrew. After this epic, Mac users can install Peach from their preferred channel.
+
+### Story 74.1: Submit to Mac App Store
+
+As a **Mac user**,
+I want to install Peach from the Mac App Store,
+so that I get automatic updates and the trust of Apple's review process.
+
+**Acceptance Criteria:**
+
+1. **Given** the Xcode project **When** archived for "Any Mac (Apple Silicon, Intel)" **Then** the archive succeeds.
+
+2. **Given** the Mac archive **When** uploaded to App Store Connect **Then** it is processed successfully alongside the iOS app (same app record, separate platform).
+
+3. **Given** the Mac App Store listing **When** reviewed **Then** macOS screenshots from Story 71.4 are uploaded and macOS-specific metadata is correct.
+
+4. **Given** the Mac build **When** submitted for review **Then** it passes review (or rejection reasons are addressed).
+
+**Implementation notes:** Manual — same App Store Connect workflow as iOS but selecting the macOS platform. Apple reviews Mac and iOS builds independently.
+
+### Story 74.2: Notarize for Direct Distribution
+
+As a **Mac user who prefers direct downloads**,
+I want a notarized .dmg or .zip of Peach,
+so that I can install it without Gatekeeper warnings.
+
+**Acceptance Criteria:**
+
+1. **Given** the Mac app **When** exported for "Developer ID" distribution **Then** the app is signed with a Developer ID certificate.
+
+2. **Given** the signed app **When** submitted to Apple's notarization service **Then** it is approved and stapled.
+
+3. **Given** the notarized app **When** a user downloads and opens it **Then** macOS Gatekeeper allows it without security warnings.
+
+4. **Given** the distribution artifact **When** packaged **Then** it is a .dmg or .zip suitable for GitHub Releases.
+
+**Implementation notes:** Manual — guided through Xcode's "Distribute App" → "Developer ID" flow and `xcrun notarytool`. Requires a Developer ID Application certificate (separate from App Store distribution certificate).
+
+### Story 74.3: Set Up GitHub Releases
+
+As a **developer distributing macOS builds**,
+I want an automated GitHub Release workflow,
+so that each version is published with a downloadable notarized artifact.
+
+**Acceptance Criteria:**
+
+1. **Given** a git tag matching `v*` (e.g., `v1.0`) **When** pushed **Then** a GitHub Actions workflow creates a GitHub Release with the tag.
+
+2. **Given** the GitHub Release **When** published **Then** it includes the notarized macOS app artifact (.dmg or .zip) as a download.
+
+3. **Given** the release **When** viewed on GitHub **Then** it includes release notes (can be auto-generated from commits or manually written).
+
+**Implementation notes:** Mix of code (GitHub Actions workflow) and manual (initial setup). The notarized artifact may need to be built locally and uploaded, or the workflow can be extended to build+notarize in CI (requires secrets for Developer ID certificate).
+
+### Story 74.4: Create Homebrew Cask
+
+As a **Mac user who uses Homebrew**,
+I want to install Peach via `brew install --cask peach`,
+so that I can manage it alongside my other Homebrew-installed apps.
+
+**Acceptance Criteria:**
+
+1. **Given** a Homebrew tap repository (e.g., `mschuerig/homebrew-tap`) **When** created **Then** it contains a cask formula for Peach.
+
+2. **Given** the cask formula **When** reviewed **Then** it points to the GitHub Release artifact URL, includes the correct SHA256 hash, and specifies the app name.
+
+3. **Given** a user **When** they run `brew tap mschuerig/tap && brew install --cask peach` **Then** Peach is installed into `/Applications`.
+
+4. **Given** a new Peach version **When** released on GitHub **Then** the cask formula is updated (manually or via automation) with the new version and hash.
+
+**Implementation notes:** Code — create the tap repo and cask formula. The formula is a simple Ruby file. Consider automating formula updates via GitHub Actions when a new release is created.
+
+### Story 74.5: Update Architecture Documentation for macOS Distribution
+
+As a **developer maintaining the project**,
+I want the architecture documentation to describe the macOS distribution pipeline,
+so that the notarization, GitHub Releases, and Homebrew processes are documented.
+
+**Acceptance Criteria:**
+
+1. **Given** the architecture documentation **When** read **Then** it describes the three macOS distribution channels: Mac App Store, GitHub Releases (notarized), and Homebrew.
+
+2. **Given** the documentation **When** read **Then** it explains how to create a new release (tag → build → notarize → upload → update cask).
