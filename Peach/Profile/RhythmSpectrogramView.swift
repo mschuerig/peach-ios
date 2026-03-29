@@ -211,14 +211,8 @@ struct RhythmSpectrogramView: View {
     // MARK: - Static Helpers
 
     static func cellColor(for level: SpectrogramAccuracyLevel?) -> Color {
-        switch level {
-        case .excellent: Color(hue: 0.45, saturation: 0.7, brightness: 0.7)
-        case .precise: .green
-        case .moderate: .yellow
-        case .loose: .orange
-        case .erratic: .red
-        case nil: .clear
-        }
+        guard let level else { return .clear }
+        return level.color
     }
 
     static func accuracyLevelName(_ level: SpectrogramAccuracyLevel) -> String {
@@ -250,6 +244,20 @@ struct RhythmSpectrogramView: View {
 
     static func formatPercent(_ value: Double) -> String {
         (value / 100.0).formatted(.percent.precision(.fractionLength(1)))
+    }
+}
+
+// MARK: - Accuracy Level Color
+
+extension SpectrogramAccuracyLevel {
+    var color: Color {
+        switch self {
+        case .excellent: Color(hue: 0.45, saturation: 0.7, brightness: 0.7)
+        case .precise: .green
+        case .moderate: .yellow
+        case .loose: .orange
+        case .erratic: .red
+        }
     }
 }
 

@@ -59,13 +59,7 @@ struct RhythmTimingFeedbackIndicator: View {
     }
 
     static func feedbackColor(level: SpectrogramAccuracyLevel) -> Color {
-        switch level {
-        case .excellent: Color(hue: 0.45, saturation: 0.7, brightness: 0.7)
-        case .precise: .green
-        case .moderate: .yellow
-        case .loose: .orange
-        case .erratic: .red
-        }
+        level.color
     }
 
     static func accessibilityLabel(offsetMs: Double) -> String {
