@@ -45,6 +45,10 @@ so that playback doesn't break on any device speed.
   - [ ] 4.4 Test: cancellation of in-flight navigation does not leave stale state
   - [ ] 4.5 Run `bin/test.sh && bin/test.sh -p mac`
 
+## Pre-Existing Finding: iOS Inactive-to-Active Clears Navigation with Running Session
+
+Surfaced during story 68.5 code review. On iOS, `IOSBackgroundPolicy.shouldClearNavigation` returns `true` for `inactive -> active`, but `shouldStopTraining` returns `false` for `.inactive`. This means a transient interruption (notification center pull-down) clears navigation to the Start Screen while the session continues running underneath. The coordinator redesign in this story should address this inconsistency — either by stopping the session before clearing navigation, or by not clearing navigation on transient `inactive -> active` transitions (only on `background -> active`).
+
 ## Dev Notes
 
 ### Current Implementation -- The Problem

@@ -1,6 +1,6 @@
 # Story 68.5: macOS App Switch Stops Session but Preserves Navigation
 
-Status: review
+Status: done
 
 ## Story
 

@@ -6,7 +6,7 @@ protocol BackgroundPolicy {
     /// Returns `true` if training should stop for the given scene phase transition.
     func shouldStopTraining(newPhase: AppScenePhase) -> Bool
 
-    /// Returns `true` if navigation should be cleared when returning to the given phase.
+    /// Returns `true` if navigation should be cleared for the given phase transition.
     func shouldClearNavigation(oldPhase: AppScenePhase, newPhase: AppScenePhase) -> Bool
 }
 

@@ -50,15 +50,18 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(navigationCleared)
     }
 
-    @Test("does not clear navigation when going to background")
-    func backgroundDoesNotClear() {
+    @Test("iOS: background stops session but does not clear navigation")
+    func iosBackgroundStopsButDoesNotClear() {
         let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
         var navigationCleared = false
 
         coordinator.handleScenePhase(old: .active, new: .background) {
             navigationCleared = true
         }
 
+        #expect(mockSession.stopCallCount == 1)
         #expect(!navigationCleared)
     }
 
