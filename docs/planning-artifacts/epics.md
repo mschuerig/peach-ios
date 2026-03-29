@@ -6811,3 +6811,117 @@ so that adding a third platform produces compiler errors instead of silent wrong
 5. **Given** the full test suite **When** run on both iOS and macOS **Then** all tests pass with zero regressions.
 
 ---
+
+## Epic 68: Quality of Life — Spectrogram, Accessibility, Schema, Audio & macOS Polish
+
+Consolidates six independent improvements surfaced during the future-work and pre-existing-findings triage on 2026-03-29. Stories are independent and can be worked in any order. Covers spectrogram refinement, Dynamic Type accessibility, SwiftData schema versioning, low-latency tap audio, and two macOS navigation/lifecycle improvements.
+
+### Story 68.1: Spectrogram Refinement — More Tempo Bands, Finer Color Gradations
+
+As a **musician reviewing rhythm training progress**,
+I want the spectrogram to show more tempo bands and a finer color gradient,
+so that I can see detailed accuracy patterns instead of a coarse 3×3 grid.
+
+**Acceptance Criteria:**
+
+1. **Given** the spectrogram Y-axis **When** displaying tempo bands **Then** it uses 5–7 finer-grained bands covering 40–200 BPM instead of the current 3.
+
+2. **Given** the spectrogram cells **When** classifying accuracy **Then** it uses 5 color gradations instead of 3, with an intuitive visual progression from excellent to poor.
+
+3. **Given** the threshold model **When** computing accuracy levels **Then** the hybrid floor/ceiling clamping is preserved and the 12 ms floor (touch latency) is respected.
+
+4. **Given** continuous rhythm matching data **When** displayed in the spectrogram **Then** it produces sensible classifications without mode-specific threshold branching.
+
+5. **Given** the full test suite **When** run on both iOS and macOS **Then** all `SpectrogramDataTests` are updated and pass.
+
+### Story 68.2: Low-Latency Tap Sound via Render-Thread Dispatch
+
+As a **musician practicing continuous rhythm matching**,
+I want the tap feedback sound to be sample-accurate like the pattern notes,
+so that auditory feedback precisely reflects my timing.
+
+**Acceptance Criteria:**
+
+1. **Given** a tap event **When** dispatching the tap sound **Then** it routes through the audio render callback (not `AVAudioUnitSampler.startNote()` from the MainActor).
+
+2. **Given** tap and pattern events **When** playing concurrently **Then** pattern playback is unaffected — no skipped or delayed pattern notes.
+
+3. **Given** the tap note-off **When** dispatched **Then** it is also render-thread dispatched, not scheduled via `Task.sleep`.
+
+4. **Given** the immediate event mechanism **When** accessed from the main thread (writer) and render thread (reader) **Then** it is lock-free with no undefined behavior.
+
+5. **Given** the full test suite **When** run on both platforms **Then** all `SoundFontEngineTests` and `ContinuousRhythmMatchingSessionTests` pass.
+
+### Story 68.3: Add SwiftData VersionedSchema and SchemaMigrationPlan
+
+As a **developer evolving the data model**,
+I want a `VersionedSchema` and `SchemaMigrationPlan` in place,
+so that future schema changes don't crash existing installs.
+
+**Acceptance Criteria:**
+
+1. **Given** the current schema (4 models) **When** defined as `SchemaV1` **Then** a `VersionedSchema` conformance captures all model properties exactly.
+
+2. **Given** the migration plan **When** configured **Then** it has `schemas = [SchemaV1.self]` and `stages = []` (no migrations yet).
+
+3. **Given** `PeachApp.swift` **When** creating the `ModelContainer` **Then** it uses the `SchemaMigrationPlan` instead of the bare model list.
+
+4. **Given** a user upgrading from the current version **When** opening the app **Then** all existing records are intact with no data loss.
+
+5. **Given** the schema file **When** read by a developer **Then** it contains a comment block explaining how to add V2.
+
+6. **Given** the full test suite **When** run on both platforms **Then** all tests pass including new round-trip verification tests.
+
+### Story 68.4: Dynamic Type Support for Grid Toggle Cells
+
+As a **user with large accessibility text sizes**,
+I want grid toggle cells to scale with Dynamic Type,
+so that labels remain readable instead of being clipped.
+
+**Acceptance Criteria:**
+
+1. **Given** `GridToggleRow` and `IntervalSelectorView` **When** the user has a large Dynamic Type setting **Then** cell dimensions scale proportionally via `@ScaledMetric`.
+
+2. **Given** default Dynamic Type size **When** rendering grid cells **Then** they appear at exactly 32×32 pt (no visual change).
+
+3. **Given** large accessibility sizes **When** cells exceed available width **Then** the content is horizontally scrollable.
+
+4. **Given** `IntervalSelectorView` header column **When** scaling **Then** the 24 pt direction column also scales via `@ScaledMetric`.
+
+### Story 68.5: macOS App-Switch — Stop Session but Don't Navigate Away
+
+As a **macOS user switching between apps**,
+I want Peach to stop the training session but leave me on the training screen,
+so that I can resume with one tap instead of navigating back from the Start Screen.
+
+**Acceptance Criteria:**
+
+1. **Given** macOS focus loss **When** the app transitions to `.inactive` **Then** the active session is stopped (unchanged).
+
+2. **Given** macOS focus gain **When** the app returns to `.active` **Then** the navigation stack is preserved — the user stays on whichever screen they were on.
+
+3. **Given** iOS backgrounding **When** the app is foregrounded **Then** behavior is unchanged — session stops AND navigation clears to Start Screen.
+
+4. **Given** a training screen after external stop **When** displayed **Then** it shows its idle/ready state correctly with no stale mid-session UI.
+
+### Story 68.6: Menu Navigation State Machine
+
+As a **macOS user navigating via the menu bar**,
+I want screen transitions to be reliable without timing hacks,
+so that playback doesn't break on any device speed.
+
+**Acceptance Criteria:**
+
+1. **Given** a menu command navigating between training screens **When** the old session is active **Then** it is stopped and confirmed idle before the new destination is pushed.
+
+2. **Given** the navigation sequencing **When** implemented **Then** no `Task.sleep` or fixed-delay workarounds are used.
+
+3. **Given** the sequencing logic **When** examined **Then** it lives in a model (coordinator), not in view code.
+
+4. **Given** navigation from the Start Screen (no active session) **When** triggered **Then** it navigates immediately with no unnecessary delay.
+
+5. **Given** rapid sequential menu commands **When** processed **Then** only the last destination wins.
+
+6. **Given** the full test suite **When** run on both platforms **Then** all tests pass with zero regressions.
+
+---

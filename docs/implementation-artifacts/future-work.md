@@ -4,35 +4,6 @@ This document tracks design decisions to revisit, architectural improvements, an
 
 ## Algorithm & Design
 
-### Investigate Whether Seamless Playback Makes Pitch Comparison Easier
-
-**Priority:** Medium
-**Category:** Algorithm Design / Calibration
-**Date Added:** 2026-02-17
-
-**Observation:**
-After implementing chain-based Kazez convergence, the algorithm quickly converges to sub-2-cent differences. However, the user consistently achieves much finer discrimination in Peach than in InTune (a reference app), where they typically plateau around 5 cents and only occasionally reach below 3 cents.
-
-**Hypothesis:**
-Peach plays the two comparison tones seamlessly (back-to-back without a gap), which may make pitch differences perceptually easier to detect than when tones are separated by silence. This could mean the difficulty levels in Peach are not directly comparable to those in apps that use gaps between tones.
-
-**Impact:**
-- Peach's difficulty numbers may overstate the user's actual pitch discrimination ability
-- Comparison with other ear training apps may be misleading
-- The training may be less effective if the task is artificially easier
-
-**Investigation Areas:**
-- Compare perceptual difficulty of seamless vs. gap-separated tone pairs at the same cent difference
-- Research psychoacoustic literature on the effect of inter-stimulus intervals on pitch discrimination
-- Consider adding a configurable gap between tones as an advanced setting
-- Evaluate whether the current approach is still valuable for training (even if "easier")
-
-**Related Code:**
-- `Peach/Core/Audio/SineWaveNotePlayer.swift` — tone generation and playback
-- `Peach/Training/TrainingSession.swift` — playback sequencing
-
----
-
 ### Tap Latency Measurement and Compensation for Rhythm Matching
 
 **Priority:** Low
@@ -56,56 +27,6 @@ Rhythm offset detection is unaffected — all clicks traverse the same audio pat
 
 **Why not now:**
 The primary value of rhythm training is trend tracking (improvement over time), which is unaffected by a constant bias. The spectrogram thresholds (story 51.3) already account for device latency by setting a 12 ms floor for the "precise" band. Compensation becomes more important if Peach ever displays absolute timing values prominently or compares across devices.
-
----
-
-### Evaluate Spectrogram Color Thresholds for Continuous Rhythm Matching
-
-**Priority:** Low
-**Category:** Algorithm Design / Calibration
-**Date Added:** 2026-03-22
-
-**Observation:**
-The spectrogram color bands (green/yellow/red) use `SpectrogramThresholds.default`, which was designed for rhythm offset detection and rhythm matching. Story 54.7's dev notes flagged that thresholds "may need adjustment for hit-rate-based data." The implementation maps `meanOffsetMs` (same unit as other rhythm modes), so the current thresholds are numerically reasonable — but no explicit evaluation was performed.
-
-**Impact:**
-- If hit rate is later threaded into the spectrogram (see AC#3 of story 54.7), the thresholds will need revisiting since hit rate is a percentage, not milliseconds
-- Even for offset data, continuous matching may have different accuracy distributions than discrete matching (longer sequences, fatigue effects)
-
-**Action:**
-- When hit rate is added to the profile path, define appropriate threshold bands for percentage-based data
-- Consider whether offset thresholds need mode-specific tuning based on user data
-
-**Related Code:**
-- `Peach/Profile/RhythmSpectrogramView.swift` — threshold usage
-- `Peach/Core/Profile/SpectrogramData.swift` — threshold definitions
-
----
-
-### Low-Latency Tap Sound for Continuous Rhythm Matching
-
-**Priority:** Medium
-**Category:** Audio Architecture
-**Date Added:** 2026-03-23
-
-**Observation:**
-Story 57.1 added auditory tap feedback using `AVAudioUnitSampler.startNote()` called from the MainActor. The tap sound works but has noticeable latency and jitter compared to the pre-scheduled pattern notes. The pattern notes are sample-accurate because they're dispatched inline during the render callback via `SoundFontEngine`'s pre-allocated schedule buffer. The tap sound takes a longer path: SwiftUI gesture → MainActor → `startNote()` API → audio render thread.
-
-**Impact:**
-- Tap sound feels slightly delayed relative to the actual tap, undermining the "judge timing by ear" goal
-- Jitter varies depending on MainActor load, making the feedback inconsistent
-- Pattern notes remain sample-accurate and unaffected
-
-**Root Cause:**
-`SoundFontEngine.scheduleEvents()` replaces the entire schedule buffer, so it can't be used to inject a single immediate event alongside the running pattern. The current `immediateNoteOn` path bypasses the schedule entirely, trading sample accuracy for non-interference.
-
-**Potential Approach:**
-Redesign `SoundFontEngine`'s scheduling to support **appending** events into the running schedule buffer (e.g., a lock-free ring buffer or a secondary "immediate" event slot checked by the render callback). This would allow tap notes to be dispatched at `currentSamplePosition` with the same sample-accurate timing as pattern notes, without disturbing the pre-scheduled batch.
-
-**Related Code:**
-- `Peach/Core/Audio/SoundFontEngine.swift` — schedule buffer, render callback
-- `Peach/Core/Audio/SoundFontStepSequencer.swift` — `playImmediateNote(velocity:)`
-- `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — `handleTap()`
 
 ---
 
@@ -136,49 +57,6 @@ After story 55.2 (protocol-based discipline registry), disciplines that share a 
 
 ---
 
-### Add SwiftData VersionedSchema and SchemaMigrationPlan
-
-**Priority:** Medium
-**Category:** Data Infrastructure
-**Date Added:** 2026-03-20
-
-**Issue:**
-The project has no `VersionedSchema` or `SchemaMigrationPlan`. All schema changes so far have been purely additive (new models), which SwiftData handles via lightweight migration. However, any future change that modifies or removes a field on an existing model will cause a runtime crash on existing installs with no recovery path.
-
-**Impact:**
-- Adding, renaming, or removing a property on any `@Model` class will fail without a migration plan
-- No safety net for schema evolution — the first non-additive change will be a crash discovered at runtime
-
-**Action:**
-- Introduce `VersionedSchema` conformances for the current schema (v1)
-- Add a `SchemaMigrationPlan` with lightweight migration stages
-- Do this before any story that modifies existing model properties
-
----
-
-### Dynamic Type Support for Grid Toggle Cells
-
-**Priority:** Low
-**Category:** Accessibility
-**Date Added:** 2026-03-24
-
-**Observation:**
-`GridToggleRow` and `IntervalSelectorView` both use `.frame(width: 32, height: 32)` for toggle cells. These fixed dimensions ignore the user's Dynamic Type setting — with large accessibility font sizes, the `.caption2` text can overflow the frame and get clipped.
-
-**Impact:**
-- Users with large accessibility text sizes see clipped or illegible labels in both the gap position selector and the interval selector grid
-- Pre-existing pattern inherited from `IntervalSelectorView`; `GridToggleRow` copied the same approach per spec
-
-**Potential Approach:**
-- Use `@ScaledMetric` for the frame dimensions so they scale with Dynamic Type
-- Ensure the `HStack`/`Grid` layout still fits on screen at larger sizes (may need `ScrollView(.horizontal)`)
-
-**Related Code:**
-- `Peach/Settings/GridToggleRow.swift` — `.frame(width: 32, height: 32)`
-- `Peach/Settings/IntervalSelectorView.swift` — same pattern at line 53
-
----
-
 ### macOS Audio Device Disconnect Handling
 
 **Priority:** Low
@@ -199,67 +77,6 @@ The project has no `VersionedSchema` or `SchemaMigrationPlan`. All schema change
 
 **Related Code:**
 - `Peach/Core/Audio/AudioSessionInterruptionMonitor.swift` — `setupObservers()`, `#if os(iOS)` at line 54
-
----
-
-### macOS App-Switch Behavior: Resume vs. Reset
-
-**Priority:** Medium
-**Category:** Platform UX
-**Date Added:** 2026-03-28
-
-**Observation:**
-Story 66.3 implemented app-switch lifecycle handling on macOS: when the user Cmd+Tabs away, all training sessions stop, and when returning, the navigation clears back to the Start Screen. This mirrors the iOS backgrounding behavior, but on macOS "switching away" is much more frequent and lightweight (e.g., checking a tuner, reading sheet music, replying to a message). Forcing the user back to the Start Screen on every return may feel heavy-handed.
-
-**Consideration:**
-- On iOS, backgrounding is a strong signal the user is done — returning may be minutes or hours later
-- On macOS, losing focus is routine — the user may intend to continue the same training session seconds later
-- Stopping playback on focus loss is correct (audio shouldn't bleed into other work), but discarding session state and navigating away may not be
-
-**Potential Approaches:**
-1. **Stop but don't navigate:** stop the active session on focus loss, but leave the user on the training screen so they can restart with one tap
-2. **Grace period:** only clear navigation if the app was inactive for more than N seconds
-3. **Keep current behavior:** always return to Start Screen — simple, predictable, consistent with iOS
-
-**Related Code:**
-- `Peach/App/ContentView.swift` — macOS `didBecomeActiveNotification` observer clears navigation
-- `Peach/App/TrainingLifecycleCoordinator.swift` — `handleScenePhase` stops sessions on `.inactive` on macOS
-
----
-
-### Menu Navigation State Machine
-
-**Priority:** Medium
-**Category:** Architecture
-**Date Added:** 2026-03-29
-
-**Observation:**
-When macOS menu commands navigate between training screens, the departing screen's `onDisappear` fires *after* the arriving screen's `onAppear`. Both screens share the same `NotePlayer`/`StepSequencer`, so the old screen's teardown (stop/stopAll) kills playback that the new screen just started. The current workaround in `ContentView` clears the navigation path, waits 50 ms for the old screen to fully disappear, then pushes the new destination:
-
-```swift
-navigationPath.removeAll()
-Task {
-    try? await Task.sleep(for: .milliseconds(50))
-    navigationPath = [request.destination]
-}
-```
-
-This is fragile — the delay is a guess, and the sequencing logic lives in the view instead of a model.
-
-**Impact:**
-- Timing-dependent: a slower device or heavier view hierarchy could break the 50 ms assumption
-- Navigation coordination logic belongs in a model, not in `ContentView`
-- Any future navigation trigger (deep links, URL schemes) would need to duplicate the same workaround
-
-**Potential Approaches:**
-1. **Navigation state machine in a model:** a coordinator that sequences stop → await idle → navigate → start, driven by explicit states rather than sleep delays
-2. **Session-owned resource scoping:** each session acquires/releases audio resources explicitly, so a departing session's cleanup cannot affect a session it doesn't own
-3. **NavigationPath diffing:** intercept path changes at the model level, ensure the old destination's session is fully stopped before the new path is committed
-
-**Related Code:**
-- `Peach/App/ContentView.swift` — `onChange(of: commandState.navigationRequest)` workaround
-- `Peach/App/PeachCommands.swift` — `NavigationRequest`, `MenuCommandState`
-- `Peach/App/PeachApp.swift` — `trackActiveSession` active-session tracking
 
 ---
 
