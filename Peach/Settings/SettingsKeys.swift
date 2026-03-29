@@ -14,6 +14,7 @@ enum SettingsKeys {
     static let noteGap = "noteGap"
     static let tempoBPM = "tempoBPM"
     static let enabledGapPositions = "enabledGapPositions"
+    static let autoStartTraining = "autoStartTraining"
 
     // MARK: - Default Values (matching TrainingSettings defaults)
 

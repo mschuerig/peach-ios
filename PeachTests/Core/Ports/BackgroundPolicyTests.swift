@@ -24,22 +24,10 @@ struct BackgroundPolicyTests {
         #expect(!policy.shouldStopTraining(newPhase: .active))
     }
 
-    @Test("iOS policy clears navigation when returning from background")
-    func iosClearsNavigationFromBackground() {
+    @Test("iOS policy auto-starts training")
+    func iosAutoStartsTraining() {
         let policy = IOSBackgroundPolicy()
-        #expect(policy.shouldClearNavigation(oldPhase: .background, newPhase: .active))
-    }
-
-    @Test("iOS policy clears navigation when returning from inactive")
-    func iosClearsNavigationFromInactive() {
-        let policy = IOSBackgroundPolicy()
-        #expect(policy.shouldClearNavigation(oldPhase: .inactive, newPhase: .active))
-    }
-
-    @Test("iOS policy does not clear navigation when not returning to active")
-    func iosDoesNotClearNavigationOnBackground() {
-        let policy = IOSBackgroundPolicy()
-        #expect(!policy.shouldClearNavigation(oldPhase: .active, newPhase: .background))
+        #expect(policy.shouldAutoStartTraining)
     }
 
     // MARK: - MacOSBackgroundPolicy
@@ -62,15 +50,9 @@ struct BackgroundPolicyTests {
         #expect(!policy.shouldStopTraining(newPhase: .active))
     }
 
-    @Test("macOS policy does not clear navigation when returning from inactive")
-    func macosDoesNotClearNavigationFromInactive() {
+    @Test("macOS policy does not auto-start training")
+    func macosDoesNotAutoStartTraining() {
         let policy = MacOSBackgroundPolicy()
-        #expect(!policy.shouldClearNavigation(oldPhase: .inactive, newPhase: .active))
-    }
-
-    @Test("macOS policy does not clear navigation when returning from background")
-    func macosDoesNotClearNavigationFromBackground() {
-        let policy = MacOSBackgroundPolicy()
-        #expect(!policy.shouldClearNavigation(oldPhase: .background, newPhase: .active))
+        #expect(!policy.shouldAutoStartTraining)
     }
 }

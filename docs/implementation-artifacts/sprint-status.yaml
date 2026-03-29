@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-29 # Story 68.5 done
+# last_updated: 2026-03-29 # Story 68.6 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -535,7 +535,7 @@ development_status:
   68-3-swiftdata-versioned-schema: done
   68-4-dynamic-type-grid-toggles: done
   68-5-macos-app-switch-stop-not-navigate: done
-  68-6-menu-navigation-state-machine: ready-for-dev
+  68-6-menu-navigation-state-machine: done
   epic-68-retrospective: optional
 
   # Epic 69: Clear to Launch — Privacy, Compliance & Code Fixes

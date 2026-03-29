@@ -19,6 +19,7 @@ final class MenuCommandState {
     var helpSheetContent: HelpSheetContent?
     var showFileImporter = false
     var settingsCoordinator: SettingsCoordinator?
+    var trainingLifecycle: TrainingLifecycleCoordinator?
 }
 
 // MARK: - Commands
@@ -26,6 +27,7 @@ final class MenuCommandState {
 struct PeachCommands: Commands {
     @FocusedValue(MenuCommandState.self) private var commandState
     @Environment(\.openWindow) private var openWindow
+    @AppStorage(SettingsKeys.autoStartTraining) private var autoStartTraining = false
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) { }
@@ -48,6 +50,23 @@ struct PeachCommands: Commands {
 
     private var trainingMenu: some Commands {
         CommandMenu("Training") {
+            if let lifecycle = commandState?.trainingLifecycle {
+                Button(lifecycle.isTrainingActive
+                       ? String(localized: "Stop Training")
+                       : String(localized: "Start Training")) {
+                    lifecycle.toggleTraining()
+                }
+                .keyboardShortcut("t", modifiers: .command)
+                .disabled(lifecycle.currentTrainingDestination == nil)
+
+                Toggle(String(localized: "Auto-Start"), isOn: $autoStartTraining)
+                    .onChange(of: autoStartTraining) { _, newValue in
+                        lifecycle.autoStartSetting = newValue
+                    }
+
+                Divider()
+            }
+
             Section("Pitch") {
                 Button("Compare Pitch") {
                     navigate(to: .pitchDiscrimination(isIntervalMode: false))

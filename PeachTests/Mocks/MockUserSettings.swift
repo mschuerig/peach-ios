@@ -32,6 +32,9 @@ final class MockUserSettings: UserSettings {
     var enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions {
         didSet { onSettingsChanged?() }
     }
+    var autoStartTraining: Bool = false {
+        didSet { onSettingsChanged?() }
+    }
 
     // MARK: - Test Control
 
@@ -50,6 +53,7 @@ final class MockUserSettings: UserSettings {
         noteGap = SettingsKeys.defaultNoteGap
         tempoBPM = SettingsKeys.defaultTempoBPM
         enabledGapPositions = SettingsKeys.defaultEnabledGapPositions
+        autoStartTraining = false
         onSettingsChanged = nil
     }
 }

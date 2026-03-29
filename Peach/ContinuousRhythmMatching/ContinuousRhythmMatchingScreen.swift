@@ -1,5 +1,4 @@
 import SwiftUI
-import os
 
 struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.continuousRhythmMatchingSession) private var session
@@ -13,8 +12,6 @@ struct ContinuousRhythmMatchingScreen: View {
     @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
     @State private var isTouchActive = false
-
-    private let logger = Logger(subsystem: "com.peach.app", category: "ContinuousRhythmMatchingScreen")
 
     static let helpSections: [HelpSection] = [
         HelpSection(
@@ -51,12 +48,10 @@ struct ContinuousRhythmMatchingScreen: View {
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
-                logger.info("Help sheet shown - stopping training")
-                lifecycle.stopContinuousRhythmMatching()
+                lifecycle.helpSheetPresented()
             } else {
-                logger.info("Help sheet dismissed - restarting training")
                 isFocused = true
-                lifecycle.startContinuousRhythmMatching()
+                lifecycle.helpSheetDismissed()
             }
         }
         .focusable()
@@ -71,20 +66,17 @@ struct ContinuousRhythmMatchingScreen: View {
             return .handled
         }
         .onKeyPress(.escape) {
-            lifecycle.stopContinuousRhythmMatching()
             dismiss()
             return .handled
         }
         .onAppear {
-            logger.info("ContinuousRhythmMatchingScreen appeared - (re)starting training")
             isFocused = true
-            lifecycle.stopContinuousRhythmMatching()
-            lifecycle.startContinuousRhythmMatching()
+            lifecycle.trainingScreenAppeared(destination: .continuousRhythmMatching)
         }
         .onDisappear {
-            logger.info("ContinuousRhythmMatchingScreen disappeared - stopping training")
-            lifecycle.stopContinuousRhythmMatching()
+            lifecycle.trainingScreenDisappeared()
         }
+        .trainingIdleOverlay()
     }
 
     // MARK: - Subviews

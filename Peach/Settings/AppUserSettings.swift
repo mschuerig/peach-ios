@@ -73,4 +73,8 @@ final class AppUserSettings: UserSettings {
         }
         return GapPositionEncoding.decodeWithDefault(raw)
     }
+
+    var autoStartTraining: Bool {
+        defaults.bool(forKey: SettingsKeys.autoStartTraining)
+    }
 }

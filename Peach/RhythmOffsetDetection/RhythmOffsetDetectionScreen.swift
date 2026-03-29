@@ -1,5 +1,4 @@
 import SwiftUI
-import os
 
 struct RhythmOffsetDetectionScreen: View {
     @Environment(\.rhythmOffsetDetectionSession) private var session
@@ -12,8 +11,6 @@ struct RhythmOffsetDetectionScreen: View {
 
     @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
-
-    private let logger = Logger(subsystem: "com.peach.app", category: "RhythmOffsetDetectionScreen")
 
     static let helpSections: [HelpSection] = [
         HelpSection(
@@ -51,12 +48,10 @@ struct RhythmOffsetDetectionScreen: View {
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
-                logger.info("Help sheet shown - stopping training")
-                lifecycle.stopRhythmOffsetDetection()
+                lifecycle.helpSheetPresented()
             } else {
-                logger.info("Help sheet dismissed - restarting training")
                 isFocused = true
-                lifecycle.startRhythmOffsetDetection()
+                lifecycle.helpSheetDismissed()
             }
         }
         .focusable()
@@ -75,20 +70,17 @@ struct RhythmOffsetDetectionScreen: View {
             return session.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .onKeyPress(.escape) {
-            lifecycle.stopRhythmOffsetDetection()
             dismiss()
             return .handled
         }
         .onAppear {
-            logger.info("RhythmOffsetDetectionScreen appeared - (re)starting training")
             isFocused = true
-            lifecycle.stopRhythmOffsetDetection()
-            lifecycle.startRhythmOffsetDetection()
+            lifecycle.trainingScreenAppeared(destination: .rhythmOffsetDetection)
         }
         .onDisappear {
-            logger.info("RhythmOffsetDetectionScreen disappeared - stopping training")
-            lifecycle.stopRhythmOffsetDetection()
+            lifecycle.trainingScreenDisappeared()
         }
+        .trainingIdleOverlay()
     }
 
     // MARK: - Subviews

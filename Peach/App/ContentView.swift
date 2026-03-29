@@ -27,14 +27,19 @@ struct ContentView: View {
         .frame(minWidth: 400, minHeight: 500)
         #endif
         .onChange(of: scenePhase) { oldPhase, newPhase in
-            lifecycle.handleScenePhase(old: oldPhase, new: newPhase) {
-                navigationPath.removeAll()
-            }
+            lifecycle.handleScenePhase(old: oldPhase, new: newPhase)
         }
         #if os(macOS)
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
+            lifecycle.handleAppDeactivated()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            lifecycle.handleAppActivated()
+        }
         .focusedSceneValue(commandState)
         .onAppear {
             commandState.settingsCoordinator = coordinator
+            commandState.trainingLifecycle = lifecycle
         }
         .background(MainWindowReader(window: $mainWindow))
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
@@ -44,11 +49,11 @@ struct ContentView: View {
         }
         .onChange(of: commandState.navigationRequest) {
             guard let request = commandState.navigationRequest else { return }
-            navigationPath.removeAll()
-            Task {
-                try? await Task.sleep(for: .milliseconds(50))
-                navigationPath = [request.destination]
-            }
+            lifecycle.navigate(to: request.destination)
+        }
+        .onChange(of: lifecycle.resolvedNavigation) {
+            guard let resolved = lifecycle.resolvedNavigation else { return }
+            navigationPath = [resolved.destination]
         }
         .sheet(item: $commandState.helpSheetContent) { content in
             helpSheet(for: content)

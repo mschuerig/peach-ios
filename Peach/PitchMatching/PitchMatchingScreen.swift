@@ -1,5 +1,4 @@
 import SwiftUI
-import os
 
 struct PitchMatchingScreen: View {
     let isIntervalMode: Bool
@@ -15,8 +14,6 @@ struct PitchMatchingScreen: View {
 
     @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
-
-    private let logger = Logger(subsystem: "com.peach.app", category: "PitchMatchingScreen")
 
     static let helpSections: [HelpSection] = [
         HelpSection(
@@ -73,12 +70,10 @@ struct PitchMatchingScreen: View {
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
-                logger.info("Help sheet shown - stopping pitch matching")
-                lifecycle.stopPitchMatching()
+                lifecycle.helpSheetPresented()
             } else {
-                logger.info("Help sheet dismissed - restarting pitch matching")
                 isFocused = true
-                lifecycle.startPitchMatching(intervals: intervals)
+                lifecycle.helpSheetDismissed()
             }
         }
         .focusable()
@@ -97,20 +92,17 @@ struct PitchMatchingScreen: View {
             pitchMatchingSession.commitCurrentPitch() ? .handled : .ignored
         }
         .onKeyPress(.escape) {
-            lifecycle.stopPitchMatching()
             dismiss()
             return .handled
         }
         .onAppear {
-            logger.info("PitchMatchingScreen appeared - (re)starting pitch matching")
             isFocused = true
-            lifecycle.stopPitchMatching()
-            lifecycle.startPitchMatching(intervals: intervals)
+            lifecycle.trainingScreenAppeared(destination: .pitchMatching(isIntervalMode: isIntervalMode))
         }
         .onDisappear {
-            logger.info("PitchMatchingScreen disappeared - stopping pitch matching")
-            lifecycle.stopPitchMatching()
+            lifecycle.trainingScreenDisappeared()
         }
+        .trainingIdleOverlay()
     }
 
     // MARK: - Subviews

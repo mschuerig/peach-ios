@@ -1,5 +1,4 @@
 import SwiftUI
-import os
 
 struct PitchDiscriminationScreen: View {
     let isIntervalMode: Bool
@@ -9,19 +8,12 @@ struct PitchDiscriminationScreen: View {
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.trainingLifecycle) private var lifecycle
 
-    /// Whether the user has enabled Reduce Motion in system accessibility settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    /// Vertical size class: .compact in landscape iPhone, .regular in portrait and iPad
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-
     @Environment(\.dismiss) private var dismiss
 
     @FocusState private var isFocused: Bool
     @State private var showHelpSheet = false
-
-    /// Logger for debugging lifecycle events
-    private let logger = Logger(subsystem: "com.peach.app", category: "PitchDiscriminationScreen")
 
     static let helpSections: [HelpSection] = [
         HelpSection(
@@ -69,12 +61,10 @@ struct PitchDiscriminationScreen: View {
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
             if isShowing {
-                logger.info("Help sheet shown - stopping training")
-                lifecycle.stopPitchDiscrimination()
+                lifecycle.helpSheetPresented()
             } else {
-                logger.info("Help sheet dismissed - restarting training")
                 isFocused = true
-                lifecycle.startPitchDiscrimination(intervals: intervals)
+                lifecycle.helpSheetDismissed()
             }
         }
         .focusable()
@@ -93,20 +83,17 @@ struct PitchDiscriminationScreen: View {
             return pitchDiscriminationSession.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .onKeyPress(.escape) {
-            lifecycle.stopPitchDiscrimination()
             dismiss()
             return .handled
         }
         .onAppear {
-            logger.info("PitchDiscriminationScreen appeared - (re)starting training")
             isFocused = true
-            lifecycle.stopPitchDiscrimination()
-            lifecycle.startPitchDiscrimination(intervals: intervals)
+            lifecycle.trainingScreenAppeared(destination: .pitchDiscrimination(isIntervalMode: isIntervalMode))
         }
         .onDisappear {
-            logger.info("PitchDiscriminationScreen disappeared - stopping training")
-            lifecycle.stopPitchDiscrimination()
+            lifecycle.trainingScreenDisappeared()
         }
+        .trainingIdleOverlay()
     }
 
     // MARK: - Subviews

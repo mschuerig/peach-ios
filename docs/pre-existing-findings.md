@@ -15,4 +15,20 @@ _None currently._
 
 ## OPEN — Needs Architectural Decision
 
-_None currently._
+### PF-001: Redundant Session Stop via Background Notification on macOS
+
+**Found:** 2026-03-29 (Story 68.6)
+**Severity:** Low (cosmetic log noise, no correctness impact)
+
+On macOS, each session's `AudioSessionInterruptionMonitor` independently listens for `NSApplication.didResignActiveNotification` and calls `stop()`. The `TrainingLifecycleCoordinator` also stops the current session via `handleAppDeactivated()`. This results in 4× redundant "stop() called but already idle" log messages on every app switch.
+
+**Fix:** Stop passing `backgroundNotificationName` to sessions on macOS, since the coordinator now owns the training lifecycle. The notification-based stop in sessions was the original mechanism before the coordinator existed.
+
+### PF-002: PeachApp Initialized Twice on macOS
+
+**Found:** 2026-03-29 (Story 68.6)
+**Severity:** Medium (wasteful startup — double ModelContainer, AudioEngine, etc.)
+
+On macOS, SwiftUI initializes the `@main App` struct twice before one instance is used. This creates duplicate `PerceptualProfile`, `SoundFontEngine`, sessions, and other heavyweight objects. Visible in logs as 2× "PerceptualProfile initialized (cold start)".
+
+**Fix:** Move heavyweight initialization out of `PeachApp.init()` into a lazily-created shared container, or use `@State` with a factory that guards against double init. This is a known SwiftUI macOS behavior.

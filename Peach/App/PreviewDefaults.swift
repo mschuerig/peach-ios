@@ -34,6 +34,7 @@ final class StubUserSettings: UserSettings {
     let noteGap: Duration = SettingsKeys.defaultNoteGap
     let tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM
     let enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions
+    let autoStartTraining = false
 }
 
 final class StubPitchDiscriminationDataStore: PitchDiscriminationRecordStoring, PitchDiscriminationObserver {

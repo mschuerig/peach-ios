@@ -7,7 +7,6 @@ import os
 @main
 struct PeachApp: App {
     private static let backgroundNotificationName: Notification.Name? = PlatformNotifications.background
-    private static let foregroundNotificationName: Notification.Name? = PlatformNotifications.foreground
 
     private static func makeAudioInterruptionObserver() -> AudioInterruptionObserving {
         #if os(iOS)
@@ -344,8 +343,7 @@ struct PeachApp: App {
             profile: profile,
             observers: observers,
             audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
-            backgroundNotificationName: PeachApp.backgroundNotificationName,
-            foregroundNotificationName: PeachApp.foregroundNotificationName
+            backgroundNotificationName: PeachApp.backgroundNotificationName
         )
     }
 
@@ -372,8 +370,7 @@ struct PeachApp: App {
             observers: observers,
             sampleRate: sampleRate,
             audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
-            backgroundNotificationName: PeachApp.backgroundNotificationName,
-            foregroundNotificationName: PeachApp.foregroundNotificationName
+            backgroundNotificationName: PeachApp.backgroundNotificationName
         )
     }
 
@@ -391,8 +388,7 @@ struct PeachApp: App {
             observers: observers,
             midiInput: midiInput,
             audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
-            backgroundNotificationName: PeachApp.backgroundNotificationName,
-            foregroundNotificationName: PeachApp.foregroundNotificationName
+            backgroundNotificationName: PeachApp.backgroundNotificationName
         )
     }
 
@@ -410,8 +406,7 @@ struct PeachApp: App {
             observers: [storeAdapter, profileAdapter],
             midiInput: midiInput,
             audioInterruptionObserver: PeachApp.makeAudioInterruptionObserver(),
-            backgroundNotificationName: PeachApp.backgroundNotificationName,
-            foregroundNotificationName: PeachApp.foregroundNotificationName
+            backgroundNotificationName: PeachApp.backgroundNotificationName
         )
     }
 }
