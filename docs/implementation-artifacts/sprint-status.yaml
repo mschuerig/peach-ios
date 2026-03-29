@@ -524,7 +524,7 @@ development_status:
   # harden bare #else branches. Work order: 67.1 first (protocols), then 67.2 (view cleanup).
   epic-67: in-progress
   67-1-push-platform-behavior-behind-protocol-ports: done
-  67-2-centralize-view-modifiers-and-harden-else-branches: review
+  67-2-centralize-view-modifiers-and-harden-else-branches: done
   epic-67-retrospective: optional
 
   # Epic 68: Quality of Life — Spectrogram, Accessibility, Schema, Audio & macOS Polish

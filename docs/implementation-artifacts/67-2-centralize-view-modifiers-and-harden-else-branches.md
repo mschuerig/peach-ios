@@ -1,6 +1,6 @@
 # Story 67.2: Centralize View Modifiers and Harden `#else` Branches
 
-Status: review
+Status: done
 
 ## Story
 
@@ -10,7 +10,7 @@ so that adding a third platform produces compiler errors instead of silent wrong
 
 ## Acceptance Criteria
 
-1. **inlineNavigationBarTitle()** -- All 12 `#if os(iOS) .navigationBarTitleDisplayMode(.inline) #endif` blocks replaced with `.inlineNavigationBarTitle()` from a shared `PlatformModifiers.swift`.
+1. **inlineNavigationBarTitle()** -- All 14 `#if os(iOS) .navigationBarTitleDisplayMode(.inline) #endif` blocks replaced with `.inlineNavigationBarTitle()` from a shared `PlatformModifiers.swift`.
 
 2. **platformFormStyle()** -- `SettingsScreen.swift` grouped form style conditional replaced with `.platformFormStyle()`.
 
