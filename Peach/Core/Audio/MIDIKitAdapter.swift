@@ -1,3 +1,4 @@
+import AsyncAlgorithms
 import MIDIKitIO
 import Observation
 import os
@@ -5,14 +6,14 @@ import os
 @Observable
 final class MIDIKitAdapter: MIDIInput {
 
-    nonisolated var events: AsyncStream<MIDIInputEvent> { _events }
+    nonisolated var events: any AsyncSequence<MIDIInputEvent, Never> & Sendable { sharedEvents }
 
     private(set) var isConnected: Bool = false
 
     // MARK: - Private
 
     @ObservationIgnored
-    private nonisolated(unsafe) var _events: AsyncStream<MIDIInputEvent>
+    private nonisolated(unsafe) var sharedEvents: any AsyncSequence<MIDIInputEvent, Never> & Sendable
 
     @ObservationIgnored
     private nonisolated(unsafe) var continuation: AsyncStream<MIDIInputEvent>.Continuation
@@ -22,9 +23,10 @@ final class MIDIKitAdapter: MIDIInput {
     private static let logger = Logger(subsystem: "com.peach.app", category: "MIDIKitAdapter")
 
     init() {
-        var continuation: AsyncStream<MIDIInputEvent>.Continuation!
-        _events = AsyncStream { continuation = $0 }
-        self.continuation = continuation
+        var cont: AsyncStream<MIDIInputEvent>.Continuation!
+        let stream = AsyncStream<MIDIInputEvent> { cont = $0 }
+        self.continuation = cont
+        self.sharedEvents = stream.share()
 
         midiManager = ObservableMIDIManager(
             clientName: "Peach",
@@ -39,7 +41,7 @@ final class MIDIKitAdapter: MIDIInput {
             return
         }
 
-        let cont = continuation!
+        let continuation = self.continuation
         do {
             try midiManager.addInputConnection(
                 to: .allOutputs,
@@ -47,37 +49,36 @@ final class MIDIKitAdapter: MIDIInput {
                 filter: .default(),
                 receiver: .events(options: [.filterActiveSensingAndClock]) { events, timeStamp, _ in
                     for event in events {
-                        switch event {
+                        let mapped: MIDIInputEvent? = switch event {
                         case .noteOn(let payload):
-                            let velocity = payload.velocity.midi1Value
-                            let note = MIDINote(Int(payload.note.number))
-                            if velocity == 0 {
-                                cont.yield(.noteOff(
-                                    note: note,
-                                    velocity: MIDIVelocity(max(1, UInt8(velocity))),
+                            payload.velocity.midi1Value == 0
+                                ? .noteOff(
+                                    note: MIDINote(Int(payload.note.number)),
+                                    velocity: MIDIVelocity(max(1, UInt8(payload.velocity.midi1Value))),
                                     timestamp: timeStamp
-                                ))
-                            } else {
-                                cont.yield(.noteOn(
-                                    note: note,
-                                    velocity: MIDIVelocity(UInt8(velocity)),
+                                )
+                                : .noteOn(
+                                    note: MIDINote(Int(payload.note.number)),
+                                    velocity: MIDIVelocity(UInt8(payload.velocity.midi1Value)),
                                     timestamp: timeStamp
-                                ))
-                            }
+                                )
                         case .noteOff(let payload):
-                            cont.yield(.noteOff(
+                            .noteOff(
                                 note: MIDINote(Int(payload.note.number)),
                                 velocity: MIDIVelocity(max(1, UInt8(payload.velocity.midi1Value))),
                                 timestamp: timeStamp
-                            ))
+                            )
                         case .pitchBend(let payload):
-                            cont.yield(.pitchBend(
+                            .pitchBend(
                                 value: PitchBendValue(UInt16(payload.value.midi1Value)),
                                 channel: MIDIChannel(UInt8(payload.channel)),
                                 timestamp: timeStamp
-                            ))
+                            )
                         default:
-                            break
+                            nil
+                        }
+                        if let mapped {
+                            continuation.yield(mapped)
                         }
                     }
                 }

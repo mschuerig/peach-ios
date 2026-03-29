@@ -1,4 +1,4 @@
 nonisolated protocol MIDIInput {
-    var events: AsyncStream<MIDIInputEvent> { get }
+    var events: any AsyncSequence<MIDIInputEvent, Never> & Sendable { get }
     var isConnected: Bool { get }
 }

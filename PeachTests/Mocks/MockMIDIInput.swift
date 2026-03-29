@@ -1,39 +1,59 @@
+import Foundation
+import os
 @testable import Peach
 
 final class MockMIDIInput: MIDIInput {
 
     // MARK: - MIDIInput Protocol
 
-    nonisolated var events: AsyncStream<MIDIInputEvent> { stream }
+    nonisolated var events: any AsyncSequence<MIDIInputEvent, Never> & Sendable {
+        broadcaster.makeStream()
+    }
 
     var isConnected: Bool = true
 
     // MARK: - Test Controls
 
-    private nonisolated(unsafe) var stream: AsyncStream<MIDIInputEvent>
-    private nonisolated(unsafe) var continuation: AsyncStream<MIDIInputEvent>.Continuation
-
-    init() {
-        var continuation: AsyncStream<MIDIInputEvent>.Continuation!
-        stream = AsyncStream { continuation = $0 }
-        self.continuation = continuation
-    }
+    private nonisolated let broadcaster = MockMIDIBroadcaster()
 
     nonisolated func send(_ event: MIDIInputEvent) {
-        continuation.yield(event)
+        broadcaster.broadcast(event)
     }
 
     nonisolated func finish() {
-        continuation.finish()
+        broadcaster.finishAll()
+    }
+}
+
+private final class MockMIDIBroadcaster: Sendable {
+
+    private nonisolated let listeners = OSAllocatedUnfairLock(initialState: [UUID: AsyncStream<MIDIInputEvent>.Continuation]())
+
+    nonisolated func makeStream() -> AsyncStream<MIDIInputEvent> {
+        let id = UUID()
+        return AsyncStream { continuation in
+            listeners.withLock { $0[id] = continuation }
+            continuation.onTermination = { [weak self] _ in
+                self?.listeners.withLock { _ = $0.removeValue(forKey: id) }
+            }
+        }
     }
 
-    // MARK: - Reset
+    nonisolated func broadcast(_ event: MIDIInputEvent) {
+        let snapshot = listeners.withLock { Array($0.values) }
+        for continuation in snapshot {
+            continuation.yield(event)
+        }
+    }
 
-    func reset() {
-        continuation.finish()
-        var newContinuation: AsyncStream<MIDIInputEvent>.Continuation!
-        stream = AsyncStream { newContinuation = $0 }
-        continuation = newContinuation
-        isConnected = true
+    nonisolated func finishAll() {
+        let snapshot = listeners.withLock { active in
+            let copy = Array(active.values)
+            active.removeAll()
+            return copy
+        }
+        for continuation in snapshot {
+            continuation.finish()
+        }
     }
 }
