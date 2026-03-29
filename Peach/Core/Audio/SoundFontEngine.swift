@@ -87,6 +87,15 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         return true
     }
 
+    /// Peek at the next immediate event without consuming it (render thread only).
+    /// Returns nil if the ring buffer is empty.
+    func peekImmediate() -> ScheduledMIDIEvent? {
+        let tail = immediateTail.load(ordering: .relaxed)
+        let head = immediateHead.load(ordering: .acquiring)
+        guard tail != head else { return nil }
+        return immediateBuffer[tail]
+    }
+
     /// Dequeue an immediate event from the render thread (consumer).
     /// Returns nil if the ring buffer is empty.
     func dequeueImmediate() -> ScheduledMIDIEvent? {
@@ -97,6 +106,11 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         let next = (tail + 1) % Self.immediateCapacity
         immediateTail.store(next, ordering: .releasing)
         return event
+    }
+
+    /// Reset the immediate ring buffer (render thread only, called on generation change).
+    func resetImmediate() {
+        immediateTail.store(immediateHead.load(ordering: .relaxed), ordering: .relaxed)
     }
 
     // MARK: - Lifecycle
@@ -119,6 +133,10 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         midiBlocks0.initialize(repeating: nil, count: 16)
         midiBlocks1.initialize(repeating: nil, count: 16)
         immediateBuffer = .allocate(capacity: Self.immediateCapacity)
+        immediateBuffer.initialize(
+            repeating: ScheduledMIDIEvent(sampleOffset: 0, midiStatus: 0, midiNote: 0, velocity: 0),
+            count: Self.immediateCapacity
+        )
     }
 
     deinit {
@@ -128,6 +146,7 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         midiBlocks0.deallocate()
         midiBlocks1.deinitialize(count: 16)
         midiBlocks1.deallocate()
+        immediateBuffer.deinitialize(count: Self.immediateCapacity)
         immediateBuffer.deallocate()
     }
 
@@ -259,12 +278,13 @@ final class SoundFontEngine {
             let gen = shared.generation.load(ordering: .acquiring)
             let slotIndex = gen % 2
 
-            // Detect schedule change — reset cursor and dispatch counter
+            // Detect schedule change — reset cursor, dispatch counter, and immediate buffer
             if gen != shared.lastGeneration {
                 shared.lastGeneration = gen
                 shared.nextIndex = 0
                 shared.samplePosition.store(0, ordering: .relaxed)
                 shared.dispatchedEventCount.store(0, ordering: .relaxed)
+                shared.resetImmediate()
             }
 
             let count = shared.count(forSlot: slotIndex)
@@ -308,16 +328,18 @@ final class SoundFontEngine {
             }
 
             // --- Drain immediate event ring buffer ---
-            while let event = shared.dequeueImmediate() {
+            // Peek before consuming: stop at events beyond the current window
+            // so future-timestamped note-offs are held for the correct callback.
+            while let event = shared.peekImmediate() {
+                if event.sampleOffset >= windowEnd { break }
+                _ = shared.dequeueImmediate()
                 let channel = event.midiStatus & Self.channelMask
                 guard let midiBlock = midiBlocks[Int(channel)] else { continue }
                 let intraBufferOffset: Int64
                 if event.sampleOffset <= windowStart {
                     intraBufferOffset = 0
-                } else if event.sampleOffset < windowEnd {
-                    intraBufferOffset = event.sampleOffset - windowStart
                 } else {
-                    intraBufferOffset = 0
+                    intraBufferOffset = event.sampleOffset - windowStart
                 }
                 let eventTime = AUEventSampleTimeImmediate
                     + AUEventSampleTime(intraBufferOffset)
@@ -478,18 +500,20 @@ final class SoundFontEngine {
             midiNote: note,
             velocity: velocity
         )
-        _ = scheduleState.enqueueImmediate(event)
+        let enqueued = scheduleState.enqueueImmediate(event)
+        assert(enqueued, "Immediate ring buffer overflow — note-on dropped")
     }
 
-    func immediateNoteOff(channel: ChannelID, note: UInt8) {
+    func immediateNoteOff(channel: ChannelID, note: UInt8, delaySamples: Int64 = 0) {
         let currentPos = scheduleState.samplePosition.load(ordering: .acquiring)
         let event = ScheduledMIDIEvent(
-            sampleOffset: currentPos,
+            sampleOffset: currentPos + delaySamples,
             midiStatus: Self.noteOffBase | channel.rawValue,
             midiNote: note,
             velocity: 0
         )
-        _ = scheduleState.enqueueImmediate(event)
+        let enqueued = scheduleState.enqueueImmediate(event)
+        assert(enqueued, "Immediate ring buffer overflow — note-off dropped")
     }
 
     func sendPitchBend(_ value: PitchBendValue, channel: ChannelID) {

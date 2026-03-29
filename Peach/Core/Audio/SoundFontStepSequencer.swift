@@ -13,7 +13,7 @@ protocol StepSequencerEngine {
     func clearSchedule()
     func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async
     func immediateNoteOn(channel: SoundFontEngine.ChannelID, note: UInt8, velocity: UInt8)
-    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8)
+    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8, delaySamples: Int64)
     func samplePosition(forHostTime hostTime: UInt64) -> Int64
 }
 
@@ -145,9 +145,10 @@ final class SoundFontStepSequencer: StepSequencer {
 
     func playImmediateNote(velocity: MIDIVelocity) throws {
         let midiNoteRaw = UInt8(Self.clickNote.rawValue)
+        let noteOffSamples = Int64(engine.sampleRate.rawValue * Self.noteOffDuration.timeInterval)
 
         engine.immediateNoteOn(channel: channel, note: midiNoteRaw, velocity: velocity.rawValue)
-        engine.immediateNoteOff(channel: channel, note: midiNoteRaw)
+        engine.immediateNoteOff(channel: channel, note: midiNoteRaw, delaySamples: noteOffSamples)
     }
 
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 {

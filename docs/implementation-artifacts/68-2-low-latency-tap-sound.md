@@ -1,6 +1,6 @@
 # Story 68.2: Low-Latency Tap Sound via Render-Thread Dispatch
 
-Status: review
+Status: done
 
 ## Story
 
@@ -38,6 +38,7 @@ so that auditory feedback precisely reflects my timing.
   - [x] 3.2 Immediate events with `sampleOffset <= frameStart` dispatch at intra-buffer offset 0
   - [x] 3.3 Immediate events with `sampleOffset` within the current frame dispatch at the correct intra-buffer offset
   - [x] 3.4 Verify pattern event dispatch logic is completely untouched
+  - [x] 3.5 Future-timestamped events (`sampleOffset >= windowEnd`) are retained in the ring buffer (peek-without-consume) and deferred to the correct callback
 
 - [x] Task 4: Update `StepSequencerEngine` protocol if needed (AC: #1, #2)
   - [x] 4.1 If `immediateNoteOn`/`immediateNoteOff` signatures change, update the `StepSequencerEngine` protocol and `MockStepSequencerEngine`
@@ -105,8 +106,13 @@ None
 - `immediateNoteOn`/`immediateNoteOff` now enqueue `ScheduledMIDIEvent` to the ring buffer instead of calling `sampler.startNote()`/`sampler.stopNote()` directly
 - Render callback drains immediate ring buffer after pattern events, dispatching at correct intra-buffer offsets
 - `SoundFontStepSequencer.playImmediateNote()` simplified to synchronous note-on + note-off enqueue — no more `Task.sleep` or `noteOffTask`
-- `StepSequencerEngine` protocol unchanged — `immediateNoteOn`/`immediateNoteOff` signatures preserved
+- `StepSequencerEngine` protocol updated — `immediateNoteOff` gains `delaySamples: Int64` parameter for sample-accurate note-off scheduling
+- `playImmediateNote()` computes note-off delay from `noteOffDuration` and `sampleRate`, passing it to `immediateNoteOff`
 - Early-return guard updated: skips timing/dispatch only when both pattern schedule and immediate ring buffer are empty (preserves existing test semantics while enabling immediate event path)
+- Render callback uses peek-before-consume for immediate events: future-timestamped events (e.g., note-off) are retained in the ring buffer until their target callback window
+- `clearSchedule()` and generation-change detection now reset the immediate ring buffer to prevent stale events after stop/restart
+- `immediateBuffer` properly initialized in `init` and deinitialized in `deinit` for memory safety consistency
+- Assertions on `enqueueImmediate` return value to catch ring buffer overflow in debug builds
 - Updated existing `SoundFontStepSequencerTests` for synchronous note-off behavior
 - Added 3 new integration tests in `SoundFontEngineTests`: immediate dispatch within one frame, coexistence with scheduled events, note-off via render thread
 
@@ -120,3 +126,4 @@ None
 
 - 2026-03-29: Story created
 - 2026-03-29: Implemented low-latency tap sound via render-thread dispatch with SPSC ring buffer
+- 2026-03-29: Code review fixes — note-off duration offset, peek-before-consume for future events, ring buffer reset on clearSchedule, buffer init/deinit, enqueue assertions

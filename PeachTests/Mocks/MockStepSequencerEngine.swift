@@ -51,7 +51,7 @@ final class MockStepSequencerEngine: StepSequencerEngine {
         lastImmediateNoteOnVelocity = velocity
     }
 
-    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8) {
+    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8, delaySamples: Int64) {
         immediateNoteOffCallCount += 1
         onImmediateNoteOff?()
     }
