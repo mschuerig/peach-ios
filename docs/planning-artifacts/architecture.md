@@ -3073,3 +3073,25 @@ A `MIDIInput` protocol in `Core/Ports/` abstracts MIDI infrastructure from train
 **Decision Compatibility:** MIDIKit is the only new dependency. It wraps CoreMIDI with a Swift-friendly API. No entitlements, Info.plist entries, or AVAudioSession changes required.
 
 **Pattern Consistency:** `MIDIInput` follows the same port protocol pattern as `NotePlayer`, `HapticFeedback`, and `StepSequencer` — domain code depends on the protocol, infrastructure implements it, composition root wires it.
+
+## v0.8 Architecture Amendment — Schema Versioning
+
+### Problem
+
+SwiftData stores evolve as training domains are added or record shapes change. Without version tracking, a schema change after users have stored data causes a crash on launch — SwiftData cannot open a store whose shape doesn't match the code's model definitions.
+
+### Decision
+
+All `@Model` record classes are defined inside a `VersionedSchema` enum (`SchemaV1`). A `SchemaMigrationPlan` declares the ordered list of schema versions and the migration stages between them. The `ModelContainer` is created from the schema and migration plan rather than from bare model types.
+
+Top-level typealiases (e.g., `typealias PitchDiscriminationRecord = SchemaV1.PitchDiscriminationRecord`) keep all call sites decoupled from the versioning mechanism. When a new schema version is introduced, only the typealiases and the migration plan need updating — domain code, stores, and tests are unaffected.
+
+### Migration Strategy
+
+- **V1 (current):** Single schema version, no migration stages. Captures the existing 4 record types as a frozen snapshot.
+- **Future versions:** Each schema change creates a new `SchemaVN` with its own nested model classes. A migration stage (lightweight or custom) bridges each version pair. The migration plan's `schemas` array grows monotonically — versions are never removed.
+- **Lightweight vs. custom:** Additive changes (new properties with defaults, new model types) use lightweight migration. Destructive changes (renames, type changes, data splits) require custom migration with explicit data transformation.
+
+### Why This Matters Now
+
+The app has four training domains, each storing records. Adding new record properties (e.g., input method, difficulty level) or new training domains is inevitable. Retrofitting versioning after users have unversioned stores is fragile. Setting up the versioning infrastructure before the first schema change ensures every future migration has a clean baseline.
