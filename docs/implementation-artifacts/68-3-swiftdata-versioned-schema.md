@@ -1,6 +1,6 @@
 # Story 68.3: SwiftData Versioned Schema and Migration Plan
 
-Status: review
+Status: done
 
 ## Story
 
@@ -112,9 +112,14 @@ None required.
 - Updated `PeachApp.swift`, `PreviewDefaults.swift`, and `TrainingDataTransferService.preview()` to use schema-based container
 - All 7 new tests pass: schema verification (1), migration plan verification (2), round-trip tests for all 4 record types (4)
 - Full suite: 1665 iOS tests pass, 1658 macOS tests pass
+- Code review fix: nested @Model classes inside SchemaV1 enum (Apple best practice) with top-level typealiases for zero call-site changes
 
 ### File List
-- `Peach/Core/Data/PeachSchema.swift` (new) — SchemaV1 and PeachSchemaMigrationPlan
+- `Peach/Core/Data/PeachSchema.swift` (new) — SchemaV1 with nested @Model classes, PeachSchemaMigrationPlan
+- `Peach/Core/Data/PitchDiscriminationRecord.swift` (modified) — typealias to SchemaV1 nested type
+- `Peach/Core/Data/PitchMatchingRecord.swift` (modified) — typealias to SchemaV1 nested type
+- `Peach/Core/Data/RhythmOffsetDetectionRecord.swift` (modified) — typealias to SchemaV1 nested type
+- `Peach/Core/Data/ContinuousRhythmMatchingRecord.swift` (modified) — typealias to SchemaV1 nested type
 - `Peach/App/PeachApp.swift` (modified) — ModelContainer uses Schema + migration plan
 - `Peach/App/PreviewDefaults.swift` (modified) — SettingsCoordinator.stub uses Schema + migration plan
 - `Peach/Core/Data/TrainingDataTransferService.swift` (modified) — preview() uses Schema + migration plan
@@ -124,3 +129,4 @@ None required.
 
 - 2026-03-29: Story created
 - 2026-03-29: Implemented VersionedSchema, migration plan, wired into app, all tests pass
+- 2026-03-29: Code review fix — nested @Model classes inside SchemaV1 with top-level typealiases
