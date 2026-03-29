@@ -60,8 +60,10 @@ struct RhythmTimingFeedbackIndicator: View {
 
     static func feedbackColor(level: SpectrogramAccuracyLevel) -> Color {
         switch level {
+        case .excellent: .green
         case .precise: .green
         case .moderate: .yellow
+        case .loose: .orange
         case .erratic: .red
         }
     }

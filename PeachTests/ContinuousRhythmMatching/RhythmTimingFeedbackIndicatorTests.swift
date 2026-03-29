@@ -72,10 +72,17 @@ struct RhythmTimingFeedbackIndicatorTests {
 
     // MARK: - accuracyLevel() Tests
 
-    @Test("precise for small offset at 120 BPM")
-    func preciseForSmallOffset() async {
-        // At 120 BPM, sixteenth = 125ms. 5ms offset = 4% — well within precise band.
+    @Test("excellent for small offset at 120 BPM")
+    func excellentForSmallOffset() async {
+        // At 120 BPM, sixteenth = 125ms. 5ms offset = 4% — below excellent threshold (8ms = 6.4%).
         let level = RhythmTimingFeedbackIndicator.accuracyLevel(offsetMs: 5.0, tempo: TempoBPM(120))
+        #expect(level == .excellent)
+    }
+
+    @Test("precise for moderate-small offset at 120 BPM")
+    func preciseForModerateSmallOffset() async {
+        // At 120 BPM, sixteenth = 125ms. 10ms offset = 8% — above excellent (6.4%), below precise (12ms = 9.6%).
+        let level = RhythmTimingFeedbackIndicator.accuracyLevel(offsetMs: 10.0, tempo: TempoBPM(120))
         #expect(level == .precise)
     }
 
@@ -96,13 +103,13 @@ struct RhythmTimingFeedbackIndicatorTests {
     @Test("uses absolute value of negative offset")
     func usesAbsoluteValueForNegativeOffset() async {
         let level = RhythmTimingFeedbackIndicator.accuracyLevel(offsetMs: -5.0, tempo: TempoBPM(120))
-        #expect(level == .precise)
+        #expect(level == .excellent)
     }
 
-    @Test("zero offset is precise")
-    func zeroOffsetIsPrecise() async {
+    @Test("zero offset is excellent")
+    func zeroOffsetIsExcellent() async {
         let level = RhythmTimingFeedbackIndicator.accuracyLevel(offsetMs: 0.0, tempo: TempoBPM(120))
-        #expect(level == .precise)
+        #expect(level == .excellent)
     }
 
     // MARK: - feedbackColor() Tests

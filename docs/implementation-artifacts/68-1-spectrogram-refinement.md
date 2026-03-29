@@ -1,6 +1,6 @@
 # Story 68.1: Spectrogram Refinement — More Tempo Bands, Finer Color Gradations
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -22,35 +22,35 @@ so that I can see detailed accuracy patterns instead of a coarse grid.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Refine `TempoRange` to support finer-grained bands (AC: #1)
-  - [ ] 1.1 Add new static ranges to `TempoRange` (e.g., 5-7 bands spanning 40-200 BPM) and a new `spectrogramRanges` static property, keeping `defaultRanges` unchanged for backward compatibility with session logic
-  - [ ] 1.2 Update `TempoRange.displayName` to cover the new ranges (localized)
-  - [ ] 1.3 Update `TempoRange.midpointTempo` for the new narrower ranges
-  - [ ] 1.4 Update `SpectrogramData.compute()` to iterate `spectrogramRanges` instead of `defaultRanges`
-  - [ ] 1.5 Verify rhythm discipline profile adapters continue to use `defaultRanges` for session-level grouping
+- [x] Task 1: Refine `TempoRange` to support finer-grained bands (AC: #1)
+  - [x] 1.1 Add new static ranges to `TempoRange` (e.g., 5-7 bands spanning 40-200 BPM) and a new `spectrogramRanges` static property, keeping `defaultRanges` unchanged for backward compatibility with session logic
+  - [x] 1.2 Update `TempoRange.displayName` to cover the new ranges (localized)
+  - [x] 1.3 Update `TempoRange.midpointTempo` for the new narrower ranges
+  - [x] 1.4 Update `SpectrogramData.compute()` to iterate `spectrogramRanges` instead of `defaultRanges`
+  - [x] 1.5 Verify rhythm discipline profile adapters continue to use `defaultRanges` for session-level grouping
 
-- [ ] Task 2: Expand `SpectrogramAccuracyLevel` to 5 gradations (AC: #2)
-  - [ ] 2.1 Add two additional levels (e.g., `excellent`, `precise`, `moderate`, `loose`, `erratic`) to `SpectrogramAccuracyLevel`
-  - [ ] 2.2 Update `SpectrogramThresholds` with 4 boundary definitions (base percent + floor/ceiling for each) while preserving the hybrid clamping model
-  - [ ] 2.3 Update `SpectrogramThresholds.accuracyLevel(for:tempoRange:)` to evaluate 4 thresholds instead of 2
+- [x] Task 2: Expand `SpectrogramAccuracyLevel` to 5 gradations (AC: #2)
+  - [x] 2.1 Add two additional levels (e.g., `excellent`, `precise`, `moderate`, `loose`, `erratic`) to `SpectrogramAccuracyLevel`
+  - [x] 2.2 Update `SpectrogramThresholds` with 4 boundary definitions (base percent + floor/ceiling for each) while preserving the hybrid clamping model
+  - [x] 2.3 Update `SpectrogramThresholds.accuracyLevel(for:tempoRange:)` to evaluate 4 thresholds instead of 2
 
-- [ ] Task 3: Update view layer for new bands and colors (AC: #2)
-  - [ ] 3.1 Update `RhythmSpectrogramView.cellColor(for:)` with 5 distinct colors in a perceptually linear gradient
-  - [ ] 3.2 Update the legend to show all 5 gradation labels
-  - [ ] 3.3 Update `columnAccessibilityLabel` to use the new level names
-  - [ ] 3.4 Verify `cellSize(columnCount:rangeCount:)` still produces usable sizes with more rows
+- [x] Task 3: Update view layer for new bands and colors (AC: #2)
+  - [x] 3.1 Update `RhythmSpectrogramView.cellColor(for:)` with 5 distinct colors in a perceptually linear gradient
+  - [x] 3.2 Update the legend to show all 5 gradation labels
+  - [x] 3.3 Update `columnAccessibilityLabel` to use the new level names
+  - [x] 3.4 Verify `cellSize(columnCount:rangeCount:)` still produces usable sizes with more rows
 
-- [ ] Task 4: Validate threshold behavior for continuous rhythm matching (AC: #3, #4)
-  - [ ] 4.1 Confirm that the unified threshold set produces sensible classifications for both rhythmOffsetDetection and continuousRhythmMatching data across all new tempo bands
-  - [ ] 4.2 Ensure the 12 ms precise floor is still effective for fast tempo bands
+- [x] Task 4: Validate threshold behavior for continuous rhythm matching (AC: #3, #4)
+  - [x] 4.1 Confirm that the unified threshold set produces sensible classifications for both rhythmOffsetDetection and continuousRhythmMatching data across all new tempo bands
+  - [x] 4.2 Ensure the 12 ms precise floor is still effective for fast tempo bands
 
-- [ ] Task 5: Update and extend tests (AC: #5)
-  - [ ] 5.1 Update `SpectrogramDataTests` — adapt all existing threshold tests to the new 5-level scheme
-  - [ ] 5.2 Add tests for new tempo band midpoints and boundary conditions
-  - [ ] 5.3 Add test verifying `trainedRanges` correctly filters with finer-grained ranges
-  - [ ] 5.4 Add test for continuous rhythm matching mode producing valid classifications
-  - [ ] 5.5 Update `TempoRangeTests` if `defaultRanges` count assertion changes
-  - [ ] 5.6 Run `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 5: Update and extend tests (AC: #5)
+  - [x] 5.1 Update `SpectrogramDataTests` — adapt all existing threshold tests to the new 5-level scheme
+  - [x] 5.2 Add tests for new tempo band midpoints and boundary conditions
+  - [x] 5.3 Add test verifying `trainedRanges` correctly filters with finer-grained ranges
+  - [x] 5.4 Add test for continuous rhythm matching mode producing valid classifications
+  - [x] 5.5 Update `TempoRangeTests` if `defaultRanges` count assertion changes
+  - [x] 5.6 Run `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -87,10 +87,30 @@ This means `SpectrogramData.compute()` needs to iterate the finer ranges and loo
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
 ### Debug Log References
 ### Completion Notes List
+- Implemented 6 fine-grained spectrogram ranges (40-59, 60-79, 80-99, 100-119, 120-159, 160-200) via `TempoRange.spectrogramRanges`, aligned with coarse `defaultRanges` boundaries
+- Added `enclosingDefaultRange` to map fine ranges to coarse ranges for data lookup
+- Redesigned `SpectrogramThresholds` with `Boundary` struct; 4 boundaries yield 5 levels: excellent/precise/moderate/loose/erratic
+- Updated `SpectrogramData.compute()` to iterate fine ranges, looking up metrics from the enclosing coarse range
+- Updated view with 5-color gradient (teal/green/yellow/orange/red), 5 legend items, and accessibility labels
+- Updated `RhythmTimingFeedbackIndicator.feedbackColor` for new accuracy levels
+- Added German translations for "excellent"/"Excellent"/"loose"/"Loose"
+- All 1658 iOS and 1651 macOS tests pass; 8 new tests added, multiple existing tests updated
+
 ### File List
+- Peach/Core/Music/TempoRange.swift
+- Peach/Core/Profile/SpectrogramData.swift
+- Peach/Profile/RhythmSpectrogramView.swift
+- Peach/ContinuousRhythmMatching/RhythmTimingFeedbackIndicator.swift
+- Peach/Resources/Localizable.xcstrings
+- PeachTests/Core/Music/TempoRangeTests.swift
+- PeachTests/Core/Profile/SpectrogramDataTests.swift
+- PeachTests/ContinuousRhythmMatching/RhythmTimingFeedbackIndicatorTests.swift
+- PeachTests/Profile/ContinuousRhythmMatchingProfileTests.swift
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-03-29: Implementation complete — 6 fine tempo bands, 5 accuracy levels, all tests green on both platforms

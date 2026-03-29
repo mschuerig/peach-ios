@@ -169,10 +169,12 @@ struct RhythmSpectrogramView: View {
     // MARK: - Legend
 
     private var legend: some View {
-        HStack(spacing: 12) {
-            legendItem(color: .green, label: String(localized: "Precise"))
-            legendItem(color: .yellow, label: String(localized: "Moderate"))
-            legendItem(color: .red, label: String(localized: "Erratic"))
+        HStack(spacing: 8) {
+            legendItem(color: Self.cellColor(for: .excellent), label: String(localized: "Excellent"))
+            legendItem(color: Self.cellColor(for: .precise), label: String(localized: "Precise"))
+            legendItem(color: Self.cellColor(for: .moderate), label: String(localized: "Moderate"))
+            legendItem(color: Self.cellColor(for: .loose), label: String(localized: "Loose"))
+            legendItem(color: Self.cellColor(for: .erratic), label: String(localized: "Erratic"))
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
@@ -210,8 +212,10 @@ struct RhythmSpectrogramView: View {
 
     static func cellColor(for level: SpectrogramAccuracyLevel?) -> Color {
         switch level {
+        case .excellent: Color(hue: 0.45, saturation: 0.7, brightness: 0.7)
         case .precise: .green
         case .moderate: .yellow
+        case .loose: .orange
         case .erratic: .red
         case nil: .clear
         }
@@ -219,8 +223,10 @@ struct RhythmSpectrogramView: View {
 
     static func accuracyLevelName(_ level: SpectrogramAccuracyLevel) -> String {
         switch level {
+        case .excellent: String(localized: "excellent")
         case .precise: String(localized: "precise")
         case .moderate: String(localized: "moderate")
+        case .loose: String(localized: "loose")
         case .erratic: String(localized: "erratic")
         }
     }

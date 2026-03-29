@@ -105,7 +105,9 @@ struct ContinuousRhythmMatchingProfileTests {
         let buckets = timeline.allGranularityBuckets(for: .continuousRhythmMatching)
         let data = SpectrogramData.compute(mode: .continuousRhythmMatching, profile: profile, timeBuckets: buckets)
 
-        #expect(data.trainedRanges == [.medium])
+        // Medium coarse range maps to 2 fine spectrogram ranges (80-99, 100-119)
+        #expect(data.trainedRanges.count == 2)
+        #expect(data.trainedRanges.allSatisfy { $0.enclosingDefaultRange == .medium })
         #expect(!data.columns.isEmpty)
     }
 

@@ -45,6 +45,22 @@ struct TempoRange: Hashable, Sendable, Comparable {
 
     static let defaultRanges: [TempoRange] = [.slow, .medium, .fast]
 
+    // MARK: - Spectrogram Ranges
+
+    static let spectrogramRanges: [TempoRange] = [
+        TempoRange(lowerBound: TempoBPM(40),  upperBound: TempoBPM(59)),
+        TempoRange(lowerBound: TempoBPM(60),  upperBound: TempoBPM(79)),
+        TempoRange(lowerBound: TempoBPM(80),  upperBound: TempoBPM(99)),
+        TempoRange(lowerBound: TempoBPM(100), upperBound: TempoBPM(119)),
+        TempoRange(lowerBound: TempoBPM(120), upperBound: TempoBPM(159)),
+        TempoRange(lowerBound: TempoBPM(160), upperBound: TempoBPM(200)),
+    ]
+
+    /// Returns the coarse default range that fully encloses this range, or nil if none.
+    var enclosingDefaultRange: TempoRange? {
+        Self.defaultRanges.first { $0.contains(lowerBound) && $0.contains(upperBound) }
+    }
+
     /// Returns the range containing the given tempo, or nil if no range matches.
     static func range(for tempo: TempoBPM, in ranges: [TempoRange] = defaultRanges) -> TempoRange? {
         ranges.first { $0.contains(tempo) }

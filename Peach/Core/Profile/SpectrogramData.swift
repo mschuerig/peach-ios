@@ -2,52 +2,53 @@ import Foundation
 
 // MARK: - Thresholds
 
-/// Parameterized color thresholds for spectrogram cells (UX-DR4).
+/// Parameterized color thresholds for spectrogram cells.
 ///
 /// Uses a hybrid model: base percentages of the sixteenth note duration,
 /// clamped to absolute floor/ceiling values in milliseconds. This ensures
 /// thresholds remain musically meaningful and physically achievable across
-/// the full 40–200 BPM range.
+/// the full 40–200 BPM range. Four boundaries yield five accuracy levels.
 struct SpectrogramThresholds: Sendable {
-    /// Base percentage of sixteenth note duration for "precise" boundary.
-    let preciseBasePercent: Double
-    /// Base percentage of sixteenth note duration for "moderate" boundary.
-    let moderateBasePercent: Double
-    /// Absolute floor in ms — precise threshold never goes below this.
-    let preciseFloorMs: Double
-    /// Absolute floor in ms — moderate threshold never goes below this.
-    let moderateFloorMs: Double
-    /// Absolute ceiling in ms — precise threshold never exceeds this.
-    let preciseCeilingMs: Double
-    /// Absolute ceiling in ms — moderate threshold never exceeds this.
-    let moderateCeilingMs: Double
+    struct Boundary: Sendable {
+        let basePercent: Double
+        let floorMs: Double
+        let ceilingMs: Double
+    }
+
+    let excellent: Boundary
+    let precise: Boundary
+    let moderate: Boundary
+    let loose: Boundary
 
     static let `default` = SpectrogramThresholds(
-        preciseBasePercent: 8.0,
-        moderateBasePercent: 20.0,
-        preciseFloorMs: 12.0,
-        moderateFloorMs: 25.0,
-        preciseCeilingMs: 30.0,
-        moderateCeilingMs: 50.0
+        excellent: Boundary(basePercent: 4.0, floorMs: 8.0, ceilingMs: 15.0),
+        precise: Boundary(basePercent: 8.0, floorMs: 12.0, ceilingMs: 30.0),
+        moderate: Boundary(basePercent: 15.0, floorMs: 20.0, ceilingMs: 40.0),
+        loose: Boundary(basePercent: 25.0, floorMs: 30.0, ceilingMs: 55.0)
     )
 
     func accuracyLevel(for percentage: Double?, tempoRange: TempoRange) -> SpectrogramAccuracyLevel? {
         guard let percentage else { return nil }
         let sixteenthMs = tempoRange.midpointTempo.sixteenthNoteDuration / .milliseconds(1)
-        let preciseMs = min(max(sixteenthMs * preciseBasePercent / 100.0, preciseFloorMs), preciseCeilingMs)
-        let moderateMs = min(max(sixteenthMs * moderateBasePercent / 100.0, moderateFloorMs), moderateCeilingMs)
-        let effectivePrecisePercent = (preciseMs / sixteenthMs) * 100.0
-        let effectiveModeratePercent = (moderateMs / sixteenthMs) * 100.0
-        if percentage <= effectivePrecisePercent { return .precise }
-        if percentage <= effectiveModeratePercent { return .moderate }
+        if percentage <= effectivePercent(boundary: excellent, sixteenthMs: sixteenthMs) { return .excellent }
+        if percentage <= effectivePercent(boundary: precise, sixteenthMs: sixteenthMs) { return .precise }
+        if percentage <= effectivePercent(boundary: moderate, sixteenthMs: sixteenthMs) { return .moderate }
+        if percentage <= effectivePercent(boundary: loose, sixteenthMs: sixteenthMs) { return .loose }
         return .erratic
+    }
+
+    private func effectivePercent(boundary: Boundary, sixteenthMs: Double) -> Double {
+        let effectiveMs = min(max(sixteenthMs * boundary.basePercent / 100.0, boundary.floorMs), boundary.ceilingMs)
+        return (effectiveMs / sixteenthMs) * 100.0
     }
 }
 
 /// Visual accuracy classification for spectrogram heat map cells.
 enum SpectrogramAccuracyLevel: Sendable {
+    case excellent
     case precise
     case moderate
+    case loose
     case erratic
 }
 
@@ -103,34 +104,39 @@ struct SpectrogramData: Sendable {
             return SpectrogramData(columns: [], trainedRanges: [])
         }
 
-        // Collect all metrics per (TempoRange, Direction)
-        var metricsMap: [TempoRange: [RhythmDirection: [MetricPoint]]] = [:]
+        // Collect all metrics per coarse (default) TempoRange × Direction
+        var coarseMetrics: [TempoRange: [RhythmDirection: [MetricPoint]]] = [:]
         for range in TempoRange.defaultRanges {
             for direction in RhythmDirection.allCases {
                 let key = StatisticsKey.rhythm(mode, range, direction)
                 if let summary = profile.statistics(for: key) {
                     let metrics = summary.metrics
                     if !metrics.isEmpty {
-                        metricsMap[range, default: [:]][direction] = metrics
+                        coarseMetrics[range, default: [:]][direction] = metrics
                     }
                 }
             }
         }
 
-        let trainedRanges = TempoRange.defaultRanges.filter { metricsMap[$0] != nil }
+        // Map fine spectrogram ranges to coarse ranges; include only those with data
+        let trainedRanges = TempoRange.spectrogramRanges.filter { fine in
+            guard let coarse = fine.enclosingDefaultRange else { return false }
+            return coarseMetrics[coarse] != nil
+        }
         guard !trainedRanges.isEmpty else {
             return SpectrogramData(columns: [], trainedRanges: [])
         }
 
-        // Build columns
+        // Build columns — each fine range uses its enclosing coarse range's metrics
         let columns = timeBuckets.enumerated().map { columnIndex, bucket in
-            let cells = trainedRanges.map { range in
-                makeCell(
-                    range: range,
+            let cells = trainedRanges.map { fineRange in
+                let coarse = fineRange.enclosingDefaultRange ?? fineRange
+                return makeCell(
+                    range: fineRange,
                     columnIndex: columnIndex,
                     bucket: bucket,
-                    earlyMetrics: metricsMap[range]?[.early] ?? [],
-                    lateMetrics: metricsMap[range]?[.late] ?? []
+                    earlyMetrics: coarseMetrics[coarse]?[.early] ?? [],
+                    lateMetrics: coarseMetrics[coarse]?[.late] ?? []
                 )
             }
             return SpectrogramColumn(index: columnIndex, date: bucket.periodStart, bucketSize: bucket.bucketSize, cells: cells)
