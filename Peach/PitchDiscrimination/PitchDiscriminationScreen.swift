@@ -64,9 +64,7 @@ struct PitchDiscriminationScreen: View {
             answerButtonsGroup
         }
         .padding()
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
         .toolbar { toolbarContent }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onChange(of: showHelpSheet) { _, isShowing in
@@ -207,9 +205,7 @@ struct PitchDiscriminationScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Training Help"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .inlineNavigationBarTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {

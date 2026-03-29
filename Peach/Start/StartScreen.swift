@@ -31,9 +31,7 @@ struct StartScreen: View {
         }
         .padding()
         .navigationTitle("Peach")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
         .toolbar {
             #if os(iOS)
             ToolbarItem(placement: .principal) {

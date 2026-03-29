@@ -12,8 +12,10 @@ struct PeachApp: App {
     private static func makeAudioInterruptionObserver() -> AudioInterruptionObserving {
         #if os(iOS)
         IOSAudioInterruptionObserver()
-        #else
+        #elseif os(macOS)
         NoOpAudioInterruptionObserver()
+        #else
+        #error("Unsupported platform")
         #endif
     }
 
@@ -64,8 +66,10 @@ struct PeachApp: App {
 
             #if os(iOS)
             let audioSessionConfigurator: AudioSessionConfiguring = IOSAudioSessionConfigurator()
-            #else
+            #elseif os(macOS)
             let audioSessionConfigurator: AudioSessionConfiguring = MacOSAudioSessionConfigurator()
+            #else
+            #error("Unsupported platform")
             #endif
 
             let soundFontEngine = try SoundFontEngine(sf2URL: sf2URL, audioSessionConfigurator: audioSessionConfigurator)
@@ -152,8 +156,10 @@ struct PeachApp: App {
 
             #if os(iOS)
             let backgroundPolicy: BackgroundPolicy = IOSBackgroundPolicy()
-            #else
+            #elseif os(macOS)
             let backgroundPolicy: BackgroundPolicy = MacOSBackgroundPolicy()
+            #else
+            #error("Unsupported platform")
             #endif
 
             _trainingLifecycle = State(wrappedValue: TrainingLifecycleCoordinator(
@@ -281,8 +287,10 @@ struct PeachApp: App {
     private func rebuildCoordinators() {
         #if os(iOS)
         let backgroundPolicy: BackgroundPolicy = IOSBackgroundPolicy()
-        #else
+        #elseif os(macOS)
         let backgroundPolicy: BackgroundPolicy = MacOSBackgroundPolicy()
+        #else
+        #error("Unsupported platform")
         #endif
 
         trainingLifecycle = TrainingLifecycleCoordinator(
@@ -323,8 +331,10 @@ struct PeachApp: App {
     ) -> PitchDiscriminationSession {
         #if os(iOS)
         let hapticManager = HapticFeedbackManager()
-        #else
+        #elseif os(macOS)
         let hapticManager = NoOpHapticFeedbackManager()
+        #else
+        #error("Unsupported platform")
         #endif
         let profileAdapter = PitchDiscriminationProfileAdapter(profile: profile)
         let storeAdapter = PitchDiscriminationStoreAdapter(store: dataStore)
@@ -348,8 +358,10 @@ struct PeachApp: App {
     ) -> RhythmOffsetDetectionSession {
         #if os(iOS)
         let hapticManager = HapticFeedbackManager()
-        #else
+        #elseif os(macOS)
         let hapticManager = NoOpHapticFeedbackManager()
+        #else
+        #error("Unsupported platform")
         #endif
         let profileAdapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
         let storeAdapter = RhythmOffsetDetectionStoreAdapter(store: dataStore)

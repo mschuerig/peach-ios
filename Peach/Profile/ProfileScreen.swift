@@ -35,9 +35,7 @@ struct ProfileScreen: View {
             .accessibilityLabel(Self.accessibilitySummary(progressTimeline: progressTimeline))
         }
         .navigationTitle("Profile")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
         .toolbar {
             ToolbarItem(placement: .automatic) {
                 Button {
@@ -56,9 +54,7 @@ struct ProfileScreen: View {
                     .padding()
                 }
                 .navigationTitle(String(localized: "Chart Help"))
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
+                .inlineNavigationBarTitle()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(String(localized: "Done")) {

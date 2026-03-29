@@ -28,11 +28,7 @@ struct ExportChartView: View {
         }
         .padding()
         .frame(width: 390)
-        #if os(iOS)
-        .background(Color(.systemBackground))
-        #else
-        .background(Color(.windowBackgroundColor))
-        #endif
+        .background(Color.platformBackground)
     }
 
     // MARK: - Headline Row

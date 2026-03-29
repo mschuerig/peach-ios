@@ -90,13 +90,9 @@ struct SettingsScreen: View {
             gapPositionsSection
             dataSection
         }
-        #if os(macOS)
-        .formStyle(.grouped)
-        #endif
+        .platformFormStyle()
         .navigationTitle("Settings")
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
-        #endif
+        .inlineNavigationBarTitle()
         .toolbar { settingsToolbar }
         .sheet(isPresented: $showHelpSheet) { helpSheetContent }
         .onAppear {
@@ -148,9 +144,7 @@ struct SettingsScreen: View {
                 .padding()
             }
             .navigationTitle(String(localized: "Settings Help"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
+            .inlineNavigationBarTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "Done")) {
