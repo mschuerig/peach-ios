@@ -213,6 +213,7 @@ struct PeachApp: App {
             }
             .environment(\.soundSourceProvider, soundFontLibrary)
             .environment(\.settingsCoordinator, settingsCoordinator)
+            .modelContainer(modelContainer)
         }
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)

@@ -1,6 +1,6 @@
 # Story 66.8: macOS Testing and Layout Polish
 
-Status: review
+Status: done
 
 ## Story
 

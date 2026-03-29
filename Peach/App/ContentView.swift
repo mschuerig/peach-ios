@@ -10,7 +10,7 @@ struct ContentView: View {
 
     #if os(macOS)
     @State private var commandState = MenuCommandState()
-    @State private var hostWindow: NSWindow?
+    @State private var mainWindow: NSWindow?
     @State private var importParseResult: CSVImportParser.ImportResult?
     @State private var showImportModeChoice = false
     @State private var showImportSummary = false
@@ -35,11 +35,11 @@ struct ContentView: View {
         .focusedSceneValue(commandState)
         .onAppear {
             commandState.settingsCoordinator = coordinator
-            hostWindow = NSApp.keyWindow
         }
+        .background(MainWindowReader(window: $mainWindow))
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
             guard let window = notification.object as? NSWindow,
-                  window === hostWindow else { return }
+                  window === mainWindow else { return }
             NSApp.terminate(nil)
         }
         .onChange(of: commandState.navigationRequest) {
@@ -143,6 +143,28 @@ struct ContentView: View {
     }
     #endif
 }
+
+#if os(macOS)
+private struct MainWindowReader: NSViewRepresentable {
+    @Binding var window: NSWindow?
+
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            self.window = view.window
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        if window == nil {
+            DispatchQueue.main.async {
+                self.window = nsView.window
+            }
+        }
+    }
+}
+#endif
 
 #Preview {
     ContentView()
