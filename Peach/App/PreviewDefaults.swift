@@ -151,11 +151,10 @@ extension TrainingLifecycleCoordinator {
 extension SettingsCoordinator {
     static let stub: SettingsCoordinator = {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
+        let schema = Schema(versionedSchema: SchemaV1.self)
         guard let container = try? ModelContainer(
-            for: PitchDiscriminationRecord.self,
-            PitchMatchingRecord.self,
-            RhythmOffsetDetectionRecord.self,
-            ContinuousRhythmMatchingRecord.self,
+            for: schema,
+            migrationPlan: PeachSchemaMigrationPlan.self,
             configurations: config
         ) else {
             fatalError("Failed to create stub ModelContainer for SettingsCoordinator")

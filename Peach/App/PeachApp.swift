@@ -48,11 +48,10 @@ struct PeachApp: App {
         #endif
 
         do {
+            let schema = Schema(versionedSchema: SchemaV1.self)
             let container = try ModelContainer(
-                for: PitchDiscriminationRecord.self,
-                PitchMatchingRecord.self,
-                RhythmOffsetDetectionRecord.self,
-                ContinuousRhythmMatchingRecord.self
+                for: schema,
+                migrationPlan: PeachSchemaMigrationPlan.self
             )
             _modelContainer = State(wrappedValue: container)
 

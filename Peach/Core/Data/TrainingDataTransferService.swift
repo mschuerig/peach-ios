@@ -104,7 +104,8 @@ final class TrainingDataTransferService {
 
     static func preview() -> TrainingDataTransferService {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        guard let container = try? ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config) else {
+        let schema = Schema(versionedSchema: SchemaV1.self)
+        guard let container = try? ModelContainer(for: schema, migrationPlan: PeachSchemaMigrationPlan.self, configurations: config) else {
             fatalError("Failed to create preview ModelContainer for TrainingDataTransferService")
         }
         let dataStore = TrainingDataStore(modelContext: container.mainContext)

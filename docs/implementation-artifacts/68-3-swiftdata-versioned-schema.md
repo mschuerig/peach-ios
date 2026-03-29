@@ -1,6 +1,6 @@
 # Story 68.3: SwiftData Versioned Schema and Migration Plan
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,26 +24,26 @@ so that future schema changes don't crash existing installs.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create `SchemaV1` VersionedSchema (AC: #1)
-  - [ ] 1.1 Create `Peach/Core/Data/PeachSchema.swift`
-  - [ ] 1.2 Define `enum SchemaV1: VersionedSchema` with `versionIdentifier` and `models` array containing all 4 @Model types
-  - [ ] 1.3 The models property must reference the actual model classes: `PitchDiscriminationRecord.self`, `PitchMatchingRecord.self`, `RhythmOffsetDetectionRecord.self`, `ContinuousRhythmMatchingRecord.self`
+- [x] Task 1: Create `SchemaV1` VersionedSchema (AC: #1)
+  - [x] 1.1 Create `Peach/Core/Data/PeachSchema.swift`
+  - [x] 1.2 Define `enum SchemaV1: VersionedSchema` with `versionIdentifier` and `models` array containing all 4 @Model types
+  - [x] 1.3 The models property must reference the actual model classes: `PitchDiscriminationRecord.self`, `PitchMatchingRecord.self`, `RhythmOffsetDetectionRecord.self`, `ContinuousRhythmMatchingRecord.self`
 
-- [ ] Task 2: Create `PeachSchemaMigrationPlan` (AC: #2, #5)
-  - [ ] 2.1 Define `enum PeachSchemaMigrationPlan: SchemaMigrationPlan` with `schemas = [SchemaV1.self]` and `stages: [MigrationStage] = []`
-  - [ ] 2.2 Add a documentation comment block explaining how to add V2: create a new `SchemaV2` with the updated models, add a migration stage, and append to the `schemas` array
+- [x] Task 2: Create `PeachSchemaMigrationPlan` (AC: #2, #5)
+  - [x] 2.1 Define `enum PeachSchemaMigrationPlan: SchemaMigrationPlan` with `schemas = [SchemaV1.self]` and `stages: [MigrationStage] = []`
+  - [x] 2.2 Add a documentation comment block explaining how to add V2: create a new `SchemaV2` with the updated models, add a migration stage, and append to the `schemas` array
 
-- [ ] Task 3: Wire migration plan into `PeachApp.swift` (AC: #3, #4)
-  - [ ] 3.1 Replace the bare model list `ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, ...)` with `ModelContainer(for: SchemaV1.self, migrationPlan: PeachSchemaMigrationPlan.self)`
-  - [ ] 3.2 Verify the container initializer signature -- use the `Schema`-based initializer that accepts a migration plan
-  - [ ] 3.3 Update `PreviewDefaults.swift` if it creates its own ModelContainer
+- [x] Task 3: Wire migration plan into `PeachApp.swift` (AC: #3, #4)
+  - [x] 3.1 Replace the bare model list with `Schema(versionedSchema: SchemaV1.self)` + `ModelContainer(for: schema, migrationPlan: PeachSchemaMigrationPlan.self)`
+  - [x] 3.2 Verify the container initializer signature -- use the `Schema`-based initializer that accepts a migration plan
+  - [x] 3.3 Update `PreviewDefaults.swift` if it creates its own ModelContainer
 
-- [ ] Task 4: Tests (AC: #6)
-  - [ ] 4.1 Add a test verifying `SchemaV1.models` contains exactly 4 model types
-  - [ ] 4.2 Add a test verifying `PeachSchemaMigrationPlan.schemas` contains `[SchemaV1.self]`
-  - [ ] 4.3 Add a round-trip test: create a ModelContainer with the migration plan, insert one record of each type, fetch them back, verify all properties are intact
-  - [ ] 4.4 Verify all existing `TrainingDataStore` tests still pass (they create their own containers)
-  - [ ] 4.5 Run `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 4: Tests (AC: #6)
+  - [x] 4.1 Add a test verifying `SchemaV1.models` contains exactly 4 model types
+  - [x] 4.2 Add a test verifying `PeachSchemaMigrationPlan.schemas` contains `[SchemaV1.self]`
+  - [x] 4.3 Add a round-trip test: create a ModelContainer with the migration plan, insert one record of each type, fetch them back, verify all properties are intact
+  - [x] 4.4 Verify all existing `TrainingDataStore` tests still pass (they create their own containers)
+  - [x] 4.5 Run `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -99,10 +99,28 @@ The `VersionedSchema` conformance requires a `static var versionIdentifier` (a `
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None required.
+
 ### Completion Notes List
+- Created `SchemaV1` VersionedSchema capturing all 4 @Model types with version 1.0.0
+- Created `PeachSchemaMigrationPlan` with single schema and empty stages
+- Added comprehensive V2 migration documentation comment on SchemaV1
+- Used `Schema(versionedSchema:)` initializer (the `ModelContainer` API requires a `Schema` object, not a raw `VersionedSchema.Type`)
+- Updated `PeachApp.swift`, `PreviewDefaults.swift`, and `TrainingDataTransferService.preview()` to use schema-based container
+- All 7 new tests pass: schema verification (1), migration plan verification (2), round-trip tests for all 4 record types (4)
+- Full suite: 1665 iOS tests pass, 1658 macOS tests pass
+
 ### File List
+- `Peach/Core/Data/PeachSchema.swift` (new) — SchemaV1 and PeachSchemaMigrationPlan
+- `Peach/App/PeachApp.swift` (modified) — ModelContainer uses Schema + migration plan
+- `Peach/App/PreviewDefaults.swift` (modified) — SettingsCoordinator.stub uses Schema + migration plan
+- `Peach/Core/Data/TrainingDataTransferService.swift` (modified) — preview() uses Schema + migration plan
+- `PeachTests/Core/Data/PeachSchemaTests.swift` (new) — 7 tests: schema, migration plan, round-trips
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-03-29: Implemented VersionedSchema, migration plan, wired into app, all tests pass
