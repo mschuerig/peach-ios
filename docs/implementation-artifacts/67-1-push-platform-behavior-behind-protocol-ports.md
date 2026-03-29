@@ -1,6 +1,6 @@
 # Story 67.1: Push Platform Behavior Behind Protocol Ports
 
-Status: review
+Status: done
 
 ## Story
 

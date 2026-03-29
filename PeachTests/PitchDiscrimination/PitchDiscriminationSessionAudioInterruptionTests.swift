@@ -1,36 +1,35 @@
-#if os(iOS)
 import Testing
-import AVFoundation
+import Foundation
 @testable import Peach
 
-/// Tests for audio interruption and route change handling in PitchDiscriminationSession
+/// Tests for audio interruption handling in PitchDiscriminationSession.
+///
+/// Uses `MockAudioInterruptionObserver` to simulate interruptions cross-platform.
+/// Filtering logic (began vs ended, route change reasons) is tested in
+/// `IOSAudioInterruptionObserverTests`.
 @Suite("PitchDiscriminationSession Audio Interruption Tests", .serialized)
 struct PitchDiscriminationSessionAudioInterruptionTests {
 
-    // MARK: - Audio Interruption Tests
+    // MARK: - Interruption Stops From Each State
 
-    @Test("Audio interruption began stops training from awaitingAnswer state")
-    func audioInterruption_Began_StopsFromAwaitingAnswer() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
+    @Test("Audio interruption stops training from awaitingAnswer state")
+    func audioInterruption_StopsFromAwaitingAnswer() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let f = makePitchDiscriminationSession(audioInterruptionObserver: mock)
         let session = f.session
         session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops training from playingReferenceNote state")
-    func audioInterruption_Began_StopsFromPlayingReferenceNote() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
+    @Test("Audio interruption stops training from playingReferenceNote state")
+    func audioInterruption_StopsFromPlayingReferenceNote() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let f = makePitchDiscriminationSession(audioInterruptionObserver: mock)
         let session = f.session
         let mockPlayer = f.mockPlayer
         mockPlayer.instantPlayback = false
@@ -39,20 +38,16 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .playingReferenceNote)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops training from playingTargetNote state")
-    func audioInterruption_Began_StopsFromPlayingTargetNote() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
+    @Test("Audio interruption stops training from playingTargetNote state")
+    func audioInterruption_StopsFromPlayingTargetNote() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let f = makePitchDiscriminationSession(audioInterruptionObserver: mock)
         let session = f.session
         let mockPlayer = f.mockPlayer
         mockPlayer.instantPlayback = false
@@ -64,181 +59,39 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
 
         try await waitForState(session, .playingTargetNote)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption ended does NOT auto-restart training")
-    func audioInterruption_Ended_DoesNotAutoRestart() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
-        let session = f.session
-        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForState(session, .awaitingAnswer)
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
-        try await waitForState(session, .idle)
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue]
-        )
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .idle, "Training should NOT auto-restart after interruption ends")
-    }
-
-    @Test("Audio interruption with nil type is handled gracefully")
-    func audioInterruption_NilType_HandledGracefully() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
-        let session = f.session
-        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForState(session, .awaitingAnswer)
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: nil
-        )
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .awaitingAnswer, "Session should continue when interruption type is nil")
-    }
+    // MARK: - Safe on Idle
 
     @Test("Audio interruption on idle session is safe (no crash)")
-    func audioInterruption_Began_WhileIdle_IsSafe() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
+    func audioInterruption_WhileIdle_IsSafe() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let f = makePitchDiscriminationSession(audioInterruptionObserver: mock)
         let session = f.session
         #expect(session.state == .idle)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await Task.sleep(for: .milliseconds(50))
         await Task.yield()
         #expect(session.state == .idle)
     }
 
-    // MARK: - Route Change Tests
-
-    @Test("Route change oldDeviceUnavailable stops training")
-    func routeChange_OldDeviceUnavailable_StopsTraining() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
-        let session = f.session
-        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForState(session, .awaitingAnswer)
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
-
-        try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    @Test("Route change non-stop reasons continue training (newDevice, categoryChange, nil)")
-    func routeChange_NonStopReasons_ContinueTraining() async throws {
-        let nonStopReasons: [UInt?] = [
-            AVAudioSession.RouteChangeReason.newDeviceAvailable.rawValue,
-            AVAudioSession.RouteChangeReason.categoryChange.rawValue,
-            nil
-        ]
-
-        for reason in nonStopReasons {
-            let nc = NotificationCenter()
-            let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
-            let session = f.session
-            session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-            try await waitForState(session, .awaitingAnswer)
-
-            let userInfo: [AnyHashable: Any]? = reason.map { [AVAudioSessionRouteChangeReasonKey: $0] }
-            nc.post(
-                name: AVAudioSession.routeChangeNotification,
-                object: AVAudioSession.sharedInstance(),
-                userInfo: userInfo
-            )
-
-            try await Task.sleep(for: .milliseconds(50))
-            await Task.yield()
-            #expect(session.state == .awaitingAnswer, "Training should continue for route change reason \(String(describing: reason))")
-            session.stop()
-        }
-    }
-
-    @Test("Route change oldDeviceUnavailable on idle session is safe")
-    func routeChange_OldDeviceUnavailable_WhileIdle_IsSafe() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
-        let session = f.session
-        #expect(session.state == .idle)
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .idle)
-    }
-
-    // MARK: - Combined Scenario Tests
+    // MARK: - Restart After Interruption
 
     @Test("Training can restart after audio interruption stops it")
     func canRestartAfterInterruption() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
+        let mock = MockAudioInterruptionObserver()
+        let f = makePitchDiscriminationSession(audioInterruptionObserver: mock)
         let session = f.session
         session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
         try await waitForState(session, .awaitingAnswer)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
-        try await waitForState(session, .idle)
-
-        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForState(session, .awaitingAnswer)
-        #expect(session.state == .awaitingAnswer)
-    }
-
-    @Test("Training can restart after route change stops it")
-    func canRestartAfterRouteChange() async throws {
-        let nc = NotificationCenter()
-        let f = makePitchDiscriminationSession(audioInterruptionObserver: IOSAudioInterruptionObserver(), notificationCenter: nc)
-        let session = f.session
-        session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
-        try await waitForState(session, .awaitingAnswer)
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
+        mock.simulateInterruption()
         try await waitForState(session, .idle)
 
         session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.prime], noteDuration: NoteDuration(0.3)))
@@ -246,4 +99,3 @@ struct PitchDiscriminationSessionAudioInterruptionTests {
         #expect(session.state == .awaitingAnswer)
     }
 }
-#endif

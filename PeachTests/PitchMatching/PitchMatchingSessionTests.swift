@@ -1,11 +1,5 @@
 import Foundation
 import Testing
-import AVFoundation
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 @testable import Peach
 
 // MARK: - Test Helpers
@@ -1040,208 +1034,82 @@ struct PitchMatchingSessionTests {
     }
 }
 
-#if os(iOS)
 // MARK: - Audio Interruption and Lifecycle Tests
 
 @Suite("PitchMatchingSession Audio Interruption Tests", .serialized)
 struct PitchMatchingSessionAudioInterruptionTests {
 
+    private static let testBackgroundNotification = Notification.Name("test.background")
+
     // MARK: - Audio Interruption Tests
 
-    @Test("Audio interruption began stops from playingTunable")
-    func audioInterruptionBeganStopsFromPlayingTunable() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
+    @Test("Audio interruption stops from playingTunable")
+    func audioInterruptionStopsFromPlayingTunable() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops from awaitingSliderTouch")
-    func audioInterruptionBeganStopsFromAwaitingSliderTouch() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
+    @Test("Audio interruption stops from awaitingSliderTouch")
+    func audioInterruptionStopsFromAwaitingSliderTouch() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
-    }
-
-    @Test("Audio interruption ended does not restart")
-    func audioInterruptionEndedDoesNotRestart() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
-        try await waitForState(session, .idle)
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue]
-        )
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .idle)
-    }
-
-    @Test("Nil interruption type handled gracefully")
-    func nilInterruptionTypeHandledGracefully() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: nil
-        )
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .awaitingSliderTouch)
     }
 
     @Test("Audio interruption on idle is safe")
     func audioInterruptionOnIdleIsSafe() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
+        let mock = MockAudioInterruptionObserver()
+        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
         #expect(session.state == .idle)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await Task.sleep(for: .milliseconds(50))
         await Task.yield()
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops from playingReference")
-    func audioInterruptionBeganStopsFromPlayingReference() async throws {
-        let nc = NotificationCenter()
-        let (session, notePlayer, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
+    @Test("Audio interruption stops from playingReference")
+    func audioInterruptionStopsFromPlayingReference() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let (session, notePlayer, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
         notePlayer.instantPlayback = false
         notePlayer.simulatedPlaybackDuration = .seconds(5)
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .playingReference)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption began stops from showingFeedback")
-    func audioInterruptionBeganStopsFromShowingFeedback() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
+    @Test("Audio interruption stops from showingFeedback")
+    func audioInterruptionStopsFromShowingFeedback() async throws {
+        let mock = MockAudioInterruptionObserver()
+        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
         session.commitPitch(0.0)
         try await waitForState(session, .showingFeedback)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
         try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    // MARK: - Route Change Tests
-
-    @Test("Route change oldDeviceUnavailable stops session")
-    func routeChangeOldDeviceUnavailableStops() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
-
-        try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    @Test("Non-stop route changes continue session")
-    func nonStopRouteChangesContinue() async throws {
-        let nonStopReasons: [UInt?] = [
-            AVAudioSession.RouteChangeReason.newDeviceAvailable.rawValue,
-            AVAudioSession.RouteChangeReason.categoryChange.rawValue,
-            nil
-        ]
-
-        for reason in nonStopReasons {
-            let nc = NotificationCenter()
-            let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
-            session.start(settings: defaultPitchMatchingTestSettings)
-            try await waitForState(session, .awaitingSliderTouch)
-
-            let userInfo: [AnyHashable: Any]? = reason.map { [AVAudioSessionRouteChangeReasonKey: $0] }
-            nc.post(
-                name: AVAudioSession.routeChangeNotification,
-                object: AVAudioSession.sharedInstance(),
-                userInfo: userInfo
-            )
-
-            try await Task.sleep(for: .milliseconds(50))
-            await Task.yield()
-            #expect(session.state == .awaitingSliderTouch, "Session should continue for route change reason \(String(describing: reason))")
-            session.stop()
-        }
-    }
-
-    @Test("Route change on idle is safe")
-    func routeChangeOnIdleIsSafe() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
-        #expect(session.state == .idle)
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
         #expect(session.state == .idle)
     }
 
@@ -1252,12 +1120,12 @@ struct PitchMatchingSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let (session, _, _, _) = makePitchMatchingSession(
             notificationCenter: nc,
-            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+            backgroundNotificationName: Self.testBackgroundNotification
         )
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
-        nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        nc.post(name: Self.testBackgroundNotification, object: nil)
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
@@ -1268,12 +1136,12 @@ struct PitchMatchingSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let (session, _, _, _) = makePitchMatchingSession(
             notificationCenter: nc,
-            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+            backgroundNotificationName: Self.testBackgroundNotification
         )
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
-        nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        nc.post(name: Self.testBackgroundNotification, object: nil)
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
@@ -1284,11 +1152,11 @@ struct PitchMatchingSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let (session, _, _, _) = makePitchMatchingSession(
             notificationCenter: nc,
-            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+            backgroundNotificationName: Self.testBackgroundNotification
         )
         #expect(session.state == .idle)
 
-        nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        nc.post(name: Self.testBackgroundNotification, object: nil)
 
         try await Task.sleep(for: .milliseconds(50))
         await Task.yield()
@@ -1299,35 +1167,12 @@ struct PitchMatchingSessionAudioInterruptionTests {
 
     @Test("Training can restart after interruption stop")
     func canRestartAfterInterruptionStop() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
+        let mock = MockAudioInterruptionObserver()
+        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
-        nc.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
-        try await waitForState(session, .idle)
-
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-        #expect(session.state == .awaitingSliderTouch)
-    }
-
-    @Test("Training can restart after route change stop")
-    func canRestartAfterRouteChangeStop() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(notificationCenter: nc, audioInterruptionObserver: IOSAudioInterruptionObserver())
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(
-            name: AVAudioSession.routeChangeNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue]
-        )
+        mock.simulateInterruption()
         try await waitForState(session, .idle)
 
         session.start(settings: defaultPitchMatchingTestSettings)
@@ -1340,12 +1185,12 @@ struct PitchMatchingSessionAudioInterruptionTests {
         let nc = NotificationCenter()
         let (session, _, _, _) = makePitchMatchingSession(
             notificationCenter: nc,
-            backgroundNotificationName: UIApplication.didEnterBackgroundNotification
+            backgroundNotificationName: Self.testBackgroundNotification
         )
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
-        nc.post(name: UIApplication.didEnterBackgroundNotification, object: nil)
+        nc.post(name: Self.testBackgroundNotification, object: nil)
         try await waitForState(session, .idle)
 
         session.start(settings: defaultPitchMatchingTestSettings)
@@ -1353,81 +1198,6 @@ struct PitchMatchingSessionAudioInterruptionTests {
         #expect(session.state == .awaitingSliderTouch)
     }
 }
-#endif
-
-#if os(macOS)
-// MARK: - macOS Background Notification Tests
-
-@Suite("PitchMatchingSession macOS Lifecycle Tests", .serialized)
-struct PitchMatchingSessionMacOSLifecycleTests {
-
-    @Test("macOS resignActive notification stops from playingTunable")
-    func macOSResignActiveStopsFromPlayingTunable() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: NSApplication.didResignActiveNotification
-        )
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await transitionToPlayingTunable(session)
-
-        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
-
-        try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    @Test("macOS resignActive notification stops from awaitingSliderTouch")
-    func macOSResignActiveStopsFromAwaitingSliderTouch() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: NSApplication.didResignActiveNotification
-        )
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
-
-        try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    @Test("macOS resignActive notification on idle is safe")
-    func macOSResignActiveOnIdleIsSafe() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: NSApplication.didResignActiveNotification
-        )
-        #expect(session.state == .idle)
-
-        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .idle)
-    }
-
-    @Test("Training can restart after macOS resignActive stop")
-    func canRestartAfterMacOSResignActiveStop() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: NSApplication.didResignActiveNotification
-        )
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(name: NSApplication.didResignActiveNotification, object: nil)
-        try await waitForState(session, .idle)
-
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-        #expect(session.state == .awaitingSliderTouch)
-    }
-}
-#endif
 
 // MARK: - MIDI Pitch Bend Tests
 

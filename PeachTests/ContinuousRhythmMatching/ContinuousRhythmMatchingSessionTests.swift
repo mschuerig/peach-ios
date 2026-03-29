@@ -1,4 +1,3 @@
-import AVFoundation
 import Foundation
 import Testing
 @testable import Peach
@@ -495,12 +494,12 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    #if os(iOS)
     // MARK: - Interruption Handling
 
     @Test("audio interruption stops session and discards incomplete trial")
     func audioInterruptionStopsSession() async {
-        let f = makeSession(audioInterruptionObserver: IOSAudioInterruptionObserver())
+        let mock = MockAudioInterruptionObserver()
+        let f = makeSession(audioInterruptionObserver: mock)
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
@@ -512,20 +511,14 @@ struct ContinuousRhythmMatchingSessionTests {
             f.session.handleTap()
         }
 
-        // Simulate audio interruption
-        f.notificationCenter.post(
-            name: AVAudioSession.interruptionNotification,
-            object: AVAudioSession.sharedInstance(),
-            userInfo: [AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue]
-        )
+        mock.simulateInterruption()
 
-        // Give the notification a moment to propagate
+        // Give the callback a moment to propagate
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(f.session.isIdle)
         #expect(f.observer.completedCallCount == 0)
     }
-    #endif
 
     // MARK: - StepProvider Conformance
 
