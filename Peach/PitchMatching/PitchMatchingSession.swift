@@ -132,10 +132,12 @@ final class PitchMatchingSession: TrainingSession {
 
     func commitPitch(_ value: Double) {
         currentPitchValue = value
-        if resumeSliderContinuationIfNeeded() {
+        let isEarlyCommit = resumeSliderContinuationIfNeeded()
+        if isEarlyCommit {
             pendingTunableFrequency = nil
         }
         guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
+        guard isEarlyCommit || currentHandle != nil else { return }
         commitResult(userFrequency: frequency)
     }
 

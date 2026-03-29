@@ -1,6 +1,6 @@
 # Story 66.6: Native macOS Settings Scene
 
-Status: review
+Status: done
 
 ## Story
 

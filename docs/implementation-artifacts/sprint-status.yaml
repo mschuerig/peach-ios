@@ -515,7 +515,7 @@ development_status:
   66-3-platform-conditional-lifecycle-notifications: done
   66-4-macos-haptic-feedback-abstraction: done
   66-5-keyboard-shortcuts-for-training: done
-  66-6-native-macos-settings-scene: review
+  66-6-native-macos-settings-scene: done
   66-7-menu-bar-integration: ready-for-dev
   66-8-macos-testing-and-layout-polish: ready-for-dev
   epic-66-retrospective: optional
