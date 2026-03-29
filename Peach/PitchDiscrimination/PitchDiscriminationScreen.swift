@@ -75,38 +75,24 @@ struct PitchDiscriminationScreen: View {
                 lifecycle.stopPitchDiscrimination()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
+                isFocused = true
                 lifecycle.startPitchDiscrimination(intervals: intervals)
             }
         }
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
-        .onKeyPress(.upArrow) {
-            guard buttonsEnabled else { return .ignored }
-            pitchDiscriminationSession.handleAnswer(isHigher: true)
-            return .handled
+        .onKeyPress(.upArrow, phases: .down) { _ in
+            pitchDiscriminationSession.handleAnswer(isHigher: true) ? .handled : .ignored
         }
-        .onKeyPress(.downArrow) {
-            guard buttonsEnabled else { return .ignored }
-            pitchDiscriminationSession.handleAnswer(isHigher: false)
-            return .handled
+        .onKeyPress(.downArrow, phases: .down) { _ in
+            pitchDiscriminationSession.handleAnswer(isHigher: false) ? .handled : .ignored
         }
         .onKeyPress(characters: .letters, phases: .down) { keyPress in
-            guard buttonsEnabled else { return .ignored }
             guard !keyPress.modifiers.contains(.command),
                   !keyPress.modifiers.contains(.control),
                   !keyPress.modifiers.contains(.option) else { return .ignored }
-            let char = keyPress.characters.lowercased()
-            let higherKey = String(localized: "shortcut.higher").lowercased()
-            let lowerKey = String(localized: "shortcut.lower").lowercased()
-            if char == higherKey {
-                pitchDiscriminationSession.handleAnswer(isHigher: true)
-                return .handled
-            } else if char == lowerKey {
-                pitchDiscriminationSession.handleAnswer(isHigher: false)
-                return .handled
-            }
-            return .ignored
+            return pitchDiscriminationSession.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .onKeyPress(.escape) {
             lifecycle.stopPitchDiscrimination()
@@ -273,7 +259,7 @@ struct PitchDiscriminationScreen: View {
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.roundedRectangle(radius: 12))
-        .disabled(!buttonsEnabled)
+        .disabled(!pitchDiscriminationSession.canAcceptAnswer)
         .accessibilityLabel(direction.label)
     }
 
@@ -295,11 +281,6 @@ struct PitchDiscriminationScreen: View {
 
     static func trainingDiscipline(for intervals: Set<DirectedInterval>) -> TrainingDisciplineID {
         intervals == [.prime] ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
-    }
-
-    /// Buttons are enabled when in playingTargetNote or awaitingAnswer states
-    private var buttonsEnabled: Bool {
-        pitchDiscriminationSession.state == .playingTargetNote || pitchDiscriminationSession.state == .awaitingAnswer
     }
 
     /// Returns the animation for feedback indicator transitions

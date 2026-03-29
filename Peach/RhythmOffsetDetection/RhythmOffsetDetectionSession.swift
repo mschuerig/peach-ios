@@ -90,6 +90,24 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
     var isIdle: Bool { state == .idle }
 
+    var canAcceptAnswer: Bool { state == .awaitingAnswer }
+
+    /// Handles a letter-key shortcut by matching against localized Early/Late keys.
+    /// Returns `true` if the key matched and the answer was accepted.
+    @discardableResult
+    func handleShortcutKey(_ character: String) -> Bool {
+        let char = character.lowercased()
+        let earlyKey = String(localized: "shortcut.early").lowercased()
+        let lateKey = String(localized: "shortcut.late").lowercased()
+        if char == earlyKey {
+            return handleAnswer(direction: .early)
+        } else if char == lateKey {
+            return handleAnswer(direction: .late)
+        }
+        return false
+    }
+
+
     func start(settings: RhythmOffsetDetectionSettings) {
         guard state == .idle else {
             logger.warning("start() called but state is \(String(describing: self.state)), not idle")
@@ -104,14 +122,15 @@ final class RhythmOffsetDetectionSession: TrainingSession {
         })
     }
 
-    func handleAnswer(direction: RhythmDirection) {
+    @discardableResult
+    func handleAnswer(direction: RhythmDirection) -> Bool {
         guard state == .awaitingAnswer else {
             logger.warning("handleAnswer() called but state is \(String(describing: self.state))")
-            return
+            return false
         }
         guard let trial = currentTrial, let settings else {
             logger.error("handleAnswer() called but currentTrial or settings is nil")
-            return
+            return false
         }
 
         let isCorrect = (direction == trial.offset.direction)
@@ -141,6 +160,7 @@ final class RhythmOffsetDetectionSession: TrainingSession {
 
         recordTrial(completed)
         transitionToFeedback(settings: settings)
+        return true
     }
 
     func stop() {

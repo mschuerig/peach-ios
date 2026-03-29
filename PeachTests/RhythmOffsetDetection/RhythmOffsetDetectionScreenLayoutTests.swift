@@ -54,15 +54,7 @@ struct RhythmOffsetDetectionScreenLayoutTests {
         #expect(RhythmOffsetDetectionScreen.buttonMinHeight(isCompact: true) >= 44)
     }
 
-    // MARK: - Buttons Enabled
-
-    @Test("buttons enabled only in awaitingAnswer state")
-    func buttonsEnabledOnlyInAwaitingAnswer() async {
-        #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: .awaitingAnswer) == true)
-        #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: .idle) == false)
-        #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: .playingPattern) == false)
-        #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: .showingFeedback) == false)
-    }
+    // canAcceptAnswer is tested via RhythmOffsetDetectionSessionTests
 
     // MARK: - Feedback Animation
 

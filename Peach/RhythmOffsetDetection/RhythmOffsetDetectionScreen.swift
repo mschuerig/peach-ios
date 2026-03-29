@@ -57,38 +57,24 @@ struct RhythmOffsetDetectionScreen: View {
                 lifecycle.stopRhythmOffsetDetection()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
+                isFocused = true
                 lifecycle.startRhythmOffsetDetection()
             }
         }
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
-        .onKeyPress(.leftArrow) {
-            guard buttonsEnabled else { return .ignored }
-            session.handleAnswer(direction: .early)
-            return .handled
+        .onKeyPress(.leftArrow, phases: .down) { _ in
+            session.handleAnswer(direction: .early) ? .handled : .ignored
         }
-        .onKeyPress(.rightArrow) {
-            guard buttonsEnabled else { return .ignored }
-            session.handleAnswer(direction: .late)
-            return .handled
+        .onKeyPress(.rightArrow, phases: .down) { _ in
+            session.handleAnswer(direction: .late) ? .handled : .ignored
         }
         .onKeyPress(characters: .letters, phases: .down) { keyPress in
-            guard buttonsEnabled else { return .ignored }
             guard !keyPress.modifiers.contains(.command),
                   !keyPress.modifiers.contains(.control),
                   !keyPress.modifiers.contains(.option) else { return .ignored }
-            let char = keyPress.characters.lowercased()
-            let earlyKey = String(localized: "shortcut.early").lowercased()
-            let lateKey = String(localized: "shortcut.late").lowercased()
-            if char == earlyKey {
-                session.handleAnswer(direction: .early)
-                return .handled
-            } else if char == lateKey {
-                session.handleAnswer(direction: .late)
-                return .handled
-            }
-            return .ignored
+            return session.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .onKeyPress(.escape) {
             lifecycle.stopRhythmOffsetDetection()
@@ -238,7 +224,7 @@ struct RhythmOffsetDetectionScreen: View {
         }
         .buttonStyle(.borderedProminent)
         .buttonBorderShape(.roundedRectangle(radius: 12))
-        .disabled(!buttonsEnabled)
+        .disabled(!session.canAcceptAnswer)
         .accessibilityLabel(direction.label)
     }
 
@@ -258,16 +244,8 @@ struct RhythmOffsetDetectionScreen: View {
 
     // MARK: - Helpers
 
-    private var buttonsEnabled: Bool {
-        session.state == .awaitingAnswer
-    }
-
     static func feedbackAnimation(reduceMotion: Bool) -> Animation? {
         reduceMotion ? nil : .easeInOut(duration: 0.2)
-    }
-
-    static func buttonsEnabled(state: RhythmOffsetDetectionSessionState) -> Bool {
-        state == .awaitingAnswer
     }
 }
 

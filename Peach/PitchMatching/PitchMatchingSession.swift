@@ -48,6 +48,18 @@ final class PitchMatchingSession: TrainingSession {
         return current.interval != .prime
     }
 
+    // MARK: - Keyboard / Slider State
+
+    /// Tracks the current pitch slider value from all input sources (touch, keyboard, MIDI).
+    private(set) var currentPitchValue: Double = 0.0
+
+    /// When non-nil, drives the PitchSlider thumb externally (keyboard arrows).
+    /// Cleared when touch input begins; reset to center on new trial.
+    private(set) var keyboardPitchValue: Double?
+
+    /// Fine pitch adjustment step for keyboard arrow keys (~1 cent at ±20 cent range).
+    private static let finePitchStep: Double = 0.05
+
     // MARK: - MIDI State
 
     private var midiListeningTask: Task<Void, Never>?
@@ -107,7 +119,10 @@ final class PitchMatchingSession: TrainingSession {
         })
     }
 
+    var canAdjustPitch: Bool { state == .awaitingSliderTouch || state == .playingTunable }
+
     func adjustPitch(_ value: Double) {
+        currentPitchValue = value
         if resumeSliderContinuationIfNeeded() { return }
         guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
         Task {
@@ -116,11 +131,40 @@ final class PitchMatchingSession: TrainingSession {
     }
 
     func commitPitch(_ value: Double) {
+        currentPitchValue = value
         if resumeSliderContinuationIfNeeded() {
             pendingTunableFrequency = nil
         }
         guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
         commitResult(userFrequency: frequency)
+    }
+
+    /// Adjusts pitch by one fine step in the given direction. Returns `true` if accepted.
+    @discardableResult
+    func adjustPitchByStep(up: Bool) -> Bool {
+        guard canAdjustPitch else { return false }
+        if up {
+            currentPitchValue = min(currentPitchValue + Self.finePitchStep, 1.0)
+        } else {
+            currentPitchValue = max(currentPitchValue - Self.finePitchStep, -1.0)
+        }
+        keyboardPitchValue = currentPitchValue
+        adjustPitch(currentPitchValue)
+        return true
+    }
+
+    /// Commits the current pitch value. Returns `true` if accepted.
+    @discardableResult
+    func commitCurrentPitch() -> Bool {
+        guard state == .playingTunable else { return false }
+        keyboardPitchValue = nil
+        commitPitch(currentPitchValue)
+        return true
+    }
+
+    /// Called by the view when touch begins on the slider, clearing keyboard external value.
+    func clearKeyboardPitchValue() {
+        keyboardPitchValue = nil
     }
 
     /// Resumes the slider-touch continuation if the session is still awaiting a touch.
@@ -144,6 +188,7 @@ final class PitchMatchingSession: TrainingSession {
     private func commitResult(userFrequency: Double) {
         guard state == .playingTunable else { return }
         guard let trial = currentTrial, let settings else { return }
+        guard currentHandle != nil else { return }
 
         let handleToStop = currentHandle
         currentHandle = nil
@@ -190,6 +235,8 @@ final class PitchMatchingSession: TrainingSession {
         midiListeningTask = nil
         hasBeenDeflected = false
         midiPitchBendValue = nil
+        currentPitchValue = 0.0
+        keyboardPitchValue = nil
         sliderTouchContinuation?.resume()
         sliderTouchContinuation = nil
         let handleToStop = currentHandle
@@ -291,6 +338,8 @@ final class PitchMatchingSession: TrainingSession {
         guard let settings else { return }
         hasBeenDeflected = false
         midiPitchBendValue = nil
+        currentPitchValue = 0.0
+        keyboardPitchValue = 0
 
         guard let interval = settings.intervals.randomElement() else { return }
         currentInterval = interval

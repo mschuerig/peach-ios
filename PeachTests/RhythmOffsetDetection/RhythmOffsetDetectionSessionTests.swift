@@ -594,7 +594,7 @@ struct RhythmOffsetDetectionSessionTests {
         try await waitForState(f.session, .waitingForGrid)
 
         // Buttons should be disabled (only enabled in awaitingAnswer)
-        #expect(RhythmOffsetDetectionScreen.buttonsEnabled(state: f.session.state) == false)
+        #expect(f.session.canAcceptAnswer == false)
         // Dots should be dimmed (litDotCount reset to 0)
         #expect(f.session.litDotCount == 0)
 

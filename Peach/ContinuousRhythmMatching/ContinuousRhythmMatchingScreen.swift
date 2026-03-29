@@ -57,17 +57,18 @@ struct ContinuousRhythmMatchingScreen: View {
                 lifecycle.stopContinuousRhythmMatching()
             } else {
                 logger.info("Help sheet dismissed - restarting training")
+                isFocused = true
                 lifecycle.startContinuousRhythmMatching()
             }
         }
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
-        .onKeyPress(.space) {
+        .onKeyPress(.space, phases: .down) { _ in
             session.handleTap()
             return .handled
         }
-        .onKeyPress(.return) {
+        .onKeyPress(.return, phases: .down) { _ in
             session.handleTap()
             return .handled
         }

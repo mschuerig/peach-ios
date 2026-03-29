@@ -73,6 +73,24 @@ final class PitchDiscriminationSession: TrainingSession {
 
     var isIdle: Bool { state == .idle }
 
+    var canAcceptAnswer: Bool { state == .playingTargetNote || state == .awaitingAnswer }
+
+    /// Handles a letter-key shortcut by matching against localized Higher/Lower keys.
+    /// Returns `true` if the key matched and the answer was accepted.
+    @discardableResult
+    func handleShortcutKey(_ character: String) -> Bool {
+        let char = character.lowercased()
+        let higherKey = String(localized: "shortcut.higher").lowercased()
+        let lowerKey = String(localized: "shortcut.lower").lowercased()
+        if char == higherKey {
+            return handleAnswer(isHigher: true)
+        } else if char == lowerKey {
+            return handleAnswer(isHigher: false)
+        }
+        return false
+    }
+
+
     var isIntervalMode: Bool {
         guard let current = currentInterval else { return false }
         return current.interval != .prime
@@ -101,14 +119,15 @@ final class PitchDiscriminationSession: TrainingSession {
         })
     }
 
-    func handleAnswer(isHigher: Bool) {
+    @discardableResult
+    func handleAnswer(isHigher: Bool) -> Bool {
         guard state == .awaitingAnswer || state == .playingTargetNote else {
             logger.warning("handleAnswer() called but state is \(String(describing: self.state))")
-            return
+            return false
         }
         guard let trial = currentTrial else {
             logger.warning("handleAnswer() called but currentTrial is nil")
-            return
+            return false
         }
 
         logger.info("User answered: \(isHigher ? "HIGHER" : "LOWER")")
@@ -122,6 +141,7 @@ final class PitchDiscriminationSession: TrainingSession {
         trackSessionBest(completed)
         recordTrial(completed)
         transitionToFeedback(completed)
+        return true
     }
 
     func resetTrainingData() throws {

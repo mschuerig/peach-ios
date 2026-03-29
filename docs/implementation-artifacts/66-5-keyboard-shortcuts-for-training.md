@@ -1,6 +1,6 @@
 # Story 66.5: Keyboard Shortcuts for Training
 
-Status: review
+Status: done
 
 ## Story
 
