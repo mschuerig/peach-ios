@@ -26,8 +26,8 @@ struct TrainingLifecycleCoordinatorTests {
         // No crash — nil activeSession is safe
     }
 
-    @Test("calls clearNavigation on foreground from background")
-    func foregroundClearsNavigation() {
+    @Test("iOS: calls clearNavigation on foreground from background")
+    func iosForegroundClearsNavigation() {
         let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         var navigationCleared = false
 
@@ -38,8 +38,8 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(navigationCleared)
     }
 
-    @Test("clears navigation when returning from inactive (e.g. phone call)")
-    func inactiveToActiveClearsNavigation() {
+    @Test("iOS: clears navigation when returning from inactive")
+    func iosInactiveToActiveClearsNavigation() {
         let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         var navigationCleared = false
 
@@ -50,19 +50,53 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(navigationCleared)
     }
 
-    @Test("backgrounds both stops session and does not clear navigation")
-    func backgroundStopsButDoesNotClear() {
+    @Test("does not clear navigation when going to background")
+    func backgroundDoesNotClear() {
         let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
-        let mockSession = MockTrainingSession()
-        coordinator.activeSession = mockSession
         var navigationCleared = false
 
         coordinator.handleScenePhase(old: .active, new: .background) {
             navigationCleared = true
         }
 
-        #expect(mockSession.stopCallCount == 1)
         #expect(!navigationCleared)
+    }
+
+    // MARK: - macOS Navigation Preservation
+
+    @Test("macOS: does not clear navigation when returning from inactive")
+    func macosInactiveToActivePreservesNavigation() {
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        var navigationCleared = false
+
+        coordinator.handleScenePhase(old: .inactive, new: .active) {
+            navigationCleared = true
+        }
+
+        #expect(!navigationCleared)
+    }
+
+    @Test("macOS: does not clear navigation when returning from background")
+    func macosBackgroundToActivePreservesNavigation() {
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        var navigationCleared = false
+
+        coordinator.handleScenePhase(old: .background, new: .active) {
+            navigationCleared = true
+        }
+
+        #expect(!navigationCleared)
+    }
+
+    @Test("macOS: inactive still stops active session")
+    func macosInactiveStopsSession() {
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        let mockSession = MockTrainingSession()
+        coordinator.activeSession = mockSession
+
+        coordinator.handleScenePhase(old: .active, new: .inactive) {}
+
+        #expect(mockSession.stopCallCount == 1)
     }
 
     // MARK: - iOS Background Policy

@@ -47,7 +47,7 @@ final class TrainingLifecycleCoordinator {
             Self.logger.info("App leaving active state (\(String(describing: new))) — stopping active session")
             activeSession?.stop()
         }
-        if new == .active && (old == .background || old == .inactive) {
+        if backgroundPolicy.shouldClearNavigation(oldPhase: AppScenePhase(old), newPhase: appPhase) {
             Self.logger.info("App returned to active from \(String(describing: old)) — clearing navigation")
             clearNavigation()
         }

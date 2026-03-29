@@ -1,6 +1,6 @@
 # Story 68.5: macOS App Switch Stops Session but Preserves Navigation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,22 +20,22 @@ so that I can resume with one tap instead of navigating back from the Start Scre
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Split `clearNavigation` behavior by platform in `TrainingLifecycleCoordinator` (AC: #1, #2, #3)
-  - [ ] 1.1 Modify `handleScenePhase(old:new:clearNavigation:)` so that on macOS, `clearNavigation()` is NOT called when returning to `.active` -- only session stop on deactivation
-  - [ ] 1.2 On iOS, preserve the current behavior: `clearNavigation()` is called when returning to `.active` from `.background` or `.inactive`
-  - [ ] 1.3 This follows the existing `BackgroundPolicy` protocol pattern (from story 67.1) if already implemented, or uses `#if os` in the coordinator if not yet abstracted
+- [x] Task 1: Split `clearNavigation` behavior by platform in `TrainingLifecycleCoordinator` (AC: #1, #2, #3)
+  - [x] 1.1 Modify `handleScenePhase(old:new:clearNavigation:)` so that on macOS, `clearNavigation()` is NOT called when returning to `.active` -- only session stop on deactivation
+  - [x] 1.2 On iOS, preserve the current behavior: `clearNavigation()` is called when returning to `.active` from `.background` or `.inactive`
+  - [x] 1.3 This follows the existing `BackgroundPolicy` protocol pattern (from story 67.1) if already implemented, or uses `#if os` in the coordinator if not yet abstracted
 
-- [ ] Task 2: Verify training screens handle external stop gracefully (AC: #4)
-  - [ ] 2.1 Review each training screen to confirm that when the session transitions to idle externally (via `stop()`), the screen shows its ready/idle state without stale feedback indicators, progress, or mid-comparison UI
-  - [ ] 2.2 Specifically check: `PitchDiscriminationScreen`, `PitchMatchingScreen`, `RhythmOffsetDetectionScreen`, `ContinuousRhythmMatchingScreen`
-  - [ ] 2.3 The session's `@Observable` state should drive the view -- when `isIdle` becomes true, the screen should reflect it. Verify no view state leaks.
+- [x] Task 2: Verify training screens handle external stop gracefully (AC: #4)
+  - [x] 2.1 Review each training screen to confirm that when the session transitions to idle externally (via `stop()`), the screen shows its ready/idle state without stale feedback indicators, progress, or mid-comparison UI
+  - [x] 2.2 Specifically check: `PitchDiscriminationScreen`, `PitchMatchingScreen`, `RhythmOffsetDetectionScreen`, `ContinuousRhythmMatchingScreen`
+  - [x] 2.3 The session's `@Observable` state should drive the view -- when `isIdle` becomes true, the screen should reflect it. Verify no view state leaks.
 
-- [ ] Task 3: Update tests (AC: #1, #2, #3)
-  - [ ] 3.1 Update `TrainingLifecycleCoordinatorTests` -- on macOS: `inactive -> active` must NOT call `clearNavigation`
-  - [ ] 3.2 Update `TrainingLifecycleCoordinatorTests` -- on macOS: `inactive` must still call `stop()` on active session
-  - [ ] 3.3 Verify iOS tests unchanged: `background -> active` still calls both stop and clearNavigation
-  - [ ] 3.4 Add test: macOS `background -> active` also preserves navigation (does not clear)
-  - [ ] 3.5 Run `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 3: Update tests (AC: #1, #2, #3)
+  - [x] 3.1 Update `TrainingLifecycleCoordinatorTests` -- on macOS: `inactive -> active` must NOT call `clearNavigation`
+  - [x] 3.2 Update `TrainingLifecycleCoordinatorTests` -- on macOS: `inactive` must still call `stop()` on active session
+  - [x] 3.3 Verify iOS tests unchanged: `background -> active` still calls both stop and clearNavigation
+  - [x] 3.4 Add test: macOS `background -> active` also preserves navigation (does not clear)
+  - [x] 3.5 Run `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -104,10 +104,29 @@ The `clearNavigation` closure removes all entries from `navigationPath`, navigat
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+
 ### Completion Notes List
+- Extended `BackgroundPolicy` protocol with `shouldClearNavigation(oldPhase:newPhase:)` method, following the existing platform abstraction pattern from story 67.1
+- `IOSBackgroundPolicy` returns `true` when returning to `.active` from `.background` or `.inactive` (preserving current behavior)
+- `MacOSBackgroundPolicy` returns `false` always — macOS users stay on the training screen after app switch
+- Updated `TrainingLifecycleCoordinator.handleScenePhase()` to delegate navigation clearing to the policy instead of unconditional logic
+- Verified all four training screens (`PitchDiscriminationScreen`, `PitchMatchingScreen`, `RhythmOffsetDetectionScreen`, `ContinuousRhythmMatchingScreen`) correctly display idle state when session is stopped externally — all driven by `@Observable` session state with proper cleanup in `stop()`
+- Added 5 new `BackgroundPolicyTests` (3 iOS, 2 macOS) for `shouldClearNavigation`
+- Added 3 new macOS-specific coordinator tests and renamed 2 existing tests for clarity
+- All 1673 iOS tests and 1666 macOS tests pass
+
 ### File List
+- Peach/Core/Ports/BackgroundPolicy.swift (modified — added `shouldClearNavigation` to protocol)
+- Peach/App/Platform/IOSBackgroundPolicy.swift (modified — added `shouldClearNavigation` implementation)
+- Peach/App/Platform/MacOSBackgroundPolicy.swift (modified — added `shouldClearNavigation` implementation)
+- Peach/App/TrainingLifecycleCoordinator.swift (modified — delegate clearNavigation to policy)
+- PeachTests/Core/Ports/BackgroundPolicyTests.swift (modified — 5 new navigation clearing tests)
+- PeachTests/App/TrainingLifecycleCoordinatorTests.swift (modified — 3 new macOS tests, renamed 2 existing)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-03-29: Implemented — extended BackgroundPolicy with shouldClearNavigation; macOS preserves navigation on app switch

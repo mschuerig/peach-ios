@@ -6,4 +6,8 @@ struct MacOSBackgroundPolicy: BackgroundPolicy {
     func shouldStopTraining(newPhase: AppScenePhase) -> Bool {
         newPhase == .background || newPhase == .inactive
     }
+
+    func shouldClearNavigation(oldPhase: AppScenePhase, newPhase: AppScenePhase) -> Bool {
+        false
+    }
 }
