@@ -6761,3 +6761,53 @@ Add a macOS menu bar with standard items (Help, File > Export) and training-rele
 Test the full app on macOS hardware. Fix any layout issues with window resizing, size class behaviour, and macOS-specific SwiftUI rendering differences. Verify audio playback and MIDI input work correctly.
 
 ---
+
+## Epic 67: Platform Ports — Eliminate `#if os` Conditional Compilation
+
+Epic 66 introduced macOS support via `#if os` macros, resulting in 54 conditional blocks across 23 files. This epic pushes platform differences behind protocol abstractions in `Core/Ports/`, centralizes scattered view styling macros into shared modifiers, and hardens all remaining `#else` branches with explicit `#elseif os(macOS)` + `#error("Unsupported platform")`. Completes the ports-and-adapters boundary for platform concerns.
+
+### Story 67.1: Push Platform Behavior Behind Protocol Ports
+
+As a **developer**,
+I want platform-divergent behavior abstracted behind protocols in `Core/Ports/`,
+so that `Core/` files and business logic contain zero `#if os` macros and platform behavior is testable through injection.
+
+**Acceptance Criteria:**
+
+1. **Given** `TrainingLifecycleCoordinator` **When** handling scene phase transitions **Then** it delegates the stop decision to an injected `BackgroundPolicy` protocol with no `#if os` in the coordinator.
+
+2. **Given** `SoundFontEngine` **When** configuring the audio session **Then** it delegates to an injected `AudioSessionConfiguring` protocol with no `#if os` in the engine.
+
+3. **Given** `AudioSessionInterruptionMonitor` **When** setting up audio interruption observers **Then** it delegates to an injected `AudioInterruptionObserving` protocol with no `#if os` in the monitor.
+
+4. **Given** `PeachApp.swift` **When** referencing background/foreground notification names **Then** it uses a centralized `PlatformNotifications` enum instead of inline `#if os` blocks.
+
+5. **Given** `ChartImageRenderer` **When** encoding a CGImage to PNG **Then** it delegates to a centralized `PlatformImage` helper with no `#if os` in the renderer.
+
+6. **Given** `HapticFeedbackManager.swift` **When** compiled **Then** the iOS and macOS implementations live in separate files under `App/Platform/`.
+
+7. **Given** all files in `Core/` **When** searched for `#if os` **Then** zero occurrences are found.
+
+8. **Given** `BackgroundPolicy` implementations **When** tested **Then** both iOS and macOS policies are tested on both platforms (no `#if os` in test assertions).
+
+9. **Given** the full test suite **When** run on both iOS and macOS **Then** all tests pass with zero regressions.
+
+### Story 67.2: Centralize View Modifiers and Harden `#else` Branches
+
+As a **developer**,
+I want repeated `#if os` view styling consolidated into shared modifiers and all bare `#else` branches hardened,
+so that adding a third platform produces compiler errors instead of silent wrong behavior.
+
+**Acceptance Criteria:**
+
+1. **Given** any screen file **When** needing inline navigation bar title display mode **Then** it uses `.inlineNavigationBarTitle()` from a shared `PlatformModifiers.swift` instead of a local `#if os` block.
+
+2. **Given** `SettingsScreen` **When** applying grouped form style on macOS **Then** it uses `.platformFormStyle()` from the shared modifiers file.
+
+3. **Given** `ExportChartView` **When** applying a background color **Then** it uses `Color.platformBackground` from the shared modifiers file.
+
+4. **Given** any `#if os` block in the codebase **When** it previously used a bare `#else` **Then** it now uses `#elseif os(macOS)` followed by `#else #error("Unsupported platform")`.
+
+5. **Given** the full test suite **When** run on both iOS and macOS **Then** all tests pass with zero regressions.
+
+---

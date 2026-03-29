@@ -519,3 +519,11 @@ development_status:
   66-7-menu-bar-integration: done
   66-8-macos-testing-and-layout-polish: done
   epic-66-retrospective: optional
+
+  # Epic 67: Platform Ports — Eliminate #if os Conditional Compilation
+  # Push platform differences behind Core/Ports/ protocols, centralize view modifiers,
+  # harden bare #else branches. Work order: 67.1 first (protocols), then 67.2 (view cleanup).
+  epic-67: backlog
+  67-1-push-platform-behavior-behind-protocol-ports: ready-for-dev
+  67-2-centralize-view-modifiers-and-harden-else-branches: ready-for-dev
+  epic-67-retrospective: optional
