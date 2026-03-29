@@ -54,6 +54,13 @@
 **Risk:** Data portability risk — users exporting from newer Peach and importing into older Peach (or vice versa) get a hard error with no recovery.
 **Disposition:** Tracked as story 65.3 in Epic 65.
 
+### TQ-2: iOS Simulator "Clone 1" test process crashes cause mass test failures
+
+**Source:** story 66.8 (observed pre-existing on clean `main` at commit 44db796)
+**Symptom:** When xcodebuild runs tests with parallel execution (default), "Clone 1" of the iPhone 17 Pro simulator frequently crashes before executing certain test bundles. All tests in the crashed bundle report as failed with 0.000 seconds duration. The affected suites vary between runs but consistently include `RhythmOffsetDetectionSessionTests`, `PitchMatchingSessionTests`, `PitchDiscriminationSessionTests`, and `SoundFontEngineTests`. Tests pass on "Clone 2" retries and on macOS (native).
+**Risk:** False negatives in CI; no code-level bug.
+**Disposition:** Open — likely a Xcode 26 simulator infrastructure issue. Workaround: run with `-parallel-testing-enabled NO` or rely on macOS test results. No code change required.
+
 ## RESOLVED
 
 ### TF-2: `CSVImportParserTests/futureVersionProducesError()` fails on German-locale simulators

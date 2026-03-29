@@ -25,10 +25,18 @@ final class MenuCommandState {
 
 struct PeachCommands: Commands {
     @FocusedValue(MenuCommandState.self) private var commandState
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) { }
         CommandGroup(replacing: .singleWindowList) { }
+
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings...") {
+                openWindow(id: "settings")
+            }
+            .keyboardShortcut(",", modifiers: .command)
+        }
 
         trainingMenu
         profileMenu

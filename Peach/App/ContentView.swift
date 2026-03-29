@@ -10,6 +10,7 @@ struct ContentView: View {
 
     #if os(macOS)
     @State private var commandState = MenuCommandState()
+    @State private var hostWindow: NSWindow?
     @State private var importParseResult: CSVImportParser.ImportResult?
     @State private var showImportModeChoice = false
     @State private var showImportSummary = false
@@ -22,6 +23,9 @@ struct ContentView: View {
         NavigationStack(path: $navigationPath) {
             StartScreen()
         }
+        #if os(macOS)
+        .frame(minWidth: 400, minHeight: 500)
+        #endif
         .onChange(of: scenePhase) { oldPhase, newPhase in
             lifecycle.handleScenePhase(old: oldPhase, new: newPhase) {
                 navigationPath.removeAll()
@@ -31,9 +35,11 @@ struct ContentView: View {
         .focusedSceneValue(commandState)
         .onAppear {
             commandState.settingsCoordinator = coordinator
+            hostWindow = NSApp.keyWindow
         }
         .onReceive(NotificationCenter.default.publisher(for: NSWindow.willCloseNotification)) { notification in
-            guard let window = notification.object as? NSWindow, window.isKeyWindow else { return }
+            guard let window = notification.object as? NSWindow,
+                  window === hostWindow else { return }
             NSApp.terminate(nil)
         }
         .onChange(of: commandState.navigationRequest) {

@@ -200,17 +200,23 @@ struct PeachApp: App {
                 }
         }
         #if os(macOS)
+        .defaultSize(width: 500, height: 700)
         .commands {
             PeachCommands()
         }
         #endif
 
         #if os(macOS)
-        Settings {
-            SettingsScreen()
-                .environment(\.soundSourceProvider, soundFontLibrary)
-                .environment(\.settingsCoordinator, settingsCoordinator)
+        Window("Settings", id: "settings") {
+            NavigationStack {
+                SettingsScreen()
+            }
+            .environment(\.soundSourceProvider, soundFontLibrary)
+            .environment(\.settingsCoordinator, settingsCoordinator)
         }
+        .windowToolbarStyle(.unified)
+        .windowResizability(.contentSize)
+        .defaultSize(width: 500, height: 600)
         #endif
     }
 

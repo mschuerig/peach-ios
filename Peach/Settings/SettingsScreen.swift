@@ -90,6 +90,9 @@ struct SettingsScreen: View {
             gapPositionsSection
             dataSection
         }
+        #if os(macOS)
+        .formStyle(.grouped)
+        #endif
         .navigationTitle("Settings")
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)

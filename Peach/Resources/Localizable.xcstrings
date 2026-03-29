@@ -2641,6 +2641,16 @@
         }
       }
     },
+    "Settings..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen …"
+          }
+        }
+      }
+    },
     "Share %@ chart" : {
       "localizations" : {
         "de" : {
