@@ -80,6 +80,31 @@ After story 55.2 (protocol-based discipline registry), disciplines that share a 
 
 ---
 
+## Visualization
+
+### Progress Chart Band Draws Across Untrained Gaps
+
+**Priority:** Low
+**Category:** Visualization / Chart Rendering
+**Date Added:** 2026-03-29
+
+**Observation:**
+The stddev band (AreaMark) in `ProgressChartView` draws continuously across time periods where no training occurred. `ProgressTimeline.allGranularityBuckets` correctly omits months/days with no data, but `lineDataWithSessionBridge(for:)` produces a flat `[LinePoint]` array with sequential integer positions, erasing gap information. Swift Charts' LineMark and AreaMark then interpolate across what are actually untrained time periods.
+
+**Impact:**
+- The confidence band visually implies the user trained during periods they didn't
+- Misleading for users with sporadic training schedules
+- Purely cosmetic — no data corruption or algorithmic impact
+
+**Potential Approach:**
+- Add segment identification to `LinePoint`, detect calendar gaps between consecutive buckets, and render each segment as a separate series so Swift Charts breaks the visual connection at gaps
+
+**Related Code:**
+- `Peach/Profile/ProgressChartView.swift` — `lineDataWithSessionBridge(for:)`, `stddevBand`
+- `Peach/Profile/ProgressTimeline.swift` — `allGranularityBuckets`
+
+---
+
 ## UX & Onboarding
 
 ### No First-Run Onboarding Experience

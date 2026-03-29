@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-03-29 # Epic 68 triage from future-work + pre-existing-findings
+# last_updated: 2026-03-29 # Story files created for all backlog items (epics 68–74 + hotfix)
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -70,7 +70,6 @@ development_status:
 
   # Hotfixes: Algorithm Convergence & Profile Accuracy
   hotfix-tune-kazez-convergence: done
-  hotfix-profile-band-segmentation: backlog # Confidence band draws across untrained gaps despite segment logic
 
   # Epic 5: See Your Progress - Profile & Statistics
   epic-5: done
@@ -523,14 +522,14 @@ development_status:
   # Epic 67: Platform Ports — Eliminate #if os Conditional Compilation
   # Push platform differences behind Core/Ports/ protocols, centralize view modifiers,
   # harden bare #else branches. Work order: 67.1 first (protocols), then 67.2 (view cleanup).
-  epic-67: backlog
+  epic-67: in-progress
   67-1-push-platform-behavior-behind-protocol-ports: ready-for-dev
   67-2-centralize-view-modifiers-and-harden-else-branches: ready-for-dev
   epic-67-retrospective: optional
 
   # Epic 68: Quality of Life — Spectrogram, Accessibility, Schema, Audio & macOS Polish
   # Six independent stories; can be worked in any order.
-  epic-68: backlog
+  epic-68: in-progress
   68-1-spectrogram-refinement: ready-for-dev
   68-2-low-latency-tap-sound: ready-for-dev
   68-3-swiftdata-versioned-schema: ready-for-dev
@@ -543,62 +542,62 @@ development_status:
   # All code-level and infrastructure changes for Apple submission compliance.
   # Work order: 69.1–69.5 independent (code), 69.6 independent (infrastructure),
   #             69.7 after 69.6 (needs privacy policy URL)
-  epic-69: backlog
-  69-1-create-privacy-manifest: backlog
-  69-2-add-export-compliance-declaration: backlog
-  69-3-fix-app-icon-alpha-channel: backlog
-  69-4-bump-version-to-1-0: backlog
-  69-5-fix-force-unwraps-flagged-in-compliance-report: backlog
-  69-6-write-and-host-privacy-policy-on-github-pages: backlog
-  69-7-add-privacy-policy-and-support-contact-in-app: backlog
+  epic-69: in-progress
+  69-1-create-privacy-manifest: ready-for-dev
+  69-2-add-export-compliance-declaration: ready-for-dev
+  69-3-fix-app-icon-alpha-channel: ready-for-dev
+  69-4-bump-version-to-1-0: ready-for-dev
+  69-5-fix-force-unwraps-flagged-in-compliance-report: ready-for-dev
+  69-6-write-and-host-privacy-policy-on-github-pages: ready-for-dev
+  69-7-add-privacy-policy-and-support-contact-in-app: ready-for-dev
   epic-69-retrospective: optional
 
   # Epic 70: Native Everywhere — Platform Polish & Real-Device Testing
   # Work order: 70.1 and 70.2 parallel (audits), 70.3 after 70.1/70.2 (fixes),
   #             70.4 independent (docs)
-  epic-70: backlog
-  70-1-platform-polish-audit-ios-ipados: backlog
-  70-2-platform-polish-audit-macos: backlog
-  70-3-fix-platform-issues-found-in-audit: backlog
-  70-4-update-project-documentation-for-three-platform-release: backlog
+  epic-70: in-progress
+  70-1-platform-polish-audit-ios-ipados: ready-for-dev
+  70-2-platform-polish-audit-macos: ready-for-dev
+  70-3-fix-platform-issues-found-in-audit: ready-for-dev
+  70-4-update-project-documentation-for-three-platform-release: ready-for-dev
   epic-70-retrospective: optional
 
   # Epic 71: Face of Peach — App Store Metadata & Screenshots
   # Work order: all stories independent
-  epic-71: backlog
-  71-1-write-app-store-description-and-keywords: backlog
-  71-2-write-app-store-review-notes: backlog
-  71-3-capture-iphone-and-ipad-screenshots: backlog
-  71-4-capture-macos-screenshots: backlog
+  epic-71: in-progress
+  71-1-write-app-store-description-and-keywords: ready-for-dev
+  71-2-write-app-store-review-notes: ready-for-dev
+  71-3-capture-iphone-and-ipad-screenshots: ready-for-dev
+  71-4-capture-macos-screenshots: ready-for-dev
   epic-71-retrospective: optional
 
   # Epic 72: Trust the Build — TestFlight Beta
   # Depends on: Epic 69 (compliance fixes in binary)
   # Work order: 72.1 → 72.2 → 72.3
-  epic-72: backlog
-  72-1-archive-and-upload-first-build-to-testflight: backlog
-  72-2-configure-testflight-and-distribute-beta: backlog
-  72-3-collect-feedback-and-fix-critical-issues: backlog
+  epic-72: in-progress
+  72-1-archive-and-upload-first-build-to-testflight: ready-for-dev
+  72-2-configure-testflight-and-distribute-beta: ready-for-dev
+  72-3-collect-feedback-and-fix-critical-issues: ready-for-dev
   epic-72-retrospective: optional
 
   # Epic 73: Into the Wild — iOS App Store Submission
   # Depends on: Epics 69, 70, 71, 72
   # Work order: 73.1 → 73.2 → 73.3 → 73.4
-  epic-73: backlog
-  73-1-complete-app-store-connect-app-record: backlog
-  73-2-upload-metadata-and-screenshots: backlog
-  73-3-set-privacy-nutrition-labels: backlog
-  73-4-submit-for-app-store-review: backlog
+  epic-73: in-progress
+  73-1-complete-app-store-connect-app-record: ready-for-dev
+  73-2-upload-metadata-and-screenshots: ready-for-dev
+  73-3-set-privacy-nutrition-labels: ready-for-dev
+  73-4-submit-for-app-store-review: ready-for-dev
   epic-73-retrospective: optional
 
   # Epic 74: Desktop Delivery — macOS Distribution
   # Depends on: Epic 69 (compliance code)
   # Work order: 74.1 independent, 74.2 independent, 74.3 after 74.2,
   #             74.4 after 74.3, 74.5 independent
-  epic-74: backlog
-  74-1-submit-to-mac-app-store: backlog
-  74-2-notarize-for-direct-distribution: backlog
-  74-3-set-up-github-releases: backlog
-  74-4-create-homebrew-cask: backlog
-  74-5-update-architecture-documentation-for-macos-distribution: backlog
+  epic-74: in-progress
+  74-1-submit-to-mac-app-store: ready-for-dev
+  74-2-notarize-for-direct-distribution: ready-for-dev
+  74-3-set-up-github-releases: ready-for-dev
+  74-4-create-homebrew-cask: ready-for-dev
+  74-5-update-architecture-documentation-for-macos-distribution: ready-for-dev
   epic-74-retrospective: optional
