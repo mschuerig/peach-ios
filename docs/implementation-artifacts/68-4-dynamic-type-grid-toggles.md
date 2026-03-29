@@ -1,6 +1,6 @@
 # Story 68.4: Dynamic Type Support for Grid Toggle Cells
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -20,27 +20,27 @@ so that labels remain readable instead of being clipped.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `@ScaledMetric` to `GridToggleRow` (AC: #1, #2)
-  - [ ] 1.1 Add `@ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32` property
-  - [ ] 1.2 Replace the hardcoded `width: 32, height: 32` in the `.frame()` modifier with the scaled metric
-  - [ ] 1.3 Verify at default size the cells remain exactly 32x32 pt
+- [x] Task 1: Add `@ScaledMetric` to `GridToggleRow` (AC: #1, #2)
+  - [x] 1.1 Add `@ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32` property
+  - [x] 1.2 Replace the hardcoded `width: 32, height: 32` in the `.frame()` modifier with the scaled metric
+  - [x] 1.3 Verify at default size the cells remain exactly 32x32 pt
 
-- [ ] Task 2: Add `@ScaledMetric` to `IntervalSelectorView` (AC: #1, #2, #4)
-  - [ ] 2.1 Add `@ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32` property
-  - [ ] 2.2 Add `@ScaledMetric(relativeTo: .caption) private var directionColumnWidth: CGFloat = 24` property
-  - [ ] 2.3 Replace hardcoded `width: 32, height: 32` in `intervalCell` with the scaled metric
-  - [ ] 2.4 Replace hardcoded `width: 32` in `headerRow` ForEach with the scaled metric
-  - [ ] 2.5 Replace hardcoded `width: 24` in direction column frames with `directionColumnWidth`
+- [x] Task 2: Add `@ScaledMetric` to `IntervalSelectorView` (AC: #1, #2, #4)
+  - [x] 2.1 Add `@ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32` property
+  - [x] 2.2 Add `@ScaledMetric(relativeTo: .caption) private var directionColumnWidth: CGFloat = 24` property
+  - [x] 2.3 Replace hardcoded `width: 32, height: 32` in `intervalCell` with the scaled metric
+  - [x] 2.4 Replace hardcoded `width: 32` in `headerRow` ForEach with the scaled metric
+  - [x] 2.5 Replace hardcoded `width: 24` in direction column frames with `directionColumnWidth`
 
-- [ ] Task 3: Add horizontal scrolling to `GridToggleRow` (AC: #3)
-  - [ ] 3.1 Wrap the `HStack` in a `ScrollView(.horizontal, showsIndicators: false)` so cells that exceed available width become scrollable
-  - [ ] 3.2 `IntervalSelectorView` already has `ScrollView(.horizontal)` -- verify it works correctly with scaled cells
+- [x] Task 3: Add horizontal scrolling to `GridToggleRow` (AC: #3)
+  - [x] 3.1 Wrap the `HStack` in a `ScrollView(.horizontal, showsIndicators: false)` so cells that exceed available width become scrollable
+  - [x] 3.2 `IntervalSelectorView` already has `ScrollView(.horizontal)` -- verify it works correctly with scaled cells
 
 - [ ] Task 4: Verify accessibility behavior (AC: #1, #2, #3)
   - [ ] 4.1 Test with Xcode Accessibility Inspector at AX1, AX3, AX5 text sizes
   - [ ] 4.2 Verify cells scale proportionally and labels remain readable
   - [ ] 4.3 Verify horizontal scrolling activates only when needed
-  - [ ] 4.4 Run `bin/test.sh && bin/test.sh -p mac`
+  - [x] 4.4 Run `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -83,10 +83,24 @@ so that labels remain readable instead of being clipped.
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Added `@ScaledMetric(relativeTo: .caption2)` to both `GridToggleRow` and `IntervalSelectorView` for cell sizes (32pt default)
+- Added `@ScaledMetric(relativeTo: .caption)` to `IntervalSelectorView` for direction column width (24pt default)
+- Wrapped `GridToggleRow` HStack in `ScrollView(.horizontal)` for overflow at large text sizes
+- `IntervalSelectorView` already had horizontal ScrollView — verified it works with scaled metrics
+- At default Dynamic Type, `@ScaledMetric` returns the initial value unchanged (32pt / 24pt), satisfying AC #2
+- Task 4.1–4.3 (manual Accessibility Inspector verification) left unchecked — requires manual testing on device/simulator
+
 ### File List
+- Modified: `Peach/Settings/GridToggleRow.swift`
+- Modified: `Peach/Settings/IntervalSelectorView.swift`
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-03-29: Implemented Dynamic Type scaling and horizontal scroll for grid toggle cells

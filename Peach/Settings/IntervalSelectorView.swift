@@ -3,6 +3,9 @@ import SwiftUI
 struct IntervalSelectorView: View {
     @Binding var selection: IntervalSelection
 
+    @ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32
+    @ScaledMetric(relativeTo: .caption) private var directionColumnWidth: CGFloat = 24
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             Grid(alignment: .center, horizontalSpacing: 4, verticalSpacing: 4) {
@@ -17,11 +20,11 @@ struct IntervalSelectorView: View {
     private var headerRow: some View {
         GridRow {
             Text("")
-                .frame(width: 24)
+                .frame(width: directionColumnWidth)
             ForEach(Interval.allCases, id: \.self) { interval in
                 Text(interval.abbreviation)
                     .font(.caption2)
-                    .frame(width: 32)
+                    .frame(width: cellSize)
             }
         }
     }
@@ -30,7 +33,7 @@ struct IntervalSelectorView: View {
         GridRow {
             Text(direction == .up ? "⏶" : "⏷")
                 .font(.caption)
-                .frame(width: 24)
+                .frame(width: directionColumnWidth)
             ForEach(Interval.allCases, id: \.self) { interval in
                 intervalCell(interval: interval, direction: direction)
             }
@@ -50,7 +53,7 @@ struct IntervalSelectorView: View {
         } label: {
             Text(interval.abbreviation)
                 .font(.caption2)
-                .frame(width: 32, height: 32)
+                .frame(width: cellSize, height: cellSize)
                 .background(isActive ? Color.accentColor : Color.secondary.opacity(0.2))
                 .foregroundStyle(isActive ? .white : .secondary)
                 .clipShape(RoundedRectangle(cornerRadius: 6))

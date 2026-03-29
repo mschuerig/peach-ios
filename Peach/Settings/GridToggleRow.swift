@@ -4,24 +4,28 @@ struct GridToggleRow<Element: CaseIterable & Hashable>: View where Element.AllCa
     @Binding var selection: Set<Element>
     let label: (Element) -> String
 
-    var body: some View {
-        HStack(spacing: 4) {
-            ForEach(Element.allCases, id: \.self) { element in
-                let isActive = selection.contains(element)
-                let isLast = Self.isLastRemaining(element, in: selection)
+    @ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32
 
-                Button {
-                    Self.toggle(element, in: &selection)
-                } label: {
-                    Text(label(element))
-                        .font(.caption2)
-                        .frame(width: 32, height: 32)
-                        .background(isActive ? Color.accentColor : Color.secondary.opacity(0.2))
-                        .foregroundStyle(isActive ? .white : .secondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 6))
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 4) {
+                ForEach(Element.allCases, id: \.self) { element in
+                    let isActive = selection.contains(element)
+                    let isLast = Self.isLastRemaining(element, in: selection)
+
+                    Button {
+                        Self.toggle(element, in: &selection)
+                    } label: {
+                        Text(label(element))
+                            .font(.caption2)
+                            .frame(width: cellSize, height: cellSize)
+                            .background(isActive ? Color.accentColor : Color.secondary.opacity(0.2))
+                            .foregroundStyle(isActive ? .white : .secondary)
+                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isLast)
                 }
-                .buttonStyle(.plain)
-                .disabled(isLast)
             }
         }
     }
