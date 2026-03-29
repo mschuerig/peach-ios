@@ -13,11 +13,11 @@ extension AppScenePhase {
     }
 }
 
-struct ResolvedNavigation: Equatable {
+struct NavigationRequest: Equatable {
     let destination: NavigationDestination
     private let id = UUID()
 
-    static func == (lhs: ResolvedNavigation, rhs: ResolvedNavigation) -> Bool {
+    static func == (lhs: NavigationRequest, rhs: NavigationRequest) -> Bool {
         lhs.id == rhs.id
     }
 }
@@ -32,7 +32,7 @@ final class TrainingLifecycleCoordinator {
     private let backgroundPolicy: BackgroundPolicy
     var activeSession: (any TrainingSession)?
 
-    private(set) var resolvedNavigation: ResolvedNavigation?
+    private(set) var resolvedNavigation: NavigationRequest?
     private var navigationTask: Task<Void, Never>?
 
     private(set) var currentTrainingDestination: NavigationDestination?
@@ -181,7 +181,7 @@ final class TrainingLifecycleCoordinator {
             }
             guard !Task.isCancelled else { return }
             Self.logger.info("Menu navigation resolved to \(String(describing: destination))")
-            resolvedNavigation = ResolvedNavigation(destination: destination)
+            resolvedNavigation = NavigationRequest(destination: destination)
         }
     }
 

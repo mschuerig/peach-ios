@@ -4,15 +4,6 @@ import AppKit
 
 // MARK: - Command State
 
-struct NavigationRequest: Equatable {
-    let destination: NavigationDestination
-    private let id = UUID()
-
-    static func == (lhs: NavigationRequest, rhs: NavigationRequest) -> Bool {
-        lhs.id == rhs.id
-    }
-}
-
 @Observable
 final class MenuCommandState {
     var navigationRequest: NavigationRequest?
