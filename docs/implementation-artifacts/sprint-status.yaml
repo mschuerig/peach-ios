@@ -533,7 +533,7 @@ development_status:
   68-1-spectrogram-refinement: done
   68-2-low-latency-tap-sound: done
   68-3-swiftdata-versioned-schema: done
-  68-4-dynamic-type-grid-toggles: review
+  68-4-dynamic-type-grid-toggles: done
   68-5-macos-app-switch-stop-not-navigate: ready-for-dev
   68-6-menu-navigation-state-machine: ready-for-dev
   epic-68-retrospective: optional

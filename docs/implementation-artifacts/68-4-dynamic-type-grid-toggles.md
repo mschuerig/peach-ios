@@ -1,6 +1,6 @@
 # Story 68.4: Dynamic Type Support for Grid Toggle Cells
 
-Status: review
+Status: done
 
 ## Story
 
