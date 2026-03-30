@@ -64,40 +64,43 @@ struct ExportChartView: View {
     // MARK: - Chart
 
     private func chartContent(buckets: [TimeBucket]) -> some View {
+        let positions = ProgressChartView.chartPositions(for: buckets)
         let yDomain = ProgressChartView.yDomain(for: buckets)
         let separatorData = ProgressChartView.zoneSeparatorData(for: buckets)
         let labels = ProgressChartView.yearLabels(for: buckets)
-
-        let lineData = ProgressChartView.lineDataWithSessionBridge(for: buckets)
+        let lineData = ProgressChartView.lineDataWithSessionBridge(for: buckets, positions: positions)
+        let axisValues = ProgressChartView.axisMarkPositions(buckets: buckets, positions: positions)
+        let totalExtent = (positions.last ?? -0.5) + 0.5
 
         return Chart {
-            ProgressChartView.zoneBackgrounds(separatorData: separatorData, yDomain: yDomain, isIncreaseContrast: false)
-            ProgressChartView.zoneDividers(separatorData: separatorData, isIncreaseContrast: false)
+            ProgressChartView.zoneBackgrounds(separatorData: separatorData, positions: positions, yDomain: yDomain, isIncreaseContrast: false)
+            ProgressChartView.zoneDividers(separatorData: separatorData, positions: positions, isIncreaseContrast: false)
             ProgressChartView.stddevBand(lineData: lineData, isIncreaseContrast: false)
             ProgressChartView.ewmaLine(lineData: lineData)
-            ProgressChartView.sessionDots(buckets: buckets)
+            ProgressChartView.sessionDots(buckets: buckets, positions: positions)
 
             RuleMark(y: .value("Baseline", config.optimalBaseline))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                 .foregroundStyle(.green.opacity(0.6))
         }
-        .chartXScale(domain: -0.5...Double(buckets.count) - 0.5)
+        .chartXScale(domain: -0.5...totalExtent)
         .chartYScale(domain: yDomain)
         .chartYAxisLabel(config.unitLabel)
         .chartXAxis {
-            AxisMarks(values: .stride(by: 1)) { value in
-                if let idx = value.as(Double.self), idx >= 0, Int(idx) < buckets.count {
-                    let bucket = buckets[Int(idx)]
-                    AxisGridLine()
+            AxisMarks(values: axisValues) { value in
+                if let pos = value.as(Double.self),
+                   let idx = ProgressChartView.bucketIndex(nearPosition: pos, in: positions) {
+                    let bucket = buckets[idx]
                     if bucket.bucketSize != .session {
-                        AxisValueLabel {
-                            Text(ProgressChartView.formatAxisLabel(
-                                bucket.periodStart,
-                                size: bucket.bucketSize,
-                                index: Int(idx),
-                                buckets: buckets
-                            ))
-                        }
+                        AxisGridLine()
+                    }
+                    AxisValueLabel {
+                        Text(ProgressChartView.formatAxisLabel(
+                            bucket.periodStart,
+                            size: bucket.bucketSize,
+                            index: idx,
+                            buckets: buckets
+                        ))
                     }
                 }
             }
@@ -108,8 +111,8 @@ struct ExportChartView: View {
                     let plotFrame = geometry[plotAreaFrame]
 
                     ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
-                        if let xFirst = proxy.position(forX: Double(label.firstIndex)),
-                           let xLast = proxy.position(forX: Double(label.lastIndex)) {
+                        if let xFirst = proxy.position(forX: positions[label.firstIndex]),
+                           let xLast = proxy.position(forX: positions[label.lastIndex]) {
                             Text(String(label.year))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)

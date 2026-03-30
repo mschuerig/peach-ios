@@ -100,22 +100,25 @@ struct ProgressChartView: View {
 
     @ViewBuilder
     private func chartLayout(buckets: [TimeBucket]) -> some View {
+        let positions = Self.chartPositions(for: buckets)
         let yDomain = Self.yDomain(for: buckets)
-        let needsScrolling = buckets.count > Self.visibleBucketCount
+        let totalExtent = (positions.last ?? -0.5) + 0.5
+        let needsScrolling = totalExtent > Double(Self.visibleBucketCount)
 
         if needsScrolling {
-            scrollableChartBody(buckets: buckets, yDomain: yDomain)
+            scrollableChartBody(buckets: buckets, positions: positions, yDomain: yDomain)
         } else {
-            staticChartBody(buckets: buckets, yDomain: yDomain)
+            staticChartBody(buckets: buckets, positions: positions, yDomain: yDomain)
         }
     }
 
-    private func scrollableChartBody(buckets: [TimeBucket], yDomain: ClosedRange<Double>) -> some View {
+    private func scrollableChartBody(buckets: [TimeBucket], positions: [Double], yDomain: ClosedRange<Double>) -> some View {
         let separatorData = Self.zoneSeparatorData(for: buckets)
         let labels = Self.yearLabels(for: buckets)
 
         return chartContent(
             buckets: buckets,
+            positions: positions,
             yDomain: yDomain,
             separatorData: separatorData,
             yearLabels: labels
@@ -123,41 +126,45 @@ struct ProgressChartView: View {
         .chartScrollableAxes(.horizontal)
         .chartXVisibleDomain(length: Self.visibleBucketCount)
         .chartScrollPosition(x: $scrollPosition)
-        .chartGesture(selectionTapGesture(bucketCount: buckets.count))
+        .chartGesture(selectionTapGesture(positions: positions))
         .onChange(of: scrollPosition) { _, _ in
             selectedBucketIndex = nil
         }
         .onAppear {
-            scrollPosition = Self.initialScrollPosition(for: buckets)
+            scrollPosition = Self.initialScrollPosition(for: positions)
         }
     }
 
-    private func staticChartBody(buckets: [TimeBucket], yDomain: ClosedRange<Double>) -> some View {
+    private func staticChartBody(buckets: [TimeBucket], positions: [Double], yDomain: ClosedRange<Double>) -> some View {
         let separatorData = Self.zoneSeparatorData(for: buckets)
         let labels = Self.yearLabels(for: buckets)
         return chartContent(
             buckets: buckets,
+            positions: positions,
             yDomain: yDomain,
             separatorData: separatorData,
             yearLabels: labels
         )
-        .chartGesture(selectionTapGesture(bucketCount: buckets.count))
+        .chartGesture(selectionTapGesture(positions: positions))
     }
 
     private func chartContent(
         buckets: [TimeBucket],
+        positions: [Double],
         yDomain: ClosedRange<Double>,
         separatorData: ZoneSeparatorData,
         yearLabels: [YearLabel]
     ) -> some View {
-        let lineData = Self.lineDataWithSessionBridge(for: buckets)
+        let lineData = Self.lineDataWithSessionBridge(for: buckets, positions: positions)
+        let axisValues = Self.axisMarkPositions(buckets: buckets, positions: positions)
+        let totalExtent = (positions.last ?? -0.5) + 0.5
 
         return Chart {
-            Self.zoneBackgrounds(separatorData: separatorData, yDomain: yDomain, isIncreaseContrast: isIncreaseContrast)
-            Self.zoneDividers(separatorData: separatorData, isIncreaseContrast: isIncreaseContrast)
+            Self.zoneBackgrounds(separatorData: separatorData, positions: positions, yDomain: yDomain, isIncreaseContrast: isIncreaseContrast)
+            Self.zoneDividers(separatorData: separatorData, positions: positions, isIncreaseContrast: isIncreaseContrast)
             Self.stddevBand(lineData: lineData, isIncreaseContrast: isIncreaseContrast)
             Self.ewmaLine(lineData: lineData)
-            Self.sessionDots(buckets: buckets)
+            Self.sessionDots(buckets: buckets, positions: positions)
 
             // Layer 6: Baseline
             RuleMark(y: .value("Baseline", config.optimalBaseline))
@@ -166,7 +173,7 @@ struct ProgressChartView: View {
 
             // Layer 7: Selection indicator with annotation
             if let selectedIndex = selectedBucketIndex, selectedIndex < buckets.count {
-                RuleMark(x: .value("Selected", Double(selectedIndex)))
+                RuleMark(x: .value("Selected", positions[selectedIndex]))
                     .foregroundStyle(Color.gray.opacity(Self.contrastAdjustedOpacity(base: 0.5, increased: 0.8, isIncreaseContrast: isIncreaseContrast)))
                     .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                     .annotation(position: .top, overflowResolution: .init(x: .fit(to: .chart), y: .fit(to: .chart))) {
@@ -174,19 +181,22 @@ struct ProgressChartView: View {
                     }
             }
         }
-        .chartXScale(domain: -0.5...Double(buckets.count) - 0.5)
+        .chartXScale(domain: -0.5...totalExtent)
         .chartYScale(domain: yDomain)
         .chartYAxisLabel(config.unitLabel)
         .chartXAxis {
-            AxisMarks(values: .stride(by: 1)) { value in
-                if let idx = value.as(Double.self), idx >= 0, Int(idx) < buckets.count {
-                    let bucket = buckets[Int(idx)]
-                    AxisGridLine()
+            AxisMarks(values: axisValues) { value in
+                if let pos = value.as(Double.self),
+                   let idx = Self.bucketIndex(nearPosition: pos, in: positions) {
+                    let bucket = buckets[idx]
+                    if bucket.bucketSize != .session {
+                        AxisGridLine()
+                    }
                     AxisValueLabel {
                         Text(Self.formatAxisLabel(
                             bucket.periodStart,
                             size: bucket.bucketSize,
-                            index: Int(idx),
+                            index: idx,
                             buckets: buckets
                         ))
                     }
@@ -200,8 +210,8 @@ struct ProgressChartView: View {
 
                     // Year labels below X-axis
                     ForEach(yearLabels) { label in
-                        if let xFirst = proxy.position(forX: Double(label.firstIndex)),
-                           let xLast = proxy.position(forX: Double(label.lastIndex)) {
+                        if let xFirst = proxy.position(forX: positions[label.firstIndex]),
+                           let xLast = proxy.position(forX: positions[label.lastIndex]) {
                             Text(String(label.year))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -214,9 +224,11 @@ struct ProgressChartView: View {
 
                     // Zone accessibility containers
                     ForEach(separatorData.zones) { zone in
+                        let zoneStart = Self.zoneEdgeBefore(index: zone.startIndex, positions: positions)
+                        let zoneEnd = Self.zoneEdgeAfter(index: zone.endIndex, positions: positions)
                         if let summary = Self.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config),
-                           let xStart = proxy.position(forX: Double(zone.startIndex) - 0.5),
-                           let xEnd = proxy.position(forX: Double(zone.endIndex) + 0.5) {
+                           let xStart = proxy.position(forX: zoneStart),
+                           let xEnd = proxy.position(forX: zoneEnd) {
                             let zoneWidth = xEnd - xStart
                             let zoneCenterX = plotFrame.origin.x + (xStart + xEnd) / 2.0
                             Color.clear
@@ -232,7 +244,7 @@ struct ProgressChartView: View {
         .padding(.bottom, yearLabels.isEmpty ? 0 : yearLabelBottomSpace)
     }
 
-    private func selectionTapGesture(bucketCount: Int) -> (ChartProxy) -> _EndedGesture<SpatialTapGesture> {
+    private func selectionTapGesture(positions: [Double]) -> (ChartProxy) -> _EndedGesture<SpatialTapGesture> {
         { proxy in
             SpatialTapGesture()
                 .onEnded { value in
@@ -240,18 +252,32 @@ struct ProgressChartView: View {
                         selectedBucketIndex = nil
                         return
                     }
-                    selectedBucketIndex = Self.findNearestBucketIndex(atX: x, bucketCount: bucketCount)
+                    selectedBucketIndex = Self.findNearestBucketIndex(atX: x, positions: positions)
                 }
         }
     }
 
+    // MARK: - Chart Positions
+
+    static let sessionSpacing: Double = 0.3
+
+    static func chartPositions(for buckets: [TimeBucket]) -> [Double] {
+        guard !buckets.isEmpty else { return [] }
+        var positions = [0.0]
+        for i in 1..<buckets.count {
+            let spacing = (buckets[i - 1].bucketSize == .session && buckets[i].bucketSize == .session) ? sessionSpacing : 1.0
+            positions.append(positions[i - 1] + spacing)
+        }
+        return positions
+    }
+
     // MARK: - Chart Content Layers
 
-    static func zoneBackgrounds(separatorData: ZoneSeparatorData, yDomain: ClosedRange<Double>, isIncreaseContrast: Bool) -> some ChartContent {
+    static func zoneBackgrounds(separatorData: ZoneSeparatorData, positions: [Double], yDomain: ClosedRange<Double>, isIncreaseContrast: Bool) -> some ChartContent {
         ForEach(separatorData.zones) { zone in
             RectangleMark(
-                xStart: .value("ZS", Double(zone.startIndex) - 0.5),
-                xEnd: .value("ZE", Double(zone.endIndex) + 0.5),
+                xStart: .value("ZS", zoneEdgeBefore(index: zone.startIndex, positions: positions)),
+                xEnd: .value("ZE", zoneEdgeAfter(index: zone.endIndex, positions: positions)),
                 yStart: .value("Y0", yDomain.lowerBound),
                 yEnd: .value("Y1", yDomain.upperBound)
             )
@@ -259,9 +285,9 @@ struct ProgressChartView: View {
         }
     }
 
-    static func zoneDividers(separatorData: ZoneSeparatorData, isIncreaseContrast: Bool) -> some ChartContent {
+    static func zoneDividers(separatorData: ZoneSeparatorData, positions: [Double], isIncreaseContrast: Bool) -> some ChartContent {
         ForEach(separatorData.dividerIndices, id: \.self) { idx in
-            RuleMark(x: .value("Div", Double(idx) - 0.5))
+            RuleMark(x: .value("Div", zoneEdgeBefore(index: idx, positions: positions)))
                 .lineStyle(StrokeStyle(lineWidth: 1))
                 .foregroundStyle(isIncreaseContrast ? .primary : .secondary)
         }
@@ -288,11 +314,11 @@ struct ProgressChartView: View {
         }
     }
 
-    static func sessionDots(buckets: [TimeBucket]) -> some ChartContent {
+    static func sessionDots(buckets: [TimeBucket], positions: [Double]) -> some ChartContent {
         ForEach(Array(buckets.enumerated()), id: \.element.periodStart) { i, bucket in
             if bucket.bucketSize == .session {
                 PointMark(
-                    x: .value("Index", Double(i)),
+                    x: .value("Index", positions[i]),
                     y: .value("Value", bucket.mean)
                 )
                 .foregroundStyle(.blue)
@@ -341,19 +367,20 @@ struct ProgressChartView: View {
         let stddev: Double
     }
 
-    static func lineDataWithSessionBridge(for buckets: [TimeBucket]) -> [LinePoint] {
+    static func lineDataWithSessionBridge(for buckets: [TimeBucket], positions: [Double]) -> [LinePoint] {
         var points: [LinePoint] = []
         for (i, bucket) in buckets.enumerated() where bucket.bucketSize != .session {
-            points.append(LinePoint(position: Double(i), mean: bucket.mean, stddev: bucket.stddev))
+            points.append(LinePoint(position: positions[i], mean: bucket.mean, stddev: bucket.stddev))
         }
-        // Bridge: extend line/band to separator position (firstSessionIndex - 0.5)
+        // Bridge: extend line/band to zone separator position
         let sessionBuckets = buckets.enumerated().filter { $0.element.bucketSize == .session }
         if let first = sessionBuckets.first {
             let totalRecords = sessionBuckets.map(\.element.recordCount).reduce(0, +)
             if totalRecords > 0 {
                 let mean = sessionBuckets.map { $0.element.mean * Double($0.element.recordCount) }.reduce(0, +) / Double(totalRecords)
                 let weightedVariance = sessionBuckets.map { pow($0.element.stddev, 2) * Double($0.element.recordCount) }.reduce(0, +) / Double(totalRecords)
-                points.append(LinePoint(position: Double(first.offset) - 0.5, mean: mean, stddev: sqrt(weightedVariance)))
+                let bridgePos = zoneEdgeBefore(index: first.offset, positions: positions)
+                points.append(LinePoint(position: bridgePos, mean: mean, stddev: sqrt(weightedVariance)))
             }
         }
         return points
@@ -447,6 +474,41 @@ struct ProgressChartView: View {
         return labels
     }
 
+    // MARK: - Position Helpers
+
+    /// Edge position before a bucket (midpoint to previous, or left margin).
+    static func zoneEdgeBefore(index: Int, positions: [Double]) -> Double {
+        if index == 0 { return positions[0] - 0.5 }
+        return (positions[index - 1] + positions[index]) / 2.0
+    }
+
+    /// Edge position after a bucket (midpoint to next, or right margin).
+    static func zoneEdgeAfter(index: Int, positions: [Double]) -> Double {
+        if index >= positions.count - 1 { return positions[index] + 0.5 }
+        return (positions[index] + positions[index + 1]) / 2.0
+    }
+
+    /// Axis mark positions: all non-session buckets, plus the first session bucket for "Today".
+    static func axisMarkPositions(buckets: [TimeBucket], positions: [Double]) -> [Double] {
+        buckets.enumerated().compactMap { i, bucket -> Double? in
+            if bucket.bucketSize != .session { return positions[i] }
+            let isFirst = i == 0 || buckets[i - 1].bucketSize != .session
+            return isFirst ? positions[i] : nil
+        }
+    }
+
+    /// Find the bucket index whose chart position is nearest to `x`.
+    static func bucketIndex(nearPosition pos: Double, in positions: [Double]) -> Int? {
+        guard !positions.isEmpty else { return nil }
+        var best = 0
+        for i in 1..<positions.count {
+            if abs(positions[i] - pos) < abs(positions[best] - pos) {
+                best = i
+            }
+        }
+        return abs(positions[best] - pos) < 0.01 ? best : nil
+    }
+
     private static func zoneTint(for bucketSize: BucketSize) -> Color {
         switch bucketSize {
         case .month: Color.platformBackground
@@ -464,10 +526,9 @@ struct ProgressChartView: View {
 
     static let visibleBucketCount = 8
 
-    /// Returns the index-based scroll position so that the most recent data appears at the right edge.
-    static func initialScrollPosition(for buckets: [TimeBucket]) -> Double {
-        guard !buckets.isEmpty else { return 0 }
-        return max(0, Double(buckets.count) - Double(visibleBucketCount))
+    static func initialScrollPosition(for positions: [Double]) -> Double {
+        guard let last = positions.last else { return 0 }
+        return max(0, last + 0.5 - Double(visibleBucketCount))
     }
 
     static func annotationDateLabel(_ date: Date, size: BucketSize) -> String {
@@ -478,10 +539,15 @@ struct ProgressChartView: View {
         }
     }
 
-    static func findNearestBucketIndex(atX x: Double, bucketCount: Int) -> Int? {
-        let index = Int(x.rounded(.toNearestOrEven))
-        guard index >= 0, index < bucketCount else { return nil }
-        return index
+    static func findNearestBucketIndex(atX x: Double, positions: [Double]) -> Int? {
+        guard !positions.isEmpty else { return nil }
+        var best = 0
+        for i in 1..<positions.count {
+            if abs(positions[i] - x) < abs(positions[best] - x) {
+                best = i
+            }
+        }
+        return best
     }
 
     static func formatAxisLabel(_ date: Date, size: BucketSize, index: Int, buckets: [TimeBucket]) -> String {

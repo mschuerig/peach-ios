@@ -69,15 +69,17 @@ struct ProgressChartViewTests {
     @Test("initial scroll position places latest data at right edge")
     func initialScrollPositionPinsRight() async {
         let buckets = makeBucketArray(count: 30)
-        let position = ProgressChartView.initialScrollPosition(for: buckets)
-        // With 30 buckets and visibleBucketCount=8, should start at index 22
-        #expect(position == Double(30 - ProgressChartView.visibleBucketCount))
+        let positions = ProgressChartView.chartPositions(for: buckets)
+        let position = ProgressChartView.initialScrollPosition(for: positions)
+        // With 30 day-only buckets (no compression), last position = 29, so scroll to 29.5 - 8 = 21.5
+        #expect(position == (positions.last! + 0.5 - Double(ProgressChartView.visibleBucketCount)))
     }
 
     @Test("initial scroll position for small dataset returns zero")
     func initialScrollPositionSmallDataset() async {
         let buckets = makeBucketArray(count: 5)
-        let position = ProgressChartView.initialScrollPosition(for: buckets)
+        let positions = ProgressChartView.chartPositions(for: buckets)
+        let position = ProgressChartView.initialScrollPosition(for: positions)
         #expect(position == 0)
     }
 
@@ -379,41 +381,40 @@ struct ProgressChartViewTests {
 
     // MARK: - findNearestBucketIndex
 
-    @Test("snaps to exact bucket index when tapping directly on it")
+    @Test("snaps to exact bucket position when tapping directly on it")
     func findNearestBucketIndexExact() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 0.0, bucketCount: 5) == 0)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 3.0, bucketCount: 5) == 3)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 4.0, bucketCount: 5) == 4)
+        let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 0.0, positions: positions) == 0)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 3.0, positions: positions) == 3)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 4.0, positions: positions) == 4)
     }
 
-    @Test("snaps to nearest bucket index when tapping between data points")
+    @Test("snaps to nearest bucket position when tapping between data points")
     func findNearestBucketIndexRounds() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 1.3, bucketCount: 5) == 1)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 1.7, bucketCount: 5) == 2)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.6, bucketCount: 5) == 3)
+        let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 1.3, positions: positions) == 1)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 1.7, positions: positions) == 2)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.6, positions: positions) == 3)
     }
 
-    @Test("returns nil for negative X outside valid range")
+    @Test("snaps to nearest for negative X near first position")
     func findNearestBucketIndexNegative() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: -1.0, bucketCount: 5) == nil)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: -0.6, bucketCount: 5) == nil)
+        let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
+        #expect(ProgressChartView.findNearestBucketIndex(atX: -0.3, positions: positions) == 0)
     }
 
-    @Test("returns zero for X at -0.5 boundary (rounds to 0)")
-    func findNearestBucketIndexAtBoundary() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: -0.5, bucketCount: 5) == 0)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: -0.4, bucketCount: 5) == 0)
-    }
-
-    @Test("returns nil for X at or beyond bucket count")
-    func findNearestBucketIndexBeyondCount() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 5.0, bucketCount: 5) == nil)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 10.0, bucketCount: 5) == nil)
-    }
-
-    @Test("returns nil for empty bucket count")
+    @Test("returns nil for empty positions")
     func findNearestBucketIndexEmpty() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 0.0, bucketCount: 0) == nil)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 0.0, positions: []) == nil)
+    }
+
+    @Test("finds nearest with compressed session positions")
+    func findNearestBucketIndexCompressedSessions() async {
+        // 2 day buckets + 3 session buckets with 0.3 spacing
+        let positions = [0.0, 1.0, 2.0, 2.3, 2.6]
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.1, positions: positions) == 2)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.2, positions: positions) == 3)
+        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.5, positions: positions) == 4)
     }
 
     // MARK: - Zone Accessibility Summary
