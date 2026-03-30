@@ -53,7 +53,7 @@ struct ProfileScreen: View {
                     }
                     .padding()
                 }
-                .navigationTitle(String(localized: "Chart Help"))
+                .navigationTitle(String(localized: "Profile Help"))
                 .inlineNavigationBarTitle()
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -98,6 +98,18 @@ struct ProfileScreen: View {
                           comment: "Granularity zone help title"),
             body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
                          comment: "Granularity zone help body")
+        ),
+        HelpSection(
+            title: String(localized: "Rhythm Spectrogram",
+                          comment: "Spectrogram overview help title"),
+            body: String(localized: "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was.",
+                         comment: "Spectrogram overview help body")
+        ),
+        HelpSection(
+            title: String(localized: "Spectrogram Colors",
+                          comment: "Spectrogram color help title"),
+            body: String(localized: "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits.",
+                         comment: "Spectrogram color help body")
         ),
     ]
 

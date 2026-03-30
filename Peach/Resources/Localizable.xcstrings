@@ -1170,6 +1170,16 @@
         }
       }
     },
+    "Green means excellent timing, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grün bedeutet exzellentes Timing, Gelb ist moderat, Orange ist ungenau und Rot bedeutet unregelmäßig. Tippe auf eine Zelle für eine detaillierte Aufschlüsselung von frühen und späten Treffern."
+          }
+        }
+      }
+    },
     "Hear & Compare" : {
       "comment" : "The title of the screen where users practice discriminating between pitches.",
       "extractionState" : "stale",
@@ -2355,6 +2365,16 @@
         }
       }
     },
+    "Profile Help" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profil-Hilfe"
+          }
+        }
+      }
+    },
     "Profile showing progress for: %@" : {
       "localizations" : {
         "de" : {
@@ -2534,6 +2554,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rhythmusprofil für %@"
+          }
+        }
+      }
+    },
+    "Rhythm Spectrogram" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rhythmus-Spektrogramm"
           }
         }
       }
@@ -2827,6 +2857,16 @@
         }
       }
     },
+    "Spectrogram Colors" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spektrogramm-Farben"
+          }
+        }
+      }
+    },
     "stable" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3057,6 +3097,16 @@
         }
       }
     },
+    "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Blaugrün bedeutet exzellent, Grün ist präzise, Gelb ist moderat, Orange ist ungenau und Rot bedeutet unregelmäßig. Tippe auf eine Zelle für eine detaillierte Aufschlüsselung von frühen und späten Treffern."
+          }
+        }
+      }
+    },
     "Tempo" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3096,6 +3146,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Das Diagramm gruppiert deine Daten nach Zeit: Monate links, die letzten Tage in der Mitte und die heutigen Sitzungen rechts."
+          }
+        }
+      }
+    },
+    "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Das farbige Raster zeigt deine Rhythmus-Genauigkeit über verschiedene Tempobereiche im Zeitverlauf. Jede Zeile ist ein Tempobereich, jede Spalte ein Zeitabschnitt. Die Farbe zeigt dir, wie präzise dein Timing war."
           }
         }
       }
