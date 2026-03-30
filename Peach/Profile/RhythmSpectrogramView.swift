@@ -252,7 +252,7 @@ struct RhythmSpectrogramView: View {
 extension SpectrogramAccuracyLevel {
     var color: Color {
         switch self {
-        case .excellent: Color(hue: 0.45, saturation: 0.7, brightness: 0.7)
+        case .excellent: Color(hue: 0.34, saturation: 0.5, brightness: 0.9)
         case .precise: .green
         case .moderate: .yellow
         case .loose: .orange
