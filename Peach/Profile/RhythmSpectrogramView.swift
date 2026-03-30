@@ -25,16 +25,12 @@ struct RhythmSpectrogramView: View {
 
     private var activeCard: some View {
         let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let data = if let cachedData, cachedData.columns.count == buckets.count {
-            cachedData
-        } else {
-            SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
-        }
+        let data = cachedData ?? SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
 
         return Group {
             if !data.trainedRanges.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
-                    spectrogramGrid(data: data, buckets: buckets)
+                    spectrogramGrid(data: data, buckets: data.timeBuckets)
                     legend
                 }
             }
@@ -102,6 +98,7 @@ struct RhythmSpectrogramView: View {
                     .padding(.top, 2)
                 }
             }
+            .defaultScrollAnchor(.trailing)
 
             // Fixed Y-axis labels (right side)
             VStack(spacing: 0) {

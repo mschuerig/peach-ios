@@ -94,6 +94,8 @@ struct SpectrogramColumn: Sendable, Identifiable {
 struct SpectrogramData: Sendable {
     let columns: [SpectrogramColumn]
     let trainedRanges: [TempoRange]
+    /// Time buckets trimmed to match `columns` (empty leading/trailing buckets removed).
+    let timeBuckets: [TimeBucket]
 
     static func compute(
         mode: TrainingDisciplineID,
@@ -101,7 +103,7 @@ struct SpectrogramData: Sendable {
         timeBuckets: [TimeBucket]
     ) -> SpectrogramData {
         guard !timeBuckets.isEmpty else {
-            return SpectrogramData(columns: [], trainedRanges: [])
+            return SpectrogramData(columns: [], trainedRanges: [], timeBuckets: [])
         }
 
         // Collect all metrics per (TempoRange, Direction)
@@ -120,11 +122,11 @@ struct SpectrogramData: Sendable {
 
         let trainedRanges = TempoRange.defaultRanges.filter { metricsMap[$0] != nil }
         guard !trainedRanges.isEmpty else {
-            return SpectrogramData(columns: [], trainedRanges: [])
+            return SpectrogramData(columns: [], trainedRanges: [], timeBuckets: [])
         }
 
         // Build columns
-        let columns = timeBuckets.enumerated().map { columnIndex, bucket in
+        let allColumns = timeBuckets.enumerated().map { columnIndex, bucket in
             let cells = trainedRanges.map { range in
                 makeCell(
                     range: range,
@@ -137,7 +139,33 @@ struct SpectrogramData: Sendable {
             return SpectrogramColumn(index: columnIndex, date: bucket.periodStart, bucketSize: bucket.bucketSize, cells: cells)
         }
 
-        return SpectrogramData(columns: columns, trainedRanges: trainedRanges)
+        // Trim empty leading/trailing columns (no data for this mode's tempo ranges)
+        let nonEmptyIndices = allColumns.indices.filter { idx in
+            allColumns[idx].cells.contains { $0.meanAccuracyPercent != nil }
+        }
+        guard let first = nonEmptyIndices.first, let last = nonEmptyIndices.last else {
+            return SpectrogramData(columns: [], trainedRanges: [], timeBuckets: [])
+        }
+
+        let trimmedBuckets = Array(timeBuckets[first...last])
+        let trimmedColumns = allColumns[first...last].enumerated().map { newIndex, column in
+            SpectrogramColumn(
+                index: newIndex,
+                date: column.date,
+                bucketSize: column.bucketSize,
+                cells: column.cells.map { cell in
+                    SpectrogramCell(
+                        tempoRange: cell.tempoRange,
+                        columnIndex: newIndex,
+                        meanAccuracyPercent: cell.meanAccuracyPercent,
+                        earlyStats: cell.earlyStats,
+                        lateStats: cell.lateStats
+                    )
+                }
+            )
+        }
+
+        return SpectrogramData(columns: trimmedColumns, trainedRanges: trainedRanges, timeBuckets: trimmedBuckets)
     }
 
     // MARK: - Private
