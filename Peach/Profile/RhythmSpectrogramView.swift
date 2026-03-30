@@ -55,59 +55,62 @@ struct RhythmSpectrogramView: View {
     private func spectrogramGrid(data: SpectrogramData, buckets: [TimeBucket]) -> some View {
         let cellSize = Self.cellSize(columnCount: data.columns.count, rangeCount: data.trainedRanges.count)
 
-        return ScrollView(.horizontal, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                // Grid rows (top = fastest, bottom = slowest)
-                ForEach(data.trainedRanges.reversed(), id: \.self) { range in
-                    HStack(spacing: 0) {
-                        // Y-axis label
-                        Text(Self.rangeLabel(range))
-                            .font(.caption2)
-                            .frame(width: 44, alignment: .trailing)
-                            .padding(.trailing, 4)
-
-                        // Cells for this range
-                        ForEach(data.columns) { column in
-                            if let cell = column.cells.first(where: { $0.tempoRange == range }) {
-                                cellView(cell: cell, size: cellSize)
+        return HStack(alignment: .top, spacing: 0) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Grid rows (top = fastest, bottom = slowest)
+                    ForEach(data.trainedRanges.reversed(), id: \.self) { range in
+                        HStack(spacing: 0) {
+                            ForEach(data.columns) { column in
+                                if let cell = column.cells.first(where: { $0.tempoRange == range }) {
+                                    cellView(cell: cell, size: cellSize)
+                                }
                             }
                         }
                     }
-                }
 
-                // VoiceOver: per-column accessibility elements (spatially aligned with grid columns)
-                HStack(spacing: 0) {
-                    Color.clear.frame(width: 48)
-                    ForEach(data.columns) { column in
-                        Color.clear
-                            .frame(width: cellSize, height: 1)
-                            .accessibilityElement()
-                            .accessibilityLabel(Self.columnAccessibilityLabel(
-                                column: column,
-                                buckets: buckets,
-                                columnIndex: column.index,
-                                thresholds: thresholds
-                            ))
-                            .accessibilityAddTraits(.isButton)
-                            .accessibilityAction {
-                                selectedCell = SelectedCell(tempoRange: column.cells.first?.tempoRange ?? .slow, columnIndex: column.index)
-                            }
+                    // VoiceOver: per-column accessibility elements (spatially aligned with grid columns)
+                    HStack(spacing: 0) {
+                        ForEach(data.columns) { column in
+                            Color.clear
+                                .frame(width: cellSize, height: 1)
+                                .accessibilityElement()
+                                .accessibilityLabel(Self.columnAccessibilityLabel(
+                                    column: column,
+                                    buckets: buckets,
+                                    columnIndex: column.index,
+                                    thresholds: thresholds
+                                ))
+                                .accessibilityAddTraits(.isButton)
+                                .accessibilityAction {
+                                    selectedCell = SelectedCell(tempoRange: column.cells.first?.tempoRange ?? .slow, columnIndex: column.index)
+                                }
+                        }
                     }
-                }
 
-                // X-axis labels
-                HStack(spacing: 0) {
-                    Color.clear.frame(width: 48)
-                    ForEach(data.columns) { column in
-                        Text(Self.columnLabel(buckets[column.index], index: column.index, buckets: buckets))
-                            .font(.caption2)
-                            .frame(width: cellSize, alignment: .center)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.7)
+                    // X-axis labels
+                    HStack(spacing: 0) {
+                        ForEach(data.columns) { column in
+                            Text(Self.columnLabel(buckets[column.index], index: column.index, buckets: buckets))
+                                .font(.caption2)
+                                .frame(width: cellSize, alignment: .center)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                        }
                     }
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 2)
                 }
-                .foregroundStyle(.secondary)
-                .padding(.top, 2)
+            }
+
+            // Fixed Y-axis labels (right side)
+            VStack(spacing: 0) {
+                ForEach(data.trainedRanges.reversed(), id: \.self) { range in
+                    Text(Self.rangeLabel(range))
+                        .font(.caption2)
+                        .frame(width: 44, height: cellSize, alignment: .leading)
+                        .padding(.leading, 4)
+                }
             }
         }
         .overlay {
