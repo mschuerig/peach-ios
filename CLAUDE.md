@@ -47,7 +47,7 @@ Invoke the relevant installed skills proactively as part of your workflow. Do no
 
 ### Code Quality
 
-- `/simplify-code` — After implementation, review diffs for reuse, quality, and efficiency
+- `/simplify-code` — **Mandatory.** After any code changes are accepted, always run `/simplify-code` before considering the task complete. This applies to every workflow: BMAD stories, quick dev, ad-hoc fixes, refactors.
 - `/orchestrate-batch-refactor` — When planning larger refactoring efforts across multiple files
 
 ### Debugging
