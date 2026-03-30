@@ -661,6 +661,7 @@
       }
     },
     "Chart Help" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1171,6 +1172,7 @@
       }
     },
     "Green means excellent timing, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2559,6 +2561,7 @@
       }
     },
     "Rhythm Spectrogram" : {
+      "comment" : "Spectrogram overview help title",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2858,6 +2861,7 @@
       }
     },
     "Spectrogram Colors" : {
+      "comment" : "Spectrogram color help title",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3098,6 +3102,7 @@
       }
     },
     "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits." : {
+      "comment" : "Spectrogram color help body",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3151,6 +3156,7 @@
       }
     },
     "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was." : {
+      "comment" : "Spectrogram overview help body",
       "localizations" : {
         "de" : {
           "stringUnit" : {
