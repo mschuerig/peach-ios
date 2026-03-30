@@ -102,10 +102,12 @@ struct SettingsScreen: View {
         .onChange(of: enabledGapPositions) {
             enabledGapPositionsEncoded = GapPositionEncoding.encode(enabledGapPositions)
         }
+        #if os(iOS)
         .fileImporter(
             isPresented: $showFileImporter,
             allowedContentTypes: [.commaSeparatedText]
         ) { handleImportFileResult($0) }
+        #endif
         .confirmationDialog("Import Training Data", isPresented: $showImportModeChoice, titleVisibility: .visible) {
             importModeButtons
         } message: {
@@ -311,7 +313,7 @@ struct SettingsScreen: View {
             }
 
             Button {
-                showFileImporter = true
+                importTrainingData()
             } label: {
                 Label("Import Training Data", systemImage: "square.and.arrow.down")
             }
@@ -361,6 +363,19 @@ struct SettingsScreen: View {
         } catch {
             showResetError = true
         }
+    }
+
+    private func importTrainingData() {
+        #if os(iOS)
+        showFileImporter = true
+        #elseif os(macOS)
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.commaSeparatedText]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        handleImportFileResult(.success(url))
+        #endif
     }
 
     private func handleImportFileResult(_ result: Result<URL, any Error>) {
