@@ -5,6 +5,7 @@ struct RhythmProfileCardView: View {
     let mode: TrainingDisciplineID
 
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.perceptualProfile) private var perceptualProfile
 
     @State private var shareImageURL: URL?
 
@@ -105,6 +106,7 @@ struct RhythmProfileCardView: View {
     private func renderShareImage() -> URL? {
         let content = RhythmProfileCardExportView(mode: mode)
             .environment(\.progressTimeline, progressTimeline)
+            .environment(\.perceptualProfile, perceptualProfile)
         let renderer = ImageRenderer(content: content)
         renderer.scale = 2.0
         guard let cgImage = renderer.cgImage,
@@ -165,6 +167,6 @@ private struct RhythmProfileCardExportView: View {
         }
         .padding()
         .frame(width: 400)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+        .background(Color.platformBackground)
     }
 }
