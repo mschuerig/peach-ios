@@ -12,11 +12,7 @@ struct ContentView: View {
     @State private var commandState = MenuCommandState()
     @State private var mainWindow: NSWindow?
     @State private var importParseResult: CSVImportParser.ImportResult?
-    @State private var showImportModeChoice = false
-    @State private var showImportSummary = false
-    @State private var importSummary: TrainingDataImporter.ImportSummary?
-    @State private var showImportError = false
-    @State private var importErrorMessage = ""
+    @State private var importParseError: String?
     #endif
 
     var body: some View {
@@ -62,17 +58,7 @@ struct ContentView: View {
             isPresented: $commandState.showFileImporter,
             allowedContentTypes: [.commaSeparatedText]
         ) { handleImportFileResult($0) }
-        .confirmationDialog("Import Training Data", isPresented: $showImportModeChoice, titleVisibility: .visible) {
-            importModeButtons
-        } message: {
-            Text("Replace deletes all existing data first. Merge keeps existing data and skips duplicates.")
-        }
-        .alert("Import Complete", isPresented: $showImportSummary) {
-            Button("OK") { }
-        } message: { importSummaryMessage }
-        .alert("Import Failed", isPresented: $showImportError) {
-            Button("OK") { }
-        } message: { Text(importErrorMessage) }
+        .importDialog(parseResult: $importParseResult, parseErrorMessage: $importParseError)
         #endif
     }
 
@@ -102,48 +88,12 @@ struct ContentView: View {
 
     #if os(macOS)
     private func handleImportFileResult(_ result: Result<URL, any Error>) {
-        switch result {
-        case .success(let url):
-            switch coordinator.prepareImport(url: url) {
-            case .success(let parseResult):
-                importParseResult = parseResult
-                showImportModeChoice = true
-            case .failure(let message):
-                importErrorMessage = message
-                showImportError = true
-            }
-        case .failure:
-            break
-        }
-    }
-
-    @ViewBuilder
-    private var importModeButtons: some View {
-        Button("Replace") {
-            completeImport(mode: .replace)
-        }
-        Button("Merge") {
-            completeImport(mode: .merge)
-        }
-        Button("Cancel", role: .cancel) { }
-    }
-
-    @ViewBuilder
-    private var importSummaryMessage: some View {
-        if let summary = importSummary {
-            Text(coordinator.formatImportSummary(summary))
-        }
-    }
-
-    private func completeImport(mode: TrainingDataImporter.ImportMode) {
-        guard let parseResult = importParseResult else { return }
-        do {
-            let summary = try coordinator.executeImport(parseResult: parseResult, mode: mode)
-            importSummary = summary
-            showImportSummary = true
-        } catch {
-            importErrorMessage = error.localizedDescription
-            showImportError = true
+        guard case .success(let url) = result else { return }
+        switch coordinator.prepareImport(url: url) {
+        case .success(let parseResult):
+            importParseResult = parseResult
+        case .failure(let message):
+            importParseError = message
         }
     }
     #endif
