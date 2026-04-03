@@ -1,5 +1,7 @@
 import Foundation
 
+// WALKTHROUGH: Naming inconsistency — UI says "Compare Timing" but types use "Rhythm*".
+// Consider renaming to TimingOffset/TimingDirection for consistency with user-facing language.
 /// A signed duration representing the timing offset from the beat.
 ///
 /// Negative values mean the hit was early; positive or zero means late

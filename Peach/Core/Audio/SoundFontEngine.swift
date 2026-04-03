@@ -173,6 +173,8 @@ final class SoundFontEngine {
 
     // MARK: - ChannelID
 
+    // WALKTHROUGH: ChannelID is a duplicate of MIDIChannel (Core/Music/MIDIChannel.swift).
+    // Same type, same range, same precondition. Replace with MIDIChannel throughout.
     struct ChannelID: Hashable, Sendable {
         let rawValue: UInt8
         init(_ rawValue: UInt8) {
@@ -230,6 +232,9 @@ final class SoundFontEngine {
 
     private let audioSessionConfigurator: AudioSessionConfiguring
 
+    // WALKTHROUGH: init is 133 lines — the render callback closure (95 lines) should be
+    // extracted to a static method. createChannel() and scheduleEvents() share a
+    // "write inactive slot + bump generation" pattern that could also be extracted.
     init(sf2URL: URL, audioSessionConfigurator: AudioSessionConfiguring) throws {
         self.sf2URL = sf2URL
         self.audioSessionConfigurator = audioSessionConfigurator
