@@ -120,7 +120,7 @@ Never run only specific test files — always the complete suite. Both platforms
 - **Behavioral test descriptions** — `@Test("plays note 1 after starting")`, not `@Test("test playNote1 method")`
 
 **Test Organization:**
-- **Mirror source structure** — test directories mirror source (e.g., `PeachTests/Core/Audio/` mirrors `Peach/Core/Audio/`, `PeachTests/Core/Music/` mirrors `Peach/Core/Music/`)
+- **Mirror source structure** — test directories mirror source (e.g., `PeachTests/Core/Audio/` mirrors `Peach/Core/Audio/`, `PeachTests/Training/PitchDiscrimination/` mirrors `Peach/Training/PitchDiscrimination/`)
 - **One test file per source file** — `SoundFontPlayer.swift` → `SoundFontPlayerTests.swift`
 - **Mock files live in test target** — `MockNotePlayer.swift`, `MockTrainingDataStore.swift`, etc.
 - **Fresh mocks per test** — create via factory method in each test; never share mocks across tests (parallel execution)
@@ -162,7 +162,8 @@ Never run only specific test files — always the complete suite. Both platforms
 - Shared training domain types (PitchDiscrimination, observers, Resettable) → `Core/Training/`
 - Musical domain value types (MIDINote, Frequency, Interval, NoteDuration, etc.) → `Core/Music/`
 - New `@Entry` environment key → `App/EnvironmentKeys.swift` (not co-located with domain types)
-- Screen the user navigates to → `{Feature}/{Feature}Screen.swift`
+- Training screen the user navigates to → `Training/{Feature}/{Feature}Screen.swift`
+- Non-training screen → `{Feature}/{Feature}Screen.swift`
 - Subview used by one screen → same feature directory as the screen
 - **No SwiftUI imports in Core/ files** — `@Entry` definitions go in `App/EnvironmentKeys.swift`
 - **No UIKit imports in Core/ files** — UIKit dependencies injected from the composition root
@@ -174,8 +175,8 @@ Never run only specific test files — always the complete suite. Both platforms
   (`TrainingDiscipline.swift`, `TrainingDisciplineRegistry.swift`, `TrainingRecordPersisting.swift`, and `*Discipline.swift` in feature directories);
   all other code accesses persistence through `TrainingDataStore`.
   The discipline exception exists because `PersistentModel` cannot be type-erased without losing compile-time safety — see architecture.md "Accepted Exception" for rationale.
-- **UIKit is injected** — `import UIKit` only in `PitchDiscrimination/HapticFeedbackManager.swift` (protocol abstraction) and `App/` (composition root); nowhere else
-- **No cross-feature coupling** — feature directories (`PitchDiscrimination/`, `PitchMatching/`, `Profile/`, `Settings/`, `Info/`) must not reference types from other feature directories; shared types belong in `Core/`; `Start/` is exempt as the navigation router
+- **UIKit is injected** — `import UIKit` only in `Training/PitchDiscrimination/HapticFeedbackManager.swift` (protocol abstraction) and `App/` (composition root); nowhere else
+- **No cross-feature coupling** — feature directories (`Training/PitchDiscrimination/`, `Training/PitchMatching/`, `Training/RhythmOffsetDetection/`, `Training/ContinuousRhythmMatching/`, `Profile/`, `Settings/`, `Info/`) must not reference types from other feature directories; shared types belong in `Core/`; `Start/` is exempt as the navigation router
 - **No Combine** — use `async/await` throughout; `import Combine` is forbidden
 - **Views must not orchestrate services** — if a view needs to coordinate multiple services (e.g., reset data + reset profile + reset session), wrap that coordination in a closure or method owned by the composition root (`PeachApp`) and inject the closure; the view should call one thing, not three
 - **Minimize a view's `@Environment` surface** — each `@Environment` dependency is a coupling point; if a view only uses a dependency to pass it to another call, the dependency belongs higher up

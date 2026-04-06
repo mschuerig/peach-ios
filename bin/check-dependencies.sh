@@ -5,7 +5,7 @@
 # Rules enforced:
 #   1. Core/ must not import SwiftUI, UIKit, or Charts
 #   2. SwiftData only in Core/Data/, App/, and TrainingDiscipline chain
-#   3. UIKit only in PitchDiscrimination/HapticFeedbackManager.swift and App/
+#   3. UIKit only in Training/PitchDiscrimination/HapticFeedbackManager.swift and App/
 #   4. No Combine in production code (use async/await)
 #   5. No cross-feature type references between feature directories
 #   6. No print() in production code (use Logger)
@@ -63,44 +63,53 @@ check_import "$SRC_DIR/Core" "Charts" \
 # PersistentModel cannot be type-erased without losing compile-time safety.
 # Accepted exception: TrainingDiscipline.swift, TrainingDisciplineRegistry.swift,
 # TrainingRecordPersisting.swift, and *Discipline.swift in feature directories.
+
+# Collect all feature directories (top-level + Training/ children)
+FEATURE_DIRS=()
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "App" ]] && continue
     [[ "$dirname" == "Resources" ]] && continue
-
-    if [[ "$dirname" == "Core" ]]; then
-        for coredir in "$SRC_DIR/Core"/*/; do
-            core_subdir=$(basename "$coredir")
-            [[ "$core_subdir" == "Data" ]] && continue
-            if [[ "$core_subdir" == "Training" ]]; then
-                check_import "$coredir" "SwiftData" \
-                    "Core/Training/ must not import SwiftData (except TrainingDiscipline chain)" \
-                    "TrainingDiscipline\|TrainingDisciplineRegistry"
-                continue
-            fi
-            if [[ "$core_subdir" == "Ports" ]]; then
-                check_import "$coredir" "SwiftData" \
-                    "Core/Ports/ must not import SwiftData (except TrainingRecordPersisting)" \
-                    "TrainingRecordPersisting"
-                continue
-            fi
-            check_import "$coredir" "SwiftData" \
-                "Core/$core_subdir/ must not import SwiftData (only Core/Data/ and discipline chain may)"
+    [[ "$dirname" == "Core" ]] && continue
+    if [[ "$dirname" == "Training" ]]; then
+        for subdir in "$dir"*/; do
+            FEATURE_DIRS+=("$subdir")
         done
     else
-        check_import "$dir" "SwiftData" \
-            "$dirname/ must not import SwiftData (access SwiftData through TrainingDataStore)" \
-            "Discipline\\.swift:"
+        FEATURE_DIRS+=("$dir")
     fi
 done
 
-# ─── Rule 3: UIKit only in allowed files ─────────────────────────────────
-# Allowed: App/ (composition root), PitchDiscrimination/HapticFeedbackManager.swift
-for dir in "$SRC_DIR"/*/; do
+for dir in "$SRC_DIR/Core"/*/; do
+    core_subdir=$(basename "$dir")
+    [[ "$core_subdir" == "Data" ]] && continue
+    if [[ "$core_subdir" == "Training" ]]; then
+        check_import "$dir" "SwiftData" \
+            "Core/Training/ must not import SwiftData (except TrainingDiscipline chain)" \
+            "TrainingDiscipline\|TrainingDisciplineRegistry"
+        continue
+    fi
+    if [[ "$core_subdir" == "Ports" ]]; then
+        check_import "$dir" "SwiftData" \
+            "Core/Ports/ must not import SwiftData (except TrainingRecordPersisting)" \
+            "TrainingRecordPersisting"
+        continue
+    fi
+    check_import "$dir" "SwiftData" \
+        "Core/$core_subdir/ must not import SwiftData (only Core/Data/ and discipline chain may)"
+done
+
+for dir in "${FEATURE_DIRS[@]}"; do
     dirname=$(basename "$dir")
-    [[ "$dirname" == "App" ]] && continue
-    [[ "$dirname" == "Core" ]] && continue
-    [[ "$dirname" == "Resources" ]] && continue
+    check_import "$dir" "SwiftData" \
+        "$dirname/ must not import SwiftData (access SwiftData through TrainingDataStore)" \
+        "Discipline\\.swift:"
+done
+
+# ─── Rule 3: UIKit only in allowed files ─────────────────────────────────
+# Allowed: App/ (composition root), Training/PitchDiscrimination/HapticFeedbackManager.swift
+for dir in "${FEATURE_DIRS[@]}"; do
+    dirname=$(basename "$dir")
 
     if [[ "$dirname" == "PitchDiscrimination" ]]; then
         check_import "$dir" "UIKit" \
@@ -116,6 +125,12 @@ done
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "Resources" ]] && continue
+    [[ "$dirname" == "Training" ]] && continue
+    check_import "$dir" "Combine" \
+        "$dirname/ must not import Combine (use async/await)"
+done
+for dir in "${FEATURE_DIRS[@]}"; do
+    dirname=$(basename "$dir")
     check_import "$dir" "Combine" \
         "$dirname/ must not import Combine (use async/await)"
 done
@@ -125,20 +140,37 @@ done
 # EXCEPT: Start/ is the navigation router and legitimately references all screens.
 # Only App/, Start/ (router), and the feature's own directory may reference its Screen.
 
-FEATURES=("PitchDiscrimination" "PitchMatching" "RhythmOffsetDetection" "ContinuousRhythmMatching" "Profile" "Settings" "Start" "Info")
-SCREEN_TYPES=("PitchDiscriminationScreen" "PitchMatchingScreen" "RhythmOffsetDetectionScreen" "ContinuousRhythmMatchingScreen" "ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
+# Build parallel arrays of feature names, screen types, and filesystem paths
+FEATURE_NAMES=()
+SCREEN_TYPES=()
+FEATURE_PATHS=()
 
-for i in "${!FEATURES[@]}"; do
-    feature="${FEATURES[$i]}"
+# Training feature directories
+for name in PitchDiscrimination PitchMatching RhythmOffsetDetection ContinuousRhythmMatching; do
+    FEATURE_NAMES+=("$name")
+    FEATURE_PATHS+=("$SRC_DIR/Training/$name")
+done
+SCREEN_TYPES+=("PitchDiscriminationScreen" "PitchMatchingScreen" "RhythmOffsetDetectionScreen" "ContinuousRhythmMatchingScreen")
+
+# Top-level feature directories
+for name in Profile Settings Start Info; do
+    FEATURE_NAMES+=("$name")
+    FEATURE_PATHS+=("$SRC_DIR/$name")
+done
+SCREEN_TYPES+=("ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
+
+for i in "${!FEATURE_NAMES[@]}"; do
+    feature="${FEATURE_NAMES[$i]}"
     screen="${SCREEN_TYPES[$i]}"
 
-    for j in "${!FEATURES[@]}"; do
-        other="${FEATURES[$j]}"
+    for j in "${!FEATURE_NAMES[@]}"; do
+        other="${FEATURE_NAMES[$j]}"
+        other_path="${FEATURE_PATHS[$j]}"
         [[ "$feature" == "$other" ]] && continue
         # Start/ is the navigation router — it must reference all screens
         [[ "$other" == "Start" ]] && continue
 
-        matches=$(grep -rn "\b${screen}\b" "$SRC_DIR/$other/" --include="*.swift" 2>/dev/null || true)
+        matches=$(grep -rn "\b${screen}\b" "$other_path/" --include="*.swift" 2>/dev/null || true)
         if [[ -n "$matches" ]]; then
             red "VIOLATION: $other/ references $screen (cross-feature dependency)"
             echo "$matches" | while IFS= read -r line; do
@@ -152,7 +184,7 @@ done
 
 # ─── Rule 6: Feature types used in other features (known patterns) ───────
 # PitchDiscriminationFeedbackIndicator should not be referenced from PitchMatching/
-matches=$(grep -rn "PitchDiscriminationFeedbackIndicator" "$SRC_DIR/PitchMatching/" --include="*.swift" 2>/dev/null || true)
+matches=$(grep -rn "PitchDiscriminationFeedbackIndicator" "$SRC_DIR/Training/PitchMatching/" --include="*.swift" 2>/dev/null || true)
 if [[ -n "$matches" ]]; then
     red "VIOLATION: PitchMatching/ references PitchDiscriminationFeedbackIndicator (cross-feature dependency)"
     echo "$matches" | while IFS= read -r line; do

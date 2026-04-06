@@ -1,6 +1,6 @@
 # Story 75.12: Training Directory Grouping
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -23,19 +23,19 @@ The walkthrough (Layer 3) noted that `PitchDiscrimination/`, `PitchMatching/`, `
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create Training/ parent group in Xcode (AC: #1)
-  - [ ] Create `Peach/Training/` group
-  - [ ] Move `PitchDiscrimination/` under `Training/`
-  - [ ] Move `PitchMatching/` under `Training/`
-  - [ ] Move `RhythmOffsetDetection/` (or `TimingOffsetDetection/`) under `Training/`
-  - [ ] Move `ContinuousRhythmMatching/` under `Training/`
+- [x] Task 1: Create Training/ parent group in Xcode (AC: #1)
+  - [x] Create `Peach/Training/` group
+  - [x] Move `PitchDiscrimination/` under `Training/`
+  - [x] Move `PitchMatching/` under `Training/`
+  - [x] Move `RhythmOffsetDetection/` under `Training/`
+  - [x] Move `ContinuousRhythmMatching/` under `Training/`
 
-- [ ] Task 2: Update path-based references (AC: #2, #3)
-  - [ ] Update `bin/check-dependencies.sh` if it references old paths
-  - [ ] Search for any hardcoded paths in documentation or scripts
+- [x] Task 2: Update path-based references (AC: #2, #3)
+  - [x] Update `bin/check-dependencies.sh` if it references old paths
+  - [x] Search for any hardcoded paths in documentation or scripts
 
-- [ ] Task 3: Build and test both platforms (AC: #4)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 3: Build and test both platforms (AC: #4)
+  - [x] `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -63,10 +63,35 @@ SwiftUI projects typically keep Xcode groups aligned with filesystem directories
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Moved PitchDiscrimination/, PitchMatching/, RhythmOffsetDetection/, ContinuousRhythmMatching/ under new Peach/Training/ parent directory
+- Mirrored structure in PeachTests/Training/ to maintain test directory mirroring convention
+- Refactored bin/check-dependencies.sh to collect feature directories from both top-level and Training/ subdirectories using a FEATURE_DIRS array, ensuring all dependency rules (SwiftData, UIKit, Combine, cross-feature references) work with new paths
+- Updated docs/project-context.md path references for UIKit, cross-feature coupling, file placement, and test organization sections
+- Project uses PBXFileSystemSynchronizedRootGroup so no pbxproj edits were needed — Xcode auto-syncs from filesystem
+- All 1711 iOS tests and 1704 macOS tests pass with zero regressions
+
 ### File List
+- Peach/Training/ (new directory)
+- Peach/Training/PitchDiscrimination/ (moved from Peach/PitchDiscrimination/)
+- Peach/Training/PitchMatching/ (moved from Peach/PitchMatching/)
+- Peach/Training/RhythmOffsetDetection/ (moved from Peach/RhythmOffsetDetection/)
+- Peach/Training/ContinuousRhythmMatching/ (moved from Peach/ContinuousRhythmMatching/)
+- PeachTests/Training/ (new directory)
+- PeachTests/Training/PitchDiscrimination/ (moved from PeachTests/PitchDiscrimination/)
+- PeachTests/Training/PitchMatching/ (moved from PeachTests/PitchMatching/)
+- PeachTests/Training/RhythmOffsetDetection/ (moved from PeachTests/RhythmOffsetDetection/)
+- PeachTests/Training/ContinuousRhythmMatching/ (moved from PeachTests/ContinuousRhythmMatching/)
+- bin/check-dependencies.sh (modified — refactored to handle Training/ parent group)
+- docs/project-context.md (modified — updated path references)
+- docs/implementation-artifacts/sprint-status.yaml (modified — status update)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-06: Implementation complete — directories grouped under Training/, scripts and docs updated
