@@ -59,15 +59,24 @@ final class TrainingLifecycleCoordinator {
 
     // MARK: - Computed Properties
 
-    var isTrainingActive: Bool {
-        guard let destination = currentTrainingDestination else { return false }
+    private func session(for destination: NavigationDestination) -> (any TrainingSession)? {
         switch destination {
-        case .pitchDiscrimination: return !pitchDiscriminationSession.isIdle
-        case .pitchMatching: return !pitchMatchingSession.isIdle
-        case .timingOffsetDetection: return !timingOffsetDetectionSession.isIdle
-        case .continuousRhythmMatching: return !continuousRhythmMatchingSession.isIdle
-        case .settings, .profile: return false
+        case .pitchDiscrimination: pitchDiscriminationSession
+        case .pitchMatching: pitchMatchingSession
+        case .timingOffsetDetection: timingOffsetDetectionSession
+        case .continuousRhythmMatching: continuousRhythmMatchingSession
+        case .settings, .profile: nil
         }
+    }
+
+    private var currentSession: (any TrainingSession)? {
+        guard let destination = currentTrainingDestination else { return nil }
+        return session(for: destination)
+    }
+
+    var isTrainingActive: Bool {
+        guard let session = currentSession else { return false }
+        return !session.isIdle
     }
 
     var shouldAutoStartTraining: Bool {
@@ -160,14 +169,7 @@ final class TrainingLifecycleCoordinator {
     }
 
     func stopCurrentSession() {
-        guard let destination = currentTrainingDestination else { return }
-        switch destination {
-        case .pitchDiscrimination: pitchDiscriminationSession.stop()
-        case .pitchMatching: pitchMatchingSession.stop()
-        case .timingOffsetDetection: timingOffsetDetectionSession.stop()
-        case .continuousRhythmMatching: continuousRhythmMatchingSession.stop()
-        case .settings, .profile: break
-        }
+        currentSession?.stop()
     }
 
     // MARK: - Menu Navigation
