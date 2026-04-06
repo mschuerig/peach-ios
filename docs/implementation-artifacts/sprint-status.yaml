@@ -611,7 +611,7 @@ development_status:
   75-1-domain-vocabulary-constants-clamping-isolation: done
   75-12-training-directory-grouping: done
   75-11-rhythm-to-timing-naming-alignment: done
-  75-9-core-dependency-direction-cleanup: review
+  75-9-core-dependency-direction-cleanup: done
   75-2-audio-engine-render-callback-and-channel-unification: ready-for-dev
   75-6-composition-root-decomposition: ready-for-dev
   75-3-training-screen-modifier: ready-for-dev

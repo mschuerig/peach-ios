@@ -1,6 +1,6 @@
 # Story 75.9: Core Dependency Direction — DuplicateKey and Data Store
 
-Status: review
+Status: done
 
 ## Story
 
