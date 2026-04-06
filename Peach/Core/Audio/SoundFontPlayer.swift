@@ -148,7 +148,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     /// implementation detail, not a musical tuning choice.
     nonisolated static func decompose(frequency: Frequency) -> (note: UInt8, cents: Cents) {
         let exactMidi = Double(MIDINote.a4.rawValue)
-            + Double(Interval.octave.semitones) * log2(frequency.rawValue / Frequency.concert440.rawValue)
+            + Double(Interval.octave.semitones) * log2(frequency / Frequency.concert440)
         let roundedMidi = Int(exactMidi.rounded())
         let centsRemainder = (exactMidi - Double(roundedMidi)) * Cents.perSemitone
         let clampedMidi = roundedMidi.clamped(to: MIDINote.validRange)

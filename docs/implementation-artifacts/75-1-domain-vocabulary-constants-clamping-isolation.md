@@ -115,11 +115,13 @@ None
 - All tests pass: 1707 iOS, 1700 macOS
 - Added arithmetic operators to `Cents` (+, -, unary -, scalar *, /, ratio /) and distance operator to `MIDINote` (-)
 - Replaced ~15 `.rawValue` accesses across domain layer with operator expressions
+- Added arithmetic operators to `Frequency` (scalar *, ratio /) and replaced 4 `.rawValue` accesses in TuningSystem, SoundFontPlayer, PitchMatchingSession
+- Changed `PitchMatchingSession.sliderFrequency` return type from `Double?` to `Frequency?` and `commitResult` parameter from `Double` to `Frequency`
 
 ### File List
 - `Peach/Core/Music/MIDINote.swift` — added `a4` constant, `noteNames` static, `-` distance operator
 - `Peach/Core/Music/Cents.swift` — added `perSemitone`, `perOctave` as Cents, `nonisolated` struct, arithmetic operators
-- `Peach/Core/Music/Frequency.swift` — `nonisolated` struct
+- `Peach/Core/Music/Frequency.swift` — `nonisolated` struct, arithmetic operators (scalar *, ratio /)
 - `Peach/Core/Music/AmplitudeDB.swift` — `nonisolated` struct
 - `Peach/Core/Music/NoteDuration.swift` — `nonisolated` struct
 - `Peach/Core/Music/MIDIVelocity.swift` — added `mezzoPiano` constant
@@ -127,8 +129,8 @@ None
 - `Peach/Core/Music/NoteRange.swift` — used MIDINote distance operator
 - `Peach/Core/Music/Interval.swift` — used MIDINote distance operator
 - `Peach/Core/Music/DirectedInterval.swift` — used MIDINote comparison directly
-- `Peach/Core/Music/TuningSystem.swift` — used Cents operators and MIDINote distance
-- `Peach/Core/Audio/SoundFontPlayer.swift` — replaced raw literals in `decompose()`, used `PitchBendValue(clamping:)` and Cents operators
+- `Peach/Core/Music/TuningSystem.swift` — used Cents operators, MIDINote distance, and Frequency scaling
+- `Peach/Core/Audio/SoundFontPlayer.swift` — replaced raw literals in `decompose()`, used `PitchBendValue(clamping:)`, Cents operators, and Frequency ratio
 - `Peach/Core/Audio/SoundFontPlaybackHandle.swift` — used Cents operators
 - `Peach/Core/Audio/SoundFontEngine.swift` — used Cents operators
 - `Peach/App/SettingsCoordinator.swift` — used `MIDINote.a4` and `MIDIVelocity.mezzoPiano`
@@ -137,11 +139,12 @@ None
 - `Peach/PitchDiscrimination/PitchDiscriminationStoreAdapter.swift` — used MIDINote distance operator
 - `Peach/PitchDiscrimination/PitchDiscriminationTrial.swift` — used Cents comparison directly
 - `Peach/PitchMatching/PitchMatchingSettings.swift` — used `.mezzoPiano`
-- `Peach/PitchMatching/PitchMatchingSession.swift` — used Cents operators
+- `Peach/PitchMatching/PitchMatchingSession.swift` — used Cents and Frequency operators, typed sliderFrequency as Frequency
 - `Peach/PitchMatching/PitchMatchingStoreAdapter.swift` — used MIDINote distance operator
 - `PeachTests/Core/Music/MIDINoteTests.swift` — added tests for `a4` constant and distance operator
 - `PeachTests/Core/Music/CentsTests.swift` — added tests for `perSemitone` and arithmetic operators
 - `PeachTests/Core/Music/PitchBendValueTests.swift` — added tests for clamping initializer
+- `PeachTests/Core/Music/FrequencyTests.swift` — added tests for arithmetic operators
 
 ## Change Log
 
@@ -149,3 +152,4 @@ None
 - 2026-04-06: Implementation complete — all domain constants, clamping, isolation, and fail-loud changes applied
 - 2026-04-06: Simplify review — `PitchBendValue(clamping:)` now uses `.clamped(to:)`; `Cents.perOctave` changed to `Cents` type for consistency with `perSemitone`; removed unnecessary doc comment from `perSemitone`
 - 2026-04-06: Added arithmetic operators to `Cents` and distance operator to `MIDINote`; replaced ~15 `.rawValue` accesses with operator expressions
+- 2026-04-06: Added Frequency arithmetic operators (scalar *, ratio /); replaced 4 `.rawValue` accesses; typed `sliderFrequency` as `Frequency?`

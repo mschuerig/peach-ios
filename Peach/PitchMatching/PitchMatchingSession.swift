@@ -128,7 +128,7 @@ final class PitchMatchingSession: TrainingSession {
         if resumeSliderContinuationIfNeeded() { return }
         guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
         Task {
-            try? await currentHandle?.adjustFrequency(Frequency(frequency))
+            try? await currentHandle?.adjustFrequency(frequency)
         }
     }
 
@@ -183,13 +183,13 @@ final class PitchMatchingSession: TrainingSession {
         return true
     }
 
-    private func sliderFrequency(for value: Double) -> Double? {
+    private func sliderFrequency(for value: Double) -> Frequency? {
         guard let referenceFrequency, let trial = currentTrial, let settings else { return nil }
         let centOffset = trial.initialCentOffset + value * settings.initialCentOffsetRange.upperBound
-        return referenceFrequency.rawValue * pow(2.0, centOffset / Cents.perOctave)
+        return referenceFrequency * pow(2.0, centOffset / Cents.perOctave)
     }
 
-    private func commitResult(userFrequency: Double) {
+    private func commitResult(userFrequency: Frequency) {
         guard state == .playingTunable else { return }
         guard let trial = currentTrial, let settings else { return }
 
@@ -202,7 +202,7 @@ final class PitchMatchingSession: TrainingSession {
         }
 
         guard let referenceFrequency else { return }
-        let userCentError = log2(userFrequency / referenceFrequency.rawValue) * Cents.perOctave
+        let userCentError = log2(userFrequency / referenceFrequency) * Cents.perOctave
         logger.info("Result: ref=\(trial.referenceNote.rawValue), target=\(trial.targetNote.rawValue), initialOffset=\(trial.initialCentOffset.rawValue)cents, userCentError=\(userCentError.rawValue)cents")
 
         let result = CompletedPitchMatchingTrial(

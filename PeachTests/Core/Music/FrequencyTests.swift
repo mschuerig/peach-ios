@@ -43,6 +43,32 @@ struct FrequencyTests {
         #expect(Frequency(880.0) > Frequency(440.0))
     }
 
+    // MARK: - Arithmetic Operators
+
+    @Test("scalar multiplication: Frequency * Double")
+    func scalarMultiplyRight() async {
+        let result = Frequency(440.0) * 2.0
+        #expect(result.rawValue == 880.0)
+    }
+
+    @Test("scalar multiplication: Double * Frequency")
+    func scalarMultiplyLeft() async {
+        let result = 0.5 * Frequency(440.0)
+        #expect(result.rawValue == 220.0)
+    }
+
+    @Test("ratio division: Frequency / Frequency returns Double")
+    func ratioDivision() async {
+        let result: Double = Frequency(880.0) / Frequency(440.0)
+        #expect(result == 2.0)
+    }
+
+    @Test("ratio of concert440 to itself is 1.0")
+    func ratioDivisionSelf() async {
+        let result: Double = Frequency.concert440 / Frequency.concert440
+        #expect(result == 1.0)
+    }
+
     // MARK: - Hashable
 
     @Test("Equal frequencies have same hash")

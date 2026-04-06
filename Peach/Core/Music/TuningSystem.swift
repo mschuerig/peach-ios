@@ -49,7 +49,7 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
 
     func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency {
         let cents = totalCentOffset(for: note)
-        return Frequency(referencePitch.rawValue * pow(2.0, cents / Cents.perOctave))
+        return referencePitch * pow(2.0, cents / Cents.perOctave)
     }
 
     func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency {

@@ -22,6 +22,22 @@ nonisolated struct Frequency: Hashable, Comparable, Sendable {
     }
 }
 
+// MARK: - Arithmetic
+
+nonisolated extension Frequency {
+    static func * (lhs: Frequency, rhs: Double) -> Frequency {
+        Frequency(lhs.rawValue * rhs)
+    }
+
+    static func * (lhs: Double, rhs: Frequency) -> Frequency {
+        Frequency(lhs * rhs.rawValue)
+    }
+
+    static func / (lhs: Frequency, rhs: Frequency) -> Double {
+        lhs.rawValue / rhs.rawValue
+    }
+}
+
 // MARK: - ExpressibleByFloatLiteral
 
 extension Frequency: ExpressibleByFloatLiteral {
