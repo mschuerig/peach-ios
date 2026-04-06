@@ -107,9 +107,9 @@ struct SpectrogramData: Sendable {
         }
 
         // Collect all metrics per (TempoRange, Direction)
-        var metricsMap: [TempoRange: [RhythmDirection: [MetricPoint]]] = [:]
+        var metricsMap: [TempoRange: [TimingDirection: [MetricPoint]]] = [:]
         for range in TempoRange.defaultRanges {
-            for direction in RhythmDirection.allCases {
+            for direction in TimingDirection.allCases {
                 let key = StatisticsKey.rhythm(mode, range, direction)
                 if let summary = profile.statistics(for: key) {
                     let metrics = summary.metrics

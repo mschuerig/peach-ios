@@ -152,9 +152,9 @@ struct TrainingLifecycleCoordinatorTests {
     func trainingScreenAppearedDoesNotAutoStartMacOS() {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
 
-        coordinator.trainingScreenAppeared(destination: .rhythmOffsetDetection)
+        coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
 
-        #expect(coordinator.currentTrainingDestination == .rhythmOffsetDetection)
+        #expect(coordinator.currentTrainingDestination == .timingOffsetDetection)
         #expect(!coordinator.isTrainingActive)
     }
 
@@ -310,7 +310,7 @@ struct TrainingLifecycleCoordinatorTests {
     @Test("startCurrentSession dispatches to rhythm offset detection")
     func startCurrentSessionDispatchesRhythm() async throws {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
-        coordinator.trainingScreenAppeared(destination: .rhythmOffsetDetection)
+        coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
 
         coordinator.startCurrentSession()
 
@@ -447,9 +447,9 @@ struct TrainingLifecycleCoordinatorTests {
                 profile: profile,
                 audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
-            rhythmOffsetDetectionSession: RhythmOffsetDetectionSession(
+            timingOffsetDetectionSession: TimingOffsetDetectionSession(
                 rhythmPlayer: MockRhythmPlayer(),
-                strategy: MockNextRhythmOffsetDetectionStrategy(),
+                strategy: MockNextTimingOffsetDetectionStrategy(),
                 profile: profile,
                 sampleRate: .standard48000,
                 audioInterruptionObserver: NoOpAudioInterruptionObserver()

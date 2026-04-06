@@ -38,8 +38,8 @@ private struct PitchMatchingSessionKey: EnvironmentKey {
     static var defaultValue: PitchMatchingSession = .stub
 }
 
-private struct RhythmOffsetDetectionSessionKey: EnvironmentKey {
-    static var defaultValue: RhythmOffsetDetectionSession = .stub
+private struct TimingOffsetDetectionSessionKey: EnvironmentKey {
+    static var defaultValue: TimingOffsetDetectionSession = .stub
 }
 
 private struct ContinuousRhythmMatchingSessionKey: EnvironmentKey {
@@ -71,9 +71,9 @@ extension EnvironmentValues {
         get { self[PitchMatchingSessionKey.self] }
         set { self[PitchMatchingSessionKey.self] = newValue }
     }
-    var rhythmOffsetDetectionSession: RhythmOffsetDetectionSession {
-        get { self[RhythmOffsetDetectionSessionKey.self] }
-        set { self[RhythmOffsetDetectionSessionKey.self] = newValue }
+    var timingOffsetDetectionSession: TimingOffsetDetectionSession {
+        get { self[TimingOffsetDetectionSessionKey.self] }
+        set { self[TimingOffsetDetectionSessionKey.self] = newValue }
     }
     var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession {
         get { self[ContinuousRhythmMatchingSessionKey.self] }

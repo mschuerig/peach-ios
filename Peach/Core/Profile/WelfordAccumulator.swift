@@ -16,9 +16,9 @@ extension Cents: WelfordMeasurement {
     }
 }
 
-// MARK: - RhythmOffset + WelfordMeasurement
+// MARK: - TimingOffset + WelfordMeasurement
 
-extension RhythmOffset: WelfordMeasurement {
+extension TimingOffset: WelfordMeasurement {
     var statisticalValue: Double {
         duration / .milliseconds(1)
     }

@@ -69,8 +69,8 @@ struct StartScreen: View {
                 SettingsScreen()
             case .profile:
                 ProfileScreen()
-            case .rhythmOffsetDetection:
-                RhythmOffsetDetectionScreen()
+            case .timingOffsetDetection:
+                TimingOffsetDetectionScreen()
             case .continuousRhythmMatching:
                 ContinuousRhythmMatchingScreen()
             }
@@ -152,8 +152,8 @@ struct StartScreen: View {
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
-            NavigationLink(value: NavigationDestination.rhythmOffsetDetection) {
-                trainingCard("Compare", systemImage: "metronome", mode: .rhythmOffsetDetection)
+            NavigationLink(value: NavigationDestination.timingOffsetDetection) {
+                trainingCard("Compare", systemImage: "metronome", mode: .timingOffsetDetection)
             }
             .buttonStyle(TrainingCardButtonStyle())
             .accessibilityLabel("Compare Timing")

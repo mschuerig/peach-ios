@@ -27,6 +27,8 @@ protocol TrainingDiscipline: Sendable {
     // MARK: - CSV Column Ownership
 
     /// The training type string used in CSV export/import (e.g., "pitchDiscrimination").
+    /// This is a stable wire-format identifier shared with other apps (e.g., peach-web)
+    /// and must not change when internal type names are renamed.
     var csvTrainingType: String { get }
 
     /// Column names specific to this discipline (excluding common columns: trainingType, timestamp).
@@ -53,3 +55,4 @@ protocol TrainingDiscipline: Sendable {
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int)
 }
+

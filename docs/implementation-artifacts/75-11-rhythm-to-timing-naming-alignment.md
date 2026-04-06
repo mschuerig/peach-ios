@@ -1,6 +1,6 @@
 # Story 75.11: Rhythm→Timing Naming Alignment
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,38 +28,39 @@ The walkthrough (Layer 1) noted that domain types use `RhythmOffset`, `RhythmDir
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define the naming mapping (AC: #1, #2, #3)
-  - [ ] `RhythmOffset` → `TimingOffset`
-  - [ ] `RhythmDirection` → `TimingDirection`
-  - [ ] `RhythmOffsetDetection*` → decide: `TimingOffsetDetection*` or `TimingComparison*` or just `TimingDetection*`
-  - [ ] Document the mapping before starting renames
+- [x] Task 1: Define the naming mapping (AC: #1, #2, #3)
+  - [x] `RhythmOffset` → `TimingOffset`
+  - [x] `RhythmDirection` → `TimingDirection`
+  - [x] `RhythmOffsetDetection*` → `TimingOffsetDetection*`
+  - [x] Document the mapping before starting renames
 
-- [ ] Task 2: Rename domain types in Core/Music/ (AC: #1, #2)
-  - [ ] Rename `RhythmOffset` → `TimingOffset` (type, file, all references)
-  - [ ] Rename `RhythmDirection` → `TimingDirection` (type, file, all references)
-  - [ ] Update `WelfordMeasurement` conformance on the renamed type
+- [x] Task 2: Rename domain types in Core/Music/ (AC: #1, #2)
+  - [x] Rename `RhythmOffset` → `TimingOffset` (type, file, all references)
+  - [x] Rename `RhythmDirection` → `TimingDirection` (type, file, all references)
+  - [x] Update `WelfordMeasurement` conformance on the renamed type
 
-- [ ] Task 3: Rename RhythmOffsetDetection feature types (AC: #3)
-  - [ ] Rename session, screen, observer, store adapter, profile adapter, discipline, trial, settings, feedback view, dot view, stats view
-  - [ ] Rename directory and file names
-  - [ ] Update `NavigationDestination` case
-  - [ ] Update `TrainingDisciplineID` case
+- [x] Task 3: Rename RhythmOffsetDetection feature types (AC: #3)
+  - [x] Rename session, screen, observer, store adapter, profile adapter, discipline, trial, settings, feedback view, dot view, stats view
+  - [x] Rename directory and file names
+  - [x] Update `NavigationDestination` case
+  - [x] Update `TrainingDisciplineID` case
 
-- [ ] Task 4: Preserve CSV backward compatibility (AC: #4)
-  - [ ] Check `trainingType` column values in CSV export — if they use the old name, add a migration or alias in the CSV import parser
-  - [ ] Test import of a CSV exported with the old naming
+- [x] Task 4: Preserve CSV backward compatibility (AC: #4)
+  - [x] `csvTrainingType = "rhythmOffsetDetection"` preserved as stable wire format (shared with peach-web)
+  - [x] All CSV string literals kept unchanged — no alias mechanism needed
 
-- [ ] Task 5: Update localization (AC: #5)
-  - [ ] Search for localization keys referencing old names
-  - [ ] Update keys where they reference type identifiers
-  - [ ] Verify user-facing strings are unaffected (they already say "Timing")
+- [x] Task 5: Update localization (AC: #5)
+  - [x] Search for localization keys referencing old names
+  - [x] Auto-generated comments updated from `RhythmOffsetDetectionScreen` → `TimingOffsetDetectionScreen`
+  - [x] User-facing strings unaffected (already say "Timing")
 
-- [ ] Task 6: Update tests (AC: #7)
-  - [ ] Rename test files and test classes
-  - [ ] Update all test references
+- [x] Task 6: Update tests (AC: #7)
+  - [x] Rename test files and test classes
+  - [x] Update all test references
 
-- [ ] Task 7: Build and test both platforms (AC: #7)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 7: Build and test both platforms (AC: #7)
+  - [x] iOS: 1711 tests passed
+  - [x] macOS: 1704 tests passed
 
 ## Dev Notes
 
@@ -94,10 +95,47 @@ The CSV `trainingType` column likely stores `"rhythmOffsetDetection"`. After ren
 ## Dev Agent Record
 
 ### Agent Model Used
-### Debug Log References
+Claude Opus 4.6
+
 ### Completion Notes List
+- SwiftData model `RhythmOffsetDetectionRecord` kept as-is inside `SchemaV1` to avoid schema migration; typealias `TimingOffsetDetectionRecord = SchemaV1.RhythmOffsetDetectionRecord` bridges the rename
+- CSV wire format string `"rhythmOffsetDetection"` preserved unchanged (stable identifier shared with peach-web)
+- `TrainingDisciplineID.timingOffsetDetection` raw value changed to `"timing-offset-detection"`
+- ~60 source files and ~30 test files updated across the rename
+
 ### File List
+**Core domain types renamed:**
+- `Peach/Core/Music/TimingOffset.swift` (was RhythmOffset.swift)
+- `Peach/Core/Music/TimingDirection.swift` (was RhythmDirection.swift)
+
+**Core infrastructure updated:**
+- `Peach/Core/Data/TimingOffsetDetectionRecord.swift` (typealias, was RhythmOffsetDetectionRecord.swift)
+- `Peach/Core/Data/TrainingDataStore.swift`
+- `Peach/Core/Data/DuplicateKey.swift`
+- `Peach/Core/Profile/StatisticsKey.swift`
+- `Peach/Core/Profile/SpectrogramData.swift`
+- `Peach/Core/Profile/WelfordAccumulator.swift`
+- `Peach/Core/Training/TrainingDisciplineID.swift`
+- `Peach/Core/Training/TrainingDisciplineRegistry.swift`
+- `Peach/Core/Algorithm/NextTimingOffsetDetectionStrategy.swift`
+- `Peach/Core/Algorithm/AdaptiveTimingOffsetDetectionStrategy.swift`
+
+**Feature directory renamed:** `Peach/Training/TimingOffsetDetection/` (was RhythmOffsetDetection/)
+
+**App layer updated:**
+- `Peach/App/NavigationDestination.swift`
+- `Peach/App/EnvironmentKeys.swift`
+- `Peach/App/PeachApp.swift`
+- `Peach/App/TrainingLifecycleCoordinator.swift`
+- `Peach/App/PreviewDefaults.swift`
+- `Peach/App/PeachCommands.swift`
+- `Peach/App/Platform/HapticFeedbackManager.swift`
+- `Peach/App/Platform/NoOpHapticFeedbackManager.swift`
+- `Peach/Start/StartScreen.swift`
+- `Peach/Profile/ProfileScreen.swift`
+- `Peach/Training/ContinuousRhythmMatching/` (TimingOffset/TimingDirection refs)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-06: Implementation complete — all renames applied, both platforms green

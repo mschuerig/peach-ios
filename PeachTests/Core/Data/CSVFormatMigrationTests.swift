@@ -122,8 +122,8 @@ struct CSVFormatMigrationTests {
         #expect(migrated[0]["userOffsetMs"] == nil)
     }
 
-    @Test("V2ToV3Migration preserves rhythmOffsetDetection training type")
-    func v2ToV3PreservesRhythmOffsetDetection() async {
+    @Test("V2ToV3Migration preserves timingOffsetDetection training type")
+    func v2ToV3PreservesTimingOffsetDetection() async {
         let migration = V2ToV3Migration()
         let rows: [[String: String]] = [
             ["trainingType": "rhythmOffsetDetection", "timestamp": "2026-03-03T14:30:00Z",

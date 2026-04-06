@@ -2,7 +2,7 @@ import Foundation
 
 struct GapResult: Sendable {
     let position: StepPosition
-    let offset: RhythmOffset
+    let offset: TimingOffset
 }
 
 struct CompletedContinuousRhythmMatchingTrial: Sendable {

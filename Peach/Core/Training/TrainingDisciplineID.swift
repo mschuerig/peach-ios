@@ -6,7 +6,7 @@ enum TrainingDisciplineID: String, CaseIterable, Sendable {
     case intervalPitchDiscrimination = "interval-discrimination"
     case unisonPitchMatching = "pitch-matching"
     case intervalPitchMatching = "interval-matching"
-    case rhythmOffsetDetection = "rhythm-offset-detection"
+    case timingOffsetDetection = "timing-offset-detection"
     case continuousRhythmMatching = "continuous-rhythm-matching"
 
     var config: TrainingDisciplineConfig {

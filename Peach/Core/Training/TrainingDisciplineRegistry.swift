@@ -22,7 +22,7 @@ final class TrainingDisciplineRegistry: Sendable {
             IntervalPitchDiscriminationDiscipline(),
             UnisonPitchMatchingDiscipline(),
             IntervalPitchMatchingDiscipline(),
-            RhythmOffsetDetectionDiscipline(),
+            TimingOffsetDetectionDiscipline(),
             ContinuousRhythmMatchingDiscipline(),
         ]
         self.all = disciplines

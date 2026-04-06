@@ -51,10 +51,10 @@ final class HapticFeedbackManager: HapticFeedback, PitchDiscriminationObserver {
     }
 }
 
-// MARK: - RhythmOffsetDetectionObserver
+// MARK: - TimingOffsetDetectionObserver
 
-extension HapticFeedbackManager: RhythmOffsetDetectionObserver {
-    func rhythmOffsetDetectionCompleted(_ result: CompletedRhythmOffsetDetectionTrial) {
+extension HapticFeedbackManager: TimingOffsetDetectionObserver {
+    func timingOffsetDetectionCompleted(_ result: CompletedTimingOffsetDetectionTrial) {
         if !result.isCorrect {
             playIncorrectFeedback()
         }

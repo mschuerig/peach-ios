@@ -29,7 +29,7 @@ struct CSVImportParserTests {
     }
 
     /// 19-column rhythm offset detection row (V3 format).
-    private var validRhythmOffsetDetectionRow: String {
+    private var validTimingOffsetDetectionRow: String {
         "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,,,,"
     }
 
@@ -41,8 +41,8 @@ struct CSVImportParserTests {
         (result.records["pitchMatching"] ?? []).compactMap { $0 as? PitchMatchingRecord }
     }
 
-    private func rhythmOffsetDetections(from result: CSVImportParser.ImportResult) -> [RhythmOffsetDetectionRecord] {
-        (result.records["rhythmOffsetDetection"] ?? []).compactMap { $0 as? RhythmOffsetDetectionRecord }
+    private func rhythmOffsetDetections(from result: CSVImportParser.ImportResult) -> [TimingOffsetDetectionRecord] {
+        (result.records["rhythmOffsetDetection"] ?? []).compactMap { $0 as? TimingOffsetDetectionRecord }
     }
 
     private func continuousRhythmMatchings(from result: CSVImportParser.ImportResult) -> [ContinuousRhythmMatchingRecord] {
@@ -499,7 +499,7 @@ struct CSVImportParserTests {
     }
 
     @Test("v2 rhythm offset detection CSV imports successfully after migration")
-    func v2RhythmOffsetDetectionImports() async {
+    func v2TimingOffsetDetectionImports() async {
         let csv = makeV2CSV(["rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"])
         let result = CSVImportParser.parse(csv)
         let rhythms = rhythmOffsetDetections(from: result)
@@ -602,8 +602,8 @@ struct CSVImportParserTests {
     // MARK: - Rhythm Types
 
     @Test("parses rhythm offset detection row")
-    func parsesRhythmOffsetDetectionRow() async {
-        let csv = makeCSV([validRhythmOffsetDetectionRow])
+    func parsesTimingOffsetDetectionRow() async {
+        let csv = makeCSV([validTimingOffsetDetectionRow])
         let result = CSVImportParser.parse(csv)
         let rhythms = rhythmOffsetDetections(from: result)
         #expect(rhythms.count == 1)
@@ -617,7 +617,7 @@ struct CSVImportParserTests {
     func parsesMixedPitchAndRhythmTypes() async {
         let csv = makeCSV([
             validPitchDiscriminationRow,
-            validRhythmOffsetDetectionRow,
+            validTimingOffsetDetectionRow,
         ])
         let result = CSVImportParser.parse(csv)
         #expect(pitchDiscriminations(from: result).count == 1)
@@ -627,7 +627,7 @@ struct CSVImportParserTests {
 
     @Test("rhythm-only file produces non-empty result")
     func rhythmOnlyFileIsValid() async {
-        let csv = makeCSV([validRhythmOffsetDetectionRow])
+        let csv = makeCSV([validTimingOffsetDetectionRow])
         let result = CSVImportParser.parse(csv)
         #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(pitchMatchings(from: result).isEmpty)

@@ -301,56 +301,56 @@ struct PerceptualProfileTests {
 
     // MARK: - Rhythm Offset Detection via Observer
 
-    @Test("RhythmOffsetDetectionObserver routes to correct key")
+    @Test("TimingOffsetDetectionObserver routes to correct key")
     func rhythmOffsetDetectionObserverDelegates() async {
         let profile = PerceptualProfile()
 
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-20)),
+            offset: TimingOffset(.milliseconds(-20)),
             isCorrect: true
         )
-        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(result)
+        TimingOffsetDetectionProfileAdapter(profile: profile).timingOffsetDetectionCompleted(result)
 
-        let stats = profile.statistics(for: .rhythm(.rhythmOffsetDetection, .fast, .early))
+        let stats = profile.statistics(for: .rhythm(.timingOffsetDetection, .fast, .early))
         #expect(stats?.recordCount == 1)
         #expect(abs((stats?.welfordMean ?? 0) - 20.0) < 0.01)
     }
 
-    @Test("RhythmOffsetDetectionObserver skips incorrect results")
+    @Test("TimingOffsetDetectionObserver skips incorrect results")
     func rhythmOffsetDetectionObserverSkipsIncorrect() async {
         let profile = PerceptualProfile()
 
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-20)),
+            offset: TimingOffset(.milliseconds(-20)),
             isCorrect: false
         )
-        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(result)
+        TimingOffsetDetectionProfileAdapter(profile: profile).timingOffsetDetectionCompleted(result)
 
-        #expect(profile.statistics(for: .rhythm(.rhythmOffsetDetection, .fast, .early)) == nil)
+        #expect(profile.statistics(for: .rhythm(.timingOffsetDetection, .fast, .early)) == nil)
     }
 
     // MARK: - Rhythm Builder
 
     @Test("Builder initialization with rhythm offset detection records rebuilds correctly")
-    func builderWithRhythmOffsetDetectionRecords() async {
+    func builderWithTimingOffsetDetectionRecords() async {
         let now = Date()
 
         let profile = PerceptualProfile { builder in
             builder.addPoint(
                 MetricPoint(timestamp: now, value: 15.0),
-                for: .rhythm(.rhythmOffsetDetection, .fast, .early),
+                for: .rhythm(.timingOffsetDetection, .fast, .early),
                 isCorrect: true
             )
             builder.addPoint(
                 MetricPoint(timestamp: now.addingTimeInterval(1), value: 25.0),
-                for: .rhythm(.rhythmOffsetDetection, .fast, .early),
+                for: .rhythm(.timingOffsetDetection, .fast, .early),
                 isCorrect: true
             )
         }
 
-        let stats = profile.statistics(for: .rhythm(.rhythmOffsetDetection, .fast, .early))
+        let stats = profile.statistics(for: .rhythm(.timingOffsetDetection, .fast, .early))
         #expect(stats?.recordCount == 2)
         #expect(abs((stats?.welfordMean ?? 0) - 20.0) < 0.01) // (15+25)/2
     }
@@ -362,17 +362,17 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile { builder in
             builder.addPoint(
                 MetricPoint(timestamp: now, value: 15.0),
-                for: .rhythm(.rhythmOffsetDetection, .fast, .early),
+                for: .rhythm(.timingOffsetDetection, .fast, .early),
                 isCorrect: true
             )
             builder.addPoint(
                 MetricPoint(timestamp: now.addingTimeInterval(1), value: 100.0),
-                for: .rhythm(.rhythmOffsetDetection, .fast, .early),
+                for: .rhythm(.timingOffsetDetection, .fast, .early),
                 isCorrect: false
             )
         }
 
-        let stats = profile.statistics(for: .rhythm(.rhythmOffsetDetection, .fast, .early))
+        let stats = profile.statistics(for: .rhythm(.timingOffsetDetection, .fast, .early))
         #expect(stats?.recordCount == 1)
     }
 
@@ -382,17 +382,17 @@ struct PerceptualProfileTests {
     func trainedTempoRangesReturnsCorrectSet() async {
         let profile = PerceptualProfile()
 
-        let fast = CompletedRhythmOffsetDetectionTrial(
+        let fast = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-10)),
+            offset: TimingOffset(.milliseconds(-10)),
             isCorrect: true
         )
-        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(fast)
+        TimingOffsetDetectionProfileAdapter(profile: profile).timingOffsetDetectionCompleted(fast)
 
         let medium = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(90),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(5)))
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(5)))
             ]
         )
         ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(medium)
@@ -408,18 +408,18 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile()
 
         // 2 samples at tempo 120 early, mean offset 20ms
-        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
-            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-15)), isCorrect: true
+        TimingOffsetDetectionProfileAdapter(profile: profile).timingOffsetDetectionCompleted(CompletedTimingOffsetDetectionTrial(
+            tempo: TempoBPM(120), offset: TimingOffset(.milliseconds(-15)), isCorrect: true
         ))
-        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
-            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-25)), isCorrect: true
+        TimingOffsetDetectionProfileAdapter(profile: profile).timingOffsetDetectionCompleted(CompletedTimingOffsetDetectionTrial(
+            tempo: TempoBPM(120), offset: TimingOffset(.milliseconds(-25)), isCorrect: true
         ))
 
         // 1 sample at tempo 90 late, mean offset 10ms
         ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(90),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10)))
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(10)))
             ]
         ))
 
@@ -441,8 +441,8 @@ struct PerceptualProfileTests {
         let profile = PerceptualProfile()
 
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
-        RhythmOffsetDetectionProfileAdapter(profile: profile).rhythmOffsetDetectionCompleted(CompletedRhythmOffsetDetectionTrial(
-            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-10)), isCorrect: true
+        TimingOffsetDetectionProfileAdapter(profile: profile).timingOffsetDetectionCompleted(CompletedTimingOffsetDetectionTrial(
+            tempo: TempoBPM(120), offset: TimingOffset(.milliseconds(-10)), isCorrect: true
         ))
 
         profile.resetAll()
@@ -461,8 +461,8 @@ struct PerceptualProfileTests {
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(100),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(-15))),
-                GapResult(position: .third, offset: RhythmOffset(.milliseconds(-5)))
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(-15))),
+                GapResult(position: .third, offset: TimingOffset(.milliseconds(-5)))
             ]
         )
         ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(trial)
@@ -479,8 +479,8 @@ struct PerceptualProfileTests {
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(130),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(20))),
-                GapResult(position: .second, offset: RhythmOffset(.milliseconds(10)))
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(20))),
+                GapResult(position: .second, offset: TimingOffset(.milliseconds(10)))
             ]
         )
         ContinuousRhythmMatchingProfileAdapter(profile: profile).continuousRhythmMatchingCompleted(trial)
@@ -502,7 +502,7 @@ struct PerceptualProfileTests {
 
         // No rhythm stats should exist for any tempo range / direction
         for range in TempoRange.defaultRanges {
-            for direction in RhythmDirection.allCases {
+            for direction in TimingDirection.allCases {
                 #expect(profile.statistics(for: .rhythm(.continuousRhythmMatching, range, direction)) == nil)
             }
         }

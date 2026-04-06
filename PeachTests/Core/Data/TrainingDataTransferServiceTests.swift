@@ -10,7 +10,7 @@ struct TrainingDataTransferServiceTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     private func makeService(
@@ -273,17 +273,17 @@ struct TrainingDataTransferServiceTests {
     func performImportRhythmOnly() async throws {
         let (service, dataStore) = try makeService()
 
-        let rhythmOffset = RhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.3, isCorrect: true, timestamp: fixedDate())
+        let timingOffset = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.3, isCorrect: true, timestamp: fixedDate())
 
         let parseResult = CSVImportParser.ImportResult(
             records: [
-                "rhythmOffsetDetection": [rhythmOffset],
+                "rhythmOffsetDetection": [timingOffset],
             ],
             errors: []
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
-        #expect(summary.imported(for: .rhythmOffsetDetection) == 1)
+        #expect(summary.imported(for: .timingOffsetDetection) == 1)
         #expect(summary.totalImported == 1)
-        #expect(try dataStore.fetchAllRhythmOffsetDetections().count == 1)
+        #expect(try dataStore.fetchAllTimingOffsetDetections().count == 1)
     }
 }

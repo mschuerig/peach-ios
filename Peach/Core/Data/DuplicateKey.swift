@@ -62,7 +62,7 @@ func buildPitchDuplicateKeys(from store: TrainingDataStore) throws -> Set<PitchD
 func buildRhythmDuplicateKeys(from store: TrainingDataStore, trainingType: String) throws -> Set<RhythmDuplicateKey> {
     var keys = Set<RhythmDuplicateKey>()
     if trainingType == "rhythmOffsetDetection" {
-        for record in try store.fetchAllRhythmOffsetDetections() {
+        for record in try store.fetchAllTimingOffsetDetections() {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: trainingType))
         }
         for record in try store.fetchAllContinuousRhythmMatchings() {
@@ -72,7 +72,7 @@ func buildRhythmDuplicateKeys(from store: TrainingDataStore, trainingType: Strin
         for record in try store.fetchAllContinuousRhythmMatchings() {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: trainingType))
         }
-        for record in try store.fetchAllRhythmOffsetDetections() {
+        for record in try store.fetchAllTimingOffsetDetections() {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: "rhythmOffsetDetection"))
         }
     }

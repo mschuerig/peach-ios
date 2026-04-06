@@ -11,7 +11,7 @@ struct TrainingDataStoreEdgeCaseTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     // MARK: - Edge Case Tests

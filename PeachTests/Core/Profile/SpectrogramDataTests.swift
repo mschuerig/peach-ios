@@ -135,9 +135,9 @@ struct SpectrogramDataTests {
         let profile = PerceptualProfile()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         #expect(data.columns.isEmpty)
         #expect(data.trainedRanges.isEmpty)
@@ -148,9 +148,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithSlowData()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         #expect(data.trainedRanges == [.slow])
         #expect(!data.columns.isEmpty)
@@ -161,9 +161,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithSlowAndFastData()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         #expect(data.trainedRanges == [.slow, .fast])
     }
@@ -173,9 +173,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithSlowAndFastData()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         // moderate range has no data — must not appear in trainedRanges or any cell
         #expect(!data.trainedRanges.contains(.moderate))
@@ -190,9 +190,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithKnownValue(ms: 10.0, range: .slow, direction: .early)
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         guard let column = data.columns.first,
               let cell = column.cells.first(where: { $0.tempoRange == .slow }) else {
@@ -213,9 +213,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithEarlyAndLateData()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         guard let column = data.columns.first,
               let cell = column.cells.first(where: { $0.tempoRange == .slow }) else {
@@ -232,9 +232,9 @@ struct SpectrogramDataTests {
     func columnsMatchBuckets() async {
         let profile = makeProfileWithSlowData()
         let timeline = ProgressTimeline(profile: profile)
-        let buckets = timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+        let buckets = timeline.allGranularityBuckets(for: .timingOffsetDetection)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
             timeBuckets: buckets
         )
@@ -246,9 +246,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithSlowAndFastData()
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         for column in data.columns {
             let ranges = column.cells.map(\.tempoRange)
@@ -268,22 +268,22 @@ struct SpectrogramDataTests {
             let now = Date()
             builder.addPoint(
                 MetricPoint(timestamp: now, value: 10.0),
-                for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+                for: .rhythm(.timingOffsetDetection, .slow, .early)
             )
             builder.addPoint(
                 MetricPoint(timestamp: now.addingTimeInterval(60), value: 20.0),
-                for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+                for: .rhythm(.timingOffsetDetection, .slow, .early)
             )
             builder.addPoint(
                 MetricPoint(timestamp: now.addingTimeInterval(120), value: 30.0),
-                for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+                for: .rhythm(.timingOffsetDetection, .slow, .early)
             )
         }
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         guard let column = data.columns.first,
               let cell = column.cells.first(where: { $0.tempoRange == .slow }),
@@ -304,9 +304,9 @@ struct SpectrogramDataTests {
         let profile = makeProfileWithSymmetricEarlyLate(ms: 50.0, range: .slow)
         let timeline = ProgressTimeline(profile: profile)
         let data = SpectrogramData.compute(
-            mode: .rhythmOffsetDetection,
+            mode: .timingOffsetDetection,
             profile: profile,
-            timeBuckets: timeline.allGranularityBuckets(for: .rhythmOffsetDetection)
+            timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         guard let column = data.columns.first,
               let cell = column.cells.first(where: { $0.tempoRange == .slow }),
@@ -394,7 +394,7 @@ struct SpectrogramDataTests {
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: 10.0 + Double(i)
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+                    for: .rhythm(.timingOffsetDetection, .slow, .early)
                 )
             }
         }
@@ -409,25 +409,25 @@ struct SpectrogramDataTests {
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: 10.0
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+                    for: .rhythm(.timingOffsetDetection, .slow, .early)
                 )
                 builder.addPoint(
                     MetricPoint(
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: 5.0
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, .fast, .late)
+                    for: .rhythm(.timingOffsetDetection, .fast, .late)
                 )
             }
         }
     }
 
-    private func makeProfileWithKnownValue(ms: Double, range: TempoRange, direction: RhythmDirection) -> PerceptualProfile {
+    private func makeProfileWithKnownValue(ms: Double, range: TempoRange, direction: TimingDirection) -> PerceptualProfile {
         PerceptualProfile { builder in
             let now = Date()
             builder.addPoint(
                 MetricPoint(timestamp: now, value: ms),
-                for: .rhythm(.rhythmOffsetDetection, range, direction)
+                for: .rhythm(.timingOffsetDetection, range, direction)
             )
         }
     }
@@ -441,14 +441,14 @@ struct SpectrogramDataTests {
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: ms
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, range, .early)
+                    for: .rhythm(.timingOffsetDetection, range, .early)
                 )
                 builder.addPoint(
                     MetricPoint(
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: ms
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, range, .late)
+                    for: .rhythm(.timingOffsetDetection, range, .late)
                 )
             }
         }
@@ -463,14 +463,14 @@ struct SpectrogramDataTests {
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: 8.0
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, .slow, .early)
+                    for: .rhythm(.timingOffsetDetection, .slow, .early)
                 )
                 builder.addPoint(
                     MetricPoint(
                         timestamp: now.addingTimeInterval(Double(i) * 60),
                         value: 12.0
                     ),
-                    for: .rhythm(.rhythmOffsetDetection, .slow, .late)
+                    for: .rhythm(.timingOffsetDetection, .slow, .late)
                 )
             }
         }

@@ -25,13 +25,13 @@ extension PerceptualProfile.Builder {
         }
     }
 
-    func feedRhythmOffsetDetections(_ records: [RhythmOffsetDetectionRecord]) {
+    func feedTimingOffsetDetections(_ records: [TimingOffsetDetectionRecord]) {
         for record in records {
-            let offset = RhythmOffset(.milliseconds(record.offsetMs))
+            let offset = TimingOffset(.milliseconds(record.offsetMs))
             guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
             addPoint(
                 MetricPoint(timestamp: record.timestamp, value: abs(record.offsetMs)),
-                for: .rhythm(.rhythmOffsetDetection, range, offset.direction),
+                for: .rhythm(.timingOffsetDetection, range, offset.direction),
                 isCorrect: record.isCorrect
             )
         }
@@ -143,8 +143,8 @@ extension PerceptualProfile {
     var trainedTempoRanges: [TempoRange] {
         var ranges = Set<TempoRange>()
         for range in TempoRange.defaultRanges {
-            for direction in RhythmDirection.allCases {
-                for mode in [TrainingDisciplineID.rhythmOffsetDetection, .continuousRhythmMatching] {
+            for direction in TimingDirection.allCases {
+                for mode in [TrainingDisciplineID.timingOffsetDetection, .continuousRhythmMatching] {
                     if statistics(for: .rhythm(mode, range, direction)) != nil {
                         ranges.insert(range)
                     }
@@ -158,8 +158,8 @@ extension PerceptualProfile {
         var totalCount = 0
         var weightedSum = 0.0
         for range in TempoRange.defaultRanges {
-            for direction in RhythmDirection.allCases {
-                for mode in [TrainingDisciplineID.rhythmOffsetDetection, .continuousRhythmMatching] {
+            for direction in TimingDirection.allCases {
+                for mode in [TrainingDisciplineID.timingOffsetDetection, .continuousRhythmMatching] {
                     if case .continuous(let stats) = statistics(for: .rhythm(mode, range, direction)),
                        stats.recordCount > 0 {
                         totalCount += stats.recordCount

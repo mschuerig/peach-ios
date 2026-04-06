@@ -76,7 +76,7 @@ struct PeachCommands: Commands {
             }
             Section("Rhythm") {
                 Button("Compare Timing") {
-                    navigate(to: .rhythmOffsetDetection)
+                    navigate(to: .timingOffsetDetection)
                 }
                 Button("Fill the Gap") {
                     navigate(to: .continuousRhythmMatching)
@@ -139,7 +139,7 @@ struct PeachCommands: Commands {
                 commandState?.helpSheetContent = .pitchMatching
             }
             Button("Rhythm Compare Help") {
-                commandState?.helpSheetContent = .rhythmOffsetDetection
+                commandState?.helpSheetContent = .timingOffsetDetection
             }
             Button("Fill the Gap Help") {
                 commandState?.helpSheetContent = .continuousRhythmMatching
@@ -160,7 +160,7 @@ enum HelpSheetContent: Identifiable, Hashable {
     case about
     case pitchDiscrimination
     case pitchMatching
-    case rhythmOffsetDetection
+    case timingOffsetDetection
     case continuousRhythmMatching
 
     var id: Self { self }
@@ -170,7 +170,7 @@ enum HelpSheetContent: Identifiable, Hashable {
         case .about: String(localized: "About Peach")
         case .pitchDiscrimination: String(localized: "Pitch Compare Help")
         case .pitchMatching: String(localized: "Pitch Match Help")
-        case .rhythmOffsetDetection: String(localized: "Rhythm Compare Help")
+        case .timingOffsetDetection: String(localized: "Rhythm Compare Help")
         case .continuousRhythmMatching: String(localized: "Fill the Gap Help")
         }
     }
@@ -183,8 +183,8 @@ enum HelpSheetContent: Identifiable, Hashable {
             PitchDiscriminationScreen.helpSections
         case .pitchMatching:
             PitchMatchingScreen.helpSections
-        case .rhythmOffsetDetection:
-            RhythmOffsetDetectionScreen.helpSections
+        case .timingOffsetDetection:
+            TimingOffsetDetectionScreen.helpSections
         case .continuousRhythmMatching:
             ContinuousRhythmMatchingScreen.helpSections
         }

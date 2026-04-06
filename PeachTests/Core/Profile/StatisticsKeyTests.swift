@@ -14,15 +14,15 @@ struct StatisticsKeyTests {
 
     @Test("rhythm keys with different ranges are distinct")
     func rhythmKeysDistinctByRange() async {
-        let key1 = StatisticsKey.rhythm(.rhythmOffsetDetection, .slow, .early)
-        let key2 = StatisticsKey.rhythm(.rhythmOffsetDetection, .fast, .early)
+        let key1 = StatisticsKey.rhythm(.timingOffsetDetection, .slow, .early)
+        let key2 = StatisticsKey.rhythm(.timingOffsetDetection, .fast, .early)
         #expect(key1 != key2)
     }
 
     @Test("rhythm keys with different directions are distinct")
     func rhythmKeysDistinctByDirection() async {
-        let key1 = StatisticsKey.rhythm(.rhythmOffsetDetection, .fast, .early)
-        let key2 = StatisticsKey.rhythm(.rhythmOffsetDetection, .fast, .late)
+        let key1 = StatisticsKey.rhythm(.timingOffsetDetection, .fast, .early)
+        let key2 = StatisticsKey.rhythm(.timingOffsetDetection, .fast, .late)
         #expect(key1 != key2)
     }
 
@@ -38,7 +38,7 @@ struct StatisticsKeyTests {
         let pitchKey = StatisticsKey.pitch(.unisonPitchDiscrimination)
         #expect(pitchKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.unisonPitchDiscrimination.config.statistics.ewmaHalflife)
 
-        let rhythmKey = StatisticsKey.rhythm(.rhythmOffsetDetection, .fast, .early)
-        #expect(rhythmKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.rhythmOffsetDetection.config.statistics.ewmaHalflife)
+        let rhythmKey = StatisticsKey.rhythm(.timingOffsetDetection, .fast, .early)
+        #expect(rhythmKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.timingOffsetDetection.config.statistics.ewmaHalflife)
     }
 }

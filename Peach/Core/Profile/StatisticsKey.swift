@@ -1,7 +1,7 @@
 /// Uniform key for looking up per-mode, per-context training statistics.
 enum StatisticsKey: Hashable, Sendable {
     case pitch(TrainingDisciplineID)
-    case rhythm(TrainingDisciplineID, TempoRange, RhythmDirection)
+    case rhythm(TrainingDisciplineID, TempoRange, TimingDirection)
 
     var statisticsConfig: StatisticsConfig {
         switch self {

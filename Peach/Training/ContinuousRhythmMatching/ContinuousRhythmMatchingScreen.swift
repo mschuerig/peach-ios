@@ -87,7 +87,7 @@ struct ContinuousRhythmMatchingScreen: View {
                 if let result = session.lastTrialResult,
                    let meanOffset = result.meanOffsetPercentage,
                    let meanMs = result.meanOffsetMs {
-                    Text(String(localized: "Mean offset: \(RhythmStatsView.percentageText(meanOffset, ms: meanMs))"))
+                    Text(String(localized: "Mean offset: \(TimingStatsView.percentageText(meanOffset, ms: meanMs))"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

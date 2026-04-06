@@ -67,7 +67,7 @@ struct SettingsCoordinatorTests {
         let container = try! ModelContainer(
             for: PitchDiscriminationRecord.self,
             PitchMatchingRecord.self,
-            RhythmOffsetDetectionRecord.self,
+            TimingOffsetDetectionRecord.self,
             ContinuousRhythmMatchingRecord.self,
             configurations: config
         )

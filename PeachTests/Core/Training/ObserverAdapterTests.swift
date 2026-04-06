@@ -149,59 +149,59 @@ struct ProfileAdapterTests {
         #expect(profile.updates[0].value == 2.0)
     }
 
-    // MARK: - RhythmOffsetDetectionProfileAdapter
+    // MARK: - TimingOffsetDetectionProfileAdapter
 
-    @Test("RhythmOffsetDetection profile adapter updates correct key for correct late trial")
+    @Test("TimingOffsetDetection profile adapter updates correct key for correct late trial")
     func rhythmOffsetDetectionProfileAdapterLate() async {
         let profile = MockProfileUpdating()
-        let adapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
+        let adapter = TimingOffsetDetectionProfileAdapter(profile: profile)
 
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(100),
-            offset: RhythmOffset(.milliseconds(12.5)),
+            offset: TimingOffset(.milliseconds(12.5)),
             isCorrect: true,
             timestamp: fixedDate()
         )
 
-        adapter.rhythmOffsetDetectionCompleted(result)
+        adapter.timingOffsetDetectionCompleted(result)
 
         #expect(profile.updates.count == 1)
-        #expect(profile.updates[0].key == .rhythm(.rhythmOffsetDetection, .brisk, .late))
+        #expect(profile.updates[0].key == .rhythm(.timingOffsetDetection, .brisk, .late))
         #expect(profile.updates[0].value == 12.5)
     }
 
-    @Test("RhythmOffsetDetection profile adapter updates correct key for correct early trial")
+    @Test("TimingOffsetDetection profile adapter updates correct key for correct early trial")
     func rhythmOffsetDetectionProfileAdapterEarly() async {
         let profile = MockProfileUpdating()
-        let adapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
+        let adapter = TimingOffsetDetectionProfileAdapter(profile: profile)
 
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(60),
-            offset: RhythmOffset(.milliseconds(-8.0)),
+            offset: TimingOffset(.milliseconds(-8.0)),
             isCorrect: true,
             timestamp: fixedDate()
         )
 
-        adapter.rhythmOffsetDetectionCompleted(result)
+        adapter.timingOffsetDetectionCompleted(result)
 
         #expect(profile.updates.count == 1)
-        #expect(profile.updates[0].key == .rhythm(.rhythmOffsetDetection, .slow, .early))
+        #expect(profile.updates[0].key == .rhythm(.timingOffsetDetection, .slow, .early))
         #expect(profile.updates[0].value == 8.0)
     }
 
-    @Test("RhythmOffsetDetection profile adapter does not update profile on incorrect answer")
+    @Test("TimingOffsetDetection profile adapter does not update profile on incorrect answer")
     func rhythmOffsetDetectionProfileAdapterIncorrect() async {
         let profile = MockProfileUpdating()
-        let adapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
+        let adapter = TimingOffsetDetectionProfileAdapter(profile: profile)
 
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(100),
-            offset: RhythmOffset(.milliseconds(12.5)),
+            offset: TimingOffset(.milliseconds(12.5)),
             isCorrect: false,
             timestamp: fixedDate()
         )
 
-        adapter.rhythmOffsetDetectionCompleted(result)
+        adapter.timingOffsetDetectionCompleted(result)
 
         #expect(profile.updates.isEmpty)
     }
@@ -216,8 +216,8 @@ struct ProfileAdapterTests {
         let result = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(100),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10))),
-                GapResult(position: .second, offset: RhythmOffset(.milliseconds(20))),
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(10))),
+                GapResult(position: .second, offset: TimingOffset(.milliseconds(20))),
             ],
             timestamp: fixedDate()
         )
@@ -314,24 +314,24 @@ struct StoreAdapterTests {
         #expect(saved.timestamp == fixedDate())
     }
 
-    // MARK: - RhythmOffsetDetectionStoreAdapter
+    // MARK: - TimingOffsetDetectionStoreAdapter
 
-    @Test("RhythmOffsetDetection store adapter creates and saves correct record")
+    @Test("TimingOffsetDetection store adapter creates and saves correct record")
     func rhythmOffsetDetectionStoreAdapter() async throws {
         let store = MockRecordPersisting()
-        let adapter = RhythmOffsetDetectionStoreAdapter(store: store)
+        let adapter = TimingOffsetDetectionStoreAdapter(store: store)
 
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-8.5)),
+            offset: TimingOffset(.milliseconds(-8.5)),
             isCorrect: true,
             timestamp: fixedDate()
         )
 
-        adapter.rhythmOffsetDetectionCompleted(result)
+        adapter.timingOffsetDetectionCompleted(result)
 
         #expect(store.saveCallCount == 1)
-        let saved = try #require(store.savedRecords[0] as? RhythmOffsetDetectionRecord)
+        let saved = try #require(store.savedRecords[0] as? TimingOffsetDetectionRecord)
         #expect(saved.tempoBPM == 120)
         #expect(saved.offsetMs == -8.5)
         #expect(saved.isCorrect == true)
@@ -348,9 +348,9 @@ struct StoreAdapterTests {
         let result = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(100),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10))),
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(20))),
-                GapResult(position: .second, offset: RhythmOffset(.milliseconds(-5))),
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(10))),
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(20))),
+                GapResult(position: .second, offset: TimingOffset(.milliseconds(-5))),
             ],
             timestamp: fixedDate()
         )
@@ -406,18 +406,18 @@ struct StoreAdapterTests {
         #expect(store.saveCallCount == 0)
     }
 
-    @Test("RhythmOffsetDetection store adapter does not throw on save error")
+    @Test("TimingOffsetDetection store adapter does not throw on save error")
     func rhythmOffsetDetectionStoreAdapterSaveError() async {
         let store = MockRecordPersisting()
         store.errorToThrow = DataStoreError.saveFailed("test")
-        let adapter = RhythmOffsetDetectionStoreAdapter(store: store)
+        let adapter = TimingOffsetDetectionStoreAdapter(store: store)
 
-        let result = CompletedRhythmOffsetDetectionTrial(
-            tempo: TempoBPM(120), offset: RhythmOffset(.milliseconds(-8.5)),
+        let result = CompletedTimingOffsetDetectionTrial(
+            tempo: TempoBPM(120), offset: TimingOffset(.milliseconds(-8.5)),
             isCorrect: true, timestamp: fixedDate()
         )
 
-        adapter.rhythmOffsetDetectionCompleted(result)
+        adapter.timingOffsetDetectionCompleted(result)
 
         #expect(store.saveCallCount == 0)
     }
@@ -430,7 +430,7 @@ struct StoreAdapterTests {
 
         let result = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(100),
-            gapResults: [GapResult(position: .first, offset: RhythmOffset(.milliseconds(10)))],
+            gapResults: [GapResult(position: .first, offset: TimingOffset(.milliseconds(10)))],
             timestamp: fixedDate()
         )
 

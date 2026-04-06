@@ -11,13 +11,13 @@ struct TrainingDataStoreTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     private func makeFileBasedContainer() throws -> ModelContainer {
         let tempDir = FileManager.default.temporaryDirectory
         let config = ModelConfiguration(url: tempDir.appendingPathComponent("test-\(UUID().uuidString).store"))
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     // MARK: - Save and Fetch Tests
@@ -458,17 +458,17 @@ struct TrainingDataStoreTests {
     // MARK: - Rhythm Offset Detection CRUD Tests
 
     @Test("Save and retrieve a single rhythm offset detection record")
-    func saveAndRetrieveRhythmOffsetDetectionRecord() async throws {
+    func saveAndRetrieveTimingOffsetDetectionRecord() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let record = RhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: -15.5, isCorrect: true, timestamp: timestamp)
+        let record = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -15.5, isCorrect: true, timestamp: timestamp)
 
         try store.save(record)
 
-        let fetched = try store.fetchAllRhythmOffsetDetections()
+        let fetched = try store.fetchAllTimingOffsetDetections()
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
@@ -477,22 +477,22 @@ struct TrainingDataStoreTests {
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
-    @Test("FetchAllRhythmOffsetDetections returns records in timestamp order")
-    func fetchRhythmOffsetDetectionsInOrder() async throws {
+    @Test("FetchAllTimingOffsetDetections returns records in timestamp order")
+    func fetchTimingOffsetDetectionsInOrder() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let now = Date()
-        let record1 = RhythmOffsetDetectionRecord(tempoBPM: 100, offsetMs: -10.0, isCorrect: true, timestamp: now.addingTimeInterval(-60))
-        let record2 = RhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.0, isCorrect: false, timestamp: now.addingTimeInterval(-30))
-        let record3 = RhythmOffsetDetectionRecord(tempoBPM: 140, offsetMs: -3.0, isCorrect: true, timestamp: now)
+        let record1 = TimingOffsetDetectionRecord(tempoBPM: 100, offsetMs: -10.0, isCorrect: true, timestamp: now.addingTimeInterval(-60))
+        let record2 = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.0, isCorrect: false, timestamp: now.addingTimeInterval(-30))
+        let record3 = TimingOffsetDetectionRecord(tempoBPM: 140, offsetMs: -3.0, isCorrect: true, timestamp: now)
 
         try store.save(record1)
         try store.save(record2)
         try store.save(record3)
 
-        let fetched = try store.fetchAllRhythmOffsetDetections()
+        let fetched = try store.fetchAllTimingOffsetDetections()
 
         #expect(fetched.count == 3)
         #expect(fetched[0].tempoBPM == 100)
@@ -500,8 +500,8 @@ struct TrainingDataStoreTests {
         #expect(fetched[2].tempoBPM == 140)
     }
 
-    @Test("deleteAllRhythmOffsetDetections deletes only rhythm offset detection records")
-    func deleteAllRhythmOffsetDetectionsOnly() async throws {
+    @Test("deleteAllTimingOffsetDetections deletes only timing offset detection records")
+    func deleteAllTimingOffsetDetectionsOnly() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
@@ -509,12 +509,12 @@ struct TrainingDataStoreTests {
         let pitchRecord = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
         try store.save(pitchRecord)
 
-        let rhythmCompRecord = RhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
+        let rhythmCompRecord = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
         try store.save(rhythmCompRecord)
 
-        try store.deleteAll(RhythmOffsetDetectionRecord.self)
+        try store.deleteAll(TimingOffsetDetectionRecord.self)
 
-        let rhythmComps = try store.fetchAllRhythmOffsetDetections()
+        let rhythmComps = try store.fetchAllTimingOffsetDetections()
         #expect(rhythmComps.isEmpty)
 
         let pitchComps = try store.fetchAllPitchDiscriminations()
@@ -523,23 +523,23 @@ struct TrainingDataStoreTests {
 
     // MARK: - Rhythm Observer Conformance Tests
 
-    @Test("RhythmOffsetDetectionObserver conformance saves record with correct fields")
-    func rhythmOffsetDetectionObserverSaves() async throws {
+    @Test("TimingOffsetDetectionObserver conformance saves record with correct fields")
+    func timingOffsetDetectionObserverSaves() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let completed = CompletedRhythmOffsetDetectionTrial(
+        let completed = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-15)),
+            offset: TimingOffset(.milliseconds(-15)),
             isCorrect: true,
             timestamp: timestamp
         )
 
-        RhythmOffsetDetectionStoreAdapter(store: store).rhythmOffsetDetectionCompleted(completed)
+        TimingOffsetDetectionStoreAdapter(store: store).timingOffsetDetectionCompleted(completed)
 
-        let fetched = try store.fetchAllRhythmOffsetDetections()
+        let fetched = try store.fetchAllTimingOffsetDetections()
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
@@ -606,7 +606,7 @@ struct TrainingDataStoreTests {
         let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0)
         try store.save(continuousRecord)
 
-        let rhythmOffsetRecord = RhythmOffsetDetectionRecord(tempoBPM: 100, offsetMs: 3.0, isCorrect: true)
+        let rhythmOffsetRecord = TimingOffsetDetectionRecord(tempoBPM: 100, offsetMs: 3.0, isCorrect: true)
         try store.save(rhythmOffsetRecord)
 
         try store.deleteAll(ContinuousRhythmMatchingRecord.self)
@@ -614,7 +614,7 @@ struct TrainingDataStoreTests {
         let continuous = try store.fetchAllContinuousRhythmMatchings()
         #expect(continuous.isEmpty)
 
-        let rhythmOffsets = try store.fetchAllRhythmOffsetDetections()
+        let rhythmOffsets = try store.fetchAllTimingOffsetDetections()
         #expect(rhythmOffsets.count == 1)
     }
 
@@ -643,9 +643,9 @@ struct TrainingDataStoreTests {
 
         let timestamp = Date()
         let gapResults = [
-            GapResult(position: .first, offset: RhythmOffset(.milliseconds(-10))),
-            GapResult(position: .third, offset: RhythmOffset(.milliseconds(5))),
-            GapResult(position: .first, offset: RhythmOffset(.milliseconds(-8))),
+            GapResult(position: .first, offset: TimingOffset(.milliseconds(-10))),
+            GapResult(position: .third, offset: TimingOffset(.milliseconds(5))),
+            GapResult(position: .first, offset: TimingOffset(.milliseconds(-8))),
         ]
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),

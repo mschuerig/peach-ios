@@ -13,7 +13,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
 
     var statisticsKeys: [StatisticsKey] {
         TempoRange.defaultRanges.flatMap { range in
-            RhythmDirection.allCases.map { direction in
+            TimingDirection.allCases.map { direction in
                 .rhythm(id, range, direction)
             }
         }
@@ -23,7 +23,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllContinuousRhythmMatchings() {
-            let offset = RhythmOffset(.milliseconds(record.meanOffsetMs))
+            let offset = TimingOffset(.milliseconds(record.meanOffsetMs))
             guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
             builder.addPoint(
                 MetricPoint(timestamp: record.timestamp, value: abs(record.meanOffsetMs)),

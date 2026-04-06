@@ -13,7 +13,7 @@ struct PeachSchemaTests {
         let typeNames = Set(models.map { String(describing: $0) })
         #expect(typeNames.contains(String(describing: PitchDiscriminationRecord.self)))
         #expect(typeNames.contains(String(describing: PitchMatchingRecord.self)))
-        #expect(typeNames.contains(String(describing: RhythmOffsetDetectionRecord.self)))
+        #expect(typeNames.contains(String(describing: TimingOffsetDetectionRecord.self)))
         #expect(typeNames.contains(String(describing: ContinuousRhythmMatchingRecord.self)))
     }
 
@@ -79,12 +79,12 @@ struct PeachSchemaTests {
         #expect(fetched[0].userCentError == 2.5)
     }
 
-    @Test("round-trip: insert and fetch RhythmOffsetDetectionRecord")
-    func roundTripRhythmOffsetDetection() async throws {
+    @Test("round-trip: insert and fetch TimingOffsetDetectionRecord")
+    func roundTripTimingOffsetDetection() async throws {
         let container = try makeContainer()
         let context = container.mainContext
 
-        let record = RhythmOffsetDetectionRecord(
+        let record = TimingOffsetDetectionRecord(
             tempoBPM: 120,
             offsetMs: 25.0,
             isCorrect: false
@@ -92,7 +92,7 @@ struct PeachSchemaTests {
         context.insert(record)
         try context.save()
 
-        let fetched = try context.fetch(FetchDescriptor<RhythmOffsetDetectionRecord>())
+        let fetched = try context.fetch(FetchDescriptor<TimingOffsetDetectionRecord>())
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
         #expect(fetched[0].offsetMs == 25.0)

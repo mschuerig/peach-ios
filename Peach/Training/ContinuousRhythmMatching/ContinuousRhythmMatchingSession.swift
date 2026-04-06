@@ -169,7 +169,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
         if abs(offsetSamples) <= windowHalfSamples {
             let offset = Double(offsetSamples) / timing.sampleRate.rawValue
-            let rhythmOffset = RhythmOffset(.seconds(offset))
+            let rhythmOffset = TimingOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
 
             let velocity = gapPosition == .first ? StepVelocity.accent : StepVelocity.normal
@@ -271,7 +271,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     // MARK: - Feedback
 
-    private func showHitFeedback(_ offset: RhythmOffset) {
+    private func showHitFeedback(_ offset: TimingOffset) {
         lastHitOffsetMs = offset.duration.timeInterval * 1000.0
         showFeedback = true
 

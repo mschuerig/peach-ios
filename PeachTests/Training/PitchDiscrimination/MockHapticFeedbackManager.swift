@@ -2,7 +2,7 @@ import Foundation
 @testable import Peach
 
 /// Mock haptic feedback manager for unit tests
-final class MockHapticFeedbackManager: HapticFeedback, PitchDiscriminationObserver, RhythmOffsetDetectionObserver {
+final class MockHapticFeedbackManager: HapticFeedback, PitchDiscriminationObserver, TimingOffsetDetectionObserver {
 
     // MARK: - HapticFeedback
 
@@ -24,15 +24,15 @@ final class MockHapticFeedbackManager: HapticFeedback, PitchDiscriminationObserv
         onPitchDiscriminationCompletedCalled?()
     }
 
-    // MARK: - RhythmOffsetDetectionObserver
+    // MARK: - TimingOffsetDetectionObserver
 
-    private(set) var rhythmOffsetDetectionCompletedCallCount = 0
-    var lastRhythmOffsetDetection: CompletedRhythmOffsetDetectionTrial?
+    private(set) var timingOffsetDetectionCompletedCallCount = 0
+    var lastTimingOffsetDetection: CompletedTimingOffsetDetectionTrial?
 
-    func rhythmOffsetDetectionCompleted(_ result: CompletedRhythmOffsetDetectionTrial) {
-        rhythmOffsetDetectionCompletedCallCount += 1
-        lastRhythmOffsetDetection = result
-        onRhythmOffsetDetectionCompletedCalled?()
+    func timingOffsetDetectionCompleted(_ result: CompletedTimingOffsetDetectionTrial) {
+        timingOffsetDetectionCompletedCallCount += 1
+        lastTimingOffsetDetection = result
+        onTimingOffsetDetectionCompletedCalled?()
     }
 
     // MARK: - Test Control
@@ -41,7 +41,7 @@ final class MockHapticFeedbackManager: HapticFeedback, PitchDiscriminationObserv
     var errorToThrow: Error = NSError(domain: "MockHapticFeedback", code: 1)
     var onPlayIncorrectFeedbackCalled: (() -> Void)?
     var onPitchDiscriminationCompletedCalled: (() -> Void)?
-    var onRhythmOffsetDetectionCompletedCalled: (() -> Void)?
+    var onTimingOffsetDetectionCompletedCalled: (() -> Void)?
 
     // MARK: - Test Helpers
 
@@ -49,11 +49,11 @@ final class MockHapticFeedbackManager: HapticFeedback, PitchDiscriminationObserv
         incorrectFeedbackCount = 0
         pitchDiscriminationCompletedCallCount = 0
         lastTrial = nil
-        rhythmOffsetDetectionCompletedCallCount = 0
-        lastRhythmOffsetDetection = nil
+        timingOffsetDetectionCompletedCallCount = 0
+        lastTimingOffsetDetection = nil
         shouldThrowError = false
         onPlayIncorrectFeedbackCalled = nil
         onPitchDiscriminationCompletedCalled = nil
-        onRhythmOffsetDetectionCompletedCalled = nil
+        onTimingOffsetDetectionCompletedCalled = nil
     }
 }

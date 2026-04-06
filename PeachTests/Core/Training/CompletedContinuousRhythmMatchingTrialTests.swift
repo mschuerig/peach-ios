@@ -9,7 +9,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
 
     @Test("gap result stores position and offset")
     func gapResultStoresPositionAndOffset() async {
-        let result = GapResult(position: .first, offset: RhythmOffset(.milliseconds(10)))
+        let result = GapResult(position: .first, offset: TimingOffset(.milliseconds(10)))
         #expect(result.position == .first)
         #expect(result.offset.statisticalValue != 0)
     }
@@ -19,8 +19,8 @@ struct CompletedContinuousRhythmMatchingTrialTests {
     @Test("trial stores tempo and gap results")
     func trialStoresTempoAndGapResults() async {
         let results = [
-            GapResult(position: .fourth, offset: RhythmOffset(.milliseconds(5))),
-            GapResult(position: .second, offset: RhythmOffset(.milliseconds(-3))),
+            GapResult(position: .fourth, offset: TimingOffset(.milliseconds(5))),
+            GapResult(position: .second, offset: TimingOffset(.milliseconds(-3))),
         ]
         let trial = CompletedContinuousRhythmMatchingTrial(tempo: TempoBPM(120), gapResults: results)
 
@@ -33,7 +33,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
         let before = Date()
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),
-            gapResults: [GapResult(position: .fourth, offset: RhythmOffset(.milliseconds(5)))]
+            gapResults: [GapResult(position: .fourth, offset: TimingOffset(.milliseconds(5)))]
         )
         let after = Date()
 
@@ -71,7 +71,7 @@ struct CompletedContinuousRhythmMatchingTrialTests {
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(12.5))),
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(12.5))),
             ]
         )
         let percentage = try #require(trial.meanOffsetPercentage)
@@ -89,8 +89,8 @@ struct CompletedContinuousRhythmMatchingTrialTests {
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),
             gapResults: [
-                GapResult(position: .first, offset: RhythmOffset(.milliseconds(10))),
-                GapResult(position: .second, offset: RhythmOffset(.milliseconds(-20))),
+                GapResult(position: .first, offset: TimingOffset(.milliseconds(10))),
+                GapResult(position: .second, offset: TimingOffset(.milliseconds(-20))),
             ]
         )
         let ms = try #require(trial.meanOffsetMs)
@@ -105,8 +105,8 @@ struct CompletedContinuousRhythmMatchingTrialTests {
 
     @Test("gap results preserve offset direction")
     func gapResultsPreserveOffsetDirection() async {
-        let early = GapResult(position: .first, offset: RhythmOffset(.milliseconds(-15)))
-        let late = GapResult(position: .second, offset: RhythmOffset(.milliseconds(20)))
+        let early = GapResult(position: .first, offset: TimingOffset(.milliseconds(-15)))
+        let late = GapResult(position: .second, offset: TimingOffset(.milliseconds(20)))
         let trial = CompletedContinuousRhythmMatchingTrial(
             tempo: TempoBPM(120),
             gapResults: [early, late]

@@ -13,7 +13,7 @@ struct TrainingDisciplineImplementationTests {
         return try ModelContainer(
             for: PitchDiscriminationRecord.self,
             PitchMatchingRecord.self,
-            RhythmOffsetDetectionRecord.self,
+            TimingOffsetDetectionRecord.self,
             ContinuousRhythmMatchingRecord.self,
             configurations: config
         )
@@ -32,13 +32,13 @@ struct TrainingDisciplineImplementationTests {
     private func makeImportResult(
         pitchDiscriminations: [PitchDiscriminationRecord] = [],
         pitchMatchings: [PitchMatchingRecord] = [],
-        rhythmOffsetDetections: [RhythmOffsetDetectionRecord] = [],
+        timingOffsetDetections: [TimingOffsetDetectionRecord] = [],
         continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = []
     ) -> CSVImportParser.ImportResult {
         var records: [String: [any PersistentModel]] = [:]
         if !pitchDiscriminations.isEmpty { records["pitchDiscrimination"] = pitchDiscriminations }
         if !pitchMatchings.isEmpty { records["pitchMatching"] = pitchMatchings }
-        if !rhythmOffsetDetections.isEmpty { records["rhythmOffsetDetection"] = rhythmOffsetDetections }
+        if !timingOffsetDetections.isEmpty { records["rhythmOffsetDetection"] = timingOffsetDetections }
         if !continuousRhythmMatchings.isEmpty { records["continuousRhythmMatching"] = continuousRhythmMatchings }
         return CSVImportParser.ImportResult(records: records, errors: [])
     }
@@ -85,13 +85,13 @@ struct TrainingDisciplineImplementationTests {
         )
     }
 
-    private func makeRhythmOffsetDetectionRecord(
+    private func makeTimingOffsetDetectionRecord(
         tempoBPM: Int = 100,
         offsetMs: Double = 12.5,
         isCorrect: Bool = true,
         minutesOffset: Double = 0
-    ) -> RhythmOffsetDetectionRecord {
-        RhythmOffsetDetectionRecord(
+    ) -> TimingOffsetDetectionRecord {
+        TimingOffsetDetectionRecord(
             tempoBPM: tempoBPM,
             offsetMs: offsetMs,
             isCorrect: isCorrect,
@@ -186,10 +186,10 @@ struct TrainingDisciplineImplementationTests {
         #expect(dict["interval"] == "P5")
     }
 
-    @Test("RhythmOffsetDetection csvKeyValuePairs produces correct columns")
-    func rhythmOffsetDetectionCSVKeyValuePairs() async {
-        let discipline = RhythmOffsetDetectionDiscipline()
-        let record = makeRhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
+    @Test("TimingOffsetDetection csvKeyValuePairs produces correct columns")
+    func timingOffsetDetectionCSVKeyValuePairs() async {
+        let discipline = TimingOffsetDetectionDiscipline()
+        let record = makeTimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
 
         let pairs = discipline.csvKeyValuePairs(for: record)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
@@ -316,16 +316,16 @@ struct TrainingDisciplineImplementationTests {
         #expect(parsed.timestamp == original.timestamp)
     }
 
-    @Test("RhythmOffsetDetection round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
-    func rhythmOffsetDetectionRoundTrip() async throws {
-        let discipline = RhythmOffsetDetectionDiscipline()
-        let original = makeRhythmOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
+    @Test("TimingOffsetDetection round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    func timingOffsetDetectionRoundTrip() async throws {
+        let discipline = TimingOffsetDetectionDiscipline()
+        let original = makeTimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "rhythmOffsetDetection", timestamp: original.timestamp,
             pairs: discipline.csvKeyValuePairs(for: original))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? RhythmOffsetDetectionRecord)
+        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? TimingOffsetDetectionRecord)
 
         #expect(parsed.tempoBPM == original.tempoBPM)
         #expect(parsed.offsetMs == original.offsetMs)
@@ -441,18 +441,18 @@ struct TrainingDisciplineImplementationTests {
         #expect(mergeResult.skipped == 1)
     }
 
-    @Test("RhythmOffsetDetection mergeImportRecords skips duplicates and imports new records")
-    func rhythmOffsetDetectionMergeDuplicates() async throws {
+    @Test("TimingOffsetDetection mergeImportRecords skips duplicates and imports new records")
+    func timingOffsetDetectionMergeDuplicates() async throws {
         let store = try makeStore()
-        let discipline = RhythmOffsetDetectionDiscipline()
+        let discipline = TimingOffsetDetectionDiscipline()
 
-        let existing = makeRhythmOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 0)
+        let existing = makeTimingOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 0)
         try store.save(existing)
 
-        let duplicate = makeRhythmOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 0)
-        let newRecord = makeRhythmOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 5)
+        let duplicate = makeTimingOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 0)
+        let newRecord = makeTimingOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 5)
 
-        let importResult = makeImportResult(rhythmOffsetDetections: [duplicate, newRecord])
+        let importResult = makeImportResult(timingOffsetDetections: [duplicate, newRecord])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -538,13 +538,13 @@ struct TrainingDisciplineImplementationTests {
         #expect(records.count == 2)
     }
 
-    @Test("RhythmOffsetDetection fetchExportRecords returns all records")
-    func rhythmOffsetDetectionFetchAll() async throws {
+    @Test("TimingOffsetDetection fetchExportRecords returns all records")
+    func timingOffsetDetectionFetchAll() async throws {
         let store = try makeStore()
-        let discipline = RhythmOffsetDetectionDiscipline()
+        let discipline = TimingOffsetDetectionDiscipline()
 
-        try store.save(makeRhythmOffsetDetectionRecord(minutesOffset: 0))
-        try store.save(makeRhythmOffsetDetectionRecord(minutesOffset: 1))
+        try store.save(makeTimingOffsetDetectionRecord(minutesOffset: 0))
+        try store.save(makeTimingOffsetDetectionRecord(minutesOffset: 1))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)

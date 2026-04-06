@@ -90,10 +90,10 @@ struct StartScreenTests {
         #expect(destination == NavigationDestination.profile)
     }
 
-    @Test("NavigationDestination enum has rhythmOffsetDetection case")
-    func navigationDestinationHasRhythmOffsetDetection() async {
-        let destination = NavigationDestination.rhythmOffsetDetection
-        #expect(destination == NavigationDestination.rhythmOffsetDetection)
+    @Test("NavigationDestination enum has timingOffsetDetection case")
+    func navigationDestinationHasTimingOffsetDetection() async {
+        let destination = NavigationDestination.timingOffsetDetection
+        #expect(destination == NavigationDestination.timingOffsetDetection)
     }
 
     @Test("NavigationDestination enum has continuousRhythmMatching case")
@@ -213,10 +213,10 @@ struct StartScreenTests {
         let settings = SettingsScreen()
         let profile = ProfileScreen()
         let info = InfoScreen()
-        let rhythmOffsetDetection = RhythmOffsetDetectionScreen()
+        let timingOffsetDetection = TimingOffsetDetectionScreen()
         let continuousRhythmMatching = ContinuousRhythmMatchingScreen()
 
         // If we can create all screens without crashing, navigation paths are valid
-        _ = (comparison, intervalComparison, pitchMatching, intervalPitchMatching, settings, profile, info, rhythmOffsetDetection, continuousRhythmMatching)
+        _ = (comparison, intervalComparison, pitchMatching, intervalPitchMatching, settings, profile, info, timingOffsetDetection, continuousRhythmMatching)
     }
 }

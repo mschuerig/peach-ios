@@ -26,7 +26,7 @@ struct NavigationRequest: Equatable {
 final class TrainingLifecycleCoordinator {
     private let pitchDiscriminationSession: PitchDiscriminationSession
     private let pitchMatchingSession: PitchMatchingSession
-    private let rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
+    private let timingOffsetDetectionSession: TimingOffsetDetectionSession
     private let continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
     private let userSettings: any UserSettings
     private let backgroundPolicy: BackgroundPolicy
@@ -43,14 +43,14 @@ final class TrainingLifecycleCoordinator {
     init(
         pitchDiscriminationSession: PitchDiscriminationSession,
         pitchMatchingSession: PitchMatchingSession,
-        rhythmOffsetDetectionSession: RhythmOffsetDetectionSession,
+        timingOffsetDetectionSession: TimingOffsetDetectionSession,
         continuousRhythmMatchingSession: ContinuousRhythmMatchingSession,
         userSettings: any UserSettings,
         backgroundPolicy: BackgroundPolicy
     ) {
         self.pitchDiscriminationSession = pitchDiscriminationSession
         self.pitchMatchingSession = pitchMatchingSession
-        self.rhythmOffsetDetectionSession = rhythmOffsetDetectionSession
+        self.timingOffsetDetectionSession = timingOffsetDetectionSession
         self.continuousRhythmMatchingSession = continuousRhythmMatchingSession
         self.userSettings = userSettings
         self.backgroundPolicy = backgroundPolicy
@@ -64,7 +64,7 @@ final class TrainingLifecycleCoordinator {
         switch destination {
         case .pitchDiscrimination: return !pitchDiscriminationSession.isIdle
         case .pitchMatching: return !pitchMatchingSession.isIdle
-        case .rhythmOffsetDetection: return !rhythmOffsetDetectionSession.isIdle
+        case .timingOffsetDetection: return !timingOffsetDetectionSession.isIdle
         case .continuousRhythmMatching: return !continuousRhythmMatchingSession.isIdle
         case .settings, .profile: return false
         }
@@ -150,8 +150,8 @@ final class TrainingLifecycleCoordinator {
         case .pitchMatching(let isIntervalMode):
             let intervals: Set<DirectedInterval> = isIntervalMode ? userSettings.intervals : [.prime]
             pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
-        case .rhythmOffsetDetection:
-            rhythmOffsetDetectionSession.start(settings: .from(userSettings))
+        case .timingOffsetDetection:
+            timingOffsetDetectionSession.start(settings: .from(userSettings))
         case .continuousRhythmMatching:
             continuousRhythmMatchingSession.start(settings: .from(userSettings))
         case .settings, .profile:
@@ -164,7 +164,7 @@ final class TrainingLifecycleCoordinator {
         switch destination {
         case .pitchDiscrimination: pitchDiscriminationSession.stop()
         case .pitchMatching: pitchMatchingSession.stop()
-        case .rhythmOffsetDetection: rhythmOffsetDetectionSession.stop()
+        case .timingOffsetDetection: timingOffsetDetectionSession.stop()
         case .continuousRhythmMatching: continuousRhythmMatchingSession.stop()
         case .settings, .profile: break
         }

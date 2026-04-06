@@ -136,8 +136,8 @@ final class TrainingDataStore {
         }
     }
 
-    func fetchAllRhythmOffsetDetections() throws -> [RhythmOffsetDetectionRecord] {
-        let descriptor = FetchDescriptor<RhythmOffsetDetectionRecord>(
+    func fetchAllTimingOffsetDetections() throws -> [TimingOffsetDetectionRecord] {
+        let descriptor = FetchDescriptor<TimingOffsetDetectionRecord>(
             sortBy: [SortDescriptor(\.timestamp, order: .forward)]
         )
         do {

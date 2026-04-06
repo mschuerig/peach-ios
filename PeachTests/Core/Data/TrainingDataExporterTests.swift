@@ -10,7 +10,7 @@ struct TrainingDataExporterTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, RhythmOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
     }
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
@@ -238,10 +238,10 @@ struct TrainingDataExporterTests {
     // MARK: - Rhythm Record Tests
 
     @Test("export with rhythm offset detection records produces correct CSV")
-    func exportRhythmOffsetDetection() async throws {
+    func exportTimingOffsetDetection() async throws {
         let store = try makeStore()
 
-        let record = RhythmOffsetDetectionRecord(
+        let record = TimingOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -15.3, isCorrect: true, timestamp: fixedDate()
         )
         try store.save(record)
@@ -267,7 +267,7 @@ struct TrainingDataExporterTests {
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
             interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
         )
-        let rhythmOffset = RhythmOffsetDetectionRecord(
+        let rhythmOffset = TimingOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 1)
         )
         let pitchMatch = PitchMatchingRecord(
@@ -315,7 +315,7 @@ struct TrainingDataExporterTests {
     func headerInExport() async throws {
         let store = try makeStore()
 
-        let record = RhythmOffsetDetectionRecord(
+        let record = TimingOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: 5.0, isCorrect: true, timestamp: fixedDate()
         )
         try store.save(record)
@@ -334,7 +334,7 @@ struct TrainingDataExporterTests {
     func rhythmOnlyExport() async throws {
         let store = try makeStore()
 
-        let offset = RhythmOffsetDetectionRecord(
+        let offset = TimingOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -5.0, isCorrect: true, timestamp: fixedDate(minutesOffset: 0)
         )
         try store.save(offset)
@@ -373,7 +373,7 @@ struct TrainingDataExporterTests {
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
             interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
         )
-        let rhythmOffset = RhythmOffsetDetectionRecord(
+        let rhythmOffset = TimingOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
         )
 
@@ -403,7 +403,7 @@ struct TrainingDataExporterTests {
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
             interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
         )
-        let rhythmOffset = RhythmOffsetDetectionRecord(
+        let rhythmOffset = TimingOffsetDetectionRecord(
             tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
         )
 

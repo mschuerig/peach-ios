@@ -80,13 +80,13 @@ final class StubStepSequencer: StepSequencer {
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 { 0 }
 }
 
-final class StubRhythmOffsetDetectionStrategy: NextRhythmOffsetDetectionStrategy {
-    func nextRhythmOffsetDetectionTrial(
+final class StubTimingOffsetDetectionStrategy: NextTimingOffsetDetectionStrategy {
+    func nextTimingOffsetDetectionTrial(
         profile: TrainingProfile,
-        settings: RhythmOffsetDetectionSettings,
-        lastResult: CompletedRhythmOffsetDetectionTrial?
-    ) -> RhythmOffsetDetectionTrial {
-        RhythmOffsetDetectionTrial(tempo: TempoBPM(80), offset: RhythmOffset(.milliseconds(50)))
+        settings: TimingOffsetDetectionSettings,
+        lastResult: CompletedTimingOffsetDetectionTrial?
+    ) -> TimingOffsetDetectionTrial {
+        TimingOffsetDetectionTrial(tempo: TempoBPM(80), offset: TimingOffset(.milliseconds(50)))
     }
 }
 
@@ -114,11 +114,11 @@ extension PitchMatchingSession {
     }()
 }
 
-extension RhythmOffsetDetectionSession {
-    static let stub: RhythmOffsetDetectionSession = {
-        RhythmOffsetDetectionSession(
+extension TimingOffsetDetectionSession {
+    static let stub: TimingOffsetDetectionSession = {
+        TimingOffsetDetectionSession(
             rhythmPlayer: StubRhythmPlayer(),
-            strategy: StubRhythmOffsetDetectionStrategy(),
+            strategy: StubTimingOffsetDetectionStrategy(),
             profile: PerceptualProfile(),
             sampleRate: .standard48000,
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
@@ -142,7 +142,7 @@ extension TrainingLifecycleCoordinator {
         TrainingLifecycleCoordinator(
             pitchDiscriminationSession: .stub,
             pitchMatchingSession: .stub,
-            rhythmOffsetDetectionSession: .stub,
+            timingOffsetDetectionSession: .stub,
             continuousRhythmMatchingSession: .stub,
             userSettings: StubUserSettings(),
             backgroundPolicy: IOSBackgroundPolicy()
@@ -186,7 +186,7 @@ extension View {
             .environment(\.settingsCoordinator, .stub)
             .environment(\.pitchDiscriminationSession, .stub)
             .environment(\.pitchMatchingSession, .stub)
-            .environment(\.rhythmOffsetDetectionSession, .stub)
+            .environment(\.timingOffsetDetectionSession, .stub)
             .environment(\.continuousRhythmMatchingSession, .stub)
     }
 }

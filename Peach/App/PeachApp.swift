@@ -22,7 +22,7 @@ struct PeachApp: App {
     @State private var dataStore: TrainingDataStore
     @State private var pitchDiscriminationSession: PitchDiscriminationSession
     @State private var pitchMatchingSession: PitchMatchingSession
-    @State private var rhythmOffsetDetectionSession: RhythmOffsetDetectionSession
+    @State private var timingOffsetDetectionSession: TimingOffsetDetectionSession
     @State private var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
     @State private var profile: PerceptualProfile
     @State private var progressTimeline: ProgressTimeline
@@ -129,13 +129,13 @@ struct PeachApp: App {
             )
             _pitchMatchingSession = State(wrappedValue: pmSession)
 
-            let rodSession = Self.createRhythmOffsetDetectionSession(
+            let rodSession = Self.createTimingOffsetDetectionSession(
                 rhythmPlayer: rhythmPlayer,
                 profile: profile,
                 dataStore: dataStore,
                 sampleRate: soundFontEngine.sampleRate
             )
-            _rhythmOffsetDetectionSession = State(wrappedValue: rodSession)
+            _timingOffsetDetectionSession = State(wrappedValue: rodSession)
 
             let soundFontStepSequencer = SoundFontStepSequencer(
                 engine: soundFontEngine,
@@ -163,7 +163,7 @@ struct PeachApp: App {
             _trainingLifecycle = State(wrappedValue: TrainingLifecycleCoordinator(
                 pitchDiscriminationSession: pdSession,
                 pitchMatchingSession: pmSession,
-                rhythmOffsetDetectionSession: rodSession,
+                timingOffsetDetectionSession: rodSession,
                 continuousRhythmMatchingSession: crmSession,
                 userSettings: userSettings,
                 backgroundPolicy: backgroundPolicy
@@ -189,7 +189,7 @@ struct PeachApp: App {
             ContentView()
                 .environment(\.pitchDiscriminationSession, pitchDiscriminationSession)
                 .environment(\.pitchMatchingSession, pitchMatchingSession)
-                .environment(\.rhythmOffsetDetectionSession, rhythmOffsetDetectionSession)
+                .environment(\.timingOffsetDetectionSession, timingOffsetDetectionSession)
                 .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
                 .environment(\.activeSession, activeSession)
                 .environment(\.perceptualProfile, profile)
@@ -212,8 +212,8 @@ struct PeachApp: App {
                 .onChange(of: pitchMatchingSession.isIdle) { _, isIdle in
                     trackActiveSession(pitchMatchingSession, isIdle: isIdle)
                 }
-                .onChange(of: rhythmOffsetDetectionSession.isIdle) { _, isIdle in
-                    trackActiveSession(rhythmOffsetDetectionSession, isIdle: isIdle)
+                .onChange(of: timingOffsetDetectionSession.isIdle) { _, isIdle in
+                    trackActiveSession(timingOffsetDetectionSession, isIdle: isIdle)
                 }
                 .onChange(of: continuousRhythmMatchingSession.isIdle) { _, isIdle in
                     trackActiveSession(continuousRhythmMatchingSession, isIdle: isIdle)
@@ -294,7 +294,7 @@ struct PeachApp: App {
         trainingLifecycle = TrainingLifecycleCoordinator(
             pitchDiscriminationSession: pitchDiscriminationSession,
             pitchMatchingSession: pitchMatchingSession,
-            rhythmOffsetDetectionSession: rhythmOffsetDetectionSession,
+            timingOffsetDetectionSession: timingOffsetDetectionSession,
             continuousRhythmMatchingSession: continuousRhythmMatchingSession,
             userSettings: userSettings,
             backgroundPolicy: backgroundPolicy
@@ -347,12 +347,12 @@ struct PeachApp: App {
         )
     }
 
-    private static func createRhythmOffsetDetectionSession(
+    private static func createTimingOffsetDetectionSession(
         rhythmPlayer: RhythmPlayer,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore,
         sampleRate: SampleRate
-    ) -> RhythmOffsetDetectionSession {
+    ) -> TimingOffsetDetectionSession {
         #if os(iOS)
         let hapticManager = HapticFeedbackManager()
         #elseif os(macOS)
@@ -360,12 +360,12 @@ struct PeachApp: App {
         #else
         #error("Unsupported platform")
         #endif
-        let profileAdapter = RhythmOffsetDetectionProfileAdapter(profile: profile)
-        let storeAdapter = RhythmOffsetDetectionStoreAdapter(store: dataStore)
-        let observers: [RhythmOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticManager]
-        return RhythmOffsetDetectionSession(
+        let profileAdapter = TimingOffsetDetectionProfileAdapter(profile: profile)
+        let storeAdapter = TimingOffsetDetectionStoreAdapter(store: dataStore)
+        let observers: [TimingOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticManager]
+        return TimingOffsetDetectionSession(
             rhythmPlayer: rhythmPlayer,
-            strategy: AdaptiveRhythmOffsetDetectionStrategy(),
+            strategy: AdaptiveTimingOffsetDetectionStrategy(),
             profile: profile,
             observers: observers,
             sampleRate: sampleRate,

@@ -3,43 +3,43 @@ import Testing
 import Foundation
 @testable import Peach
 
-@Suite("HapticFeedbackManager RhythmOffsetDetectionObserver Tests")
+@Suite("HapticFeedbackManager TimingOffsetDetectionObserver Tests")
 struct HapticFeedbackManagerRhythmTests {
 
-    @Test("rhythmOffsetDetectionCompleted triggers haptic on incorrect answer")
+    @Test("timingOffsetDetectionCompleted triggers haptic on incorrect answer")
     func triggersHapticOnIncorrect() async {
         let manager = HapticFeedbackManager()
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-20)),
+            offset: TimingOffset(.milliseconds(-20)),
             isCorrect: false
         )
         // Calling on device would trigger haptic; on simulator we verify no crash.
-        manager.rhythmOffsetDetectionCompleted(result)
+        manager.timingOffsetDetectionCompleted(result)
     }
 
-    @Test("rhythmOffsetDetectionCompleted does NOT trigger on correct answer")
+    @Test("timingOffsetDetectionCompleted does NOT trigger on correct answer")
     func noHapticOnCorrect() async {
         let manager = HapticFeedbackManager()
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-20)),
+            offset: TimingOffset(.milliseconds(-20)),
             isCorrect: true
         )
-        manager.rhythmOffsetDetectionCompleted(result)
+        manager.timingOffsetDetectionCompleted(result)
     }
 
     @Test("mock tracks rhythm offset detection calls")
     func mockTracksRhythmCalls() async {
         let mock = MockHapticFeedbackManager()
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-20)),
+            offset: TimingOffset(.milliseconds(-20)),
             isCorrect: false
         )
-        mock.rhythmOffsetDetectionCompleted(result)
-        #expect(mock.rhythmOffsetDetectionCompletedCallCount == 1)
-        #expect(mock.lastRhythmOffsetDetection != nil)
+        mock.timingOffsetDetectionCompleted(result)
+        #expect(mock.timingOffsetDetectionCompletedCallCount == 1)
+        #expect(mock.lastTimingOffsetDetection != nil)
     }
 }
 #endif
@@ -75,16 +75,16 @@ struct NoOpHapticFeedbackManagerTests {
         observer.pitchDiscriminationCompleted(completed)
     }
 
-    @Test("conforms to RhythmOffsetDetectionObserver and handles callback without side effects")
+    @Test("conforms to TimingOffsetDetectionObserver and handles callback without side effects")
     func rhythmOffsetDetectionObserverNoOp() async {
         let manager = NoOpHapticFeedbackManager()
-        let result = CompletedRhythmOffsetDetectionTrial(
+        let result = CompletedTimingOffsetDetectionTrial(
             tempo: TempoBPM(120),
-            offset: RhythmOffset(.milliseconds(-20)),
+            offset: TimingOffset(.milliseconds(-20)),
             isCorrect: false
         )
-        let observer: RhythmOffsetDetectionObserver = manager
-        observer.rhythmOffsetDetectionCompleted(result)
+        let observer: TimingOffsetDetectionObserver = manager
+        observer.timingOffsetDetectionCompleted(result)
     }
 }
 #endif
