@@ -1,6 +1,6 @@
 # Story 75.6: Composition Root — Init Decomposition
 
-Status: review
+Status: done
 
 ## Story
 

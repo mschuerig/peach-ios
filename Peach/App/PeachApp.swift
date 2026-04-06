@@ -58,6 +58,7 @@ struct PeachApp: App {
             let audio = try Self.setupPlayers(engine: engine, library: library, userSettings: userSettings)
             _notePlayer = State(wrappedValue: audio.notePlayer)
             _rhythmPlayer = State(wrappedValue: audio.rhythmPlayer)
+            _stepSequencer = State(wrappedValue: audio.stepSequencer)
 
             let (profile, progressTimeline) = try Self.setupProfile(dataStore: dataStore)
             _profile = State(wrappedValue: profile)
@@ -69,9 +70,8 @@ struct PeachApp: App {
             let sessions = Self.createAllSessions(
                 notePlayer: audio.notePlayer,
                 rhythmPlayer: audio.rhythmPlayer,
-                engine: engine,
-                percussionPreset: audio.percussionPreset,
-                percussionChannel: audio.percussionChannel,
+                stepSequencer: audio.stepSequencer,
+                sampleRate: engine.sampleRate,
                 profile: profile,
                 dataStore: dataStore
             )
@@ -80,7 +80,6 @@ struct PeachApp: App {
             _timingOffsetDetectionSession = State(wrappedValue: sessions.timingOffsetDetection)
             _continuousRhythmMatchingSession = State(wrappedValue: sessions.continuousRhythmMatching)
             _midiAdapter = State(wrappedValue: sessions.midiAdapter)
-            _stepSequencer = State(wrappedValue: sessions.stepSequencer)
 
             let coordinators = Self.buildCoordinators(
                 pitchDiscriminationSession: sessions.pitchDiscrimination,
@@ -189,7 +188,8 @@ struct PeachApp: App {
             notePlayer: newNotePlayer,
             strategy: strategy,
             profile: profile,
-            dataStore: dataStore
+            dataStore: dataStore,
+            hapticFeedback: Self.makeHapticFeedbackManager()
         )
         pitchMatchingSession = Self.createPitchMatchingSession(
             notePlayer: newNotePlayer,
@@ -251,7 +251,7 @@ struct PeachApp: App {
         engine: SoundFontEngine,
         library: SoundFontLibrary,
         userSettings: any UserSettings
-    ) throws -> (notePlayer: any NotePlayer, rhythmPlayer: any RhythmPlayer, percussionPreset: SF2Preset, percussionChannel: MIDIChannel) {
+    ) throws -> (notePlayer: any NotePlayer, rhythmPlayer: any RhythmPlayer, stepSequencer: SoundFontStepSequencer) {
         let preset = library.resolve(userSettings.soundSource)
         let notePlayer: any NotePlayer = SoundFontPlayer(
             engine: engine,
@@ -269,7 +269,13 @@ struct PeachApp: App {
             channel: percussionChannel
         )
 
-        return (notePlayer, rhythmPlayer, percussionPreset, percussionChannel)
+        let stepSequencer = SoundFontStepSequencer(
+            engine: engine,
+            preset: percussionPreset,
+            channel: percussionChannel
+        )
+
+        return (notePlayer, rhythmPlayer, stepSequencer)
     }
 
     // MARK: - Profile Setup
@@ -314,9 +320,8 @@ struct PeachApp: App {
     private static func createAllSessions(
         notePlayer: any NotePlayer,
         rhythmPlayer: any RhythmPlayer,
-        engine: SoundFontEngine,
-        percussionPreset: SF2Preset,
-        percussionChannel: MIDIChannel,
+        stepSequencer: SoundFontStepSequencer,
+        sampleRate: SampleRate,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
     ) -> (
@@ -324,16 +329,17 @@ struct PeachApp: App {
         pitchMatching: PitchMatchingSession,
         timingOffsetDetection: TimingOffsetDetectionSession,
         continuousRhythmMatching: ContinuousRhythmMatchingSession,
-        midiAdapter: MIDIKitAdapter,
-        stepSequencer: SoundFontStepSequencer
+        midiAdapter: MIDIKitAdapter
     ) {
         let midiAdapter = MIDIKitAdapter()
+        let hapticManager = makeHapticFeedbackManager()
 
         let pdSession = createPitchDiscriminationSession(
             notePlayer: notePlayer,
             strategy: KazezNoteStrategy(),
             profile: profile,
-            dataStore: dataStore
+            dataStore: dataStore,
+            hapticFeedback: hapticManager
         )
 
         let pmSession = createPitchMatchingSession(
@@ -347,13 +353,8 @@ struct PeachApp: App {
             rhythmPlayer: rhythmPlayer,
             profile: profile,
             dataStore: dataStore,
-            sampleRate: engine.sampleRate
-        )
-
-        let stepSequencer = SoundFontStepSequencer(
-            engine: engine,
-            preset: percussionPreset,
-            channel: percussionChannel
+            sampleRate: sampleRate,
+            hapticFeedback: hapticManager
         )
 
         let crmSession = createContinuousRhythmMatchingSession(
@@ -363,18 +364,19 @@ struct PeachApp: App {
             midiInput: midiAdapter
         )
 
-        return (pdSession, pmSession, todSession, crmSession, midiAdapter, stepSequencer)
+        return (pdSession, pmSession, todSession, crmSession, midiAdapter)
     }
 
     private static func createPitchDiscriminationSession(
         notePlayer: NotePlayer,
         strategy: NextPitchDiscriminationStrategy,
         profile: PerceptualProfile,
-        dataStore: TrainingDataStore
+        dataStore: TrainingDataStore,
+        hapticFeedback: some PitchDiscriminationObserver
     ) -> PitchDiscriminationSession {
         let profileAdapter = PitchDiscriminationProfileAdapter(profile: profile)
         let storeAdapter = PitchDiscriminationStoreAdapter(store: dataStore)
-        let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter, makeHapticFeedbackManager()]
+        let observers: [PitchDiscriminationObserver] = [storeAdapter, profileAdapter, hapticFeedback]
         return PitchDiscriminationSession(
             notePlayer: notePlayer,
             strategy: strategy,
@@ -389,11 +391,12 @@ struct PeachApp: App {
         rhythmPlayer: RhythmPlayer,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore,
-        sampleRate: SampleRate
+        sampleRate: SampleRate,
+        hapticFeedback: some TimingOffsetDetectionObserver
     ) -> TimingOffsetDetectionSession {
         let profileAdapter = TimingOffsetDetectionProfileAdapter(profile: profile)
         let storeAdapter = TimingOffsetDetectionStoreAdapter(store: dataStore)
-        let observers: [TimingOffsetDetectionObserver] = [storeAdapter, profileAdapter, makeHapticFeedbackManager()]
+        let observers: [TimingOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticFeedback]
         return TimingOffsetDetectionSession(
             rhythmPlayer: rhythmPlayer,
             strategy: AdaptiveTimingOffsetDetectionStrategy(),
