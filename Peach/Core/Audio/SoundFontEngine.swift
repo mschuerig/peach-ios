@@ -2,6 +2,24 @@
 import os
 import Synchronization
 
+// MARK: - MIDI Byte Helper
+
+/// Passes three MIDI bytes to a closure via a contiguous stack buffer,
+/// avoiding reliance on Swift tuple memory layout guarantees.
+/// Uses stack allocation (real-time safe for 3 bytes).
+@inline(__always)
+private nonisolated func withUnsafeMIDIBytes(
+    _ bytes: (UInt8, UInt8, UInt8),
+    body: (UnsafePointer<UInt8>) -> Void
+) {
+    withUnsafeTemporaryAllocation(of: UInt8.self, capacity: 3) { buffer in
+        buffer[0] = bytes.0
+        buffer[1] = bytes.1
+        buffer[2] = bytes.2
+        body(buffer.baseAddress!)
+    }
+}
+
 // MARK: - Scheduled MIDI Event
 
 /// A MIDI event scheduled for sample-accurate dispatch on the audio render thread.
@@ -37,10 +55,11 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
     private let eventBuffer1: UnsafeMutablePointer<ScheduledMIDIEvent>
     let capacity: Int
 
-    /// Event counts per slot. No concurrent access to the same slot due to double-buffering;
-    /// visibility guaranteed by the generation counter's release/acquire fence.
-    private var count0: Int = 0
-    private var count1: Int = 0
+    /// Event counts per slot. Written by the main thread, read by the render thread.
+    /// Atomic to avoid torn reads; ordering piggybacks on the generation counter's
+    /// release/acquire fence.
+    private let count0: Atomic<Int>
+    private let count1: Atomic<Int>
 
     // MARK: - MIDI Blocks (two slots × 16 channels)
 
@@ -109,8 +128,10 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
     }
 
     /// Reset the immediate ring buffer (render thread only, called on generation change).
+    /// Uses acquiring on the head load to pick up any events enqueued between the main
+    /// thread's generation bump and this reset.
     func resetImmediate() {
-        immediateTail.store(immediateHead.load(ordering: .relaxed), ordering: .relaxed)
+        immediateTail.store(immediateHead.load(ordering: .acquiring), ordering: .relaxed)
     }
 
     // MARK: - Lifecycle
@@ -118,6 +139,8 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
     init(capacity: Int) {
         self.capacity = capacity
         self.generation = Atomic<Int>(0)
+        self.count0 = Atomic<Int>(0)
+        self.count1 = Atomic<Int>(0)
         self.samplePosition = Atomic<Int64>(0)
         self.hostTimeAtSample = Atomic<UInt64>(0)
         self.hostTimeSamplePosition = Atomic<Int64>(0)
@@ -157,11 +180,19 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
     }
 
     func count(forSlot slot: Int) -> Int {
-        slot == 0 ? count0 : count1
+        if slot == 0 {
+            count0.load(ordering: .relaxed)
+        } else {
+            count1.load(ordering: .relaxed)
+        }
     }
 
     func setCount(_ count: Int, forSlot slot: Int) {
-        if slot == 0 { count0 = count } else { count1 = count }
+        if slot == 0 {
+            count0.store(count, ordering: .relaxed)
+        } else {
+            count1.store(count, ordering: .relaxed)
+        }
     }
 
     func midiBlocks(forSlot slot: Int) -> UnsafeMutablePointer<AUScheduleMIDIEventBlock?> {
@@ -288,9 +319,8 @@ final class SoundFontEngine {
         // Publish the new MIDI block via the double-buffer protocol.
         // Carry forward events from the active slot so the render thread
         // continues its current schedule uninterrupted.
-        let currentGen = scheduleState.generation.load(ordering: .relaxed)
-        let activeSlot = currentGen % 2
         swapScheduleSlot { inactiveSlot in
+            let activeSlot = (inactiveSlot + 1) % 2
             let activeCount = scheduleState.count(forSlot: activeSlot)
             let activeEvents = scheduleState.eventBuffer(forSlot: activeSlot)
             let inactiveEvents = scheduleState.eventBuffer(forSlot: inactiveSlot)
@@ -481,15 +511,12 @@ final class SoundFontEngine {
     }
 
     func clearSchedule() {
-        let currentGen = scheduleState.generation.load(ordering: .relaxed)
-        let inactiveIndex = (currentGen + 1) % 2
-        scheduleState.setCount(0, forSlot: inactiveIndex)
-
-        // Atomic publish — render thread resets samplePosition to 0 on generation change
-        // detection. Do NOT reset timing atomics here: the render thread may be mid-callback
-        // reading them on the old generation, and a zeroed samplePosition could cause
-        // re-dispatch of events in the current schedule.
-        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
+        // Render thread resets samplePosition to 0 on generation change detection.
+        // Do NOT reset timing atomics here: the render thread may be mid-callback
+        // reading them on the old generation.
+        swapScheduleSlot { inactiveSlot in
+            scheduleState.setCount(0, forSlot: inactiveSlot)
+        }
     }
 
     var scheduledEventCount: Int {
@@ -613,9 +640,9 @@ final class SoundFontEngine {
                         let intraBufferOffset = event.sampleOffset - windowStart
                         let eventTime = AUEventSampleTimeImmediate
                             + AUEventSampleTime(intraBufferOffset)
-                        var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
-                        withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                            midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                        let midiBytes: (UInt8, UInt8, UInt8) = (event.midiStatus, event.midiNote, event.velocity)
+                        withUnsafeMIDIBytes(midiBytes) { ptr in
+                            midiBlock(eventTime, 0, 3, ptr)
                         }
                         shared.dispatchedEventCount.wrappingAdd(1, ordering: .relaxed)
                     }
@@ -641,9 +668,9 @@ final class SoundFontEngine {
                 }
                 let eventTime = AUEventSampleTimeImmediate
                     + AUEventSampleTime(intraBufferOffset)
-                var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
-                withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                    midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                let midiBytes: (UInt8, UInt8, UInt8) = (event.midiStatus, event.midiNote, event.velocity)
+                withUnsafeMIDIBytes(midiBytes) { ptr in
+                    midiBlock(eventTime, 0, 3, ptr)
                 }
                 shared.dispatchedImmediateEventCount.wrappingAdd(1, ordering: .relaxed)
             }
