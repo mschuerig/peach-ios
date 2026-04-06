@@ -8,12 +8,12 @@ protocol StepSequencerEngine {
     var currentSamplePosition: Int64 { get }
     func ensureAudioSessionConfigured() throws
     func ensureEngineRunning() throws
-    func loadPreset(_ preset: SF2Preset, channel: SoundFontEngine.ChannelID) async throws
+    func loadPreset(_ preset: SF2Preset, channel: MIDIChannel) async throws
     func scheduleEvents(_ events: [ScheduledMIDIEvent])
     func clearSchedule()
-    func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async
-    func immediateNoteOn(channel: SoundFontEngine.ChannelID, note: UInt8, velocity: UInt8)
-    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8, delaySamples: Int64)
+    func stopNotes(channel: MIDIChannel, stopPropagationDelay: Duration) async
+    func immediateNoteOn(channel: MIDIChannel, note: UInt8, velocity: UInt8)
+    func immediateNoteOff(channel: MIDIChannel, note: UInt8, delaySamples: Int64)
     func samplePosition(forHostTime hostTime: UInt64) -> Int64
 }
 
@@ -44,7 +44,7 @@ final class SoundFontStepSequencer: StepSequencer {
     // MARK: - Dependencies
 
     private let engine: any StepSequencerEngine
-    private let channel: SoundFontEngine.ChannelID
+    private let channel: MIDIChannel
     private let preset: SF2Preset
 
     // MARK: - Observable State
@@ -56,6 +56,7 @@ final class SoundFontStepSequencer: StepSequencer {
 
     private(set) var samplesPerStep: Int64 = 0
     private(set) var samplesPerCycle: Int64 = 0
+    private var noteOffDelaySamples: Int64 = 0
 
     var timing: SequencerTiming {
         SequencerTiming(
@@ -72,7 +73,7 @@ final class SoundFontStepSequencer: StepSequencer {
 
     // MARK: - Initialization
 
-    init(engine: any StepSequencerEngine, preset: SF2Preset, channel: SoundFontEngine.ChannelID) {
+    init(engine: any StepSequencerEngine, preset: SF2Preset, channel: MIDIChannel) {
         self.engine = engine
         self.preset = preset
         self.channel = channel
@@ -87,23 +88,11 @@ final class SoundFontStepSequencer: StepSequencer {
         try engine.ensureEngineRunning()
         try await engine.loadPreset(preset, channel: channel)
 
-        let sampleRate = engine.sampleRate
-        let computedSamplesPerStep = Self.samplesPerStep(tempo: tempo, sampleRate: sampleRate)
-        let noteOffDelaySamples = Self.noteOffDelaySamples(
-            sampleRate: sampleRate,
-            samplesPerStep: computedSamplesPerStep
-        )
-        let computedSamplesPerCycle = computedSamplesPerStep * 4
+        configureTiming(tempo: tempo)
 
-        self.samplesPerStep = computedSamplesPerStep
-        self.samplesPerCycle = computedSamplesPerCycle
-
-        let batch = Self.buildBatch(
+        let batch = buildBatch(
             cycleCount: Self.cyclesPerBatch,
-            stepProvider: stepProvider,
-            samplesPerStep: samplesPerStep,
-            noteOffDelaySamples: noteOffDelaySamples,
-            channelID: channel
+            stepProvider: stepProvider
         )
         engine.scheduleEvents(batch.events)
 
@@ -127,12 +116,9 @@ final class SoundFontStepSequencer: StepSequencer {
 
                 // Replenish batch when approaching the end
                 if position >= refillThreshold {
-                    let nextBatch = Self.buildBatch(
+                    let nextBatch = buildBatch(
                         cycleCount: Self.cyclesPerBatch,
-                        stepProvider: stepProvider,
-                        samplesPerStep: samplesPerStep,
-                        noteOffDelaySamples: noteOffDelaySamples,
-                        channelID: channel
+                        stepProvider: stepProvider
                     )
                     definitions = nextBatch.definitions
                     engine.scheduleEvents(nextBatch.events)
@@ -163,9 +149,19 @@ final class SoundFontStepSequencer: StepSequencer {
         currentCycle = nil
         samplesPerStep = 0
         samplesPerCycle = 0
+        noteOffDelaySamples = 0
         engine.clearSchedule()
         await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
         logger.info("Step sequencer stopped")
+    }
+
+    // MARK: - Timing Configuration (internal for testability)
+
+    func configureTiming(tempo: TempoBPM) {
+        let sampleRate = engine.sampleRate
+        samplesPerStep = Self.samplesPerStep(tempo: tempo, sampleRate: sampleRate)
+        samplesPerCycle = samplesPerStep * 4
+        noteOffDelaySamples = Self.noteOffDelaySamples(sampleRate: sampleRate, samplesPerStep: samplesPerStep)
     }
 
     // MARK: - Event Building (pure, testable)
@@ -182,18 +178,15 @@ final class SoundFontStepSequencer: StepSequencer {
         return min(noteOffSamples, max(samplesPerStep - 1, 1))
     }
 
-    static func buildCycleEvents(
+    func buildCycleEvents(
         cycle: CycleDefinition,
-        cycleOffset: Int64,
-        samplesPerStep: Int64,
-        noteOffDelaySamples: Int64,
-        channelID: SoundFontEngine.ChannelID
+        cycleOffset: Int64
     ) -> [ScheduledMIDIEvent] {
         var events: [ScheduledMIDIEvent] = []
         events.reserveCapacity(6)
 
-        let midiNoteRaw = UInt8(clickNote.rawValue)
-        let channelRaw = channelID.rawValue
+        let midiNoteRaw = UInt8(Self.clickNote.rawValue)
+        let channelRaw = channel.rawValue
 
         for step in StepPosition.allCases {
             if step == cycle.gapPosition { continue }
@@ -224,14 +217,10 @@ final class SoundFontStepSequencer: StepSequencer {
         let definitions: [CycleDefinition]
     }
 
-    static func buildBatch(
+    func buildBatch(
         cycleCount: Int,
-        stepProvider: any StepProvider,
-        samplesPerStep: Int64,
-        noteOffDelaySamples: Int64,
-        channelID: SoundFontEngine.ChannelID
+        stepProvider: any StepProvider
     ) -> Batch {
-        let samplesPerCycle = samplesPerStep * 4
         var allEvents: [ScheduledMIDIEvent] = []
         allEvents.reserveCapacity(cycleCount * 6)
         var definitions: [CycleDefinition] = []
@@ -244,10 +233,7 @@ final class SoundFontStepSequencer: StepSequencer {
 
             let cycleEvents = buildCycleEvents(
                 cycle: cycle,
-                cycleOffset: cycleOffset,
-                samplesPerStep: samplesPerStep,
-                noteOffDelaySamples: noteOffDelaySamples,
-                channelID: channelID
+                cycleOffset: cycleOffset
             )
             allEvents.append(contentsOf: cycleEvents)
         }

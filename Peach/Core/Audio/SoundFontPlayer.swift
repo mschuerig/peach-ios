@@ -32,11 +32,11 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
 
     // MARK: - Channel
 
-    private let channel: SoundFontEngine.ChannelID
+    private let channel: MIDIChannel
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, preset: SF2Preset, channel: SoundFontEngine.ChannelID = SoundFontEngine.ChannelID(0), stopPropagationDelay: Duration = .milliseconds(25)) {
+    init(engine: SoundFontEngine, preset: SF2Preset, channel: MIDIChannel = MIDIChannel(0), stopPropagationDelay: Duration = .milliseconds(25)) {
         self.soundFontEngine = engine
         self.preset = preset
         self.channel = channel

@@ -25,7 +25,7 @@ final class MockStepSequencerEngine: StepSequencerEngine {
         ensureEngineRunningCallCount += 1
     }
 
-    func loadPreset(_ preset: SF2Preset, channel: SoundFontEngine.ChannelID) async throws {
+    func loadPreset(_ preset: SF2Preset, channel: MIDIChannel) async throws {
         loadPresetCallCount += 1
     }
 
@@ -41,17 +41,17 @@ final class MockStepSequencerEngine: StepSequencerEngine {
         currentSamplePosition = 0
     }
 
-    func stopNotes(channel: SoundFontEngine.ChannelID, stopPropagationDelay: Duration) async {
+    func stopNotes(channel: MIDIChannel, stopPropagationDelay: Duration) async {
         stopNotesCallCount += 1
     }
 
-    func immediateNoteOn(channel: SoundFontEngine.ChannelID, note: UInt8, velocity: UInt8) {
+    func immediateNoteOn(channel: MIDIChannel, note: UInt8, velocity: UInt8) {
         immediateNoteOnCallCount += 1
         lastImmediateNoteOnNote = note
         lastImmediateNoteOnVelocity = velocity
     }
 
-    func immediateNoteOff(channel: SoundFontEngine.ChannelID, note: UInt8, delaySamples: Int64) {
+    func immediateNoteOff(channel: MIDIChannel, note: UInt8, delaySamples: Int64) {
         immediateNoteOffCallCount += 1
         onImmediateNoteOff?()
     }

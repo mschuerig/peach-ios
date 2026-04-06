@@ -6,14 +6,14 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     // MARK: - State
 
     private let engine: SoundFontEngine
-    private let channel: SoundFontEngine.ChannelID
+    private let channel: MIDIChannel
     private let midiNote: MIDINote
     private let stopPropagationDelay: Duration
     private var hasStopped = false
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, channel: SoundFontEngine.ChannelID, midiNote: MIDINote, stopPropagationDelay: Duration) {
+    init(engine: SoundFontEngine, channel: MIDIChannel, midiNote: MIDINote, stopPropagationDelay: Duration) {
         self.engine = engine
         self.channel = channel
         self.midiNote = midiNote

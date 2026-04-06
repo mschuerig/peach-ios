@@ -171,16 +171,6 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
 
 final class SoundFontEngine {
 
-    // MARK: - ChannelID
-
-    struct ChannelID: Hashable, Sendable {
-        let rawValue: UInt8
-        init(_ rawValue: UInt8) {
-            precondition((0...15).contains(rawValue), "MIDI channel must be 0-15, got \(rawValue)")
-            self.rawValue = rawValue
-        }
-    }
-
     // MARK: - Logger
 
     private let logger = Logger(subsystem: "com.peach.app", category: "SoundFontEngine")
@@ -188,12 +178,12 @@ final class SoundFontEngine {
     // MARK: - Audio Components
 
     private let engine: AVAudioEngine
-    private var channels: [ChannelID: AVAudioUnitSampler] = [:]
+    private var channels: [MIDIChannel: AVAudioUnitSampler] = [:]
     private let sourceNode: AVAudioSourceNode
 
     // MARK: - State
 
-    private var loadedPresets: [ChannelID: SF2Preset] = [:]
+    private var loadedPresets: [MIDIChannel: SF2Preset] = [:]
     private var activeMuteCount = 0
 
     // MARK: - MIDI Constants
@@ -241,7 +231,7 @@ final class SoundFontEngine {
         self.scheduleState = shared
 
         // Pre-create channel 0 for backward compatibility
-        let channel0 = ChannelID(0)
+        let channel0 = MIDIChannel(0)
         let sampler0 = AVAudioUnitSampler()
         engine.attach(sampler0)
         engine.connect(sampler0, to: engine.mainMixerNode, format: nil)
@@ -262,102 +252,8 @@ final class SoundFontEngine {
         let sampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
         let sourceFormat = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
 
-        let sourceNode = AVAudioSourceNode(format: sourceFormat) { @Sendable
-            isSilence, timestamp, frameCount, outputData -> OSStatus in
-
-            isSilence.pointee = true
-            let abl = UnsafeMutableAudioBufferListPointer(outputData)
-            for buf in abl {
-                if let data = buf.mData {
-                    memset(data, 0, Int(buf.mDataByteSize))
-                }
-            }
-
-            // Load generation with acquire ordering — ensures all slot writes
-            // from the main thread's release store are visible.
-            let gen = shared.generation.load(ordering: .acquiring)
-            let slotIndex = gen % 2
-
-            // Detect schedule change — reset cursor, dispatch counter, and immediate buffer
-            if gen != shared.lastGeneration {
-                shared.lastGeneration = gen
-                shared.nextIndex = 0
-                shared.samplePosition.store(0, ordering: .relaxed)
-                shared.dispatchedEventCount.store(0, ordering: .relaxed)
-                shared.resetImmediate()
-            }
-
-            let count = shared.count(forSlot: slotIndex)
-            let hasImmediateEvents = shared.immediateTail.load(ordering: .acquiring)
-                != shared.immediateHead.load(ordering: .acquiring)
-
-            // Skip timing/dispatch when there's nothing to process
-            guard count > 0 || hasImmediateEvents else { return noErr }
-
-            let midiBlocks = shared.midiBlocks(forSlot: slotIndex)
-            let windowStart = shared.samplePosition.load(ordering: .relaxed)
-            let windowEnd = windowStart + Int64(frameCount)
-
-            // --- Dispatch scheduled pattern events ---
-            if count > 0 {
-                let events = shared.eventBuffer(forSlot: slotIndex)
-                var nextIdx = shared.nextIndex
-
-                while nextIdx < count {
-                    let event = events[nextIdx]
-                    if event.sampleOffset >= windowEnd { break }
-                    if event.sampleOffset >= windowStart {
-                        let channel = event.midiStatus & Self.channelMask
-                        guard let midiBlock = midiBlocks[Int(channel)] else {
-                            nextIdx += 1
-                            continue
-                        }
-                        let intraBufferOffset = event.sampleOffset - windowStart
-                        let eventTime = AUEventSampleTimeImmediate
-                            + AUEventSampleTime(intraBufferOffset)
-                        var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
-                        withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                            midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
-                        }
-                        shared.dispatchedEventCount.wrappingAdd(1, ordering: .relaxed)
-                    }
-                    nextIdx += 1
-                }
-
-                shared.nextIndex = nextIdx
-            }
-
-            // --- Drain immediate event ring buffer ---
-            // Peek before consuming: stop at events beyond the current window
-            // so future-timestamped note-offs are held for the correct callback.
-            while let event = shared.peekImmediate() {
-                if event.sampleOffset >= windowEnd { break }
-                _ = shared.dequeueImmediate()
-                let channel = event.midiStatus & Self.channelMask
-                guard let midiBlock = midiBlocks[Int(channel)] else { continue }
-                let intraBufferOffset: Int64
-                if event.sampleOffset <= windowStart {
-                    intraBufferOffset = 0
-                } else {
-                    intraBufferOffset = event.sampleOffset - windowStart
-                }
-                let eventTime = AUEventSampleTimeImmediate
-                    + AUEventSampleTime(intraBufferOffset)
-                var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
-                withUnsafeBytes(of: &midiBytes) { rawBuffer in
-                    midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
-                }
-                shared.dispatchedImmediateEventCount.wrappingAdd(1, ordering: .relaxed)
-            }
-
-            // Store timing values BEFORE the releasing samplePosition store so that
-            // a reader who acquires samplePosition sees consistent timing state.
-            shared.hostTimeAtSample.store(timestamp.pointee.mHostTime, ordering: .relaxed)
-            shared.hostTimeSamplePosition.store(windowStart, ordering: .relaxed)
-            shared.samplePosition.store(windowEnd, ordering: .releasing)
-
-            return noErr
-        }
+        let sourceNode = AVAudioSourceNode(format: sourceFormat,
+            renderBlock: Self.makeRenderCallback(shared: shared))
         self.sourceNode = sourceNode
 
         engine.attach(sourceNode)
@@ -378,7 +274,7 @@ final class SoundFontEngine {
 
     // MARK: - Channel Management
 
-    func createChannel(_ id: ChannelID) throws {
+    func createChannel(_ id: MIDIChannel) throws {
         guard channels[id] == nil else { return }
 
         let sampler = AVAudioUnitSampler()
@@ -389,25 +285,20 @@ final class SoundFontEngine {
         let block = sampler.auAudioUnit.scheduleMIDIEventBlock
         mainThreadMidiBlocks[id.rawValue] = block
 
-        // Publish the new MIDI block via the double-buffer protocol: write to the
-        // inactive slot and bump generation. This respects the invariant that the
-        // active slot (read by the render thread) is never written by the main thread.
+        // Publish the new MIDI block via the double-buffer protocol.
+        // Carry forward events from the active slot so the render thread
+        // continues its current schedule uninterrupted.
         let currentGen = scheduleState.generation.load(ordering: .relaxed)
-        let inactiveIndex = (currentGen + 1) % 2
-        let inactiveBlocks = scheduleState.midiBlocks(forSlot: inactiveIndex)
-        // Copy all current MIDI blocks into the inactive slot
-        for ch in 0..<16 {
-            inactiveBlocks[ch] = mainThreadMidiBlocks[UInt8(ch)]
+        let activeSlot = currentGen % 2
+        swapScheduleSlot { inactiveSlot in
+            let activeCount = scheduleState.count(forSlot: activeSlot)
+            let activeEvents = scheduleState.eventBuffer(forSlot: activeSlot)
+            let inactiveEvents = scheduleState.eventBuffer(forSlot: inactiveSlot)
+            for i in 0..<activeCount {
+                inactiveEvents[i] = activeEvents[i]
+            }
+            scheduleState.setCount(activeCount, forSlot: inactiveSlot)
         }
-        // Preserve the inactive slot's event count (carry forward from current active slot)
-        let activeCount = scheduleState.count(forSlot: currentGen % 2)
-        let activeEvents = scheduleState.eventBuffer(forSlot: currentGen % 2)
-        let inactiveEvents = scheduleState.eventBuffer(forSlot: inactiveIndex)
-        for i in 0..<activeCount {
-            inactiveEvents[i] = activeEvents[i]
-        }
-        scheduleState.setCount(activeCount, forSlot: inactiveIndex)
-        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
 
         logger.info("Created channel \(id.rawValue)")
     }
@@ -426,7 +317,7 @@ final class SoundFontEngine {
 
     // MARK: - Preset Loading
 
-    func loadPreset(_ preset: SF2Preset, channel: ChannelID) async throws {
+    func loadPreset(_ preset: SF2Preset, channel: MIDIChannel) async throws {
         guard let sampler = channels[channel] else {
             throw AudioError.invalidPreset("Channel \(channel.rawValue) does not exist")
         }
@@ -467,19 +358,19 @@ final class SoundFontEngine {
 
     // MARK: - Immediate MIDI Dispatch
 
-    func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue, channel: ChannelID) {
+    func startNote(_ midiNote: MIDINote, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB, pitchBend: PitchBendValue, channel: MIDIChannel) {
         guard let sampler = channels[channel] else { return }
         sampler.sendPitchBend(pitchBend.rawValue, onChannel: channel.rawValue)
         sampler.overallGain = Float(amplitudeDB.rawValue)
         sampler.startNote(UInt8(midiNote.rawValue), withVelocity: velocity.rawValue, onChannel: channel.rawValue)
     }
 
-    func stopNote(_ midiNote: MIDINote, channel: ChannelID) {
+    func stopNote(_ midiNote: MIDINote, channel: MIDIChannel) {
         guard let sampler = channels[channel] else { return }
         sampler.stopNote(UInt8(midiNote.rawValue), onChannel: channel.rawValue)
     }
 
-    func stopNotes(channel: ChannelID, stopPropagationDelay: Duration) async {
+    func stopNotes(channel: MIDIChannel, stopPropagationDelay: Duration) async {
         guard let sampler = channels[channel] else { return }
         if stopPropagationDelay > .zero {
             muteForFade()
@@ -492,7 +383,7 @@ final class SoundFontEngine {
         }
     }
 
-    func immediateNoteOn(channel: ChannelID, note: UInt8, velocity: UInt8) {
+    func immediateNoteOn(channel: MIDIChannel, note: UInt8, velocity: UInt8) {
         let currentPos = scheduleState.samplePosition.load(ordering: .acquiring)
         let event = ScheduledMIDIEvent(
             sampleOffset: currentPos,
@@ -504,7 +395,7 @@ final class SoundFontEngine {
         assert(enqueued, "Immediate ring buffer overflow — note-on dropped")
     }
 
-    func immediateNoteOff(channel: ChannelID, note: UInt8, delaySamples: Int64 = 0) {
+    func immediateNoteOff(channel: MIDIChannel, note: UInt8, delaySamples: Int64 = 0) {
         let currentPos = scheduleState.samplePosition.load(ordering: .acquiring)
         let event = ScheduledMIDIEvent(
             sampleOffset: currentPos + delaySamples,
@@ -516,7 +407,7 @@ final class SoundFontEngine {
         assert(enqueued, "Immediate ring buffer overflow — note-off dropped")
     }
 
-    func sendPitchBend(_ value: PitchBendValue, channel: ChannelID) {
+    func sendPitchBend(_ value: PitchBendValue, channel: MIDIChannel) {
         guard let sampler = channels[channel] else { return }
         sampler.sendPitchBend(value.rawValue, onChannel: channel.rawValue)
     }
@@ -544,6 +435,24 @@ final class SoundFontEngine {
 
     // MARK: - Render-Thread Scheduling
 
+    /// Writes to the inactive double-buffer slot, copies MIDI blocks, and atomically
+    /// swaps via the generation counter. The `prepare` closure receives the inactive
+    /// slot index so callers can populate it before the swap — either with new events
+    /// (`scheduleEvents`) or by carrying forward existing events (`createChannel`).
+    private func swapScheduleSlot(prepare: (_ inactiveSlot: Int) -> Void) {
+        let currentGen = scheduleState.generation.load(ordering: .relaxed)
+        let inactiveIndex = (currentGen + 1) % 2
+
+        prepare(inactiveIndex)
+
+        let inactiveBlocks = scheduleState.midiBlocks(forSlot: inactiveIndex)
+        for ch in 0..<16 {
+            inactiveBlocks[ch] = mainThreadMidiBlocks[UInt8(ch)]
+        }
+
+        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
+    }
+
     func scheduleEvents(_ events: [ScheduledMIDIEvent]) {
         if events.count > Self.scheduleCapacity {
             logger.warning("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity), truncating")
@@ -556,30 +465,19 @@ final class SoundFontEngine {
             affectedChannels.insert(event.midiStatus & Self.channelMask)
         }
         for channelID in affectedChannels {
-            if let sampler = channels[ChannelID(channelID)] {
+            if let sampler = channels[MIDIChannel(channelID)] {
                 sampler.auAudioUnit.reset()
             }
         }
 
-        // Write to the inactive slot, then atomically swap via generation increment
-        let currentGen = scheduleState.generation.load(ordering: .relaxed)
-        let inactiveIndex = (currentGen + 1) % 2
-        let buffer = scheduleState.eventBuffer(forSlot: inactiveIndex)
-        let count = min(events.count, scheduleState.capacity)
-        for i in 0..<count {
-            buffer[i] = events[i]
+        swapScheduleSlot { inactiveSlot in
+            let buffer = scheduleState.eventBuffer(forSlot: inactiveSlot)
+            let count = min(events.count, scheduleState.capacity)
+            for i in 0..<count {
+                buffer[i] = events[i]
+            }
+            scheduleState.setCount(count, forSlot: inactiveSlot)
         }
-        scheduleState.setCount(count, forSlot: inactiveIndex)
-
-        // Copy current MIDI blocks into the inactive slot
-        let inactiveBlocks = scheduleState.midiBlocks(forSlot: inactiveIndex)
-        for ch in 0..<16 {
-            inactiveBlocks[ch] = mainThreadMidiBlocks[UInt8(ch)]
-        }
-
-        // Atomic publish — release fence ensures all writes above are visible
-        // to the render thread's acquire load of the generation counter.
-        scheduleState.generation.store(currentGen + 1, ordering: .releasing)
     }
 
     func clearSchedule() {
@@ -658,9 +556,111 @@ final class SoundFontEngine {
         return (dispatched, index)
     }
 
+    // MARK: - Render Callback
+
+    private nonisolated static func makeRenderCallback(
+        shared: DoubleBufferedScheduleState
+    ) -> @Sendable (UnsafeMutablePointer<ObjCBool>, UnsafePointer<AudioTimeStamp>, UInt32, UnsafeMutablePointer<AudioBufferList>) -> OSStatus {
+        { @Sendable isSilence, timestamp, frameCount, outputData -> OSStatus in
+
+            isSilence.pointee = true
+            let abl = UnsafeMutableAudioBufferListPointer(outputData)
+            for buf in abl {
+                if let data = buf.mData {
+                    memset(data, 0, Int(buf.mDataByteSize))
+                }
+            }
+
+            // Load generation with acquire ordering — ensures all slot writes
+            // from the main thread's release store are visible.
+            let gen = shared.generation.load(ordering: .acquiring)
+            let slotIndex = gen % 2
+
+            // Detect schedule change — reset cursor, dispatch counter, and immediate buffer
+            if gen != shared.lastGeneration {
+                shared.lastGeneration = gen
+                shared.nextIndex = 0
+                shared.samplePosition.store(0, ordering: .relaxed)
+                shared.dispatchedEventCount.store(0, ordering: .relaxed)
+                shared.resetImmediate()
+            }
+
+            let count = shared.count(forSlot: slotIndex)
+            let hasImmediateEvents = shared.immediateTail.load(ordering: .acquiring)
+                != shared.immediateHead.load(ordering: .acquiring)
+
+            // Skip timing/dispatch when there's nothing to process
+            guard count > 0 || hasImmediateEvents else { return noErr }
+
+            let midiBlocks = shared.midiBlocks(forSlot: slotIndex)
+            let windowStart = shared.samplePosition.load(ordering: .relaxed)
+            let windowEnd = windowStart + Int64(frameCount)
+
+            // --- Dispatch scheduled pattern events ---
+            if count > 0 {
+                let events = shared.eventBuffer(forSlot: slotIndex)
+                var nextIdx = shared.nextIndex
+
+                while nextIdx < count {
+                    let event = events[nextIdx]
+                    if event.sampleOffset >= windowEnd { break }
+                    if event.sampleOffset >= windowStart {
+                        let channel = event.midiStatus & channelMask
+                        guard let midiBlock = midiBlocks[Int(channel)] else {
+                            nextIdx += 1
+                            continue
+                        }
+                        let intraBufferOffset = event.sampleOffset - windowStart
+                        let eventTime = AUEventSampleTimeImmediate
+                            + AUEventSampleTime(intraBufferOffset)
+                        var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
+                        withUnsafeBytes(of: &midiBytes) { rawBuffer in
+                            midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                        }
+                        shared.dispatchedEventCount.wrappingAdd(1, ordering: .relaxed)
+                    }
+                    nextIdx += 1
+                }
+
+                shared.nextIndex = nextIdx
+            }
+
+            // --- Drain immediate event ring buffer ---
+            // Peek before consuming: stop at events beyond the current window
+            // so future-timestamped note-offs are held for the correct callback.
+            while let event = shared.peekImmediate() {
+                if event.sampleOffset >= windowEnd { break }
+                _ = shared.dequeueImmediate()
+                let channel = event.midiStatus & channelMask
+                guard let midiBlock = midiBlocks[Int(channel)] else { continue }
+                let intraBufferOffset: Int64
+                if event.sampleOffset <= windowStart {
+                    intraBufferOffset = 0
+                } else {
+                    intraBufferOffset = event.sampleOffset - windowStart
+                }
+                let eventTime = AUEventSampleTimeImmediate
+                    + AUEventSampleTime(intraBufferOffset)
+                var midiBytes = (event.midiStatus, event.midiNote, event.velocity)
+                withUnsafeBytes(of: &midiBytes) { rawBuffer in
+                    midiBlock(eventTime, 0, 3, rawBuffer.baseAddress!.assumingMemoryBound(to: UInt8.self))
+                }
+                shared.dispatchedImmediateEventCount.wrappingAdd(1, ordering: .relaxed)
+            }
+
+            // Store timing values BEFORE the releasing samplePosition store so that
+            // a reader who acquires samplePosition sees consistent timing state.
+            shared.hostTimeAtSample.store(timestamp.pointee.mHostTime, ordering: .relaxed)
+            shared.hostTimeSamplePosition.store(windowStart, ordering: .relaxed)
+            shared.samplePosition.store(windowEnd, ordering: .releasing)
+
+            return noErr
+        }
+    }
+
     // MARK: - MIDI Helpers
 
-    private func sendPitchBendRange(channel: ChannelID) {
+    private func sendPitchBendRange(channel: MIDIChannel) {
         guard let sampler = channels[channel] else { return }
         // MIDI RPN 0x0000 (Pitch Bend Sensitivity): set range to ±pitchBendRangeSemitones
         sampler.sendController(101, withValue: 0, onChannel: channel.rawValue)   // RPN MSB

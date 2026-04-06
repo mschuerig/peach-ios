@@ -1,10 +1,10 @@
 final class SoundFontRhythmPlaybackHandle: RhythmPlaybackHandle {
 
     private let engine: SoundFontEngine
-    private let channel: SoundFontEngine.ChannelID
+    private let channel: MIDIChannel
     private var hasStopped = false
 
-    init(engine: SoundFontEngine, channel: SoundFontEngine.ChannelID) {
+    init(engine: SoundFontEngine, channel: MIDIChannel) {
         self.engine = engine
         self.channel = channel
     }

@@ -8,7 +8,7 @@ struct SoundFontStepSequencerTests {
 
     private static let sampleRate = SampleRate.standard44100
     private static let tempo = TempoBPM(120)
-    private static let channelID = SoundFontEngine.ChannelID(1)
+    private static let channelID = MIDIChannel(1)
 
     private static var samplesPerStep: Int64 {
         SoundFontStepSequencer.samplesPerStep(tempo: tempo, sampleRate: sampleRate)
@@ -19,6 +19,15 @@ struct SoundFontStepSequencerTests {
             sampleRate: sampleRate,
             samplesPerStep: samplesPerStep
         )
+    }
+
+    /// Creates a sequencer with timing state pre-configured for event building tests.
+    private func makeSequencerForEventBuilding() -> SoundFontStepSequencer {
+        let engine = MockStepSequencerEngine()
+        engine.sampleRate = Self.sampleRate
+        let sequencer = SoundFontStepSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        sequencer.configureTiming(tempo: Self.tempo)
+        return sequencer
     }
 
     // MARK: - samplesPerStep
@@ -38,14 +47,9 @@ struct SoundFontStepSequencerTests {
 
     @Test("cycle with gap at second position produces 3 note-on and 3 note-off events")
     func cycleEventsGapAtSecond() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycle = CycleDefinition(gapPosition: .second)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         let noteOns = events.filter { $0.midiStatus == SoundFontEngine.noteOnBase | Self.channelID.rawValue }
         let noteOffs = events.filter { $0.midiStatus == SoundFontEngine.noteOffBase | Self.channelID.rawValue }
@@ -56,15 +60,10 @@ struct SoundFontStepSequencerTests {
 
     @Test("gap position produces no events at that step's sample offset")
     func gapPositionIsSilent() async {
+        let sequencer = makeSequencerForEventBuilding()
         let gapPosition = StepPosition.third
         let cycle = CycleDefinition(gapPosition: gapPosition)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         let gapOffset = Int64(gapPosition.rawValue) * Self.samplesPerStep
         let eventsAtGap = events.filter { $0.sampleOffset == gapOffset }
@@ -73,14 +72,9 @@ struct SoundFontStepSequencerTests {
 
     @Test("step 1 uses accent velocity 127")
     func firstStepUsesAccentVelocity() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycle = CycleDefinition(gapPosition: .second)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         let firstStepNoteOn = events.first {
             $0.sampleOffset == 0 && $0.midiStatus == SoundFontEngine.noteOnBase | Self.channelID.rawValue
@@ -90,14 +84,9 @@ struct SoundFontStepSequencerTests {
 
     @Test("non-gap steps 2–4 use normal velocity 100")
     func nonGapStepsUseNormalVelocity() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycle = CycleDefinition(gapPosition: .first) // gap at first, so steps 2-4 are normal
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         let noteOns = events.filter {
             $0.midiStatus == SoundFontEngine.noteOnBase | Self.channelID.rawValue
@@ -111,15 +100,10 @@ struct SoundFontStepSequencerTests {
 
     @Test("step 1 uses accent even when gap is elsewhere")
     func step1AccentWhenGapElsewhere() async {
+        let sequencer = makeSequencerForEventBuilding()
         for gap in [StepPosition.second, .third, .fourth] {
             let cycle = CycleDefinition(gapPosition: gap)
-            let events = SoundFontStepSequencer.buildCycleEvents(
-                cycle: cycle,
-                cycleOffset: 0,
-                samplesPerStep: Self.samplesPerStep,
-                noteOffDelaySamples: Self.noteOffDelay,
-                channelID: Self.channelID
-            )
+            let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
             let firstStepNoteOn = events.first {
                 $0.sampleOffset == 0 && $0.midiStatus == SoundFontEngine.noteOnBase | Self.channelID.rawValue
@@ -130,14 +114,9 @@ struct SoundFontStepSequencerTests {
 
     @Test("when gap is at first position, no accent event is produced")
     func noAccentWhenGapAtFirst() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycle = CycleDefinition(gapPosition: .first)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         let accentEvents = events.filter { $0.velocity == StepVelocity.accent.rawValue }
         #expect(accentEvents.isEmpty)
@@ -145,14 +124,9 @@ struct SoundFontStepSequencerTests {
 
     @Test("events use correct MIDI note 76")
     func eventsUseClickNote() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycle = CycleDefinition(gapPosition: .second)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         for event in events {
             #expect(event.midiNote == 76)
@@ -161,14 +135,9 @@ struct SoundFontStepSequencerTests {
 
     @Test("note-off events follow note-on events by the correct delay")
     func noteOffTimingIsCorrect() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycle = CycleDefinition(gapPosition: .fourth)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: 0,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: 0)
 
         let channelRaw = Self.channelID.rawValue
         let noteOns = events.filter { $0.midiStatus == SoundFontEngine.noteOnBase | channelRaw }
@@ -185,15 +154,10 @@ struct SoundFontStepSequencerTests {
 
     @Test("cycle offset shifts all event sample offsets")
     func cycleOffsetShiftsEvents() async {
+        let sequencer = makeSequencerForEventBuilding()
         let cycleOffset: Int64 = 100_000
         let cycle = CycleDefinition(gapPosition: .second)
-        let events = SoundFontStepSequencer.buildCycleEvents(
-            cycle: cycle,
-            cycleOffset: cycleOffset,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let events = sequencer.buildCycleEvents(cycle: cycle, cycleOffset: cycleOffset)
 
         for event in events {
             #expect(event.sampleOffset >= cycleOffset)
@@ -204,16 +168,11 @@ struct SoundFontStepSequencerTests {
 
     @Test("batch events call stepProvider once per cycle")
     func batchCallsProviderPerCycle() async {
+        let sequencer = makeSequencerForEventBuilding()
         let provider = MockStepProvider(gapPositions: [.second, .third, .fourth])
         let cycleCount = 6
 
-        let batch = SoundFontStepSequencer.buildBatch(
-            cycleCount: cycleCount,
-            stepProvider: provider,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let batch = sequencer.buildBatch(cycleCount: cycleCount, stepProvider: provider)
 
         #expect(provider.nextCycleCallCount == cycleCount)
         #expect(batch.definitions.count == cycleCount)
@@ -221,17 +180,12 @@ struct SoundFontStepSequencerTests {
 
     @Test("batch events with changing gap positions produces correct events per cycle")
     func batchWithChangingGaps() async {
+        let sequencer = makeSequencerForEventBuilding()
         let gaps: [StepPosition] = [.first, .second, .third, .fourth]
         let provider = MockStepProvider(gapPositions: gaps)
         let samplesPerCycle = Self.samplesPerStep * 4
 
-        let batch = SoundFontStepSequencer.buildBatch(
-            cycleCount: 4,
-            stepProvider: provider,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let batch = sequencer.buildBatch(cycleCount: 4, stepProvider: provider)
 
         let channelRaw = Self.channelID.rawValue
 
@@ -251,15 +205,10 @@ struct SoundFontStepSequencerTests {
 
     @Test("batch events are ordered by sample offset within each cycle")
     func batchEventsAreOrdered() async {
+        let sequencer = makeSequencerForEventBuilding()
         let provider = MockStepProvider(gapPositions: [.third])
 
-        let batch = SoundFontStepSequencer.buildBatch(
-            cycleCount: 3,
-            stepProvider: provider,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let batch = sequencer.buildBatch(cycleCount: 3, stepProvider: provider)
 
         // Verify events within each cycle are non-decreasing in offset
         let samplesPerCycle = Self.samplesPerStep * 4
@@ -276,16 +225,11 @@ struct SoundFontStepSequencerTests {
 
     @Test("batch definitions track the gap positions provided by stepProvider")
     func batchDefinitionsMatchProvider() async {
+        let sequencer = makeSequencerForEventBuilding()
         let gaps: [StepPosition] = [.first, .third, .second, .fourth, .second]
         let provider = MockStepProvider(gapPositions: gaps)
 
-        let batch = SoundFontStepSequencer.buildBatch(
-            cycleCount: 5,
-            stepProvider: provider,
-            samplesPerStep: Self.samplesPerStep,
-            noteOffDelaySamples: Self.noteOffDelay,
-            channelID: Self.channelID
-        )
+        let batch = sequencer.buildBatch(cycleCount: 5, stepProvider: provider)
 
         let expectedGaps = gaps
         let actualGaps = batch.definitions.map(\.gapPosition)
@@ -294,15 +238,10 @@ struct SoundFontStepSequencerTests {
 
     @Test("each gap position produces exactly one silent step per cycle")
     func eachGapPositionHasOneSilentStep() async {
+        let sequencer = makeSequencerForEventBuilding()
         for gap in StepPosition.allCases {
             let provider = MockStepProvider(gapPositions: [gap])
-            let batch = SoundFontStepSequencer.buildBatch(
-                cycleCount: 1,
-                stepProvider: provider,
-                samplesPerStep: Self.samplesPerStep,
-                noteOffDelaySamples: Self.noteOffDelay,
-                channelID: Self.channelID
-            )
+            let batch = sequencer.buildBatch(cycleCount: 1, stepProvider: provider)
 
             let channelRaw = Self.channelID.rawValue
             let noteOns = batch.events.filter {

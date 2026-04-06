@@ -5,7 +5,7 @@ import Testing
 @Suite("SoundFontEngine")
 struct SoundFontEngineTests {
 
-    private static let channel0 = SoundFontEngine.ChannelID(0)
+    private static let channel0 = MIDIChannel(0)
 
     private func makeEngine() throws -> SoundFontEngine {
         try SoundFontEngine(sf2URL: TestSoundFont.url, audioSessionConfigurator: MockAudioSessionConfigurator())
@@ -237,21 +237,21 @@ struct SoundFontEngineTests {
     @Test("createChannel adds a second channel without crash")
     func createChannelNoCrash() async throws {
         let engine = try makeEngine()
-        try engine.createChannel(SoundFontEngine.ChannelID(1))
+        try engine.createChannel(MIDIChannel(1))
     }
 
     @Test("loadPreset on specific channel succeeds")
     func loadPresetOnChannel() async throws {
         let engine = try makeEngine()
-        try engine.createChannel(SoundFontEngine.ChannelID(1))
+        try engine.createChannel(MIDIChannel(1))
         let preset = SF2Preset(name: "Cello", program: 42, bank: 0)
-        try await engine.loadPreset(preset, channel: SoundFontEngine.ChannelID(1))
+        try await engine.loadPreset(preset, channel: MIDIChannel(1))
     }
 
     @Test("startNote on specific channel does not crash")
     func startNoteOnChannel() async throws {
         let engine = try makeEngine()
-        let channel = SoundFontEngine.ChannelID(0)
+        let channel = MIDIChannel(0)
         engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: channel)
         engine.stopNote(MIDINote(69), channel: channel)
     }
@@ -259,7 +259,7 @@ struct SoundFontEngineTests {
     @Test("stopNotes on channel does not crash")
     func stopNotesOnChannel() async throws {
         let engine = try makeEngine()
-        let channel = SoundFontEngine.ChannelID(0)
+        let channel = MIDIChannel(0)
         engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: channel)
         await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
     }
@@ -267,18 +267,18 @@ struct SoundFontEngineTests {
     @Test("sendPitchBend on channel does not crash")
     func sendPitchBendOnChannel() async throws {
         let engine = try makeEngine()
-        engine.sendPitchBend(.center, channel: SoundFontEngine.ChannelID(0))
+        engine.sendPitchBend(.center, channel: MIDIChannel(0))
     }
 
     @Test("muteForFade and restoreAfterFade affect all channels")
     func muteAndRestoreAllChannels() async throws {
         let engine = try makeEngine()
-        try engine.createChannel(SoundFontEngine.ChannelID(1))
+        try engine.createChannel(MIDIChannel(1))
         engine.muteForFade()
         engine.restoreAfterFade()
         // If this doesn't crash and subsequent play works, volumes were restored
-        engine.startNote(MIDINote(60), velocity: MIDIVelocity(100), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: SoundFontEngine.ChannelID(0))
-        engine.stopNote(MIDINote(60), channel: SoundFontEngine.ChannelID(0))
+        engine.startNote(MIDINote(60), velocity: MIDIVelocity(100), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: MIDIChannel(0))
+        engine.stopNote(MIDINote(60), channel: MIDIChannel(0))
     }
 
     // MARK: - Lock-Free Dispatch Verification

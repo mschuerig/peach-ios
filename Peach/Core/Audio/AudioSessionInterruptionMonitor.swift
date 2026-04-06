@@ -8,9 +8,7 @@ final class AudioSessionInterruptionMonitor {
     private let onStopRequired: () -> Void
     private let audioInterruptionObserver: AudioInterruptionObserving
 
-    private var audioObserverTokens: [NSObjectProtocol] = []
-    private var backgroundObserver: NSObjectProtocol?
-    private var foregroundObserver: NSObjectProtocol?
+    private var observerTokens: [NSObjectProtocol] = []
 
     init(
         notificationCenter: NotificationCenter = .default,
@@ -25,14 +23,14 @@ final class AudioSessionInterruptionMonitor {
         self.onStopRequired = onStopRequired
         self.audioInterruptionObserver = audioInterruptionObserver
 
-        self.audioObserverTokens = audioInterruptionObserver.setupObservers(
+        self.observerTokens = audioInterruptionObserver.setupObservers(
             notificationCenter: notificationCenter,
             onStopRequired: onStopRequired
         )
 
-        if let backgroundNotificationName {
-            self.backgroundObserver = notificationCenter.addObserver(
-                forName: backgroundNotificationName,
+        for name in [backgroundNotificationName, foregroundNotificationName].compactMap({ $0 }) {
+            let token = notificationCenter.addObserver(
+                forName: name,
                 object: nil,
                 queue: .main
             ) { [weak self] _ in
@@ -40,31 +38,14 @@ final class AudioSessionInterruptionMonitor {
                     self?.onStopRequired()
                 }
             }
-        }
-
-        if let foregroundNotificationName {
-            self.foregroundObserver = notificationCenter.addObserver(
-                forName: foregroundNotificationName,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.onStopRequired()
-                }
-            }
+            observerTokens.append(token)
         }
 
         logger.info("Audio interruption observers setup complete")
     }
 
     isolated deinit {
-        for observer in audioObserverTokens {
-            notificationCenter.removeObserver(observer)
-        }
-        if let observer = backgroundObserver {
-            notificationCenter.removeObserver(observer)
-        }
-        if let observer = foregroundObserver {
+        for observer in observerTokens {
             notificationCenter.removeObserver(observer)
         }
     }

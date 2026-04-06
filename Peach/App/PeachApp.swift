@@ -81,10 +81,10 @@ struct PeachApp: App {
             )
             _notePlayer = State(wrappedValue: notePlayer)
 
-            try soundFontEngine.createChannel(SoundFontEngine.ChannelID(1))
+            try soundFontEngine.createChannel(MIDIChannel(1))
             let percussionPreset = soundFontLibrary.percussionPresets.first
                 ?? SF2Preset(name: "", program: 0, bank: SF2Preset.percussionBank)
-            let percussionChannel = SoundFontEngine.ChannelID(1)
+            let percussionChannel = MIDIChannel(1)
             let rhythmPlayer: any RhythmPlayer = SoundFontPlayer(
                 engine: soundFontEngine,
                 preset: percussionPreset,

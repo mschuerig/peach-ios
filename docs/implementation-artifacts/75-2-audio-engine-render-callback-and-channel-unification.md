@@ -1,6 +1,6 @@
 # Story 75.2: Audio Engine — Render Callback Extraction and Channel Unification
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -25,31 +25,31 @@ The walkthrough (Layer 2) found that `SoundFontEngine.init()` is 133 lines with 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Replace ChannelID with MIDIChannel (AC: #1)
-  - [ ] Remove `ChannelID` nested struct from `SoundFontEngine`
-  - [ ] Replace all `ChannelID` references with `MIDIChannel`
-  - [ ] Verify preconditions and ranges are identical (both UInt8, 0–15)
+- [x] Task 1: Replace ChannelID with MIDIChannel (AC: #1)
+  - [x] Remove `ChannelID` nested struct from `SoundFontEngine`
+  - [x] Replace all `ChannelID` references with `MIDIChannel`
+  - [x] Verify preconditions and ranges are identical (both UInt8, 0–15)
 
-- [ ] Task 2: Extract render callback from init (AC: #2)
-  - [ ] Create a `private static func makeRenderCallback(shared:...)` returning the closure
-  - [ ] Move the ~95-line `AVAudioSourceNode` callback body into the static method
-  - [ ] Verify it captures only `shared` state and `Self` constants (no `self` capture)
+- [x] Task 2: Extract render callback from init (AC: #2)
+  - [x] Create a `private static func makeRenderCallback(shared:...)` returning the closure
+  - [x] Move the ~95-line `AVAudioSourceNode` callback body into the static method
+  - [x] Verify it captures only `shared` state and `Self` constants (no `self` capture)
 
-- [ ] Task 3: Extract schedule-swap helper (AC: #3)
-  - [ ] Identify the shared pattern in `createChannel()` and `scheduleEvents()`
-  - [ ] Extract to a private method (e.g., `swapScheduleSlot(prepare:)`)
+- [x] Task 3: Extract schedule-swap helper (AC: #3)
+  - [x] Identify the shared pattern in `createChannel()` and `scheduleEvents()`
+  - [x] Extract to a private method (e.g., `swapScheduleSlot(prepare:)`)
 
-- [ ] Task 4: Convert SoundFontStepSequencer statics to instance methods (AC: #4)
-  - [ ] Change `buildBatch` and `buildCycleEvents` from `static` to instance methods
-  - [ ] Remove parameters that are already available as properties
-  - [ ] Store `noteOffDelaySamples` as a property if not already
+- [x] Task 4: Convert SoundFontStepSequencer statics to instance methods (AC: #4)
+  - [x] Change `buildBatch` and `buildCycleEvents` from `static` to instance methods
+  - [x] Remove parameters that are already available as properties
+  - [x] Store `noteOffDelaySamples` as a property if not already
 
-- [ ] Task 5: Simplify AudioSessionInterruptionMonitor (AC: #5)
-  - [ ] Replace separate `backgroundObserver`/`foregroundObserver` with a single loop
-  - [ ] Evaluate whether the foreground stop observer is redundant (both call `onStopRequired`)
+- [x] Task 5: Simplify AudioSessionInterruptionMonitor (AC: #5)
+  - [x] Replace separate `backgroundObserver`/`foregroundObserver` with a single loop
+  - [x] Evaluate whether the foreground stop observer is redundant (both call `onStopRequired`)
 
-- [ ] Task 6: Build and test both platforms (AC: #6)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 6: Build and test both platforms (AC: #6)
+  - [x] `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -91,10 +91,32 @@ The render callback runs on the real-time audio thread. When extracting it:
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+N/A
+
 ### Completion Notes List
+- AC#1: Removed `ChannelID` nested struct from `SoundFontEngine`; replaced all 40+ references across 10 files with `MIDIChannel` from `Core/Music/`. Both types are identical (UInt8, 0-15, Hashable, Sendable).
+- AC#2: Extracted ~95-line render callback into `private nonisolated static func makeRenderCallback(shared:)`. Captures only `DoubleBufferedScheduleState` and `Self.channelMask` — no `self` capture. Real-time safety preserved (no allocations, locks, or ObjC message sends).
+- AC#3: Extracted `swapScheduleSlot(prepare:)` helper. Both `createChannel()` and `scheduleEvents()` now delegate double-buffer swap logic to this method — `createChannel` carries forward existing events, `scheduleEvents` writes new events.
+- AC#4: Converted `buildBatch` and `buildCycleEvents` from `static` to instance methods. Added `noteOffDelaySamples` as property. Extracted `configureTiming(tempo:)` for both production `start()` and test use. Removed `samplesPerStep`, `noteOffDelaySamples`, and `channelID` parameters.
+- AC#5: Unified `backgroundObserver`/`foregroundObserver` into single `observerTokens` array populated via `compactMap` loop. Both foreground and background observers call `onStopRequired` — the foreground observer is intentional (stop training when app returns to foreground too).
+- AC#6: iOS 1717 tests passed, macOS 1710 tests passed. Zero regressions.
+
 ### File List
+- Peach/Core/Audio/SoundFontEngine.swift (modified)
+- Peach/Core/Audio/SoundFontStepSequencer.swift (modified)
+- Peach/Core/Audio/AudioSessionInterruptionMonitor.swift (modified)
+- Peach/Core/Audio/SoundFontPlayer.swift (modified)
+- Peach/Core/Audio/SoundFontPlaybackHandle.swift (modified)
+- Peach/Core/Audio/SoundFontRhythmPlaybackHandle.swift (modified)
+- Peach/App/PeachApp.swift (modified)
+- PeachTests/Core/Audio/SoundFontEngineTests.swift (modified)
+- PeachTests/Core/Audio/SoundFontStepSequencerTests.swift (modified)
+- PeachTests/Mocks/MockStepSequencerEngine.swift (modified)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-06: Implementation complete — all 6 tasks done, all ACs satisfied
