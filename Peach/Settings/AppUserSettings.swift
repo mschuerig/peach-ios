@@ -74,6 +74,8 @@ final class AppUserSettings: UserSettings {
         return GapPositionEncoding.decodeWithDefault(raw)
     }
 
+    var velocity: MIDIVelocity { .mezzoPiano }
+
     var autoStartTraining: Bool {
         defaults.bool(forKey: SettingsKeys.autoStartTraining)
     }

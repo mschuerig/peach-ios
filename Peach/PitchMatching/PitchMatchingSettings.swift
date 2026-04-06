@@ -43,7 +43,8 @@ struct PitchMatchingSettings {
             intervals: intervals,
             tuningSystem: userSettings.tuningSystem,
             noteDuration: userSettings.noteDuration,
-            varyLoudness: userSettings.varyLoudness
+            varyLoudness: userSettings.varyLoudness,
+            velocity: userSettings.velocity
         )
     }
 }

@@ -32,7 +32,6 @@ final class SettingsCoordinator {
     }
 
     private static let previewNote = MIDINote.a4
-    private static let previewVelocity = MIDIVelocity.mezzoPiano
     /// 0 dB — unity gain, no additional amplitude boost or cut.
     private static let previewAmplitude = AmplitudeDB(0)
 
@@ -44,7 +43,7 @@ final class SettingsCoordinator {
         try? await notePlayer.play(
             frequency: frequency,
             duration: duration,
-            velocity: Self.previewVelocity,
+            velocity: userSettings.velocity,
             amplitudeDB: Self.previewAmplitude
         )
     }

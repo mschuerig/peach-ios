@@ -10,7 +10,8 @@ nonisolated struct PitchBendValue: Hashable, Comparable, Sendable {
     }
 
     init(clamping rawValue: Int) {
-        self.rawValue = UInt16(rawValue.clamped(to: 0...16383))
+        let range = Int(Self.validRange.lowerBound)...Int(Self.validRange.upperBound)
+        self.rawValue = UInt16(rawValue.clamped(to: range))
     }
 
     // MARK: - Slider Mapping

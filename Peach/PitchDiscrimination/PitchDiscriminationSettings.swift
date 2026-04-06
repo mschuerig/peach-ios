@@ -50,6 +50,7 @@ struct PitchDiscriminationSettings {
             tuningSystem: userSettings.tuningSystem,
             noteDuration: userSettings.noteDuration,
             varyLoudness: userSettings.varyLoudness,
+            velocity: userSettings.velocity,
             noteGap: userSettings.noteGap
         )
     }

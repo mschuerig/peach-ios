@@ -608,7 +608,7 @@ development_status:
   #             Phase 3 (75.3, 75.7, 75.8, 75.5), Phase 4 (75.4),
   #             Phase 5 (75.13), Phase 6 (75.10)
   epic-75: in-progress
-  75-1-domain-vocabulary-constants-clamping-isolation: review
+  75-1-domain-vocabulary-constants-clamping-isolation: done
   75-12-training-directory-grouping: ready-for-dev
   75-11-rhythm-to-timing-naming-alignment: ready-for-dev
   75-9-core-dependency-direction-cleanup: ready-for-dev

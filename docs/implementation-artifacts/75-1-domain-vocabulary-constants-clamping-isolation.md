@@ -1,6 +1,6 @@
 # Story 75.1: Domain Vocabulary — Constants, Clamping, and Isolation Hygiene
 
-Status: review
+Status: done
 
 ## Story
 
