@@ -149,7 +149,7 @@ SCREEN_TYPES=()
 FEATURE_PATHS=()
 
 # Training feature directories
-for name in PitchDiscrimination PitchMatching RhythmOffsetDetection ContinuousRhythmMatching; do
+for name in PitchDiscrimination PitchMatching TimingOffsetDetection ContinuousRhythmMatching; do
     FEATURE_NAMES+=("$name")
     SCREEN_TYPES+=("${name}Screen")
     FEATURE_PATHS+=("$SRC_DIR/Training/$name")

@@ -102,11 +102,11 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: "rhythmOffsetDetection")
+        var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: csvTrainingType)
         var imported = 0, skipped = 0
         for record in parsedRecords(from: parseResult) {
             guard let r = record as? TimingOffsetDetectionRecord else { continue }
-            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: "rhythmOffsetDetection")
+            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: csvTrainingType)
             if existingKeys.contains(key) {
                 skipped += 1
             } else {

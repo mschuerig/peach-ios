@@ -143,7 +143,7 @@ final class TrainingDataStore {
         do {
             return try modelContext.fetch(descriptor)
         } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch rhythm offset detection records: \(error.localizedDescription)")
+            throw DataStoreError.fetchFailed("Failed to fetch timing offset detection records: \(error.localizedDescription)")
         }
     }
 

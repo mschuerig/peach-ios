@@ -129,13 +129,13 @@ struct PeachApp: App {
             )
             _pitchMatchingSession = State(wrappedValue: pmSession)
 
-            let rodSession = Self.createTimingOffsetDetectionSession(
+            let todSession = Self.createTimingOffsetDetectionSession(
                 rhythmPlayer: rhythmPlayer,
                 profile: profile,
                 dataStore: dataStore,
                 sampleRate: soundFontEngine.sampleRate
             )
-            _timingOffsetDetectionSession = State(wrappedValue: rodSession)
+            _timingOffsetDetectionSession = State(wrappedValue: todSession)
 
             let soundFontStepSequencer = SoundFontStepSequencer(
                 engine: soundFontEngine,
@@ -163,7 +163,7 @@ struct PeachApp: App {
             _trainingLifecycle = State(wrappedValue: TrainingLifecycleCoordinator(
                 pitchDiscriminationSession: pdSession,
                 pitchMatchingSession: pmSession,
-                timingOffsetDetectionSession: rodSession,
+                timingOffsetDetectionSession: todSession,
                 continuousRhythmMatchingSession: crmSession,
                 userSettings: userSettings,
                 backgroundPolicy: backgroundPolicy

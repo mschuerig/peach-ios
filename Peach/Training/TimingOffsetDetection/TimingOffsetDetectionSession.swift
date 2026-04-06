@@ -117,7 +117,7 @@ final class TimingOffsetDetectionSession: TrainingSession {
         }
 
         self.settings = settings
-        logger.info("Starting rhythm offset detection training loop")
+        logger.info("Starting timing offset detection training loop")
 
         lifecycle?.setTrainingTask(Task {
             await runTrainingLoop()

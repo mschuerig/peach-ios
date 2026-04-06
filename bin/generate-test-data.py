@@ -12,7 +12,7 @@ Supports 6 training disciplines:
   --discrimination-interval   pitchDiscrimination with random non-unison intervals
   --matching-unison           pitchMatching with P1 interval
   --matching-interval         pitchMatching with random non-unison intervals
-  --rhythm-offset-detection   rhythmOffsetDetection (early/late judgment)
+  --timing-offset-detection   rhythmOffsetDetection (early/late judgment)
   --rhythm-matching           continuousRhythmMatching (tap timing accuracy)
 
 Without any discipline flags, generates records distributed across all 6 disciplines.
@@ -20,7 +20,7 @@ Without any discipline flags, generates records distributed across all 6 discipl
 Usage:
     python3 bin/generate-test-data.py                              # 100 records, all disciplines
     python3 bin/generate-test-data.py --discrimination-unison      # 100 discrimination-unison
-    python3 bin/generate-test-data.py --rhythm-offset-detection    # 100 rhythm offset detection
+    python3 bin/generate-test-data.py --timing-offset-detection    # 100 timing offset detection
     python3 bin/generate-test-data.py --count 50 output.csv        # 50 records to custom path
 
 Then import the CSV in the app via Settings > Import Training Data (merge mode).
@@ -35,7 +35,7 @@ METADATA_LINE = "# peach-export-format:3"
 
 # Full 19-column header matching CSVExportSchema column assembly order:
 # common (2) + pitch discrimination (8) + pitch matching (2)
-# + rhythm offset detection (2) + continuous rhythm matching (5)
+# + timing offset detection (2) + continuous rhythm matching (5)
 HEADER = [
     "trainingType", "timestamp",
     "referenceNote", "referenceNoteName",
@@ -155,7 +155,7 @@ def pitch_matching_row(timestamp: datetime, initial_cent_offset: float,
     return row
 
 
-def rhythm_offset_detection_row(timestamp: datetime) -> list:
+def timing_offset_detection_row(timestamp: datetime) -> list:
     row = empty_row("rhythmOffsetDetection", timestamp)
     row[9] = random.choice(["true", "false"])  # isCorrect (shared column)
     row[12] = str(random_tempo_bpm())
@@ -199,8 +199,8 @@ def make_row(discipline: str, timestamp: datetime) -> list:
         return pitch_matching_row(timestamp, random_initial_cent_offset(),
                                   random_user_cent_error(), abbrev, ref, target)
 
-    elif discipline == "rhythm-offset-detection":
-        return rhythm_offset_detection_row(timestamp)
+    elif discipline == "timing-offset-detection":
+        return timing_offset_detection_row(timestamp)
 
     elif discipline == "rhythm-matching":
         return continuous_rhythm_matching_row(timestamp)
@@ -256,7 +256,7 @@ def generate_records(disciplines: list[str], count: int) -> list:
 ALL_DISCIPLINES = [
     "discrimination-unison", "discrimination-interval",
     "matching-unison", "matching-interval",
-    "rhythm-offset-detection", "rhythm-matching",
+    "timing-offset-detection", "rhythm-matching",
 ]
 
 # Map from training type + distinguishing field to display name
@@ -265,7 +265,7 @@ DISCIPLINE_CLASSIFIERS = {
     ("pitchDiscrimination", None): "discrimination-interval",
     ("pitchMatching", "P1"): "matching-unison",
     ("pitchMatching", None): "matching-interval",
-    ("rhythmOffsetDetection", None): "rhythm-offset-detection",
+    ("rhythmOffsetDetection", None): "timing-offset-detection",
     ("continuousRhythmMatching", None): "rhythm-matching",
 }
 
@@ -297,8 +297,8 @@ def main():
                         help="Generate pitch matching unison records")
     parser.add_argument("--matching-interval", action="store_true",
                         help="Generate pitch matching interval records")
-    parser.add_argument("--rhythm-offset-detection", action="store_true",
-                        help="Generate rhythm offset detection records")
+    parser.add_argument("--timing-offset-detection", action="store_true",
+                        help="Generate timing offset detection records")
     parser.add_argument("--rhythm-matching", action="store_true",
                         help="Generate continuous rhythm matching records")
     args = parser.parse_args()
@@ -312,8 +312,8 @@ def main():
         disciplines.append("matching-unison")
     if args.matching_interval:
         disciplines.append("matching-interval")
-    if args.rhythm_offset_detection:
-        disciplines.append("rhythm-offset-detection")
+    if args.timing_offset_detection:
+        disciplines.append("timing-offset-detection")
     if args.rhythm_matching:
         disciplines.append("rhythm-matching")
 

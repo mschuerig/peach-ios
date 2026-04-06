@@ -1,6 +1,6 @@
 # Story 75.11: Rhythm→Timing Naming Alignment
 
-Status: review
+Status: done
 
 ## Story
 
