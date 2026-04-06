@@ -1,6 +1,12 @@
 import SwiftData
 import Foundation
 
+// WALKTHROUGH: PeachSchema defines concrete record models for all 4 training disciplines.
+// Adding or changing a discipline requires modifying this file — Core depends on features.
+// SwiftData's VersionedSchema requires all models in one place, but that's a framework
+// constraint, not an architectural justification. This file belongs at the feature layer
+// (or a shared data-definition layer), not in Core. Same violation as DuplicateKey.swift.
+
 // MARK: - SchemaV1
 
 /// Captures the initial data model (4 record types) as a versioned schema.

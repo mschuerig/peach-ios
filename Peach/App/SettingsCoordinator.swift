@@ -31,6 +31,9 @@ final class SettingsCoordinator {
         transferService.refreshExport()
     }
 
+    // WALKTHROUGH: previewNote should use MIDINote.a4 (to be defined) instead of raw 69.
+    // previewVelocity is hardcoded to 63 but training sessions use settings.velocity —
+    // the preview should use the same velocity so the user hears what training will sound like.
     /// A4 (MIDI 69) — the standard tuning reference note.
     private static let previewNote: MIDINote = 69
     /// MIDI velocity 63 — mezzo-piano, a comfortable preview loudness.

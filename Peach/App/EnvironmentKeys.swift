@@ -1,5 +1,9 @@
 import SwiftUI
 
+// WALKTHROUGH: audioSampleRate has a concrete default (.standard48000) that silently
+// masks missing injection. A sample rate mismatch would cause subtle timing bugs.
+// Remove the default and make it optional or fatalError, so missing injection fails loudly.
+
 // MARK: - Environment Keys (production defaults)
 
 extension EnvironmentValues {

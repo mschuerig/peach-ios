@@ -601,3 +601,24 @@ development_status:
   74-4-create-homebrew-cask: ready-for-dev
   74-5-update-architecture-documentation-for-macos-distribution: ready-for-dev
   epic-74-retrospective: optional
+
+  # Epic 75: Fresh Eyes — Walkthrough Findings
+  # Source: docs/walkthrough/ (layers 1-6 observations and WALKTHROUGH annotations)
+  # Work order: Phase 1 (75.1, 75.12, 75.11), Phase 2 (75.9, 75.2, 75.6),
+  #             Phase 3 (75.3, 75.7, 75.8, 75.5), Phase 4 (75.4),
+  #             Phase 5 (75.13), Phase 6 (75.10)
+  epic-75: backlog
+  75-1-domain-vocabulary-constants-clamping-isolation: ready-for-dev
+  75-2-audio-engine-render-callback-and-channel-unification: ready-for-dev
+  75-3-training-screen-modifier: ready-for-dev
+  75-4-progress-chart-view-decomposition: ready-for-dev
+  75-5-settings-single-source-of-truth: ready-for-dev
+  75-6-composition-root-decomposition: ready-for-dev
+  75-7-platform-split-contentview-and-settings-import: ready-for-dev
+  75-8-help-content-centralization: ready-for-dev
+  75-9-core-dependency-direction-cleanup: ready-for-dev
+  75-10-design-decision-documentation: ready-for-dev
+  75-11-rhythm-to-timing-naming-alignment: ready-for-dev
+  75-12-training-directory-grouping: ready-for-dev
+  75-13-session-state-machine-effect-separation: ready-for-dev
+  epic-75-retrospective: optional

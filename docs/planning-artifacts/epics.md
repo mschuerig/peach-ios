@@ -7405,3 +7405,197 @@ so that the notarization, GitHub Releases, and Homebrew processes are documented
 1. **Given** the architecture documentation **When** read **Then** it describes the three macOS distribution channels: Mac App Store, GitHub Releases (notarized), and Homebrew.
 
 2. **Given** the documentation **When** read **Then** it explains how to create a new release (tag → build → notarize → upload → update cask).
+
+---
+
+## Epic 75: Fresh Eyes — Walkthrough Findings
+
+**Theme:** Structural hygiene, decomposition, and naming alignment based on the bottom-up codebase walkthrough (Layers 1–6).
+
+**Source:** `docs/walkthrough/` (per-layer observation notes and `// WALKTHROUGH:` source annotations)
+
+**Work order:**
+- Phase 1 (foundations): 75.1 → 75.12 → 75.11 (constants, directory restructure, rename — do early to minimize merge conflicts with later stories)
+- Phase 2 (structure): 75.9, 75.2, 75.6 (core deps, audio, composition root — independent, can be parallel)
+- Phase 3 (UI): 75.3, 75.7, 75.8, 75.5 (training modifier, platform split, help, settings — can be parallel)
+- Phase 4 (visualization): 75.4 (ProgressChartView decomposition)
+- Phase 5 (architecture): 75.13 (session state machines — largest story, benefits from all prior cleanup)
+- Phase 6 (documentation): 75.10 (design decisions — last, because prior stories may change documented code)
+
+### Story 75.1: Domain Vocabulary — Constants, Clamping, and Isolation Hygiene
+
+As a **developer reading the domain layer**,
+I want domain constants defined once on their owning types and value type isolation applied consistently,
+so that raw literals and duplicated knowledge are eliminated.
+
+**Acceptance Criteria:**
+
+1. **Given** `MIDINote` **When** inspected **Then** it has `static let a4 = MIDINote(69)` and `noteNames` is a `private static let`.
+2. **Given** `Cents` **When** inspected **Then** it has `static let perSemitone: Cents = 100`.
+3. **Given** `TuningSystem` and `SoundFontPlayer.decompose()` **When** inspected **Then** they reference `MIDINote.a4`, `Frequency.concert440`, and `Cents.perSemitone` instead of raw literals.
+4. **Given** `PitchBendValue` **When** inspected **Then** it has a clamping initializer (matching the `AmplitudeDB`/`NoteDuration` pattern) and `SoundFontPlayer.pitchBendValue(forCents:)` uses it.
+5. **Given** `SettingsCoordinator` **When** inspected **Then** `previewNote` uses `MIDINote.a4` and `previewVelocity` reads from `UserSettings.velocity`.
+6. **Given** all value types in `Core/Music/` **When** inspected **Then** `nonisolated` is applied consistently at the struct level (not piecemeal on members).
+7. **Given** the `audioSampleRate` environment key **When** injection is missing **Then** it fails loudly (optional or sentinel) instead of silently defaulting to 48 kHz.
+8. **Given** both platforms **When** built and tested **Then** all tests pass.
+
+### Story 75.2: Audio Engine — Render Callback Extraction and Channel Unification
+
+As a **developer reading the audio layer**,
+I want `SoundFontEngine.init()` decomposed and internal types unified with domain types,
+so that the audio engine is easier to understand and maintain.
+
+**Acceptance Criteria:**
+
+1. **Given** `SoundFontEngine` **When** inspected **Then** `ChannelID` is replaced by `MIDIChannel` from `Core/Music/`.
+2. **Given** `SoundFontEngine.init()` **When** inspected **Then** the render callback closure is extracted to a static method.
+3. **Given** `SoundFontEngine` **When** inspected **Then** the "write to inactive slot, copy MIDI blocks, bump generation" pattern shared by `createChannel()` and `scheduleEvents()` is extracted to a shared helper.
+4. **Given** `SoundFontStepSequencer` **When** inspected **Then** `buildBatch` and `buildCycleEvents` are instance methods (not static with 5 parameters).
+5. **Given** `AudioSessionInterruptionMonitor` **When** inspected **Then** the duplicate background/foreground observer registrations are unified into a single loop over notification names.
+6. **Given** both platforms **When** built and tested **Then** all tests pass.
+
+### Story 75.3: Training Screen Modifier — Shared Boilerplate Extraction
+
+As a **developer adding or modifying training screens**,
+I want shared scaffolding extracted into a `TrainingScreenModifier`,
+so that each screen defines only its unique content and help sections.
+
+**Acceptance Criteria:**
+
+1. **Given** a new `TrainingScreenModifier` view modifier **When** applied **Then** it provides: `@FocusState` + `focusable()` + `focusEffectDisabled()`, `onKeyPress(.escape)` dismiss, `onAppear`/`onDisappear` lifecycle calls, help sheet `onChange` with lifecycle notifications, toolbar (help + settings + profile links), `trainingIdleOverlay()`.
+2. **Given** all 4 training screens **When** inspected **Then** they use the modifier instead of duplicating the scaffolding.
+3. **Given** each training screen **When** inspected **Then** it only defines its unique content (buttons/slider/dots), help sections, and screen-specific keyboard shortcuts.
+4. **Given** both platforms **When** built and tested **Then** all tests pass and all 4 training screens behave identically to before.
+
+### Story 75.4: ProgressChartView Decomposition
+
+As a **developer working on chart visualization**,
+I want `ProgressChartView` split into focused types,
+so that data preparation, rendering, and interaction are separate concerns.
+
+**Acceptance Criteria:**
+
+1. **Given** a new `ChartData` struct **When** constructed from profile data **Then** it contains all pre-computed chart data: bucket positions, zone boundaries, line data (including session bridge), year boundaries, stddev bands.
+2. **Given** `lineDataWithSessionBridge()` **When** inspected **Then** its weighted mean/variance computation lives in the data layer (on `ChartData` or `ProgressTimeline`), not in the view.
+3. **Given** `ProgressChartView` **When** inspected **Then** it renders from `ChartData` without computing positions, zones, or line data itself.
+4. **Given** `ExportChartView` **When** inspected **Then** it constructs a `ChartData` and renders from it, instead of duplicating static method calls.
+5. **Given** `ProgressTimeline.assignMultiGranularityBuckets` **When** inspected **Then** its three zone logic paths are extracted into zone-specific methods.
+6. **Given** the resulting `ProgressChartView` file **When** measured **Then** it is significantly smaller than 629 lines, with each extracted type under ~200 lines.
+7. **Given** both platforms **When** built and tested **Then** all tests pass, charts render identically, and share/export produces identical images.
+
+### Story 75.5: Settings — Single Source of Truth
+
+As a **developer modifying settings**,
+I want setting keys, defaults, and types defined in exactly one place,
+so that adding or changing a setting cannot cause the UI and session to disagree.
+
+**Acceptance Criteria:**
+
+1. **Given** any setting **When** its default is defined **Then** it exists in exactly one place (not duplicated between `SettingsKeys`, `@AppStorage` declarations, and `AppUserSettings`).
+2. **Given** `SettingsScreen` **When** inspected **Then** it does not declare its own `@AppStorage` defaults that could drift from `SettingsKeys`.
+3. **Given** both platforms **When** built and tested **Then** all tests pass and all settings behave identically to before.
+
+### Story 75.6: Composition Root — Init Decomposition
+
+As a **developer reading the app entry point**,
+I want `PeachApp.init()` organized into named phases and coordinator dispatch table-driven,
+so that the 180-line init is comprehensible and `rebuildCoordinators()` doesn't duplicate construction.
+
+**Acceptance Criteria:**
+
+1. **Given** `PeachApp.init()` **When** inspected **Then** it calls named methods (e.g., `setupAudio()`, `createSessions()`, `buildCoordinators()`) instead of a flat 180-line sequence.
+2. **Given** `rebuildCoordinators()` **When** inspected **Then** it reuses the same `buildCoordinators()` method used by init, eliminating duplication.
+3. **Given** `TrainingLifecycleCoordinator` **When** inspected **Then** `startCurrentSession()` and `stopCurrentSession()` use a data-driven dispatch (e.g., dictionary) instead of 6-case switch statements.
+4. **Given** both platforms **When** built and tested **Then** all tests pass.
+
+### Story 75.7: Platform Split — ContentView and SettingsScreen Import
+
+As a **developer maintaining platform-specific code**,
+I want `ContentView` split into per-platform files and `SettingsScreen`'s inline `#if os()` import logic moved to `App/Platform/`,
+so that each platform's code is straightforward to read independently.
+
+**Acceptance Criteria:**
+
+1. **Given** `ContentView` **When** inspected **Then** iOS and macOS have separate files with no `#if os()` guards.
+2. **Given** `SettingsScreen.importTrainingData()` **When** inspected **Then** the `NSOpenPanel` (macOS) and `.fileImporter` (iOS) paths live in `App/Platform/`, not inline in the view.
+3. **Given** both platforms **When** built and tested **Then** all tests pass and navigation/import behavior is identical to before.
+
+### Story 75.8: Help Content Centralization
+
+As a **developer maintaining help content**,
+I want help sections decoupled from individual screen types,
+so that `PeachCommands` (macOS menu bar) doesn't depend on screen implementations.
+
+**Acceptance Criteria:**
+
+1. **Given** help sections **When** inspected **Then** they are defined in a central location (e.g., `HelpContent` namespace) rather than as static properties on each screen.
+2. **Given** `PeachCommands` **When** inspected **Then** it references the central help content, not `PitchDiscriminationScreen.helpSections` etc.
+3. **Given** each training screen **When** inspected **Then** it references the central help content for its help sheet.
+4. **Given** both platforms **When** built and tested **Then** all tests pass and help content is identical to before.
+
+### Story 75.9: Core Dependency Direction — DuplicateKey and Data Store
+
+As a **developer maintaining the Core layer**,
+I want Core free of knowledge about specific training disciplines,
+so that adding a discipline doesn't force changes to Core files.
+
+**Acceptance Criteria:**
+
+1. **Given** `DuplicateKey.swift` **When** inspected **Then** it lives in a shared import/export area near the discipline types, not in `Core/Data/`.
+2. **Given** `PitchDiscriminationRecordStoring` **When** inspected **Then** it is removed; all disciplines use `TrainingRecordPersisting`.
+3. **Given** `TrainingDataStore` **When** inspected **Then** the 4 per-type convenience fetch methods are replaced by a single generic sorted fetch (e.g., constrained to a `Timestamped` protocol).
+4. **Given** both platforms **When** built and tested **Then** all tests pass.
+
+### Story 75.10: Design Decision Documentation
+
+As a **developer reading non-obvious code**,
+I want brief comments explaining intentional design choices,
+so that asymmetries and unusual patterns are not mistaken for bugs.
+
+**Acceptance Criteria:**
+
+1. **Given** `PitchMatchingProfileAdapter` **When** inspected **Then** a comment explains why it routes all results (no `isCorrect` gate), unlike `PitchDiscriminationProfileAdapter`.
+2. **Given** `ContinuousRhythmMatchingScreen`'s tap button **When** inspected **Then** a comment explains the `DragGesture(minimumDistance: 0)` choice (touch-down timing) and the manual accessibility traits.
+3. **Given** `PeachSchema.swift` **When** inspected **Then** a comment explains the relationship between CSV format versioning (v3) and SwiftData schema versioning (v1).
+4. **Given** `HapticFeedbackManager` **When** inspected **Then** a comment explains why only 2 of 4 training modes get haptic feedback (matching modes have no binary correct/incorrect).
+
+### Story 75.11: Rhythm→Timing Naming Alignment
+
+As a **developer reading the codebase**,
+I want type names to match the user-facing language,
+so that "Compare Timing" in the UI and `RhythmOffset` in code don't create a mental translation layer.
+
+**Acceptance Criteria:**
+
+1. **Given** `RhythmOffset` **When** inspected **Then** it is renamed to `TimingOffset` (or equivalent agreed name).
+2. **Given** `RhythmDirection` **When** inspected **Then** it is renamed to `TimingDirection`.
+3. **Given** all `RhythmOffsetDetection*` types and files **When** inspected **Then** they use the aligned naming.
+4. **Given** CSV export/import **When** tested **Then** backward compatibility is preserved (CSV column names are a serialization format and may need mapping).
+5. **Given** localization keys **When** inspected **Then** they are updated to match new type names where they reference internal identifiers.
+6. **Given** both platforms **When** built and tested **Then** all tests pass.
+
+### Story 75.12: Training Directory Grouping
+
+As a **developer navigating the project**,
+I want training feature directories grouped under a `Training/` parent,
+so that they are visually separated from unrelated screens like `Info/`, `Profile/`, `Settings/`.
+
+**Acceptance Criteria:**
+
+1. **Given** the Xcode project **When** browsing the navigator **Then** `PitchDiscrimination/`, `PitchMatching/`, `RhythmOffsetDetection/`, and `ContinuousRhythmMatching/` are under a `Training/` group.
+2. **Given** all import paths and file references **When** inspected **Then** they reflect the new structure.
+3. **Given** both platforms **When** built and tested **Then** all tests pass.
+
+### Story 75.13: Session State Machine — Explicit State/Effect Separation
+
+As a **developer maintaining training sessions**,
+I want session state machines to separate state transitions from side effects,
+so that methods named `transitionToFeedback` don't also play the next trial, and `commitResult` doesn't handle 5 responsibilities.
+
+**Acceptance Criteria:**
+
+1. **Given** a state machine event **When** processed **Then** it produces a new state and a list of effects, without executing any side effects inline.
+2. **Given** the effect list **When** interpreted **Then** each effect (play audio, record result, show feedback, schedule next trial) is executed by a separate effect handler.
+3. **Given** all 4 session classes **When** inspected **Then** they follow the state + event → (newState, [Effect]) pattern.
+4. **Given** each session's state transitions **When** tested **Then** they can be tested as pure functions without mocking audio, persistence, or UI.
+5. **Given** both platforms **When** built and tested **Then** all existing tests pass and new state transition tests are added.
