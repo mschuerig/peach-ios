@@ -3,3 +3,5 @@
 /// Maps the renamed public type to the unchanged SwiftData entity name,
 /// avoiding a schema migration for a purely cosmetic rename.
 typealias TimingOffsetDetectionRecord = SchemaV1.RhythmOffsetDetectionRecord
+
+extension TimingOffsetDetectionRecord: Timestamped {}

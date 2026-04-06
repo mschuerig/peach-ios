@@ -22,7 +22,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
     let recordType: any PersistentModel.Type = TimingOffsetDetectionRecord.self
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllTimingOffsetDetections() {
+        for record in try store.fetchAllSorted(TimingOffsetDetectionRecord.self) {
             let offset = TimingOffset(.milliseconds(record.offsetMs))
             guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
             builder.addPoint(
@@ -89,7 +89,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
     }
 
     func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllTimingOffsetDetections()
+        try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
             .map { ($0.timestamp, $0 as any PersistentModel) }
     }
 

@@ -109,7 +109,7 @@ struct TrainingDataImportActionTests {
         )
 
         // Profile should have all 5 records (3 existing + 2 imported)
-        let allRecords = try store.fetchAllPitchDiscriminations()
+        let allRecords = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(allRecords.count == 5)
     }
 

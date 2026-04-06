@@ -167,7 +167,7 @@ struct TrainingDataTransferServiceTests {
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
-        #expect(try dataStore.fetchAllPitchDiscriminations().count == 2)
+        #expect(try dataStore.fetchAllSorted(PitchDiscriminationRecord.self).count == 2)
     }
 
     @Test("performImport with merge mode returns correct summary")
@@ -284,6 +284,6 @@ struct TrainingDataTransferServiceTests {
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
         #expect(summary.imported(for: .timingOffsetDetection) == 1)
         #expect(summary.totalImported == 1)
-        #expect(try dataStore.fetchAllTimingOffsetDetections().count == 1)
+        #expect(try dataStore.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 1)
     }
 }

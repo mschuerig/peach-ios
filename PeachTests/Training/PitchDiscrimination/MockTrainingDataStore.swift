@@ -1,7 +1,7 @@
 import Foundation
 @testable import Peach
 
-final class MockTrainingDataStore: PitchDiscriminationRecordStoring, PitchDiscriminationObserver, PitchMatchingObserver {
+final class MockTrainingDataStore: PitchDiscriminationObserver, PitchMatchingObserver {
     // MARK: - Comparison Test State Tracking
 
     var saveCallCount = 0
@@ -29,7 +29,7 @@ final class MockTrainingDataStore: PitchDiscriminationRecordStoring, PitchDiscri
     var onPitchDiscriminationCompletedCalled: (() -> Void)?
     var onPitchMatchingCompletedCalled: (() -> Void)?
 
-    // MARK: - PitchDiscriminationRecordStoring Protocol
+    // MARK: - Pitch Discrimination Record Storage
 
     func save(_ record: PitchDiscriminationRecord) throws {
         saveCallCount += 1
@@ -42,15 +42,6 @@ final class MockTrainingDataStore: PitchDiscriminationRecordStoring, PitchDiscri
         }
 
         savedRecords.append(record)
-    }
-
-    func fetchAllPitchDiscriminations() throws -> [PitchDiscriminationRecord] {
-        onFetchCalled?()
-
-        if shouldThrowError {
-            throw DataStoreError.fetchFailed("Mock error")
-        }
-        return savedRecords
     }
 
     // MARK: - Pitch Matching Methods
@@ -66,15 +57,6 @@ final class MockTrainingDataStore: PitchDiscriminationRecordStoring, PitchDiscri
         }
 
         savedPitchMatchingRecords.append(record)
-    }
-
-    func fetchAllPitchMatchings() throws -> [PitchMatchingRecord] {
-        onFetchCalled?()
-
-        if shouldThrowError {
-            throw DataStoreError.fetchFailed("Mock error")
-        }
-        return savedPitchMatchingRecords
     }
 
     // MARK: - Test Helpers

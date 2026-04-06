@@ -112,49 +112,14 @@ final class TrainingDataStore {
         }
     }
 
-    // MARK: - Per-Type Convenience (sorted by timestamp)
+    // MARK: - Sorted Fetch
 
-    func fetchAllPitchDiscriminations() throws -> [PitchDiscriminationRecord] {
-        let descriptor = FetchDescriptor<PitchDiscriminationRecord>(
-            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
-        )
+    func fetchAllSorted<T: PersistentModel & Timestamped>(_ type: T.Type) throws -> [T] {
+        let descriptor = FetchDescriptor<T>()
         do {
-            return try modelContext.fetch(descriptor)
+            return try modelContext.fetch(descriptor).sorted { $0.timestamp < $1.timestamp }
         } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch records: \(error.localizedDescription)")
-        }
-    }
-
-    func fetchAllPitchMatchings() throws -> [PitchMatchingRecord] {
-        let descriptor = FetchDescriptor<PitchMatchingRecord>(
-            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
-        )
-        do {
-            return try modelContext.fetch(descriptor)
-        } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch pitch matching records: \(error.localizedDescription)")
-        }
-    }
-
-    func fetchAllTimingOffsetDetections() throws -> [TimingOffsetDetectionRecord] {
-        let descriptor = FetchDescriptor<TimingOffsetDetectionRecord>(
-            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
-        )
-        do {
-            return try modelContext.fetch(descriptor)
-        } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch timing offset detection records: \(error.localizedDescription)")
-        }
-    }
-
-    func fetchAllContinuousRhythmMatchings() throws -> [ContinuousRhythmMatchingRecord] {
-        let descriptor = FetchDescriptor<ContinuousRhythmMatchingRecord>(
-            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
-        )
-        do {
-            return try modelContext.fetch(descriptor)
-        } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch continuous rhythm matching records: \(error.localizedDescription)")
+            throw DataStoreError.fetchFailed("Failed to fetch \(T.self): \(error.localizedDescription)")
         }
     }
 }

@@ -49,10 +49,10 @@ struct RhythmDuplicateKey: Hashable, Sendable {
 /// Builds a set of pitch duplicate keys from all existing pitch records in the store.
 func buildPitchDuplicateKeys(from store: TrainingDataStore) throws -> Set<PitchDuplicateKey> {
     var keys = Set<PitchDuplicateKey>()
-    for record in try store.fetchAllPitchDiscriminations() {
+    for record in try store.fetchAll(PitchDiscriminationRecord.self) {
         keys.insert(PitchDuplicateKey(record: record))
     }
-    for record in try store.fetchAllPitchMatchings() {
+    for record in try store.fetchAll(PitchMatchingRecord.self) {
         keys.insert(PitchDuplicateKey(record: record))
     }
     return keys
@@ -62,17 +62,17 @@ func buildPitchDuplicateKeys(from store: TrainingDataStore) throws -> Set<PitchD
 func buildRhythmDuplicateKeys(from store: TrainingDataStore, trainingType: String) throws -> Set<RhythmDuplicateKey> {
     var keys = Set<RhythmDuplicateKey>()
     if trainingType == "rhythmOffsetDetection" {
-        for record in try store.fetchAllTimingOffsetDetections() {
+        for record in try store.fetchAll(TimingOffsetDetectionRecord.self) {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: trainingType))
         }
-        for record in try store.fetchAllContinuousRhythmMatchings() {
+        for record in try store.fetchAll(ContinuousRhythmMatchingRecord.self) {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: "continuousRhythmMatching"))
         }
     } else {
-        for record in try store.fetchAllContinuousRhythmMatchings() {
+        for record in try store.fetchAll(ContinuousRhythmMatchingRecord.self) {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: trainingType))
         }
-        for record in try store.fetchAllTimingOffsetDetections() {
+        for record in try store.fetchAll(TimingOffsetDetectionRecord.self) {
             keys.insert(RhythmDuplicateKey(timestamp: record.timestamp, tempoBPM: record.tempoBPM, trainingType: "rhythmOffsetDetection"))
         }
     }

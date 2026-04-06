@@ -16,7 +16,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
     let recordType: any PersistentModel.Type = PitchDiscriminationRecord.self
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllPitchDiscriminations() where record.interval != 0 {
+        for record in try store.fetchAllSorted(PitchDiscriminationRecord.self) where record.interval != 0 {
             builder.addPoint(
                 MetricPoint(timestamp: record.timestamp, value: abs(record.centOffset)),
                 for: .pitch(id),
@@ -56,7 +56,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
     }
 
     func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllPitchDiscriminations()
+        try store.fetchAllSorted(PitchDiscriminationRecord.self)
             .filter { $0.interval != 0 }
             .map { ($0.timestamp, $0 as any PersistentModel) }
     }

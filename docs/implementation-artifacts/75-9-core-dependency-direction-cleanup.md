@@ -1,6 +1,6 @@
 # Story 75.9: Core Dependency Direction — DuplicateKey and Data Store
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,25 +30,25 @@ Note: `PeachSchema` defining all record models in Core was already evaluated in 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Move DuplicateKey.swift (AC: #1)
-  - [ ] Identify the best location (e.g., a shared `Training/` area or `Settings/Import/`)
-  - [ ] Move the file and update any imports
-  - [ ] Remove the `// WALKTHROUGH:` annotation from the file
+- [x] Task 1: Move DuplicateKey.swift (AC: #1)
+  - [x] Identify the best location (e.g., a shared `Training/` area or `Settings/Import/`)
+  - [x] Move the file and update any imports
+  - [x] Remove the `// WALKTHROUGH:` annotation from the file
 
-- [ ] Task 2: Remove PitchDiscriminationRecordStoring (AC: #2)
-  - [ ] Find all conformers and callers
-  - [ ] Replace with `TrainingRecordPersisting` usage
-  - [ ] Delete the protocol file
+- [x] Task 2: Remove PitchDiscriminationRecordStoring (AC: #2)
+  - [x] Find all conformers and callers
+  - [x] Replace with `TrainingRecordPersisting` usage
+  - [x] Delete the protocol file
 
-- [ ] Task 3: Create generic sorted fetch (AC: #3, #4)
-  - [ ] Define a `Timestamped` protocol with `var timestamp: Date { get }` (or use an existing sort descriptor approach)
-  - [ ] Conform all 4 record types to `Timestamped`
-  - [ ] Add `fetchAllSorted<T: PersistentModel & Timestamped>(_ type: T.Type) -> [T]` to `TrainingDataStore`
-  - [ ] Replace the 4 per-type methods with calls to the generic one
-  - [ ] Update all callers (discipline `feedRecords` methods, export pipeline)
+- [x] Task 3: Create generic sorted fetch (AC: #3, #4)
+  - [x] Define a `Timestamped` protocol with `var timestamp: Date { get }` (or use an existing sort descriptor approach)
+  - [x] Conform all 4 record types to `Timestamped`
+  - [x] Add `fetchAllSorted<T: PersistentModel & Timestamped>(_ type: T.Type) -> [T]` to `TrainingDataStore`
+  - [x] Replace the 4 per-type methods with calls to the generic one
+  - [x] Update all callers (discipline `feedRecords` methods, export pipeline)
 
-- [ ] Task 4: Build and test both platforms (AC: #5)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 4: Build and test both platforms (AC: #5)
+  - [x] `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -94,10 +94,42 @@ All callers just need `[T]` sorted by timestamp — the generic version serves t
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+- SwiftData generic `SortDescriptor(\.timestamp)` fails with `KeyPath<T, Date>` not conforming to `Sendable` for generic `T`. Workaround: fetch unsorted via `FetchDescriptor<T>()` then sort in-memory with `.sorted { $0.timestamp < $1.timestamp }`.
+
 ### Completion Notes List
+- Task 1: Moved `DuplicateKey.swift` from `Core/Data/` to `Core/Training/` (shared training infrastructure). No WALKTHROUGH annotations were present (already cleaned up).
+- Task 2: Deleted `PitchDiscriminationRecordStoring.swift`. Removed protocol conformance from `MockTrainingDataStore` and `StubPitchDiscriminationDataStore`. `PitchDiscriminationStoreAdapter` already used `TrainingRecordPersisting` — no change needed.
+- Task 3: Created `Timestamped` protocol in `Core/Data/Timestamped.swift`. Added conformance to all 4 record types via extensions in their typealias files. Added `fetchAllSorted<T: PersistentModel & Timestamped>` to `TrainingDataStore`, replacing the 4 per-type methods. Updated all callers across 6 discipline files, 1 duplicate key builder file, and 5 test files.
+- Task 4: Both platforms pass — iOS: 1717 tests, macOS: 1710 tests.
+
 ### File List
+- `Peach/Core/Training/DuplicateKey.swift` — moved from `Peach/Core/Data/DuplicateKey.swift`, updated to use `fetchAllSorted`
+- `Peach/Core/Data/PitchDiscriminationRecordStoring.swift` — deleted
+- `Peach/Core/Data/Timestamped.swift` — new protocol
+- `Peach/Core/Data/TrainingDataStore.swift` — replaced 4 per-type fetches with `fetchAllSorted`
+- `Peach/Core/Data/PitchDiscriminationRecord.swift` — added `Timestamped` conformance
+- `Peach/Core/Data/PitchMatchingRecord.swift` — added `Timestamped` conformance
+- `Peach/Core/Data/TimingOffsetDetectionRecord.swift` — added `Timestamped` conformance
+- `Peach/Core/Data/ContinuousRhythmMatchingRecord.swift` — added `Timestamped` conformance
+- `Peach/Training/PitchDiscrimination/UnisonPitchDiscriminationDiscipline.swift` — updated to use `fetchAllSorted`
+- `Peach/Training/PitchDiscrimination/IntervalPitchDiscriminationDiscipline.swift` — updated to use `fetchAllSorted`
+- `Peach/Training/PitchMatching/UnisonPitchMatchingDiscipline.swift` — updated to use `fetchAllSorted`
+- `Peach/Training/PitchMatching/IntervalPitchMatchingDiscipline.swift` — updated to use `fetchAllSorted`
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionDiscipline.swift` — updated to use `fetchAllSorted`
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingDiscipline.swift` — updated to use `fetchAllSorted`
+- `Peach/App/PreviewDefaults.swift` — simplified `StubPitchDiscriminationDataStore`
+- `PeachTests/Training/PitchDiscrimination/MockTrainingDataStore.swift` — removed `PitchDiscriminationRecordStoring` conformance
+- `PeachTests/Core/Training/DuplicateKeyTests.swift` — new tests for duplicate key types
+- `PeachTests/Core/Data/TrainingDataStoreTests.swift` — updated to use `fetchAllSorted`
+- `PeachTests/Core/Data/TrainingDataStoreEdgeCaseTests.swift` — updated to use `fetchAllSorted`
+- `PeachTests/Core/Data/TrainingDataImporterTests.swift` — updated to use `fetchAllSorted`
+- `PeachTests/Settings/TrainingDataImportActionTests.swift` — updated to use `fetchAllSorted`
+- `PeachTests/Core/Data/TrainingDataTransferServiceTests.swift` — updated to use `fetchAllSorted`
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-06: Implementation complete — all 3 dependency violations resolved

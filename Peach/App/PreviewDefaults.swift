@@ -38,9 +38,7 @@ final class StubUserSettings: UserSettings {
     let autoStartTraining = false
 }
 
-final class StubPitchDiscriminationDataStore: PitchDiscriminationRecordStoring, PitchDiscriminationObserver {
-    func save(_ record: PitchDiscriminationRecord) throws {}
-    func fetchAllPitchDiscriminations() throws -> [PitchDiscriminationRecord] { [] }
+final class StubPitchDiscriminationDataStore: PitchDiscriminationObserver {
     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {}
 }
 

@@ -40,7 +40,7 @@ struct TrainingDataStoreTests {
 
         try store.save(record)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 60)
@@ -66,7 +66,7 @@ struct TrainingDataStoreTests {
         try store.save(record2)
         try store.save(record3)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
 
         #expect(fetched.count == 3)
         #expect(fetched[0].referenceNote == 60)
@@ -93,7 +93,7 @@ struct TrainingDataStoreTests {
 
         try store.save(record)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
 
         #expect(fetched.count == 1)
         let retrieved = fetched[0]
@@ -117,12 +117,12 @@ struct TrainingDataStoreTests {
         let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
         try store.save(record)
 
-        var fetched = try store.fetchAllPitchDiscriminations()
+        var fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 1)
 
         try store.delete(record)
 
-        fetched = try store.fetchAllPitchDiscriminations()
+        fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.isEmpty)
     }
 
@@ -139,7 +139,7 @@ struct TrainingDataStoreTests {
 
         try store.delete(record1)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 62)
     }
@@ -168,7 +168,7 @@ struct TrainingDataStoreTests {
         let context2 = ModelContext(container)
         let store2 = TrainingDataStore(modelContext: context2)
 
-        let fetched = try store2.fetchAllPitchDiscriminations()
+        let fetched = try store2.fetchAllSorted(PitchDiscriminationRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 69)
@@ -186,7 +186,7 @@ struct TrainingDataStoreTests {
         let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
         try store.save(record)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 60)
         #expect(fetched[0].targetNote == 60)
@@ -202,7 +202,7 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
 
         #expect(fetched.isEmpty)
     }
@@ -226,7 +226,7 @@ struct TrainingDataStoreTests {
 
         try store.save(record)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 69)
@@ -250,7 +250,7 @@ struct TrainingDataStoreTests {
         try store.save(record2)
         try store.save(record3)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(fetched.count == 3)
         #expect(fetched[0].referenceNote == 60)
@@ -264,7 +264,7 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(fetched.isEmpty)
     }
@@ -287,10 +287,10 @@ struct TrainingDataStoreTests {
 
         try store.deleteAll()
 
-        let comparisonFetched = try store.fetchAllPitchDiscriminations()
+        let comparisonFetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(comparisonFetched.isEmpty)
 
-        let pitchFetched = try store.fetchAllPitchMatchings()
+        let pitchFetched = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(pitchFetched.isEmpty)
     }
 
@@ -314,7 +314,7 @@ struct TrainingDataStoreTests {
 
         PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 69)
@@ -343,7 +343,7 @@ struct TrainingDataStoreTests {
         PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
         PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(fetched.count == 2)
     }
 
@@ -369,7 +369,7 @@ struct TrainingDataStoreTests {
 
         PitchDiscriminationStoreAdapter(store: store).pitchDiscriminationCompleted(completed)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 60)
@@ -401,7 +401,7 @@ struct TrainingDataStoreTests {
 
         PitchDiscriminationStoreAdapter(store: store).pitchDiscriminationCompleted(completed)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 60)
         #expect(fetched[0].targetNote == 67)
@@ -426,7 +426,7 @@ struct TrainingDataStoreTests {
 
         PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 60)
         #expect(fetched[0].targetNote == 67)
@@ -447,7 +447,7 @@ struct TrainingDataStoreTests {
         let record = PitchMatchingRecord(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
         try store.save(record)
 
-        let fetched = try store.fetchAllPitchMatchings()
+        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(fetched.count == 1)
         #expect(fetched[0].referenceNote == 60)
         #expect(fetched[0].targetNote == 60)
@@ -468,7 +468,7 @@ struct TrainingDataStoreTests {
 
         try store.save(record)
 
-        let fetched = try store.fetchAllTimingOffsetDetections()
+        let fetched = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
@@ -492,7 +492,7 @@ struct TrainingDataStoreTests {
         try store.save(record2)
         try store.save(record3)
 
-        let fetched = try store.fetchAllTimingOffsetDetections()
+        let fetched = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
 
         #expect(fetched.count == 3)
         #expect(fetched[0].tempoBPM == 100)
@@ -514,10 +514,10 @@ struct TrainingDataStoreTests {
 
         try store.deleteAll(TimingOffsetDetectionRecord.self)
 
-        let rhythmComps = try store.fetchAllTimingOffsetDetections()
+        let rhythmComps = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
         #expect(rhythmComps.isEmpty)
 
-        let pitchComps = try store.fetchAllPitchDiscriminations()
+        let pitchComps = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(pitchComps.count == 1)
     }
 
@@ -539,7 +539,7 @@ struct TrainingDataStoreTests {
 
         TimingOffsetDetectionStoreAdapter(store: store).timingOffsetDetectionCompleted(completed)
 
-        let fetched = try store.fetchAllTimingOffsetDetections()
+        let fetched = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
@@ -566,7 +566,7 @@ struct TrainingDataStoreTests {
 
         try store.save(record)
 
-        let fetched = try store.fetchAllContinuousRhythmMatchings()
+        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
@@ -589,7 +589,7 @@ struct TrainingDataStoreTests {
         try store.save(record2)
         try store.save(record3)
 
-        let fetched = try store.fetchAllContinuousRhythmMatchings()
+        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
 
         #expect(fetched.count == 3)
         #expect(fetched[0].tempoBPM == 80)
@@ -611,10 +611,10 @@ struct TrainingDataStoreTests {
 
         try store.deleteAll(ContinuousRhythmMatchingRecord.self)
 
-        let continuous = try store.fetchAllContinuousRhythmMatchings()
+        let continuous = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
         #expect(continuous.isEmpty)
 
-        let rhythmOffsets = try store.fetchAllTimingOffsetDetections()
+        let rhythmOffsets = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
         #expect(rhythmOffsets.count == 1)
     }
 
@@ -629,7 +629,7 @@ struct TrainingDataStoreTests {
 
         try store.deleteAll()
 
-        let fetched = try store.fetchAllContinuousRhythmMatchings()
+        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
         #expect(fetched.isEmpty)
     }
 
@@ -655,7 +655,7 @@ struct TrainingDataStoreTests {
 
         ContinuousRhythmMatchingStoreAdapter(store: store).continuousRhythmMatchingCompleted(trial)
 
-        let fetched = try store.fetchAllContinuousRhythmMatchings()
+        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
 
         #expect(fetched.count == 1)
         #expect(fetched[0].tempoBPM == 120)
@@ -686,7 +686,7 @@ struct TrainingDataStoreTests {
             interval: 4, tuningSystem: "equalTemperament", timestamp: Date()
         )
         try store.save(committed)
-        #expect(try store.fetchAllPitchDiscriminations().count == 1)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
 
         struct TestError: Error {}
         do {
@@ -705,8 +705,8 @@ struct TrainingDataStoreTests {
             #expect(error is TestError)
         }
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
-        let matchings = try store.fetchAllPitchMatchings()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let matchings = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(comparisons.count == 1)
         #expect(comparisons[0].referenceNote == 60)
         #expect(matchings.count == 0)

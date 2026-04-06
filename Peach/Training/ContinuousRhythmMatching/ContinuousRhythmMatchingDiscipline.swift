@@ -22,7 +22,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
     let recordType: any PersistentModel.Type = ContinuousRhythmMatchingRecord.self
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllContinuousRhythmMatchings() {
+        for record in try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self) {
             let offset = TimingOffset(.milliseconds(record.meanOffsetMs))
             guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
             builder.addPoint(
@@ -109,7 +109,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
     }
 
     func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllContinuousRhythmMatchings()
+        try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
             .map { ($0.timestamp, $0 as any PersistentModel) }
     }
 

@@ -112,8 +112,8 @@ struct TrainingDataImporterTests {
 
         try store.save(makeComparison(minutesOffset: 0))
         try store.save(makePitchMatching(minutesOffset: 1))
-        #expect(try store.fetchAllPitchDiscriminations().count == 1)
-        #expect(try store.fetchAllPitchMatchings().count == 1)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
+        #expect(try store.fetchAllSorted(PitchMatchingRecord.self).count == 1)
 
         let importResult = makeImportResult(
             pitchDiscriminations: [makeComparison(minutesOffset: 10), makeComparison(minutesOffset: 11)],
@@ -127,8 +127,8 @@ struct TrainingDataImporterTests {
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.skipped(for: .intervalPitchMatching) == 0)
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
-        let pitchMatchings = try store.fetchAllPitchMatchings()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let pitchMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(comparisons.count == 2)
         #expect(pitchMatchings.count == 1)
     }
@@ -145,8 +145,8 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.imported(for: .intervalPitchMatching) == 0)
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
-        let pitchMatchings = try store.fetchAllPitchMatchings()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let pitchMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(comparisons.count == 0)
         #expect(pitchMatchings.count == 0)
     }
@@ -190,7 +190,7 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(comparisons.count == 2)
     }
 
@@ -212,7 +212,7 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.skipped(for: .intervalPitchMatching) == 1)
 
-        let pitchMatchings = try store.fetchAllPitchMatchings()
+        let pitchMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
         #expect(pitchMatchings.count == 2)
     }
 
@@ -234,7 +234,7 @@ struct TrainingDataImporterTests {
 
         _ = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(comparisons.count == 1)
         #expect(comparisons[0].centOffset == 15.5)
         #expect(comparisons[0].isCorrect == true)
@@ -300,8 +300,8 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.skipped(for: .intervalPitchMatching) == 1)
 
-        #expect(try store.fetchAllPitchDiscriminations().count == 2)
-        #expect(try store.fetchAllPitchMatchings().count == 2)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 2)
+        #expect(try store.fetchAllSorted(PitchMatchingRecord.self).count == 2)
     }
 
     // MARK: - Edge Case Tests
@@ -367,8 +367,8 @@ struct TrainingDataImporterTests {
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.skipped(for: .intervalPitchMatching) == 1)
-        #expect(try store.fetchAllPitchDiscriminations().count == 1)
-        #expect(try store.fetchAllPitchMatchings().count == 1)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
+        #expect(try store.fetchAllSorted(PitchMatchingRecord.self).count == 1)
     }
 
     @Test("records with identical timestamps but different training types are not duplicates")
@@ -419,7 +419,7 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
-        #expect(try store.fetchAllPitchDiscriminations().count == 3)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 3)
     }
 
     // MARK: - CSV Round-Trip Duplicate Detection
@@ -449,7 +449,7 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
-        #expect(try store.fetchAllPitchDiscriminations().count == 1)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
     }
 
     // MARK: - Rhythm Record Helpers
@@ -478,8 +478,8 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.imported(for: .timingOffsetDetection) == 1)
-        #expect(try store.fetchAllPitchDiscriminations().count == 1)
-        #expect(try store.fetchAllTimingOffsetDetections().count == 1)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
+        #expect(try store.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 1)
     }
 
     @Test("replace mode replaces existing rhythm records")
@@ -495,7 +495,7 @@ struct TrainingDataImporterTests {
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
         #expect(summary.imported(for: .timingOffsetDetection) == 2)
-        #expect(try store.fetchAllTimingOffsetDetections().count == 2)
+        #expect(try store.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 2)
     }
 
     // MARK: - Rhythm Merge Mode
@@ -517,7 +517,7 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .timingOffsetDetection) == 1)
         #expect(summary.skipped(for: .timingOffsetDetection) == 1)
-        #expect(try store.fetchAllTimingOffsetDetections().count == 2)
+        #expect(try store.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 2)
     }
 
     @Test("rhythm records with same timestamp but different tempo are not duplicates")
@@ -607,7 +607,7 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
-        #expect(try store.fetchAllPitchDiscriminations().count == 2)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 2)
     }
 
     @Test("two records at the exact same millisecond with same key fields are deduplicated")
@@ -629,6 +629,6 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
-        #expect(try store.fetchAllPitchDiscriminations().count == 1)
+        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
     }
 }

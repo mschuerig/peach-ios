@@ -16,7 +16,7 @@ struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     let recordType: any PersistentModel.Type = PitchMatchingRecord.self
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllPitchMatchings() where record.interval == 0 {
+        for record in try store.fetchAllSorted(PitchMatchingRecord.self) where record.interval == 0 {
             builder.addPoint(
                 MetricPoint(timestamp: record.timestamp, value: abs(record.userCentError)),
                 for: .pitch(id)
@@ -55,7 +55,7 @@ struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     }
 
     func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllPitchMatchings()
+        try store.fetchAllSorted(PitchMatchingRecord.self)
             .filter { $0.interval == 0 }
             .map { ($0.timestamp, $0 as any PersistentModel) }
     }

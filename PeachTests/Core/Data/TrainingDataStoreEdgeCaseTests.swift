@@ -28,7 +28,7 @@ struct TrainingDataStoreEdgeCaseTests {
         try store.save(record1)
         try store.save(record2)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 2)
     }
 
@@ -44,7 +44,7 @@ struct TrainingDataStoreEdgeCaseTests {
         try store.save(minRecord)
         try store.save(maxRecord)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 2)
         #expect(fetched.contains { $0.referenceNote == 0 })
         #expect(fetched.contains { $0.referenceNote == 127 })
@@ -67,7 +67,7 @@ struct TrainingDataStoreEdgeCaseTests {
 
         try store.save(record)
 
-        let fetched = try store.fetchAllPitchDiscriminations()
+        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         #expect(fetched.count == 1)
         #expect(fetched[0].centOffset == 12.3)
     }
@@ -84,7 +84,7 @@ struct TrainingDataStoreEdgeCaseTests {
         try store.save(record)
 
         do {
-            _ = try store.fetchAllPitchDiscriminations()
+            _ = try store.fetchAllSorted(PitchDiscriminationRecord.self)
         } catch let error as Peach.DataStoreError {
             switch error {
             case .fetchFailed(let message):
@@ -153,8 +153,8 @@ struct TrainingDataStoreEdgeCaseTests {
         var records: [any PersistentModel] = [newComparison, newMatching]
         try store.replaceAllRecords(records)
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
-        let matchings = try store.fetchAllPitchMatchings()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let matchings = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(comparisons.count == 1)
         #expect(comparisons[0].referenceNote == 72)
@@ -175,8 +175,8 @@ struct TrainingDataStoreEdgeCaseTests {
 
         try store.replaceAllRecords([])
 
-        let comparisons = try store.fetchAllPitchDiscriminations()
-        let matchings = try store.fetchAllPitchMatchings()
+        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let matchings = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(comparisons.isEmpty)
         #expect(matchings.isEmpty)
@@ -198,8 +198,8 @@ struct TrainingDataStoreEdgeCaseTests {
         var records: [any PersistentModel] = comparisons + matchings
         try store.replaceAllRecords(records)
 
-        let fetchedComparisons = try store.fetchAllPitchDiscriminations()
-        let fetchedMatchings = try store.fetchAllPitchMatchings()
+        let fetchedComparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetchedMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
 
         #expect(fetchedComparisons.count == 5)
         #expect(fetchedMatchings.count == 3)
