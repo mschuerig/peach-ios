@@ -6,14 +6,8 @@ struct PitchMatchingScreen: View {
     @Environment(\.pitchMatchingSession) private var pitchMatchingSession
     @Environment(\.userSettings) private var userSettings
     @Environment(\.progressTimeline) private var progressTimeline
-    @Environment(\.trainingLifecycle) private var lifecycle
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-
-    @Environment(\.dismiss) private var dismiss
-
-    @FocusState private var isFocused: Bool
-    @State private var showHelpSheet = false
 
     static let helpSections: [HelpSection] = [
         HelpSection(
@@ -65,20 +59,6 @@ struct PitchMatchingScreen: View {
             )
             .padding()
         }
-        .inlineNavigationBarTitle()
-        .toolbar { toolbarContent }
-        .sheet(isPresented: $showHelpSheet) { helpSheetContent }
-        .onChange(of: showHelpSheet) { _, isShowing in
-            if isShowing {
-                lifecycle.helpSheetPresented()
-            } else {
-                isFocused = true
-                lifecycle.helpSheetDismissed()
-            }
-        }
-        .focusable()
-        .focusEffectDisabled()
-        .focused($isFocused)
         .onKeyPress(.upArrow) {
             pitchMatchingSession.adjustPitchByStep(up: true) ? .handled : .ignored
         }
@@ -91,18 +71,19 @@ struct PitchMatchingScreen: View {
         .onKeyPress(.return) {
             pitchMatchingSession.commitCurrentPitch() ? .handled : .ignored
         }
-        .onKeyPress(.escape) {
-            dismiss()
-            return .handled
+        .trainingScreen(
+            helpSections: Self.helpSections,
+            destination: .pitchMatching(isIntervalMode: isIntervalMode)
+        ) {
+            HStack(spacing: 6) {
+                Image(systemName: "target")
+                Text(isIntervalMode ? String(localized: "Intervals") : String(localized: "Pitch"))
+            }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(isIntervalMode
+                ? String(localized: "Intervals \u{2013} Match")
+                : String(localized: "Pitch \u{2013} Match"))
         }
-        .onAppear {
-            isFocused = true
-            lifecycle.trainingScreenAppeared(destination: .pitchMatching(isIntervalMode: isIntervalMode))
-        }
-        .onDisappear {
-            lifecycle.trainingScreenDisappeared()
-        }
-        .trainingIdleOverlay()
     }
 
     // MARK: - Subviews
@@ -139,61 +120,6 @@ struct PitchMatchingScreen: View {
             .animation(Self.feedbackAnimation(reduceMotion: reduceMotion), value: pitchMatchingSession.state == .showingFeedback)
         }
         .padding(.horizontal)
-    }
-
-    @ToolbarContentBuilder
-    private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            HStack(spacing: 6) {
-                Image(systemName: "target")
-                Text(isIntervalMode ? String(localized: "Intervals") : String(localized: "Pitch"))
-            }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(isIntervalMode
-                ? String(localized: "Intervals \u{2013} Match")
-                : String(localized: "Pitch \u{2013} Match"))
-        }
-        ToolbarItem(placement: .automatic) {
-            HStack(spacing: 20) {
-                Button {
-                    showHelpSheet = true
-                } label: {
-                    Label("Help", systemImage: "questionmark.circle")
-                }
-
-                NavigationLink(value: NavigationDestination.settings) {
-                    Image(systemName: "gearshape")
-                        .imageScale(.large)
-                }
-                .accessibilityLabel("Settings")
-
-                NavigationLink(value: NavigationDestination.profile) {
-                    Image(systemName: "chart.xyaxis.line")
-                        .imageScale(.large)
-                }
-                .accessibilityLabel("Profile")
-            }
-        }
-    }
-
-    private var helpSheetContent: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    HelpContentView(sections: Self.helpSections)
-                }
-                .padding()
-            }
-            .navigationTitle(String(localized: "Training Help"))
-            .inlineNavigationBarTitle()
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Done")) {
-                        showHelpSheet = false
-                    }
-                }
-            }
-        }
     }
 
     // MARK: - Helpers

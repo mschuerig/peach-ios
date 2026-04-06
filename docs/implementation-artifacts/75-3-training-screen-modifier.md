@@ -1,6 +1,6 @@
 # Story 75.3: Training Screen Modifier — Shared Boilerplate Extraction
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -30,23 +30,23 @@ The walkthrough (Layer 6) found that all 4 training screens duplicate ~30 lines 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Identify the exact shared scaffolding (AC: #1)
-  - [ ] Diff all 4 screens to confirm the identical lines
-  - [ ] Note any minor variations that need parameterization
+- [x] Task 1: Identify the exact shared scaffolding (AC: #1)
+  - [x] Diff all 4 screens to confirm the identical lines
+  - [x] Note any minor variations that need parameterization
 
-- [ ] Task 2: Create TrainingScreenModifier (AC: #1, #4)
-  - [ ] Define the modifier with parameters: `title: LocalizedStringKey`, `helpSections: [HelpSection]`
-  - [ ] Move all shared scaffolding into the modifier's `body(content:)`
-  - [ ] Handle the `@FocusState` — may need to be managed inside the modifier or passed as a binding
+- [x] Task 2: Create TrainingScreenModifier (AC: #1, #4)
+  - [x] Define the modifier with parameters: `helpSections: [HelpSection]`, `destination: NavigationDestination`, `@ViewBuilder title`
+  - [x] Move all shared scaffolding into the modifier's `body(content:)`
+  - [x] Handle the `@FocusState` — owned internally by the modifier (cleaner approach)
 
-- [ ] Task 3: Apply to all 4 training screens (AC: #2, #3)
-  - [ ] `PitchDiscriminationScreen` — remove duplicated scaffolding, apply modifier
-  - [ ] `PitchMatchingScreen` — remove duplicated scaffolding, apply modifier
-  - [ ] `RhythmOffsetDetectionScreen` — remove duplicated scaffolding, apply modifier
-  - [ ] `ContinuousRhythmMatchingScreen` — remove duplicated scaffolding, apply modifier
+- [x] Task 3: Apply to all 4 training screens (AC: #2, #3)
+  - [x] `PitchDiscriminationScreen` — remove duplicated scaffolding, apply modifier
+  - [x] `PitchMatchingScreen` — remove duplicated scaffolding, apply modifier
+  - [x] `TimingOffsetDetectionScreen` — remove duplicated scaffolding, apply modifier
+  - [x] `ContinuousRhythmMatchingScreen` — remove duplicated scaffolding, apply modifier
 
-- [ ] Task 4: Verify behavior (AC: #5)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 4: Verify behavior (AC: #5)
+  - [x] `bin/test.sh && bin/test.sh -p mac` — 1717 iOS + 1710 macOS tests pass
   - [ ] Manual check: focus, keyboard shortcuts, help sheet, toolbar, idle overlay on each screen
 
 ## Dev Notes
@@ -86,10 +86,26 @@ Each screen has its own keyboard shortcuts (arrows, letters) defined in `onKeyPr
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+
 ### Completion Notes List
+- Created `TrainingScreenModifier` as a generic `ViewModifier` with `@ViewBuilder` title parameter (instead of plain `LocalizedStringKey`) because the toolbar principal content varies per screen (icon + text + accessibility label)
+- `@FocusState` is owned internally by the modifier — content views don't need to know about it
+- The modifier absorbs: `@FocusState` + focus modifiers, escape key dismiss, onAppear/onDisappear lifecycle, help sheet state + onChange lifecycle, toolbar (principal title + help/settings/profile), `inlineNavigationBarTitle()`, `trainingIdleOverlay()`
+- Each screen retains only: unique content, screen-specific keyboard shortcuts, help sections array
+- Convenience extension `View.trainingScreen(helpSections:destination:title:)` provides clean call-site API
+- Story specified `title: LocalizedStringKey` but actual toolbar principal uses icon + text + accessibility, so `@ViewBuilder` was the right choice
+
 ### File List
+- `Peach/App/TrainingScreenModifier.swift` (new)
+- `Peach/Training/PitchDiscrimination/PitchDiscriminationScreen.swift` (modified — removed ~40 lines of scaffolding)
+- `Peach/Training/PitchMatching/PitchMatchingScreen.swift` (modified — removed ~45 lines of scaffolding)
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionScreen.swift` (modified — removed ~45 lines of scaffolding)
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` (modified — removed ~45 lines of scaffolding)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-07: Implemented TrainingScreenModifier and applied to all 4 training screens
