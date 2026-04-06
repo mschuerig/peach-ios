@@ -61,7 +61,7 @@ nonisolated enum Interval: Int, Hashable, Comparable, Sendable, CaseIterable, Co
     }
 
     static func between(_ reference: MIDINote, _ target: MIDINote) throws -> Interval {
-        let distance = abs(reference.rawValue - target.rawValue)
+        let distance = abs(reference - target)
         guard let interval = Interval(rawValue: distance) else {
             throw AudioError.invalidInterval("Semitone distance \(distance) exceeds octave range (0-12)")
         }

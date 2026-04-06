@@ -26,6 +26,38 @@ nonisolated struct Cents: Hashable, Comparable, Sendable {
     }
 }
 
+// MARK: - Arithmetic
+
+nonisolated extension Cents {
+    static func + (lhs: Cents, rhs: Cents) -> Cents {
+        Cents(lhs.rawValue + rhs.rawValue)
+    }
+
+    static func - (lhs: Cents, rhs: Cents) -> Cents {
+        Cents(lhs.rawValue - rhs.rawValue)
+    }
+
+    static prefix func - (value: Cents) -> Cents {
+        Cents(-value.rawValue)
+    }
+
+    static func * (lhs: Double, rhs: Cents) -> Cents {
+        Cents(lhs * rhs.rawValue)
+    }
+
+    static func * (lhs: Cents, rhs: Double) -> Cents {
+        Cents(lhs.rawValue * rhs)
+    }
+
+    static func / (lhs: Cents, rhs: Cents) -> Double {
+        lhs.rawValue / rhs.rawValue
+    }
+
+    static func / (lhs: Cents, rhs: Double) -> Cents {
+        Cents(lhs.rawValue / rhs)
+    }
+}
+
 // MARK: - ExpressibleByFloatLiteral
 
 extension Cents: ExpressibleByFloatLiteral {

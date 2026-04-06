@@ -33,7 +33,7 @@ struct DirectedInterval: Hashable, Comparable, Sendable, Codable {
 
     static func between(_ reference: MIDINote, _ target: MIDINote) throws -> DirectedInterval {
         let interval = try Interval.between(reference, target)
-        let direction: Direction = target.rawValue >= reference.rawValue ? .up : .down
+        let direction: Direction = target >= reference ? .up : .down
         return DirectedInterval(interval: interval, direction: direction)
     }
 }

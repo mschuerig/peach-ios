@@ -48,17 +48,17 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         }
 
         let decomposed = SoundFontPlayer.decompose(frequency: frequency)
-        let targetMidi = Double(decomposed.note) + decomposed.cents.rawValue / Cents.perSemitone.rawValue
+        let targetMidi = Double(decomposed.note) + decomposed.cents / Cents.perSemitone
         let baseMidi = Double(midiNote.rawValue)
-        let centDifference = (targetMidi - baseMidi) * Cents.perSemitone.rawValue
+        let centDifference = (targetMidi - baseMidi) * Cents.perSemitone
 
-        guard abs(centDifference) <= SoundFontEngine.pitchBendRangeCents else {
+        guard centDifference.magnitude <= SoundFontEngine.pitchBendRangeCents else {
             throw AudioError.invalidFrequency(
-                "Target frequency \(freq) Hz is \(Int(centDifference)) cents from base MIDI note \(midiNote.rawValue), exceeding ±\(Int(SoundFontEngine.pitchBendRangeCents)) cent pitch bend range"
+                "Target frequency \(freq) Hz is \(Int(centDifference.rawValue)) cents from base MIDI note \(midiNote.rawValue), exceeding ±\(Int(SoundFontEngine.pitchBendRangeCents)) cent pitch bend range"
             )
         }
 
-        let bendValue = SoundFontPlayer.pitchBendValue(forCents: Cents(centDifference))
+        let bendValue = SoundFontPlayer.pitchBendValue(forCents: centDifference)
         engine.sendPitchBend(bendValue, channel: channel)
     }
 }

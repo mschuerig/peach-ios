@@ -39,6 +39,14 @@ nonisolated struct MIDINote: Hashable, Comparable, Codable, Sendable {
     }
 }
 
+// MARK: - Distance
+
+nonisolated extension MIDINote {
+    static func - (lhs: MIDINote, rhs: MIDINote) -> Int {
+        lhs.rawValue - rhs.rawValue
+    }
+}
+
 // MARK: - ExpressibleByIntegerLiteral
 
 extension MIDINote: ExpressibleByIntegerLiteral {

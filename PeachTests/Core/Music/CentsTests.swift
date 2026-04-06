@@ -64,6 +64,56 @@ struct CentsTests {
         #expect(Cents.perSemitone.rawValue == 100.0)
     }
 
+    // MARK: - Arithmetic Operators
+
+    @Test("addition of two Cents values")
+    func addition() async {
+        let result = Cents(100.0) + Cents(50.0)
+        #expect(result.rawValue == 150.0)
+    }
+
+    @Test("subtraction of two Cents values")
+    func subtraction() async {
+        let result = Cents(100.0) - Cents(30.0)
+        #expect(result.rawValue == 70.0)
+    }
+
+    @Test("negation of a Cents value")
+    func negation() async {
+        let result = -Cents(50.0)
+        #expect(result.rawValue == -50.0)
+    }
+
+    @Test("negation of a negative Cents value")
+    func negationOfNegative() async {
+        let result = -Cents(-50.0)
+        #expect(result.rawValue == 50.0)
+    }
+
+    @Test("scalar multiplication: Double * Cents")
+    func scalarMultiplyLeft() async {
+        let result = 3.0 * Cents(100.0)
+        #expect(result.rawValue == 300.0)
+    }
+
+    @Test("scalar multiplication: Cents * Double")
+    func scalarMultiplyRight() async {
+        let result = Cents(100.0) * 0.5
+        #expect(result.rawValue == 50.0)
+    }
+
+    @Test("ratio division: Cents / Cents returns Double")
+    func ratioDivision() async {
+        let result: Double = Cents(600.0) / Cents.perOctave
+        #expect(result == 0.5)
+    }
+
+    @Test("scalar division: Cents / Double returns Cents")
+    func scalarDivision() async {
+        let result = Cents(200.0) / 4.0
+        #expect(result.rawValue == 50.0)
+    }
+
     // MARK: - Comparable
 
     @Test("Comparison uses signed raw values")

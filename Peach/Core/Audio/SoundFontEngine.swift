@@ -207,7 +207,7 @@ final class SoundFontEngine {
     nonisolated static let pitchBendRangeSemitones: Int = 2
 
     /// Maximum pitch bend displacement in cents, derived from `pitchBendRangeSemitones`.
-    nonisolated static let pitchBendRangeCents: Double = Double(pitchBendRangeSemitones) * Cents.perSemitone.rawValue
+    nonisolated static let pitchBendRangeCents: Double = (Double(pitchBendRangeSemitones) * Cents.perSemitone).rawValue
 
     private nonisolated static let scheduleCapacity = 4096
 

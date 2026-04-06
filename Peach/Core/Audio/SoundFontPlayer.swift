@@ -150,7 +150,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
         let exactMidi = Double(MIDINote.a4.rawValue)
             + Double(Interval.octave.semitones) * log2(frequency.rawValue / Frequency.concert440.rawValue)
         let roundedMidi = Int(exactMidi.rounded())
-        let centsRemainder = Cents((exactMidi - Double(roundedMidi)) * Cents.perSemitone.rawValue)
+        let centsRemainder = (exactMidi - Double(roundedMidi)) * Cents.perSemitone
         let clampedMidi = roundedMidi.clamped(to: MIDINote.validRange)
         return (note: UInt8(clampedMidi), cents: centsRemainder)
     }

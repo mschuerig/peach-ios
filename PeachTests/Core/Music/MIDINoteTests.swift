@@ -120,6 +120,19 @@ struct MIDINoteTests {
         #expect(MIDINote(0).name == "C-1")
     }
 
+    // MARK: - Distance Operator
+
+    @Test("subtraction gives signed semitone distance")
+    func distanceOperator() async {
+        #expect(MIDINote(72) - MIDINote(60) == 12)
+        #expect(MIDINote(60) - MIDINote(72) == -12)
+    }
+
+    @Test("distance from a note to itself is zero")
+    func distanceSelf() async {
+        #expect(MIDINote(69) - MIDINote(69) == 0)
+    }
+
     // MARK: - Transposition
 
     @Test("C4 transposed by perfect fifth up gives G4")

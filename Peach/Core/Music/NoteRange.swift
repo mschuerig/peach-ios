@@ -13,8 +13,8 @@ struct NoteRange: Hashable, Sendable {
 
     init(lowerBound: MIDINote, upperBound: MIDINote) {
         precondition(
-            upperBound.rawValue - lowerBound.rawValue >= Self.minimumSpan,
-            "NoteRange requires at least \(Self.minimumSpan) semitones, got \(upperBound.rawValue - lowerBound.rawValue)"
+            upperBound - lowerBound >= Self.minimumSpan,
+            "NoteRange requires at least \(Self.minimumSpan) semitones, got \(upperBound - lowerBound)"
         )
         self.lowerBound = lowerBound
         self.upperBound = upperBound
@@ -31,6 +31,6 @@ struct NoteRange: Hashable, Sendable {
     }
 
     var semitoneSpan: Int {
-        upperBound.rawValue - lowerBound.rawValue
+        upperBound - lowerBound
     }
 }

@@ -104,38 +104,48 @@ None
 
 ### Completion Notes List
 - Added `MIDINote.a4` and `private static let noteNames` to `MIDINote`
-- Added `Cents.perSemitone` constant; changed `Cents.perOctave` from `Double` to `Cents` for consistency
+- Added `Cents.perSemitone` constant
 - Replaced `TuningSystem.referenceMIDINote = 69` with inline `MIDINote.a4.rawValue`
-- Replaced all 5 local constants in `SoundFontPlayer.decompose()` with domain type references
-- Replaced raw `100.0` in `SoundFontPlaybackHandle`, `SoundFontEngine.pitchBendRangeCents`, and `TuningSystem.centOffset(for:)` with `Cents.perSemitone.rawValue`
+- Replaced all 5 local constants in `SoundFontPlayer.decompose()` with domain type references (`MIDINote.a4`, `Interval.octave.semitones`, `Frequency.concert440`, `Cents.perSemitone`, `MIDINote.validRange`)
+- Also replaced raw `100.0` in `SoundFontPlaybackHandle`, `SoundFontEngine.pitchBendRangeCents`, and `TuningSystem.centOffset(for:)` with `Cents.perSemitone.rawValue`
 - Added `PitchBendValue(clamping:)` initializer; updated `SoundFontPlayer.pitchBendValue(forCents:)` to use it
 - Added `MIDIVelocity.mezzoPiano` constant; used in `SettingsCoordinator`, `PitchDiscriminationSettings`, and `PitchMatchingSettings`
 - Applied `nonisolated` at struct level on `Cents`, `Frequency`, `AmplitudeDB`, `NoteDuration`; removed redundant piecemeal `nonisolated` on `Cents.init`
 - Changed `audioSampleRate` environment key to `SampleRate?` (nil default)
 - All tests pass: 1707 iOS, 1700 macOS
+- Added arithmetic operators to `Cents` (+, -, unary -, scalar *, /, ratio /) and distance operator to `MIDINote` (-)
+- Replaced ~15 `.rawValue` accesses across domain layer with operator expressions
 
 ### File List
-- `Peach/Core/Music/MIDINote.swift` — added `a4` constant, `noteNames` static
-- `Peach/Core/Music/Cents.swift` — added `perSemitone`, changed `perOctave` to Cents type, `nonisolated` struct
+- `Peach/Core/Music/MIDINote.swift` — added `a4` constant, `noteNames` static, `-` distance operator
+- `Peach/Core/Music/Cents.swift` — added `perSemitone`, `perOctave` as Cents, `nonisolated` struct, arithmetic operators
 - `Peach/Core/Music/Frequency.swift` — `nonisolated` struct
 - `Peach/Core/Music/AmplitudeDB.swift` — `nonisolated` struct
 - `Peach/Core/Music/NoteDuration.swift` — `nonisolated` struct
 - `Peach/Core/Music/MIDIVelocity.swift` — added `mezzoPiano` constant
 - `Peach/Core/Music/PitchBendValue.swift` — added `init(clamping:)`
-- `Peach/Core/Music/TuningSystem.swift` — used `MIDINote.a4.rawValue` and `Cents.perSemitone.rawValue`
-- `Peach/Core/Audio/SoundFontPlayer.swift` — replaced raw literals in `decompose()`, used `PitchBendValue(clamping:)`
-- `Peach/Core/Audio/SoundFontPlaybackHandle.swift` — used `Cents.perSemitone.rawValue`
-- `Peach/Core/Audio/SoundFontEngine.swift` — used `Cents.perSemitone.rawValue`
+- `Peach/Core/Music/NoteRange.swift` — used MIDINote distance operator
+- `Peach/Core/Music/Interval.swift` — used MIDINote distance operator
+- `Peach/Core/Music/DirectedInterval.swift` — used MIDINote comparison directly
+- `Peach/Core/Music/TuningSystem.swift` — used Cents operators and MIDINote distance
+- `Peach/Core/Audio/SoundFontPlayer.swift` — replaced raw literals in `decompose()`, used `PitchBendValue(clamping:)` and Cents operators
+- `Peach/Core/Audio/SoundFontPlaybackHandle.swift` — used Cents operators
+- `Peach/Core/Audio/SoundFontEngine.swift` — used Cents operators
 - `Peach/App/SettingsCoordinator.swift` — used `MIDINote.a4` and `MIDIVelocity.mezzoPiano`
 - `Peach/App/EnvironmentKeys.swift` — changed `audioSampleRate` to optional
 - `Peach/PitchDiscrimination/PitchDiscriminationSettings.swift` — used `.mezzoPiano`
+- `Peach/PitchDiscrimination/PitchDiscriminationStoreAdapter.swift` — used MIDINote distance operator
+- `Peach/PitchDiscrimination/PitchDiscriminationTrial.swift` — used Cents comparison directly
 - `Peach/PitchMatching/PitchMatchingSettings.swift` — used `.mezzoPiano`
-- `Peach/PitchMatching/PitchMatchingSession.swift` — updated `Cents.perOctave` references for type change
-- `PeachTests/Core/Music/MIDINoteTests.swift` — added tests for `a4` constant
-- `PeachTests/Core/Music/CentsTests.swift` — added tests for `perSemitone`
+- `Peach/PitchMatching/PitchMatchingSession.swift` — used Cents operators
+- `Peach/PitchMatching/PitchMatchingStoreAdapter.swift` — used MIDINote distance operator
+- `PeachTests/Core/Music/MIDINoteTests.swift` — added tests for `a4` constant and distance operator
+- `PeachTests/Core/Music/CentsTests.swift` — added tests for `perSemitone` and arithmetic operators
 - `PeachTests/Core/Music/PitchBendValueTests.swift` — added tests for clamping initializer
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
 - 2026-04-06: Implementation complete — all domain constants, clamping, isolation, and fail-loud changes applied
+- 2026-04-06: Simplify review — `PitchBendValue(clamping:)` now uses `.clamped(to:)`; `Cents.perOctave` changed to `Cents` type for consistency with `perSemitone`; removed unnecessary doc comment from `perSemitone`
+- 2026-04-06: Added arithmetic operators to `Cents` and distance operator to `MIDINote`; replaced ~15 `.rawValue` accesses with operator expressions

@@ -5,7 +5,7 @@ struct PitchDiscriminationTrial {
     let targetNote: DetunedMIDINote
 
     var isTargetHigher: Bool {
-        targetNote.offset.rawValue > 0
+        targetNote.offset > 0
     }
 
     func referenceFrequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
