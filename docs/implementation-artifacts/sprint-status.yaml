@@ -614,7 +614,7 @@ development_status:
   75-9-core-dependency-direction-cleanup: done
   75-2-audio-engine-render-callback-and-channel-unification: done
   75-6-composition-root-decomposition: done
-  75-3-training-screen-modifier: review
+  75-3-training-screen-modifier: done
   75-7-platform-split-contentview-and-settings-import: ready-for-dev
   75-8-help-content-centralization: ready-for-dev
   75-5-settings-single-source-of-truth: ready-for-dev

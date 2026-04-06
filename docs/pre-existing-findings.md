@@ -32,3 +32,12 @@ On macOS, each session's `AudioSessionInterruptionMonitor` independently listens
 On macOS, SwiftUI initializes the `@main App` struct twice before one instance is used. This creates duplicate `PerceptualProfile`, `SoundFontEngine`, sessions, and other heavyweight objects. Visible in logs as 2× "PerceptualProfile initialized (cold start)".
 
 **Fix:** Move heavyweight initialization out of `PeachApp.init()` into a lazily-created shared container, or use `@State` with a factory that guards against double init. This is a known SwiftUI macOS behavior.
+
+### PF-003: Training Session Restart on In-Stack Navigation to Settings/Profile
+
+**Found:** 2026-04-07 (Story 75.3 code review)
+**Severity:** Medium (session progress lost on navigation round-trip)
+
+When the user taps Settings or Profile in the training screen toolbar, SwiftUI's NavigationStack fires `onDisappear` on the training screen, which calls `lifecycle.trainingScreenDisappeared()` → `stopCurrentSession()` → `session.stop()`. The `stop()` method fully clears session state (`sessionBestCentDifference`, `currentTrial`, `lastResult` — all nilled). When the user navigates back, `onAppear` fires and `startCurrentSession()` restarts training from scratch, losing all in-session progress.
+
+**Fix:** Introduce pause/resume semantics distinct from stop/start. Either add `pause()`/`resume()` to the `TrainingSession` protocol, or have the lifecycle coordinator distinguish between temporary pushes (Settings/Profile) and permanent pops (back to Start Screen). Requires multi-file change across the session protocol, all session implementations, and the lifecycle coordinator.

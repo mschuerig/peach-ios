@@ -1,6 +1,6 @@
 # Story 75.3: Training Screen Modifier — Shared Boilerplate Extraction
 
-Status: review
+Status: done
 
 ## Story
 

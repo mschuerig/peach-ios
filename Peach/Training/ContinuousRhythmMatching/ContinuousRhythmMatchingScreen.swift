@@ -38,10 +38,12 @@ struct ContinuousRhythmMatchingScreen: View {
         }
         .padding()
         .onKeyPress(.space, phases: .down) { _ in
+            guard session.isRunning else { return .ignored }
             session.handleTap()
             return .handled
         }
         .onKeyPress(.return, phases: .down) { _ in
+            guard session.isRunning else { return .ignored }
             session.handleTap()
             return .handled
         }
