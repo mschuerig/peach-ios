@@ -302,9 +302,6 @@ final class PitchDiscriminationSession: TrainingSession {
         }
     }
 
-    // WALKTHROUGH: Named "transitionToFeedback" but also plays the next trial.
-    // State machine transitions are interwoven with side effects (recording, feedback, scheduling).
-    // See observation #3 in Layer 3 notes — research explicit state machine patterns.
     private func transitionToFeedback(_ completed: CompletedPitchDiscriminationTrial) {
         guard let settings else { return }
 

@@ -112,11 +112,6 @@ final class TrainingDataStore {
         }
     }
 
-    // WALKTHROUGH: These per-type convenience methods couple Core to concrete discipline
-    // record types. Adding a discipline forces adding a method here. Replace with a single
-    // generic sorted fetch, e.g. fetchAllSorted<T: PersistentModel & Timestamped>(_ type: T.Type).
-    // Callers already know their record type — they can pass it as a generic parameter.
-
     // MARK: - Per-Type Convenience (sorted by timestamp)
 
     func fetchAllPitchDiscriminations() throws -> [PitchDiscriminationRecord] {

@@ -7,8 +7,6 @@ import Foundation
 /// `TuningSystem.frequency(for:referencePitch:)`.
 nonisolated struct MIDINote: Hashable, Comparable, Codable, Sendable {
     static let validRange = 0...127
-    // WALKTHROUGH: Add `static let a4 = MIDINote(69)` — used as reference in TuningSystem.
-    // TuningSystem.swift currently has `private static let referenceMIDINote = 69` (raw Int).
 
     let rawValue: Int
 
@@ -20,7 +18,6 @@ nonisolated struct MIDINote: Hashable, Comparable, Codable, Sendable {
     // MARK: - Computed Properties
 
     var name: String {
-        // WALKTHROUGH: noteNames is re-created on every call — could be a static constant.
         let noteNames = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
         let pitchClass = rawValue % 12
         let octave = (rawValue / 12) - 1

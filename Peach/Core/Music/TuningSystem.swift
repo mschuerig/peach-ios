@@ -34,7 +34,6 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
 
     // MARK: - Frequency Bridge (Logical → Physical)
 
-    // WALKTHROUGH: Should use MIDINote.a4 instead of raw 69.
     private static let referenceMIDINote = 69
 
     /// Decomposes MIDI distance into octaves + remainder interval, then computes

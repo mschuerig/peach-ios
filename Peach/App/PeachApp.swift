@@ -4,12 +4,6 @@ import SwiftData
 import TipKit
 import os
 
-// WALKTHROUGH: init() is a 180-line flat sequence mixing all abstraction levels.
-// rebuildCoordinators() duplicates the TrainingLifecycleCoordinator and SettingsCoordinator
-// construction from init(), including #if os() conditionals. Decompose init() into named
-// methods (e.g. setupAudio(), createSessions(), buildCoordinators()) so rebuildCoordinators()
-// can reuse buildCoordinators() instead of duplicating it.
-
 @main
 struct PeachApp: App {
     private static let backgroundNotificationName: Notification.Name? = PlatformNotifications.background

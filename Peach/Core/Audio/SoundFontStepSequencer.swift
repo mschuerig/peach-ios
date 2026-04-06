@@ -182,10 +182,6 @@ final class SoundFontStepSequencer: StepSequencer {
         return min(noteOffSamples, max(samplesPerStep - 1, 1))
     }
 
-    // WALKTHROUGH: buildCycleEvents and buildBatch should be instance methods.
-    // 3 of 5 parameters are already on self (cyclesPerBatch, samplesPerStep, channel).
-    // Store noteOffDelaySamples as a property alongside samplesPerStep.
-    // Remove or make private the static versions — test through start()/stop() instead.
     static func buildCycleEvents(
         cycle: CycleDefinition,
         cycleOffset: Int64,

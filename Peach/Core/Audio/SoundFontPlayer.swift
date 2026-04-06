@@ -137,8 +137,6 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
 
     // MARK: - Static Helpers
 
-    // WALKTHROUGH: Manual clamping to 0...16383 duplicates PitchBendValue.validRange.
-    // Consider a clamping init on PitchBendValue (like AmplitudeDB/NoteDuration) instead.
     nonisolated static func pitchBendValue(forCents cents: Cents) -> PitchBendValue {
         let center = Double(PitchBendValue.center.rawValue)
         let raw = Int(center + cents.rawValue * center / SoundFontEngine.pitchBendRangeCents)
@@ -149,12 +147,6 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     /// Decomposes a frequency into its nearest MIDI note and cent remainder.
     /// Always uses 12-TET at concert pitch (A4=440Hz) — this is a MIDI
     /// implementation detail, not a musical tuning choice.
-    // WALKTHROUGH: All locals here duplicate existing domain constants:
-    //   referenceMIDINote = 69  → MIDINote.a4 (to be added, see Layer 1 obs #3)
-    //   concert440 = 440.0      → Frequency.concert440
-    //   midiRange = 0...127     → MIDINote.validRange
-    //   semitonesPerOctave      → Interval.octave.semitones (= 12)
-    //   centsPerSemitone        → missing; add Cents.perSemitone = 100.0
     nonisolated static func decompose(frequency: Frequency) -> (note: UInt8, cents: Cents) {
         let referenceMIDINote = 69
         let semitonesPerOctave = 12.0
