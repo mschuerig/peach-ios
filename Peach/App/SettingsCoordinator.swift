@@ -31,10 +31,8 @@ final class SettingsCoordinator {
         transferService.refreshExport()
     }
 
-    /// A4 (MIDI 69) — the standard tuning reference note.
-    private static let previewNote: MIDINote = 69
-    /// MIDI velocity 63 — mezzo-piano, a comfortable preview loudness.
-    private static let previewVelocity: MIDIVelocity = 63
+    private static let previewNote = MIDINote.a4
+    private static let previewVelocity = MIDIVelocity.mezzoPiano
     /// 0 dB — unity gain, no additional amplitude boost or cut.
     private static let previewAmplitude = AmplitudeDB(0)
 

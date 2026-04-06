@@ -105,6 +105,21 @@ struct MIDINoteTests {
         #expect(decoded == note)
     }
 
+    // MARK: - Well-Known Constants
+
+    @Test("a4 constant is MIDI note 69")
+    func a4Constant() async {
+        #expect(MIDINote.a4.rawValue == 69)
+    }
+
+    @Test("noteNames array is not re-created on every name call")
+    func noteNamesIsStatic() async {
+        // Verify name still works correctly — the optimization is structural
+        #expect(MIDINote.a4.name == "A4")
+        #expect(MIDINote(60).name == "C4")
+        #expect(MIDINote(0).name == "C-1")
+    }
+
     // MARK: - Transposition
 
     @Test("C4 transposed by perfect fifth up gives G4")

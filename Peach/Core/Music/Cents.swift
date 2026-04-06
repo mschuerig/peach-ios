@@ -5,9 +5,9 @@ import Foundation
 /// Cents is a universal unit — not specific to 12-TET. It appears in
 /// `DetunedMIDINote` (microtonal offset), `Comparison` (cent difference
 /// between notes), and `TrainingSettings` (difficulty bounds).
-struct Cents: Hashable, Comparable, Sendable {
-    /// The number of cents in one octave (1200 = 12 semitones x 100 cents).
-    static let perOctave: Double = 1200.0
+nonisolated struct Cents: Hashable, Comparable, Sendable {
+    static let perSemitone = Cents(100.0)
+    static let perOctave = Cents(1200.0)
 
     let rawValue: Double
 
@@ -15,7 +15,7 @@ struct Cents: Hashable, Comparable, Sendable {
         abs(rawValue)
     }
 
-    nonisolated init(_ rawValue: Double) {
+    init(_ rawValue: Double) {
         self.rawValue = rawValue
     }
 

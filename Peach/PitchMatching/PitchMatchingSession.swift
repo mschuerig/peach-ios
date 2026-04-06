@@ -186,7 +186,7 @@ final class PitchMatchingSession: TrainingSession {
     private func sliderFrequency(for value: Double) -> Double? {
         guard let referenceFrequency, let trial = currentTrial, let settings else { return nil }
         let centOffset = trial.initialCentOffset.rawValue + value * settings.initialCentOffsetRange.upperBound.rawValue
-        return referenceFrequency.rawValue * pow(2.0, centOffset / Cents.perOctave)
+        return referenceFrequency.rawValue * pow(2.0, centOffset / Cents.perOctave.rawValue)
     }
 
     private func commitResult(userFrequency: Double) {
@@ -202,7 +202,7 @@ final class PitchMatchingSession: TrainingSession {
         }
 
         guard let referenceFrequency else { return }
-        let userCentError = Cents(Cents.perOctave * log2(userFrequency / referenceFrequency.rawValue))
+        let userCentError = Cents(Cents.perOctave.rawValue * log2(userFrequency / referenceFrequency.rawValue))
         logger.info("Result: ref=\(trial.referenceNote.rawValue), target=\(trial.targetNote.rawValue), initialOffset=\(trial.initialCentOffset.rawValue)cents, userCentError=\(userCentError.rawValue)cents")
 
         let result = CompletedPitchMatchingTrial(

@@ -9,6 +9,10 @@ nonisolated struct PitchBendValue: Hashable, Comparable, Sendable {
         self.rawValue = rawValue
     }
 
+    init(clamping rawValue: Int) {
+        self.rawValue = UInt16(rawValue.clamped(to: 0...16383))
+    }
+
     // MARK: - Slider Mapping
 
     /// Maps the 14-bit pitch bend range [0, 16383] linearly to [-1.0, +1.0].

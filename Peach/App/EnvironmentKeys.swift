@@ -9,7 +9,7 @@ extension EnvironmentValues {
     @Entry var rhythmPlayer: (any RhythmPlayer)? = nil
     @Entry var stepSequencer: (any StepSequencer)? = nil
     @Entry var midiInput: (any MIDIInput)? = nil
-    @Entry var audioSampleRate: SampleRate = .standard48000
+    @Entry var audioSampleRate: SampleRate?
 }
 
 // MARK: - Environment Keys (injected by PeachApp — defaults are stubs for previews only)

@@ -30,6 +30,32 @@ struct PitchBendValueTests {
         #expect(set.count == 2)
     }
 
+    // MARK: - Clamping Initializer
+
+    @Test("Clamping initializer clamps value below 0 to 0")
+    func clampingBelowMinimum() async {
+        let bend = PitchBendValue(clamping: -100)
+        #expect(bend.rawValue == 0)
+    }
+
+    @Test("Clamping initializer clamps value above 16383 to 16383")
+    func clampingAboveMaximum() async {
+        let bend = PitchBendValue(clamping: 20000)
+        #expect(bend.rawValue == 16383)
+    }
+
+    @Test("Clamping initializer passes through valid value")
+    func clampingValidValue() async {
+        let bend = PitchBendValue(clamping: 8192)
+        #expect(bend.rawValue == 8192)
+    }
+
+    @Test("Clamping initializer passes through boundary values")
+    func clampingBoundaryValues() async {
+        #expect(PitchBendValue(clamping: 0).rawValue == 0)
+        #expect(PitchBendValue(clamping: 16383).rawValue == 16383)
+    }
+
     // MARK: - Normalized Slider Value
 
     @Test("normalizedSliderValue maps 0 to -1.0")

@@ -1,6 +1,6 @@
 import Foundation
 
-struct AmplitudeDB: Hashable, Comparable, Sendable {
+nonisolated struct AmplitudeDB: Hashable, Comparable, Sendable {
     static let validRange: ClosedRange<Double> = -90.0...12.0
 
     let rawValue: Double

@@ -57,6 +57,13 @@ struct CentsTests {
         #expect(cents.rawValue == 100.0)
     }
 
+    // MARK: - Well-Known Constants
+
+    @Test("perSemitone constant is 100 cents")
+    func perSemitoneConstant() async {
+        #expect(Cents.perSemitone.rawValue == 100.0)
+    }
+
     // MARK: - Comparable
 
     @Test("Comparison uses signed raw values")

@@ -48,9 +48,9 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         }
 
         let decomposed = SoundFontPlayer.decompose(frequency: frequency)
-        let targetMidi = Double(decomposed.note) + decomposed.cents.rawValue / 100.0
+        let targetMidi = Double(decomposed.note) + decomposed.cents.rawValue / Cents.perSemitone.rawValue
         let baseMidi = Double(midiNote.rawValue)
-        let centDifference = (targetMidi - baseMidi) * 100.0
+        let centDifference = (targetMidi - baseMidi) * Cents.perSemitone.rawValue
 
         guard abs(centDifference) <= SoundFontEngine.pitchBendRangeCents else {
             throw AudioError.invalidFrequency(

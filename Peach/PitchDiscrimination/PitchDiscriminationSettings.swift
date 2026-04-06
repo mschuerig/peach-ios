@@ -24,7 +24,7 @@ struct PitchDiscriminationSettings {
         minCentDifference: Cents = Cents(0.1),
         maxCentDifference: Cents = Cents(100.0),
         maxLoudnessOffsetDB: AmplitudeDB = AmplitudeDB(10.0),
-        velocity: MIDIVelocity = MIDIVelocity(63),
+        velocity: MIDIVelocity = .mezzoPiano,
         noteGap: Duration = .zero,
         feedbackDuration: Duration = .milliseconds(400)
     ) {

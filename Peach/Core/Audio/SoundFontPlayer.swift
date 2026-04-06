@@ -140,26 +140,19 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     nonisolated static func pitchBendValue(forCents cents: Cents) -> PitchBendValue {
         let center = Double(PitchBendValue.center.rawValue)
         let raw = Int(center + cents.rawValue * center / SoundFontEngine.pitchBendRangeCents)
-        let clamped = Swift.min(16383, Swift.max(0, raw))
-        return PitchBendValue(UInt16(clamped))
+        return PitchBendValue(clamping: raw)
     }
 
     /// Decomposes a frequency into its nearest MIDI note and cent remainder.
     /// Always uses 12-TET at concert pitch (A4=440Hz) — this is a MIDI
     /// implementation detail, not a musical tuning choice.
     nonisolated static func decompose(frequency: Frequency) -> (note: UInt8, cents: Cents) {
-        let referenceMIDINote = 69
-        let semitonesPerOctave = 12.0
-        let centsPerSemitone = 100.0
-        let concert440 = 440.0
-        let midiRange = 0...127
-
-        let exactMidi = Double(referenceMIDINote)
-            + semitonesPerOctave * log2(frequency.rawValue / concert440)
+        let exactMidi = Double(MIDINote.a4.rawValue)
+            + Double(Interval.octave.semitones) * log2(frequency.rawValue / Frequency.concert440.rawValue)
         let roundedMidi = Int(exactMidi.rounded())
-        let centsRemainder = (exactMidi - Double(roundedMidi)) * centsPerSemitone
-        let clampedMidi = roundedMidi.clamped(to: midiRange)
-        return (note: UInt8(clampedMidi), cents: Cents(centsRemainder))
+        let centsRemainder = Cents((exactMidi - Double(roundedMidi)) * Cents.perSemitone.rawValue)
+        let clampedMidi = roundedMidi.clamped(to: MIDINote.validRange)
+        return (note: UInt8(clampedMidi), cents: centsRemainder)
     }
 
 }

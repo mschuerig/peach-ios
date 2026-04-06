@@ -3,6 +3,9 @@ import Foundation
 nonisolated struct MIDIVelocity: Hashable, Comparable, Sendable {
     static let validRange: ClosedRange<UInt8> = 1...127
 
+    /// Mezzo-piano — the default training and preview velocity.
+    static let mezzoPiano = MIDIVelocity(63)
+
     let rawValue: UInt8
 
     init(_ rawValue: UInt8) {

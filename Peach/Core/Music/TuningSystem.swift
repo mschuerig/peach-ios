@@ -12,7 +12,7 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     func centOffset(for interval: Interval) -> Cents {
         switch self {
         case .equalTemperament:
-            return Cents(Double(interval.semitones) * 100.0)
+            return Cents(Double(interval.semitones) * Cents.perSemitone.rawValue)
         case .justIntonation:
             switch interval {
             case .prime:        return Cents(0.0)
@@ -27,31 +27,29 @@ enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
             case .majorSixth:   return Cents(884.359)
             case .minorSeventh: return Cents(1017.596)
             case .majorSeventh: return Cents(1088.269)
-            case .octave:       return Cents(Cents.perOctave)
+            case .octave:       return Cents.perOctave
             }
         }
     }
 
     // MARK: - Frequency Bridge (Logical → Physical)
 
-    private static let referenceMIDINote = 69
-
     /// Decomposes MIDI distance into octaves + remainder interval, then computes
     /// the total cent offset using tuning-system-specific interval sizes.
     /// Remainder is always 0–11 via Euclidean mod, so Interval(rawValue:)! is safe.
     private func totalCentOffset(for note: DetunedMIDINote) -> Cents {
-        let distance = note.note.rawValue - Self.referenceMIDINote
+        let distance = note.note.rawValue - MIDINote.a4.rawValue
         let remainder = ((distance % 12) + 12) % 12
         let octaves = (distance - remainder) / 12
         guard let interval = Interval(rawValue: remainder) else {
             preconditionFailure("Euclidean mod produced out-of-range remainder \(remainder)")
         }
-        return Cents(Double(octaves) * Cents.perOctave + centOffset(for: interval).rawValue + note.offset.rawValue)
+        return Cents(Double(octaves) * Cents.perOctave.rawValue + centOffset(for: interval).rawValue + note.offset.rawValue)
     }
 
     func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency {
         let cents = totalCentOffset(for: note)
-        return Frequency(referencePitch.rawValue * pow(2.0, cents.rawValue / Cents.perOctave))
+        return Frequency(referencePitch.rawValue * pow(2.0, cents.rawValue / Cents.perOctave.rawValue))
     }
 
     func frequency(for note: MIDINote, referencePitch: Frequency) -> Frequency {

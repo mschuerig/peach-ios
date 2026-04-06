@@ -21,7 +21,7 @@ struct PitchMatchingSettings {
         varyLoudness: UnitInterval = UnitInterval(0.0),
         maxLoudnessOffsetDB: AmplitudeDB = AmplitudeDB(10.0),
         initialCentOffsetRange: ClosedRange<Cents> = Cents(-20.0)...Cents(20.0),
-        velocity: MIDIVelocity = MIDIVelocity(63),
+        velocity: MIDIVelocity = .mezzoPiano,
         feedbackDuration: Duration = .milliseconds(400)
     ) {
         self.noteRange = noteRange

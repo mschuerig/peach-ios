@@ -5,7 +5,7 @@ import Foundation
 /// Frequency lives in the physical world. Produced by
 /// `TuningSystem.frequency(for:referencePitch:)` from a logical-world
 /// `MIDINote` or `DetunedMIDINote`.
-struct Frequency: Hashable, Comparable, Sendable {
+nonisolated struct Frequency: Hashable, Comparable, Sendable {
     let rawValue: Double
 
     init(_ rawValue: Double) {
