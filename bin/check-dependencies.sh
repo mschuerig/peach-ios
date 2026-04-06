@@ -11,6 +11,7 @@
 #   6. No print() in production code (use Logger)
 
 set -euo pipefail
+shopt -s nullglob
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
@@ -28,11 +29,15 @@ check_import() {
     local rule_name="$3"    # human-readable rule description
     local exclude="${4:-}"  # optional grep -v pattern to exclude specific files
 
+    # Catches bare imports, qualified imports (import struct M.Type), and
+    # attributed imports (@testable import M, @_exported import M).
+    local pattern="^(@[a-zA-Z_]+[[:space:]]+)?import[[:space:]]+(struct[[:space:]]+|class[[:space:]]+|enum[[:space:]]+|protocol[[:space:]]+|func[[:space:]]+)?${module}($|\.)"
+
     local matches
     if [[ -n "$exclude" ]]; then
-        matches=$(grep -rn "^import ${module}$" "$dir" --include="*.swift" | grep -v "$exclude" || true)
+        matches=$(grep -rEn "$pattern" "$dir" --include="*.swift" | grep -v "$exclude" || true)
     else
-        matches=$(grep -rn "^import ${module}$" "$dir" --include="*.swift" || true)
+        matches=$(grep -rEn "$pattern" "$dir" --include="*.swift" || true)
     fi
 
     if [[ -n "$matches" ]]; then
@@ -64,7 +69,9 @@ check_import "$SRC_DIR/Core" "Charts" \
 # Accepted exception: TrainingDiscipline.swift, TrainingDisciplineRegistry.swift,
 # TrainingRecordPersisting.swift, and *Discipline.swift in feature directories.
 
-# Collect all feature directories (top-level + Training/ children)
+# Collect all feature directories (top-level + Training/ children).
+# Any new top-level directory is treated as a feature by default — if it is
+# infrastructure (not a feature), add it to the skip list below.
 FEATURE_DIRS=()
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
@@ -103,7 +110,7 @@ for dir in "${FEATURE_DIRS[@]}"; do
     dirname=$(basename "$dir")
     check_import "$dir" "SwiftData" \
         "$dirname/ must not import SwiftData (access SwiftData through TrainingDataStore)" \
-        "Discipline\\.swift:"
+        "[A-Z][a-zA-Z]*Discipline\\.swift:"
 done
 
 # ─── Rule 3: UIKit only in allowed files ─────────────────────────────────
@@ -122,15 +129,11 @@ for dir in "${FEATURE_DIRS[@]}"; do
 done
 
 # ─── Rule 4: No Combine in any production code ──────────────────────────
+# Single recursive pass over all top-level dirs. Training/ is checked recursively,
+# covering both loose files at the root and all feature subdirectories.
 for dir in "$SRC_DIR"/*/; do
     dirname=$(basename "$dir")
     [[ "$dirname" == "Resources" ]] && continue
-    [[ "$dirname" == "Training" ]] && continue
-    check_import "$dir" "Combine" \
-        "$dirname/ must not import Combine (use async/await)"
-done
-for dir in "${FEATURE_DIRS[@]}"; do
-    dirname=$(basename "$dir")
     check_import "$dir" "Combine" \
         "$dirname/ must not import Combine (use async/await)"
 done
@@ -140,7 +143,7 @@ done
 # EXCEPT: Start/ is the navigation router and legitimately references all screens.
 # Only App/, Start/ (router), and the feature's own directory may reference its Screen.
 
-# Build parallel arrays of feature names, screen types, and filesystem paths
+# Build parallel arrays in lockstep — screen type is derived by convention (${name}Screen).
 FEATURE_NAMES=()
 SCREEN_TYPES=()
 FEATURE_PATHS=()
@@ -148,16 +151,16 @@ FEATURE_PATHS=()
 # Training feature directories
 for name in PitchDiscrimination PitchMatching RhythmOffsetDetection ContinuousRhythmMatching; do
     FEATURE_NAMES+=("$name")
+    SCREEN_TYPES+=("${name}Screen")
     FEATURE_PATHS+=("$SRC_DIR/Training/$name")
 done
-SCREEN_TYPES+=("PitchDiscriminationScreen" "PitchMatchingScreen" "RhythmOffsetDetectionScreen" "ContinuousRhythmMatchingScreen")
 
 # Top-level feature directories
 for name in Profile Settings Start Info; do
     FEATURE_NAMES+=("$name")
+    SCREEN_TYPES+=("${name}Screen")
     FEATURE_PATHS+=("$SRC_DIR/$name")
 done
-SCREEN_TYPES+=("ProfileScreen" "SettingsScreen" "StartScreen" "InfoScreen")
 
 for i in "${!FEATURE_NAMES[@]}"; do
     feature="${FEATURE_NAMES[$i]}"
@@ -183,15 +186,22 @@ for i in "${!FEATURE_NAMES[@]}"; do
 done
 
 # ─── Rule 6: Feature types used in other features (known patterns) ───────
-# PitchDiscriminationFeedbackIndicator should not be referenced from PitchMatching/
-matches=$(grep -rn "PitchDiscriminationFeedbackIndicator" "$SRC_DIR/Training/PitchMatching/" --include="*.swift" 2>/dev/null || true)
-if [[ -n "$matches" ]]; then
-    red "VIOLATION: PitchMatching/ references PitchDiscriminationFeedbackIndicator (cross-feature dependency)"
-    echo "$matches" | while IFS= read -r line; do
-        echo "  $line"
-    done
-    echo
-    ERRORS=$((ERRORS + 1))
+# PitchDiscriminationFeedbackIndicator should not be referenced from PitchMatching/.
+# Path derived from FEATURE_PATHS to stay in sync with Rule 5 arrays.
+pm_path=""
+for i in "${!FEATURE_NAMES[@]}"; do
+    [[ "${FEATURE_NAMES[$i]}" == "PitchMatching" ]] && pm_path="${FEATURE_PATHS[$i]}" && break
+done
+if [[ -n "$pm_path" ]]; then
+    matches=$(grep -rn "PitchDiscriminationFeedbackIndicator" "$pm_path/" --include="*.swift" 2>/dev/null || true)
+    if [[ -n "$matches" ]]; then
+        red "VIOLATION: PitchMatching/ references PitchDiscriminationFeedbackIndicator (cross-feature dependency)"
+        echo "$matches" | while IFS= read -r line; do
+            echo "  $line"
+        done
+        echo
+        ERRORS=$((ERRORS + 1))
+    fi
 fi
 
 # ─── Rule 7: No print() in production code ──────────────────────────────

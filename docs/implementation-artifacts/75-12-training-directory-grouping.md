@@ -1,6 +1,6 @@
 # Story 75.12: Training Directory Grouping
 
-Status: review
+Status: done
 
 ## Story
 
