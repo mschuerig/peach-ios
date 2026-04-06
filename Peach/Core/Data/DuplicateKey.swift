@@ -1,5 +1,10 @@
 import Foundation
 
+// WALKTHROUGH: This entire file belongs in the feature layer, not Core/Data.
+// Duplicate detection is purely a CSV import concern — only the 6 discipline types call these.
+// Nothing else in Core references DuplicateKey types (verified via grep).
+// Move to a shared import/export area near the discipline files.
+
 /// Duplicate detection key for pitch-based training records (discrimination and matching).
 struct PitchDuplicateKey: Hashable, Sendable {
     let timestampMillis: Int64

@@ -189,6 +189,9 @@ final class PitchMatchingSession: TrainingSession {
         return referenceFrequency.rawValue * pow(2.0, centOffset / Cents.perOctave)
     }
 
+    // WALKTHROUGH: commitResult handles stopping audio, computing error, recording,
+    // showing feedback, AND scheduling the next trial. Same concern-mixing as
+    // PitchDiscriminationSession.transitionToFeedback. See Layer 3 observation #3.
     private func commitResult(userFrequency: Double) {
         guard state == .playingTunable else { return }
         guard let trial = currentTrial, let settings else { return }

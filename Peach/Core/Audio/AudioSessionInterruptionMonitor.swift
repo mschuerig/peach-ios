@@ -30,6 +30,11 @@ final class AudioSessionInterruptionMonitor {
             onStopRequired: onStopRequired
         )
 
+        // WALKTHROUGH: backgroundObserver and foregroundObserver have identical handlers —
+        // both just call onStopRequired(). Simplify to a single [Notification.Name] parameter
+        // (e.g. lifecycleNotificationNames) and register one observer per name in a loop.
+        // The foreground stop may also be redundant: if we already stopped on background,
+        // there's nothing left to stop on return.
         if let backgroundNotificationName {
             self.backgroundObserver = notificationCenter.addObserver(
                 forName: backgroundNotificationName,
