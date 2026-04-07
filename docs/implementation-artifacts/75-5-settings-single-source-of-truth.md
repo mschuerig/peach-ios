@@ -1,6 +1,6 @@
 # Story 75.5: Settings — Single Source of Truth
 
-Status: review
+Status: done
 
 ## Story
 
@@ -33,7 +33,7 @@ The walkthrough (Layer 6) found that settings have three sources of truth: `Sett
 
 - [x] Task 2: Design single-source approach (AC: #1, #4)
   - [x] Option A: `@AppStorage` properties in `SettingsScreen` use `SettingsKeys.defaultX` for their defaults, and `AppUserSettings` does the same
-  - [ ] Option B: Replace `@AppStorage` in `SettingsScreen` with bindings to an `@Observable` settings object that wraps `UserDefaults` with `SettingsKeys` defaults
+  - [x] Option B: Replace `@AppStorage` in `SettingsScreen` with bindings to an `@Observable` settings object that wraps `UserDefaults` with `SettingsKeys` defaults — evaluated, rejected in favor of Option A (less churn)
   - [x] Choose the approach that minimizes churn while guaranteeing single source
 
 - [x] Task 3: Implement chosen approach (AC: #2, #3)

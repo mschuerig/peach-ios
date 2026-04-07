@@ -31,8 +31,9 @@ enum SettingsKeys {
     static let minimumTempoBPM: TempoBPM = TempoBPM(20)
     static let maximumTempoBPM: TempoBPM = TempoBPM(300)
     static let defaultEnabledGapPositions: Set<StepPosition> = Set(StepPosition.allCases)
-    static let defaultIntervalSelection = IntervalSelection([.up(.perfectFifth)])
-    static let defaultAutoStartTraining = false
+    static let defaultVelocity: MIDIVelocity = .mezzoPiano
+    static let defaultIntervalSelection: IntervalSelection = IntervalSelection([.up(.perfectFifth)])
+    static let defaultAutoStartTraining: Bool = false
 
     // MARK: - Note Range Constants
 

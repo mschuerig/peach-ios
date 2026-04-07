@@ -34,7 +34,7 @@ final class StubUserSettings: UserSettings {
     let noteGap: Duration = SettingsKeys.defaultNoteGap
     let tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM
     let enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions
-    let velocity: MIDIVelocity = .mezzoPiano
+    let velocity: MIDIVelocity = SettingsKeys.defaultVelocity
     let autoStartTraining = SettingsKeys.defaultAutoStartTraining
 }
 

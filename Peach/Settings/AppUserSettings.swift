@@ -50,7 +50,7 @@ final class AppUserSettings: UserSettings {
         guard let raw = defaults.object(forKey: SettingsKeys.noteGap) as? Double else {
             return SettingsKeys.defaultNoteGap
         }
-        return .seconds(raw)
+        return .seconds(max(0, raw))
     }
 
     var tempoBPM: TempoBPM {
@@ -74,7 +74,7 @@ final class AppUserSettings: UserSettings {
         return GapPositionEncoding.decodeWithDefault(raw)
     }
 
-    var velocity: MIDIVelocity { .mezzoPiano }
+    var velocity: MIDIVelocity { SettingsKeys.defaultVelocity }
 
     var autoStartTraining: Bool {
         guard defaults.object(forKey: SettingsKeys.autoStartTraining) != nil else {
