@@ -167,6 +167,10 @@ final class PitchMatchingSession: TrainingSession {
     var isIdle: Bool { state == .idle }
 
     func start(settings: PitchMatchingSettings) {
+        guard state == .idle else {
+            logger.warning("start() called but state is \(String(describing: self.state)), not idle")
+            return
+        }
         precondition(!settings.intervals.isEmpty, "intervals must not be empty")
         self.settings = settings
         logger.info("Starting training loop")
@@ -191,7 +195,6 @@ final class PitchMatchingSession: TrainingSession {
         currentPitchValue = value
         guard let frequency = sliderFrequency(for: value) else { return }
         guard state == .awaitingSliderTouch || state == .playingTunable else { return }
-        guard state == .awaitingSliderTouch || currentHandle != nil else { return }
         send(.pitchCommitted(userFrequency: frequency))
     }
 

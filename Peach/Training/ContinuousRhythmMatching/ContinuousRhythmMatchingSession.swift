@@ -48,8 +48,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             return [
                 .playTapSound(result.position),
                 .recordGapResult(result),
-                .advanceCycleCount,
-                .showHitFeedback(result.offset)
+                .showHitFeedback(result.offset),
+                .advanceCycleCount
             ]
 
         case (.running, .cycleMissed):
@@ -155,6 +155,10 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     // MARK: - Public API
 
     func start(settings: ContinuousRhythmMatchingSettings) {
+        guard state == .idle else {
+            logger.warning("start() called but already running")
+            return
+        }
         self.settings = settings
         self.gapResults = []
         self.gapPositions = []

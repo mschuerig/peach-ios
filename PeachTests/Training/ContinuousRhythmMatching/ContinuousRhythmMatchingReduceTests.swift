@@ -49,7 +49,7 @@ struct ContinuousRhythmMatchingReduceTests {
 
     // MARK: - Tap Hit
 
-    @Test("running + tapHit → running with playTapSound, recordGapResult, advanceCycleCount, showHitFeedback")
+    @Test("running + tapHit → running with playTapSound, recordGapResult, showHitFeedback, advanceCycleCount")
     func tapHit() async {
         let result = GapResult(position: .second, offset: TimingOffset(.milliseconds(5)))
         let (state, effects) = reduce(.running, .tapHit(result))
@@ -64,12 +64,12 @@ struct ContinuousRhythmMatchingReduceTests {
             Issue.record("Expected .recordGapResult second")
             return
         }
-        guard case .advanceCycleCount = effects[2] else {
-            Issue.record("Expected .advanceCycleCount third")
+        guard case .showHitFeedback = effects[2] else {
+            Issue.record("Expected .showHitFeedback third")
             return
         }
-        guard case .showHitFeedback = effects[3] else {
-            Issue.record("Expected .showHitFeedback fourth")
+        guard case .advanceCycleCount = effects[3] else {
+            Issue.record("Expected .advanceCycleCount fourth")
             return
         }
     }

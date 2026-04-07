@@ -169,6 +169,10 @@ final class TimingOffsetDetectionSession: TrainingSession {
     }
 
     func start(settings: TimingOffsetDetectionSettings) {
+        guard state == .idle else {
+            logger.warning("start() called but state is \(String(describing: self.state)), not idle")
+            return
+        }
         self.settings = settings
         logger.info("Starting timing offset detection training loop")
         send(.startRequested)

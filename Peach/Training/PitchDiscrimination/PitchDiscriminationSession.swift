@@ -172,6 +172,10 @@ final class PitchDiscriminationSession: TrainingSession {
     }
 
     func start(settings: PitchDiscriminationSettings) {
+        guard state == .idle else {
+            logger.warning("start() called but state is \(String(describing: self.state)), not idle")
+            return
+        }
         precondition(!settings.intervals.isEmpty, "intervals must not be empty")
         self.settings = settings
         logger.info("Starting training loop")
@@ -269,11 +273,9 @@ final class PitchDiscriminationSession: TrainingSession {
         )
         currentTrial = trial
 
-        let amplitudeDB = calculateTargetAmplitude()
-
         let freq1 = trial.referenceFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
-        logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
+        logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz, target \(freq2.rawValue)Hz, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
 
         lifecycle?.setTrainingTask(Task {
             do {

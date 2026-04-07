@@ -619,6 +619,6 @@ development_status:
   75-8-help-content-centralization: done
   75-5-settings-single-source-of-truth: done
   75-4-progress-chart-view-decomposition: done
-  75-13-session-state-machine-effect-separation: review
+  75-13-session-state-machine-effect-separation: done
   75-10-design-decision-documentation: ready-for-dev
   epic-75-retrospective: optional
