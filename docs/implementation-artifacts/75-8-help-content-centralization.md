@@ -1,6 +1,6 @@
 # Story 75.8: Help Content Centralization
 
-Status: review
+Status: done
 
 ## Story
 
