@@ -7,7 +7,6 @@ import AppKit
 @Observable
 final class MenuCommandState {
     var navigationRequest: NavigationRequest?
-    var helpSheetContent: HelpSheetContent?
     var showFileImporter = false
     var settingsCoordinator: SettingsCoordinator?
     var trainingLifecycle: TrainingLifecycleCoordinator?
@@ -127,22 +126,22 @@ struct PeachCommands: Commands {
     private var helpCommands: some Commands {
         CommandGroup(replacing: .help) {
             Button("About Peach") {
-                commandState?.helpSheetContent = .about
+                HelpPanelController.shared.show(content: .about)
             }
 
             Divider()
 
             Button("Pitch Compare Help") {
-                commandState?.helpSheetContent = .pitchDiscrimination
+                HelpPanelController.shared.show(content: .pitchDiscrimination)
             }
             Button("Pitch Match Help") {
-                commandState?.helpSheetContent = .pitchMatching
+                HelpPanelController.shared.show(content: .pitchMatching)
             }
             Button("Rhythm Compare Help") {
-                commandState?.helpSheetContent = .timingOffsetDetection
+                HelpPanelController.shared.show(content: .timingOffsetDetection)
             }
             Button("Fill the Gap Help") {
-                commandState?.helpSheetContent = .continuousRhythmMatching
+                HelpPanelController.shared.show(content: .continuousRhythmMatching)
             }
         }
     }
@@ -156,7 +155,7 @@ struct PeachCommands: Commands {
 
 // MARK: - Help Sheet Content
 
-enum HelpSheetContent: Identifiable, Hashable {
+enum HelpSheetContent: Identifiable, Hashable, Codable {
     case about
     case pitchDiscrimination
     case pitchMatching

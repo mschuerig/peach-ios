@@ -1,6 +1,6 @@
 # Story 75.7: Platform Split — ContentView and SettingsScreen Import
 
-Status: review
+Status: done
 
 ## Story
 

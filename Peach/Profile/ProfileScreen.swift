@@ -45,25 +45,11 @@ struct ProfileScreen: View {
                 }
             }
         }
-        .sheet(isPresented: $showHelpSheet) {
-            NavigationStack {
-                ScrollView {
-                    VStack(spacing: 24) {
-                        HelpContentView(sections: Self.helpSections)
-                    }
-                    .padding()
-                }
-                .navigationTitle(String(localized: "Profile Help"))
-                .inlineNavigationBarTitle()
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(String(localized: "Done")) {
-                            showHelpSheet = false
-                        }
-                    }
-                }
-            }
-        }
+        .platformHelp(
+            isPresented: $showHelpSheet,
+            title: String(localized: "Profile Help"),
+            sections: Self.helpSections
+        )
     }
 
     // MARK: - Help Content

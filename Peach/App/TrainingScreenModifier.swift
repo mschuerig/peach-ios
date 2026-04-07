@@ -15,15 +15,16 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
         content
             .inlineNavigationBarTitle()
             .toolbar { toolbarContent }
-            .sheet(isPresented: $showHelpSheet) { helpSheetContent }
-            .onChange(of: showHelpSheet) { _, isShowing in
-                if isShowing {
-                    lifecycle.helpSheetPresented()
-                } else {
+            .platformHelp(
+                isPresented: $showHelpSheet,
+                title: String(localized: "Training Help"),
+                sections: helpSections,
+                onPresented: { lifecycle.helpSheetPresented() },
+                onDismissed: {
                     isFocused = true
                     lifecycle.helpSheetDismissed()
                 }
-            }
+            )
             .focusable()
             .focusEffectDisabled()
             .focused($isFocused)
@@ -69,25 +70,6 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
         }
     }
 
-    private var helpSheetContent: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 24) {
-                    HelpContentView(sections: helpSections)
-                }
-                .padding()
-            }
-            .navigationTitle(String(localized: "Training Help"))
-            .inlineNavigationBarTitle()
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "Done")) {
-                        showHelpSheet = false
-                    }
-                }
-            }
-        }
-    }
 }
 
 extension View {

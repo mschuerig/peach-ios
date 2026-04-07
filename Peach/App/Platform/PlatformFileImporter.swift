@@ -2,6 +2,8 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 extension View {
+    /// Platform-unified file importer. Cancellation is filtered out on both platforms;
+    /// `onResult` is only called on success or a real error.
     func platformFileImporter(
         isPresented: Binding<Bool>,
         allowedContentTypes: [UTType],
@@ -10,9 +12,14 @@ extension View {
         #if os(iOS)
         self.fileImporter(
             isPresented: isPresented,
-            allowedContentTypes: allowedContentTypes,
-            onCompletion: onResult
-        )
+            allowedContentTypes: allowedContentTypes
+        ) { result in
+            if case .failure(let error) = result,
+               (error as? CocoaError)?.code == .userCancelled {
+                return
+            }
+            onResult(result)
+        }
         #elseif os(macOS)
         self.onChange(of: isPresented.wrappedValue) {
             guard isPresented.wrappedValue else { return }

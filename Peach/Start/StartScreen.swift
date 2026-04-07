@@ -75,7 +75,11 @@ struct StartScreen: View {
                 ContinuousRhythmMatchingScreen()
             }
         }
-        .sheet(isPresented: $showInfoSheet) {
+        .platformHelp(
+            isPresented: $showInfoSheet,
+            title: String(localized: "About Peach"),
+            sections: InfoScreen.helpSections + InfoScreen.acknowledgmentsSections
+        ) {
             InfoScreen()
         }
     }
