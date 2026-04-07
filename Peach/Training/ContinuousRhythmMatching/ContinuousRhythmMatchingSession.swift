@@ -2,8 +2,77 @@ import Foundation
 import Observation
 import os
 
+enum ContinuousRhythmMatchingSessionState {
+    case idle
+    case running
+}
+
 @Observable
 final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
+
+    // MARK: - State Machine Types
+
+    enum Event {
+        case startRequested(ContinuousRhythmMatchingSettings)
+        case sequencerReady
+        case tapHit(GapResult)
+        case cycleMissed
+        case trialCompleted
+        case stopRequested
+        case audioError
+    }
+
+    enum Effect {
+        case startSequencer(ContinuousRhythmMatchingSettings)
+        case startTrackingLoop
+        case startMIDIListening
+        case playTapSound(StepPosition)
+        case recordGapResult(GapResult)
+        case showHitFeedback(TimingOffset)
+        case advanceCycleCount
+        case completeTrial
+        case stopAll
+    }
+
+    /// Pure state transition function.
+    static func reduce(state: inout ContinuousRhythmMatchingSessionState, event: Event) -> [Effect] {
+        switch (state, event) {
+        case (.idle, .startRequested(let settings)):
+            state = .running
+            return [.startSequencer(settings), .startMIDIListening]
+
+        case (.running, .sequencerReady):
+            return [.startTrackingLoop]
+
+        case (.running, .tapHit(let result)):
+            return [
+                .playTapSound(result.position),
+                .recordGapResult(result),
+                .advanceCycleCount,
+                .showHitFeedback(result.offset)
+            ]
+
+        case (.running, .cycleMissed):
+            return [.advanceCycleCount]
+
+        case (.running, .trialCompleted):
+            return [.completeTrial]
+
+        case (.idle, .stopRequested):
+            return []
+
+        case (.running, .stopRequested):
+            state = .idle
+            return [.stopAll]
+
+        case (_, .audioError):
+            state = .idle
+            return [.stopAll]
+
+        default:
+            return []
+        }
+    }
 
     // MARK: - Constants
 
@@ -21,13 +90,15 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     // MARK: - Observable State
 
-    private(set) var isRunning = false
+    private(set) var state: ContinuousRhythmMatchingSessionState = .idle
     private(set) var currentStep: StepPosition?
     private(set) var currentGapPosition: StepPosition?
     private(set) var cyclesInCurrentTrial = 0
     private(set) var lastTrialResult: CompletedContinuousRhythmMatchingTrial?
     private(set) var lastHitOffsetMs: Double?
     private(set) var showFeedback = false
+
+    var isRunning: Bool { state == .running }
 
     // MARK: - Dependencies
 
@@ -75,49 +146,15 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     // MARK: - TrainingSession Protocol
 
-    var isIdle: Bool { !isRunning }
+    var isIdle: Bool { state == .idle }
 
     func stop() {
-        guard isRunning else {
-            logger.debug("stop() called but already idle")
-            return
-        }
-
-        logger.info("Stopping continuous rhythm matching session")
-
-        startTask?.cancel()
-        startTask = nil
-        trackingTask?.cancel()
-        trackingTask = nil
-        midiListeningTask?.cancel()
-        midiListeningTask = nil
-        lifecycle?.cancelFeedbackTask()
-
-        Task {
-            try? await stepSequencer.stop()
-        }
-
-        isRunning = false
-        currentStep = nil
-        currentGapPosition = nil
-        cyclesInCurrentTrial = 0
-        showFeedback = false
-        lastHitOffsetMs = nil
-        gapResults = []
-        gapPositions = []
-        hitCycleIndices = []
-        settings = nil
-        lastEvaluatedCycleIndex = -1
+        send(.stopRequested)
     }
 
     // MARK: - Public API
 
     func start(settings: ContinuousRhythmMatchingSettings) {
-        guard !isRunning else {
-            logger.warning("start() called but already running")
-            return
-        }
-
         self.settings = settings
         self.gapResults = []
         self.gapPositions = []
@@ -125,30 +162,16 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         self.cyclesInCurrentTrial = 0
         self.lastEvaluatedCycleIndex = -1
         self.lastTrialResult = nil
-        self.isRunning = true
 
         logger.info("Starting continuous rhythm matching at \(settings.tempo.value) BPM")
-
-        startMIDIListening()
-
-        startTask = Task {
-            do {
-                try await stepSequencer.start(tempo: settings.tempo, stepProvider: self)
-                startTrackingLoop()
-            } catch is CancellationError {
-                logger.info("Session task cancelled")
-            } catch {
-                logger.error("Failed to start step sequencer: \(error.localizedDescription)")
-                stop()
-            }
-        }
+        send(.startRequested(settings))
     }
 
     func handleTap(atSamplePosition overrideSamplePosition: Int64? = nil) {
         let timing = stepSequencer.timing
         let samplePosition = overrideSamplePosition ?? timing.samplePosition
 
-        guard isRunning else {
+        guard state == .running else {
             logger.debug("handleTap() called but not running")
             return
         }
@@ -172,16 +195,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             let rhythmOffset = TimingOffset(.seconds(offset))
             hitCycleIndices.insert(playingCycleIndex)
 
-            let velocity = gapPosition == .first ? StepVelocity.accent : StepVelocity.normal
-            do {
-                try stepSequencer.playImmediateNote(velocity: velocity)
-            } catch {
-                logger.warning("Failed to play tap note: \(error.localizedDescription)")
-            }
-
-            recordGapResult(GapResult(position: gapPosition, offset: rhythmOffset))
-            advanceCycleCount()
-            showHitFeedback(rhythmOffset)
+            let result = GapResult(position: gapPosition, offset: rhythmOffset)
+            send(.tapHit(result))
             logger.debug("Gap hit at offset \(offset * 1000, format: .fixed(precision: 1))ms")
         }
     }
@@ -189,7 +204,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     // MARK: - StepProvider Protocol
 
     func nextCycle() -> CycleDefinition {
-        guard isRunning, let settings else {
+        guard state == .running, let settings else {
             return CycleDefinition(gapPosition: .fourth)
         }
 
@@ -206,16 +221,121 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         return CycleDefinition(gapPosition: selectedPosition)
     }
 
-    // MARK: - MIDI Listening
+    /// Evaluates completed cycles and advances the cycle counter.
+    /// Visible for testing.
+    func evaluatePlaybackPosition() {
+        let timing = stepSequencer.timing
+        guard state == .running,
+              timing.samplePosition >= 0,
+              timing.samplesPerStep > 0,
+              timing.samplesPerCycle > 0 else { return }
 
-    /// Iterates the MIDI input stream and routes note-on events to `handleTap`.
-    /// The stream lives for the adapter's lifetime (not tied to device connection),
-    /// so this task only ends on cancellation or adapter deallocation.
+        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerCycle)
+
+        let globalStepIndex = Int(timing.samplePosition / timing.samplesPerStep)
+        currentStep = StepPosition(rawValue: globalStepIndex % 4)
+
+        if playingCycleIndex < gapPositions.count {
+            currentGapPosition = gapPositions[playingCycleIndex]
+        }
+
+        while lastEvaluatedCycleIndex < playingCycleIndex - 1 {
+            lastEvaluatedCycleIndex += 1
+            if !hitCycleIndices.contains(lastEvaluatedCycleIndex) {
+                send(.cycleMissed)
+            }
+        }
+    }
+
+    // MARK: - State Machine Engine
+
+    private func send(_ event: Event) {
+        let previousState = state
+        let effects = Self.reduce(state: &state, event: event)
+        if state == previousState && effects.isEmpty && !isNoOpTransition(event) {
+            logger.warning("Invalid transition: \(String(describing: event)) in state \(String(describing: previousState))")
+        }
+        for effect in effects {
+            interpret(effect)
+        }
+    }
+
+    private func isNoOpTransition(_ event: Event) -> Bool {
+        if case .stopRequested = event { return true }
+        return false
+    }
+
+    // MARK: - Effect Interpreter
+
+    private func interpret(_ effect: Effect) {
+        switch effect {
+        case .startSequencer(let settings):
+            startSequencer(settings: settings)
+
+        case .startTrackingLoop:
+            startTrackingLoop()
+
+        case .startMIDIListening:
+            startMIDIListening()
+
+        case .playTapSound(let position):
+            let velocity = position == .first ? StepVelocity.accent : StepVelocity.normal
+            do {
+                try stepSequencer.playImmediateNote(velocity: velocity)
+            } catch {
+                logger.warning("Failed to play tap note: \(error.localizedDescription)")
+            }
+
+        case .recordGapResult(let result):
+            gapResults.append(result)
+
+        case .showHitFeedback(let offset):
+            showHitFeedback(offset)
+
+        case .advanceCycleCount:
+            cyclesInCurrentTrial += 1
+            if cyclesInCurrentTrial >= Self.cyclesPerTrial {
+                send(.trialCompleted)
+            }
+
+        case .completeTrial:
+            completeTrial()
+
+        case .stopAll:
+            stopAll()
+        }
+    }
+
+    // MARK: - Effect Implementations
+
+    private func startSequencer(settings: ContinuousRhythmMatchingSettings) {
+        startTask = Task {
+            do {
+                try await stepSequencer.start(tempo: settings.tempo, stepProvider: self)
+                send(.sequencerReady)
+            } catch is CancellationError {
+                logger.info("Session task cancelled")
+            } catch {
+                logger.error("Failed to start step sequencer: \(error.localizedDescription)")
+                send(.audioError)
+            }
+        }
+    }
+
+    private func startTrackingLoop() {
+        trackingTask = Task {
+            while !Task.isCancelled {
+                evaluatePlaybackPosition()
+                try? await Task.sleep(for: Self.trackingPollingInterval)
+            }
+        }
+    }
+
     private func startMIDIListening() {
         guard let midiInput else { return }
         midiListeningTask = Task {
             for await event in midiInput.events {
-                guard !Task.isCancelled, isRunning else { break }
+                guard !Task.isCancelled, state == .running else { break }
                 switch event {
                 case .noteOn(_, _, let timestamp):
                     let samplePos = stepSequencer.samplePosition(forHostTime: timestamp)
@@ -228,73 +348,15 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         }
     }
 
-    // MARK: - Real-Time Tracking
-
-    private func startTrackingLoop() {
-        trackingTask = Task {
-            while !Task.isCancelled {
-                evaluatePlaybackPosition()
-                try? await Task.sleep(for: Self.trackingPollingInterval)
-            }
-        }
-    }
-
-    /// Evaluates completed cycles and advances the cycle counter.
-    /// Visible for testing.
-    func evaluatePlaybackPosition() {
-        let timing = stepSequencer.timing
-        guard isRunning,
-              timing.samplePosition >= 0,
-              timing.samplesPerStep > 0,
-              timing.samplesPerCycle > 0 else { return }
-
-        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerCycle)
-
-        // Update observable step position
-        let globalStepIndex = Int(timing.samplePosition / timing.samplesPerStep)
-        currentStep = StepPosition(rawValue: globalStepIndex % 4)
-
-        // Update observable gap position for the currently-playing cycle
-        if playingCycleIndex < gapPositions.count {
-            currentGapPosition = gapPositions[playingCycleIndex]
-        }
-
-        // Advance past completed cycles — each missed one counts toward the trial limit.
-        // Hit cycles are already counted immediately in handleTap, so skip them here.
-        while lastEvaluatedCycleIndex < playingCycleIndex - 1 {
-            lastEvaluatedCycleIndex += 1
-            if !hitCycleIndices.contains(lastEvaluatedCycleIndex) {
-                advanceCycleCount()
-            }
-        }
-    }
-
-    // MARK: - Feedback
-
     private func showHitFeedback(_ offset: TimingOffset) {
         lastHitOffsetMs = offset.duration.timeInterval * 1000.0
         showFeedback = true
 
         lifecycle?.setFeedbackTask(Task {
             try? await Task.sleep(for: Self.feedbackDuration)
-            guard isRunning, !Task.isCancelled else { return }
+            guard state == .running, !Task.isCancelled else { return }
             showFeedback = false
         })
-    }
-
-    // MARK: - Private Implementation
-
-    func recordGapResult(_ result: GapResult) {
-        gapResults.append(result)
-    }
-
-    /// Called from `evaluatePlaybackPosition` when enough cycles have elapsed, or
-    /// when a hit pushes past the cycle limit.
-    private func advanceCycleCount() {
-        cyclesInCurrentTrial += 1
-        if cyclesInCurrentTrial >= Self.cyclesPerTrial {
-            completeTrial()
-        }
     }
 
     private func completeTrial() {
@@ -318,5 +380,32 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
         gapResults = []
         cyclesInCurrentTrial = 0
+    }
+
+    private func stopAll() {
+        logger.info("Stopping continuous rhythm matching session")
+
+        startTask?.cancel()
+        startTask = nil
+        trackingTask?.cancel()
+        trackingTask = nil
+        midiListeningTask?.cancel()
+        midiListeningTask = nil
+        lifecycle?.cancelFeedbackTask()
+
+        Task {
+            try? await stepSequencer.stop()
+        }
+
+        currentStep = nil
+        currentGapPosition = nil
+        cyclesInCurrentTrial = 0
+        showFeedback = false
+        lastHitOffsetMs = nil
+        gapResults = []
+        gapPositions = []
+        hitCycleIndices = []
+        settings = nil
+        lastEvaluatedCycleIndex = -1
     }
 }

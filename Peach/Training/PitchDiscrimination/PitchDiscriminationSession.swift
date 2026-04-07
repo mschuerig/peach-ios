@@ -12,6 +12,72 @@ enum PitchDiscriminationSessionState {
 
 @Observable
 final class PitchDiscriminationSession: TrainingSession {
+
+    // MARK: - State Machine Types
+
+    enum Event {
+        case startRequested
+        case referencePhaseCompleted
+        case targetNoteFinished
+        case answerReceived(isHigher: Bool)
+        case feedbackTimerFired
+        case stopRequested
+        case audioError
+    }
+
+    enum Effect {
+        case beginNextTrial
+        case playTargetNote
+        case stopNote
+        case evaluateAnswer(isHigher: Bool)
+        case scheduleFeedbackTimer
+        case stopAll
+    }
+
+    /// Pure state transition function. Given the current state and an event,
+    /// produces the new state and a list of effects to execute.
+    static func reduce(state: inout PitchDiscriminationSessionState, event: Event) -> [Effect] {
+        switch (state, event) {
+        case (.idle, .startRequested):
+            state = .playingReferenceNote
+            return [.beginNextTrial]
+
+        case (.playingReferenceNote, .referencePhaseCompleted):
+            state = .playingTargetNote
+            return [.playTargetNote]
+
+        case (.playingTargetNote, .targetNoteFinished):
+            state = .awaitingAnswer
+            return []
+
+        case (.playingTargetNote, .answerReceived(let isHigher)):
+            state = .showingFeedback
+            return [.stopNote, .evaluateAnswer(isHigher: isHigher), .scheduleFeedbackTimer]
+
+        case (.awaitingAnswer, .answerReceived(let isHigher)):
+            state = .showingFeedback
+            return [.evaluateAnswer(isHigher: isHigher), .scheduleFeedbackTimer]
+
+        case (.showingFeedback, .feedbackTimerFired):
+            state = .playingReferenceNote
+            return [.beginNextTrial]
+
+        case (.idle, .stopRequested):
+            return []
+
+        case (_, .stopRequested):
+            state = .idle
+            return [.stopAll]
+
+        case (_, .audioError):
+            state = .idle
+            return [.stopAll]
+
+        default:
+            return []
+        }
+    }
+
     // MARK: - Logger
 
     private let logger = Logger(subsystem: "com.peach.app", category: "PitchDiscriminationSession")
@@ -92,7 +158,6 @@ final class PitchDiscriminationSession: TrainingSession {
         return false
     }
 
-
     var isIntervalMode: Bool {
         guard let current = currentInterval else { return false }
         return current.interval != .prime
@@ -107,43 +172,22 @@ final class PitchDiscriminationSession: TrainingSession {
     }
 
     func start(settings: PitchDiscriminationSettings) {
-        guard state == .idle else {
-            logger.warning("start() called but state is \(String(describing: self.state)), not idle")
-            return
-        }
-
         precondition(!settings.intervals.isEmpty, "intervals must not be empty")
         self.settings = settings
-
         logger.info("Starting training loop")
-        lifecycle?.setTrainingTask(Task {
-            await runTrainingLoop()
-        })
+        send(.startRequested)
     }
 
     @discardableResult
     func handleAnswer(isHigher: Bool) -> Bool {
-        guard state == .awaitingAnswer || state == .playingTargetNote else {
-            logger.warning("handleAnswer() called but state is \(String(describing: self.state))")
-            return false
-        }
-        guard let trial = currentTrial else {
+        guard currentTrial != nil else {
             logger.warning("handleAnswer() called but currentTrial is nil")
             return false
         }
-
         logger.info("User answered: \(isHigher ? "HIGHER" : "LOWER")")
-
-        stopTargetNoteIfPlaying()
-
-        let completed = CompletedPitchDiscriminationTrial(trial: trial, userAnsweredHigher: isHigher, tuningSystem: sessionTuningSystem)
-        logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (target was \(trial.isTargetHigher ? "higher" : "lower"))")
-
-        lastCompletedTrial = completed
-        trackSessionBest(completed)
-        recordTrial(completed)
-        transitionToFeedback(completed)
-        return true
+        let previousState = state
+        send(.answerReceived(isHigher: isHigher))
+        return state != previousState
     }
 
     func resetTrainingData() throws {
@@ -161,46 +205,57 @@ final class PitchDiscriminationSession: TrainingSession {
     }
 
     func stop() {
-        guard state != .idle else {
-            logger.debug("stop() called but already idle")
-            return
-        }
-
-        logger.info("Training stopped (state was: \(String(describing: self.state)))")
-
-        Task {
-            try? await notePlayer.stopAll()
-            logger.info("NotePlayer stopped")
-        }
-
-        lifecycle?.cancelAllTasks()
-
-        state = .idle
-        currentTrial = nil
-        lastCompletedTrial = nil
-        sessionBestCentDifference = nil
-        currentInterval = nil
-        settings = nil
-
-        showFeedback = false
-        isLastAnswerCorrect = nil
+        send(.stopRequested)
     }
 
-    // MARK: - Private Implementation
+    // MARK: - State Machine Engine
 
-    private func runTrainingLoop() async {
-        logger.info("runTrainingLoop() started")
-
-        await playNextTrial()
-
-        while state != .idle && !Task.isCancelled {
-            try? await Task.sleep(for: .milliseconds(100))
+    private func send(_ event: Event) {
+        let previousState = state
+        let effects = Self.reduce(state: &state, event: event)
+        if state == previousState && effects.isEmpty && !isNoOpTransition(event) {
+            logger.warning("Invalid transition: \(String(describing: event)) in state \(String(describing: previousState))")
         }
-
-        logger.info("runTrainingLoop() ended, state: \(String(describing: self.state))")
+        for effect in effects {
+            interpret(effect)
+        }
     }
 
-    private func playNextTrial() async {
+    private func isNoOpTransition(_ event: Event) -> Bool {
+        if case .stopRequested = event { return true }
+        return false
+    }
+
+    // MARK: - Effect Interpreter
+
+    private func interpret(_ effect: Effect) {
+        switch effect {
+        case .beginNextTrial:
+            beginNextTrial()
+
+        case .playTargetNote:
+            playTargetNote()
+
+        case .stopNote:
+            logger.info("Stopping target note immediately")
+            Task {
+                try? await notePlayer.stopAll()
+            }
+
+        case .evaluateAnswer(let isHigher):
+            evaluateAnswer(isHigher: isHigher)
+
+        case .scheduleFeedbackTimer:
+            scheduleFeedbackTimer()
+
+        case .stopAll:
+            stopAll()
+        }
+    }
+
+    // MARK: - Effect Implementations
+
+    private func beginNextTrial() {
         guard let settings else { return }
 
         guard let interval = settings.intervals.randomElement() else { return }
@@ -216,21 +271,128 @@ final class PitchDiscriminationSession: TrainingSession {
 
         let amplitudeDB = calculateTargetAmplitude()
 
-        do {
-            try await playTrialNotes(
-                trial: trial,
-                amplitudeDB: amplitudeDB
-            )
-        } catch is CancellationError {
-            logger.info("Training task cancelled")
-        } catch let error as AudioError {
-            logger.error("Audio error, stopping training: \(error.localizedDescription)")
-            stop()
-        } catch {
-            logger.error("Unexpected error, stopping training: \(error.localizedDescription)")
-            stop()
+        let freq1 = trial.referenceFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
+        let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
+        logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
+
+        lifecycle?.setTrainingTask(Task {
+            do {
+                try await notePlayer.play(
+                    frequency: freq1,
+                    duration: .seconds(settings.noteDuration.rawValue),
+                    velocity: settings.velocity,
+                    amplitudeDB: AmplitudeDB(0.0)
+                )
+
+                guard state != .idle && !Task.isCancelled else {
+                    logger.info("Training stopped during reference note, aborting")
+                    return
+                }
+
+                if settings.noteGap > .zero {
+                    try await Task.sleep(for: settings.noteGap)
+                    guard state != .idle && !Task.isCancelled else {
+                        logger.info("Training stopped during note gap, aborting")
+                        return
+                    }
+                }
+
+                send(.referencePhaseCompleted)
+            } catch is CancellationError {
+                logger.info("Training task cancelled")
+            } catch {
+                logger.error("Audio error during reference note: \(error.localizedDescription)")
+                send(.audioError)
+            }
+        })
+    }
+
+    private func playTargetNote() {
+        guard let settings, let trial = currentTrial else { return }
+
+        let amplitudeDB = calculateTargetAmplitude()
+        let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
+
+        lifecycle?.setTrainingTask(Task {
+            do {
+                try await notePlayer.play(
+                    frequency: freq2,
+                    duration: .seconds(settings.noteDuration.rawValue),
+                    velocity: settings.velocity,
+                    amplitudeDB: amplitudeDB
+                )
+
+                guard state != .idle && !Task.isCancelled else {
+                    logger.info("Training stopped during target note, aborting")
+                    return
+                }
+
+                if state == .playingTargetNote {
+                    send(.targetNoteFinished)
+                } else {
+                    logger.info("Target note finished, but user already answered (state: \(String(describing: self.state)))")
+                }
+            } catch is CancellationError {
+                logger.info("Training task cancelled")
+            } catch {
+                logger.error("Audio error during target note: \(error.localizedDescription)")
+                send(.audioError)
+            }
+        })
+    }
+
+    private func evaluateAnswer(isHigher: Bool) {
+        guard let trial = currentTrial else { return }
+
+        let completed = CompletedPitchDiscriminationTrial(
+            trial: trial, userAnsweredHigher: isHigher, tuningSystem: sessionTuningSystem
+        )
+        logger.info("Answer was \(completed.isCorrect ? "✓ CORRECT" : "✗ WRONG") (target was \(trial.isTargetHigher ? "higher" : "lower"))")
+
+        lastCompletedTrial = completed
+        trackSessionBest(completed)
+
+        isLastAnswerCorrect = completed.isCorrect
+        showFeedback = true
+
+        observers.forEach { observer in
+            observer.pitchDiscriminationCompleted(completed)
         }
     }
+
+    private func scheduleFeedbackTimer() {
+        guard let settings else { return }
+        logger.info("Entering feedback state")
+
+        lifecycle?.setFeedbackTask(Task {
+            try? await Task.sleep(for: settings.feedbackDuration)
+            guard state == .showingFeedback && !Task.isCancelled else { return }
+            showFeedback = false
+            logger.info("Feedback complete, starting next comparison")
+            send(.feedbackTimerFired)
+        })
+    }
+
+    private func stopAll() {
+        logger.info("Training stopped (state was transitioning to idle)")
+
+        Task {
+            try? await notePlayer.stopAll()
+            logger.info("NotePlayer stopped")
+        }
+
+        lifecycle?.cancelAllTasks()
+
+        currentTrial = nil
+        lastCompletedTrial = nil
+        sessionBestCentDifference = nil
+        currentInterval = nil
+        settings = nil
+        showFeedback = false
+        isLastAnswerCorrect = nil
+    }
+
+    // MARK: - Private Helpers
 
     private func calculateTargetAmplitude() -> AmplitudeDB {
         guard let settings else { return AmplitudeDB(0.0) }
@@ -239,57 +401,6 @@ final class PitchDiscriminationSession: TrainingSession {
         let range = varyLoudness * settings.maxLoudnessOffsetDB.rawValue
         let offset = Double.random(in: -range...range)
         return AmplitudeDB(offset)
-    }
-
-    private func playTrialNotes(
-        trial: PitchDiscriminationTrial,
-        amplitudeDB: AmplitudeDB
-    ) async throws {
-        guard let settings else { return }
-
-        let freq1 = trial.referenceFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
-        let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
-        logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz @0.0dB, target \(freq2.rawValue)Hz @\(amplitudeDB.rawValue)dB, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
-
-        state = .playingReferenceNote
-        try await notePlayer.play(frequency: freq1, duration: .seconds(settings.noteDuration.rawValue), velocity: settings.velocity, amplitudeDB: AmplitudeDB(0.0))
-
-        guard state != .idle && !Task.isCancelled else {
-            logger.info("Training stopped during reference note, aborting comparison")
-            return
-        }
-
-        if settings.noteGap > .zero {
-            try await Task.sleep(for: settings.noteGap)
-            guard state != .idle && !Task.isCancelled else {
-                logger.info("Training stopped during note gap, aborting comparison")
-                return
-            }
-        }
-
-        state = .playingTargetNote
-        try await notePlayer.play(frequency: freq2, duration: .seconds(settings.noteDuration.rawValue), velocity: settings.velocity, amplitudeDB: amplitudeDB)
-
-        guard state != .idle && !Task.isCancelled else {
-            logger.info("Training stopped during target note, aborting comparison")
-            return
-        }
-
-        if state == .playingTargetNote {
-            state = .awaitingAnswer
-            logger.info("Target note finished, awaiting answer")
-        } else {
-            logger.info("Target note finished, but user already answered (state: \(String(describing: self.state)))")
-        }
-    }
-
-    private func stopTargetNoteIfPlaying() {
-        if state == .playingTargetNote {
-            logger.info("Stopping target note immediately")
-            Task {
-                try? await notePlayer.stopAll()
-            }
-        }
     }
 
     private func trackSessionBest(_ completed: CompletedPitchDiscriminationTrial) {
@@ -301,30 +412,4 @@ final class PitchDiscriminationSession: TrainingSession {
             sessionBestCentDifference = diff
         }
     }
-
-    private func transitionToFeedback(_ completed: CompletedPitchDiscriminationTrial) {
-        guard let settings else { return }
-
-        isLastAnswerCorrect = completed.isCorrect
-        showFeedback = true
-
-        state = .showingFeedback
-        logger.info("Entering feedback state")
-
-        lifecycle?.setFeedbackTask(Task {
-            try? await Task.sleep(for: settings.feedbackDuration)
-            if state == .showingFeedback && !Task.isCancelled {
-                showFeedback = false
-                logger.info("Feedback complete, starting next comparison")
-                await playNextTrial()
-            }
-        })
-    }
-
-    private func recordTrial(_ completed: CompletedPitchDiscriminationTrial) {
-        observers.forEach { observer in
-            observer.pitchDiscriminationCompleted(completed)
-        }
-    }
-
 }
