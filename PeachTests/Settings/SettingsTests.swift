@@ -307,6 +307,29 @@ struct SettingsTests {
         #expect(bodyLower.contains("equal temperament") || bodyLower.contains("gleichstufig"))
     }
 
+    // MARK: - Single Source of Truth (Story 75.5)
+
+    @Test("defaultNoteGapSeconds matches defaultNoteGap converted to seconds")
+    func noteGapSecondsMatchesDuration() async {
+        #expect(SettingsKeys.defaultNoteGapSeconds == 0.0)
+        #expect(SettingsKeys.defaultNoteGap == .seconds(SettingsKeys.defaultNoteGapSeconds))
+    }
+
+    @Test("defaultIntervalSelection is up perfectFifth")
+    func defaultIntervalSelectionValue() async {
+        #expect(SettingsKeys.defaultIntervalSelection.intervals == Set<DirectedInterval>([.up(.perfectFifth)]))
+    }
+
+    @Test("IntervalSelection.default forwards to SettingsKeys.defaultIntervalSelection")
+    func intervalSelectionDefaultForwards() async {
+        #expect(IntervalSelection.default == SettingsKeys.defaultIntervalSelection)
+    }
+
+    @Test("defaultAutoStartTraining is false")
+    func defaultAutoStartTrainingValue() async {
+        #expect(SettingsKeys.defaultAutoStartTraining == false)
+    }
+
     // MARK: - Sound Preview
 
     @Test("previewDuration is 2 seconds")

@@ -25,11 +25,14 @@ enum SettingsKeys {
     static let defaultSoundSource: String = "sf2:0:0"
     static let defaultVaryLoudness: UnitInterval = 0.0
     static let defaultTuningSystem: TuningSystem = .equalTemperament
-    static let defaultNoteGap: Duration = .zero
+    static let defaultNoteGapSeconds: Double = 0.0
+    static let defaultNoteGap: Duration = .seconds(defaultNoteGapSeconds)
     static let defaultTempoBPM: TempoBPM = TempoBPM(80)
     static let minimumTempoBPM: TempoBPM = TempoBPM(20)
     static let maximumTempoBPM: TempoBPM = TempoBPM(300)
     static let defaultEnabledGapPositions: Set<StepPosition> = Set(StepPosition.allCases)
+    static let defaultIntervalSelection = IntervalSelection([.up(.perfectFifth)])
+    static let defaultAutoStartTraining = false
 
     // MARK: - Note Range Constants
 

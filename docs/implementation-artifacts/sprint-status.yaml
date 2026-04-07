@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-07 # Story 75.8 review
+# last_updated: 2026-04-07 # Story 75.5 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -617,7 +617,7 @@ development_status:
   75-3-training-screen-modifier: done
   75-7-platform-split-contentview-and-settings-import: done
   75-8-help-content-centralization: done
-  75-5-settings-single-source-of-truth: ready-for-dev
+  75-5-settings-single-source-of-truth: review
   75-4-progress-chart-view-decomposition: ready-for-dev
   75-13-session-state-machine-effect-separation: ready-for-dev
   75-10-design-decision-documentation: ready-for-dev

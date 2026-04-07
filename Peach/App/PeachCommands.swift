@@ -17,7 +17,7 @@ final class MenuCommandState {
 struct PeachCommands: Commands {
     @FocusedValue(MenuCommandState.self) private var commandState
     @Environment(\.openWindow) private var openWindow
-    @AppStorage(SettingsKeys.autoStartTraining) private var autoStartTraining = false
+    @AppStorage(SettingsKeys.autoStartTraining) private var autoStartTraining = SettingsKeys.defaultAutoStartTraining
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) { }

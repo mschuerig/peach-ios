@@ -41,7 +41,7 @@ final class AppUserSettings: UserSettings {
     var intervals: Set<DirectedInterval> {
         guard let raw = defaults.string(forKey: SettingsKeys.intervals),
               let selection = IntervalSelection(rawValue: raw) else {
-            return IntervalSelection.default.intervals
+            return SettingsKeys.defaultIntervalSelection.intervals
         }
         return selection.intervals
     }
@@ -77,6 +77,9 @@ final class AppUserSettings: UserSettings {
     var velocity: MIDIVelocity { .mezzoPiano }
 
     var autoStartTraining: Bool {
-        defaults.bool(forKey: SettingsKeys.autoStartTraining)
+        guard defaults.object(forKey: SettingsKeys.autoStartTraining) != nil else {
+            return SettingsKeys.defaultAutoStartTraining
+        }
+        return defaults.bool(forKey: SettingsKeys.autoStartTraining)
     }
 }

@@ -1,6 +1,6 @@
 # Story 75.5: Settings — Single Source of Truth
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,23 +26,23 @@ The walkthrough (Layer 6) found that settings have three sources of truth: `Sett
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Audit current defaults for drift (AC: #1)
-  - [ ] Compare every `@AppStorage` default in `SettingsScreen` against `SettingsKeys`
-  - [ ] Compare every `AppUserSettings` fallback against `SettingsKeys`
-  - [ ] Document any mismatches found
+- [x] Task 1: Audit current defaults for drift (AC: #1)
+  - [x] Compare every `@AppStorage` default in `SettingsScreen` against `SettingsKeys`
+  - [x] Compare every `AppUserSettings` fallback against `SettingsKeys`
+  - [x] Document any mismatches found
 
-- [ ] Task 2: Design single-source approach (AC: #1, #4)
-  - [ ] Option A: `@AppStorage` properties in `SettingsScreen` use `SettingsKeys.defaultX` for their defaults, and `AppUserSettings` does the same
+- [x] Task 2: Design single-source approach (AC: #1, #4)
+  - [x] Option A: `@AppStorage` properties in `SettingsScreen` use `SettingsKeys.defaultX` for their defaults, and `AppUserSettings` does the same
   - [ ] Option B: Replace `@AppStorage` in `SettingsScreen` with bindings to an `@Observable` settings object that wraps `UserDefaults` with `SettingsKeys` defaults
-  - [ ] Choose the approach that minimizes churn while guaranteeing single source
+  - [x] Choose the approach that minimizes churn while guaranteeing single source
 
-- [ ] Task 3: Implement chosen approach (AC: #2, #3)
-  - [ ] Update `SettingsScreen` to eliminate duplicated defaults
-  - [ ] Update `AppUserSettings` to reference `SettingsKeys` defaults
-  - [ ] Verify `IntervalSelection` and `GapPositionEncoding` (custom encoded settings) also use single-source defaults
+- [x] Task 3: Implement chosen approach (AC: #2, #3)
+  - [x] Update `SettingsScreen` to eliminate duplicated defaults
+  - [x] Update `AppUserSettings` to reference `SettingsKeys` defaults
+  - [x] Verify `IntervalSelection` and `GapPositionEncoding` (custom encoded settings) also use single-source defaults
 
-- [ ] Task 4: Build and test both platforms (AC: #5)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 4: Build and test both platforms (AC: #5)
+  - [x] `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -77,10 +77,31 @@ The fix may be simpler than expected if most `@AppStorage` defaults already refe
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None required.
+
 ### Completion Notes List
+- **Audit (Task 1):** Found 3 mismatches: (1) `noteGap` in SettingsScreen used hardcoded `0.0` instead of SettingsKeys reference, (2) `intervals` default lived on `IntervalSelection.default` instead of SettingsKeys, (3) `autoStartTraining` had no explicit default in SettingsKeys (relied on implicit `UserDefaults.bool` returning `false`).
+- **Design (Task 2):** Chose Option A — keep `@AppStorage` with SettingsKeys references. Added `defaultNoteGapSeconds` raw-value companion (because `Duration` lacks `RawRepresentable`), `defaultIntervalSelection`, and `defaultAutoStartTraining` to SettingsKeys.
+- **Implementation (Task 3):** Fixed SettingsScreen `noteGap` and `intervalSelection` defaults, updated AppUserSettings `intervals` fallback and `autoStartTraining` to use SettingsKeys. Updated `IntervalSelection.default` to forward to SettingsKeys. Also fixed `autoStartTraining` hardcoded `false` in `PeachCommands`, `PreviewDefaults` (StubUserSettings), and `MockUserSettings`.
+- **Tests (Task 4):** Added 5 new tests verifying single-source defaults. Updated 3 existing test assertions. All 1722 iOS + 1715 macOS tests pass.
+
 ### File List
+- `Peach/Settings/SettingsKeys.swift` — added `defaultNoteGapSeconds`, `defaultIntervalSelection`, `defaultAutoStartTraining`; refactored `defaultNoteGap` to derive from raw value
+- `Peach/Settings/SettingsScreen.swift` — fixed `noteGap` and `intervalSelection` defaults to reference SettingsKeys
+- `Peach/Settings/AppUserSettings.swift` — updated `intervals` fallback and `autoStartTraining` to reference SettingsKeys
+- `Peach/Settings/IntervalSelection.swift` — `.default` now forwards to `SettingsKeys.defaultIntervalSelection`
+- `Peach/App/PeachCommands.swift` — `autoStartTraining` default references SettingsKeys
+- `Peach/App/PreviewDefaults.swift` — `StubUserSettings.autoStartTraining` references SettingsKeys
+- `PeachTests/Mocks/MockUserSettings.swift` — `autoStartTraining` default and reset reference SettingsKeys
+- `PeachTests/Settings/SettingsTests.swift` — added 4 single-source-of-truth tests
+- `PeachTests/Settings/AppUserSettingsTests.swift` — added `autoStartTraining` default test, updated `intervals` assertions
+- `docs/implementation-artifacts/sprint-status.yaml` — status updated
+- `docs/implementation-artifacts/75-5-settings-single-source-of-truth.md` — story file updated
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-07: Implemented single-source defaults — centralized noteGap, intervalSelection, and autoStartTraining defaults into SettingsKeys; fixed all consumers

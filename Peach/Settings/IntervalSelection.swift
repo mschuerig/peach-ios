@@ -28,5 +28,5 @@ struct IntervalSelection: RawRepresentable, Equatable, Sendable {
         return string
     }
 
-    static let `default` = IntervalSelection([.up(.perfectFifth)])
+    static let `default` = SettingsKeys.defaultIntervalSelection
 }

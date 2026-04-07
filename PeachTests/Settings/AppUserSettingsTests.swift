@@ -50,7 +50,7 @@ struct AppUserSettingsTests {
     @Test("intervals returns default when no UserDefaults value set")
     func intervalsDefault() async {
         let settings = makeSettings()
-        #expect(settings.intervals == IntervalSelection.default.intervals)
+        #expect(settings.intervals == SettingsKeys.defaultIntervalSelection.intervals)
     }
 
     @Test("tuningSystem returns default when no UserDefaults value set")
@@ -75,6 +75,12 @@ struct AppUserSettingsTests {
     func enabledGapPositionsDefault() async {
         let settings = makeSettings()
         #expect(settings.enabledGapPositions == SettingsKeys.defaultEnabledGapPositions)
+    }
+
+    @Test("autoStartTraining returns default when no UserDefaults value set")
+    func autoStartTrainingDefault() async {
+        let settings = makeSettings()
+        #expect(settings.autoStartTraining == SettingsKeys.defaultAutoStartTraining)
     }
 
     // MARK: - Validation / Clamping (AC #3.3)
@@ -125,6 +131,6 @@ struct AppUserSettingsTests {
         let settings = makeSettings()
         settings.defaults.set(";;;garbage;;;", forKey: SettingsKeys.intervals)
 
-        #expect(settings.intervals == IntervalSelection.default.intervals)
+        #expect(settings.intervals == SettingsKeys.defaultIntervalSelection.intervals)
     }
 }

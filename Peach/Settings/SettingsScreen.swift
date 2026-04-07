@@ -21,13 +21,13 @@ struct SettingsScreen: View {
     private var varyLoudness: Double = SettingsKeys.defaultVaryLoudness.rawValue
 
     @AppStorage(SettingsKeys.intervals)
-    private var intervalSelection = IntervalSelection.default
+    private var intervalSelection = SettingsKeys.defaultIntervalSelection
 
     @AppStorage(SettingsKeys.tuningSystem)
     private var tuningSystemIdentifier: String = SettingsKeys.defaultTuningSystem.identifier
 
     @AppStorage(SettingsKeys.noteGap)
-    private var noteGap: Double = 0.0
+    private var noteGap: Double = SettingsKeys.defaultNoteGapSeconds
 
     @AppStorage(SettingsKeys.tempoBPM)
     private var tempoBPM: Int = SettingsKeys.defaultTempoBPM.value

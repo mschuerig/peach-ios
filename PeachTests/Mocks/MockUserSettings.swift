@@ -35,7 +35,7 @@ final class MockUserSettings: UserSettings {
     var velocity: MIDIVelocity = .mezzoPiano {
         didSet { onSettingsChanged?() }
     }
-    var autoStartTraining: Bool = false {
+    var autoStartTraining: Bool = SettingsKeys.defaultAutoStartTraining {
         didSet { onSettingsChanged?() }
     }
 
@@ -57,7 +57,7 @@ final class MockUserSettings: UserSettings {
         tempoBPM = SettingsKeys.defaultTempoBPM
         enabledGapPositions = SettingsKeys.defaultEnabledGapPositions
         velocity = .mezzoPiano
-        autoStartTraining = false
+        autoStartTraining = SettingsKeys.defaultAutoStartTraining
         onSettingsChanged = nil
     }
 }
