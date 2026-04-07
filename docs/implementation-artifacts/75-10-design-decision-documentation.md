@@ -1,6 +1,6 @@
 # Story 75.10: Design Decision Documentation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -49,8 +49,8 @@ This story is documentation-only — no behavioral changes.
 
 | File | Change |
 |------|--------|
-| `Peach/PitchMatching/PitchMatchingProfileAdapter.swift` | Comment: routes all results |
-| `Peach/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` | Comment: DragGesture timing |
+| `Peach/Training/PitchMatching/PitchMatchingProfileAdapter.swift` | Comment: routes all results |
+| `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` | Comment: DragGesture timing |
 | `Peach/Core/Data/PeachSchema.swift` | Comment: dual versioning tracks |
 | `Peach/App/Platform/HapticFeedbackManager.swift` | Comment: 2-of-4 mode coverage |
 
@@ -89,7 +89,7 @@ N/A — documentation-only story, no debugging needed.
 - Added 3-line contrast comment to `PitchDiscriminationProfileAdapter` explaining why only correct answers update the profile
 - Added 4-line comment above `DragGesture(minimumDistance: 0)` in `ContinuousRhythmMatchingScreen` explaining touch-down timing accuracy and manual accessibility traits
 - Added 2-line comment above `SchemaV1` in `PeachSchema.swift` explaining CSV format v3 and SwiftData schema v1 are independent versioning tracks
-- Added 3-line comment above `HapticFeedbackManager` class declaration explaining 2-of-6 observer conformance (only binary-outcome modes have haptic feedback)
+- Added 3-line comment above `HapticFeedbackManager` class declaration explaining 2-of-4 observer conformance (only binary-outcome modes have haptic feedback)
 - Both iOS and macOS builds succeed with no new warnings
 
 ### File List

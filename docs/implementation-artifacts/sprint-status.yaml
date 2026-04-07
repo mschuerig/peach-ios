@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-07 # Story 75.10 review
+# last_updated: 2026-04-07 # Story 75.10 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -620,5 +620,5 @@ development_status:
   75-5-settings-single-source-of-truth: done
   75-4-progress-chart-view-decomposition: done
   75-13-session-state-machine-effect-separation: done
-  75-10-design-decision-documentation: review
+  75-10-design-decision-documentation: done
   epic-75-retrospective: optional
