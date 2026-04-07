@@ -50,7 +50,7 @@ struct ProgressChartViewTests {
 
     @Test("zone configs contains month, day, and session")
     func zoneConfigsContainsExpectedKeys() async {
-        let configs = ProgressChartView.zoneConfigs
+        let configs = ChartData.zoneConfigs
         #expect(configs[.month] != nil)
         #expect(configs[.day] != nil)
         #expect(configs[.session] != nil)
@@ -58,7 +58,7 @@ struct ProgressChartViewTests {
 
     @Test("zone config point widths match expected values")
     func zoneConfigPointWidths() async {
-        let configs = ProgressChartView.zoneConfigs
+        let configs = ChartData.zoneConfigs
         #expect(configs[.month]?.pointWidth == 30)
         #expect(configs[.day]?.pointWidth == 40)
         #expect(configs[.session]?.pointWidth == 50)
@@ -87,22 +87,22 @@ struct ProgressChartViewTests {
 
     @Test("trend symbol for improving is arrow.down.right")
     func trendSymbolImproving() async {
-        #expect(ProgressChartView.trendSymbol(.improving) == "arrow.down.right")
+        #expect(TrainingStatsView.trendSymbol(.improving) == "arrow.down.right")
     }
 
     @Test("trend symbol for stable is arrow.right")
     func trendSymbolStable() async {
-        #expect(ProgressChartView.trendSymbol(.stable) == "arrow.right")
+        #expect(TrainingStatsView.trendSymbol(.stable) == "arrow.right")
     }
 
     @Test("trend symbol for declining is arrow.up.right")
     func trendSymbolDeclining() async {
-        #expect(ProgressChartView.trendSymbol(.declining) == "arrow.up.right")
+        #expect(TrainingStatsView.trendSymbol(.declining) == "arrow.up.right")
     }
 
     @Test("trend label for improving")
     func trendLabelImproving() async {
-        let label = ProgressChartView.trendLabel(.improving)
+        let label = TrainingStatsView.trendLabel(.improving)
         #expect(!label.isEmpty)
     }
 
@@ -110,13 +110,13 @@ struct ProgressChartViewTests {
 
     @Test("formats EWMA value with one decimal place")
     func formatEWMA() async {
-        let formatted = ProgressChartView.formatEWMA(23.456)
+        let formatted = ChartData.formatEWMA(23.456)
         #expect(formatted.contains("23.5") || formatted.contains("23,5"))
     }
 
     @Test("formats stddev with plus-minus prefix")
     func formatStdDev() async {
-        let formatted = ProgressChartView.formatStdDev(5.78)
+        let formatted = ChartData.formatStdDev(5.78)
         #expect(formatted.contains("±"))
     }
 
@@ -327,8 +327,8 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: base.addingTimeInterval(3600), periodEnd: base.addingTimeInterval(7200), bucketSize: .session, mean: 8, stddev: 1, recordCount: 1),
         ]
 
-        let firstSessionLabel = ProgressChartView.formatAxisLabel(buckets[1].periodStart, size: .session, index: 1, buckets: buckets)
-        let secondSessionLabel = ProgressChartView.formatAxisLabel(buckets[2].periodStart, size: .session, index: 2, buckets: buckets)
+        let firstSessionLabel = ChartData.formatAxisLabel(buckets[1].periodStart, size: .session, index: 1, buckets: buckets)
+        let secondSessionLabel = ChartData.formatAxisLabel(buckets[2].periodStart, size: .session, index: 2, buckets: buckets)
 
         #expect(firstSessionLabel == String(localized: "Today"))
         #expect(secondSessionLabel == "")
@@ -341,7 +341,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: base, periodEnd: base.addingTimeInterval(86400), bucketSize: .month, mean: 10, stddev: 1, recordCount: 5),
         ]
 
-        let label = ProgressChartView.formatAxisLabel(base, size: .month, index: 0, buckets: buckets)
+        let label = ChartData.formatAxisLabel(base, size: .month, index: 0, buckets: buckets)
         #expect(!label.isEmpty)
         // Should not end with a trailing dot (German abbreviation fix)
         #expect(!label.hasSuffix("."))
@@ -353,7 +353,7 @@ struct ProgressChartViewTests {
     func annotationDateLabelMonth() async {
         let calendar = Calendar.current
         let jan2026 = calendar.date(from: DateComponents(year: 2026, month: 1, day: 15))!
-        let label = ProgressChartView.annotationDateLabel(jan2026, size: .month)
+        let label = ChartData.annotationDateLabel(jan2026, size: .month)
         #expect(label.contains("2026"))
         #expect(label.contains("Jan"))
     }
@@ -363,7 +363,7 @@ struct ProgressChartViewTests {
         let calendar = Calendar.current
         // March 5, 2026 is a Thursday
         let mar5 = calendar.date(from: DateComponents(year: 2026, month: 3, day: 5))!
-        let label = ProgressChartView.annotationDateLabel(mar5, size: .day)
+        let label = ChartData.annotationDateLabel(mar5, size: .day)
         #expect(label.contains("5"))
         // Verify weekday abbreviation is present (Thu/Do/etc. depending on locale)
         let weekdaySymbols = calendar.shortWeekdaySymbols
@@ -375,7 +375,7 @@ struct ProgressChartViewTests {
     func annotationDateLabelSession() async {
         let calendar = Calendar.current
         let date = calendar.date(from: DateComponents(year: 2026, month: 3, day: 5, hour: 14, minute: 30))!
-        let label = ProgressChartView.annotationDateLabel(date, size: .session)
+        let label = ChartData.annotationDateLabel(date, size: .session)
         #expect(label.contains("14") || label.contains("2:30"))
     }
 
@@ -384,37 +384,37 @@ struct ProgressChartViewTests {
     @Test("snaps to exact bucket position when tapping directly on it")
     func findNearestBucketIndexExact() async {
         let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
-        #expect(ChartData.findNearestBucketIndex(atX: 0.0, positions: positions) == 0)
-        #expect(ChartData.findNearestBucketIndex(atX: 3.0, positions: positions) == 3)
-        #expect(ChartData.findNearestBucketIndex(atX: 4.0, positions: positions) == 4)
+        #expect(ChartData.nearestBucketIndex(atX: 0.0, in: positions) == 0)
+        #expect(ChartData.nearestBucketIndex(atX: 3.0, in: positions) == 3)
+        #expect(ChartData.nearestBucketIndex(atX: 4.0, in: positions) == 4)
     }
 
     @Test("snaps to nearest bucket position when tapping between data points")
     func findNearestBucketIndexRounds() async {
         let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
-        #expect(ChartData.findNearestBucketIndex(atX: 1.3, positions: positions) == 1)
-        #expect(ChartData.findNearestBucketIndex(atX: 1.7, positions: positions) == 2)
-        #expect(ChartData.findNearestBucketIndex(atX: 2.6, positions: positions) == 3)
+        #expect(ChartData.nearestBucketIndex(atX: 1.3, in: positions) == 1)
+        #expect(ChartData.nearestBucketIndex(atX: 1.7, in: positions) == 2)
+        #expect(ChartData.nearestBucketIndex(atX: 2.6, in: positions) == 3)
     }
 
     @Test("snaps to nearest for negative X near first position")
     func findNearestBucketIndexNegative() async {
         let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
-        #expect(ChartData.findNearestBucketIndex(atX: -0.3, positions: positions) == 0)
+        #expect(ChartData.nearestBucketIndex(atX: -0.3, in: positions) == 0)
     }
 
     @Test("returns nil for empty positions")
     func findNearestBucketIndexEmpty() async {
-        #expect(ChartData.findNearestBucketIndex(atX: 0.0, positions: []) == nil)
+        #expect(ChartData.nearestBucketIndex(atX: 0.0, in: []) == nil)
     }
 
     @Test("finds nearest with compressed session positions")
     func findNearestBucketIndexCompressedSessions() async {
         // 2 day buckets + 3 session buckets with 0.3 spacing
         let positions = [0.0, 1.0, 2.0, 2.3, 2.6]
-        #expect(ChartData.findNearestBucketIndex(atX: 2.1, positions: positions) == 2)
-        #expect(ChartData.findNearestBucketIndex(atX: 2.2, positions: positions) == 3)
-        #expect(ChartData.findNearestBucketIndex(atX: 2.5, positions: positions) == 4)
+        #expect(ChartData.nearestBucketIndex(atX: 2.1, in: positions) == 2)
+        #expect(ChartData.nearestBucketIndex(atX: 2.2, in: positions) == 3)
+        #expect(ChartData.nearestBucketIndex(atX: 2.5, in: positions) == 4)
     }
 
     // MARK: - Zone Accessibility Summary
@@ -435,7 +435,7 @@ struct ProgressChartViewTests {
         let zone = ChartData.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 2)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
-        let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
+        let summary = ChartData.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         let s = try #require(summary)
         #expect(s.contains("15.2") || s.contains("15,2"))
@@ -457,7 +457,7 @@ struct ProgressChartViewTests {
         let zone = ChartData.ZoneInfo(bucketSize: .day, startIndex: 0, endIndex: 1)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
-        let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
+        let summary = ChartData.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         let s2 = try #require(summary)
         #expect(s2.contains("2 data points") || s2.contains("2 Datenpunkte"))
@@ -472,7 +472,7 @@ struct ProgressChartViewTests {
         let zone = ChartData.ZoneInfo(bucketSize: .session, startIndex: 0, endIndex: 0)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
-        let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
+        let summary = ChartData.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         let s3 = try #require(summary)
         #expect(s3.contains("1 data points") || s3.contains("1 Datenpunkte"))
@@ -484,7 +484,7 @@ struct ProgressChartViewTests {
         let zone = ChartData.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: -1)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
-        let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
+        let summary = ChartData.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         #expect(summary == nil)
     }
@@ -498,7 +498,7 @@ struct ProgressChartViewTests {
         let zone = ChartData.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 5)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
-        let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
+        let summary = ChartData.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
 
         #expect(summary == nil)
     }
@@ -507,13 +507,13 @@ struct ProgressChartViewTests {
 
     @Test("returns base opacity when standard contrast")
     func contrastAdjustedOpacityStandard() async {
-        let result = ProgressChartView.contrastAdjustedOpacity(base: 0.15, increased: 0.3, isIncreaseContrast: false)
+        let result = ChartData.contrastAdjustedOpacity(base: 0.15, increased: 0.3, isIncreaseContrast: false)
         #expect(result == 0.15)
     }
 
     @Test("returns higher opacity when increase contrast is enabled")
     func contrastAdjustedOpacityIncreased() async {
-        let result = ProgressChartView.contrastAdjustedOpacity(base: 0.15, increased: 0.3, isIncreaseContrast: true)
+        let result = ChartData.contrastAdjustedOpacity(base: 0.15, increased: 0.3, isIncreaseContrast: true)
         #expect(result == 0.3)
     }
 

@@ -235,11 +235,11 @@ struct RhythmSpectrogramView: View {
     }
 
     static func columnLabel(_ bucket: TimeBucket, index: Int, buckets: [TimeBucket]) -> String {
-        ProgressChartView.formatAxisLabel(bucket.periodStart, size: bucket.bucketSize, index: index, buckets: buckets)
+        ChartData.formatAxisLabel(bucket.periodStart, size: bucket.bucketSize, index: index, buckets: buckets)
     }
 
     static func columnDateLabel(_ bucket: TimeBucket) -> String {
-        ProgressChartView.annotationDateLabel(bucket.periodStart, size: bucket.bucketSize)
+        ChartData.annotationDateLabel(bucket.periodStart, size: bucket.bucketSize)
     }
 
     static func formatPercent(_ value: Double) -> String {

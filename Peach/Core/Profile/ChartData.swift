@@ -89,19 +89,24 @@ struct ChartData {
 
     static func lineDataWithSessionBridge(for buckets: [TimeBucket], positions: [Double]) -> [LinePoint] {
         var points: [LinePoint] = []
-        for (i, bucket) in buckets.enumerated() where bucket.bucketSize != .session {
-            points.append(LinePoint(position: positions[i], mean: bucket.mean, stddev: bucket.stddev))
-        }
-        let sessionBuckets = buckets.enumerated().filter { $0.element.bucketSize == .session }
-        if let first = sessionBuckets.first {
-            let totalRecords = sessionBuckets.map(\.element.recordCount).reduce(0, +)
-            if totalRecords > 0 {
-                let mean = sessionBuckets.map { $0.element.mean * Double($0.element.recordCount) }.reduce(0, +) / Double(totalRecords)
-                let weightedVariance = sessionBuckets.map { pow($0.element.stddev, 2) * Double($0.element.recordCount) }.reduce(0, +) / Double(totalRecords)
-                let bridgePos = zoneEdgeBefore(index: first.offset, positions: positions)
-                points.append(LinePoint(position: bridgePos, mean: mean, stddev: sqrt(weightedVariance)))
+        var firstSessionOffset: Int?
+        for (i, bucket) in buckets.enumerated() {
+            if bucket.bucketSize == .session {
+                if firstSessionOffset == nil { firstSessionOffset = i }
+            } else {
+                points.append(LinePoint(position: positions[i], mean: bucket.mean, stddev: bucket.stddev))
             }
         }
+        guard let firstSession = firstSessionOffset else { return points }
+        let sessionBuckets = buckets[firstSession...].filter { $0.bucketSize == .session }
+        let totalRecords = sessionBuckets.map(\.recordCount).reduce(0, +)
+        guard totalRecords > 0 else { return points }
+        let mean = sessionBuckets.map { $0.mean * Double($0.recordCount) }.reduce(0, +) / Double(totalRecords)
+        let weightedVariance = sessionBuckets.map { pow($0.stddev, 2) * Double($0.recordCount) }.reduce(0, +) / Double(totalRecords)
+        let bridgePos = zoneEdgeBefore(index: firstSession, positions: positions)
+        // Insert bridge at correct position to maintain sort order
+        let insertIndex = points.firstIndex { $0.position > bridgePos } ?? points.endIndex
+        points.insert(LinePoint(position: bridgePos, mean: mean, stddev: sqrt(weightedVariance)), at: insertIndex)
         return points
     }
 
@@ -200,18 +205,9 @@ struct ChartData {
 
     // MARK: - Bucket Lookup
 
-    static func bucketIndex(nearPosition pos: Double, in positions: [Double]) -> Int? {
-        guard !positions.isEmpty else { return nil }
-        var best = 0
-        for i in 1..<positions.count {
-            if abs(positions[i] - pos) < abs(positions[best] - pos) {
-                best = i
-            }
-        }
-        return abs(positions[best] - pos) < 0.01 ? best : nil
-    }
-
-    static func findNearestBucketIndex(atX x: Double, positions: [Double]) -> Int? {
+    /// Find the bucket index whose chart position is nearest to `x`.
+    /// When `tolerance` is non-nil, returns nil if the nearest position is farther than `tolerance`.
+    static func nearestBucketIndex(atX x: Double, in positions: [Double], tolerance: Double? = nil) -> Int? {
         guard !positions.isEmpty else { return nil }
         var best = 0
         for i in 1..<positions.count {
@@ -219,11 +215,77 @@ struct ChartData {
                 best = i
             }
         }
+        if let tolerance, abs(positions[best] - x) > tolerance {
+            return nil
+        }
         return best
     }
 
     static func initialScrollPosition(for positions: [Double]) -> Double {
         guard let last = positions.last else { return 0 }
         return max(0, last + 0.5 - Double(visibleBucketCount))
+    }
+
+    // MARK: - Formatting
+
+    static let zoneConfigs: [BucketSize: any GranularityZoneConfig] = [
+        .month: MonthlyZoneConfig(),
+        .day: DailyZoneConfig(),
+        .session: SessionZoneConfig(),
+    ]
+
+    static func formatEWMA(_ value: Double) -> String {
+        Cents(value).formatted()
+    }
+
+    static func formatStdDev(_ value: Double) -> String {
+        "±\(Cents(value).formatted())"
+    }
+
+    static func annotationDateLabel(_ date: Date, size: BucketSize) -> String {
+        switch size {
+        case .month: date.formatted(.dateTime.month(.abbreviated).year())
+        case .day: date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())
+        case .session: date.formatted(.dateTime.hour().minute())
+        }
+    }
+
+    static func formatAxisLabel(_ date: Date, size: BucketSize, index: Int, buckets: [TimeBucket]) -> String {
+        if size == .session {
+            let isFirst = index == 0 || buckets[index - 1].bucketSize != .session
+            return isFirst ? String(localized: "Today") : ""
+        }
+        guard let config = zoneConfigs[size] else { return "" }
+        var label = config.formatAxisLabel(date)
+        if label.hasSuffix(".") {
+            label.removeLast()
+        }
+        return label
+    }
+
+    static func zoneAccessibilitySummary(buckets: [TimeBucket], zone: ZoneInfo, config: TrainingDisciplineConfig) -> String? {
+        guard zone.startIndex >= 0, zone.endIndex < buckets.count, zone.startIndex <= zone.endIndex else { return nil }
+
+        let zoneBuckets = Array(buckets[zone.startIndex...zone.endIndex])
+        guard !zoneBuckets.isEmpty else { return nil }
+
+        let zoneName: String
+        switch zone.bucketSize {
+        case .month: zoneName = String(localized: "Monthly")
+        case .day: zoneName = String(localized: "Daily")
+        case .session: zoneName = String(localized: "Session")
+        }
+
+        guard let first = zoneBuckets.first, let last = zoneBuckets.last else { return "" }
+        let firstDate = annotationDateLabel(first.periodStart, size: zone.bucketSize)
+        let lastDate = annotationDateLabel(last.periodStart, size: zone.bucketSize)
+        let firstMean = formatEWMA(first.mean)
+        let lastMean = formatEWMA(last.mean)
+        let count = zoneBuckets.count
+
+        if count == 1 {
+            return String(localized: "\(zoneName) zone: \(firstDate), pitch trend \(firstMean) \(config.unitLabel), \(count) data points")
+        }
+        return String(localized: "\(zoneName) zone: \(firstDate) through \(lastDate), pitch trend from \(firstMean) to \(lastMean) \(config.unitLabel), \(count) data points")
     }
 }

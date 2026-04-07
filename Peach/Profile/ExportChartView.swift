@@ -23,7 +23,8 @@ struct ExportChartView: View {
         VStack(alignment: .leading, spacing: 12) {
             headlineRow(ewma: ewma, stddev: stddev, trend: trend)
             timestampRow
-            chartContent(chartData: ChartData(buckets: buckets))
+            let chartData = ChartData(buckets: buckets)
+            chartContent(chartData: chartData)
                 .frame(height: 180)
         }
         .padding()
@@ -47,16 +48,16 @@ struct ExportChartView: View {
             Spacer()
 
             if let ewma {
-                Text(ProgressChartView.formatEWMA(ewma))
+                Text(ChartData.formatEWMA(ewma))
                     .font(.title2.bold())
-                Text(ProgressChartView.formatStdDev(stddev))
+                Text(ChartData.formatStdDev(stddev))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             if let trend {
-                Image(systemName: ProgressChartView.trendSymbol(trend))
-                    .foregroundStyle(ProgressChartView.trendColor(trend))
+                Image(systemName: TrainingStatsView.trendSymbol(trend))
+                    .foregroundStyle(TrainingStatsView.trendColor(trend))
             }
         }
     }
@@ -65,11 +66,11 @@ struct ExportChartView: View {
 
     private func chartContent(chartData: ChartData) -> some View {
         Chart {
-            ProgressChartView.zoneBackgrounds(separatorData: chartData.separatorData, positions: chartData.positions, yDomain: chartData.yDomain, isIncreaseContrast: false)
-            ProgressChartView.zoneDividers(separatorData: chartData.separatorData, positions: chartData.positions, isIncreaseContrast: false)
-            ProgressChartView.stddevBand(lineData: chartData.lineData, isIncreaseContrast: false)
-            ProgressChartView.ewmaLine(lineData: chartData.lineData)
-            ProgressChartView.sessionDots(buckets: chartData.buckets, positions: chartData.positions)
+            ChartData.zoneBackgrounds(separatorData: chartData.separatorData, positions: chartData.positions, yDomain: chartData.yDomain, isIncreaseContrast: false)
+            ChartData.zoneDividers(separatorData: chartData.separatorData, positions: chartData.positions, isIncreaseContrast: false)
+            ChartData.stddevBand(lineData: chartData.lineData, isIncreaseContrast: false)
+            ChartData.ewmaLine(lineData: chartData.lineData)
+            ChartData.sessionDots(buckets: chartData.buckets, positions: chartData.positions)
 
             RuleMark(y: .value("Baseline", config.optimalBaseline))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
@@ -81,13 +82,13 @@ struct ExportChartView: View {
         .chartXAxis {
             AxisMarks(values: chartData.axisValues) { value in
                 if let pos = value.as(Double.self),
-                   let idx = ChartData.bucketIndex(nearPosition: pos, in: chartData.positions) {
+                   let idx = ChartData.nearestBucketIndex(atX: pos, in: chartData.positions, tolerance: 0.01) {
                     let bucket = chartData.buckets[idx]
                     if bucket.bucketSize != .session {
                         AxisGridLine()
                     }
                     AxisValueLabel {
-                        Text(ProgressChartView.formatAxisLabel(
+                        Text(ChartData.formatAxisLabel(
                             bucket.periodStart,
                             size: bucket.bucketSize,
                             index: idx,

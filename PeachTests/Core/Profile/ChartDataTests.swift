@@ -8,7 +8,7 @@ struct ChartDataTests {
     // MARK: - Construction
 
     @Test("constructs from buckets with all pre-computed data")
-    func constructsFromBuckets() async {
+    func constructsFromBuckets() {
         let base = Date(timeIntervalSinceReferenceDate: 0)
         let buckets = [
             TimeBucket(periodStart: base, periodEnd: base.addingTimeInterval(3600), bucketSize: .month, mean: 10, stddev: 1, recordCount: 5),
@@ -27,7 +27,7 @@ struct ChartDataTests {
     }
 
     @Test("empty buckets produce empty chart data")
-    func emptyBuckets() async {
+    func emptyBuckets() {
         let chartData = ChartData(buckets: [])
 
         #expect(chartData.buckets.isEmpty)
@@ -42,7 +42,7 @@ struct ChartDataTests {
     // MARK: - Positions
 
     @Test("positions use session spacing for consecutive sessions")
-    func sessionSpacing() async {
+    func sessionSpacing() {
         let base = Date()
         let buckets = [
             TimeBucket(periodStart: base, periodEnd: base.addingTimeInterval(3600), bucketSize: .session, mean: 7, stddev: 1, recordCount: 1),
@@ -58,7 +58,7 @@ struct ChartDataTests {
     // MARK: - Line Data with Session Bridge
 
     @Test("line data excludes session buckets but includes bridge point")
-    func lineDataSessionBridge() async {
+    func lineDataSessionBridge() {
         let base = Date(timeIntervalSinceReferenceDate: 0)
         let buckets = [
             TimeBucket(periodStart: base, periodEnd: base.addingTimeInterval(86400), bucketSize: .day, mean: 10, stddev: 2, recordCount: 5),
@@ -82,7 +82,7 @@ struct ChartDataTests {
     // MARK: - Total Extent
 
     @Test("totalExtent is half past the last position")
-    func totalExtent() async {
+    func totalExtent() {
         let base = Date()
         let buckets = [
             TimeBucket(periodStart: base, periodEnd: base.addingTimeInterval(86400), bucketSize: .day, mean: 10, stddev: 1, recordCount: 5),
@@ -95,7 +95,7 @@ struct ChartDataTests {
     }
 
     @Test("totalExtent is zero for empty data")
-    func totalExtentEmpty() async {
+    func totalExtentEmpty() {
         let chartData = ChartData(buckets: [])
         #expect(chartData.totalExtent == 0.0)
     }
@@ -103,7 +103,7 @@ struct ChartDataTests {
     // MARK: - Needs Scrolling
 
     @Test("needs scrolling when total extent exceeds visible bucket count")
-    func needsScrollingTrue() async {
+    func needsScrollingTrue() {
         let base = Date()
         let buckets = (0..<15).map { i in
             TimeBucket(periodStart: base.addingTimeInterval(Double(i) * 86400), periodEnd: base.addingTimeInterval(Double(i + 1) * 86400), bucketSize: .day, mean: 10, stddev: 1, recordCount: 5)
@@ -115,7 +115,7 @@ struct ChartDataTests {
     }
 
     @Test("does not need scrolling when few buckets")
-    func needsScrollingFalse() async {
+    func needsScrollingFalse() {
         let base = Date()
         let buckets = (0..<3).map { i in
             TimeBucket(periodStart: base.addingTimeInterval(Double(i) * 86400), periodEnd: base.addingTimeInterval(Double(i + 1) * 86400), bucketSize: .day, mean: 10, stddev: 1, recordCount: 5)

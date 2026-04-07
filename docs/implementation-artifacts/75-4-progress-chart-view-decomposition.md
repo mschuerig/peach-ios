@@ -1,6 +1,6 @@
 # Story 75.4: ProgressChartView Decomposition
 
-Status: review
+Status: done
 
 ## Story
 
