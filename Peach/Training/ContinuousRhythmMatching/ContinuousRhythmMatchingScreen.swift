@@ -96,6 +96,10 @@ struct ContinuousRhythmMatchingScreen: View {
         .background(.tint, in: RoundedRectangle(cornerRadius: 12))
         .opacity(isTouchActive ? 0.7 : 1.0)
         .contentShape(Rectangle())
+        // DragGesture(minimumDistance: 0) fires on touch-down for timing accuracy —
+        // a standard Button fires on touch-up, adding ~100ms latency that matters for
+        // rhythm training. Accessibility traits (.isButton) and action (.default) are
+        // added manually below since DragGesture doesn't provide them.
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in

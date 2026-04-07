@@ -41,6 +41,9 @@ import Foundation
 ///
 /// 4. Update the top-level typealiases in each record file to point at
 ///    the latest version (e.g., `typealias PitchDiscriminationRecord = SchemaV2.PitchDiscriminationRecord`).
+// CSV export format versioning (currently v3) and SwiftData schema versioning (currently v1)
+// are independent tracks. CSV versions evolved through column renames and additions before
+// the SwiftData schema was versioned — they do not need to stay in sync.
 enum SchemaV1: VersionedSchema {
     nonisolated static let versionIdentifier = Schema.Version(1, 0, 0)
 

@@ -12,6 +12,10 @@ import UIKit
 ///
 /// # Testing Note
 /// Haptics don't work in iOS Simulator - must test on real device.
+// Conforms to PitchDiscriminationObserver and TimingOffsetDetectionObserver only (2 of 4
+// observer protocols). The matching protocols (PitchMatchingObserver, ContinuousRhythmMatchingObserver)
+// produce continuous accuracy rather than binary correct/incorrect, so there is no
+// "incorrect answer" haptic to fire.
 final class HapticFeedbackManager: HapticFeedback, PitchDiscriminationObserver {
     /// UIKit haptic generator
     private let generator: UIImpactFeedbackGenerator

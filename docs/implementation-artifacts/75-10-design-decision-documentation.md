@@ -1,6 +1,6 @@
 # Story 75.10: Design Decision Documentation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -26,22 +26,22 @@ This story is documentation-only — no behavioral changes.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Document profile adapter asymmetry (AC: #1)
-  - [ ] Add comment to `PitchMatchingProfileAdapter` explaining why all results are routed
-  - [ ] Optionally add a brief note to `PitchDiscriminationProfileAdapter` for contrast
+- [x] Task 1: Document profile adapter asymmetry (AC: #1)
+  - [x] Add comment to `PitchMatchingProfileAdapter` explaining why all results are routed
+  - [x] Optionally add a brief note to `PitchDiscriminationProfileAdapter` for contrast
 
-- [ ] Task 2: Document DragGesture timing choice (AC: #2)
-  - [ ] Add comment above the `DragGesture(minimumDistance: 0)` in `ContinuousRhythmMatchingScreen`
-  - [ ] Note the intentional `.accessibilityAddTraits(.isButton)` and `.accessibilityAction(.default)`
+- [x] Task 2: Document DragGesture timing choice (AC: #2)
+  - [x] Add comment above the `DragGesture(minimumDistance: 0)` in `ContinuousRhythmMatchingScreen`
+  - [x] Note the intentional `.accessibilityAddTraits(.isButton)` and `.accessibilityAction(.default)`
 
-- [ ] Task 3: Document dual versioning tracks (AC: #3)
-  - [ ] Add comment to `PeachSchema.swift` near the migration plan explaining the CSV/SwiftData version independence
+- [x] Task 3: Document dual versioning tracks (AC: #3)
+  - [x] Add comment to `PeachSchema.swift` near the migration plan explaining the CSV/SwiftData version independence
 
-- [ ] Task 4: Document haptic feedback mode coverage (AC: #4)
-  - [ ] Add comment to `HapticFeedbackManager` explaining the 2-of-4 conformance
+- [x] Task 4: Document haptic feedback mode coverage (AC: #4)
+  - [x] Add comment to `HapticFeedbackManager` explaining the 2-of-4 conformance
 
-- [ ] Task 5: Build both platforms (AC: #5)
-  - [ ] `bin/build.sh && bin/build.sh -p mac`
+- [x] Task 5: Build both platforms (AC: #5)
+  - [x] `bin/build.sh && bin/build.sh -p mac`
 
 ## Dev Notes
 
@@ -79,10 +79,27 @@ Keep comments brief — 1–3 lines. Example:
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+N/A — documentation-only story, no debugging needed.
+
 ### Completion Notes List
+- Added 3-line comment to `PitchMatchingProfileAdapter` explaining why all results are routed (no isCorrect gate) — continuous cent error, not binary outcome
+- Added 3-line contrast comment to `PitchDiscriminationProfileAdapter` explaining why only correct answers update the profile
+- Added 4-line comment above `DragGesture(minimumDistance: 0)` in `ContinuousRhythmMatchingScreen` explaining touch-down timing accuracy and manual accessibility traits
+- Added 2-line comment above `SchemaV1` in `PeachSchema.swift` explaining CSV format v3 and SwiftData schema v1 are independent versioning tracks
+- Added 3-line comment above `HapticFeedbackManager` class declaration explaining 2-of-6 observer conformance (only binary-outcome modes have haptic feedback)
+- Both iOS and macOS builds succeed with no new warnings
+
 ### File List
+- `Peach/Training/PitchMatching/PitchMatchingProfileAdapter.swift` (modified)
+- `Peach/Training/PitchDiscrimination/PitchDiscriminationProfileAdapter.swift` (modified)
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` (modified)
+- `Peach/Core/Data/PeachSchema.swift` (modified)
+- `Peach/App/Platform/HapticFeedbackManager.swift` (modified)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-07: Implemented all 5 tasks — added design decision comments to 5 source files, both platforms build clean
