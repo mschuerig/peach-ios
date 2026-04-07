@@ -31,12 +31,12 @@ struct HelpContentViewTests {
 
     @Test("InfoScreen acknowledgments sections has one section")
     func acknowledgmentsSectionsHasOneSection() async {
-        #expect(InfoScreen.acknowledgmentsSections.count == 1)
+        #expect(HelpContent.acknowledgments.count == 1)
     }
 
     @Test("InfoScreen acknowledgments text contains SoundFont URL")
     func acknowledgmentsTextContainsSoundFontURL() async {
-        #expect(InfoScreen.acknowledgmentsText.contains("schristiancollins.com"))
+        #expect(HelpContent.acknowledgmentsText.contains("schristiancollins.com"))
     }
 
     // MARK: - Identifiable Conformance

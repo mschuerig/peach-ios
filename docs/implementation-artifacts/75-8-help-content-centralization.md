@@ -1,6 +1,6 @@
 # Story 75.8: Help Content Centralization
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,21 +24,22 @@ The walkthrough (Layer 6) found that all 4 training screens, the settings screen
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create central help content (AC: #1)
-  - [ ] Create `HelpContent.swift` (or `HelpSections.swift`) with a namespace enum
-  - [ ] Move help section arrays from each screen into the central file
-  - [ ] Preserve the conditional interval-mode sections as parameterized functions (e.g., `HelpContent.pitchDiscrimination(isIntervalMode: Bool)`)
+- [x] Task 1: Create central help content (AC: #1)
+  - [x] Create `HelpContent.swift` with a namespace enum
+  - [x] Move help section arrays from each screen into the central file
+  - [x] Help sections are unconditional static arrays (no conditional interval logic existed) — moved as-is
 
-- [ ] Task 2: Update PeachCommands (AC: #2)
-  - [ ] Replace `PitchDiscriminationScreen.helpSections` references with `HelpContent.pitchDiscrimination`
-  - [ ] Same for all other screen references in the menu
+- [x] Task 2: Update PeachCommands (AC: #2)
+  - [x] Replace `PitchDiscriminationScreen.helpSections` references with `HelpContent.pitchDiscrimination`
+  - [x] Same for all other screen references in the menu
 
-- [ ] Task 3: Update training screens (AC: #3, #4)
-  - [ ] Replace `Self.helpSections` with `HelpContent.pitchDiscrimination(isIntervalMode:)` etc.
-  - [ ] Remove the `static let helpSections` from each screen
+- [x] Task 3: Update training screens (AC: #3, #4)
+  - [x] Replace `Self.helpSections` with `HelpContent.pitchDiscrimination` etc.
+  - [x] Remove the `static let helpSections` from each screen
+  - [x] Also updated SettingsScreen, ProfileScreen, InfoScreen, and StartScreen
 
-- [ ] Task 4: Build and test both platforms (AC: #5)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 4: Build and test both platforms (AC: #5)
+  - [x] `bin/test.sh && bin/test.sh -p mac` — 1717 iOS + 1710 macOS tests pass
 
 ## Dev Notes
 
@@ -70,10 +71,43 @@ If 75.3 is done first, the modifier accepts `helpSections` as a parameter. This 
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+
 ### Completion Notes List
+- Created `Peach/App/HelpContent.swift` enum namespace with all help section arrays centralized
+- Moved help sections from 7 screens (4 training + settings + profile + info) into `HelpContent`
+- Updated `PeachCommands.HelpSheetContent.sections` to reference `HelpContent.*` instead of screen types
+- Updated all training screens to pass `HelpContent.*` to `.trainingScreen(helpSections:)` modifier
+- Updated `SettingsScreen`, `ProfileScreen`, `InfoScreen`, and `StartScreen` references
+- Updated 6 test files to reference `HelpContent.*` instead of screen types
+- Note: The story expected conditional interval-mode logic but none existed — interval help sections were always included unconditionally. Preserved as-is.
+- Simplify-code: Moved text constants (appDescription, trainingModesDescription, gettingStartedText, acknowledgmentsText) from `InfoScreen` into `HelpContent` to eliminate mutual coupling
+- Simplify-code: Added `HelpContent.about` computed property to deduplicate `info + acknowledgments` concatenation
+
 ### File List
+- Peach/App/HelpContent.swift (new)
+- Peach/App/PeachCommands.swift (modified)
+- Peach/Training/PitchDiscrimination/PitchDiscriminationScreen.swift (modified)
+- Peach/Training/PitchMatching/PitchMatchingScreen.swift (modified)
+- Peach/Training/TimingOffsetDetection/TimingOffsetDetectionScreen.swift (modified)
+- Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift (modified)
+- Peach/Settings/SettingsScreen.swift (modified)
+- Peach/Profile/ProfileScreen.swift (modified)
+- Peach/Info/InfoScreen.swift (modified)
+- Peach/Start/StartScreen.swift (modified)
+- PeachTests/App/HelpContentViewTests.swift (modified)
+- PeachTests/Start/StartScreenTests.swift (modified)
+- PeachTests/Training/PitchMatching/PitchMatchingScreenTests.swift (modified)
+- PeachTests/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreenTests.swift (modified)
+- PeachTests/Training/PitchDiscrimination/PitchDiscriminationScreenLayoutTests.swift (modified)
+- PeachTests/Settings/SettingsTests.swift (modified)
+- PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionScreenLayoutTests.swift (modified)
+- docs/implementation-artifacts/75-8-help-content-centralization.md (modified)
+- docs/implementation-artifacts/sprint-status.yaml (modified)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-07: Implementation complete — centralized all help content into HelpContent enum namespace

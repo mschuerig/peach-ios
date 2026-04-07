@@ -78,7 +78,7 @@ struct StartScreen: View {
         .platformHelp(
             isPresented: $showInfoSheet,
             title: String(localized: "About Peach"),
-            sections: InfoScreen.helpSections + InfoScreen.acknowledgmentsSections
+            sections: HelpContent.about
         ) {
             InfoScreen()
         }

@@ -6,25 +6,6 @@ struct TimingOffsetDetectionScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    static let helpSections: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "Goal"),
-            body: String(localized: "You'll hear four clicks — a short rhythmic pattern. The **third** click may arrive slightly **early** or **late**. Your job is to decide which one it was.")
-        ),
-        HelpSection(
-            title: String(localized: "Controls"),
-            body: String(localized: "Once the pattern finishes, the **Early** and **Late** buttons become active. Tap the one that matches what you heard.")
-        ),
-        HelpSection(
-            title: String(localized: "Feedback"),
-            body: String(localized: "After each answer you'll see a **checkmark** (correct) or **X** (incorrect), along with the current difficulty as a percentage.")
-        ),
-        HelpSection(
-            title: String(localized: "Difficulty"),
-            body: String(localized: "The percentage shows how far off-beat the last click was — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
-        ),
-    ]
-
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
     }
@@ -50,7 +31,7 @@ struct TimingOffsetDetectionScreen: View {
             return session.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .trainingScreen(
-            helpSections: Self.helpSections,
+            helpSections: HelpContent.timingOffsetDetection,
             destination: .timingOffsetDetection
         ) {
             HStack(spacing: 6) {

@@ -48,56 +48,9 @@ struct ProfileScreen: View {
         .platformHelp(
             isPresented: $showHelpSheet,
             title: String(localized: "Profile Help"),
-            sections: Self.helpSections
+            sections: HelpContent.profile
         )
     }
-
-    // MARK: - Help Content
-
-    private static let helpSections = [
-        HelpSection(
-            title: String(localized: "Your Progress Chart",
-                          comment: "Chart overview help title"),
-            body: String(localized: "This chart shows how your pitch perception is developing over time.",
-                         comment: "Chart overview help body")
-        ),
-        HelpSection(
-            title: String(localized: "Trend Line",
-                          comment: "EWMA line help title"),
-            body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.",
-                         comment: "EWMA line help body")
-        ),
-        HelpSection(
-            title: String(localized: "Variability Band",
-                          comment: "Stddev band help title"),
-            body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results.",
-                         comment: "Stddev band help body")
-        ),
-        HelpSection(
-            title: String(localized: "Target Baseline",
-                          comment: "Baseline help title"),
-            body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.",
-                         comment: "Baseline help body")
-        ),
-        HelpSection(
-            title: String(localized: "Time Zones",
-                          comment: "Granularity zone help title"),
-            body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
-                         comment: "Granularity zone help body")
-        ),
-        HelpSection(
-            title: String(localized: "Rhythm Spectrogram",
-                          comment: "Spectrogram overview help title"),
-            body: String(localized: "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was.",
-                         comment: "Spectrogram overview help body")
-        ),
-        HelpSection(
-            title: String(localized: "Spectrogram Colors",
-                          comment: "Spectrogram color help title"),
-            body: String(localized: "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits.",
-                         comment: "Spectrogram color help body")
-        ),
-    ]
 
     // MARK: - Accessibility
 

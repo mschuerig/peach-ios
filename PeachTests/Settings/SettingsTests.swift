@@ -266,7 +266,7 @@ struct SettingsTests {
 
     @Test("helpSections returns six sections matching settings groups")
     func helpSectionsCount() async {
-        #expect(SettingsScreen.helpSections.count == 6)
+        #expect(HelpContent.settings.count == 6)
     }
 
     @Test("help section titles match settings groups in order")
@@ -279,13 +279,13 @@ struct SettingsTests {
             String(localized: "Rhythm"),
             String(localized: "Data"),
         ]
-        let actualTitles = SettingsScreen.helpSections.map(\.title)
+        let actualTitles = HelpContent.settings.map(\.title)
         #expect(actualTitles == expectedTitles)
     }
 
     @Test("each help section has a non-empty body")
     func helpSectionBodiesNonEmpty() async {
-        for section in SettingsScreen.helpSections {
+        for section in HelpContent.settings {
             #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
         }
     }
@@ -293,7 +293,7 @@ struct SettingsTests {
     @Test("concert pitch help contains practical 440 Hz context")
     func concertPitchHelpContainsPracticalContext() async {
         let soundTitle = String(localized: "Sound")
-        let soundSection = SettingsScreen.helpSections.first { $0.title == soundTitle }
+        let soundSection = HelpContent.settings.first { $0.title == soundTitle }
         #expect(soundSection != nil)
         #expect(soundSection?.body.contains("440") == true)
     }
@@ -301,7 +301,7 @@ struct SettingsTests {
     @Test("tuning system help contains Equal Temperament reference")
     func tuningSystemHelpContainsKeyTerm() async {
         let soundTitle = String(localized: "Sound")
-        let soundSection = SettingsScreen.helpSections.first { $0.title == soundTitle }
+        let soundSection = HelpContent.settings.first { $0.title == soundTitle }
         #expect(soundSection != nil)
         let bodyLower = soundSection?.body.lowercased() ?? ""
         #expect(bodyLower.contains("equal temperament") || bodyLower.contains("gleichstufig"))

@@ -177,15 +177,15 @@ enum HelpSheetContent: Identifiable, Hashable, Codable {
     var sections: [HelpSection] {
         switch self {
         case .about:
-            InfoScreen.helpSections + InfoScreen.acknowledgmentsSections
+            HelpContent.about
         case .pitchDiscrimination:
-            PitchDiscriminationScreen.helpSections
+            HelpContent.pitchDiscrimination
         case .pitchMatching:
-            PitchMatchingScreen.helpSections
+            HelpContent.pitchMatching
         case .timingOffsetDetection:
-            TimingOffsetDetectionScreen.helpSections
+            HelpContent.timingOffsetDetection
         case .continuousRhythmMatching:
-            ContinuousRhythmMatchingScreen.helpSections
+            HelpContent.continuousRhythmMatching
         }
     }
 }

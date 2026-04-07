@@ -72,7 +72,7 @@ struct TimingOffsetDetectionScreenLayoutTests {
 
     @Test("helpSections returns four sections for rhythm training")
     func helpSectionsCount() async {
-        #expect(TimingOffsetDetectionScreen.helpSections.count == 4)
+        #expect(HelpContent.timingOffsetDetection.count == 4)
     }
 
     @Test("help section titles match expected order")
@@ -83,13 +83,13 @@ struct TimingOffsetDetectionScreenLayoutTests {
             String(localized: "Feedback"),
             String(localized: "Difficulty"),
         ]
-        let actualTitles = TimingOffsetDetectionScreen.helpSections.map(\.title)
+        let actualTitles = HelpContent.timingOffsetDetection.map(\.title)
         #expect(actualTitles == expectedTitles)
     }
 
     @Test("each help section has a non-empty body")
     func helpSectionBodiesNonEmpty() async {
-        for section in TimingOffsetDetectionScreen.helpSections {
+        for section in HelpContent.timingOffsetDetection {
             #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
         }
     }

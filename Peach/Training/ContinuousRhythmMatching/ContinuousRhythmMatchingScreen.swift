@@ -7,21 +7,6 @@ struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isTouchActive = false
 
-    static let helpSections: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "Goal"),
-            body: String(localized: "A continuous stream of 16th notes plays — fill the gap by tapping at the right moment.")
-        ),
-        HelpSection(
-            title: String(localized: "Controls"),
-            body: String(localized: "Tap the **Tap** button when the outlined note should sound. The bold first dot marks beat one.\n\nYou can also play any key on a connected **MIDI keyboard** instead of tapping.")
-        ),
-        HelpSection(
-            title: String(localized: "Feedback"),
-            body: String(localized: "After each hit, an arrow shows whether you tapped early (←) or late (→) with the offset in milliseconds. The color indicates accuracy: **green** (precise), **yellow** (moderate), **red** (erratic). Stats update after each trial of 16 cycles.")
-        ),
-    ]
-
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
     }
@@ -48,7 +33,7 @@ struct ContinuousRhythmMatchingScreen: View {
             return .handled
         }
         .trainingScreen(
-            helpSections: Self.helpSections,
+            helpSections: HelpContent.continuousRhythmMatching,
             destination: .continuousRhythmMatching
         ) {
             HStack(spacing: 6) {

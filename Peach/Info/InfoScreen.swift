@@ -13,47 +13,16 @@ struct InfoScreen: View {
         }
         return url
     }()
-    static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
-
-    static let trainingModesDescription = String(localized: "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Rhythm** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap.")
-
-    static let gettingStartedText = String(localized: "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically.")
-
-    static let acknowledgmentsText = String(localized: "Piano sounds from [FluidR3_GM by Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT License). All other sounds from [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php).")
-
     static var copyrightNotice: String {
         "© \(copyrightYear) \(developerName)"
     }
-
-    static let helpSections: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "What is Peach?"),
-            body: appDescription
-        ),
-        HelpSection(
-            title: String(localized: "Training Modes"),
-            body: trainingModesDescription
-        ),
-        HelpSection(
-            title: String(localized: "Getting Started"),
-            body: gettingStartedText
-        ),
-    ]
-
-    static let acknowledgmentsSections: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "Acknowledgments"),
-            body: acknowledgmentsText
-        ),
-    ]
 
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
                     headerSection
-                    HelpContentView(sections: Self.helpSections)
-                    HelpContentView(sections: Self.acknowledgmentsSections)
+                    HelpContentView(sections: HelpContent.about)
                 }
                 .padding()
             }

@@ -180,26 +180,26 @@ struct StartScreenTests {
 
     @Test("Info Screen app description mentions Peach")
     func infoScreenHasAppDescription() async {
-        #expect(InfoScreen.appDescription.contains("Peach"))
-        #expect(InfoScreen.appDescription.count > 50)
+        #expect(HelpContent.appDescription.contains("Peach"))
+        #expect(HelpContent.appDescription.count > 50)
     }
 
     @Test("Info Screen training modes description contains dash-separated mode names")
     func infoScreenHasTrainingModesDescription() async {
-        let description = InfoScreen.trainingModesDescription
+        let description = HelpContent.trainingModesDescription
         #expect(description.contains("–"))
         #expect(description.count > 100)
     }
 
     @Test("Info Screen has three help sections")
     func infoScreenHasThreeHelpSections() async {
-        #expect(InfoScreen.helpSections.count == 3)
+        #expect(HelpContent.info.count == 3)
     }
 
     @Test("Info Screen getting started text mentions Peach")
     func infoScreenHasGettingStarted() async {
-        #expect(InfoScreen.gettingStartedText.contains("Peach"))
-        #expect(InfoScreen.gettingStartedText.count > 30)
+        #expect(HelpContent.gettingStartedText.contains("Peach"))
+        #expect(HelpContent.gettingStartedText.count > 30)
     }
 
     // MARK: - Hub and Spoke Pattern Verification

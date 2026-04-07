@@ -28,12 +28,12 @@ struct ContinuousRhythmMatchingScreenTests {
 
     @Test("has three help sections")
     func helpSectionCount() async {
-        #expect(ContinuousRhythmMatchingScreen.helpSections.count == 3)
+        #expect(HelpContent.continuousRhythmMatching.count == 3)
     }
 
     @Test("help sections have Goal, Controls, Feedback titles")
     func helpSectionTitles() async {
-        let titles = ContinuousRhythmMatchingScreen.helpSections.map(\.title)
+        let titles = HelpContent.continuousRhythmMatching.map(\.title)
         #expect(titles.contains(String(localized: "Goal")))
         #expect(titles.contains(String(localized: "Controls")))
         #expect(titles.contains(String(localized: "Feedback")))

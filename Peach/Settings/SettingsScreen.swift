@@ -49,33 +49,6 @@ struct SettingsScreen: View {
 
     static let previewDuration: Duration = .seconds(2)
 
-    static let helpSections: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "Training Range"),
-            body: String(localized: "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.")
-        ),
-        HelpSection(
-            title: String(localized: "Intervals"),
-            body: String(localized: "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.")
-        ),
-        HelpSection(
-            title: String(localized: "Sound"),
-            body: String(localized: "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.")
-        ),
-        HelpSection(
-            title: String(localized: "Difficulty"),
-            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
-        ),
-        HelpSection(
-            title: String(localized: "Rhythm"),
-            body: String(localized: "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
-        ),
-        HelpSection(
-            title: String(localized: "Data"),
-            body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
-        ),
-    ]
-
     var body: some View {
         Form {
             trainingRangeSection
@@ -93,7 +66,7 @@ struct SettingsScreen: View {
         .platformHelp(
             isPresented: $showHelpSheet,
             title: String(localized: "Settings Help"),
-            sections: Self.helpSections
+            sections: HelpContent.settings
         )
         .onAppear {
             enabledGapPositions = GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
