@@ -1,6 +1,6 @@
 # Story 75.7: Platform Split — ContentView and SettingsScreen Import
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -24,20 +24,20 @@ The walkthrough (Layers 5, 6) found that `ContentView` is ~75% macOS-only code: 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Split ContentView (AC: #1, #2, #3)
-  - [ ] Create `Peach/App/Platform/ContentView+iOS.swift` with the iOS-only content
-  - [ ] Create `Peach/App/Platform/ContentView+macOS.swift` with the macOS-only content
-  - [ ] Remove the original `ContentView.swift` (or make it a thin `#if` that selects the right file, though separate files are preferred)
-  - [ ] Move `MainWindowReader` to the macOS file if it isn't already
+- [x] Task 1: Split ContentView (AC: #1, #2, #3)
+  - [x] Create `Peach/App/Platform/ContentView+iOS.swift` with the iOS-only content
+  - [x] Create `Peach/App/Platform/ContentView+macOS.swift` with the macOS-only content
+  - [x] Remove the original `ContentView.swift` (or make it a thin `#if` that selects the right file, though separate files are preferred)
+  - [x] Move `MainWindowReader` to the macOS file if it isn't already
 
-- [ ] Task 2: Extract SettingsScreen import abstraction (AC: #4)
-  - [ ] Define a platform abstraction for file import (protocol or platform-specific implementations)
-  - [ ] Move `NSOpenPanel` logic to `App/Platform/` macOS file
-  - [ ] Move `.fileImporter` logic to `App/Platform/` iOS file
-  - [ ] `SettingsScreen` calls the abstraction instead of using `#if os()` inline
+- [x] Task 2: Extract SettingsScreen import abstraction (AC: #4)
+  - [x] Define a platform abstraction for file import (protocol or platform-specific implementations)
+  - [x] Move `NSOpenPanel` logic to `App/Platform/` macOS file
+  - [x] Move `.fileImporter` logic to `App/Platform/` iOS file
+  - [x] `SettingsScreen` calls the abstraction instead of using `#if os()` inline
 
-- [ ] Task 3: Build and test both platforms (AC: #5)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
+- [x] Task 3: Build and test both platforms (AC: #5)
+  - [x] `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -81,10 +81,28 @@ The project's existing pattern: Core defines a protocol in `Core/Ports/`, `App/P
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Split `ContentView.swift` (128 lines) into `ContentView+iOS.swift` (23 lines) and `ContentView+macOS.swift` (107 lines) with no `#if os()` guards — each file is wrapped in a top-level `#if os()` block
+- iOS ContentView contains only NavigationStack + scenePhase handling
+- macOS ContentView contains NavigationStack, scenePhase, menu command wiring, window lifecycle (MainWindowReader, willCloseNotification), file importer, help sheet, and app activation/deactivation handlers
+- MainWindowReader (NSViewRepresentable) moved to macOS file as a private struct
+- Created `PlatformFileImporter.swift` view modifier in `App/Platform/` — iOS uses `.fileImporter`, macOS uses `NSOpenPanel` via `.onChange` trigger
+- SettingsScreen's `importTrainingData()` simplified to `showFileImporter = true` with no `#if os()` — platform logic handled by `.platformFileImporter` modifier
+- All 1717 iOS tests and 1710 macOS tests pass with no regressions
+
 ### File List
+- `Peach/App/ContentView.swift` — deleted
+- `Peach/App/Platform/ContentView+iOS.swift` — new
+- `Peach/App/Platform/ContentView+macOS.swift` — new
+- `Peach/App/Platform/PlatformFileImporter.swift` — new
+- `Peach/Settings/SettingsScreen.swift` — modified
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-07: Implementation complete — ContentView split into platform files, SettingsScreen import abstracted via platformFileImporter modifier

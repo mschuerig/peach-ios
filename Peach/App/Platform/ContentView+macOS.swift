@@ -1,3 +1,4 @@
+#if os(macOS)
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -7,25 +8,19 @@ struct ContentView: View {
     @Environment(\.settingsCoordinator) private var coordinator
 
     @State private var navigationPath: [NavigationDestination] = []
-
-    #if os(macOS)
     @State private var commandState = MenuCommandState()
     @State private var mainWindow: NSWindow?
     @State private var importParseResult: CSVImportParser.ImportResult?
     @State private var importParseError: String?
-    #endif
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
             StartScreen()
         }
-        #if os(macOS)
         .frame(minWidth: 400, minHeight: 500)
-        #endif
         .onChange(of: scenePhase) { oldPhase, newPhase in
             lifecycle.handleScenePhase(old: oldPhase, new: newPhase)
         }
-        #if os(macOS)
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didResignActiveNotification)) { _ in
             lifecycle.handleAppDeactivated()
         }
@@ -59,12 +54,10 @@ struct ContentView: View {
             allowedContentTypes: [.commaSeparatedText]
         ) { handleImportFileResult($0) }
         .importDialog(parseResult: $importParseResult, parseErrorMessage: $importParseError)
-        #endif
     }
 
-    // MARK: - macOS Help Sheet
+    // MARK: - Help Sheet
 
-    #if os(macOS)
     private func helpSheet(for content: HelpSheetContent) -> some View {
         NavigationStack {
             ScrollView {
@@ -82,11 +75,9 @@ struct ContentView: View {
         }
         .frame(minWidth: 400, minHeight: 300)
     }
-    #endif
 
-    // MARK: - macOS File Import
+    // MARK: - File Import
 
-    #if os(macOS)
     private func handleImportFileResult(_ result: Result<URL, any Error>) {
         guard case .success(let url) = result else { return }
         switch coordinator.prepareImport(url: url) {
@@ -96,10 +87,8 @@ struct ContentView: View {
             importParseError = message
         }
     }
-    #endif
 }
 
-#if os(macOS)
 private struct MainWindowReader: NSViewRepresentable {
     @Binding var window: NSWindow?
 
@@ -119,9 +108,9 @@ private struct MainWindowReader: NSViewRepresentable {
         }
     }
 }
-#endif
 
 #Preview {
     ContentView()
         .previewEnvironment()
 }
+#endif
