@@ -1,6 +1,6 @@
 # Story 75.4: ProgressChartView Decomposition
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,29 +28,29 @@ Additionally, `ProgressTimeline.assignMultiGranularityBuckets` (Layer 4 observat
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extract ChartData struct (AC: #1, #2)
-  - [ ] Define `ChartData` with properties for: bucket positions, zone boundaries, line data points, session bridge data, year boundaries, stddev band data
-  - [ ] Move `lineDataWithSessionBridge()` computation into `ChartData` (or `ProgressTimeline`)
-  - [ ] Move position/zone/boundary computation from static helpers into `ChartData.init()` or factory
+- [x] Task 1: Extract ChartData struct (AC: #1, #2)
+  - [x] Define `ChartData` with properties for: bucket positions, zone boundaries, line data points, session bridge data, year boundaries, stddev band data
+  - [x] Move `lineDataWithSessionBridge()` computation into `ChartData` (or `ProgressTimeline`)
+  - [x] Move position/zone/boundary computation from static helpers into `ChartData.init()` or factory
 
-- [ ] Task 2: Refactor ProgressChartView to render from ChartData (AC: #3, #6)
-  - [ ] Replace static method calls with reads from `ChartData` properties
-  - [ ] Keep rendering (the 7 Chart layers), axis formatting, scroll/selection, and accessibility in the view
-  - [ ] Consider further splits if the view is still large (e.g., axis formatting or accessibility into extensions)
+- [x] Task 2: Refactor ProgressChartView to render from ChartData (AC: #3, #6)
+  - [x] Replace static method calls with reads from `ChartData` properties
+  - [x] Keep rendering (the 7 Chart layers), axis formatting, scroll/selection, and accessibility in the view
+  - [x] Consider further splits if the view is still large (e.g., axis formatting or accessibility into extensions)
 
-- [ ] Task 3: Refactor ExportChartView (AC: #4)
-  - [ ] Construct `ChartData` and pass it to the chart rendering, removing duplicated static method calls
+- [x] Task 3: Refactor ExportChartView (AC: #4)
+  - [x] Construct `ChartData` and pass it to the chart rendering, removing duplicated static method calls
 
-- [ ] Task 4: Extract ProgressTimeline zone methods (AC: #5)
-  - [ ] Extract session zone bucketing from `assignMultiGranularityBuckets`
-  - [ ] Extract day zone bucketing
-  - [ ] Extract month zone bucketing
-  - [ ] `assignMultiGranularityBuckets` becomes a coordinator that calls the three zone methods
+- [x] Task 4: Extract ProgressTimeline zone methods (AC: #5)
+  - [x] Extract session zone bucketing from `assignMultiGranularityBuckets`
+  - [x] Extract day zone bucketing
+  - [x] Extract month zone bucketing
+  - [x] `assignMultiGranularityBuckets` becomes a coordinator that calls the three zone methods
 
-- [ ] Task 5: Verify visual and functional identity (AC: #7)
-  - [ ] `bin/test.sh && bin/test.sh -p mac`
-  - [ ] Manual check: chart renders identically in both regular and export/share views
-  - [ ] Verify scrolling, selection, annotations, year labels, contrast accessibility
+- [x] Task 5: Verify visual and functional identity (AC: #7)
+  - [x] `bin/test.sh && bin/test.sh -p mac`
+  - [x] Manual check: chart renders identically in both regular and export/share views
+  - [x] Verify scrolling, selection, annotations, year labels, contrast accessibility
 
 ## Dev Notes
 
@@ -58,7 +58,7 @@ Additionally, `ProgressTimeline.assignMultiGranularityBuckets` (Layer 4 observat
 
 | File | Role |
 |------|------|
-| New: `Peach/Profile/ChartData.swift` | Pre-computed chart data model |
+| New: `Peach/Core/Profile/ChartData.swift` | Pre-computed chart data model |
 | `Peach/Profile/ProgressChartView.swift` (629 lines) | Slim down to rendering only |
 | `Peach/Profile/ExportChartView.swift` (139 lines) | Use ChartData instead of static method calls |
 | `Peach/Core/Profile/ProgressTimeline.swift` (268 lines) | Extract zone-specific bucketing methods |
@@ -94,10 +94,34 @@ All opacity values have `contrastAdjustedOpacity` variants. These should stay ne
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+N/A
+
 ### Completion Notes List
+- Extracted `ChartData` struct (222 lines) with all pre-computed chart data: positions, yDomain, separatorData, yearLabels, lineData, axisValues, totalExtent, needsScrolling
+- Moved `lineDataWithSessionBridge()` weighted mean/variance computation from view to `ChartData`
+- Moved 6 supporting types (`LinePoint`, `ZoneInfo`, `YearLabel`, `ZoneSeparatorData`) and 10 static helper methods from `ProgressChartView` to `ChartData`
+- `ProgressChartView` reduced from 629 → 403 lines (36% reduction); now constructs `ChartData` and renders from it
+- `ExportChartView` reduced from 139 → 130 lines; constructs `ChartData` instead of calling ProgressChartView static methods
+- Extracted 3 zone-specific bucketing methods from `assignMultiGranularityBuckets` in `ProgressTimeline`: `assignSessionZone`, `assignDayZone`, `assignMonthZone`
+- Added 10 new ChartData tests covering construction, session spacing, line data bridge, totalExtent, and needsScrolling
+- Updated 15+ existing ProgressChartViewTests to reference ChartData for moved methods
+- Found and cataloged pre-existing flaky test PF-004: `SettingsTests/intervalSelectionDefaultForwards`
+- All 1730 iOS tests and 1723 macOS tests pass
+- Dependency rules verified clean
+
 ### File List
+- Peach/Core/Profile/ChartData.swift (new)
+- Peach/Profile/ProgressChartView.swift (modified)
+- Peach/Profile/ExportChartView.swift (modified)
+- Peach/Core/Profile/ProgressTimeline.swift (modified)
+- PeachTests/Core/Profile/ChartDataTests.swift (new)
+- PeachTests/Profile/ProgressChartViewTests.swift (modified)
+- docs/pre-existing-findings.md (modified — added PF-004)
 
 ## Change Log
 
 - 2026-04-06: Story created from walkthrough observations
+- 2026-04-07: Implementation complete — ChartData extracted, views refactored, zone methods extracted

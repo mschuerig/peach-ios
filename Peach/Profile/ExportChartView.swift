@@ -23,7 +23,7 @@ struct ExportChartView: View {
         VStack(alignment: .leading, spacing: 12) {
             headlineRow(ewma: ewma, stddev: stddev, trend: trend)
             timestampRow
-            chartContent(buckets: buckets)
+            chartContent(chartData: ChartData(buckets: buckets))
                 .frame(height: 180)
         }
         .padding()
@@ -63,34 +63,26 @@ struct ExportChartView: View {
 
     // MARK: - Chart
 
-    private func chartContent(buckets: [TimeBucket]) -> some View {
-        let positions = ProgressChartView.chartPositions(for: buckets)
-        let yDomain = ProgressChartView.yDomain(for: buckets)
-        let separatorData = ProgressChartView.zoneSeparatorData(for: buckets)
-        let labels = ProgressChartView.yearLabels(for: buckets)
-        let lineData = ProgressChartView.lineDataWithSessionBridge(for: buckets, positions: positions)
-        let axisValues = ProgressChartView.axisMarkPositions(buckets: buckets, positions: positions)
-        let totalExtent = (positions.last ?? -0.5) + 0.5
-
-        return Chart {
-            ProgressChartView.zoneBackgrounds(separatorData: separatorData, positions: positions, yDomain: yDomain, isIncreaseContrast: false)
-            ProgressChartView.zoneDividers(separatorData: separatorData, positions: positions, isIncreaseContrast: false)
-            ProgressChartView.stddevBand(lineData: lineData, isIncreaseContrast: false)
-            ProgressChartView.ewmaLine(lineData: lineData)
-            ProgressChartView.sessionDots(buckets: buckets, positions: positions)
+    private func chartContent(chartData: ChartData) -> some View {
+        Chart {
+            ProgressChartView.zoneBackgrounds(separatorData: chartData.separatorData, positions: chartData.positions, yDomain: chartData.yDomain, isIncreaseContrast: false)
+            ProgressChartView.zoneDividers(separatorData: chartData.separatorData, positions: chartData.positions, isIncreaseContrast: false)
+            ProgressChartView.stddevBand(lineData: chartData.lineData, isIncreaseContrast: false)
+            ProgressChartView.ewmaLine(lineData: chartData.lineData)
+            ProgressChartView.sessionDots(buckets: chartData.buckets, positions: chartData.positions)
 
             RuleMark(y: .value("Baseline", config.optimalBaseline))
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                 .foregroundStyle(.green.opacity(0.6))
         }
-        .chartXScale(domain: -0.5...totalExtent)
-        .chartYScale(domain: yDomain)
+        .chartXScale(domain: -0.5...chartData.totalExtent)
+        .chartYScale(domain: chartData.yDomain)
         .chartYAxisLabel(config.unitLabel)
         .chartXAxis {
-            AxisMarks(values: axisValues) { value in
+            AxisMarks(values: chartData.axisValues) { value in
                 if let pos = value.as(Double.self),
-                   let idx = ProgressChartView.bucketIndex(nearPosition: pos, in: positions) {
-                    let bucket = buckets[idx]
+                   let idx = ChartData.bucketIndex(nearPosition: pos, in: chartData.positions) {
+                    let bucket = chartData.buckets[idx]
                     if bucket.bucketSize != .session {
                         AxisGridLine()
                     }
@@ -99,7 +91,7 @@ struct ExportChartView: View {
                             bucket.periodStart,
                             size: bucket.bucketSize,
                             index: idx,
-                            buckets: buckets
+                            buckets: chartData.buckets
                         ))
                     }
                 }
@@ -110,9 +102,9 @@ struct ExportChartView: View {
                 if let plotAreaFrame = proxy.plotFrame {
                     let plotFrame = geometry[plotAreaFrame]
 
-                    ForEach(Array(labels.enumerated()), id: \.offset) { _, label in
-                        if let xFirst = proxy.position(forX: positions[label.firstIndex]),
-                           let xLast = proxy.position(forX: positions[label.lastIndex]) {
+                    ForEach(chartData.yearLabels) { label in
+                        if let xFirst = proxy.position(forX: chartData.positions[label.firstIndex]),
+                           let xLast = proxy.position(forX: chartData.positions[label.lastIndex]) {
                             Text(String(label.year))
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -125,7 +117,7 @@ struct ExportChartView: View {
                 }
             }
         }
-        .padding(.bottom, labels.isEmpty ? 0 : 16)
+        .padding(.bottom, chartData.yearLabels.isEmpty ? 0 : 16)
     }
 
     // MARK: - Timestamp

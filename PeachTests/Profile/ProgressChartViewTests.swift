@@ -14,7 +14,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: Date(), periodEnd: Date(), bucketSize: .day, mean: 10.0, stddev: 3.0, recordCount: 5),
             TimeBucket(periodStart: Date(), periodEnd: Date(), bucketSize: .session, mean: 30.0, stddev: 8.0, recordCount: 3),
         ]
-        let domain = ProgressChartView.yDomain(for: buckets)
+        let domain = ChartData.yDomain(for: buckets)
         #expect(domain.lowerBound == 0.0)
         #expect(domain.upperBound == 38.0)
     }
@@ -24,14 +24,14 @@ struct ProgressChartViewTests {
         let buckets = [
             TimeBucket(periodStart: Date(), periodEnd: Date(), bucketSize: .month, mean: 2.0, stddev: 5.0, recordCount: 10),
         ]
-        let domain = ProgressChartView.yDomain(for: buckets)
+        let domain = ChartData.yDomain(for: buckets)
         #expect(domain.lowerBound == 0.0)
         #expect(domain.upperBound == 7.0)
     }
 
     @Test("Y domain for empty buckets returns 0...1")
     func yDomainEmptyBuckets() async {
-        let domain = ProgressChartView.yDomain(for: [])
+        let domain = ChartData.yDomain(for: [])
         #expect(domain.lowerBound == 0.0)
         #expect(domain.upperBound == 1.0)
     }
@@ -41,7 +41,7 @@ struct ProgressChartViewTests {
         let buckets = [
             TimeBucket(periodStart: Date(), periodEnd: Date(), bucketSize: .day, mean: 15.0, stddev: 0.0, recordCount: 1),
         ]
-        let domain = ProgressChartView.yDomain(for: buckets)
+        let domain = ChartData.yDomain(for: buckets)
         #expect(domain.lowerBound == 0.0)
         #expect(domain.upperBound == 15.0)
     }
@@ -69,17 +69,17 @@ struct ProgressChartViewTests {
     @Test("initial scroll position places latest data at right edge")
     func initialScrollPositionPinsRight() async {
         let buckets = makeBucketArray(count: 30)
-        let positions = ProgressChartView.chartPositions(for: buckets)
-        let position = ProgressChartView.initialScrollPosition(for: positions)
+        let positions = ChartData.chartPositions(for: buckets)
+        let position = ChartData.initialScrollPosition(for: positions)
         // With 30 day-only buckets (no compression), last position = 29, so scroll to 29.5 - 8 = 21.5
-        #expect(position == (positions.last! + 0.5 - Double(ProgressChartView.visibleBucketCount)))
+        #expect(position == (positions.last! + 0.5 - Double(ChartData.visibleBucketCount)))
     }
 
     @Test("initial scroll position for small dataset returns zero")
     func initialScrollPositionSmallDataset() async {
         let buckets = makeBucketArray(count: 5)
-        let positions = ProgressChartView.chartPositions(for: buckets)
-        let position = ProgressChartView.initialScrollPosition(for: positions)
+        let positions = ChartData.chartPositions(for: buckets)
+        let position = ChartData.initialScrollPosition(for: positions)
         #expect(position == 0)
     }
 
@@ -145,7 +145,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: base.addingTimeInterval(86400 * 4), periodEnd: base.addingTimeInterval(86400 * 4 + 3600), bucketSize: .session, mean: 7, stddev: 1, recordCount: 1),
         ]
 
-        let separators = ProgressChartView.zoneSeparatorData(for: buckets)
+        let separators = ChartData.zoneSeparatorData(for: buckets)
 
         #expect(separators.zones.count == 3)
         #expect(separators.dividerIndices.count == 2)
@@ -175,7 +175,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: base.addingTimeInterval(86400), periodEnd: base.addingTimeInterval(86400 + 3600), bucketSize: .day, mean: 12, stddev: 1, recordCount: 5),
         ]
 
-        let separators = ProgressChartView.zoneSeparatorData(for: buckets)
+        let separators = ChartData.zoneSeparatorData(for: buckets)
         #expect(separators.zones.isEmpty)
         #expect(separators.dividerIndices.isEmpty)
     }
@@ -189,7 +189,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: base.addingTimeInterval(86400 * 2), periodEnd: base.addingTimeInterval(86400 * 2 + 3600), bucketSize: .day, mean: 9, stddev: 1, recordCount: 3),
         ]
 
-        let separators = ProgressChartView.zoneSeparatorData(for: buckets)
+        let separators = ChartData.zoneSeparatorData(for: buckets)
         #expect(separators.zones.count == 2)
         #expect(separators.dividerIndices.count == 1)
         #expect(separators.dividerIndices[0] == 1)
@@ -197,7 +197,7 @@ struct ProgressChartViewTests {
 
     @Test("returns no zone separators for empty buckets")
     func zoneSeparatorsEmpty() async {
-        let separators = ProgressChartView.zoneSeparatorData(for: [])
+        let separators = ChartData.zoneSeparatorData(for: [])
         #expect(separators.zones.isEmpty)
         #expect(separators.dividerIndices.isEmpty)
     }
@@ -225,7 +225,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: mar2026, periodEnd: mar2026.addingTimeInterval(86400), bucketSize: .day, mean: 8, stddev: 1, recordCount: 3),
         ]
 
-        let separators = ProgressChartView.zoneSeparatorData(for: buckets)
+        let separators = ChartData.zoneSeparatorData(for: buckets)
         // Zone divider at index 5 (month→day transition)
         // Year divider at index 3 (Dec 2025 → Jan 2026) — not near zone transition
         #expect(separators.dividerIndices.contains(3), "Year boundary between Dec 2025 and Jan 2026 should be a divider")
@@ -245,7 +245,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: jan2026, periodEnd: jan2026.addingTimeInterval(86400), bucketSize: .day, mean: 8, stddev: 1, recordCount: 3),
         ]
 
-        let separators = ProgressChartView.zoneSeparatorData(for: buckets)
+        let separators = ChartData.zoneSeparatorData(for: buckets)
         // Zone divider at index 1. Year boundary would also be at index 1 — should be deduplicated (only 1 divider).
         #expect(separators.dividerIndices.count == 1)
         #expect(separators.dividerIndices[0] == 1)
@@ -271,7 +271,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: feb2026, periodEnd: feb2026.addingTimeInterval(86400), bucketSize: .day, mean: 8, stddev: 1, recordCount: 3),
         ]
 
-        let labels = ProgressChartView.yearLabels(for: buckets)
+        let labels = ChartData.yearLabels(for: buckets)
 
         #expect(labels.count == 2)
         #expect(labels[0].year == 2025)
@@ -296,7 +296,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: dec2025, periodEnd: dec2025.addingTimeInterval(86400), bucketSize: .day, mean: 8, stddev: 1, recordCount: 3),
         ]
 
-        let labels = ProgressChartView.yearLabels(for: buckets)
+        let labels = ChartData.yearLabels(for: buckets)
 
         #expect(labels.count == 1)
         #expect(labels[0].year == 2025)
@@ -312,7 +312,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: base.addingTimeInterval(86400), periodEnd: base.addingTimeInterval(86400 * 2), bucketSize: .session, mean: 7, stddev: 1, recordCount: 1),
         ]
 
-        let labels = ProgressChartView.yearLabels(for: buckets)
+        let labels = ChartData.yearLabels(for: buckets)
         #expect(labels.isEmpty)
     }
 
@@ -384,37 +384,37 @@ struct ProgressChartViewTests {
     @Test("snaps to exact bucket position when tapping directly on it")
     func findNearestBucketIndexExact() async {
         let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 0.0, positions: positions) == 0)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 3.0, positions: positions) == 3)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 4.0, positions: positions) == 4)
+        #expect(ChartData.findNearestBucketIndex(atX: 0.0, positions: positions) == 0)
+        #expect(ChartData.findNearestBucketIndex(atX: 3.0, positions: positions) == 3)
+        #expect(ChartData.findNearestBucketIndex(atX: 4.0, positions: positions) == 4)
     }
 
     @Test("snaps to nearest bucket position when tapping between data points")
     func findNearestBucketIndexRounds() async {
         let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 1.3, positions: positions) == 1)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 1.7, positions: positions) == 2)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.6, positions: positions) == 3)
+        #expect(ChartData.findNearestBucketIndex(atX: 1.3, positions: positions) == 1)
+        #expect(ChartData.findNearestBucketIndex(atX: 1.7, positions: positions) == 2)
+        #expect(ChartData.findNearestBucketIndex(atX: 2.6, positions: positions) == 3)
     }
 
     @Test("snaps to nearest for negative X near first position")
     func findNearestBucketIndexNegative() async {
         let positions = [0.0, 1.0, 2.0, 3.0, 4.0]
-        #expect(ProgressChartView.findNearestBucketIndex(atX: -0.3, positions: positions) == 0)
+        #expect(ChartData.findNearestBucketIndex(atX: -0.3, positions: positions) == 0)
     }
 
     @Test("returns nil for empty positions")
     func findNearestBucketIndexEmpty() async {
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 0.0, positions: []) == nil)
+        #expect(ChartData.findNearestBucketIndex(atX: 0.0, positions: []) == nil)
     }
 
     @Test("finds nearest with compressed session positions")
     func findNearestBucketIndexCompressedSessions() async {
         // 2 day buckets + 3 session buckets with 0.3 spacing
         let positions = [0.0, 1.0, 2.0, 2.3, 2.6]
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.1, positions: positions) == 2)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.2, positions: positions) == 3)
-        #expect(ProgressChartView.findNearestBucketIndex(atX: 2.5, positions: positions) == 4)
+        #expect(ChartData.findNearestBucketIndex(atX: 2.1, positions: positions) == 2)
+        #expect(ChartData.findNearestBucketIndex(atX: 2.2, positions: positions) == 3)
+        #expect(ChartData.findNearestBucketIndex(atX: 2.5, positions: positions) == 4)
     }
 
     // MARK: - Zone Accessibility Summary
@@ -432,7 +432,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: dec2025, periodEnd: jan2026, bucketSize: .month, mean: 13.0, stddev: 1.5, recordCount: 8),
             TimeBucket(periodStart: jan2026, periodEnd: feb2026, bucketSize: .month, mean: 11.0, stddev: 1.0, recordCount: 12),
         ]
-        let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 2)
+        let zone = ChartData.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 2)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
@@ -454,7 +454,7 @@ struct ProgressChartViewTests {
             TimeBucket(periodStart: mar5, periodEnd: mar6, bucketSize: .day, mean: 10.0, stddev: 1.0, recordCount: 5),
             TimeBucket(periodStart: mar6, periodEnd: mar7, bucketSize: .day, mean: 9.0, stddev: 0.5, recordCount: 3),
         ]
-        let zone = ProgressChartView.ZoneInfo(bucketSize: .day, startIndex: 0, endIndex: 1)
+        let zone = ChartData.ZoneInfo(bucketSize: .day, startIndex: 0, endIndex: 1)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
@@ -469,7 +469,7 @@ struct ProgressChartViewTests {
         let buckets = [
             TimeBucket(periodStart: date, periodEnd: date.addingTimeInterval(3600), bucketSize: .session, mean: 8.5, stddev: 0.5, recordCount: 3),
         ]
-        let zone = ProgressChartView.ZoneInfo(bucketSize: .session, startIndex: 0, endIndex: 0)
+        let zone = ChartData.ZoneInfo(bucketSize: .session, startIndex: 0, endIndex: 0)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
@@ -481,7 +481,7 @@ struct ProgressChartViewTests {
     @Test("empty zone returns nil accessibility summary")
     func zoneAccessibilitySummaryEmptyZone() async {
         let buckets: [TimeBucket] = []
-        let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: -1)
+        let zone = ChartData.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: -1)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)
@@ -495,7 +495,7 @@ struct ProgressChartViewTests {
         let buckets = [
             TimeBucket(periodStart: date, periodEnd: date.addingTimeInterval(3600), bucketSize: .month, mean: 10.0, stddev: 1.0, recordCount: 5),
         ]
-        let zone = ProgressChartView.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 5)
+        let zone = ChartData.ZoneInfo(bucketSize: .month, startIndex: 0, endIndex: 5)
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config
 
         let summary = ProgressChartView.zoneAccessibilitySummary(buckets: buckets, zone: zone, config: config)

@@ -147,60 +147,94 @@ final class ProgressTimeline {
 
     // MARK: - Multi-Granularity Bucket Assignment
 
+    private typealias BucketGroup = (key: Date, end: Date, size: BucketSize, points: [Double])
+
     private func assignMultiGranularityBuckets(
         _ metrics: [MetricPoint],
         now: Date,
         calendar: Calendar,
         sessionGap: Duration
     ) -> [TimeBucket] {
-        // Calendar-snapped zone boundaries
         let sessionStart = calendar.startOfDay(for: now)
         guard let dayStart = calendar.date(byAdding: .day, value: -Self.dayZoneDays, to: sessionStart) else {
             return []
         }
 
         let sessionGapSeconds = sessionGap / .seconds(1)
-        var groups: [(key: Date, end: Date, size: BucketSize, points: [Double])] = []
+        var groups: [BucketGroup] = []
         var groupIndex: [Date: Int] = [:]
 
         for metric in metrics {
-            let bucketInfo: (key: Date, end: Date, size: BucketSize)
-
             if metric.timestamp >= sessionStart {
-                // Session zone: merge records within sessionGap
-                if let lastGroup = groups.last,
-                   lastGroup.size == .session,
-                   metric.timestamp.timeIntervalSince(lastGroup.end) < sessionGapSeconds {
-                    groups[groups.count - 1].points.append(metric.value)
-                    groups[groups.count - 1].end = metric.timestamp
-                    continue
-                }
-                bucketInfo = (key: metric.timestamp, end: metric.timestamp, size: .session)
+                assignSessionZone(metric: metric, sessionGapSeconds: sessionGapSeconds, groups: &groups, groupIndex: &groupIndex)
             } else if metric.timestamp >= dayStart {
-                // Day zone: 7 calendar days before today
-                let bucketDay = calendar.startOfDay(for: metric.timestamp)
-                let dayEnd = bucketDay.addingTimeInterval(Self.secondsPerDay / .seconds(1))
-                bucketInfo = (key: bucketDay, end: dayEnd, size: .day)
+                assignDayZone(metric: metric, calendar: calendar, groups: &groups, groupIndex: &groupIndex)
             } else {
-                // Month zone: truncate last monthly bucket at dayStart
-                if let monthInterval = calendar.dateInterval(of: .month, for: metric.timestamp) {
-                    let truncatedEnd = min(monthInterval.end, dayStart)
-                    bucketInfo = (key: monthInterval.start, end: truncatedEnd, size: .month)
-                } else {
-                    continue
-                }
-            }
-
-            if let idx = groupIndex[bucketInfo.key] {
-                groups[idx].points.append(metric.value)
-            } else {
-                groupIndex[bucketInfo.key] = groups.count
-                groups.append((key: bucketInfo.key, end: bucketInfo.end, size: bucketInfo.size, points: [metric.value]))
+                assignMonthZone(metric: metric, calendar: calendar, dayStart: dayStart, groups: &groups, groupIndex: &groupIndex)
             }
         }
 
         return groups.sorted { $0.key < $1.key }.map { group in
             Self.makeBucket(periodStart: group.key, periodEnd: group.end, bucketSize: group.size, points: group.points)
+        }
+    }
+
+    // MARK: - Zone-Specific Bucketing
+
+    private func assignSessionZone(
+        metric: MetricPoint,
+        sessionGapSeconds: Double,
+        groups: inout [BucketGroup],
+        groupIndex: inout [Date: Int]
+    ) {
+        // Merge into existing session if within gap threshold
+        if let lastGroup = groups.last,
+           lastGroup.size == .session,
+           metric.timestamp.timeIntervalSince(lastGroup.end) < sessionGapSeconds {
+            groups[groups.count - 1].points.append(metric.value)
+            groups[groups.count - 1].end = metric.timestamp
+            return
+        }
+        let key = metric.timestamp
+        Self.addToBucket(key: key, end: key, size: .session, value: metric.value, groups: &groups, groupIndex: &groupIndex)
+    }
+
+    private func assignDayZone(
+        metric: MetricPoint,
+        calendar: Calendar,
+        groups: inout [BucketGroup],
+        groupIndex: inout [Date: Int]
+    ) {
+        let bucketDay = calendar.startOfDay(for: metric.timestamp)
+        let dayEnd = bucketDay.addingTimeInterval(Self.secondsPerDay / .seconds(1))
+        Self.addToBucket(key: bucketDay, end: dayEnd, size: .day, value: metric.value, groups: &groups, groupIndex: &groupIndex)
+    }
+
+    private func assignMonthZone(
+        metric: MetricPoint,
+        calendar: Calendar,
+        dayStart: Date,
+        groups: inout [BucketGroup],
+        groupIndex: inout [Date: Int]
+    ) {
+        guard let monthInterval = calendar.dateInterval(of: .month, for: metric.timestamp) else { return }
+        let truncatedEnd = min(monthInterval.end, dayStart)
+        Self.addToBucket(key: monthInterval.start, end: truncatedEnd, size: .month, value: metric.value, groups: &groups, groupIndex: &groupIndex)
+    }
+
+    private static func addToBucket(
+        key: Date,
+        end: Date,
+        size: BucketSize,
+        value: Double,
+        groups: inout [BucketGroup],
+        groupIndex: inout [Date: Int]
+    ) {
+        if let idx = groupIndex[key] {
+            groups[idx].points.append(value)
+        } else {
+            groupIndex[key] = groups.count
+            groups.append((key: key, end: end, size: size, points: [value]))
         }
     }
 

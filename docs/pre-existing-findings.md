@@ -41,3 +41,12 @@ On macOS, SwiftUI initializes the `@main App` struct twice before one instance i
 When the user taps Settings or Profile in the training screen toolbar, SwiftUI's NavigationStack fires `onDisappear` on the training screen, which calls `lifecycle.trainingScreenDisappeared()` → `stopCurrentSession()` → `session.stop()`. The `stop()` method fully clears session state (`sessionBestCentDifference`, `currentTrial`, `lastResult` — all nilled). When the user navigates back, `onAppear` fires and `startCurrentSession()` restarts training from scratch, losing all in-session progress.
 
 **Fix:** Introduce pause/resume semantics distinct from stop/start. Either add `pause()`/`resume()` to the `TrainingSession` protocol, or have the lifecycle coordinator distinguish between temporary pushes (Settings/Profile) and permanent pops (back to Start Screen). Requires multi-file change across the session protocol, all session implementations, and the lifecycle coordinator.
+
+### PF-004: Flaky SettingsTests/intervalSelectionDefaultForwards
+
+**Found:** 2026-04-07 (Story 75.4)
+**Severity:** Low (test-only, no production impact)
+
+`SettingsTests/intervalSelectionDefaultForwards()` intermittently fails in parallel test runs. The test compares `IntervalSelection.default == SettingsKeys.defaultIntervalSelection`. Likely caused by UserDefaults state leaking between parallel test executions, since `IntervalSelection.default` may read from `@AppStorage` which shares the same UserDefaults suite across parallel test clones.
+
+**Fix:** Ensure the test reads from a deterministic source rather than UserDefaults, or isolate the UserDefaults suite per test process.
