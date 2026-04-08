@@ -10,7 +10,7 @@ struct SoundFontPlaybackHandleTests {
     private func makePlayer() throws -> SoundFontPlayer {
         let engine = try SoundFontEngine(sf2URL: TestSoundFont.url, audioSessionConfigurator: MockAudioSessionConfigurator())
         let preset = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:0"))
-        return SoundFontPlayer(engine: engine, preset: preset)
+        return SoundFontPlayer(engine: engine, preset: preset, channel: MIDIChannel(0), fadeOutDuration: .milliseconds(25))
     }
 
     // MARK: - Stop Behavior via SoundFontPlayer
@@ -108,7 +108,7 @@ struct SoundFontPlaybackHandleTests {
         let player = try makePlayer()
         let handle1 = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
         try await handle1.stop()
-        // Default stopPropagationDelay (25ms) exercises the fade-out path.
+        // fadeOutDuration (25ms) exercises the fade-out path.
         // If volume were stuck at 0 after stop, this play would produce no sound.
         let handle2 = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
         try await handle2.stop()

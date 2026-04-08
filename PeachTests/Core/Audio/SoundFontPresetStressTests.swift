@@ -40,7 +40,7 @@ struct SoundFontPresetStressTests {
 
     private func makePlayer(preset: SF2Preset) throws -> SoundFontPlayer {
         let engine = try SoundFontEngine(sf2URL: TestSoundFont.url, audioSessionConfigurator: MockAudioSessionConfigurator())
-        return SoundFontPlayer(engine: engine, preset: preset)
+        return SoundFontPlayer(engine: engine, preset: preset, channel: MIDIChannel(0), fadeOutDuration: .zero)
     }
 
     // MARK: - Task 2: Per-Preset Smoke Test

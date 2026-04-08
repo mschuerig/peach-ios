@@ -11,7 +11,7 @@ protocol StepSequencerEngine {
     func loadPreset(_ preset: SF2Preset, channel: MIDIChannel) async throws
     func scheduleEvents(_ events: [ScheduledMIDIEvent])
     func clearSchedule()
-    func stopNotes(channel: MIDIChannel, stopPropagationDelay: Duration) async
+    func stopNotes(channel: MIDIChannel, fadeOutDuration: Duration) async
     func immediateNoteOn(channel: MIDIChannel, note: UInt8, velocity: UInt8)
     func immediateNoteOff(channel: MIDIChannel, note: UInt8, delaySamples: Int64)
     func samplePosition(forHostTime hostTime: UInt64) -> Int64
@@ -151,7 +151,7 @@ final class SoundFontStepSequencer: StepSequencer {
         samplesPerCycle = 0
         noteOffDelaySamples = 0
         engine.clearSchedule()
-        await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
+        await engine.stopNotes(channel: channel, fadeOutDuration: .zero)
         logger.info("Step sequencer stopped")
     }
 

@@ -400,15 +400,15 @@ final class SoundFontEngine {
         sampler.stopNote(UInt8(midiNote.rawValue), onChannel: channel.rawValue)
     }
 
-    func stopNotes(channel: MIDIChannel, stopPropagationDelay: Duration) async {
+    func stopNotes(channel: MIDIChannel, fadeOutDuration: Duration) async {
         guard let sampler = channels[channel] else { return }
-        if stopPropagationDelay > .zero {
+        if fadeOutDuration > .zero {
             muteForFade()
-            try? await Task.sleep(for: stopPropagationDelay)
+            try? await Task.sleep(for: fadeOutDuration)
         }
         sampler.sendController(123, withValue: 0, onChannel: channel.rawValue)
         sampler.sendPitchBend(PitchBendValue.center.rawValue, onChannel: channel.rawValue)
-        if stopPropagationDelay > .zero {
+        if fadeOutDuration > .zero {
             restoreAfterFade()
         }
     }

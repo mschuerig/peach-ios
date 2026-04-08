@@ -13,6 +13,6 @@ final class SoundFontRhythmPlaybackHandle: RhythmPlaybackHandle {
         guard !hasStopped else { return }
         hasStopped = true
         engine.clearSchedule()
-        await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
+        await engine.stopNotes(channel: channel, fadeOutDuration: .zero)
     }
 }

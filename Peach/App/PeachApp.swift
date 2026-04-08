@@ -179,7 +179,8 @@ struct PeachApp: App {
         let newNotePlayer = SoundFontPlayer(
             engine: soundFontEngine,
             preset: preset,
-            stopPropagationDelay: .zero
+            channel: MIDIChannel(0),
+            fadeOutDuration: Self.determineFadeOutDuration(for: preset)
         )
         notePlayer = newNotePlayer
 
@@ -256,7 +257,8 @@ struct PeachApp: App {
         let notePlayer: any NotePlayer = SoundFontPlayer(
             engine: engine,
             preset: preset,
-            stopPropagationDelay: .zero
+            channel: MIDIChannel(0),
+            fadeOutDuration: Self.determineFadeOutDuration(for: preset)
         )
 
         try engine.createChannel(MIDIChannel(1))
@@ -266,7 +268,8 @@ struct PeachApp: App {
         let rhythmPlayer: any RhythmPlayer = SoundFontPlayer(
             engine: engine,
             preset: percussionPreset,
-            channel: percussionChannel
+            channel: percussionChannel,
+            fadeOutDuration: .zero
         )
 
         let stepSequencer = SoundFontStepSequencer(
@@ -276,6 +279,18 @@ struct PeachApp: App {
         )
 
         return (notePlayer, rhythmPlayer, stepSequencer)
+    }
+
+    // MARK: - Fade-Out Duration
+
+    /// Returns the appropriate fade-out duration for a given preset.
+    /// Most presets have natural release envelopes and need no fade-out, but synthetic
+    /// waveforms (e.g. Sine Wave) click on abrupt stop and benefit from a short fade.
+    static func determineFadeOutDuration(for preset: SF2Preset) -> Duration {
+        if preset.bank == 8 && preset.program == 80 {
+            return .milliseconds(25)
+        }
+        return .zero
     }
 
     // MARK: - Profile Setup

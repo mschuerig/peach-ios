@@ -8,16 +8,16 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     private let engine: SoundFontEngine
     private let channel: MIDIChannel
     private let midiNote: MIDINote
-    private let stopPropagationDelay: Duration
+    private let fadeOutDuration: Duration
     private var hasStopped = false
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, channel: MIDIChannel, midiNote: MIDINote, stopPropagationDelay: Duration) {
+    init(engine: SoundFontEngine, channel: MIDIChannel, midiNote: MIDINote, fadeOutDuration: Duration) {
         self.engine = engine
         self.channel = channel
         self.midiNote = midiNote
-        self.stopPropagationDelay = stopPropagationDelay
+        self.fadeOutDuration = fadeOutDuration
     }
 
     // MARK: - PlaybackHandle Protocol
@@ -25,13 +25,13 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     func stop() async throws {
         guard !hasStopped else { return }
         hasStopped = true
-        if stopPropagationDelay > .zero {
+        if fadeOutDuration > .zero {
             engine.muteForFade()
-            try? await Task.sleep(for: stopPropagationDelay)
+            try? await Task.sleep(for: fadeOutDuration)
         }
         engine.stopNote(midiNote, channel: channel)
         engine.sendPitchBend(.center, channel: channel)
-        if stopPropagationDelay > .zero {
+        if fadeOutDuration > .zero {
             engine.restoreAfterFade()
         }
     }

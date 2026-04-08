@@ -41,7 +41,7 @@ final class MockStepSequencerEngine: StepSequencerEngine {
         currentSamplePosition = 0
     }
 
-    func stopNotes(channel: MIDIChannel, stopPropagationDelay: Duration) async {
+    func stopNotes(channel: MIDIChannel, fadeOutDuration: Duration) async {
         stopNotesCallCount += 1
     }
 

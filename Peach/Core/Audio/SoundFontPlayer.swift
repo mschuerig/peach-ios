@@ -24,7 +24,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     /// Duration to mute `sampler.volume` before stopping a note, allowing the audio render
     /// thread to propagate silence and avoid click/pop artifacts. Set to `.zero` to skip the
     /// fade-out entirely (notes stop immediately). 25ms covers 2+ render cycles at 44.1kHz/512.
-    let stopPropagationDelay: Duration
+    let fadeOutDuration: Duration
 
     // MARK: - Preset
 
@@ -36,11 +36,11 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, preset: SF2Preset, channel: MIDIChannel = MIDIChannel(0), stopPropagationDelay: Duration = .milliseconds(25)) {
+    init(engine: SoundFontEngine, preset: SF2Preset, channel: MIDIChannel, fadeOutDuration: Duration) {
         self.soundFontEngine = engine
         self.preset = preset
         self.channel = channel
-        self.stopPropagationDelay = stopPropagationDelay
+        self.fadeOutDuration = fadeOutDuration
 
         logger.info("SoundFontPlayer initialized on channel \(channel.rawValue) with preset \(preset.rawValue)")
     }
@@ -54,7 +54,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
         try soundFontEngine.ensureEngineRunning()
         let midiNote = startNote(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
         logger.debug("play: \(frequency.rawValue, format: .fixed(precision: 1))Hz, vel=\(velocity.rawValue), amp=\(amplitudeDB.rawValue, format: .fixed(precision: 1))dB → MIDI \(midiNote.rawValue)")
-        return SoundFontPlaybackHandle(engine: soundFontEngine, channel: channel, midiNote: midiNote, stopPropagationDelay: stopPropagationDelay)
+        return SoundFontPlaybackHandle(engine: soundFontEngine, channel: channel, midiNote: midiNote, fadeOutDuration: fadeOutDuration)
     }
 
     // MARK: - RhythmPlayer Protocol
@@ -113,7 +113,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     func stopAll() async throws {
         logger.debug("stopAll: clearing schedule and stopping notes on channel \(self.channel.rawValue)")
         soundFontEngine.clearSchedule()
-        await soundFontEngine.stopNotes(channel: channel, stopPropagationDelay: stopPropagationDelay)
+        await soundFontEngine.stopNotes(channel: channel, fadeOutDuration: fadeOutDuration)
     }
 
     // MARK: - Melodic Play Sub-operations

@@ -83,14 +83,14 @@ struct SoundFontEngineTests {
     @Test("stopNotes does not crash when no notes are playing")
     func stopNotesNoNotes() async throws {
         let engine = try makeEngine()
-        await engine.stopNotes(channel: Self.channel0, stopPropagationDelay: .zero)
+        await engine.stopNotes(channel: Self.channel0, fadeOutDuration: .zero)
     }
 
     @Test("stopNotes with propagation delay restores volume")
     func stopNotesRestoresVolume() async throws {
         let engine = try makeEngine()
         engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: Self.channel0)
-        await engine.stopNotes(channel: Self.channel0, stopPropagationDelay: .milliseconds(25))
+        await engine.stopNotes(channel: Self.channel0, fadeOutDuration: .milliseconds(25))
         engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: Self.channel0)
         engine.stopNote(MIDINote(69), channel: Self.channel0)
     }
@@ -99,7 +99,7 @@ struct SoundFontEngineTests {
     func stopNotesSilencesNote() async throws {
         let engine = try makeEngine()
         engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: Self.channel0)
-        await engine.stopNotes(channel: Self.channel0, stopPropagationDelay: .zero)
+        await engine.stopNotes(channel: Self.channel0, fadeOutDuration: .zero)
     }
 
     // MARK: - Schedule Scanning (pure function)
@@ -261,7 +261,7 @@ struct SoundFontEngineTests {
         let engine = try makeEngine()
         let channel = MIDIChannel(0)
         engine.startNote(MIDINote(69), velocity: MIDIVelocity(63), amplitudeDB: AmplitudeDB(0.0), pitchBend: .center, channel: channel)
-        await engine.stopNotes(channel: channel, stopPropagationDelay: .zero)
+        await engine.stopNotes(channel: channel, fadeOutDuration: .zero)
     }
 
     @Test("sendPitchBend on channel does not crash")
