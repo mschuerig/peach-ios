@@ -169,19 +169,19 @@ Never run only specific test files — always the complete suite. Both platforms
 - **No UIKit imports in Core/ files** — UIKit dependencies injected from the composition root
 - **Do not create `Utils/`, `Helpers/`, `Shared/`, `Common/` directories** — none exist and agents must not create them preemptively
 
-**Dependency Direction Rules (enforced by `bin/check-dependencies.sh`):**
+**Dependency Direction Rules (enforced by `archlint.yaml` and `bin/check-dependencies.sh`):**
 - **Core/ is framework-free** — no `import SwiftUI`, `import UIKit`, or `import Charts` in any Core/ file
-- **SwiftData is encapsulated** — `import SwiftData` only in `Core/Data/`, `App/`, and the TrainingDiscipline protocol chain
-  (`TrainingDiscipline.swift`, `TrainingDisciplineRegistry.swift`, `TrainingRecordPersisting.swift`, and `*Discipline.swift` in feature directories);
+- **SwiftData is encapsulated** — `import SwiftData` only in `Core/Data/`, `App/`, and the discipline chain subdirectories
+  (`Core/Training/Discipline/`, `Core/Ports/Persistence/`, and `*/Discipline/` subdirs in feature directories);
   all other code accesses persistence through `TrainingDataStore`.
   The discipline exception exists because `PersistentModel` cannot be type-erased without losing compile-time safety — see architecture.md "Accepted Exception" for rationale.
-- **UIKit is injected** — `import UIKit` only in `Training/PitchDiscrimination/HapticFeedbackManager.swift` (protocol abstraction) and `App/` (composition root); nowhere else
+- **UIKit is injected** — `import UIKit` only in `App/` (composition root); nowhere else
 - **No cross-feature coupling** — feature directories (`Training/PitchDiscrimination/`, `Training/PitchMatching/`, `Training/TimingOffsetDetection/`, `Training/ContinuousRhythmMatching/`, `Profile/`, `Settings/`, `Info/`) must not reference types from other feature directories; shared types belong in `Core/`; `Start/` is exempt as the navigation router
 - **No Combine** — use `async/await` throughout; `import Combine` is forbidden
 - **Views must not orchestrate services** — if a view needs to coordinate multiple services (e.g., reset data + reset profile + reset session), wrap that coordination in a closure or method owned by the composition root (`PeachApp`) and inject the closure; the view should call one thing, not three
 - **Minimize a view's `@Environment` surface** — each `@Environment` dependency is a coupling point; if a view only uses a dependency to pass it to another call, the dependency belongs higher up
 - **Public API must be intentional** — mark methods `private` unless cross-file access is needed; unnecessary `internal` surface creates accidental coupling
-- Run `bin/check-dependencies.sh` to verify — the script checks import rules and cross-feature references mechanically
+- Run `archlint Peach/` to verify import rules and `bin/check-dependencies.sh` for cross-feature type references and code patterns
 
 **Code Style:**
 - **Trailing closure syntax for single closures only** — use labeled parameters when multiple closures are involved

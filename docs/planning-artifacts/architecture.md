@@ -1574,7 +1574,7 @@ Each mode has a `TrainingDisciplineConfig` with independent parameters for:
 - `TrainingDataStore` migrated from `print()` to `os.Logger` at `.warning` level for save errors
 - `PitchMatchingSession` and `PitchDiscriminationSession` use `os.Logger` for lifecycle events
 - `PeachApp` uses `os.Logger` for startup timing
-- `bin/check-dependencies.sh` now enforces: no `print()` calls in production code
+- `bin/check-dependencies.sh` enforces: no `print()` calls in production code
 
 ### Updated Service Table
 
@@ -2841,7 +2841,7 @@ The `TrainingDiscipline` protocol, `TrainingRecordPersisting` port, and all disc
 - `Core/Ports/TrainingRecordPersisting.swift` — uses `some PersistentModel` constraint
 - `*Discipline.swift` files in feature directories — reference `@Model` record types
 
-**What is NOT allowed:** Any other file outside `Core/Data/` and `App/` importing SwiftData. The exception is scoped to the discipline protocol chain only. `bin/check-dependencies.sh` enforces this boundary.
+**What is NOT allowed:** Any other file outside `Core/Data/`, `App/`, and the `Discipline/` subdirectories importing SwiftData. The exception is scoped to the discipline protocol chain only. `archlint.yaml` enforces this boundary.
 
 **Architectural principle:** Rules serve the codebase — not the other way around. When enforcing a rule makes the code less safe (runtime failures replacing compile-time errors), update the rule.
 

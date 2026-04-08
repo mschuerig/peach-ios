@@ -1,0 +1,158 @@
+# Architecture dependency rules for the Peach project.
+# Enforces import boundaries between layers and frameworks.
+#
+# Source containers use directory paths (Xcode project, no Package.swift).
+# Framework containers use bare module names as imported in Swift.
+
+containers:
+  # ── Source layers ──────────────────────────────────────────────────
+  core:
+    pattern: "Peach/Core"
+    description: domain layer (framework-free)
+
+  core-data:
+    pattern: "Peach/Core/Data"
+    description: SwiftData persistence (allowed SwiftData)
+
+  core-discipline:
+    pattern: "Peach/Core/Training/Discipline"
+    description: TrainingDiscipline chain (allowed SwiftData for PersistentModel)
+
+  core-persistence-port:
+    pattern: "Peach/Core/Ports/Persistence"
+    description: persistence port (allowed SwiftData for PersistentModel)
+
+  app:
+    pattern: "Peach/App"
+    description: composition root
+
+  # Training feature directories
+  pd:
+    pattern: "Peach/Training/PitchDiscrimination"
+    description: PitchDiscrimination feature
+  pd-discipline:
+    pattern: "Peach/Training/PitchDiscrimination/Discipline"
+    description: PitchDiscrimination disciplines (allowed SwiftData)
+
+  pm:
+    pattern: "Peach/Training/PitchMatching"
+    description: PitchMatching feature
+  pm-discipline:
+    pattern: "Peach/Training/PitchMatching/Discipline"
+    description: PitchMatching disciplines (allowed SwiftData)
+
+  tod:
+    pattern: "Peach/Training/TimingOffsetDetection"
+    description: TimingOffsetDetection feature
+  tod-discipline:
+    pattern: "Peach/Training/TimingOffsetDetection/Discipline"
+    description: TimingOffsetDetection disciplines (allowed SwiftData)
+
+  crm:
+    pattern: "Peach/Training/ContinuousRhythmMatching"
+    description: ContinuousRhythmMatching feature
+  crm-discipline:
+    pattern: "Peach/Training/ContinuousRhythmMatching/Discipline"
+    description: ContinuousRhythmMatching disciplines (allowed SwiftData)
+
+  # Non-training feature directories
+  profile:
+    pattern: "Peach/Profile"
+    description: Profile feature
+  settings:
+    pattern: "Peach/Settings"
+    description: Settings feature
+  start:
+    pattern: "Peach/Start"
+    description: Start (navigation router) feature
+  info:
+    pattern: "Peach/Info"
+    description: Info feature
+
+  # ── Frameworks (matched as import module names) ────────────────────
+  swiftui:    "SwiftUI"
+  uikit:      "UIKit"
+  charts:     "Charts"
+  swiftdata:  "SwiftData"
+  combine:    "Combine"
+
+rules:
+  # ── Rule 1: Core/ must not import SwiftUI, UIKit, or Charts ────────
+  - deny: "core -> swiftui"
+    reason: domain layer must be framework-free
+  - deny: "core -> uikit"
+    reason: domain layer must be framework-free
+  - deny: "core -> charts"
+    reason: UI framework belongs in feature layer
+
+  # ── Rule 2: SwiftData only in allowed places ──────────────────────
+  # Deny SwiftData for all of Core (broad rule)...
+  - deny: "core -> swiftdata"
+    reason: only Core/Data, Core/Training/Discipline, and Core/Ports/Persistence may use SwiftData
+  # ...then allow the specific sub-containers that need it
+  - allow: "core-data -> swiftdata"
+  - allow: "core-discipline -> swiftdata"
+  - allow: "core-persistence-port -> swiftdata"
+
+  # Deny SwiftData for feature directories (broad rule)...
+  - deny: "pd -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "pm -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "tod -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "crm -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "profile -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "settings -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "start -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  - deny: "info -> swiftdata"
+    reason: access SwiftData through TrainingDataStore, not directly
+  # ...then allow the Discipline/ subdirs
+  - allow: "pd-discipline -> swiftdata"
+  - allow: "pm-discipline -> swiftdata"
+  - allow: "tod-discipline -> swiftdata"
+  - allow: "crm-discipline -> swiftdata"
+
+  # ── Rule 3: UIKit only in App/ ─────────────────────────────────────
+  - deny: "pd -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "pm -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "tod -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "crm -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "profile -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "settings -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "start -> uikit"
+    reason: inject via protocol from composition root
+  - deny: "info -> uikit"
+    reason: inject via protocol from composition root
+
+  # ── Rule 4: No Combine anywhere ───────────────────────────────────
+  - deny: "core -> combine"
+    reason: use async/await instead of Combine
+  - deny: "app -> combine"
+    reason: use async/await instead of Combine
+  - deny: "pd -> combine"
+    reason: use async/await instead of Combine
+  - deny: "pm -> combine"
+    reason: use async/await instead of Combine
+  - deny: "tod -> combine"
+    reason: use async/await instead of Combine
+  - deny: "crm -> combine"
+    reason: use async/await instead of Combine
+  - deny: "profile -> combine"
+    reason: use async/await instead of Combine
+  - deny: "settings -> combine"
+    reason: use async/await instead of Combine
+  - deny: "start -> combine"
+    reason: use async/await instead of Combine
+  - deny: "info -> combine"
+    reason: use async/await instead of Combine
