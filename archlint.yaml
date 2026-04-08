@@ -118,41 +118,10 @@ rules:
   - allow: "crm-discipline -> swiftdata"
 
   # ── Rule 3: UIKit only in App/ ─────────────────────────────────────
-  - deny: "pd -> uikit"
+  - deny: "* -> uikit"
     reason: inject via protocol from composition root
-  - deny: "pm -> uikit"
-    reason: inject via protocol from composition root
-  - deny: "tod -> uikit"
-    reason: inject via protocol from composition root
-  - deny: "crm -> uikit"
-    reason: inject via protocol from composition root
-  - deny: "profile -> uikit"
-    reason: inject via protocol from composition root
-  - deny: "settings -> uikit"
-    reason: inject via protocol from composition root
-  - deny: "start -> uikit"
-    reason: inject via protocol from composition root
-  - deny: "info -> uikit"
-    reason: inject via protocol from composition root
+  - allow: "app -> uikit"
 
   # ── Rule 4: No Combine anywhere ───────────────────────────────────
-  - deny: "core -> combine"
-    reason: use async/await instead of Combine
-  - deny: "app -> combine"
-    reason: use async/await instead of Combine
-  - deny: "pd -> combine"
-    reason: use async/await instead of Combine
-  - deny: "pm -> combine"
-    reason: use async/await instead of Combine
-  - deny: "tod -> combine"
-    reason: use async/await instead of Combine
-  - deny: "crm -> combine"
-    reason: use async/await instead of Combine
-  - deny: "profile -> combine"
-    reason: use async/await instead of Combine
-  - deny: "settings -> combine"
-    reason: use async/await instead of Combine
-  - deny: "start -> combine"
-    reason: use async/await instead of Combine
-  - deny: "info -> combine"
+  - deny: "* -> combine"
     reason: use async/await instead of Combine
