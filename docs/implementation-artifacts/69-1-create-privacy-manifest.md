@@ -1,6 +1,6 @@
 # Story 69.1: Create Privacy Manifest
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,17 +18,17 @@ so that Apple does not reject the binary for missing privacy declarations.
 
 ## Tasks / Subtasks
 
-- [ ] Create `Peach/Resources/PrivacyInfo.xcprivacy` with required privacy declarations (AC: #1, #2, #3)
-  - [ ] Set `NSPrivacyTracking` to `false`
-  - [ ] Set `NSPrivacyTrackingDomains` to empty array
-  - [ ] Set `NSPrivacyCollectedDataTypes` to empty array
-  - [ ] Add `NSPrivacyAccessedAPITypes` entry for `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`
-- [ ] Add `PrivacyInfo.xcprivacy` to the Xcode project so it is included in the app bundle (AC: #1)
-- [ ] Audit MIDIKit 0.11.0 for required-reason API usage (AC: #4)
-  - [ ] Check if MIDIKit uses UserDefaults, file timestamp, system boot time, or disk space APIs
-  - [ ] CoreMIDI is not on Apple's required-reason API list, so likely no additions needed
-  - [ ] If MIDIKit ships its own `PrivacyInfo.xcprivacy`, no action needed on our side
-- [ ] Build both platforms: `bin/build.sh && bin/build.sh -p mac` (AC: #5)
+- [x] Create `Peach/Resources/PrivacyInfo.xcprivacy` with required privacy declarations (AC: #1, #2, #3)
+  - [x] Set `NSPrivacyTracking` to `false`
+  - [x] Set `NSPrivacyTrackingDomains` to empty array
+  - [x] Set `NSPrivacyCollectedDataTypes` to empty array
+  - [x] Add `NSPrivacyAccessedAPITypes` entry for `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`
+- [x] Add `PrivacyInfo.xcprivacy` to the Xcode project so it is included in the app bundle (AC: #1)
+- [x] Audit MIDIKit 0.11.0 for required-reason API usage (AC: #4)
+  - [x] Check if MIDIKit uses UserDefaults, file timestamp, system boot time, or disk space APIs
+  - [x] CoreMIDI is not on Apple's required-reason API list, so likely no additions needed
+  - [x] If MIDIKit ships its own `PrivacyInfo.xcprivacy`, no action needed on our side
+- [x] Build both platforms: `bin/build.sh && bin/build.sh -p mac` (AC: #5)
 
 ## Dev Notes
 
@@ -54,10 +54,21 @@ File goes in `Peach/Resources/` alongside `Assets.xcassets`, `Localizable.xcstri
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Created `PrivacyInfo.xcprivacy` with all required Apple privacy declarations: `NSPrivacyTracking=false`, empty tracking domains and collected data types, `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`
+- Project uses `PBXFileSystemSynchronizedRootGroup` — file is automatically included in the app bundle without manual Xcode project edits
+- Audited MIDIKit 0.11.0: uses UserDefaults for MIDI identifier persistence but does not ship its own privacy manifest. Our app's `CA92.1` reason code covers MIDIKit's usage since it's compiled into the same app
+- Both iOS and macOS builds succeed with no privacy-manifest-related warnings
+
 ### File List
+- `Peach/Resources/PrivacyInfo.xcprivacy` (new)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-04-24: Implementation complete — privacy manifest created, MIDIKit audited, both platforms build clean
