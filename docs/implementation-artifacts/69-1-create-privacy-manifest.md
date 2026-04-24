@@ -1,6 +1,6 @@
 # Story 69.1: Create Privacy Manifest
 
-Status: review
+Status: done
 
 ## Story
 
@@ -63,6 +63,7 @@ None
 - Created `PrivacyInfo.xcprivacy` with all required Apple privacy declarations: `NSPrivacyTracking=false`, empty tracking domains and collected data types, `NSPrivacyAccessedAPICategoryUserDefaults` with reason `CA92.1`
 - Project uses `PBXFileSystemSynchronizedRootGroup` — file is automatically included in the app bundle without manual Xcode project edits
 - Audited MIDIKit 0.11.0: uses UserDefaults for MIDI identifier persistence but does not ship its own privacy manifest. Our app's `CA92.1` reason code covers MIDIKit's usage since it's compiled into the same app
+- Code review found MIDIKitInternals calls `mach_absolute_time()` — added `NSPrivacyAccessedAPICategorySystemBootTime` with reason `35F9.1` to cover this
 - Both iOS and macOS builds succeed with no privacy-manifest-related warnings
 
 ### File List
@@ -72,3 +73,4 @@ None
 
 - 2026-03-29: Story created
 - 2026-04-24: Implementation complete — privacy manifest created, MIDIKit audited, both platforms build clean
+- 2026-04-24: Code review fix — added NSPrivacyAccessedAPICategorySystemBootTime for MIDIKit's mach_absolute_time() usage
