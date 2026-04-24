@@ -1,6 +1,6 @@
 # Story 70.1: Platform Polish Audit — iOS / iPadOS
 
-Status: review
+Status: done
 
 ## Story
 
@@ -103,7 +103,7 @@ This audit was conducted as a **comprehensive code-based review** rather than ma
 
 #### MUST-FIX ISSUES
 
-**M1. Zero `.hoverEffect()` usage in entire app (AC#3)**
+**M1. Custom interactive elements lack `.hoverEffect()` (AC#3)**
 - Severity: must-fix
 - A `grep` for `hoverEffect` across the `Peach/` source tree returns zero results. No custom interactive element provides iPadOS pointer hover feedback. System-styled buttons (`.borderedProminent`, Form row items) get automatic hover, but the following do NOT:
   - StartScreen training cards (NavigationLink with custom `TrainingCardButtonStyle`)
@@ -116,7 +116,7 @@ This audit was conducted as a **comprehensive code-based review** rather than ma
 **M2. ProfileScreen content stretches too wide on iPad (AC#2)**
 - Severity: must-fix
 - `ProfileScreen.swift`: The `VStack` inside `ScrollView` uses `.padding()` but no `maxWidth` constraint. On iPad Pro 13-inch full-screen, progress charts and rhythm cards stretch across 1024+ points, creating an unprofessional layout.
-- Fix: Add `.frame(maxWidth: 700)` or `.dynamicTypeSize(...)` readable-content constraint
+- Fix: Add `.frame(maxWidth: 700)` or use a readable-content-width constraint
 
 **M3. InfoScreen/HelpContentView text spans full iPad width (AC#2)**
 - Severity: must-fix

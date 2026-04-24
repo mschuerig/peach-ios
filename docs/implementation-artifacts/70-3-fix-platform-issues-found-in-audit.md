@@ -30,14 +30,15 @@ _Tasks will be populated after Stories 70.1 and 70.2 are complete. Each must-fix
   - [ ] 3.3 [70.1-M3] Add maxWidth constraint to InfoScreen and HelpContentView for readable text lines on iPad
   - [ ] 3.4 [70.1-M4] Replace fixed 44pt Y-axis label width in RhythmSpectrogramView with `@ScaledMetric` or `.fixedSize()`
   - [ ] 3.5 [70.1-M5] Wrap StartScreen landscape layout in `ScrollView(.vertical)` or use `ViewThatFits` for Dynamic Type overflow
-  - [ ] 3.6 [70.1-N1] Use `@ScaledMetric` for training button icon sizes in PitchDiscriminationScreen, TimingOffsetDetectionScreen, ContinuousRhythmMatchingScreen (currently fixed 60/80pt)
-  - [ ] 3.7 [70.1-N2] Add ScrollView wrapping to training screen VStack bodies (PitchDiscrimination, TimingOffsetDetection, ContinuousRhythmMatching) for Dynamic Type overflow on small landscape iPhones
-  - [ ] 3.8 [70.1-N3] Consider `@ScaledMetric` for ProgressSparklineView fixed 60x24 frame
-  - [ ] 3.9 [70.1-N4] Consider `@ScaledMetric` for ProgressChartView fixed chart heights (180/240pt)
-  - [ ] 3.10 [70.1-N5] Add `.contentShape(Rectangle())` to TrainingCardButtonStyle for full-area tap/hover target
-  - [ ] 3.11 [70.1-N6] Add `.hoverEffect()` to SettingsScreen data section buttons and ShareLink
-  - [ ] 3.12 [70.1-N7] Add hover cue to ProgressChartView SpatialTapGesture area for iPad pointer
-  - [ ] 3.13 [70.1-N8] Investigate PitchSlider thumb "jump" when orientation changes during active drag
+- [ ] Task 3b: Nice-to-have iOS/iPadOS issues (triage in Task 1)
+  - [ ] 3b.1 [70.1-N1] Use `@ScaledMetric` for training button icon sizes in PitchDiscriminationScreen, TimingOffsetDetectionScreen, ContinuousRhythmMatchingScreen (currently fixed 60/80pt)
+  - [ ] 3b.2 [70.1-N2] Add ScrollView wrapping to training screen VStack bodies (PitchDiscrimination, TimingOffsetDetection, ContinuousRhythmMatching) for Dynamic Type overflow on small landscape iPhones
+  - [ ] 3b.3 [70.1-N3] Consider `@ScaledMetric` for ProgressSparklineView fixed 60x24 frame
+  - [ ] 3b.4 [70.1-N4] Consider `@ScaledMetric` for ProgressChartView fixed chart heights (180/240pt)
+  - [ ] 3b.5 [70.1-N5] Add `.contentShape(Rectangle())` to TrainingCardButtonStyle for full-area tap/hover target
+  - [ ] 3b.6 [70.1-N6] Add `.hoverEffect()` to SettingsScreen data section buttons and ShareLink
+  - [ ] 3b.7 [70.1-N7] Add hover cue to ProgressChartView SpatialTapGesture area for iPad pointer
+  - [ ] 3b.8 [70.1-N8] Investigate PitchSlider thumb "jump" when orientation changes during active drag
 - [ ] Task 4: Cross-platform verification (AC: #2)
   - [ ] 4.1 Verify each fix on the affected platform
   - [ ] 4.2 Verify no regressions on other platforms
