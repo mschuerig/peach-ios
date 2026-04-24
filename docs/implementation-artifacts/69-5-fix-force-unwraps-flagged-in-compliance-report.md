@@ -1,6 +1,6 @@
 # Story 69.5: Fix Force Unwraps Flagged in Compliance Report
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -16,15 +16,15 @@ so that the app does not crash from unexpected nil values during App Store revie
 
 ## Tasks / Subtasks
 
-- [ ] Fix force unwrap in `PeachApp.swift` line 57 (AC: #1)
-  - [ ] Current: `let sf2URL = Bundle.main.url(forResource: "Samples", withExtension: "sf2")!`
-  - [ ] Replace with `guard let` + descriptive `fatalError("Required resource Samples.sf2 not found in bundle")`
-  - [ ] A `fatalError` with a message is acceptable here because a missing bundle resource is a build/packaging error, not a runtime condition — but the message must explain what went wrong
-- [ ] Fix implicitly unwrapped optional in `MIDIKitAdapter.swift` lines 26-27 (AC: #2)
-  - [ ] Current pattern: `var cont: AsyncStream<MIDIInputEvent>.Continuation!` then assigned inside `AsyncStream` closure
-  - [ ] Refactor to avoid IUO — use `AsyncStream.makeStream(of:)` factory method which returns `(stream, continuation)` tuple, eliminating the need for the IUO entirely
-- [ ] Run tests: `bin/test.sh && bin/test.sh -p mac` (AC: #3)
-- [ ] Build both platforms: `bin/build.sh && bin/build.sh -p mac`
+- [x] Fix force unwrap in `PeachApp.swift` line 57 (AC: #1)
+  - [x] Current: `let sf2URL = Bundle.main.url(forResource: "Samples", withExtension: "sf2")!`
+  - [x] Replace with `guard let` + descriptive `fatalError("Required resource Samples.sf2 not found in bundle")`
+  - [x] A `fatalError` with a message is acceptable here because a missing bundle resource is a build/packaging error, not a runtime condition — but the message must explain what went wrong
+- [x] Fix implicitly unwrapped optional in `MIDIKitAdapter.swift` lines 26-27 (AC: #2)
+  - [x] Current pattern: `var cont: AsyncStream<MIDIInputEvent>.Continuation!` then assigned inside `AsyncStream` closure
+  - [x] Refactor to avoid IUO — use `AsyncStream.makeStream(of:)` factory method which returns `(stream, continuation)` tuple, eliminating the need for the IUO entirely
+- [x] Run tests: `bin/test.sh && bin/test.sh -p mac` (AC: #3)
+- [x] Build both platforms: `bin/build.sh && bin/build.sh -p mac`
 
 ## Dev Notes
 
@@ -52,10 +52,23 @@ The compliance report also mentions `self.gridOrigin!` in `RhythmOffsetDetection
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+- iOS test run: 1769 passed, 1 failed (PF-004 pre-existing flaky test)
+- macOS test run: 1763 passed, 0 failed
+- Both platform builds successful
+
 ### Completion Notes List
+- Replaced force unwrap `Bundle.main.url(...)!` in `PeachApp.swift:setupSoundFontInfrastructure()` with `guard let` + descriptive `fatalError("Required resource Samples.sf2 not found in bundle")`
+- Replaced IUO pattern `var cont: AsyncStream<...>.Continuation!` in `MIDIKitAdapter.init()` with `AsyncStream.makeStream(of:)` factory method, eliminating the implicitly unwrapped optional entirely
+- Removed redundant `let continuation = self.continuation` local variable since the tuple destructure already provides a local `continuation` for closure capture
+
 ### File List
+- Peach/App/PeachApp.swift (modified)
+- Peach/Core/Audio/MIDIKitAdapter.swift (modified)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-04-24: Implementation complete — replaced force unwrap and IUO with safe alternatives

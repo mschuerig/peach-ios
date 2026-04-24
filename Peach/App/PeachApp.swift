@@ -232,7 +232,9 @@ struct PeachApp: App {
     // MARK: - Audio Setup
 
     private static func setupSoundFontInfrastructure() throws -> (SoundFontLibrary, SoundFontEngine) {
-        let sf2URL = Bundle.main.url(forResource: "Samples", withExtension: "sf2")!
+        guard let sf2URL = Bundle.main.url(forResource: "Samples", withExtension: "sf2") else {
+            fatalError("Required resource Samples.sf2 not found in bundle")
+        }
         let library = SoundFontLibrary(sf2URL: sf2URL, defaultPreset: SettingsKeys.defaultSoundSource)
         SettingsKeys.validateSoundSource(against: library)
 

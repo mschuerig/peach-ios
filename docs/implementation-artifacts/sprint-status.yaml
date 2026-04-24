@@ -547,7 +547,7 @@ development_status:
   69-2-add-export-compliance-declaration: done
   69-3-fix-app-icon-alpha-channel: ready-for-dev
   69-4-bump-version-to-1-0: ready-for-dev
-  69-5-fix-force-unwraps-flagged-in-compliance-report: ready-for-dev
+  69-5-fix-force-unwraps-flagged-in-compliance-report: review
   69-6-write-and-host-privacy-policy-on-github-pages: ready-for-dev
   69-7-add-privacy-policy-and-support-contact-in-app: ready-for-dev
   epic-69-retrospective: optional

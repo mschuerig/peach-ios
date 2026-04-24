@@ -23,9 +23,8 @@ final class MIDIKitAdapter: MIDIInput {
     private static let logger = Logger(subsystem: "com.peach.app", category: "MIDIKitAdapter")
 
     init() {
-        var cont: AsyncStream<MIDIInputEvent>.Continuation!
-        let stream = AsyncStream<MIDIInputEvent> { cont = $0 }
-        self.continuation = cont
+        let (stream, continuation) = AsyncStream.makeStream(of: MIDIInputEvent.self)
+        self.continuation = continuation
         self.sharedEvents = stream.share()
 
         midiManager = ObservableMIDIManager(
@@ -41,7 +40,6 @@ final class MIDIKitAdapter: MIDIInput {
             return
         }
 
-        let continuation = self.continuation
         do {
             try midiManager.addInputConnection(
                 to: .allOutputs,
