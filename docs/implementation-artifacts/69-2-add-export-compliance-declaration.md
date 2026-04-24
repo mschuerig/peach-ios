@@ -1,6 +1,6 @@
 # Story 69.2: Add Export Compliance Declaration
 
-Status: review
+Status: done
 
 ## Story
 
