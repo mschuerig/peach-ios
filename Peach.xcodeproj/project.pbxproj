@@ -63,6 +63,11 @@
 			path = PeachTests;
 			sourceTree = "<group>";
 		};
+		4CE9E9E92F9C14A8000FA856 /* pages */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = pages;
+			sourceTree = "<group>";
+		};
 		4CEC64532F55314C002420F1 /* bin */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = bin;
@@ -107,6 +112,7 @@
 				4CBCEE5C2F45CC28006FEF97 /* NOTICE */,
 				4CBCEE5D2F45CC28006FEF97 /* README.md */,
 				4C055CBB2F8693D5002EF29C /* archlint.yaml */,
+				4CE9E9E92F9C14A8000FA856 /* pages */,
 				4CEC64532F55314C002420F1 /* bin */,
 			);
 			sourceTree = "<group>";

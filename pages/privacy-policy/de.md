@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Datenschutzrichtlinie — Peach
+title: Datenschutz — Peach
 ---
 
-# Datenschutzrichtlinie
+# Datenschutz
 
 **Peach — Gehörtraining**
 
