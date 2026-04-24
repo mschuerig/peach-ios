@@ -1,6 +1,6 @@
 # Story 69.6: Write and Host Privacy Policy on GitHub Pages
 
-Status: review
+Status: done
 
 ## Story
 
