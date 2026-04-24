@@ -26,13 +26,13 @@ so that I can link it in App Store Connect and in-app, and it stays live without
   - [x] Include developer contact: Michael Schuerig, email address
   - [x] Include effective date
 - [x] Create privacy policy page in repository (AC: #2, #4)
-  - [x] Create multilingual subdirectory structure: `docs/privacy-policy/en.md`, `docs/privacy-policy/de.md`, `docs/privacy-policy/index.html` (JS locale redirect)
+  - [x] Create multilingual subdirectory structure: `pages/privacy-policy/en.md`, `pages/privacy-policy/de.md`, `pages/privacy-policy/index.html` (JS locale redirect)
   - [x] Keep it simple — Markdown rendered by GitHub Pages with minima theme
   - [x] Ensure responsive layout (minima theme is responsive by default)
   - [x] Cross-link between language versions
 - [x] Configure GitHub Pages deployment (AC: #2, #3)
   - [x] Option B: Create `.github/workflows/pages.yml` GitHub Actions workflow for custom deployment
-  - [x] Jekyll `_config.yml` scoped to only serve privacy policy (excludes all project docs)
+  - [x] Jekyll `_config.yml` in dedicated `pages/` directory (isolated from project docs)
   - [x] The URL will be `https://mschuerig.github.io/peach-ios/privacy-policy`
 - [ ] Verify the page is accessible and renders on mobile/desktop (AC: #4)
 
@@ -68,21 +68,21 @@ Claude Opus 4.6
 None — docs-only story, no debugging needed.
 
 ### Completion Notes List
-- Created multilingual privacy policy with subdirectory structure: `docs/privacy-policy/en.md` (English), `docs/privacy-policy/de.md` (German), `docs/privacy-policy/index.html` (JS locale redirect with noscript fallback to English)
+- Created multilingual privacy policy with subdirectory structure: `pages/privacy-policy/en.md` (English), `pages/privacy-policy/de.md` (German), `pages/privacy-policy/index.html` (JS locale redirect with noscript fallback to English)
 - Privacy policy content covers all ACs: no data collection, local-only storage, no third-party analytics/tracking, MIDIKit disclosure, no data sharing, developer contact (michael@schuerig.de), effective date (2026-04-24)
 - German version uses informal "du" form per project convention
 - Each language version cross-links to the other
-- Created `docs/_config.yml` with Jekyll configuration using minima theme, scoped to serve only the privacy policy (all project documentation directories and files excluded)
-- Created `.github/workflows/pages.yml` with GitHub Actions workflow for automated deployment to GitHub Pages on push to main (triggers on changes to `docs/privacy-policy/**`, `docs/_config.yml`, or the workflow itself)
+- Created `pages/_config.yml` with Jekyll configuration using minima theme in dedicated `pages/` directory (isolated from project docs)
+- Created `.github/workflows/pages.yml` with GitHub Actions workflow for automated deployment to GitHub Pages on push to main (triggers on changes to `pages/**` or the workflow itself)
 - URLs: `https://mschuerig.github.io/peach-ios/privacy-policy/` (auto-redirect), `.../privacy-policy/en` (English), `.../privacy-policy/de` (German)
 - **Manual step required**: GitHub Pages must be enabled in repository settings (Settings → Pages → Source: GitHub Actions). The workflow will not deploy until this is configured.
 - Verification (AC #4) requires the workflow to run and the page to be live — this can only be verified after pushing to main and enabling GitHub Pages.
 
 ### File List
-- `docs/privacy-policy/en.md` — new: English privacy policy with Jekyll frontmatter
-- `docs/privacy-policy/de.md` — new: German privacy policy with Jekyll frontmatter
-- `docs/privacy-policy/index.html` — new: JS locale redirect (de → de, else → en) with noscript fallback
-- `docs/_config.yml` — new: Jekyll config scoped to privacy policy only
+- `pages/privacy-policy/en.md` — new: English privacy policy with Jekyll frontmatter
+- `pages/privacy-policy/de.md` — new: German privacy policy with Jekyll frontmatter
+- `pages/privacy-policy/index.html` — new: JS locale redirect (de → de, else → en) with noscript fallback
+- `pages/_config.yml` — new: Jekyll config for GitHub Pages
 - `.github/workflows/pages.yml` — new: GitHub Actions workflow for Pages deployment
 - `docs/implementation-artifacts/sprint-status.yaml` — modified: story status updated
 - `docs/implementation-artifacts/69-6-write-and-host-privacy-policy-on-github-pages.md` — modified: tasks checked, dev record updated

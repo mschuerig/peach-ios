@@ -4,8 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'docs/privacy-policy/**'
-      - 'docs/_config.yml'
+      - 'pages/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
 
@@ -31,7 +30,7 @@ jobs:
       - name: Build with Jekyll
         uses: actions/jekyll-build-pages@v1
         with:
-          source: ./docs
+          source: ./pages
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
