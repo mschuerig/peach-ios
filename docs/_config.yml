@@ -1,0 +1,18 @@
+title: Peach
+theme: minima
+
+# Only serve the privacy policy — exclude all project documentation
+exclude:
+  - planning-artifacts
+  - implementation-artifacts
+  - reports
+  - test-artifacts
+  - walkthrough
+  - bmb-creations
+  - brainstorming
+  - project-context.md
+  - arc42.md
+  - pre-existing-findings.md
+  - "code-review-*.md"
+  - README.md
+  - _config.yml

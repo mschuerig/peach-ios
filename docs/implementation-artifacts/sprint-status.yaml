@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-24 # Story 69.2 done
+# last_updated: 2026-04-24 # Story 69.6 in-progress
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -548,7 +548,7 @@ development_status:
   69-3-fix-app-icon-alpha-channel: ready-for-dev
   69-4-bump-version-to-1-0: ready-for-dev
   69-5-fix-force-unwraps-flagged-in-compliance-report: done
-  69-6-write-and-host-privacy-policy-on-github-pages: ready-for-dev
+  69-6-write-and-host-privacy-policy-on-github-pages: review
   69-7-add-privacy-policy-and-support-contact-in-app: ready-for-dev
   epic-69-retrospective: optional
 
