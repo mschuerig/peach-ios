@@ -1,6 +1,6 @@
 # Story 69.2: Add Export Compliance Declaration
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -15,10 +15,10 @@ so that TestFlight and App Store builds don't show "Missing Compliance" warnings
 
 ## Tasks / Subtasks
 
-- [ ] Add `ITSAppUsesNonExemptEncryption = NO` to the build settings (AC: #1)
-  - [ ] The project uses `GENERATE_INFOPLIST_FILE = YES`, so add via `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` in project.pbxproj build settings (all 4 build configurations: Debug/Release x iOS/macOS)
-- [ ] Build both platforms: `bin/build.sh && bin/build.sh -p mac` (AC: #1)
-- [ ] Verify the key appears in the built Info.plist by inspecting the product bundle (AC: #2)
+- [x] Add `ITSAppUsesNonExemptEncryption = NO` to the build settings (AC: #1)
+  - [x] The project uses `GENERATE_INFOPLIST_FILE = YES`, so add via `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` in project.pbxproj build settings (all 4 build configurations: Debug/Release x iOS/macOS)
+- [x] Build both platforms: `bin/build.sh && bin/build.sh -p mac` (AC: #1)
+- [x] Verify the key appears in the built Info.plist by inspecting the product bundle (AC: #2)
 
 ## Dev Notes
 
@@ -38,10 +38,21 @@ Change is in `Peach.xcodeproj/project.pbxproj` build settings only. No new files
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Added `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` to both app target build configurations (Debug + Release) in project.pbxproj
+- Verified the key appears as `ITSAppUsesNonExemptEncryption = false` in the generated Info.plist for both iOS and macOS builds
+- No new tests needed — this is a build setting change with no code impact
+- Full test suite passes on both platforms (1770 iOS, 1763 macOS)
+
 ### File List
+- Peach.xcodeproj/project.pbxproj (modified)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-04-24: Implementation complete — export compliance build setting added
