@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-25 # Story 70.1 done
+# last_updated: 2026-04-25 # Story 70.2 done
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -557,7 +557,7 @@ development_status:
   #             70.4 independent (docs)
   epic-70: in-progress
   70-1-platform-polish-audit-ios-ipados: done
-  70-2-platform-polish-audit-macos: ready-for-dev
+  70-2-platform-polish-audit-macos: done
   70-3-fix-platform-issues-found-in-audit: ready-for-dev
   70-4-update-project-documentation-for-three-platform-release: ready-for-dev
   epic-70-retrospective: optional

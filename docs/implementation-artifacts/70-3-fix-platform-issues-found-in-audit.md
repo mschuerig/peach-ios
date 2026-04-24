@@ -24,6 +24,17 @@ _Tasks will be populated after Stories 70.1 and 70.2 are complete. Each must-fix
 - [ ] Task 2: Triage issues from Story 70.2 (macOS audit) (AC: #1)
   - [ ] 2.1 Review all discovered issues
   - [ ] 2.2 Classify each as "must fix before release" or "nice-to-have / post-release"
+- [ ] Task 3c: Fix all must-fix macOS issues (AC: #1, #2)
+  - [ ] 3c.1 [70.2-M1] Fix dual Settings access paths — gear icon in StartScreen/TrainingScreenModifier toolbar should open native Settings window on macOS (via `openWindow(id: "settings")`) instead of pushing SettingsScreen into NavigationStack
+  - [ ] 3c.2 [70.2-M2] Fix StartScreen landscape layout at narrow macOS window heights — increase min width, add ScrollView to landscape layout, or add macOS-specific layout that avoids 3-column at <500px width
+  - [ ] 3c.3 [70.2-M3] Add maxWidth constraint to ProfileScreen VStack (same fix as 70.1-M2, verify it applies to macOS window resizing)
+  - [ ] 3c.4 [70.2-M4] Add maxWidth constraint to HelpPanel content — HelpPanelController wraps resizable NSWindow with no content width cap, text becomes unreadable when panel is widened
+- [ ] Task 3d: Nice-to-have macOS issues (triage in Task 2)
+  - [ ] 3d.1 [70.2-N1] Add keyboard shortcut for "Show Profile" in menu bar (e.g., Cmd+P)
+  - [ ] 3d.2 [70.2-N2] Add visual indication of current active training mode in Training menu (checkmark or disabled state)
+  - [ ] 3d.3 [70.2-N3] Verify PitchMatchingScreen arrow key behavior — lacks `.phases: .down` unlike all other training screens, may affect key repeat behavior
+  - [ ] 3d.4 [70.2-N4] Unify file import on macOS — SettingsScreen uses blocking `NSOpenPanel.runModal()` while ContentView uses SwiftUI `.fileImporter()`
+  - [ ] 3d.5 [70.2-N5] Verify window position/size restoration between app launches
 - [ ] Task 3: Fix all must-fix iOS/iPadOS issues (AC: #1, #2)
   - [ ] 3.1 [70.1-M1] Add `.hoverEffect(.highlight)` to all custom interactive elements — StartScreen training cards, IntervalSelectorView toggles, GridToggleRow toggles, ContinuousRhythmMatching tap button, RhythmSpectrogramView cells
   - [ ] 3.2 [70.1-M2] Add maxWidth constraint (~700pt) to ProfileScreen VStack for readable layout on iPad
