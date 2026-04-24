@@ -54,13 +54,13 @@ struct PlatformHelpModifier: ViewModifier {
 
 // MARK: - Custom iOS Sheet Modifier
 
-/// For cases where the iOS sheet needs custom content (e.g., InfoScreen with a header),
-/// while macOS still uses the standard help panel with sections.
-struct PlatformHelpWithCustomSheetModifier<SheetContent: View>: ViewModifier {
+/// For cases where the sheet needs custom content (e.g., InfoScreen with a header)
+/// on both iOS and macOS.
+struct PlatformHelpWithCustomSheetModifier<SheetContent: View, PanelContent: View>: ViewModifier {
     @Binding var isPresented: Bool
     let title: String
-    let sections: [HelpSection]
     @ViewBuilder let iosSheet: () -> SheetContent
+    @ViewBuilder let macPanel: () -> PanelContent
 
     func body(content: Content) -> some View {
         content
@@ -72,7 +72,7 @@ struct PlatformHelpWithCustomSheetModifier<SheetContent: View>: ViewModifier {
             .onChange(of: isPresented) { _, isShowing in
                 #if os(macOS)
                 if isShowing {
-                    HelpPanelController.shared.show(title: title, sections: sections)
+                    HelpPanelController.shared.show(title: title, view: macPanel())
                     isPresented = false
                 }
                 #endif
@@ -99,17 +99,17 @@ extension View {
         ))
     }
 
-    func platformHelp<SheetContent: View>(
+    func platformHelp<SheetContent: View, PanelContent: View>(
         isPresented: Binding<Bool>,
         title: String,
-        sections: [HelpSection],
-        @ViewBuilder iosSheet: @escaping () -> SheetContent
+        @ViewBuilder iosSheet: @escaping () -> SheetContent,
+        @ViewBuilder macPanel: @escaping () -> PanelContent
     ) -> some View {
         modifier(PlatformHelpWithCustomSheetModifier(
             isPresented: isPresented,
             title: title,
-            sections: sections,
-            iosSheet: iosSheet
+            iosSheet: iosSheet,
+            macPanel: macPanel
         ))
     }
 }

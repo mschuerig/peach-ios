@@ -78,10 +78,9 @@ struct StartScreen: View {
         .platformHelp(
             isPresented: $showInfoSheet,
             title: String(localized: "About Peach"),
-            sections: HelpContent.about
-        ) {
-            InfoScreen()
-        }
+            iosSheet: { InfoScreen() },
+            macPanel: { InfoContentView() }
+        )
     }
 
     // MARK: - Layouts

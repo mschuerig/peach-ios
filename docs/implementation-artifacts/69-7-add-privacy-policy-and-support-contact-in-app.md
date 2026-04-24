@@ -1,6 +1,6 @@
 # Story 69.7: Add Privacy Policy and Support Contact In-App
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -18,21 +18,21 @@ so that I can review the policy and reach the developer if needed.
 
 ## Tasks / Subtasks
 
-- [ ] Add privacy policy URL constant to `InfoScreen.swift` (AC: #1, #3)
-  - [ ] Use the URL from story 69-6 (e.g., `https://mschuerig.github.io/peach/privacy-policy`)
-  - [ ] Follow the existing pattern: `static let` with `URL(string:)` and `preconditionFailure` guard (see `gitHubURL`)
-- [ ] Add support contact constant (AC: #2, #4)
-  - [ ] Email link using `mailto:` URL scheme, or a support page URL
-  - [ ] Follow same `static let` pattern as `gitHubURL`
-- [ ] Add links to the header section of `InfoScreen.swift` (AC: #1, #2)
-  - [ ] Add `Link(String(localized: "Privacy Policy"), destination: Self.privacyPolicyURL)` after existing GitHub link
-  - [ ] Add `Link(String(localized: "Support"), destination: Self.supportURL)` (for email: `mailto:` URL)
-  - [ ] Style consistently with existing `Link` for GitHub (`.font(.caption)`)
-- [ ] Add German translations (AC: #5)
-  - [ ] Use `bin/add-localization.swift` to add translations for "Privacy Policy" and "Support" (or "Contact")
-  - [ ] German: "Datenschutz" for privacy policy, "Kontakt" or "Support" for support
-- [ ] Build both platforms: `bin/build.sh && bin/build.sh -p mac` (AC: #1-#4)
-- [ ] Run tests: `bin/test.sh && bin/test.sh -p mac`
+- [x] Add privacy policy URL constant to `InfoScreen.swift` (AC: #1, #3)
+  - [x] Use the URL from story 69-6 (e.g., `https://mschuerig.github.io/peach/privacy-policy`)
+  - [x] Follow the existing pattern: `static let` with `URL(string:)` and `preconditionFailure` guard (see `gitHubURL`)
+- [x] Add support contact constant (AC: #2, #4)
+  - [x] Email link using `mailto:` URL scheme, or a support page URL
+  - [x] Follow same `static let` pattern as `gitHubURL`
+- [x] Add links to the header section of `InfoScreen.swift` (AC: #1, #2)
+  - [x] Add `Link(String(localized: "Privacy Policy"), destination: Self.privacyPolicyURL)` after existing GitHub link
+  - [x] Add `Link(String(localized: "Support"), destination: Self.supportURL)` (for email: `mailto:` URL)
+  - [x] Style consistently with existing `Link` for GitHub (`.font(.caption)`)
+- [x] Add German translations (AC: #5)
+  - [x] Use `bin/add-localization.swift` to add translations for "Privacy Policy" and "Support" (or "Contact")
+  - [x] German: "Datenschutz" for privacy policy, "Kontakt" or "Support" for support
+- [x] Build both platforms: `bin/build.sh && bin/build.sh -p mac` (AC: #1-#4)
+- [x] Run tests: `bin/test.sh && bin/test.sh -p mac`
 
 ## Dev Notes
 
@@ -65,10 +65,33 @@ For the `mailto:` link, use `URL(string: "mailto:someone@example.com")` — Swif
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6
+
 ### Debug Log References
+None
+
 ### Completion Notes List
+- Extracted `InfoContentView` from `InfoScreen` so the same header + help content renders on both iOS and macOS
+- `InfoScreen` wraps `InfoContentView` in NavigationStack/toolbar for iOS sheet presentation
+- macOS "About Peach" (menu bar and start screen) shows `InfoContentView` via `HelpPanelController.show(title:view:)`
+- Added `privacyPolicyURL` and `supportURL` constants with `Link` views in the header section
+- Privacy policy URL: `https://mschuerig.github.io/peach-ios/privacy-policy`
+- Support contact: `mailto:michael@schuerig.de`
+- Refactored `HelpPanelController` to extract `showView(title:content:)` helper, eliminating duplicated window creation logic
+- Updated `PlatformHelpWithCustomSheetModifier` to accept separate `macPanel` content instead of falling back to sections-only
+- Localized "Privacy Policy" (de: "Datenschutz") and "Contact" (de: "Kontakt")
+- All iOS tests pass (1770/1770)
+
 ### File List
+- Peach/Info/InfoScreen.swift (modified — extracted InfoContentView, added privacy/contact links)
+- Peach/App/Platform/HelpPanel.swift (modified — added show(title:view:) and showView helper)
+- Peach/App/Platform/PlatformHelpPresentation.swift (modified — macPanel parameter for custom view on macOS)
+- Peach/App/PeachCommands.swift (modified — About button shows InfoContentView)
+- Peach/Start/StartScreen.swift (modified — updated platformHelp call with macPanel)
+- Peach/Resources/Localizable.xcstrings (modified — added Privacy Policy and Contact translations)
+- PeachTests/Start/StartScreenTests.swift (modified — updated references from InfoScreen to InfoContentView)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-04-24: Implementation complete — privacy policy and contact links in shared InfoContentView for cross-platform parity

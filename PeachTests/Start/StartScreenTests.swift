@@ -138,30 +138,30 @@ struct StartScreenTests {
 
     @Test("Info Screen has correct GitHub URL")
     func infoScreenHasCorrectGitHubURL() async {
-        #expect(InfoScreen.gitHubURL == URL(string: "https://github.com/mschuerig/peach")!)
+        #expect(InfoContentView.gitHubURL == URL(string: "https://github.com/mschuerig/peach")!)
     }
 
     @Test("Info Screen has correct developer name")
     func infoScreenHasCorrectDeveloperName() async {
-        #expect(InfoScreen.developerName == "Michael Schürig")
+        #expect(InfoContentView.developerName == "Michael Schürig")
     }
 
     @Test("Info Screen copyright notice contains current year and developer name")
     func infoScreenHasCopyrightNotice() async {
         let currentYear = Calendar.current.component(.year, from: Date())
-        #expect(InfoScreen.copyrightNotice.contains("\(currentYear)"))
-        #expect(InfoScreen.copyrightNotice.contains(InfoScreen.developerName))
-        #expect(InfoScreen.copyrightNotice.contains("©"))
+        #expect(InfoContentView.copyrightNotice.contains("\(currentYear)"))
+        #expect(InfoContentView.copyrightNotice.contains(InfoContentView.developerName))
+        #expect(InfoContentView.copyrightNotice.contains("©"))
     }
 
     @Test("Info Screen has correct license name")
     func infoScreenHasCorrectLicenseName() async {
-        #expect(InfoScreen.licenseName == "MIT")
+        #expect(InfoContentView.licenseName == "MIT")
     }
 
     @Test("Info Screen has non-empty version string")
     func infoScreenHasNonEmptyVersion() async {
-        let view = InfoScreen()
+        let view = InfoContentView()
 
         let mirror = Mirror(reflecting: view)
         let appVersionProperty = mirror.children.first(where: { $0.label == "appVersion" })

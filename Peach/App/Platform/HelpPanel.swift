@@ -15,9 +15,34 @@ final class HelpPanelController: NSObject, NSWindowDelegate {
         onDismiss: (() -> Void)? = nil
     ) {
         self.onDismiss = onDismiss
+        let content = HelpContentView(sections: sections)
+        showView(title: title, content: content)
+    }
+
+    func show<V: View>(title: String, view: V) {
+        self.onDismiss = nil
+        showView(title: title, content: view)
+    }
+
+    func show(content: HelpSheetContent) {
+        show(title: content.title, sections: content.sections)
+    }
+
+    nonisolated func windowWillClose(_ notification: Notification) {
+        MainActor.assumeIsolated {
+            onDismiss?()
+            onDismiss = nil
+        }
+    }
+
+    private func showView<V: View>(title: String, content: V) {
+        let hosted = ScrollView {
+            content.padding()
+        }
+        .frame(minWidth: 350, minHeight: 250)
 
         if let window {
-            window.contentView = NSHostingView(rootView: helpView(for: sections))
+            window.contentView = NSHostingView(rootView: hosted)
             window.title = title
             window.orderFront(nil)
             return
@@ -32,30 +57,11 @@ final class HelpPanelController: NSObject, NSWindowDelegate {
         window.title = title
         window.isReleasedWhenClosed = false
         window.delegate = self
-        window.contentView = NSHostingView(rootView: helpView(for: sections))
+        window.contentView = NSHostingView(rootView: hosted)
         window.contentMinSize = NSSize(width: 350, height: 250)
         window.center()
         window.orderFront(nil)
         self.window = window
-    }
-
-    func show(content: HelpSheetContent) {
-        show(title: content.title, sections: content.sections)
-    }
-
-    nonisolated func windowWillClose(_ notification: Notification) {
-        MainActor.assumeIsolated {
-            onDismiss?()
-            onDismiss = nil
-        }
-    }
-
-    private func helpView(for sections: [HelpSection]) -> some View {
-        ScrollView {
-            HelpContentView(sections: sections)
-                .padding()
-        }
-        .frame(minWidth: 350, minHeight: 250)
     }
 }
 #endif

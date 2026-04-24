@@ -728,6 +728,16 @@
         }
       }
     },
+    "Contact" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kontakt"
+          }
+        }
+      }
+    },
     "Controls" : {
       "localizations" : {
         "de" : {
@@ -2345,6 +2355,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Prime"
+          }
+        }
+      }
+    },
+    "Privacy Policy" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenschutz"
           }
         }
       }

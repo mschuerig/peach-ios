@@ -126,7 +126,10 @@ struct PeachCommands: Commands {
     private var helpCommands: some Commands {
         CommandGroup(replacing: .help) {
             Button("About Peach") {
-                HelpPanelController.shared.show(content: .about)
+                HelpPanelController.shared.show(
+                    title: String(localized: "About Peach"),
+                    view: InfoContentView()
+                )
             }
 
             Divider()
