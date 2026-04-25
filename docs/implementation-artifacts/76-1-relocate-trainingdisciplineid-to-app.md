@@ -1,6 +1,6 @@
 # Story 76.1: Relocate TrainingDisciplineID's concrete cases to the App layer
 
-Status: review
+Status: done
 
 ## Story
 
@@ -260,6 +260,7 @@ Active docs (`arc42.md`, `glossary.md`, `project-context.md`) describe the disci
 
 - 2026-04-25: Story drafted as new Story 76.1 of Epic 76. Existing 76.1/76.2/76.3 renumbered to 76.2/76.3/76.4. Status → ready-for-dev.
 - 2026-04-25: Implementation complete. `TrainingDisciplineID` converted to slug-wrapping struct in Core; six static factories and `canonicalIDs` declared in `Peach/App/Training/DisciplineIDs.swift`. Pure refactor with no observable behavior change. Both platforms green (1765 iOS, 1757 macOS). Status → review.
+- 2026-04-25: Code review complete. One patch applied (doc-comment story-number leakage in `DisciplineIDs.swift`). Four defer items: subscript force-unwrap routed to 76.4 task 5.3; `mode`→`discipline` local-variable rename routed to 76.3 task 9.4; ProfileScreen `canonicalIDs`→`registry.all` already covered by 76.3 AC 8; Codable shape + `CustomStringConvertible` left latent (no consumer). Status → done.
 
 ## Dev Agent Record
 

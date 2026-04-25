@@ -188,6 +188,7 @@ If the script changes from AC 4 are deferred, document the equivalent `xcodebuil
 - [ ] Task 5: Gate registration in `DisciplineBootstrap` (AC: 5)
   - [ ] 5.1 Wrap timing-discipline registrations in `#if PEACH_RESEARCH`
   - [ ] 5.2 Confirm no other source file uses `PEACH_RESEARCH`
+  - [ ] 5.3 Audit `TrainingDisciplineRegistry.subscript(_ id:)` in `Peach/Core/Training/Discipline/TrainingDisciplineRegistry.swift:50` (`byID[id]!`). Once registration is build-conditional, looking up an unregistered ID's `.config` or `.statisticsKeys` traps. Decide between (a) keeping the force-unwrap as an intentional invariant guard with a `precondition` carrying the unregistered slug for diagnostics, or (b) returning the entry as optional and migrating the two callers (`TrainingDisciplineID.config`, `TrainingDisciplineID.statisticsKeys`). Document the decision in Completion Notes.
 - [ ] Task 6: Update tests (AC: 6)
   - [ ] 6.1 Remove or replace `registryContainsSixDisciplines` with subset / invariant assertions
   - [ ] 6.2 Replace `TrainingDisciplineID.canonicalIDs == registeredIDs` with `registeredIDs.isSubset(of: canonicalIDs)`

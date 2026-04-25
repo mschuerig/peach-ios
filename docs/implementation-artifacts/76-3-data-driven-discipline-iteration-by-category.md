@@ -211,6 +211,7 @@ Calls of the form `TrainingDisciplineID.canonicalIDs.map { $0.config.displayName
   - [ ] 9.1 Switch `ForEach` to iterate `registry.all`
   - [ ] 9.2 Switch on `discipline.category` instead of enum cases
   - [ ] 9.3 Update `accessibilitySummary` to iterate registry
+  - [ ] 9.4 Rename local variables in this file: loop binding `mode` → `discipline`, `activeModes` → `activeDisciplines`, `modeNames` → `disciplineNames` (per `feedback_disciplines_not_modes.md`). Scope is `ProfileScreen.swift` only — call-site parameter names like `RhythmProfileCardView(mode:)` and `ProgressChartView(mode:)` stay unchanged here; renaming them would propagate across the Profile module and is a separate concern.
 - [ ] Task 10: Audit remaining `TrainingDisciplineID.canonicalIDs` usages (AC: 9)
   - [ ] 10.1 `grep -rn "TrainingDisciplineID.canonicalIDs" Peach/ PeachTests/`
   - [ ] 10.2 For each hit, determine if it queries metadata (replace) or asserts identifier-catalog structure (keep with comment)

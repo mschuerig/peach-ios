@@ -6,9 +6,11 @@ nonisolated extension TrainingDisciplineID {
     static let timingOffsetDetection        = TrainingDisciplineID("timing-offset-detection")
     static let continuousRhythmMatching     = TrainingDisciplineID("continuous-rhythm-matching")
 
-    /// All discipline IDs currently declared by the App. This is the historical
-    /// `allCases` set; production code should prefer iterating `TrainingDisciplineRegistry.shared.all`
-    /// since that reflects what is actually registered (which becomes build-conditional in 76.4).
+    /// All discipline IDs declared by the App. Iterate this only when a structural
+    /// invariant of the catalog itself is being asserted (e.g. tests). Production
+    /// code should iterate `TrainingDisciplineRegistry.shared.all`, which reflects
+    /// what is actually registered and may be a strict subset of this list when
+    /// registration is conditional on build configuration.
     static let canonicalIDs: [TrainingDisciplineID] = [
         .unisonPitchDiscrimination,
         .intervalPitchDiscrimination,
