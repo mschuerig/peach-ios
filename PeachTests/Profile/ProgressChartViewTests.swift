@@ -546,7 +546,7 @@ struct ProgressChartViewTests {
 
     // MARK: - Share Button Accessibility Labels
 
-    @Test("share accessibility label contains mode display name and is non-empty for all training modes",
+    @Test("share accessibility label contains discipline display name and is non-empty for all training disciplines",
           arguments: TrainingDisciplineID.allCases)
     func shareAccessibilityLabel(mode: TrainingDisciplineID) async {
         let label = String(localized: "Share \(mode.config.displayName) chart")

@@ -184,9 +184,9 @@ struct StartScreenTests {
         #expect(HelpContent.appDescription.count > 50)
     }
 
-    @Test("Info Screen training modes description contains dash-separated mode names")
-    func infoScreenHasTrainingModesDescription() async {
-        let description = HelpContent.trainingModesDescription
+    @Test("Info Screen training disciplines description contains dash-separated discipline names")
+    func infoScreenHasTrainingDisciplinesDescription() async {
+        let description = HelpContent.trainingDisciplinesDescription
         #expect(description.contains("–"))
         #expect(description.count > 100)
     }

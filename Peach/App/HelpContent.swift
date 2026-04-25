@@ -20,7 +20,7 @@ enum HelpContent {
         ),
         HelpSection(
             title: String(localized: "Intervals"),
-            body: String(localized: "In interval mode, the two notes are separated by a specific **musical interval** (like a fifth or an octave) instead of a small pitch difference. You still decide which note is higher — but now you're training your sense of musical distance.")
+            body: String(localized: "For interval training, the two notes are separated by a specific **musical interval** (like a fifth or an octave) instead of a small pitch difference. You still decide which note is higher — but now you're training your sense of musical distance.")
         ),
     ]
 
@@ -39,7 +39,7 @@ enum HelpContent {
         ),
         HelpSection(
             title: String(localized: "Intervals"),
-            body: String(localized: "In interval mode, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it.")
+            body: String(localized: "For interval training, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it.")
         ),
     ]
 
@@ -92,11 +92,11 @@ enum HelpContent {
         ),
         HelpSection(
             title: String(localized: "Difficulty"),
-            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
+            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
         ),
         HelpSection(
             title: String(localized: "Rhythm"),
-            body: String(localized: "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
+            body: String(localized: "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
         ),
         HelpSection(
             title: String(localized: "Data"),
@@ -151,9 +151,9 @@ enum HelpContent {
 
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
 
-    static let trainingModesDescription = String(localized: "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Rhythm** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap.")
+    static let trainingDisciplinesDescription = String(localized: "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Rhythm** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap.")
 
-    static let gettingStartedText = String(localized: "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically.")
+    static let gettingStartedText = String(localized: "Just pick a discipline on the home screen and start practicing. Peach adapts to your skill level automatically.")
 
     static let acknowledgmentsText = String(localized: "Piano sounds from [FluidR3_GM by Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT License). All other sounds from [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php).")
 
@@ -163,8 +163,8 @@ enum HelpContent {
             body: appDescription
         ),
         HelpSection(
-            title: String(localized: "Training Modes"),
-            body: trainingModesDescription
+            title: String(localized: "Training Disciplines"),
+            body: trainingDisciplinesDescription
         ),
         HelpSection(
             title: String(localized: "Getting Started"),

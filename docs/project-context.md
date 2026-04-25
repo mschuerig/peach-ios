@@ -254,7 +254,7 @@ Never run only specific test files — always the complete suite. Both platforms
 - **Use `TuningSystem.frequency(for:referencePitch:)` for all Hz conversions** — accepts `MIDINote` or `DetunedMIDINote`; always requires explicit `tuningSystem` and `referencePitch` parameters; the app requires 0.1-cent precision
 - **Feedback phase is 400ms** — default in both `PitchDiscriminationSettings` and `PitchMatchingSettings`; it's a perceptual learning design decision
 - **Interval training constrains note range** — when interval > prime, the upper bound of the note selection range shrinks by `interval.semitones` to keep the target note within valid MIDI range (0-127)
-- **Four training modes** — unison comparison, interval comparison, unison matching, interval matching. Each has independent progress tracking via `TrainingDisciplineConfig`. `ProgressTimeline` tracks all four
+- **Six training disciplines** — unison pitch comparison, interval pitch comparison, unison pitch matching, interval pitch matching, timing offset detection, continuous rhythm matching. Each has independent progress tracking via `TrainingDisciplineConfig`. `ProgressTimeline` tracks all six
 
 **Never Do This:**
 - `ObservableObject` / `@Published` → use `@Observable`

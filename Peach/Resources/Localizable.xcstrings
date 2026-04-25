@@ -63,23 +63,23 @@
         }
       }
     },
-    "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves." : {
+    "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves." : {
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Tempo** bestimmt die Geschwindigkeit aller Rhythmus-Trainingsmodi, gemessen in Schlägen pro Minute (BPM). Ein niedrigeres Tempo ist einfacher; erhöhe es, wenn sich dein Timing verbessert."
+            "value" : "**Tempo** bestimmt die Geschwindigkeit aller Rhythmus-Disziplinen, gemessen in Schlägen pro Minute (BPM). Ein niedrigeres Tempo ist einfacher; erhöhe es, wenn sich dein Timing verbessert."
           }
         }
       }
     },
-    "**Tempo** controls the speed for all rhythm training modes, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions." : {
+    "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Tempo** steuert die Geschwindigkeit aller Rhythmus-Trainingsmodi, gemessen in Schlägen pro Minute (BPM). Ein langsameres Tempo ist leichter; erhöhe es, wenn sich dein Timing verbessert.\n\n**Lücken-Positionen** bestimmen, welche Unterteilungen des Schlags im „Lücke füllen“-Training verwendet werden. Jeder Schlag wird in vier 16tel-Positionen unterteilt: Beat (Grundschlag), E, Und, A. Deaktiviere Positionen, um dich auf bestimmte Unterteilungen zu konzentrieren."
+            "value" : "**Tempo** steuert die Geschwindigkeit aller Rhythmus-Disziplinen, gemessen in Schlägen pro Minute (BPM). Ein langsameres Tempo ist leichter; erhöhe es, wenn sich dein Timing verbessert.\n\n**Lücken-Positionen** bestimmen, welche Unterteilungen des Schlags im „Lücke füllen“-Training verwendet werden. Jeder Schlag wird in vier 16tel-Positionen unterteilt: Beat (Grundschlag), E, Und, A. Deaktiviere Positionen, um dich auf bestimmte Unterteilungen zu konzentrieren."
           }
         }
       }
@@ -116,23 +116,23 @@
         }
       }
     },
-    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back." : {
+    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Trainingsmodi.\n\n**Pause** fügt eine Pause zwischen den beiden Tönen im Vergleichstraining ein. Bei null spielen die Töne direkt hintereinander."
+            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Disziplinen.\n\n**Pause** fügt eine Pause zwischen den beiden Tönen im Vergleichstraining ein. Bei null spielen die Töne direkt hintereinander."
           }
         }
       }
     },
-    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all training modes.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back." : {
+    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back." : {
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer – in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Trainingsmodi.\n\n**Pause** fügt eine Stille zwischen den beiden Tönen im Hören & Vergleichen-Training ein. Bei null werden die Töne direkt nacheinander gespielt."
+            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer – in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Disziplinen.\n\n**Pause** fügt eine Stille zwischen den beiden Tönen im Hören & Vergleichen-Training ein. Bei null werden die Töne direkt nacheinander gespielt."
           }
         }
       }
@@ -1354,22 +1354,22 @@
         }
       }
     },
-    "In interval mode, the two notes are separated by a specific **musical interval** (like a fifth or an octave) instead of a small pitch difference. You still decide which note is higher — but now you're training your sense of musical distance." : {
+    "For interval training, the two notes are separated by a specific **musical interval** (like a fifth or an octave) instead of a small pitch difference. You still decide which note is higher — but now you're training your sense of musical distance." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Im Intervallmodus sind die beiden Töne durch ein bestimmtes **musikalisches Intervall** getrennt (z. B. eine Quinte oder Oktave) statt durch einen kleinen Tonhöhenunterschied. Du entscheidest weiterhin, welcher Ton höher ist — aber du trainierst jetzt dein Gespür für musikalische Abstände."
+            "value" : "Beim Intervalltraining sind die beiden Töne durch ein bestimmtes **musikalisches Intervall** getrennt (z. B. eine Quinte oder Oktave) statt durch einen kleinen Tonhöhenunterschied. Du entscheidest weiterhin, welcher Ton höher ist — aber du trainierst jetzt dein Gespür für musikalische Abstände."
           }
         }
       }
     },
-    "In interval mode, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it." : {
+    "For interval training, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Im Intervallmodus liegt deine Zieltonhöhe ein bestimmtes **musikalisches Intervall** vom Referenzton entfernt. Statt denselben Ton zu treffen, triffst du einen Ton, der einen bestimmten Abstand darüber oder darunter hat."
+            "value" : "Beim Intervalltraining liegt deine Zieltonhöhe ein bestimmtes **musikalisches Intervall** vom Referenzton entfernt. Statt denselben Ton zu treffen, triffst du einen Ton, der einen bestimmten Abstand darüber oder darunter hat."
           }
         }
       }
@@ -1467,12 +1467,12 @@
         }
       }
     },
-    "Just pick any training mode on the home screen and start practicing. Peach adapts to your skill level automatically." : {
+    "Just pick a discipline on the home screen and start practicing. Peach adapts to your skill level automatically." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wähle einfach einen Trainingsmodus auf dem Startbildschirm und leg los. Peach passt sich automatisch deinem Niveau an."
+            "value" : "Wähle einfach eine Disziplin auf dem Startbildschirm und leg los. Peach passt sich automatisch deinem Niveau an."
           }
         }
       }
@@ -3391,12 +3391,12 @@
         }
       }
     },
-    "Training Modes" : {
+    "Training Disciplines" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Trainingsmodi"
+            "value" : "Trainingsdisziplinen"
           }
         }
       }

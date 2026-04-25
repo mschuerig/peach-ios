@@ -467,7 +467,7 @@ This amendment extends the MVP architecture to support Pitch Matching (v0.2), a 
 
 ### Prerequisite Renames
 
-With two training modes, several MVP names are now ambiguous. These renames must be completed before implementing Pitch Matching:
+With two disciplines, several MVP names are now ambiguous. These renames must be completed before implementing Pitch Matching:
 
 | Current Name | New Name | Reason |
 |---|---|---|
@@ -483,7 +483,7 @@ With two training modes, several MVP names are now ambiguous. These renames must
 - `TrainingSettings` — shared settings (note range, reference pitch, note duration) apply to both modes
 - `PitchDiscriminationObserver`, `PitchDiscriminationTrial`, `CompletedPitchDiscriminationTrial` — already specific
 - `PerceptualProfile` — the concrete class conforms to both pitch comparison and matching protocols
-- `NotePlayer` — generic by design, serves both training modes
+- `NotePlayer` — generic by design, serves both disciplines
 - `HapticFeedbackManager` — comparison-only behavior, but name doesn't claim "training"
 
 **Rename scope:** Code files, class/struct/enum names, all references in `docs/project-context.md`, `docs/planning-artifacts/architecture.md`, and `docs/planning-artifacts/glossary.md`. Implementation artifact stories referencing old names should be updated if they are not yet completed.
@@ -913,7 +913,7 @@ PeachTests/
 
 *Amended: 2026-02-28*
 
-This amendment extends the architecture to support Interval Training (v0.3), which generalizes both existing training modes from unison to musical intervals. It also documents prerequisite refactorings to enrich domain types and unify naming before adding interval support.
+This amendment extends the architecture to support Interval Training (v0.3), which generalizes both existing disciplines from unison to musical intervals. It also documents prerequisite refactorings to enrich domain types and unify naming before adding interval support.
 
 **Input documents for this amendment:**
 - PRD v0.3 additions (FR53–FR67, User Journeys 7–8)
@@ -1076,7 +1076,7 @@ The standalone `FrequencyCalculation.swift` utility becomes redundant as its log
 
 #### D. Unified Reference/Target Naming
 
-Across all training modes, the abstract concept is the same: a **reference note** (the anchor the system plays) and a **target note** (what the user judges against or tunes toward). Current naming is inconsistent:
+Across all disciplines, the abstract concept is the same: a **reference note** (the anchor the system plays) and a **target note** (what the user judges against or tunes toward). Current naming is inconsistent:
 
 | Current | New | Where |
 |---|---|---|
@@ -1550,7 +1550,7 @@ Magic numbers have been extracted to named constants:
 
 ### Training Modes and Progress Tracking
 
-Four training modes are now formally tracked:
+Four disciplines are now formally tracked:
 
 ```
 enum TrainingDiscipline: CaseIterable {
@@ -1582,14 +1582,14 @@ Each mode has a `TrainingDisciplineConfig` with independent parameters for:
 |---|---|
 | `TrainingConstants` | Shared configuration constants used by both sessions: feedback duration, default velocity, default amplitude |
 | `TrainingDisciplineConfig` | Per-mode configuration for progress tracking: display names, EWMA parameters, baselines |
-| `ProgressTimeline` | Progress tracking across four training modes with EWMA smoothing, adaptive bucketing, and trend analysis. Conforms to both observer protocols |
+| `ProgressTimeline` | Progress tracking across four disciplines with EWMA smoothing, adaptive bucketing, and trend analysis. Conforms to both observer protocols |
 | `DirectedInterval` | Value type combining `Interval` + `Direction` (up/down) for settings and session parameterization |
 
 ## v0.4 Architecture Amendment — Rhythm Training
 
 *Amended: 2026-03-18*
 
-This amendment extends the architecture to support Rhythm Training (v0.4), which introduces two new training modes — Rhythm Comparison and Rhythm Matching — with a sample-accurate audio scheduling engine, asymmetric early/late difficulty tracking, tempo-indexed profiles, and a spectrogram visualization. It also documents prerequisite refactorings to reorganize domain types and clean up the perceptual profile.
+This amendment extends the architecture to support Rhythm Training (v0.4), which introduces two new disciplines — Rhythm Comparison and Rhythm Matching — with a sample-accurate audio scheduling engine, asymmetric early/late difficulty tracking, tempo-indexed profiles, and a spectrogram visualization. It also documents prerequisite refactorings to reorganize domain types and clean up the perceptual profile.
 
 **Input documents for this amendment:**
 - PRD v0.4 additions (FR68–FR104, User Journeys 9–10)
@@ -1598,9 +1598,9 @@ This amendment extends the architecture to support Rhythm Training (v0.4), which
 
 ### Central Design Principles
 
-1. **No overlapping implementations.** One low-level audio engine serves all training modes. Rhythm scheduling and pitch note playback share the same `AVAudioEngine`/`AVAudioUnitSampler` infrastructure.
+1. **No overlapping implementations.** One low-level audio engine serves all disciplines. Rhythm scheduling and pitch note playback share the same `AVAudioEngine`/`AVAudioUnitSampler` infrastructure.
 2. **Simple things simple, complex things possible.** Pitch training keeps its clean `NotePlayer` interface with immediate MIDI dispatch. Rhythm training gets sample-accurate scheduling via a new `RhythmPlayer` protocol. Both delegate to a shared engine.
-3. **Stable high-level abstractions.** Future training modes add new high-level protocols; existing protocols don't change. The engine grows capabilities without breaking existing clients.
+3. **Stable high-level abstractions.** Future disciplines add new high-level protocols; existing protocols don't change. The engine grows capabilities without breaking existing clients.
 
 ### Prerequisite Refactorings
 
@@ -2074,7 +2074,7 @@ struct GapResult {
 **Conforming types:**
 - `TrainingDataStore` — persists `RhythmOffsetDetectionRecord` and `RhythmMatchingRecord`
 - `PerceptualProfile` — updates rhythm statistics via `RhythmProfile` protocol
-- `ProgressTimeline` — tracks rhythm training modes for trend analysis
+- `ProgressTimeline` — tracks rhythm disciplines for trend analysis
 - `HapticFeedbackManager` — haptic on incorrect rhythm comparison answers (FR71), same as pitch comparison
 
 **File locations:**
@@ -2365,7 +2365,7 @@ Peach/
 │   │   ├── PitchDiscriminationProfile.swift
 │   │   ├── PitchMatchingProfile.swift
 │   │   ├── RhythmProfile.swift           # NEW — protocol
-│   │   ├── ProgressTimeline.swift        # Updated: 6 training modes, rhythm observers
+│   │   ├── ProgressTimeline.swift        # Updated: 6 disciplines, rhythm observers
 │   │   ├── TrainingDisciplineConfig.swift      # Updated: rhythm mode configs
 │   │   ├── ChartLayoutCalculator.swift
 │   │   └── GranularityZoneConfig.swift
@@ -2568,7 +2568,7 @@ enum StatisticalSummary: Sendable {
 
 `TrainingDisciplineStatistics` (Welford + EWMA + trend + time-ordered metrics) becomes the payload of the `.continuous` case rather than the raw return type. Most consumers use the common computed properties and never need to `switch`. Only consumers that need continuous-specific data (e.g., `welford.mean` for adaptive difficulty) pattern-match on `.continuous(let stats)`.
 
-**Future extension:** When a training mode produces non-continuous measurements (ordinal, 2D), add a new `StatisticalSummary` case with its own statistics type. `PerceptualProfile`'s storage and `TrainingProfile`'s API don't change — the new variant flows through the existing infrastructure. At that point, `MetricPoint.value: Double` should also become a sum type (`MeasuredValue`) — see deferred design note.
+**Future extension:** When a discipline produces non-continuous measurements (ordinal, 2D), add a new `StatisticalSummary` case with its own statistics type. `PerceptualProfile`'s storage and `TrainingProfile`'s API don't change — the new variant flows through the existing infrastructure. At that point, `MetricPoint.value: Double` should also become a sum type (`MeasuredValue`) — see deferred design note.
 
 #### 2. TrainingDiscipline Key Expansion
 
@@ -2595,7 +2595,7 @@ extension TrainingDiscipline {
 }
 ```
 
-Pitch modes expand 1:1 (one key each). Rhythm modes expand across tempoRange × direction (currently 3 × 2 = 6 keys each). The expansion is training-mode knowledge that belongs with `TrainingDiscipline`, not with `PerceptualProfile`.
+Pitch disciplines expand 1:1 (one key each). Rhythm disciplines expand across tempoRange × direction (currently 3 × 2 = 6 keys each). The expansion is discipline-specific knowledge that belongs with `TrainingDiscipline`, not with `PerceptualProfile`.
 
 #### 3. Generic Merge on TrainingProfile
 
@@ -2620,7 +2620,7 @@ extension TrainingProfile {
 }
 ```
 
-This collects metrics from multiple keys, merges them chronologically, and rebuilds a `StatisticalSummary`. It is generic — no training-mode-specific knowledge. For single-key pitch modes, `mergedStatistics(for: mode.statisticsKeys)` is equivalent to `statistics(for: .pitch(mode))`. For multi-key rhythm modes, it aggregates across all tempo ranges and directions.
+This collects metrics from multiple keys, merges them chronologically, and rebuilds a `StatisticalSummary`. It is generic — no discipline-specific knowledge. For single-key pitch disciplines, `mergedStatistics(for: mode.statisticsKeys)` is equivalent to `statistics(for: .pitch(mode))`. For multi-key rhythm disciplines, it aggregates across all tempo ranges and directions.
 
 #### Resulting Architecture
 

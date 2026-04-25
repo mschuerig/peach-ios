@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-25 # Story 71.2 → review; 71.5 added as ready-for-dev
+# last_updated: 2026-04-25 # Story 71.5 → review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -569,7 +569,7 @@ development_status:
   71-2-write-app-store-review-notes: review
   71-3-capture-iphone-and-ipad-screenshots: ready-for-dev
   71-4-capture-macos-screenshots: ready-for-dev
-  71-5-rename-mode-to-discipline-in-user-facing-copy: ready-for-dev # Cleanup follow-up surfaced by 71.2 review-notes drafting; user-facing copy + active docs only
+  71-5-rename-mode-to-discipline-in-user-facing-copy: review # Cleanup follow-up surfaced by 71.2 review-notes drafting; user-facing copy + active docs only
   epic-71-retrospective: optional
 
   # Epic 72: Trust the Build — TestFlight Beta

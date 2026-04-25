@@ -120,7 +120,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 ### Version 0.3 Scope (Phase 3 — Interval Training)
 
-**Core addition:** Interval-based variants of both training modes. Instead of comparing or matching unison (same pitch), the user works with musical intervals — detecting whether an interval is sharp/flat, or tuning a note to match a target interval from a reference.
+**Core addition:** Interval-based variants of both disciplines. Instead of comparing or matching unison (same pitch), the user works with musical intervals — detecting whether an interval is sharp/flat, or tuning a note to match a target interval from a reference.
 
 **Domain concepts introduced:**
 - Interval value object representing musical intervals from Prime (unison) through Octave
@@ -144,7 +144,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 **Pre-work:** PerceptualProfile cleanup — remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-mode extension. Must complete before rhythm implementation.
 
-**Core addition:** Two rhythm training modes that build a tempo-indexed rhythm profile with asymmetric early/late tracking and a 2D difficulty model (time offset × tempo).
+**Core addition:** Two rhythm disciplines that build a tempo-indexed rhythm profile with asymmetric early/late tracking and a 2D difficulty model (time offset × tempo).
 
 **Domain concepts introduced:**
 - 2D difficulty model: adaptive time offset (axis 1) × user-selected metronome tempo (axis 2)
@@ -290,13 +290,13 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 **Climax:** After a minute, she notices her ear is doing something new. She's not just hearing "higher or lower" — she's hearing "sharp fifth or flat fifth." The training feels directly relevant to ensemble intonation. This is the skill gap she's been trying to close.
 
-**Resolution:** She switches back to unison pitch comparison for a quick burst. Both modes feed her understanding of pitch. The interval mode trains a higher-order skill that builds on the foundation the unison mode established.
+**Resolution:** She switches back to unison pitch comparison for a quick burst. Both disciplines feed her understanding of pitch. Interval pitch comparison trains a higher-order skill that builds on the foundation unison pitch comparison established.
 
 **Requirements revealed:** Interval Pitch Comparison Screen, target interval display, second note offset from correct interval (not from reference), same higher/lower interaction pattern, same feedback mechanisms, Start Screen integration.
 
 ### Journey 8: Interval Pitch Matching — "Tune That Fifth"
 
-**Persona:** Sarah, exploring the interval pitch matching mode for the first time.
+**Persona:** Sarah, exploring interval pitch matching for the first time.
 
 **Opening Scene:** She taps "Interval Pitch Matching" on the Start Screen. The screen indicates the target interval: Perfect Fifth Up.
 
@@ -304,7 +304,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 **Climax:** She releases the slider. The result shows she was 6 cents flat of a true fifth. Not bad for a first attempt. The next reference note plays. She goes again. This mode is harder than unison matching — she has to hold the interval relationship in her mind while tuning. It's exactly the skill she uses when tuning her cello's strings.
 
-**Resolution:** She does five matches and closes the app. The interval matching mode is more demanding but directly applicable to her instrument. She'll alternate between unison and interval modes in her daily training.
+**Resolution:** She does five matches and closes the app. Interval pitch matching is more demanding but directly applicable to her instrument. She'll alternate between unison and interval disciplines in her daily training.
 
 **Requirements revealed:** Interval Pitch Matching Screen, target interval display, slider tuning to interval (not unison), result recording with target interval, same slider interaction pattern, same feedback mechanisms.
 
@@ -334,7 +334,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 **Resolution:** She alternates between rhythm comparison and rhythm matching, the way she alternates between pitch comparison and pitch matching. Different skills, same philosophy: build the profile, target the weak spots, no scores, no judgment.
 
-**Requirements revealed:** Rhythm Matching Screen, tap input, 3+1 dot visualization with color feedback, separate early/late error tracking, per-tempo statistics, same interruption handling as other training modes.
+**Requirements revealed:** Rhythm Matching Screen, tap input, 3+1 dot visualization with color feedback, separate early/late error tracking, per-tempo statistics, same interruption handling as other disciplines.
 
 ### Journey Requirements Summary
 
@@ -372,7 +372,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 | Sample-accurate audio scheduling engine | 9, 10 | v0.4 |
 | Spectrogram-style rhythm profile visualization | 9, 10 | v0.4 |
 | CSV format v2 with rhythm training types | 9, 10 | v0.4 |
-| Start Screen buttons for rhythm training modes | 9, 10 | v0.4 |
+| Start Screen buttons for rhythm disciplines | 9, 10 | v0.4 |
 | Temporal progress visualization | 3 | Future |
 | Per-note detail view | 3 | Future |
 
@@ -538,7 +538,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 ### Start Screen Integration
 
-- **FR65:** Start Screen shows training buttons for all available training modes (pitch comparison, pitch matching, interval variants, rhythm variants — growing as modes are added per version scope)
+- **FR65:** Start Screen shows training buttons for all available disciplines (pitch comparison, pitch matching, interval variants, rhythm variants — growing as disciplines are added per version scope)
 - **FR66:** Unison comparison and unison pitch matching behave identically to their interval variants with the interval fixed to prime (unison)
 
 ### Initial Scope Constraint

@@ -595,7 +595,7 @@ The composition root wires:
 
 ### 8.7 Training Discipline Registry
 
-The `TrainingDiscipline` protocol + `TrainingDisciplineRegistry` is the extensibility pattern for training modes. Each discipline self-describes via a single struct conformance:
+The `TrainingDiscipline` protocol + `TrainingDisciplineRegistry` is the extensibility pattern for disciplines. Each discipline self-describes via a single struct conformance:
 
 - **Identity:** `TrainingDisciplineID` (stable string-backed enum with six cases)
 - **Display:** `TrainingDisciplineConfig` (localized name, unit label, optimal baseline, statistics parameters)
@@ -762,7 +762,7 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 
 **Context:** Adding interval training could duplicate sessions, screens, and data models for "interval" and "non-interval" variants.
 
-**Decision:** Unison (prime) is treated as the interval "prime" — not a separate concept. Existing sessions are parameterized with an interval set. Four pitch training modes map to two session types × interval configuration.
+**Decision:** Unison (prime) is treated as the interval "prime" — not a separate concept. Existing sessions are parameterized with an interval set. Four pitch disciplines map to two session types × interval configuration.
 
 **Status:** Implemented.
 
@@ -894,7 +894,7 @@ Quality
 | **Cent** | Unit of pitch difference. 100 cents = 1 semitone, 1200 cents = 1 octave. |
 | **Cold Start** | Initial state when no training data exists for a note or tempo range. The algorithm starts at maximum difficulty. |
 | **Composition Root** | The single location (app entry point) where all services are created and wired. |
-| **Continuous Rhythm Matching** | Training mode: a repeating rhythmic pattern plays with one gap per cycle; user taps to fill the gap. Timing accuracy is measured. |
+| **Continuous Rhythm Matching** | A repeating rhythmic pattern plays with one gap per cycle; user taps to fill the gap. Timing accuracy is measured. |
 | **CycleDefinition** | A single four-step cycle in continuous rhythm matching, specifying which step position is the gap. |
 | **DetunedMIDINote** | A MIDI note with a cent offset — a precise pitch identity in the logical world. |
 | **EWMA** | Exponentially Weighted Moving Average. Used for smoothing progress trends over time. |
@@ -904,14 +904,14 @@ Quality
 | **PeachCommands** | SwiftUI `Commands` type providing macOS menu bar entries and keyboard shortcuts for training interactions. |
 | **Perceptual Profile** | In-memory model of the user's pitch and rhythm perception, rebuilt from training records on startup. Keyed by `StatisticsKey`. |
 | **Pitch Bend** | MIDI mechanism for fine-tuning pitch. Peach uses a ±200 cent range with 14-bit resolution (~0.024 cents per step). |
-| **Pitch Comparison** | Training mode: two notes in sequence, user judges higher or lower. |
-| **Pitch Matching** | Training mode: user tunes a note to match a reference pitch via slider. |
+| **Pitch Comparison** | Two notes in sequence, user judges higher or lower. |
+| **Pitch Matching** | User tunes a note to match a reference pitch via slider. |
 | **Platform Implementation** | A concrete type in `App/Platform/` that conforms to a port protocol with platform-specific behavior (e.g., `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`). |
 | **Port** | A platform-agnostic protocol in `Core/Ports/` that abstracts a platform-specific capability (e.g., `HapticFeedback`, `AudioSessionConfiguring`). See Section 8.8. |
 | **Reference Note** | The anchor note in a training exercise. Always an exact MIDI note. |
 | **RhythmDirection** | Whether a timing offset is early (before the beat) or late (after the beat). |
 | **RhythmOffset** | A signed duration representing the timing deviation from the beat. Negative = early, positive = late. |
-| **Rhythm Offset Detection** | Training mode: a four-note pattern plays with one note offset from the beat; user judges early or late. |
+| **Rhythm Offset Detection** | A four-note pattern plays with one note offset from the beat; user judges early or late. |
 | **SampleRate** | Audio samples per second (e.g., 44,100 Hz or 48,000 Hz). Used for sample-accurate scheduling. |
 | **SoundFont (SF2)** | File format containing sampled instrument sounds. Peach bundles one GM SoundFont for both pitched and percussion playback. |
 | **SoundFontEngine** | Shared multi-channel audio engine managing a single `AVAudioEngine` with multiple `AVAudioUnitSampler` nodes. Provides sample-accurate event scheduling via render-thread dispatch. |
@@ -923,7 +923,6 @@ Quality
 | **TempoRange** | A band of tempos (slow: 40-79, medium: 80-119, fast: 120-200 BPM) used to group rhythm statistics. |
 | **Training Discipline** | A self-describing unit of training functionality. Six disciplines exist: unison/interval pitch comparison, unison/interval pitch matching, rhythm offset detection, continuous rhythm matching. |
 | **TrainingDisciplineRegistry** | Singleton that registers all active disciplines and provides aggregate operations (profile feeding, CSV column aggregation, parser dispatch). |
-| **Training Mode** | One of six activities: unison comparison, interval comparison, unison matching, interval matching, rhythm offset detection, continuous rhythm matching. |
 | **Tuning System** | Defines how intervals map to cent offsets (and thus frequencies). Currently: 12-TET and just intonation. |
 | **Two-World Architecture** | Separation of logical types (MIDI notes, intervals, cents, tempos) from physical types (frequencies, sample offsets). Bridged by TuningSystem (pitch) and SampleRate × Duration (rhythm). |
 | **Welford's Algorithm** | Incremental method for computing running mean and variance without storing all historical data. |

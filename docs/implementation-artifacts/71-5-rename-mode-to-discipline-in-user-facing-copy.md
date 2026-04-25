@@ -1,6 +1,6 @@
 # Story 71.5: Rename "mode" to "discipline" in user-facing copy and active docs
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -152,32 +152,32 @@ Note: renaming `Localizable.xcstrings` keys means the `String(localized:)` call 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update English copy in source (AC: 1)
-  - [ ] 1.1 Edit the two "interval mode" help-body strings (`HelpContent.swift:23,42`)
-  - [ ] 1.2 Edit the four "training mode(s)" `String(localized:)` strings and the `"Training Modes"` section title (`HelpContent.swift:95,99,156,166`)
-  - [ ] 1.3 Rename the `trainingModesDescription` identifier to `trainingDisciplinesDescription` (and any references)
-  - [ ] 1.4 Build iOS — confirm no compiler errors
-- [ ] Task 2: Update string-catalog keys and German translations (AC: 2, 3)
-  - [ ] 2.1 In `Localizable.xcstrings`, rename each affected English key
-  - [ ] 2.2 Update each German translation to use "Disziplin(en)" / "Trainingsdisziplin(en)" with `du`/imperative tone
-  - [ ] 2.3 Run `bin/add-localization.swift --list` and `--missing` to verify no orphaned keys or missing translations
-- [ ] Task 3: Update test method descriptions (AC: 4)
-  - [ ] 3.1 `StartScreenTests.swift:187`
-  - [ ] 3.2 `ProgressChartViewTests.swift:549`
-- [ ] Task 4: Update arc42 (AC: 5)
-  - [ ] 4.1 Edit prose lines 598, 765 (rename "training modes" → "disciplines")
-  - [ ] 4.2 Reword glossary table rows at 897, 907, 908, 914 to drop the "Training mode:" preamble
-  - [ ] 4.3 Delete the `**Training Mode**` glossary row at line 926
-- [ ] Task 5: Update project-context (AC: 6)
-  - [ ] 5.1 Rewrite line 257 to "Six training disciplines" with the correct list
-- [ ] Task 6: Update planning glossary (AC: 7)
-  - [ ] 6.1 Verify static-instance count of `TrainingDisciplineConfig` and update glossary entry from "Four" to current number
-- [ ] Task 7: Update prd, architecture, ux-design-specification (AC: 8)
-  - [ ] 7.1 Apply minimally invasive edits to each listed line
-  - [ ] 7.2 Re-grep after edits to confirm no remaining "training mode" prose (excluding deliberate historical references)
-- [ ] Task 8: Build & test on both platforms (AC: 10)
-  - [ ] 8.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
-  - [ ] 8.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
+- [x] Task 1: Update English copy in source (AC: 1)
+  - [x] 1.1 Edit the two "interval mode" help-body strings (`HelpContent.swift:23,42`)
+  - [x] 1.2 Edit the four "training mode(s)" `String(localized:)` strings and the `"Training Modes"` section title (`HelpContent.swift:95,99,156,166`)
+  - [x] 1.3 Rename the `trainingModesDescription` identifier to `trainingDisciplinesDescription` (and any references)
+  - [x] 1.4 Build iOS — confirm no compiler errors
+- [x] Task 2: Update string-catalog keys and German translations (AC: 2, 3)
+  - [x] 2.1 In `Localizable.xcstrings`, rename each affected English key
+  - [x] 2.2 Update each German translation to use "Disziplin(en)" / "Trainingsdisziplin(en)" with `du`/imperative tone
+  - [x] 2.3 Run `bin/add-localization.swift --list` and `--missing` to verify no orphaned keys or missing translations
+- [x] Task 3: Update test method descriptions (AC: 4)
+  - [x] 3.1 `StartScreenTests.swift:187`
+  - [x] 3.2 `ProgressChartViewTests.swift:549`
+- [x] Task 4: Update arc42 (AC: 5)
+  - [x] 4.1 Edit prose lines 598, 765 (rename "training modes" → "disciplines")
+  - [x] 4.2 Reword glossary table rows at 897, 907, 908, 914 to drop the "Training mode:" preamble
+  - [x] 4.3 Delete the `**Training Mode**` glossary row at line 926
+- [x] Task 5: Update project-context (AC: 6)
+  - [x] 5.1 Rewrite line 257 to "Six training disciplines" with the correct list
+- [x] Task 6: Update planning glossary (AC: 7)
+  - [x] 6.1 Verify static-instance count of `TrainingDisciplineConfig` and update glossary entry from "Four" to current number
+- [x] Task 7: Update prd, architecture, ux-design-specification (AC: 8)
+  - [x] 7.1 Apply minimally invasive edits to each listed line
+  - [x] 7.2 Re-grep after edits to confirm no remaining "training mode" prose (excluding deliberate historical references)
+- [x] Task 8: Build & test on both platforms (AC: 10)
+  - [x] 8.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
+  - [x] 8.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
 
 ## Dev Notes
 
@@ -204,14 +204,43 @@ Project lead decision (2026-04-25): "interval mode" is acceptable as an **intern
 
 ### Completion Notes List
 
-(to be filled in by the dev workflow)
+- AC 1 — Updated five `String(localized:)` strings + section title in `HelpContent.swift`; renamed `trainingModesDescription` → `trainingDisciplinesDescription` (call site in `HelpContent.swift:167` and test reference in `StartScreenTests.swift`).
+- AC 2 + AC 3 — Renamed all eight English keys and German translations in `Localizable.xcstrings`. German uses `Disziplin(en)` / `Trainingsdisziplinen` and "Beim Intervalltraining" with `du`/imperative tone. `bin/add-localization.swift --missing` reports only pre-existing missing keys ("Play Preview", "Stop Preview"), unrelated to this story.
+- AC 4 — Updated test method descriptions in `StartScreenTests.swift:187` and `ProgressChartViewTests.swift:549`.
+- AC 5 — Updated arc42 prose at lines 598, 765; reworded four glossary rows (Continuous Rhythm Matching, Pitch Comparison, Pitch Matching, Rhythm Offset Detection) to drop the "Training mode:" preamble; deleted the redundant `**Training Mode**` glossary row.
+- AC 6 — Rewrote project-context line 257: "Four training modes" → "Six training disciplines", with corrected list (added timing offset detection, continuous rhythm matching).
+- AC 7 — Verified six discipline `TrainingDisciplineConfig(...)` instances across the discipline files; updated glossary entry from "Four static instances" to "Six instances". Also fixed two related stale "four" counts in the glossary (Progress Timeline, Profile Screen) and reworded the Start Screen entry to reflect six discipline buttons (Boy Scout Rule).
+- AC 8 — Updated five prose lines in `prd.md`, eleven prose lines in `architecture.md`, and twelve prose lines in `ux-design-specification.md`. Preserved historical-rationale references per AC 8 exception: section headings `### Training Modes and Progress Tracking` (1551) and `### Training Modes Extension` (2207) in `architecture.md`, plus cross-references at 2545 and 2705.
+- AC 8 follow-up — Project-lead clarification (2026-04-25): "interval mode" describing a *screen/session operating state* (e.g. "the screen in interval mode") is acceptable internal usage; only *discipline-level* references to "interval mode(s)" need rewriting. Updated three discipline-level prose references in `prd.md` (lines 293, 299, 307) and four in `ux-design-specification.md` (lines 1469, 1503, 1519, 1630). Left screen-state descriptions intact in `arc42.md` (219, 220, 770), `glossary.md` (103, 104), `ux-design-specification.md` (1471, 1606, 1639), and `architecture.md` (1290, 1500, 2285).
+- AC 9 — No historical artifacts (implementation artifacts, code review docs, completed tech specs, retrospectives) modified.
+- AC 10 — Both platforms green: `bin/build.sh` (0 warnings iOS, 1 pre-existing AppIntents metadata warning macOS), `bin/test.sh` (1765 passed iOS, 1758 passed macOS).
 
 ### File List
 
-(to be filled in by the dev workflow)
+**Source code:**
+- `Peach/App/HelpContent.swift`
+- `Peach/Resources/Localizable.xcstrings`
+
+**Tests:**
+- `PeachTests/Start/StartScreenTests.swift`
+- `PeachTests/Profile/ProgressChartViewTests.swift`
+
+**Documentation:**
+- `docs/project-context.md`
+- `docs/arc42.md`
+- `docs/planning-artifacts/glossary.md`
+- `docs/planning-artifacts/prd.md`
+- `docs/planning-artifacts/architecture.md`
+- `docs/planning-artifacts/ux-design-specification.md`
+
+**Sprint tracking:**
+- `docs/implementation-artifacts/sprint-status.yaml`
+- `docs/implementation-artifacts/71-5-rename-mode-to-discipline-in-user-facing-copy.md`
 
 ## Change Log
 
 - 2026-04-25: Story drafted as a follow-up to story 71.2 (review notes), which surfaced the inconsistency.
 - 2026-04-25: Scope locked after project-lead decision: user-facing "interval mode" copy is in scope (rewritten); internal `isIntervalMode: Bool` parameter is out of scope (treated as implementation detail).
 - 2026-04-25: Filed under epic 71 as Story 71.5; status → ready-for-dev.
+- 2026-04-25: Implementation complete. All ACs satisfied; iOS + macOS green; status → review.
+- 2026-04-25: Simplify-code review surfaced ~17 in-scope "interval mode" references missed by the AC line lists (AC line lists were generated from `grep "training mode\|TrainingMode\b"`, which doesn't match standalone "interval mode"). Project-lead clarification refined the scope: discipline-level references → rewrite; screen/session operating-state descriptions → leave (per memory: "mode" is not a banned word; internal screen-state descriptions remain acceptable). Applied seven discipline-level rewrites in `prd.md` and `ux-design-specification.md`; left ten screen-state descriptions intact across `arc42.md`, `glossary.md`, `ux-design-specification.md`, and `architecture.md`.

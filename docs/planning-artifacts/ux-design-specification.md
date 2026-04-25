@@ -1025,7 +1025,7 @@ After the user releases the slider, feedback is displayed for the same duration 
 
 3. **"When am I done?"** — The user must decide when to commit (release the slider). The release gesture is the commit action.
 
-4. **Start Screen hierarchy** — Adding a second training mode button changes the visual balance. Must preserve zero-friction feel.
+4. **Start Screen hierarchy** — Adding a second discipline button changes the visual balance. Must preserve zero-friction feel.
 
 ### PRD Amendment Required
 
@@ -1281,7 +1281,7 @@ App backgrounded during pitch matching ──► Start Screen
 | Settings button | `Button` with `Image(systemName:)` (reuse existing pattern) | Pitch Matching Screen |
 | Profile button | `Button` with `Image(systemName:)` (reuse existing pattern) | Pitch Matching Screen |
 
-The Pitch Matching button sits below Start Training on the Start Screen. It should be clearly visible but visually subordinate to Start Training — this is the secondary training mode. Stock `Button` with less prominence than `.borderedProminent`.
+The Pitch Matching button sits below Start Training on the Start Screen. It should be clearly visible but visually subordinate to Start Training — this is the secondary discipline. Stock `Button` with less prominence than `.borderedProminent`.
 
 #### Custom Components
 
@@ -1383,7 +1383,7 @@ Peach now has **two feedback patterns** instead of one. They share timing and sc
 - Same display duration (~400ms)
 - Same transition animation (`.transition(.opacity)`)
 - Same "appears instantly, clears automatically" behavior
-- The two feedback patterns never appear on the same screen — each is unique to its training mode
+- The two feedback patterns never appear on the same screen — each is unique to its discipline
 
 #### Navigation Pattern — No Change
 
@@ -1397,7 +1397,7 @@ Pitch Matching Screen follows the identical hub-and-spoke pattern. Settings and 
 | App backgrounded | Stop, discard, return to Start Screen | Stop, discard, return to Start Screen |
 | Phone call / headphone disconnect | Stop, discard | Stop, discard |
 
-Identical behavior. The interruption contract is universal across all training modes.
+Identical behavior. The interruption contract is universal across all disciplines.
 
 #### Empty States — Pitch Matching Addition
 
@@ -1452,7 +1452,7 @@ Unlike pitch comparison training (where eyes-closed is fully supported via hapti
 
 ### Project Understanding
 
-Interval training generalizes both existing training modes from unison to musical intervals. Instead of comparing or matching the same pitch, the user works with intervals — detecting whether an interval is sharp or flat (comparison), or tuning a note to produce a target interval (pitch matching).
+Interval training generalizes both existing disciplines from unison to musical intervals. Instead of comparing or matching the same pitch, the user works with intervals — detecting whether an interval is sharp or flat (comparison), or tuning a note to produce a target interval (pitch matching).
 
 **The core insight:** the interaction patterns are identical to unison training. Higher/lower buttons for comparison, vertical slider for pitch matching. What changes is the **frame of reference** — the user judges relative to a target interval, not relative to unison.
 
@@ -1466,7 +1466,7 @@ Interval training generalizes both existing training modes from unison to musica
 
 **Target interval display at top of screen.** Both Interval Pitch Comparison and Interval Pitch Matching show the current target interval prominently at the top of the training screen. This is essential information, not decorative context — once multiple intervals are in rotation, the user must know which interval they're judging or tuning toward before the exercise begins. For v0.3 (fixed perfect fifth), the display is static. The UX is designed for the future where it changes per exercise.
 
-**Flat vertical stack for Start Screen buttons.** Four training buttons arranged vertically with visual grouping to separate unison modes from interval modes. The zero-friction philosophy is preserved — the primary actions (Pitch Comparison, Pitch Matching) retain their current prominence and position, with interval variants appearing below a subtle visual separator.
+**Flat vertical stack for Start Screen buttons.** Four training buttons arranged vertically with visual grouping to separate the unison disciplines from the interval disciplines. The zero-friction philosophy is preserved — the primary actions (Pitch Comparison, Pitch Matching) retain their current prominence and position, with interval variants appearing below a subtle visual separator.
 
 **Screen reuse with conditional interval context.** The Pitch Comparison Screen and Pitch Matching Screen are extended, not duplicated. When entered in interval mode, a target interval label appears at the top. When entered in unison mode, no interval indicator is shown — the screen looks exactly as it does today. This keeps the codebase lean and ensures consistency.
 
@@ -1500,7 +1500,7 @@ Key mental model elements:
 
 1. **The interval is the frame** — the target interval label at the top of the screen is not informational chrome; it's the exercise definition. The user must internalize it before listening. As intervals rotate randomly in future versions, glancing at this label becomes part of the exercise ritual.
 2. **Same muscles, different skill** — the buttons, slider, feedback, and timing are identical. What's different is inside the user's head. The UX must not add complexity to support a more complex listening task — the simplicity of the interaction is more important than ever when the cognitive load is higher.
-3. **Unison is just prime** — there is no conceptual wall between unison and interval training. The user who has been doing unison pitch comparison has been doing interval pitch comparison at prime all along. The interval modes are a generalization, not a separate feature.
+3. **Unison is just prime** — there is no conceptual wall between unison and interval training. The user who has been doing unison pitch comparison has been doing interval pitch comparison at prime all along. The interval disciplines are a generalization, not a separate feature.
 
 ### Interval Training — Emotional Response
 
@@ -1516,7 +1516,7 @@ Key mental model elements:
 
 | Moment | Desired Feeling | Anti-Pattern to Avoid |
 |---|---|---|
-| **Choosing interval mode** | Curiosity — "let me try this" | Intimidation, "advanced mode" framing |
+| **Choosing an interval discipline** | Curiosity — "let me try this" | Intimidation, "advanced mode" framing |
 | **Seeing target interval label** | Orientation — "got it, perfect fifth" | Confusion about what the label means |
 | **First interval pitch comparison** | Familiar interaction, new challenge — same buttons, different listening | Overwhelm from the harder task |
 | **First wrong answer** | Same neutral acceptance as unison — just a haptic tick | Frustration from failing at a "harder" mode |
@@ -1627,7 +1627,7 @@ flowchart TD
 **Design rationale:**
 - Pitch Comparison retains `.borderedProminent` as the hero action — it's the entry point for new users and the most-used mode
 - Pitch Matching retains its current secondary position
-- A subtle visual separator (extra spacing, a thin divider, or a section label like "Intervals") groups the interval modes
+- A subtle visual separator (extra spacing, a thin divider, or a section label like "Intervals") groups the interval disciplines
 - Interval buttons use `.bordered` style — same prominence as Pitch Matching, visually subordinate to Pitch Comparison
 - The vertical stack preserves the one-handed, thumb-friendly layout
 - Four buttons is the maximum for this design. If future modes are added beyond interval training, a different organizational pattern would be needed
@@ -1761,7 +1761,7 @@ The rest of the accessibility story is identical to unison modes — no new acce
 
 2. **Chart image sharing via per-chart share button** — Each `ProgressChartView` card gets a share icon in its headline row. Tapping renders the chart as a shareable image including the chart title (mode name, EWMA, stddev, trend) and a localized timestamp.
 
-3. **Filenames include minute-precision timestamps** — `peach-training-data-2026-03-15-1432.csv` for data, `peach-pitch-comparison-2026-03-15-1432.png` for chart images. Training mode name is slugified into the chart filename.
+3. **Filenames include minute-precision timestamps** — `peach-training-data-2026-03-15-1432.csv` for data, `peach-pitch-comparison-2026-03-15-1432.png` for chart images. Discipline name is slugified into the chart filename.
 
 ### CSV Sharing — UX Specification
 
@@ -1818,7 +1818,7 @@ Chart sharing taps into the "it's working" moment — the user sees their progre
 
 ### Project Understanding
 
-Rhythm training introduces two new training modes that extend Peach from pitch perception into temporal perception. The user trains their ability to detect and produce precise rhythmic timing — a complementary musical skill that uses the same "training, not testing" philosophy.
+Rhythm training introduces two new disciplines that extend Peach from pitch perception into temporal perception. The user trains their ability to detect and produce precise rhythmic timing — a complementary musical skill that uses the same "training, not testing" philosophy.
 
 **Rhythm Comparison** (judgment/detection): 4 sixteenth notes play at the user's chosen tempo. The 4th note is offset early or late. The user judges "Early" or "Late." This parallels pitch comparison — binary judgment, adaptive difficulty, reflexive interaction.
 
@@ -1877,7 +1877,7 @@ Key mental model shift from pitch training: pitch training works in frequency sp
 3. **User taps Early or Late** — Both buttons disable immediately. Result is recorded. Feedback appears.
 4. **Feedback** — Green checkmark (correct) or red cross (incorrect) + current difficulty as `RhythmDeviation` (e.g., "4%") in the summary stat line. Haptic tick on incorrect. Same duration as pitch comparison feedback (~400ms).
 5. **Feedback clears** — Next pattern plays. Return to step 1.
-6. **Leaving** — Same as all training modes. Navigate away, background the app. Incomplete exercises silently discarded.
+6. **Leaving** — Same as all disciplines. Navigate away, background the app. Incomplete exercises silently discarded.
 
 **The Rhythm Matching Loop — Step by Step:**
 
@@ -1886,7 +1886,7 @@ Key mental model shift from pitch training: pitch training works in frequency sp
 3. **User taps** — The 4th dot lights up (neutral color). Timing error is measured and recorded. Feedback appears.
 4. **Feedback** — Signed `RhythmDeviation` with directional arrow in the summary stat line: left arrow + "3% early" or right arrow + "8% late." Same arrow direction convention as the Early/Late buttons. Same feedback duration (~400ms).
 5. **Feedback clears** — Next lead-in plays. Return to step 1.
-6. **Leaving** — Same as all training modes.
+6. **Leaving** — Same as all disciplines.
 
 **Experience Principles (Rhythm-Specific):**
 
@@ -2057,7 +2057,7 @@ Formula: `thresholdMs = clamp(sixteenthMs × basePercent / 100, floor, ceiling)`
 | Moderate | between precise and moderate thresholds | Yellow (system) |
 | Erratic | > moderate threshold (25–50 ms depending on tempo) | Red (system) |
 
-**Calibration rationale (story 51.3):** Thresholds are informed by sensorimotor synchronization research — perception JND (~10–25 ms, Madison & Merker 2004), professional drummer steady-state SD (~10–20 ms, Butterfield 2010), and iOS touchscreen latency (~8–16 ms). Both rhythm training modes (offset detection and rhythm matching) share the same thresholds; the distinction between perception and production is captured by separate `TrainingDiscipline` values, not by different color scales.
+**Calibration rationale (story 51.3):** Thresholds are informed by sensorimotor synchronization research — perception JND (~10–25 ms, Madison & Merker 2004), professional drummer steady-state SD (~10–20 ms, Butterfield 2010), and iOS touchscreen latency (~8–16 ms). Both rhythm disciplines (offset detection and rhythm matching) share the same thresholds; the distinction between perception and production is captured by separate `TrainingDiscipline` values, not by different color scales.
 
 Band count, threshold values, and BPM range are all parameterized — no hardcoded values.
 
@@ -2246,7 +2246,7 @@ Two new screens (Rhythm Comparison, Rhythm Matching) with direct navigation from
 
 #### Interruption Pattern — No Change
 
-Identical to all existing training modes. Any interruption during rhythm training follows the same rule: stop audio, discard incomplete exercise, leave training screen. No rhythm-specific interruption handling.
+Identical to all existing disciplines. Any interruption during rhythm training follows the same rule: stop audio, discard incomplete exercise, leave training screen. No rhythm-specific interruption handling.
 
 #### Empty States — Rhythm-Specific
 
@@ -2255,7 +2255,7 @@ Identical to all existing training modes. Any interruption during rhythm trainin
 - Profile card headline shows dashes for EWMA, no trend arrow
 - Same treatment as pitch profile empty states — the absence of data, not an error
 
-**Rhythm training screens — never empty.** The loop starts immediately, same as all training modes.
+**Rhythm training screens — never empty.** The loop starts immediately, same as all disciplines.
 
 ### Rhythm Training — Responsive & Accessibility
 
