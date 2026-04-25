@@ -80,9 +80,9 @@ struct StartScreen: View {
     private var portraitLayout: some View {
         ScrollView(.vertical) {
             VStack(spacing: Self.sectionSpacing(isCompact: false)) {
-                pitchSection
-                intervalsSection
-                rhythmSection
+                ForEach(TrainingDisciplineRegistry.shared.activeCategories, id: \.self) { category in
+                    categorySection(category)
+                }
             }
             .padding(.vertical)
         }
@@ -91,95 +91,46 @@ struct StartScreen: View {
     private var landscapeLayout: some View {
         ScrollView(.vertical) {
             HStack(alignment: .top, spacing: Self.sectionSpacing(isCompact: true)) {
-                pitchSection
-                    .frame(maxWidth: .infinity)
-                intervalsSection
-                    .frame(maxWidth: .infinity)
-                rhythmSection
-                    .frame(maxWidth: .infinity)
+                ForEach(TrainingDisciplineRegistry.shared.activeCategories, id: \.self) { category in
+                    categorySection(category)
+                        .frame(maxWidth: .infinity)
+                }
             }
         }
     }
 
     // MARK: - Sections
 
-    private var pitchSection: some View {
+    private func categorySection(_ category: TrainingCategory) -> some View {
         VStack(spacing: Self.cardSpacing(isCompact: isCompactHeight)) {
-            Text("Pitch")
+            Text(category.localizedTitle)
                 .font(.title3)
                 .foregroundStyle(.secondary)
 
-            NavigationLink(value: NavigationDestination.pitchDiscrimination(isIntervalMode: false)) {
-                trainingCard("Compare", systemImage: "ear", mode: .unisonPitchDiscrimination, isHero: true)
+            ForEach(TrainingDisciplineRegistry.shared.disciplines(in: category), id: \.id) { discipline in
+                NavigationLink(value: discipline.id.navigationDestination) {
+                    trainingCard(for: discipline)
+                }
+                .buttonStyle(TrainingCardButtonStyle())
+                .accessibilityLabel(discipline.config.displayName)
             }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Compare Pitch")
-
-            NavigationLink(value: NavigationDestination.pitchMatching(isIntervalMode: false)) {
-                trainingCard("Match", systemImage: "target", mode: .unisonPitchMatching)
-            }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Match Pitch")
-        }
-    }
-
-    private var intervalsSection: some View {
-        VStack(spacing: Self.cardSpacing(isCompact: isCompactHeight)) {
-            Text("Intervals")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-
-            NavigationLink(value: NavigationDestination.pitchDiscrimination(isIntervalMode: true)) {
-                trainingCard("Compare", systemImage: "ear", mode: .intervalPitchDiscrimination)
-            }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Compare Intervals")
-
-            NavigationLink(value: NavigationDestination.pitchMatching(isIntervalMode: true)) {
-                trainingCard("Match", systemImage: "target", mode: .intervalPitchMatching)
-            }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Match Intervals")
-        }
-    }
-
-    private var rhythmSection: some View {
-        VStack(spacing: Self.cardSpacing(isCompact: isCompactHeight)) {
-            Text("Rhythm")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-
-            NavigationLink(value: NavigationDestination.timingOffsetDetection) {
-                trainingCard("Compare", systemImage: "metronome", mode: .timingOffsetDetection)
-            }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Compare Timing")
-
-            NavigationLink(value: NavigationDestination.continuousRhythmMatching) {
-                trainingCard("Fill the Gap", systemImage: "hand.tap", mode: .continuousRhythmMatching)
-            }
-            .buttonStyle(TrainingCardButtonStyle())
-            .accessibilityLabel("Fill the Gap")
         }
     }
 
     // MARK: - Card View
 
-    private func trainingCard(
-        _ title: LocalizedStringKey,
-        systemImage: String,
-        mode: TrainingDisciplineID,
-        isHero: Bool = false
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Label(title, systemImage: systemImage)
+    private func trainingCard(for discipline: any TrainingDiscipline) -> some View {
+        let config = discipline.config
+        let mode = discipline.id
+        return VStack(alignment: .leading, spacing: 4) {
+            Label(config.shortLabel, systemImage: config.systemImageName)
             ProgressSparklineView(
                 state: progressTimeline.state(for: mode),
                 bucketMeans: progressTimeline.buckets(for: mode).map(\.mean),
                 ewma: progressTimeline.currentEWMA(for: mode),
                 trend: progressTimeline.trend(for: mode),
-                modeName: mode.config.displayName,
-                unitLabel: mode.config.unitLabel
+                modeName: config.displayName,
+                unitLabel: config.unitLabel
             )
         }
         .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
@@ -188,10 +139,10 @@ struct StartScreen: View {
         .foregroundStyle(.primary)
         .background(
             RoundedRectangle(cornerRadius: Self.cardCornerRadius)
-                .fill(isHero ? .thinMaterial : .regularMaterial)
+                .fill(config.isHero ? .thinMaterial : .regularMaterial)
         )
         .overlay {
-            if isHero {
+            if config.isHero {
                 RoundedRectangle(cornerRadius: Self.cardCornerRadius)
                     .strokeBorder(.tint.opacity(0.3), lineWidth: 1)
             }

@@ -21,27 +21,6 @@
         }
       }
     },
-    "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Tonhöhe vergleichen** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Intervalle vergleichen** – Das gleiche Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Tonhöhe treffen** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Intervalle treffen** – Gleiche Tonhöhen mit musikalischen Intervallen an."
-          }
-        }
-      }
-    },
-    "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Timing** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Tonhöhe vergleichen** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Intervalle vergleichen** – Das gleiche Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Tonhöhe treffen** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Intervalle treffen** – Gleiche Tonhöhen mit musikalischen Intervallen an.\n\n**Timing vergleichen** – Höre ein kurzes rhythmisches Muster und entscheide, ob der getestete Ton zu früh oder zu spät kam.\n\n**Lücke füllen** – Ein fortlaufender Strom von Noten spielt — tippe im richtigen Moment, um die Lücke zu füllen."
-          }
-        }
-      }
-    },
     "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone." : {
       "localizations" : {
         "de" : {
@@ -427,6 +406,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Eine Folge von Sechzehntelnoten wird abgespielt — tippe im richtigen Moment, um die Lücke zu füllen."
+          }
+        }
+      }
+    },
+    "A continuous stream of notes plays — tap at the right moment to fill the gap." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein fortlaufender Strom von Noten spielt – tippe im richtigen Moment, um die Lücke zu füllen."
           }
         }
       }
@@ -1125,6 +1114,26 @@
         }
       }
     },
+    "For interval training, the two notes are separated by a specific **musical interval** (like a fifth or an octave) instead of a small pitch difference. You still decide which note is higher — but now you're training your sense of musical distance." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Intervalltraining sind die beiden Töne durch ein bestimmtes **musikalisches Intervall** getrennt (z. B. eine Quinte oder Oktave) statt durch einen kleinen Tonhöhenunterschied. Du entscheidest weiterhin, welcher Ton höher ist — aber du trainierst jetzt dein Gespür für musikalische Abstände."
+          }
+        }
+      }
+    },
+    "For interval training, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim Intervalltraining liegt deine Zieltonhöhe ein bestimmtes **musikalisches Intervall** vom Referenzton entfernt. Statt denselben Ton zu treffen, triffst du einen Ton, der einen bestimmten Abstand darüber oder darunter hat."
+          }
+        }
+      }
+    },
     "Gap Positions" : {
       "localizations" : {
         "de" : {
@@ -1229,6 +1238,16 @@
         }
       }
     },
+    "Hear a short rhythmic pattern and decide whether the tested note was early or late." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höre ein kurzes rhythmisches Muster und entscheide, ob der getestete Ton zu früh oder zu spät kam."
+          }
+        }
+      }
+    },
     "Help" : {
       "localizations" : {
         "de" : {
@@ -1328,26 +1347,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verbessernd"
-          }
-        }
-      }
-    },
-    "For interval training, the two notes are separated by a specific **musical interval** (like a fifth or an octave) instead of a small pitch difference. You still decide which note is higher — but now you're training your sense of musical distance." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beim Intervalltraining sind die beiden Töne durch ein bestimmtes **musikalisches Intervall** getrennt (z. B. eine Quinte oder Oktave) statt durch einen kleinen Tonhöhenunterschied. Du entscheidest weiterhin, welcher Ton höher ist — aber du trainierst jetzt dein Gespür für musikalische Abstände."
-          }
-        }
-      }
-    },
-    "For interval training, your target pitch is a specific **musical interval** away from the reference note. Instead of matching the same note, you're matching a note that's a certain distance above or below it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Beim Intervalltraining liegt deine Zieltonhöhe ein bestimmtes **musikalisches Intervall** vom Referenzton entfernt. Statt denselben Ton zu treffen, triffst du einen Ton, der einen bestimmten Abstand darüber oder darunter hat."
           }
         }
       }
@@ -3359,22 +3358,22 @@
         }
       }
     },
-    "Training Help" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Trainingshilfe"
-          }
-        }
-      }
-    },
     "Training Disciplines" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trainingsdisziplinen"
+          }
+        }
+      }
+    },
+    "Training Help" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trainingshilfe"
           }
         }
       }

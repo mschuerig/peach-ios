@@ -1,6 +1,6 @@
 # Story 76.3: Data-driven discipline iteration by category
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -174,52 +174,52 @@ Calls of the form `TrainingDisciplineID.canonicalIDs.map { $0.config.displayName
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Extend registry with `activeCategories` and `disciplines(in:)` (AC: 1)
-  - [ ] 1.1 Implement `disciplines(in:)` as a filter over `all`
-  - [ ] 1.2 Implement `activeCategories` preserving `TrainingCategory.allCases` order, deduplicated, omitting empty categories
-  - [ ] 1.3 Add Core unit tests using synthetic discipline fixtures (parameterized over generated input — see Dev Notes)
-- [ ] Task 2: Add App-side `TrainingDisciplineID.navigationDestination` (AC: 2)
-  - [ ] 2.1 Create `Peach/App/TrainingDisciplineNavigation.swift` with the extension
-  - [ ] 2.2 Add to both iOS and macOS targets
-- [ ] Task 3: Add display metadata (`shortLabel`, `systemImageName`, `isHero`, `helpDescription`) (AC: 3, 7)
-  - [ ] 3.1 Decide placement (extend `TrainingDisciplineConfig` or sibling type)
-  - [ ] 3.2 Populate values for each of the six disciplines, migrating from current StartScreen/PeachCommands literals and `HelpContent.trainingDisciplinesDescription`
-  - [ ] 3.3 Add localized strings to `Localizable.xcstrings` with German translations (preserve existing tone — `du` / imperative per `feedback_german_informal.md`)
-- [ ] Task 4: Add category title/intro mapping (AC: 6)
-  - [ ] 4.1 Place mapping function/property in App (or Core if used in both)
-  - [ ] 4.2 Add `Pitch` / `Intervals` / `Rhythm` localized titles (already in catalog — likely just a reference)
-  - [ ] 4.3 Decide on intros (AC 7); if not used, leave `nil` returns
-- [ ] Task 5: Refactor `StartScreen` (AC: 4)
-  - [ ] 5.1 Replace `pitchSection`/`intervalsSection`/`rhythmSection` with a single `categorySection(_ category:)` helper
-  - [ ] 5.2 Iterate `registry.activeCategories` in both portrait and landscape layouts
-  - [ ] 5.3 Update `trainingCard` to consume display metadata
-  - [ ] 5.4 Source `NavigationLink` destination from `TrainingDisciplineID.navigationDestination`
-  - [ ] 5.5 Source accessibility label from `displayName`
-- [ ] Task 6: Refactor `PeachCommands` training menu (AC: 5)
-  - [ ] 6.1 Replace hardcoded sections with iteration over `registry.activeCategories`
-  - [ ] 6.2 Source destinations and titles from registry data
-- [ ] Task 7: Refactor `PeachCommands` help and `HelpSheetContent` (AC: 5)
-  - [ ] 7.1 Iterate `registry.all` to produce help buttons
-  - [ ] 7.2 Refactor `HelpSheetContent` to carry a `TrainingDisciplineID` payload, drop per-discipline cases
-  - [ ] 7.3 Resolve title and sections via the registry
-- [ ] Task 8: Refactor `HelpContent.trainingDisciplinesDescription` (AC: 7)
-  - [ ] 8.1 Replace static string with computed property generating from `registry`
-  - [ ] 8.2 Migrate per-discipline descriptions to `helpDescription` strings (English + German)
-  - [ ] 8.3 Remove the legacy `trainingDisciplinesDescription` localization key + German translation from `Localizable.xcstrings`
-  - [ ] 8.4 Verify `bin/add-localization.swift --missing` shows no new orphans
-- [ ] Task 9: Refactor `ProfileScreen` (AC: 8)
-  - [ ] 9.1 Switch `ForEach` to iterate `registry.all`
-  - [ ] 9.2 Switch on `discipline.category` instead of enum cases
-  - [ ] 9.3 Update `accessibilitySummary` to iterate registry
-  - [ ] 9.4 Rename local variables in this file: loop binding `mode` → `discipline`, `activeModes` → `activeDisciplines`, `modeNames` → `disciplineNames` (per `feedback_disciplines_not_modes.md`). Scope is `ProfileScreen.swift` only — call-site parameter names like `RhythmProfileCardView(mode:)` and `ProgressChartView(mode:)` stay unchanged here; renaming them would propagate across the Profile module and is a separate concern.
-- [ ] Task 10: Audit remaining `TrainingDisciplineID.canonicalIDs` usages (AC: 9)
-  - [ ] 10.1 `grep -rn "TrainingDisciplineID.canonicalIDs" Peach/ PeachTests/`
-  - [ ] 10.2 For each hit, determine if it queries metadata (replace) or asserts identifier-catalog structure (keep with comment)
-  - [ ] 10.3 Migrate metadata-querying tests to iterate `registry.all`
-- [ ] Task 11: Build & test both platforms (AC: 10, 11)
-  - [ ] 11.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
-  - [ ] 11.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
-  - [ ] 11.3 Manual smoke: launch app, verify StartScreen still shows six disciplines in three sections, profile cards still render correctly, both German and English UI
+- [x] Task 1: Extend registry with `activeCategories` and `disciplines(in:)` (AC: 1)
+  - [x] 1.1 Implement `disciplines(in:)` as a filter over `all`
+  - [x] 1.2 Implement `activeCategories` preserving `TrainingCategory.allCases` order, deduplicated, omitting empty categories
+  - [x] 1.3 Add Core unit tests using synthetic discipline fixtures (parameterized over generated input — see Dev Notes)
+- [x] Task 2: Add App-side `TrainingDisciplineID.navigationDestination` (AC: 2)
+  - [x] 2.1 Create `Peach/App/TrainingDisciplineNavigation.swift` with the extension
+  - [x] 2.2 Add to both iOS and macOS targets
+- [x] Task 3: Add display metadata (`shortLabel`, `systemImageName`, `isHero`, `helpDescription`) (AC: 3, 7)
+  - [x] 3.1 Decide placement (extend `TrainingDisciplineConfig` or sibling type)
+  - [x] 3.2 Populate values for each of the six disciplines, migrating from current StartScreen/PeachCommands literals and `HelpContent.trainingDisciplinesDescription`
+  - [x] 3.3 Add localized strings to `Localizable.xcstrings` with German translations (preserve existing tone — `du` / imperative per `feedback_german_informal.md`)
+- [x] Task 4: Add category title/intro mapping (AC: 6)
+  - [x] 4.1 Place mapping function/property in App (or Core if used in both)
+  - [x] 4.2 Add `Pitch` / `Intervals` / `Rhythm` localized titles (already in catalog — likely just a reference)
+  - [x] 4.3 Decide on intros (AC 7); if not used, leave `nil` returns
+- [x] Task 5: Refactor `StartScreen` (AC: 4)
+  - [x] 5.1 Replace `pitchSection`/`intervalsSection`/`rhythmSection` with a single `categorySection(_ category:)` helper
+  - [x] 5.2 Iterate `registry.activeCategories` in both portrait and landscape layouts
+  - [x] 5.3 Update `trainingCard` to consume display metadata
+  - [x] 5.4 Source `NavigationLink` destination from `TrainingDisciplineID.navigationDestination`
+  - [x] 5.5 Source accessibility label from `displayName`
+- [x] Task 6: Refactor `PeachCommands` training menu (AC: 5)
+  - [x] 6.1 Replace hardcoded sections with iteration over `registry.activeCategories`
+  - [x] 6.2 Source destinations and titles from registry data
+- [x] Task 7: Refactor `PeachCommands` help and `HelpSheetContent` (AC: 5)
+  - [x] 7.1 Iterate `registry.all` to produce help buttons
+  - [x] 7.2 Refactor `HelpSheetContent` to carry a `TrainingDisciplineID` payload, drop per-discipline cases
+  - [x] 7.3 Resolve title and sections via the registry
+- [x] Task 8: Refactor `HelpContent.trainingDisciplinesDescription` (AC: 7)
+  - [x] 8.1 Replace static string with computed property generating from `registry`
+  - [x] 8.2 Migrate per-discipline descriptions to `helpDescription` strings (English + German)
+  - [x] 8.3 Remove the legacy `trainingDisciplinesDescription` localization key + German translation from `Localizable.xcstrings`
+  - [x] 8.4 Verify `bin/add-localization.swift --missing` shows no new orphans
+- [x] Task 9: Refactor `ProfileScreen` (AC: 8)
+  - [x] 9.1 Switch `ForEach` to iterate `registry.all`
+  - [x] 9.2 Switch on `discipline.category` instead of enum cases
+  - [x] 9.3 Update `accessibilitySummary` to iterate registry
+  - [x] 9.4 Rename local variables in this file: loop binding `mode` → `discipline`, `activeModes` → `activeDisciplines`, `modeNames` → `disciplineNames` (per `feedback_disciplines_not_modes.md`). Scope is `ProfileScreen.swift` only — call-site parameter names like `RhythmProfileCardView(mode:)` and `ProgressChartView(mode:)` stay unchanged here; renaming them would propagate across the Profile module and is a separate concern.
+- [x] Task 10: Audit remaining `TrainingDisciplineID.canonicalIDs` usages (AC: 9)
+  - [x] 10.1 `grep -rn "TrainingDisciplineID.canonicalIDs" Peach/ PeachTests/`
+  - [x] 10.2 For each hit, determine if it queries metadata (replace) or asserts identifier-catalog structure (keep with comment)
+  - [x] 10.3 Migrate metadata-querying tests to iterate `registry.all`
+- [x] Task 11: Build & test both platforms (AC: 10, 11)
+  - [x] 11.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
+  - [x] 11.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
+  - [x] 11.3 Manual smoke: launch app, verify StartScreen still shows six disciplines in three sections, profile cards still render correctly, both German and English UI
 
 ## Dev Notes
 
@@ -264,6 +264,48 @@ If hero styling on the first card per category produces a worse visual than hero
 - Story 76.1 — relocated `TrainingDisciplineID`'s named instances to `App/Training/DisciplineIDs.swift`
 - Story 76.2 — provides `TrainingCategory` and the bootstrap pattern this story consumes
 
+## Dev Agent Record
+
+### Completion Notes
+
+- All four UI consumers (`StartScreen`, `PeachCommands`, `ProfileScreen`, `HelpContent`) now iterate `TrainingDisciplineRegistry` instead of hardcoding the six disciplines. Behavior is unchanged when all six are registered.
+- Display metadata (`shortLabel`, `systemImageName`, `isHero`, `helpDescription`) lives on `TrainingDisciplineConfig` rather than in a sibling type — keeps presentation data and behavioral data co-located, matching the existing `displayName` / `unitLabel` pattern.
+- `isHero` is set only on `unisonPitchDiscrimination` to preserve current visual hierarchy exactly. Categorical "first card per category is hero" was rejected per Dev Notes since visual hierarchy is not a goal of this story.
+- `TrainingDisciplineID.navigationDestination` lives in `Peach/App/TrainingDisciplineNavigation.swift` with `default: preconditionFailure` — required because `TrainingDisciplineID` is a slug-wrapping struct, not an enum.
+- `HelpSheetContent` was rewritten with two cases (`.about`, `.discipline(TrainingDisciplineID)`); per-discipline cases dropped. Title and sections resolve through the registry.
+- `HelpContent.trainingDisciplinesDescription` is a computed `static var` generated by walking `registry.activeCategories` and per-category disciplines, joining `**displayName** – helpDescription` paragraphs. The legacy stale 4-discipline and current 6-discipline localized keys were removed from `Localizable.xcstrings`; per-discipline German translations cover all six `helpDescription` strings.
+- `ProfileScreen` switches on `discipline.category` (`.rhythm` → `RhythmProfileCardView`; `.pitch` / `.intervals` → `ProgressChartView`). Local variables renamed to `discipline` / `activeDisciplines` / `disciplineNames` per `feedback_disciplines_not_modes.md`. Call-site parameter names (`RhythmProfileCardView(mode:)`, `ProgressChartView(mode:)`) intentionally untouched — Profile-module-wide rename is out of scope.
+- `canonicalIDs` audit migrated `TrainingDisciplineConfigTests`, `ProgressTimelineTests`, and `ProgressChartViewTests` to iterate `registry.all`. The `TrainingDisciplineRegistryTests` references at lines 15 and 27 are preserved because they assert structural integrity of the identifier catalog (consumed by story 76.4).
+- `ProgressChartViewTests.shareAccessibilityLabel` was de-parameterized — `@Test(arguments:)` cannot use MainActor-isolated `TrainingDisciplineRegistry.shared.all`. The body now iterates the registry under `@MainActor`, which preserves the per-discipline coverage intent.
+- `RegistryActiveCategoriesTests` uses a local `SyntheticDiscipline` fixture conforming to `TrainingDiscipline`, decoupling registry algorithm tests from the real bootstrap list per Dev Notes ("Data-driven testing per Quinn").
+- Tests pass cleanly on both platforms (1773 iOS, 1766 macOS, 0 failures); both builds emit only the pre-existing AppIntents-tooling warning, no new warnings.
+
+### File List
+
+**Added**
+- `Peach/App/TrainingDisciplineNavigation.swift` — `TrainingDisciplineID.navigationDestination` switch
+- `Peach/App/TrainingCategoryDisplay.swift` — `TrainingCategory.localizedTitle` / `localizedIntro`
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift` — synthetic-fixture tests for `disciplines(in:)` and `activeCategories`
+
+**Modified**
+- `Peach/Core/Training/Discipline/TrainingDisciplineRegistry.swift` — added `activeCategories` (precomputed in init), `disciplines(in:)`
+- `Peach/Core/Training/TrainingDisciplineConfig.swift` — added `shortLabel`, `systemImageName`, `isHero`, `helpDescription`
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift` — populates new metadata fields
+- `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift` — populates new metadata fields
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift` — populates new metadata fields
+- `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift` — populates new metadata fields
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — populates new metadata fields
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — populates new metadata fields
+- `Peach/Start/StartScreen.swift` — single `categorySection(_:)` helper, iterates `registry.activeCategories`
+- `Peach/App/Platform/PeachCommands.swift` — training menu / help commands iterate registry; `HelpSheetContent` carries `TrainingDisciplineID` payload
+- `Peach/App/HelpContent.swift` — `trainingDisciplinesDescription` is registry-driven; `sections(for:)` switch added
+- `Peach/Profile/ProfileScreen.swift` — iterates `registry.all`, switches on `discipline.category`, renamed local variables
+- `Peach/Resources/Localizable.xcstrings` — removed stale `trainingDisciplinesDescription` keys (4-discipline + 6-discipline) and added German `helpDescription` translations
+- `PeachTests/Core/Profile/TrainingDisciplineConfigTests.swift` — `uniqueDisplayNames` iterates `registry.all`
+- `PeachTests/Core/Profile/ProgressTimelineTests.swift` — `emptyTimeline` iterates `registry.all`
+- `PeachTests/Profile/ProgressChartViewTests.swift` — `shareAccessibilityLabel` iterates `registry.all` inside body under `@MainActor`
+
 ## Change Log
 
 - 2026-04-25: Story drafted as Story 76.3 of Epic 76. Renumbered from original 76.2 when a new 76.1 (relocate `TrainingDisciplineID` to App) was inserted. Status → ready-for-dev. Depends on Stories 76.1 and 76.2.
+- 2026-04-26: Implementation complete. Registry exposes `activeCategories` + `disciplines(in:)`. Six disciplines now carry display metadata in `TrainingDisciplineConfig`. StartScreen, PeachCommands, ProfileScreen, and HelpContent iterate the registry; metadata-querying tests on `canonicalIDs` migrated to `registry.all`. Behavior unchanged in this build (all six disciplines still registered). Both platforms green (1773 iOS, 1766 macOS). Status → review.

@@ -151,26 +151,44 @@ enum HelpContent {
 
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
 
-    static let trainingDisciplinesDescription = String(localized: "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Timing** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap.")
+    /// Markdown body for the "Training Disciplines" section of the Info screen.
+    /// Generated from the registry: emits one paragraph per registered discipline,
+    /// grouped by category, with optional category intros.
+    static var trainingDisciplinesDescription: String {
+        let registry = TrainingDisciplineRegistry.shared
+        var paragraphs: [String] = []
+        for category in registry.activeCategories {
+            if let intro = category.localizedIntro {
+                paragraphs.append(intro)
+            }
+            for discipline in registry.disciplines(in: category) {
+                let config = discipline.config
+                paragraphs.append("**\(config.displayName)** – \(config.helpDescription)")
+            }
+        }
+        return paragraphs.joined(separator: "\n\n")
+    }
 
     static let gettingStartedText = String(localized: "Just pick a discipline on the home screen and start practicing. Peach adapts to your skill level automatically.")
 
     static let acknowledgmentsText = String(localized: "Piano sounds from [FluidR3_GM by Frank Wen](https://member.keymusician.com/Member/FluidR3_GM/index.html) (MIT License). All other sounds from [GeneralUser GS by S. Christian Collins](https://schristiancollins.com/generaluser.php).")
 
-    static let info: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "What is Peach?"),
-            body: appDescription
-        ),
-        HelpSection(
-            title: String(localized: "Training Disciplines"),
-            body: trainingDisciplinesDescription
-        ),
-        HelpSection(
-            title: String(localized: "Getting Started"),
-            body: gettingStartedText
-        ),
-    ]
+    static var info: [HelpSection] {
+        [
+            HelpSection(
+                title: String(localized: "What is Peach?"),
+                body: appDescription
+            ),
+            HelpSection(
+                title: String(localized: "Training Disciplines"),
+                body: trainingDisciplinesDescription
+            ),
+            HelpSection(
+                title: String(localized: "Getting Started"),
+                body: gettingStartedText
+            ),
+        ]
+    }
 
     static let acknowledgments: [HelpSection] = [
         HelpSection(
@@ -180,4 +198,22 @@ enum HelpContent {
     ]
 
     static var about: [HelpSection] { info + acknowledgments }
+
+    /// Resolves help sections for a given discipline. Unison/interval variants
+    /// of the same training type share the same help content because the
+    /// underlying mechanics are identical.
+    static func sections(for id: TrainingDisciplineID) -> [HelpSection] {
+        switch id {
+        case .unisonPitchDiscrimination, .intervalPitchDiscrimination:
+            pitchDiscrimination
+        case .unisonPitchMatching, .intervalPitchMatching:
+            pitchMatching
+        case .timingOffsetDetection:
+            timingOffsetDetection
+        case .continuousRhythmMatching:
+            continuousRhythmMatching
+        default:
+            []
+        }
+    }
 }

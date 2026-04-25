@@ -70,11 +70,11 @@ struct ProgressTimelineTests {
 
     // MARK: - Cold Start Tests
 
-    @Test("empty timeline reports noData for all modes")
+    @Test("empty timeline reports noData for all disciplines")
     func emptyTimeline() async {
         let timeline = ProgressTimeline(profile: PerceptualProfile())
-        for mode in TrainingDisciplineID.canonicalIDs {
-            #expect(timeline.state(for: mode) == .noData)
+        for discipline in TrainingDisciplineRegistry.shared.all {
+            #expect(timeline.state(for: discipline.id) == .noData)
         }
     }
 

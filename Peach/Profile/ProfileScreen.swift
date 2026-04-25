@@ -18,14 +18,14 @@ struct ProfileScreen: View {
                 if let currentTip = tipGroup.currentTip {
                     TipView(currentTip)
                 }
-                ForEach(TrainingDisciplineID.canonicalIDs, id: \.self) { mode in
-                    switch mode {
-                    case .timingOffsetDetection, .continuousRhythmMatching:
-                        RhythmProfileCardView(mode: mode)
-                    default:
-                        let state = progressTimeline.state(for: mode)
+                ForEach(TrainingDisciplineRegistry.shared.all, id: \.id) { discipline in
+                    switch discipline.category {
+                    case .rhythm:
+                        RhythmProfileCardView(mode: discipline.id)
+                    case .pitch, .intervals:
+                        let state = progressTimeline.state(for: discipline.id)
                         if state != .noData {
-                            ProgressChartView(mode: mode)
+                            ProgressChartView(mode: discipline.id)
                         }
                     }
                 }
@@ -57,12 +57,14 @@ struct ProfileScreen: View {
     // MARK: - Accessibility
 
     static func accessibilitySummary(progressTimeline: ProgressTimeline) -> String {
-        let activeModes = TrainingDisciplineID.canonicalIDs.filter { progressTimeline.state(for: $0) != .noData }
-        guard !activeModes.isEmpty else {
+        let activeDisciplines = TrainingDisciplineRegistry.shared.all.filter {
+            progressTimeline.state(for: $0.id) != .noData
+        }
+        guard !activeDisciplines.isEmpty else {
             return String(localized: "Profile. No training data available.")
         }
-        let modeNames = activeModes.map(\.config.displayName).joined(separator: ", ")
-        return String(localized: "Profile showing progress for: \(modeNames)")
+        let disciplineNames = activeDisciplines.map(\.config.displayName).joined(separator: ", ")
+        return String(localized: "Profile showing progress for: \(disciplineNames)")
     }
 }
 

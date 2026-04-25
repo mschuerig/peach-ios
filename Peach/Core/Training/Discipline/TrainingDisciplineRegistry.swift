@@ -37,6 +37,14 @@ final class TrainingDisciplineRegistry: Sendable {
     /// All registered disciplines in display order.
     let all: [any TrainingDiscipline]
 
+    /// Categories that have at least one registered discipline, in
+    /// ``TrainingCategory/allCases`` order.
+    ///
+    /// A category whose ``disciplines(in:)`` would return an empty array
+    /// is omitted, so consumers can iterate this list and render a section
+    /// per category without separate emptiness checks.
+    let activeCategories: [TrainingCategory]
+
     /// Lookup by ID.
     private let byID: [TrainingDisciplineID: any TrainingDiscipline]
 
@@ -50,6 +58,12 @@ final class TrainingDisciplineRegistry: Sendable {
         }
         self.all = disciplines
         self.byID = byID
+
+        var seenCategories: Set<TrainingCategory> = []
+        for discipline in disciplines {
+            seenCategories.insert(discipline.category)
+        }
+        self.activeCategories = TrainingCategory.allCases.filter(seenCategories.contains)
 
         let commonColumnSet = Set(CSVExportSchema.commonColumns)
         var parsers: [String: any TrainingDiscipline] = [:]
@@ -73,6 +87,11 @@ final class TrainingDisciplineRegistry: Sendable {
         self.csvParsers = parsers
         self.csvDisciplineColumns = columns
         self.recordTypes = distinctRecordTypes
+    }
+
+    /// Disciplines registered under the given category, preserving registration order.
+    func disciplines(in category: TrainingCategory) -> [any TrainingDiscipline] {
+        all.filter { $0.category == category }
     }
 
     subscript(_ id: TrainingDisciplineID) -> any TrainingDiscipline {

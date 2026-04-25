@@ -20,8 +20,24 @@ struct StatisticsConfig: Sendable {
 /// statistical parameters for EWMA smoothing, adaptive bucketing, and trend
 /// detection.
 struct TrainingDisciplineConfig {
-    /// Localized name shown in UI cards and accessibility labels.
+    /// Localized name shown in UI cards, menus, and accessibility labels
+    /// (e.g., "Compare Pitch").
     let displayName: String
+
+    /// Localized short label used as a card title or button label
+    /// (e.g., "Compare", "Match", "Fill the Gap").
+    let shortLabel: String
+
+    /// SF Symbol name for the discipline's card icon.
+    let systemImageName: String
+
+    /// Whether this discipline renders as the visually prominent "hero" card
+    /// at the top of its category section on the StartScreen.
+    let isHero: Bool
+
+    /// Localized markdown description shown under "Training Disciplines"
+    /// on the Info screen (one paragraph per discipline, generated at runtime).
+    let helpDescription: String
 
     /// Localized unit label for metric values (e.g., "cents").
     let unitLabel: String

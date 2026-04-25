@@ -46,8 +46,8 @@ struct TrainingDisciplineConfigTests {
 
     @Test("all configurations have unique display names")
     func uniqueDisplayNames() async {
-        let configs = TrainingDisciplineID.canonicalIDs.map(\.config)
-        let names = Set(configs.map(\.displayName))
-        #expect(names.count == TrainingDisciplineID.canonicalIDs.count)
+        let disciplines = TrainingDisciplineRegistry.shared.all
+        let names = Set(disciplines.map(\.config.displayName))
+        #expect(names.count == disciplines.count)
     }
 }

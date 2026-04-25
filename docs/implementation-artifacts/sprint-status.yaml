@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-25 # Story 76.2 → done: code review complete, three patches applied (init validation, category test, parser doc-comment cleanup); D1/D2 covered by 76.4/76.3
+# last_updated: 2026-04-26 # Story 76.3 → review: data-driven discipline iteration by category
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -632,6 +632,6 @@ development_status:
   epic-76: in-progress
   76-1-relocate-trainingdisciplineid-to-app: done
   76-2-discipline-category-and-bootstrap-relocation: done
-  76-3-data-driven-discipline-iteration-by-category: ready-for-dev
+  76-3-data-driven-discipline-iteration-by-category: review
   76-4-build-gated-timing-disciplines: ready-for-dev
   epic-76-retrospective: optional

@@ -58,17 +58,17 @@ struct PeachCommands: Commands {
             }
 
             let currentDestination = commandState?.trainingLifecycle?.currentTrainingDestination
-            Section("Pitch") {
-                trainingButton("Compare Pitch", destination: .pitchDiscrimination(isIntervalMode: false), currentDestination: currentDestination)
-                trainingButton("Match Pitch", destination: .pitchMatching(isIntervalMode: false), currentDestination: currentDestination)
-            }
-            Section("Intervals") {
-                trainingButton("Compare Intervals", destination: .pitchDiscrimination(isIntervalMode: true), currentDestination: currentDestination)
-                trainingButton("Match Intervals", destination: .pitchMatching(isIntervalMode: true), currentDestination: currentDestination)
-            }
-            Section("Rhythm") {
-                trainingButton("Compare Timing", destination: .timingOffsetDetection, currentDestination: currentDestination)
-                trainingButton("Fill the Gap", destination: .continuousRhythmMatching, currentDestination: currentDestination)
+            let registry = TrainingDisciplineRegistry.shared
+            ForEach(registry.activeCategories, id: \.self) { category in
+                Section(category.localizedTitle) {
+                    ForEach(registry.disciplines(in: category), id: \.id) { discipline in
+                        trainingButton(
+                            discipline.config.displayName,
+                            destination: discipline.id.navigationDestination,
+                            currentDestination: currentDestination
+                        )
+                    }
+                }
             }
         }
     }
@@ -124,24 +124,17 @@ struct PeachCommands: Commands {
 
             Divider()
 
-            Button("Pitch Compare Help") {
-                HelpPanelController.shared.show(content: .pitchDiscrimination)
-            }
-            Button("Pitch Match Help") {
-                HelpPanelController.shared.show(content: .pitchMatching)
-            }
-            Button("Rhythm Compare Help") {
-                HelpPanelController.shared.show(content: .timingOffsetDetection)
-            }
-            Button("Fill the Gap Help") {
-                HelpPanelController.shared.show(content: .continuousRhythmMatching)
+            ForEach(TrainingDisciplineRegistry.shared.all, id: \.id) { discipline in
+                Button(discipline.config.displayName) {
+                    HelpPanelController.shared.show(content: .discipline(discipline.id))
+                }
             }
         }
     }
 
     // MARK: - Navigation
 
-    private func trainingButton(_ title: LocalizedStringKey, destination: NavigationDestination, currentDestination: NavigationDestination?) -> some View {
+    private func trainingButton(_ title: String, destination: NavigationDestination, currentDestination: NavigationDestination?) -> some View {
         Toggle(isOn: Binding(
             get: { currentDestination == destination },
             set: { newValue in
@@ -163,20 +156,16 @@ struct PeachCommands: Commands {
 
 enum HelpSheetContent: Identifiable, Hashable, Codable {
     case about
-    case pitchDiscrimination
-    case pitchMatching
-    case timingOffsetDetection
-    case continuousRhythmMatching
+    case discipline(TrainingDisciplineID)
 
     var id: Self { self }
 
     var title: String {
         switch self {
-        case .about: String(localized: "About Peach")
-        case .pitchDiscrimination: String(localized: "Pitch Compare Help")
-        case .pitchMatching: String(localized: "Pitch Match Help")
-        case .timingOffsetDetection: String(localized: "Rhythm Compare Help")
-        case .continuousRhythmMatching: String(localized: "Fill the Gap Help")
+        case .about:
+            String(localized: "About Peach")
+        case .discipline(let id):
+            TrainingDisciplineRegistry.shared[id].config.displayName
         }
     }
 
@@ -184,14 +173,8 @@ enum HelpSheetContent: Identifiable, Hashable, Codable {
         switch self {
         case .about:
             HelpContent.about
-        case .pitchDiscrimination:
-            HelpContent.pitchDiscrimination
-        case .pitchMatching:
-            HelpContent.pitchMatching
-        case .timingOffsetDetection:
-            HelpContent.timingOffsetDetection
-        case .continuousRhythmMatching:
-            HelpContent.continuousRhythmMatching
+        case .discipline(let id):
+            HelpContent.sections(for: id)
         }
     }
 }

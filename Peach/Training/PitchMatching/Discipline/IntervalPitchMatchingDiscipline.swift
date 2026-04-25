@@ -8,6 +8,10 @@ struct IntervalPitchMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Match Intervals"),
+        shortLabel: String(localized: "Match"),
+        systemImageName: "target",
+        isHero: false,
+        helpDescription: String(localized: "Match pitches using musical intervals."),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 8.0,
         statistics: .default

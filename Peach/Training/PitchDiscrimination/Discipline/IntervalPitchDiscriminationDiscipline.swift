@@ -8,6 +8,10 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
 
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Compare Intervals"),
+        shortLabel: String(localized: "Compare"),
+        systemImageName: "ear",
+        isHero: false,
+        helpDescription: String(localized: "The same idea, but with musical intervals between notes."),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 12.0,
         statistics: .default

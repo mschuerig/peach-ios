@@ -8,6 +8,10 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
 
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Compare Timing"),
+        shortLabel: String(localized: "Compare"),
+        systemImageName: "metronome",
+        isHero: false,
+        helpDescription: String(localized: "Hear a short rhythmic pattern and decide whether the tested note was early or late."),
         unitLabel: String(localized: "ms"),
         optimalBaseline: 15.0,
         statistics: .default

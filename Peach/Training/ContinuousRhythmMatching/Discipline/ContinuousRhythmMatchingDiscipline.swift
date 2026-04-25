@@ -8,6 +8,10 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Fill the Gap"),
+        shortLabel: String(localized: "Fill the Gap"),
+        systemImageName: "hand.tap",
+        isHero: false,
+        helpDescription: String(localized: "A continuous stream of notes plays — tap at the right moment to fill the gap."),
         unitLabel: String(localized: "ms"),
         optimalBaseline: 20.0,
         statistics: .default

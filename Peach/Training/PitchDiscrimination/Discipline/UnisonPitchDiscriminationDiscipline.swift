@@ -8,6 +8,10 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
 
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Compare Pitch"),
+        shortLabel: String(localized: "Compare"),
+        systemImageName: "ear",
+        isHero: true,
+        helpDescription: String(localized: "Listen to two notes and decide which one is higher."),
         unitLabel: String(localized: "cents"),
         optimalBaseline: 8.0,
         statistics: .default
