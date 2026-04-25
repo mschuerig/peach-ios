@@ -30,6 +30,18 @@ struct TrainingDisciplineRegistryTests {
         }
     }
 
+    @Test("each discipline declares the expected category", arguments: [
+        (TrainingDisciplineID.unisonPitchDiscrimination, TrainingCategory.pitch),
+        (TrainingDisciplineID.intervalPitchDiscrimination, TrainingCategory.intervals),
+        (TrainingDisciplineID.unisonPitchMatching, TrainingCategory.pitch),
+        (TrainingDisciplineID.intervalPitchMatching, TrainingCategory.intervals),
+        (TrainingDisciplineID.timingOffsetDetection, TrainingCategory.rhythm),
+        (TrainingDisciplineID.continuousRhythmMatching, TrainingCategory.rhythm),
+    ])
+    func disciplineDeclaresExpectedCategory(_ id: TrainingDisciplineID, _ expected: TrainingCategory) async {
+        #expect(registry[id].category == expected)
+    }
+
     // MARK: - No CSV column name overlaps
 
     @Test("no discipline declares a common column as its own")

@@ -41,8 +41,15 @@ final class TrainingDisciplineRegistry: Sendable {
     private let byID: [TrainingDisciplineID: any TrainingDiscipline]
 
     init(disciplines: [any TrainingDiscipline]) {
+        precondition(!disciplines.isEmpty, "TrainingDisciplineRegistry requires at least one discipline")
+
+        var byID: [TrainingDisciplineID: any TrainingDiscipline] = [:]
+        for discipline in disciplines {
+            let previous = byID.updateValue(discipline, forKey: discipline.id)
+            precondition(previous == nil, "Duplicate discipline registered for id \(discipline.id)")
+        }
         self.all = disciplines
-        self.byID = Dictionary(uniqueKeysWithValues: disciplines.map { ($0.id, $0) })
+        self.byID = byID
 
         let commonColumnSet = Set(CSVExportSchema.commonColumns)
         var parsers: [String: any TrainingDiscipline] = [:]

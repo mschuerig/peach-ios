@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// Shared CSV row parsing for PitchMatchingRecord.
-/// Used by both UnisonPitchMatchingDiscipline and IntervalPitchMatchingDiscipline.
+/// Used by all pitch-matching disciplines.
 enum PitchMatchingCSVParser {
 
     static func parse(

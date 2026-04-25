@@ -1,6 +1,6 @@
 # Story 76.2: Add discipline category and relocate concrete bootstrap to App layer
 
-Status: review
+Status: done
 
 ## Story
 
@@ -175,7 +175,7 @@ The `App/Training/` directory already exists from story 76.1 (`DisciplineIDs.swi
 - [x] Task 9: Build & test both platforms (AC: 8, 9)
   - [x] 9.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
   - [x] 9.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
-  - [ ] 9.3 Manual smoke: launch app, verify all six disciplines appear in StartScreen, navigate into one of each category, confirm no crash
+  - [x] 9.3 Manual smoke: launch app, verify all six disciplines appear in StartScreen, navigate into one of each category, confirm no crash
 
 ## Dev Notes
 
@@ -211,6 +211,7 @@ Active docs (`arc42.md`, `glossary.md`, `project-context.md`) describe the regis
 
 - 2026-04-25: Story drafted as Story 76.2 of Epic 76 (Soft Launch — Build-Gated Timing Disciplines). Renumbered from original 76.1 when a new 76.1 (relocate `TrainingDisciplineID` to App) was inserted. Status → ready-for-dev.
 - 2026-04-25: Implementation complete. `TrainingCategory` enum added in Core; `TrainingDiscipline` protocol gained `category` requirement; six conformances declare their category. Registry refactored to `init(disciplines:)` plus `static func bootstrap(disciplines:)` backed by `Synchronization.Mutex`. New `Peach/App/Training/DisciplineBootstrap.swift` owns the concrete six-discipline list; `PeachApp.init()` calls bootstrap as its first line. Status → review.
+- 2026-04-25: Code review complete. Three patches applied (init validation for empty/duplicate-id inputs, parameterized category test, doc-comment cleanup in two CSV parsers to satisfy AC 4.4 grep). Manual smoke test passed. Deferred items D1 (subscript trap on unregistered ID) and D2 (category display-name mechanism) are already covered by stories 76.4 and 76.3 respectively. Both platforms green (iOS 1771, macOS 1764). Status → done.
 
 ## Dev Agent Record
 
@@ -256,5 +257,11 @@ Tests are hosted in `Peach.app` via `TEST_HOST` (see `Peach.xcodeproj/project.pb
 - `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift` — added `category = .intervals`
 - `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — added `category = .rhythm`
 - `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — added `category = .rhythm`
-- `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift` — constructs registry via `init(disciplines: DisciplineBootstrap.allDisciplines)`
+- `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift` — constructs registry via `init(disciplines: DisciplineBootstrap.allDisciplines)`; added parameterized `disciplineDeclaresExpectedCategory` test (review patch P2)
 - `docs/implementation-artifacts/sprint-status.yaml` — story 76.2 status updated
+
+### Code Review Patches (2026-04-25)
+
+- **P1**: `init(disciplines:)` now traps with diagnostic messages on empty input and on duplicate IDs (was: empty silently accepted; duplicates trapped with bare `Dictionary(uniqueKeysWithValues:)` message). Duplicate `csvTrainingType` first-wins remains intentional (Pitch Discrimination disciplines share a parser by design).
+- **P2**: Added parameterized test asserting each discipline's `category` matches the AC 3 table.
+- **P3**: Reworded doc comments in `Peach/Core/Data/PitchDiscriminationCSVParser.swift` and `Peach/Core/Data/PitchMatchingCSVParser.swift` to remove concrete `*Discipline` type names — AC 4.4 grep now returns zero matches in `Peach/Core/`.

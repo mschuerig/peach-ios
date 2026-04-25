@@ -2,7 +2,7 @@ import Foundation
 import SwiftData
 
 /// Shared CSV row parsing for PitchDiscriminationRecord.
-/// Used by both UnisonPitchDiscriminationDiscipline and IntervalPitchDiscriminationDiscipline.
+/// Used by all pitch-discrimination disciplines.
 enum PitchDiscriminationCSVParser {
 
     static func parse(
