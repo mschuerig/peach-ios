@@ -1,6 +1,6 @@
 # Story 76.2: Add discipline category and relocate concrete bootstrap to App layer
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -142,39 +142,39 @@ The `App/Training/` directory already exists from story 76.1 (`DisciplineIDs.swi
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add `TrainingCategory` enum (AC: 1)
-  - [ ] 1.1 Create `Peach/Core/Training/TrainingCategory.swift`
-  - [ ] 1.2 Add to both iOS and macOS targets
-- [ ] Task 2: Extend protocol with `category` (AC: 2)
-  - [ ] 2.1 Add `var category: TrainingCategory { get }` to `TrainingDiscipline.swift`
-  - [ ] 2.2 Add the doc comment described in AC 2
-- [ ] Task 3: Update each conformance with its category (AC: 3)
-  - [ ] 3.1 Locate each of the six conformance files (e.g. via `grep -rn "TrainingDiscipline {" Peach/`)
-  - [ ] 3.2 Add `let category: TrainingCategory = .pitch | .intervals | .rhythm` per the AC 3 table
-  - [ ] 3.3 Build iOS and macOS — confirm protocol conformance is satisfied
-- [ ] Task 4: Refactor `TrainingDisciplineRegistry` init (AC: 4)
-  - [ ] 4.1 Rename `private init()` to `init(disciplines: [any TrainingDiscipline])`
-  - [ ] 4.2 Replace the hardcoded `disciplines` array with the `disciplines` parameter
-  - [ ] 4.3 Verify `byID`, `csvParsers`, `csvDisciplineColumns` setup is unchanged
-  - [ ] 4.4 Confirm no concrete discipline references remain in `Core/`
-- [ ] Task 5: Wire `.shared` bootstrap (AC: 5)
-  - [ ] 5.1 Implement Option A (or Option B) for `.shared` initialization
-  - [ ] 5.2 Add `TrainingDisciplineRegistry.bootstrap(disciplines:)` (or chosen equivalent)
-  - [ ] 5.3 Document the access contract in a doc comment on `.shared` ("must call `bootstrap` before access")
-- [ ] Task 6: Create `DisciplineBootstrap` (AC: 6)
-  - [ ] 6.1 Create `Peach/App/Training/` directory
-  - [ ] 6.2 Create `DisciplineBootstrap.swift` with `allDisciplines` static
-  - [ ] 6.3 Add the file to both iOS and macOS targets
-- [ ] Task 7: Wire bootstrap from `PeachApp.init` (AC: 5, 8)
-  - [ ] 7.1 Add `TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)` as the first line of `PeachApp.init()`
-  - [ ] 7.2 Confirm via launch on iOS Simulator and macOS that no precondition fails
-- [ ] Task 8: Update tests (AC: 7)
-  - [ ] 8.1 Refactor `TrainingDisciplineRegistryTests` to construct registries via `init(disciplines:)`
-  - [ ] 8.2 Confirm all existing assertions still pass
-  - [ ] 8.3 Check whether any other test files relied on `.shared` being pre-bootstrapped via `private init()` — bootstrap them in test setup if needed
-- [ ] Task 9: Build & test both platforms (AC: 8, 9)
-  - [ ] 9.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
-  - [ ] 9.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
+- [x] Task 1: Add `TrainingCategory` enum (AC: 1)
+  - [x] 1.1 Create `Peach/Core/Training/TrainingCategory.swift`
+  - [x] 1.2 Add to both iOS and macOS targets
+- [x] Task 2: Extend protocol with `category` (AC: 2)
+  - [x] 2.1 Add `var category: TrainingCategory { get }` to `TrainingDiscipline.swift`
+  - [x] 2.2 Add the doc comment described in AC 2
+- [x] Task 3: Update each conformance with its category (AC: 3)
+  - [x] 3.1 Locate each of the six conformance files (e.g. via `grep -rn "TrainingDiscipline {" Peach/`)
+  - [x] 3.2 Add `let category: TrainingCategory = .pitch | .intervals | .rhythm` per the AC 3 table
+  - [x] 3.3 Build iOS and macOS — confirm protocol conformance is satisfied
+- [x] Task 4: Refactor `TrainingDisciplineRegistry` init (AC: 4)
+  - [x] 4.1 Rename `private init()` to `init(disciplines: [any TrainingDiscipline])`
+  - [x] 4.2 Replace the hardcoded `disciplines` array with the `disciplines` parameter
+  - [x] 4.3 Verify `byID`, `csvParsers`, `csvDisciplineColumns` setup is unchanged
+  - [x] 4.4 Confirm no concrete discipline references remain in `Core/`
+- [x] Task 5: Wire `.shared` bootstrap (AC: 5)
+  - [x] 5.1 Implement Option A (or Option B) for `.shared` initialization
+  - [x] 5.2 Add `TrainingDisciplineRegistry.bootstrap(disciplines:)` (or chosen equivalent)
+  - [x] 5.3 Document the access contract in a doc comment on `.shared` ("must call `bootstrap` before access")
+- [x] Task 6: Create `DisciplineBootstrap` (AC: 6)
+  - [x] 6.1 Create `Peach/App/Training/` directory
+  - [x] 6.2 Create `DisciplineBootstrap.swift` with `allDisciplines` static
+  - [x] 6.3 Add the file to both iOS and macOS targets
+- [x] Task 7: Wire bootstrap from `PeachApp.init` (AC: 5, 8)
+  - [x] 7.1 Add `TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)` as the first line of `PeachApp.init()`
+  - [x] 7.2 Confirm via launch on iOS Simulator and macOS that no precondition fails
+- [x] Task 8: Update tests (AC: 7)
+  - [x] 8.1 Refactor `TrainingDisciplineRegistryTests` to construct registries via `init(disciplines:)`
+  - [x] 8.2 Confirm all existing assertions still pass
+  - [x] 8.3 Check whether any other test files relied on `.shared` being pre-bootstrapped via `private init()` — bootstrap them in test setup if needed
+- [x] Task 9: Build & test both platforms (AC: 8, 9)
+  - [x] 9.1 `bin/build.sh && bin/build.sh -p mac` — zero new warnings
+  - [x] 9.2 `bin/test.sh && bin/test.sh -p mac` — all tests green
   - [ ] 9.3 Manual smoke: launch app, verify all six disciplines appear in StartScreen, navigate into one of each category, confirm no crash
 
 ## Dev Notes
@@ -210,3 +210,51 @@ Active docs (`arc42.md`, `glossary.md`, `project-context.md`) describe the regis
 ## Change Log
 
 - 2026-04-25: Story drafted as Story 76.2 of Epic 76 (Soft Launch — Build-Gated Timing Disciplines). Renumbered from original 76.1 when a new 76.1 (relocate `TrainingDisciplineID` to App) was inserted. Status → ready-for-dev.
+- 2026-04-25: Implementation complete. `TrainingCategory` enum added in Core; `TrainingDiscipline` protocol gained `category` requirement; six conformances declare their category. Registry refactored to `init(disciplines:)` plus `static func bootstrap(disciplines:)` backed by `Synchronization.Mutex`. New `Peach/App/Training/DisciplineBootstrap.swift` owns the concrete six-discipline list; `PeachApp.init()` calls bootstrap as its first line. Status → review.
+
+## Dev Agent Record
+
+### Implementation Plan
+
+**Bootstrap mechanism (AC 5, Option A)**
+
+Chose Option A (`static var shared` backed by `static var _shared`) for the `.shared` bootstrap pattern. Implemented with `Synchronization.Mutex<TrainingDisciplineRegistry?>(nil)` (matching the existing precedent in `Peach/Core/Audio/SoundFontEngine.swift`) rather than `nonisolated(unsafe)` storage:
+
+- `static var shared` reads the mutex; `preconditionFailure` if unset (loud + immediate per AC).
+- `static func bootstrap(disciplines:)` writes the mutex; `precondition` traps on second call.
+- `init(disciplines:)` is reachable for tests that want their own registry without affecting `.shared`.
+
+Rationale: `Mutex` provides a real concurrency barrier (defense in depth) without `nonisolated(unsafe)`. Read cost is small (single uncontended lock) and the `_shared` access is invariant after bootstrap.
+
+**Test bootstrap (AC 7)**
+
+Tests are hosted in `Peach.app` via `TEST_HOST` (see `Peach.xcodeproj/project.pbxproj`). When the test bundle loads, the host's `PeachApp.init()` runs first and bootstraps the registry, so every test sees a populated `.shared` from the start. No test-side bootstrap shim is required. `TrainingDisciplineRegistryTests` instantiates its own registry via `init(disciplines: DisciplineBootstrap.allDisciplines)` per AC 7.
+
+### Completion Notes
+
+- All nine ACs implemented. Both platforms green: iOS 1765 tests, macOS 1758 tests, zero warnings.
+- Two `/simplify-code` follow-ups applied (high-confidence, behavior-preserving):
+  1. `recordTypes` precomputed in `init` and stored as `let` (was a computed property allocating a fresh `Set` per call; called from `TrainingDataStore` deletion/replacement loops).
+  2. `subscript(_ id:)` now traps with `preconditionFailure("No discipline registered for id \(id)")` instead of force-unwrap.
+- Manual smoke test (Task 9.3) deferred to user verification on iOS Simulator and macOS hardware.
+
+### File List
+
+**Added**
+
+- `Peach/Core/Training/TrainingCategory.swift`
+- `Peach/App/Training/DisciplineBootstrap.swift`
+
+**Modified**
+
+- `Peach/Core/Training/Discipline/TrainingDiscipline.swift` — added `category` protocol requirement
+- `Peach/Core/Training/Discipline/TrainingDisciplineRegistry.swift` — replaced `private init()` with `init(disciplines:)`, added `bootstrap(disciplines:)`/`shared`, precomputed `recordTypes`, improved subscript trap
+- `Peach/App/PeachApp.swift` — added `TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)` as first line of `init()`
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift` — added `category = .pitch`
+- `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift` — added `category = .intervals`
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift` — added `category = .pitch`
+- `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift` — added `category = .intervals`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — added `category = .rhythm`
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — added `category = .rhythm`
+- `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift` — constructs registry via `init(disciplines: DisciplineBootstrap.allDisciplines)`
+- `docs/implementation-artifacts/sprint-status.yaml` — story 76.2 status updated

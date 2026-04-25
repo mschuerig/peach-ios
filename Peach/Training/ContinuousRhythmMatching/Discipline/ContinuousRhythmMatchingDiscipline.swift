@@ -4,6 +4,8 @@ import SwiftData
 struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.continuousRhythmMatching
 
+    let category: TrainingCategory = .rhythm
+
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Fill the Gap"),
         unitLabel: String(localized: "ms"),

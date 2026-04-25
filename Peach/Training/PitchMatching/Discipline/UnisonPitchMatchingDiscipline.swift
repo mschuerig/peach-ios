@@ -4,6 +4,8 @@ import SwiftData
 struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.unisonPitchMatching
 
+    let category: TrainingCategory = .pitch
+
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Match Pitch"),
         unitLabel: String(localized: "cents"),

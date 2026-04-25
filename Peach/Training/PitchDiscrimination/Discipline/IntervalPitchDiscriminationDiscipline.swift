@@ -4,6 +4,8 @@ import SwiftData
 struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.intervalPitchDiscrimination
 
+    let category: TrainingCategory = .intervals
+
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Compare Intervals"),
         unitLabel: String(localized: "cents"),

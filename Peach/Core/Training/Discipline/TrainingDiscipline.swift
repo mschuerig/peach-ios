@@ -11,6 +11,10 @@ protocol TrainingDiscipline: Sendable {
     /// Stable identifier for this discipline.
     var id: TrainingDisciplineID { get }
 
+    /// Display partition for grouping in lists and menus. Each discipline
+    /// belongs to exactly one category.
+    var category: TrainingCategory { get }
+
     /// Display and statistics configuration (name, unit label, baseline, EWMA parameters).
     var config: TrainingDisciplineConfig { get }
 

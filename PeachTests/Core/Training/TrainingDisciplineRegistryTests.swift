@@ -5,9 +5,9 @@ import Foundation
 @Suite("TrainingDisciplineRegistry")
 struct TrainingDisciplineRegistryTests {
 
-    private let registry = TrainingDisciplineRegistry.shared
+    private let registry = TrainingDisciplineRegistry(disciplines: DisciplineBootstrap.allDisciplines)
 
-    // MARK: - Task 4.2: All discipline IDs are registered
+    // MARK: - All discipline IDs are registered
 
     @Test("all canonical TrainingDisciplineIDs are registered in the registry")
     func allDisciplineIDsRegistered() async {
@@ -30,7 +30,7 @@ struct TrainingDisciplineRegistryTests {
         }
     }
 
-    // MARK: - Task 4.3: No CSV column name overlaps
+    // MARK: - No CSV column name overlaps
 
     @Test("no discipline declares a common column as its own")
     func noDisciplineDeclaresCommonColumn() async {
@@ -55,9 +55,6 @@ struct TrainingDisciplineRegistryTests {
         }
 
         for (column, owners) in columnOwners where owners.count > 1 {
-            // Columns shared across different training types are expected for pitch types
-            // (referenceNote, targetNote, etc. shared by pitchDiscrimination and pitchMatching)
-            // This is by design — the registry deduplicates them
             #expect(registry.csvDisciplineColumns.contains(column),
                     "Shared column '\(column)' missing from registry's deduped column list")
         }
@@ -69,7 +66,7 @@ struct TrainingDisciplineRegistryTests {
         #expect(columns.count == Set(columns).count)
     }
 
-    // MARK: - Task 4.4: Parser dispatch by training type string
+    // MARK: - Parser dispatch by training type string
 
     @Test("each discipline's csvTrainingType resolves to a parser in csvParsers")
     func parserDispatchByTrainingType() async {

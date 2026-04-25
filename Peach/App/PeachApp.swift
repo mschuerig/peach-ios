@@ -42,6 +42,8 @@ struct PeachApp: App {
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
     init() {
+        TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)
+
         #if os(macOS)
         configureSingleWindowApp()
         #endif

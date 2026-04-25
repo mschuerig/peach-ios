@@ -4,6 +4,8 @@ import SwiftData
 struct IntervalPitchMatchingDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.intervalPitchMatching
 
+    let category: TrainingCategory = .intervals
+
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Match Intervals"),
         unitLabel: String(localized: "cents"),

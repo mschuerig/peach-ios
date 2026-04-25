@@ -4,6 +4,8 @@ import SwiftData
 struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
     let id = TrainingDisciplineID.timingOffsetDetection
 
+    let category: TrainingCategory = .rhythm
+
     let config = TrainingDisciplineConfig(
         displayName: String(localized: "Compare Timing"),
         unitLabel: String(localized: "ms"),
