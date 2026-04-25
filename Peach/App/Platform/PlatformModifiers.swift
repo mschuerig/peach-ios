@@ -30,6 +30,21 @@ extension View {
         #error("Unsupported platform")
         #endif
     }
+
+    func platformPrincipalTitle(_ title: String) -> some View {
+        #if os(iOS)
+        self.toolbar {
+            ToolbarItem(placement: .principal) {
+                Text(title)
+                    .font(.headline)
+            }
+        }
+        #elseif os(macOS)
+        self
+        #else
+        #error("Unsupported platform")
+        #endif
+    }
 }
 
 struct PlatformSettingsButton: View {

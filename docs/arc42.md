@@ -50,7 +50,7 @@ Peach is a pitch and rhythm ear training app for iOS, iPadOS, and macOS. It trai
 
 | Role | Person | Expectations |
 |------|--------|-------------|
-| Developer, User, Product Owner | Michael | Functional ear training app; learning vehicle for iOS development and AI-assisted workflows |
+| Developer, User, Product Owner | Michael | Functional ear training app; learning vehicle for Apple platform development and AI-assisted workflows |
 | AI Development Agents | Claude Code, BMAD agents | Clear architectural boundaries, testable interfaces, documented patterns |
 
 ---
@@ -85,7 +85,7 @@ graph LR
     Storage["Local Storage"]
     FS["File System"]
     SF2["Bundled SoundFont"]
-    MIDI["MIDI Controller<br/>(iOS + macOS)"]
+    MIDI["MIDI Controller<br/>(all platforms)"]
     KB["Keyboard<br/>(macOS)"]
 
     User -- "starts training,<br/>answers, adjusts slider,<br/>taps rhythm" --> Peach
@@ -218,12 +218,12 @@ graph TB
 | **Composition Root** | Creates all services, wires the dependency graph, injects everything via SwiftUI environment. The only place that knows the full object graph. Manages four sessions, two audio layers, and their respective adapters. |
 | **Pitch Comparison** | Training loop where two notes play in sequence and the user judges higher/lower. Owns the `PitchDiscriminationSession` state machine. Works in both unison and interval modes via parameterization. |
 | **Pitch Matching** | Training loop where a reference note plays and the user tunes a second note to match. Owns the `PitchMatchingSession` state machine, pitch slider interaction. Works in both unison and interval modes. |
-| **Rhythm Offset Detection** | Training loop where a four-note rhythmic pattern plays with one note offset from the beat. User judges whether the offset note is early or late. Owns the `RhythmOffsetDetectionSession` state machine. Uses `RhythmPlayer` for sample-accurate pattern playback. |
+| **Rhythm Offset Detection** | Training loop where a four-note rhythmic pattern plays with one note offset from the beat. User judges whether the offset note is early or late. Owns the `TimingOffsetDetectionSession` state machine. Uses `RhythmPlayer` for sample-accurate pattern playback. |
 | **Continuous Rhythm Matching** | Continuous training loop where a repeating four-step pattern plays with one gap per cycle. User taps to fill the gap. Timing accuracy is measured. Owns the `ContinuousRhythmMatchingSession` and acts as `StepProvider` for the `StepSequencer`. |
 | **Profile** | Visualizes the user's perceptual abilities: piano keyboard heatmap, progress chart across all six training disciplines, spectrogram for rhythm, chart export. |
 | **Settings** | User configuration: note range, note duration, reference pitch, sound source, interval selection, tuning system, tempo, gap position, data import/export. |
 | **Audio** | Tone generation and percussion sequencing. Provides three protocol boundaries: `NotePlayer` (pitched playback), `RhythmPlayer` (pattern-based percussion), and `StepSequencer` (continuous cycle-based sequencing). `SoundFontEngine` is the shared multi-channel audio engine. Implements the two-world architecture (see Section 8.1). |
-| **Algorithm** | Decides the next exercise based on the user's profile. `KazezNoteStrategy` implements the staircase for pitch comparison (see ADR-4). `AdaptiveRhythmOffsetDetectionStrategy` adapts the same staircase for rhythm timing. Both strategies conform to their respective protocol (`NextPitchDiscriminationStrategy`, `NextRhythmOffsetDetectionStrategy`). |
+| **Algorithm** | Decides the next exercise based on the user's profile. `KazezNoteStrategy` implements the staircase for pitch comparison (see ADR-4). `AdaptiveTimingOffsetDetectionStrategy` adapts the same staircase for rhythm timing. Both strategies conform to their respective protocol (`NextPitchDiscriminationStrategy`, `NextTimingOffsetDetectionStrategy`). |
 | **Training** | Shared training infrastructure: `TrainingSession` protocol, `TrainingDiscipline` protocol, `TrainingDisciplineRegistry` (see Section 8.7), `TrainingDisciplineConfig`, `TrainingDisciplineID` (six cases), `StatisticsKey`, observer protocols, session-specific settings snapshots, `Resettable`, `ProfileUpdating`. |
 | **Data** | Sole accessor to SwiftData persistence. Stores every completed exercise across four record types. Handles CSV import/export with discipline-driven column ownership. |
 | **Profile Model** | In-memory perceptual profile rebuilt from training records on startup. Keyed by `StatisticsKey` — either `.pitch(TrainingDisciplineID)` or `.rhythm(TrainingDisciplineID, TempoRange, RhythmDirection)`. Uses Welford's algorithm for running statistics. Builder pattern for initialization. Progress timeline with EWMA smoothing and adaptive time bucketing. |
@@ -474,7 +474,7 @@ Sessions, the algorithm, profiles, data stores, and observers work **exclusively
 Only the audio layer touches the physical world — and it does so through explicit conversions:
 1. **Pitch (logical → physical):** `TuningSystem.frequency(for:referencePitch:)` — used by sessions before calling the audio layer
 2. **Pitch (physical → MIDI hardware):** internal to the SoundFont player, invisible to the rest of the app
-3. **Rhythm (logical → physical):** `SampleRate × Duration` — used inside `RhythmOffsetDetectionSession.buildPattern()` and `SoundFontStepSequencer`
+3. **Rhythm (logical → physical):** `SampleRate × Duration` — used inside `TimingOffsetDetectionSession.buildPattern()` and `SoundFontStepSequencer`
 
 The `NotePlayer` protocol sits at the pitch boundary: it accepts frequencies. The `RhythmPlayer` protocol sits at the rhythm boundary: it accepts `RhythmPattern` (pre-computed sample offsets). The `StepSequencer` protocol accepts `TempoBPM` and a `StepProvider`.
 
@@ -551,7 +551,7 @@ Raw values are unwrapped only at system boundaries: UserDefaults, SwiftData `@Mo
 ### 8.3 Persistence Strategy
 
 - **Single accessor:** One `TrainingDataStore` component is the sole entry point for all database operations. No other component touches the persistence context.
-- **Four record types:** `PitchDiscriminationRecord` (reference/target notes, cent offset, isCorrect, interval, tuning system), `PitchMatchingRecord` (reference/target notes, initial offset, user cent error, interval, tuning system), `RhythmOffsetDetectionRecord` (tempo BPM, signed offset ms, isCorrect), `ContinuousRhythmMatchingRecord` (tempo BPM, mean offset ms, per-position offset ms).
+- **Four record types:** `PitchDiscriminationRecord` (reference/target notes, cent offset, isCorrect, interval, tuning system), `PitchMatchingRecord` (reference/target notes, initial offset, user cent error, interval, tuning system), `TimingOffsetDetectionRecord` (tempo BPM, signed offset ms, isCorrect), `ContinuousRhythmMatchingRecord` (tempo BPM, mean offset ms, per-position offset ms).
 - **Atomic writes:** SwiftData (SQLite-backed) provides atomic transactions. Bulk operations (e.g., CSV import with replace) use explicit transactions.
 - **In-memory profile:** The perceptual profile is never persisted directly — it is rebuilt from training records on startup and updated incrementally during training. This means the profile is always consistent with the underlying data and requires no schema migration when profile logic changes.
 - **CSV import/export:** Discipline-driven column ownership. Each `TrainingDiscipline` declares its `csvColumns`, `csvKeyValuePairs(for:)`, and `parseCSVRow(...)`. The `TrainingDisciplineRegistry` aggregates all columns and dispatches row parsing by training type string. A chain-of-responsibility parser handles version compatibility. New format versions are additive — existing parsers are never modified.
@@ -567,14 +567,14 @@ Raw values are unwrapped only at system boundaries: UserDefaults, SwiftData `@Mo
 
 Sessions decouple result delivery from result consumers. After each completed exercise, the session iterates its injected observer array and notifies each one.
 
-Each training paradigm defines its own observer protocol (`PitchDiscriminationObserver`, `PitchMatchingObserver`, `RhythmOffsetDetectionObserver`, `ContinuousRhythmMatchingObserver`). Shared infrastructure (`PerceptualProfile`, `TrainingDataStore`) does not conform to these protocols directly. Instead, dedicated **adapter types** bridge discipline-specific observers to shared infrastructure:
+Each training paradigm defines its own observer protocol (`PitchDiscriminationObserver`, `PitchMatchingObserver`, `TimingOffsetDetectionObserver`, `ContinuousRhythmMatchingObserver`). Shared infrastructure (`PerceptualProfile`, `TrainingDataStore`) does not conform to these protocols directly. Instead, dedicated **adapter types** bridge discipline-specific observers to shared infrastructure:
 
 - `PitchDiscriminationProfileAdapter` / `PitchDiscriminationStoreAdapter`
 - `PitchMatchingProfileAdapter` / `PitchMatchingStoreAdapter`
-- `RhythmOffsetDetectionProfileAdapter` / `RhythmOffsetDetectionStoreAdapter`
+- `TimingOffsetDetectionProfileAdapter` / `TimingOffsetDetectionStoreAdapter`
 - `ContinuousRhythmMatchingProfileAdapter` / `ContinuousRhythmMatchingStoreAdapter`
 
-This adapter layer keeps the shared infrastructure free of discipline-specific knowledge while allowing each discipline's observer protocol to use discipline-appropriate types (e.g., `CompletedRhythmOffsetDetectionTrial` rather than a generic result).
+This adapter layer keeps the shared infrastructure free of discipline-specific knowledge while allowing each discipline's observer protocol to use discipline-appropriate types (e.g., `CompletedTimingOffsetDetectionTrial` rather than a generic result).
 
 Adding a new observer (e.g., analytics, achievements) requires zero session changes — just add the new conformer to the observer array in the composition root.
 
@@ -658,8 +658,8 @@ graph LR
 
 - Port abstractions are the preferred mechanism for platform differences
 - `#if os()` conditionals are permitted only in `App/Platform/` implementations and the composition root (`PeachApp.swift`)
-- Never use `#if os()` in `Core/`, feature directories, or test code
-- Currently 16 files contain `#if os()` — all in `App/Platform/` or `PeachApp.swift`
+- Test files for platform-specific implementations may use file-level `#if os()` guards
+- Never use `#if os()` in `Core/` or feature directories
 
 **macOS-specific features (beyond port implementations):**
 
@@ -740,7 +740,7 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 - (+) Converges on perceptual thresholds without frustrating the user
 - (+) Coefficients are tunable
 - (+) Cold start handled gracefully (untrained notes start at maximum difficulty)
-- (+) Algorithm generalized to rhythm: `AdaptiveRhythmOffsetDetectionStrategy` uses the same formula with offset percentage as the difficulty parameter
+- (+) Algorithm generalized to rhythm: `AdaptiveTimingOffsetDetectionStrategy` uses the same formula with offset percentage as the difficulty parameter
 - (-) No adaptive algorithm for pitch matching yet (random note selection)
 
 ### ADR-5: In-Memory Profile Rebuilt on Startup
@@ -860,7 +860,7 @@ Quality
 | QS-10 | Responsiveness | Rotate device during training | Layout adapts; no data loss; training continues |
 | QS-11 | Localization | Switch device language to German | All user-facing strings display in German |
 | QS-12 | Extensibility | Developer adds a new training discipline | Only new files created; no changes to existing disciplines, profile, or data store |
-| QS-13 | Platform Consistency | Same training exercise on iPhone and Mac | Identical training behavior; Mac uses keyboard shortcuts instead of tap targets |
+| QS-13 | Platform Consistency | Same training exercise on iPhone, iPad, and Mac | Identical training behavior; Mac uses keyboard shortcuts instead of tap targets |
 | QS-14 | Portability | Developer adds a new platform-conditional behavior | New port protocol + implementation; no changes to Core or feature code |
 
 ---
@@ -905,9 +905,9 @@ Quality
 | **Perceptual Profile** | In-memory model of the user's pitch and rhythm perception, rebuilt from training records on startup. Keyed by `StatisticsKey`. |
 | **Pitch Bend** | MIDI mechanism for fine-tuning pitch. Peach uses a ±200 cent range with 14-bit resolution (~0.024 cents per step). |
 | **Pitch Comparison** | Training mode: two notes in sequence, user judges higher or lower. |
+| **Pitch Matching** | Training mode: user tunes a note to match a reference pitch via slider. |
 | **Platform Implementation** | A concrete type in `App/Platform/` that conforms to a port protocol with platform-specific behavior (e.g., `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`). |
 | **Port** | A platform-agnostic protocol in `Core/Ports/` that abstracts a platform-specific capability (e.g., `HapticFeedback`, `AudioSessionConfiguring`). See Section 8.8. |
-| **Pitch Matching** | Training mode: user tunes a note to match a reference pitch via slider. |
 | **Reference Note** | The anchor note in a training exercise. Always an exact MIDI note. |
 | **RhythmDirection** | Whether a timing offset is early (before the beat) or late (after the beat). |
 | **RhythmOffset** | A signed duration representing the timing deviation from the beat. Negative = early, positive = late. |

@@ -1,6 +1,6 @@
 # Story 70.4: Update Project Documentation for Three-Platform Release
 
-Status: review
+Status: done
 
 ## Story
 

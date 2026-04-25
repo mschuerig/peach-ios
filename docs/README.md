@@ -1,6 +1,6 @@
 # Peach Documentation
 
-Documentation for **Peach**, an adaptive pitch comparison training app for iOS.
+Documentation for **Peach**, an adaptive pitch and rhythm ear training app for iOS, iPadOS, and macOS.
 
 ## Directory Overview
 

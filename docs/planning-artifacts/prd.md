@@ -390,7 +390,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 - Audio output (speaker and headphones) — no microphone required
 - Haptic engine for wrong-answer feedback (iOS/iPadOS only; no-op on macOS)
-- MIDI controller input for training interactions (iOS and macOS)
+- MIDI controller input for training interactions (all platforms)
 - System volume only — no in-app audio controls
 - No camera, location, contacts, push notifications, or other permissions
 
