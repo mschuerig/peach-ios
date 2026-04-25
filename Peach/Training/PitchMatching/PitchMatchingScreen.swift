@@ -40,10 +40,10 @@ struct PitchMatchingScreen: View {
             )
             .padding()
         }
-        .onKeyPress(.upArrow, phases: .down) { _ in
+        .onKeyPress(.upArrow, phases: [.down, .repeat]) { _ in
             pitchMatchingSession.adjustPitchByStep(up: true) ? .handled : .ignored
         }
-        .onKeyPress(.downArrow, phases: .down) { _ in
+        .onKeyPress(.downArrow, phases: [.down, .repeat]) { _ in
             pitchMatchingSession.adjustPitchByStep(up: false) ? .handled : .ignored
         }
         .onKeyPress(.space, phases: .down) { _ in

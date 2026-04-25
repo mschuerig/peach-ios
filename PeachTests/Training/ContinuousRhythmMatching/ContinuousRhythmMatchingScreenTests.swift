@@ -6,12 +6,6 @@ struct ContinuousRhythmMatchingScreenTests {
 
     // MARK: - Layout Parameters
 
-    @Test("compact button icon size is smaller than regular")
-    func compactButtonIconSize() async {
-        #expect(ContinuousRhythmMatchingScreen.buttonIconSize(isCompact: true) <
-                ContinuousRhythmMatchingScreen.buttonIconSize(isCompact: false))
-    }
-
     @Test("compact button min height is smaller than regular")
     func compactButtonMinHeight() async {
         #expect(ContinuousRhythmMatchingScreen.buttonMinHeight(isCompact: true) <

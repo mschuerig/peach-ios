@@ -1,6 +1,6 @@
 # Story 70.3: Fix Platform Issues Found in Audit
 
-Status: review
+Status: done
 
 ## Story
 
@@ -97,7 +97,7 @@ N/A — no debugging required; all fixes compiled cleanly on first attempt.
 
 **Must-Fix Issues Resolved (9 total):**
 
-1. **[70.2-M1] Dual Settings access paths** — Created `PlatformSettingsButton` struct in `PlatformModifiers.swift`. On iOS, renders `NavigationLink` pushing to SettingsScreen. On macOS, renders `Button` that opens the native Settings window via `NSApp.sendAction`. Applied to both `StartScreen` and `TrainingScreenModifier` toolbars, eliminating the confusing dual-path behavior.
+1. **[70.2-M1] Dual Settings access paths** — Created `PlatformSettingsButton` struct in `PlatformModifiers.swift`. On iOS, renders `NavigationLink` pushing to SettingsScreen. On macOS, renders `Button` that opens the native Settings window via `openWindow(id: "settings")`. Applied to both `StartScreen` and `TrainingScreenModifier` toolbars, eliminating the confusing dual-path behavior.
 
 2. **[70.2-M2] StartScreen landscape layout overflow** — Wrapped the `landscapeLayout` HStack in `ScrollView(.vertical)`, matching the portrait layout's scroll behavior. Prevents content overflow on both narrow macOS windows and iPhone SE landscape with Dynamic Type.
 

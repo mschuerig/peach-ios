@@ -80,7 +80,7 @@ struct PeachCommands: Commands {
             Button("Show Profile") {
                 navigate(to: .profile)
             }
-            .keyboardShortcut("p", modifiers: .command)
+            .keyboardShortcut("p", modifiers: [.command, .shift])
         }
     }
 
@@ -141,17 +141,16 @@ struct PeachCommands: Commands {
 
     // MARK: - Navigation
 
-    @ViewBuilder
     private func trainingButton(_ title: LocalizedStringKey, destination: NavigationDestination, currentDestination: NavigationDestination?) -> some View {
-        let isCurrent = currentDestination == destination
-        Button {
-            navigate(to: destination)
-        } label: {
-            if isCurrent {
-                Label(title, systemImage: "checkmark")
-            } else {
-                Text(title)
+        Toggle(isOn: Binding(
+            get: { currentDestination == destination },
+            set: { newValue in
+                if newValue {
+                    navigate(to: destination)
+                }
             }
+        )) {
+            Text(title)
         }
     }
 

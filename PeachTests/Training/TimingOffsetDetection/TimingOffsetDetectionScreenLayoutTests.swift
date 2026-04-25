@@ -5,18 +5,6 @@ import SwiftUI
 @Suite("TimingOffsetDetectionScreen Layout Tests")
 struct TimingOffsetDetectionScreenLayoutTests {
 
-    // MARK: - Button Icon Size
-
-    @Test("button icon size is 60pt in compact mode")
-    func buttonIconSizeCompact() async {
-        #expect(TimingOffsetDetectionScreen.buttonIconSize(isCompact: true) == 60)
-    }
-
-    @Test("button icon size is 80pt in regular mode")
-    func buttonIconSizeRegular() async {
-        #expect(TimingOffsetDetectionScreen.buttonIconSize(isCompact: false) == 80)
-    }
-
     // MARK: - Button Min Height
 
     @Test("button min height is 120pt in compact mode")
@@ -45,7 +33,6 @@ struct TimingOffsetDetectionScreenLayoutTests {
 
     @Test("all compact dimensions are smaller than regular dimensions")
     func compactDimensionsSmallerThanRegular() async {
-        #expect(TimingOffsetDetectionScreen.buttonIconSize(isCompact: true) < TimingOffsetDetectionScreen.buttonIconSize(isCompact: false))
         #expect(TimingOffsetDetectionScreen.buttonMinHeight(isCompact: true) < TimingOffsetDetectionScreen.buttonMinHeight(isCompact: false))
     }
 

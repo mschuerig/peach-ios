@@ -6,18 +6,6 @@ import SwiftUI
 @Suite("PitchDiscriminationScreen Layout Tests")
 struct PitchDiscriminationScreenLayoutTests {
 
-    // MARK: - Button Icon Size
-
-    @Test("Button icon size is 60pt in compact mode")
-    func buttonIconSizeCompact() async {
-        #expect(PitchDiscriminationScreen.buttonIconSize(isCompact: true) == 60)
-    }
-
-    @Test("Button icon size is 80pt in regular mode")
-    func buttonIconSizeRegular() async {
-        #expect(PitchDiscriminationScreen.buttonIconSize(isCompact: false) == 80)
-    }
-
     // MARK: - Button Min Height
 
     @Test("Button min height is 120pt in compact mode")
@@ -46,7 +34,6 @@ struct PitchDiscriminationScreenLayoutTests {
 
     @Test("All compact dimensions are smaller than regular dimensions")
     func compactDimensionsSmallerThanRegular() async {
-        #expect(PitchDiscriminationScreen.buttonIconSize(isCompact: true) < PitchDiscriminationScreen.buttonIconSize(isCompact: false))
         #expect(PitchDiscriminationScreen.buttonMinHeight(isCompact: true) < PitchDiscriminationScreen.buttonMinHeight(isCompact: false))
     }
 

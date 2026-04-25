@@ -6,8 +6,8 @@ struct TimingOffsetDetectionScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
-    @ScaledMetric private var buttonIconSize: CGFloat = 80
-    @ScaledMetric private var buttonIconSizeCompact: CGFloat = 60
+    @ScaledMetric(relativeTo: .title) private var buttonIconSize: CGFloat = 80
+    @ScaledMetric(relativeTo: .title) private var buttonIconSizeCompact: CGFloat = 60
 
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
@@ -127,10 +127,6 @@ struct TimingOffsetDetectionScreen: View {
     }
 
     // MARK: - Layout Parameters (extracted for testability)
-
-    static func buttonIconSize(isCompact: Bool) -> CGFloat {
-        isCompact ? 60 : 80
-    }
 
     static func buttonMinHeight(isCompact: Bool) -> CGFloat {
         isCompact ? 120 : 200
