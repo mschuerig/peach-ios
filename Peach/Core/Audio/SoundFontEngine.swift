@@ -94,6 +94,14 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
     let immediateTail: Atomic<Int>
     let dispatchedImmediateEventCount: Atomic<Int>
 
+    // MARK: - Render-Thread Reset Flag
+
+    /// Set by the main thread before a generation bump to request that the render
+    /// thread send CC#123 (All Notes Off) on the next generation change detection.
+    /// Consumed by the render thread via `exchange(false)`. Visibility is guaranteed
+    /// by the generation counter's release/acquire fence.
+    let needsAllNotesOff: Atomic<Bool>
+
     /// Enqueue an immediate event from the main thread (producer).
     /// Returns false if the ring buffer is full (events dropped).
     func enqueueImmediate(_ event: ScheduledMIDIEvent) -> Bool {
@@ -148,6 +156,7 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
         self.immediateHead = Atomic<Int>(0)
         self.immediateTail = Atomic<Int>(0)
         self.dispatchedImmediateEventCount = Atomic<Int>(0)
+        self.needsAllNotesOff = Atomic<Bool>(false)
 
         eventBuffer0 = .allocate(capacity: capacity)
         eventBuffer1 = .allocate(capacity: capacity)
@@ -488,17 +497,12 @@ final class SoundFontEngine {
             logger.warning("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity), truncating")
             assertionFailure("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity)")
         }
-        // Reset only samplers on channels referenced by the new events to flush
-        // stale MIDI events without disrupting other active channels.
-        var affectedChannels: Set<UInt8> = []
-        for event in events {
-            affectedChannels.insert(event.midiStatus & Self.channelMask)
-        }
-        for channelID in affectedChannels {
-            if let sampler = channels[MIDIChannel(channelID)] {
-                sampler.auAudioUnit.reset()
-            }
-        }
+        // Signal the render thread to send CC#123 (All Notes Off) on the next
+        // generation change. This replaces the previous sampler.auAudioUnit.reset()
+        // call which was unsafe — calling reset() on the main thread while the
+        // render thread is actively processing MIDI events triggers a crash in
+        // Apple's SamplerBaseElement::IncrementActiveLayerVoiceCount.
+        scheduleState.needsAllNotesOff.store(true, ordering: .relaxed)
 
         swapScheduleSlot { inactiveSlot in
             let buffer = scheduleState.eventBuffer(forSlot: inactiveSlot)
@@ -610,6 +614,20 @@ final class SoundFontEngine {
                 shared.samplePosition.store(0, ordering: .relaxed)
                 shared.dispatchedEventCount.store(0, ordering: .relaxed)
                 shared.resetImmediate()
+
+                // Send All Notes Off (CC#123) on the render thread if requested.
+                // This replaces the previous main-thread auAudioUnit.reset() which
+                // caused a crash in AVAudioUnitSampler's voice count management.
+                if shared.needsAllNotesOff.exchange(false, ordering: .relaxed) {
+                    let resetBlocks = shared.midiBlocks(forSlot: slotIndex)
+                    for ch: UInt8 in 0..<16 {
+                        guard let midiBlock = resetBlocks[Int(ch)] else { continue }
+                        let ccBytes: (UInt8, UInt8, UInt8) = (0xB0 | ch, 123, 0)
+                        withUnsafeMIDIBytes(ccBytes) { ptr in
+                            midiBlock(AUEventSampleTimeImmediate, 0, 3, ptr)
+                        }
+                    }
+                }
             }
 
             let count = shared.count(forSlot: slotIndex)

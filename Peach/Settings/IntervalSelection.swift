@@ -16,6 +16,13 @@ struct IntervalSelection: RawRepresentable, Equatable, Sendable {
         intervals = decoded
     }
 
+    // Explicit Equatable — the RawRepresentable default compares rawValue
+    // (JSON strings) whose key ordering is non-deterministic, causing
+    // intermittent equality failures for identical interval sets.
+    static func == (lhs: IntervalSelection, rhs: IntervalSelection) -> Bool {
+        lhs.intervals == rhs.intervals
+    }
+
     func isLastRemaining(_ interval: DirectedInterval) -> Bool {
         intervals.count == 1 && intervals.contains(interval)
     }
