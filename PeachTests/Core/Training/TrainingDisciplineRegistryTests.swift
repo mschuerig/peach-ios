@@ -9,10 +9,10 @@ struct TrainingDisciplineRegistryTests {
 
     // MARK: - Task 4.2: All discipline IDs are registered
 
-    @Test("all TrainingDisciplineID cases are registered in the registry")
+    @Test("all canonical TrainingDisciplineIDs are registered in the registry")
     func allDisciplineIDsRegistered() async {
         let registeredIDs = Set(registry.all.map(\.id))
-        let allIDs = Set(TrainingDisciplineID.allCases)
+        let allIDs = Set(TrainingDisciplineID.canonicalIDs)
 
         #expect(registeredIDs == allIDs)
     }
@@ -24,7 +24,7 @@ struct TrainingDisciplineRegistryTests {
 
     @Test("subscript returns correct discipline for each ID")
     func subscriptReturnsCorrectDiscipline() async {
-        for disciplineID in TrainingDisciplineID.allCases {
+        for disciplineID in TrainingDisciplineID.canonicalIDs {
             let discipline = registry[disciplineID]
             #expect(discipline.id == disciplineID)
         }

@@ -547,14 +547,14 @@ struct ProgressChartViewTests {
     // MARK: - Share Button Accessibility Labels
 
     @Test("share accessibility label contains discipline display name and is non-empty for all training disciplines",
-          arguments: TrainingDisciplineID.allCases)
+          arguments: TrainingDisciplineID.canonicalIDs)
     func shareAccessibilityLabel(mode: TrainingDisciplineID) async {
         let label = String(localized: "Share \(mode.config.displayName) chart")
         #expect(!label.isEmpty)
         #expect(label.contains(mode.config.displayName),
                 "Expected label to contain '\(mode.config.displayName)' but got: \(label)")
         // Verify the label is distinct per mode (not a generic fallback)
-        let otherModes = TrainingDisciplineID.allCases.filter { $0 != mode }
+        let otherModes = TrainingDisciplineID.canonicalIDs.filter { $0 != mode }
         for other in otherModes {
             let otherLabel = String(localized: "Share \(other.config.displayName) chart")
             #expect(label != otherLabel, "Labels for \(mode) and \(other) should differ")

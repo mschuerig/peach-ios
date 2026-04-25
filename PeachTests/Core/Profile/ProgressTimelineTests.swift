@@ -73,7 +73,7 @@ struct ProgressTimelineTests {
     @Test("empty timeline reports noData for all modes")
     func emptyTimeline() async {
         let timeline = ProgressTimeline(profile: PerceptualProfile())
-        for mode in TrainingDisciplineID.allCases {
+        for mode in TrainingDisciplineID.canonicalIDs {
             #expect(timeline.state(for: mode) == .noData)
         }
     }

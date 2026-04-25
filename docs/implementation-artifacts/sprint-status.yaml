@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-25 # Epic 76 expanded to four stories: new 76.1 (relocate TrainingDisciplineID) inserted; original 76.1/76.2/76.3 renumbered to 76.2/76.3/76.4 — all ready-for-dev
+# last_updated: 2026-04-25 # Story 76.1 → review: TrainingDisciplineID relocated to App as slug-wrapping struct
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -630,7 +630,7 @@ development_status:
   # distributed to a small TestFlight research group.
   # Work order: 76.1 → 76.2 → 76.3 → 76.4 (strict dependency)
   epic-76: in-progress
-  76-1-relocate-trainingdisciplineid-to-app: ready-for-dev
+  76-1-relocate-trainingdisciplineid-to-app: review
   76-2-discipline-category-and-bootstrap-relocation: ready-for-dev
   76-3-data-driven-discipline-iteration-by-category: ready-for-dev
   76-4-build-gated-timing-disciplines: ready-for-dev

@@ -1,13 +1,16 @@
 import Foundation
 
-/// Stable identifier for each training discipline.
-enum TrainingDisciplineID: String, CaseIterable, Sendable {
-    case unisonPitchDiscrimination = "pitch-discrimination"
-    case intervalPitchDiscrimination = "interval-discrimination"
-    case unisonPitchMatching = "pitch-matching"
-    case intervalPitchMatching = "interval-matching"
-    case timingOffsetDetection = "timing-offset-detection"
-    case continuousRhythmMatching = "continuous-rhythm-matching"
+/// Stable identifier for a training discipline.
+///
+/// Identity is the `slug` string. Named instances (`.unisonPitchDiscrimination`,
+/// `.timingOffsetDetection`, …) are declared in `App/Training/DisciplineIDs.swift`
+/// — Core owns only the identifier shape; App owns the identity catalog.
+struct TrainingDisciplineID: Hashable, Sendable, Codable {
+    let slug: String
+
+    nonisolated init(_ slug: String) {
+        self.slug = slug
+    }
 
     var config: TrainingDisciplineConfig {
         TrainingDisciplineRegistry.shared[self].config
@@ -16,6 +19,4 @@ enum TrainingDisciplineID: String, CaseIterable, Sendable {
     var statisticsKeys: [StatisticsKey] {
         TrainingDisciplineRegistry.shared[self].statisticsKeys
     }
-
-    var slug: String { rawValue }
 }
