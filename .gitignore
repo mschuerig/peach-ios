@@ -15,5 +15,8 @@ test-data.csv
 # LSP
 buildServer.json
 
+# Claude Code runtime artifacts
+.claude/scheduled_tasks.lock
+
 # macOS
 .DS_Store
