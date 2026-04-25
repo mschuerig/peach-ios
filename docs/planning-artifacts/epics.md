@@ -7599,3 +7599,90 @@ so that methods named `transitionToFeedback` don't also play the next trial, and
 3. **Given** all 4 session classes **When** inspected **Then** they follow the state + event → (newState, [Effect]) pattern.
 4. **Given** each session's state transitions **When** tested **Then** they can be tested as pure functions without mocking audio, persistence, or UI.
 5. **Given** both platforms **When** built and tested **Then** all existing tests pass and new state transition tests are added.
+
+---
+
+## Epic 76: Soft Launch — Build-Gated Timing Disciplines
+
+**Theme:** Hide the two timing disciplines (`TimingOffsetDetectionDiscipline`, `ContinuousRhythmMatchingDiscipline`) from the v1.0 App Store release while keeping the implementation in the codebase and exposing it via a separate `Research` build distributed to a small group of TestFlight participants who give targeted feedback on timing.
+
+**Motivation:** Touch input on iOS adds 50–80 ms latency on top of the audio stack; BLE MIDI adds 30–50 ms with jitter. The timing disciplines need sub-20 ms input latency to be musically useful, leaving wired USB MIDI as the only reliable input path. Releasing the timing disciplines into the open App Store would give most users a broken experience. The implementation is otherwise complete and wanted in v1.x, so the right answer is to gate registration on a build flag rather than remove the code.
+
+**Approach:** Four-story refactor that pushes concrete-feature knowledge out of Core (76.1: relocate `TrainingDisciplineID`'s named instances to App), prepares the seam (76.2: category + bootstrap relocation), routes the UI through it (76.3: data-driven iteration), then flips the switch (76.4: `PEACH_RESEARCH` build flag and `Research` configuration). Only 76.4 is user-visible; 76.1, 76.2, and 76.3 are zero-behavior-change refactors.
+
+**Work order:** 76.1 → 76.2 → 76.3 → 76.4 (strict dependency).
+
+### Story 76.1: Relocate TrainingDisciplineID's concrete cases to the App layer
+
+As a **Peach contributor preparing the registry refactor for build-gated timing disciplines**,
+I want `TrainingDisciplineID` in `Core/` reduced to a slug-wrapping struct with no concrete-feature knowledge, and the named instances (`.unisonPitchDiscrimination`, `.intervalPitchMatching`, `.timingOffsetDetection`, …) declared in an App-side extension,
+so that Core defines only the **identifier shape** while App owns the **identity catalog** — completing the Core/App separation that stories 76.2, 76.3, and 76.4 build on.
+
+**Acceptance Criteria:**
+
+1. **Given** `Peach/Core/Training/TrainingDisciplineID.swift` **When** inspected **Then** it defines a slug-wrapping `struct TrainingDisciplineID: Hashable, Sendable, Codable { let slug: String }` and contains no string literal naming a concrete discipline.
+2. **Given** `Peach/App/Training/DisciplineIDs.swift` **When** inspected **Then** it declares the six static factories (`.unisonPitchDiscrimination`, …) on `TrainingDisciplineID` with the historical slug strings preserved verbatim.
+3. **Given** the same App-side extension **When** inspected **Then** it exposes `static let canonicalIDs: [TrainingDisciplineID]` containing the six declared instances, with a doc comment distinguishing the catalog from `registry.all`.
+4. **Given** the six discipline conformances **When** inspected **Then** each `id` property still references its ID symbolically (no `TrainingDisciplineID(...)` literal-slug constructors in conformance files).
+5. **Given** the production call sites that exhaustively switch on IDs (ProfileScreen, StartScreen, PeachCommands, TrainingLifecycleCoordinator, StatisticalSummary) **When** built after this story **Then** each compiles via `default:` branches or restructured dispatch.
+6. **Given** the test files that reference `TrainingDisciplineID.allCases` **When** inspected **Then** each reference is replaced with `TrainingDisciplineID.canonicalIDs`; final grep returns zero `.allCases` hits.
+7. **Given** the running app **When** used **Then** observable behavior is identical to before this story (six disciplines, CSV round-trip stable, all UI surfaces unchanged).
+8. **Given** both platforms **When** built and tested **Then** all tests pass with zero new warnings.
+
+### Story 76.2: Add discipline category and relocate concrete bootstrap to App layer
+
+As a **Peach contributor preparing to gate timing disciplines per build**,
+I want a `TrainingCategory` partition on `TrainingDiscipline` and the concrete discipline list moved out of `Core/Training/Discipline/TrainingDisciplineRegistry.swift` and into a new `App/Training/DisciplineBootstrap.swift`,
+so that Core defines the registry mechanism while App owns the policy of which concrete disciplines exist — preparing the seam where stories 76.3 and 76.4 can drop in data-driven UI iteration and a build flag.
+
+**Acceptance Criteria:**
+
+1. **Given** `Peach/Core/Training/TrainingCategory.swift` **When** inspected **Then** it defines a `String, CaseIterable, Sendable` enum with cases `pitch`, `intervals`, `rhythm`.
+2. **Given** the `TrainingDiscipline` protocol **When** inspected **Then** it has a `var category: TrainingCategory { get }` requirement.
+3. **Given** the six discipline conformances **When** inspected **Then** each declares its category (pitch unison/match → `.pitch`; interval unison/match → `.intervals`; timing offset detection / continuous rhythm matching → `.rhythm`).
+4. **Given** `TrainingDisciplineRegistry` **When** inspected **Then** its initializer takes `disciplines: [any TrainingDiscipline]` and Core contains no concrete discipline references.
+5. **Given** `TrainingDisciplineRegistry.shared` **When** the app launches **Then** it is initialized via `bootstrap(disciplines:)` from `PeachApp.init()` before any view code accesses it.
+6. **Given** `Peach/App/Training/DisciplineBootstrap.swift` **When** inspected **Then** it owns the concrete six-discipline list as a static property.
+7. **Given** `TrainingDisciplineRegistryTests` **When** inspected **Then** it constructs registries via `init(disciplines:)` instead of relying on `.shared`.
+8. **Given** the running app **When** used **Then** observable behavior is identical to before this story (six disciplines, all UI surfaces unchanged).
+9. **Given** both platforms **When** built and tested **Then** all tests pass with zero new warnings.
+
+### Story 76.3: Data-driven discipline iteration by category
+
+As a **Peach contributor preparing for build-gated timing disciplines**,
+I want every UI consumer of the discipline list — `StartScreen`, `PeachCommands`, `ProfileScreen`, `HelpContent` — to iterate the registry by category instead of hardcoding the six disciplines,
+so that when story 76.4 stops registering the two timing disciplines, the rhythm category disappears from every surface automatically with no per-view change.
+
+**Acceptance Criteria:**
+
+1. **Given** `TrainingDisciplineRegistry` **When** inspected **Then** it exposes `activeCategories: [TrainingCategory]` (deduplicated, ordered by `TrainingCategory.allCases`, omitting empty categories) and `disciplines(in:) -> [any TrainingDiscipline]`.
+2. **Given** an App-side extension on `TrainingDisciplineID` **When** inspected **Then** it provides `var navigationDestination: NavigationDestination` so views need no switch.
+3. **Given** discipline display metadata **When** inspected **Then** each discipline carries `shortLabel`, `systemImageName`, `isHero`, and `helpDescription` so StartScreen / PeachCommands / HelpContent contain no discipline-name or icon literals.
+4. **Given** `StartScreen` **When** inspected **Then** it iterates `registry.activeCategories` and renders one section per category with one card per discipline.
+5. **Given** `PeachCommands` **When** inspected **Then** the training menu iterates `registry.activeCategories`, the help commands iterate `registry.all`, and `HelpSheetContent` carries a `TrainingDisciplineID` payload instead of per-discipline cases.
+6. **Given** category title and intro localization **When** inspected **Then** there is one source of truth mapping each `TrainingCategory` to a localized title (and optional intro), used by all consumers.
+7. **Given** `HelpContent.trainingDisciplinesDescription` **When** inspected **Then** it is generated from `registry.activeCategories.flatMap { registry.disciplines(in: $0) }`, with each discipline contributing its own `helpDescription`. The legacy hardcoded six-discipline localized string is removed.
+8. **Given** `ProfileScreen` **When** inspected **Then** it iterates `registry.all`, switches on `discipline.category` (not on static-ID identity), and `accessibilitySummary` reads from the registry.
+9. **Given** the codebase **When** searched for `TrainingDisciplineID.canonicalIDs` **Then** every remaining usage either iterates for the identifier catalog's structural integrity or has a comment explaining why registry iteration would be wrong.
+10. **Given** the running app **When** used **Then** observable behavior is identical to before this story (six disciplines still visible).
+11. **Given** both platforms **When** built and tested **Then** all tests pass with zero new warnings.
+
+### Story 76.4: Build-gated timing disciplines via PEACH_RESEARCH flag
+
+As **Michael preparing the v1.0 App Store release while keeping the timing disciplines available for targeted research feedback**,
+I want a `Research` Xcode build configuration whose `PEACH_RESEARCH` Swift compilation flag controls whether the two timing disciplines are registered in `DisciplineBootstrap`,
+so that the `Release` build (and therefore the App Store binary) ships only the four pitch-and-intervals disciplines while a TestFlight build from the `Research` configuration ships all six for a small number of invited testers.
+
+**Acceptance Criteria:**
+
+1. **Given** the Xcode project **When** Build Settings are inspected **Then** a `Research` build configuration exists, duplicated from `Release`.
+2. **Given** the project's Swift compiler flags **When** inspected **Then** `PEACH_RESEARCH` is defined only in the `Research` configuration (not in `Debug` or `Release`).
+3. **Given** the project's schemes **When** inspected **Then** a shared `Peach (Research)` scheme exists, configured to use `Research` for Run/Test/Profile/Analyze/Archive on both iOS and macOS.
+4. **Given** `bin/build.sh` and `bin/test.sh` **When** invoked with a new `--research` flag **Then** they build/test against the `Research` configuration. (If retrofitting is non-trivial, document the equivalent `xcodebuild` invocation in Completion Notes.)
+5. **Given** `Peach/App/Training/DisciplineBootstrap.swift` **When** inspected **Then** the timing-discipline registrations are wrapped in `#if PEACH_RESEARCH`, and that flag appears nowhere else in production code.
+6. **Given** `TrainingDisciplineRegistryTests` **When** inspected **Then** the count-based `registry.all.count == 6` assertion is replaced with data-driven invariants (subset relations against `canonicalIDs`, non-empty active categories, no duplicate IDs); no `#if PEACH_RESEARCH` guards in tests.
+7. **Given** App Store copy and in-app strings **When** searched for count-references ("six disciplines", "6 disciplines", etc.) **Then** any user-facing count assertion is rewritten to compute at runtime from `registry.all.count` or to avoid the count entirely; rhythm-category mentions in strings shipped in `Release` are eliminated.
+8. **Given** `arc42.md`, `glossary.md`, `project-context.md` **When** inspected **Then** they reflect the new architecture: identifier struct in Core with named factories in App (per 76.1), registry mechanism in Core, bootstrap policy in App, build-flag-gated timing disciplines, and the rationale (input-latency physics).
+9. **Given** a `Release` build **When** launched **Then** four disciplines are registered, only Pitch and Intervals categories appear in StartScreen/PeachCommands/Profile/Help, and no rhythm-discipline UI is reachable.
+10. **Given** a `Research` build **When** launched **Then** six disciplines are registered and behavior is identical to the pre-76.4 app.
+11. **Given** both platforms **When** built and tested in both `Debug` and `Research` configurations **Then** all tests pass with zero new warnings.

@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-25 # Story 71.5 → review; 71.5 → done after code review
+# last_updated: 2026-04-25 # Epic 76 expanded to four stories: new 76.1 (relocate TrainingDisciplineID) inserted; original 76.1/76.2/76.3 renumbered to 76.2/76.3/76.4 — all ready-for-dev
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -623,3 +623,15 @@ development_status:
   75-13-session-state-machine-effect-separation: done
   75-10-design-decision-documentation: done
   epic-75-retrospective: optional
+
+  # Epic 76: Soft Launch — Build-Gated Timing Disciplines
+  # Hide the two timing disciplines from the v1.0 App Store release while keeping
+  # the implementation in code; expose all six via a Research build configuration
+  # distributed to a small TestFlight research group.
+  # Work order: 76.1 → 76.2 → 76.3 → 76.4 (strict dependency)
+  epic-76: in-progress
+  76-1-relocate-trainingdisciplineid-to-app: ready-for-dev
+  76-2-discipline-category-and-bootstrap-relocation: ready-for-dev
+  76-3-data-driven-discipline-iteration-by-category: ready-for-dev
+  76-4-build-gated-timing-disciplines: ready-for-dev
+  epic-76-retrospective: optional
