@@ -31,7 +31,7 @@ editHistory:
 
 ## Executive Summary
 
-Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' perception through pitch and rhythm modes. **Pitch training** offers two complementary approaches: **Pitch Comparison** (two notes in sequence — user answers higher or lower) and **Pitch Matching** (user tunes a note to match a reference pitch). Both build a perceptual profile across the user's range and relentlessly target weak spots. Each has an **interval variant** that generalizes from unison to any musical interval. **Rhythm training** adds two modes: **Rhythm Comparison** (judge whether a note is early or late) and **Rhythm Matching** (tap the beat at the correct moment) — building a tempo-indexed rhythm profile with asymmetric early/late tracking.
+Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' perception through pitch and rhythm disciplines. **Pitch training** offers two complementary approaches: **Pitch Comparison** (two notes in sequence — user answers higher or lower) and **Pitch Matching** (user tunes a note to match a reference pitch). Both build a perceptual profile across the user's range and relentlessly target weak spots. Each has an **interval variant** that generalizes from unison to any musical interval. **Rhythm training** adds two disciplines: **Rhythm Comparison** (judge whether a note is early or late) and **Rhythm Matching** (tap the beat at the correct moment) — building a tempo-indexed rhythm profile with asymmetric early/late tracking.
 
 **Target users:** Musicians (singers, string, woodwind, brass players) for whom intonation is a practical challenge.
 
@@ -130,7 +130,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 - Interval Pitch Comparison training: reference note plays, second note plays at target interval ± cent deviation, user judges higher/lower relative to the correct interval
 - Interval Pitch Matching training: reference note plays, user adjusts second note to match target interval
 - Start Screen integration: two new buttons ("Interval Pitch Comparison", "Interval Pitch Matching")
-- Existing comparison and pitch matching modes are the prime (unison) case — same underlying training session, fixed to prime interval
+- Existing comparison and pitch matching disciplines are the prime (unison) case — same underlying training session, fixed to prime interval
 - Initial implementation limited to a single fixed interval: perfect fifth up (700 cents in 12-TET)
 
 **Deferred to subsequent iteration:**
@@ -142,7 +142,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 ### Version 0.4 Scope (Phase 4 — Rhythm Training)
 
-**Pre-work:** PerceptualProfile cleanup — remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-mode extension. Must complete before rhythm implementation.
+**Pre-work:** PerceptualProfile cleanup — remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-discipline extension. Must complete before rhythm implementation.
 
 **Core addition:** Two rhythm disciplines that build a tempo-indexed rhythm profile with asymmetric early/late tracking and a 2D difficulty model (time offset × tempo).
 
@@ -276,7 +276,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 **Climax:** She releases the slider. The note stops. The result is recorded — she was 4 cents off. No score, no judgment. The next reference note plays. She goes again. The rhythm is different from comparisons — slower, more deliberate, more like tuning an actual instrument. After a minute she's answered six matches. It feels like a different kind of exercise — active rather than reactive.
 
-**Resolution:** She switches back to pitch comparison training for a quick burst, then closes the app. Both modes feed her perceptual profile. Tomorrow she'll do a few minutes of each.
+**Resolution:** She switches back to pitch comparison training for a quick burst, then closes the app. Both disciplines feed her perceptual profile. Tomorrow she'll do a few minutes of each.
 
 **Requirements revealed:** Pitch Matching Screen, indefinite note playback, real-time pitch adjustment via slider, visual proximity feedback, result recording, Start Screen integration, same interruption handling as pitch comparison training.
 
@@ -302,7 +302,7 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 **Rising Action:** A reference note plays. Then a tunable note begins — but instead of matching the reference pitch, she needs to tune it to a perfect fifth above. The slider works the same way as unison pitch matching, but the target is different. She drags the slider, listening for the characteristic sound of a pure fifth. She overshoots, pulls back, fine-tunes.
 
-**Climax:** She releases the slider. The result shows she was 6 cents flat of a true fifth. Not bad for a first attempt. The next reference note plays. She goes again. This mode is harder than unison matching — she has to hold the interval relationship in her mind while tuning. It's exactly the skill she uses when tuning her cello's strings.
+**Climax:** She releases the slider. The result shows she was 6 cents flat of a true fifth. Not bad for a first attempt. The next reference note plays. She goes again. This discipline is harder than unison matching — she has to hold the interval relationship in her mind while tuning. It's exactly the skill she uses when tuning her cello's strings.
 
 **Resolution:** She does five matches and closes the app. Interval pitch matching is more demanding but directly applicable to her instrument. She'll alternate between unison and interval disciplines in her daily training.
 
@@ -324,13 +324,13 @@ Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' pe
 
 ### Journey 10: Rhythm Matching — "Hit That Beat"
 
-**Persona:** Sarah, exploring the rhythm matching mode for the first time.
+**Persona:** Sarah, exploring the rhythm matching discipline for the first time.
 
 **Opening Scene:** She taps "Rhythm Matching" on the Start Screen. Same tempo setting — 100 BPM.
 
 **Rising Action:** Three clicks play in sequence — sixteenth notes at tempo. Silence where the fourth should be. She taps the screen at what she thinks is the right moment. A fourth dot appears at the fixed grid position. It turns green — she was within 3% of a sixteenth note. Next round: three clicks. She taps. Yellow — 8% late. She adjusts her internal timing. Three more clicks. She taps. Green again.
 
-**Climax:** This mode is harder than comparison. She's not judging — she's *producing*. The separate early/late statistics reveal she consistently taps slightly late. The mean error is +4% (late), standard deviation is tight. Her timing is consistent but biased. This is actionable feedback for her playing.
+**Climax:** This discipline is harder than comparison. She's not judging — she's *producing*. The separate early/late statistics reveal she consistently taps slightly late. The mean error is +4% (late), standard deviation is tight. Her timing is consistent but biased. This is actionable feedback for her playing.
 
 **Resolution:** She alternates between rhythm comparison and rhythm matching, the way she alternates between pitch comparison and pitch matching. Different skills, same philosophy: build the profile, target the weak spots, no scores, no judgment.
 

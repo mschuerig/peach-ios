@@ -32,12 +32,12 @@
         }
       }
     },
-    "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Rhythm** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap." : {
+    "**Compare Pitch** – Listen to two notes and decide which one is higher.\n\n**Compare Intervals** – The same idea, but with musical intervals between notes.\n\n**Match Pitch** – Hear a note and slide to match its pitch.\n\n**Match Intervals** – Match pitches using musical intervals.\n\n**Compare Timing** – Hear a short rhythmic pattern and decide whether the tested note was early or late.\n\n**Fill the Gap** – A continuous stream of notes plays — tap at the right moment to fill the gap." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Tonhöhe vergleichen** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Intervalle vergleichen** – Das gleiche Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Tonhöhe treffen** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Intervalle treffen** – Gleiche Tonhöhen mit musikalischen Intervallen an.\n\n**Rhythmus vergleichen** – Höre ein kurzes rhythmisches Muster und entscheide, ob der getestete Ton zu früh oder zu spät kam.\n\n**Lücke füllen** – Ein fortlaufender Strom von Noten spielt — tippe im richtigen Moment, um die Lücke zu füllen."
+            "value" : "**Tonhöhe vergleichen** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Intervalle vergleichen** – Das gleiche Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Tonhöhe treffen** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Intervalle treffen** – Gleiche Tonhöhen mit musikalischen Intervallen an.\n\n**Timing vergleichen** – Höre ein kurzes rhythmisches Muster und entscheide, ob der getestete Ton zu früh oder zu spät kam.\n\n**Lücke füllen** – Ein fortlaufender Strom von Noten spielt — tippe im richtigen Moment, um die Lücke zu füllen."
           }
         }
       }
@@ -59,17 +59,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "**Hören & Vergleichen – Einzeltöne** – Höre zwei Töne und entscheide, welcher höher ist.\n\n**Hören & Vergleichen – Intervalle** – Dasselbe Prinzip, aber mit musikalischen Intervallen zwischen den Tönen.\n\n**Stimmen & Treffen – Einzeltöne** – Höre einen Ton und gleiche die Tonhöhe mit dem Regler an.\n\n**Stimmen & Treffen – Intervalle** – Gleiche Tonhöhen mit musikalischen Intervallen an."
-          }
-        }
-      }
-    },
-    "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Tempo** bestimmt die Geschwindigkeit aller Rhythmus-Disziplinen, gemessen in Schlägen pro Minute (BPM). Ein niedrigeres Tempo ist einfacher; erhöhe es, wenn sich dein Timing verbessert."
           }
         }
       }
@@ -122,17 +111,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Disziplinen.\n\n**Pause** fügt eine Pause zwischen den beiden Tönen im Vergleichstraining ein. Bei null spielen die Töne direkt hintereinander."
-          }
-        }
-      }
-    },
-    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Hear & Compare training. At zero, notes play back-to-back." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer – in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Disziplinen.\n\n**Pause** fügt eine Stille zwischen den beiden Tönen im Hören & Vergleichen-Training ein. Bei null werden die Töne direkt nacheinander gespielt."
           }
         }
       }
@@ -3600,12 +3578,12 @@
         }
       }
     },
-    "Vary Loudness (All Modes)" : {
+    "Vary Loudness (All Disciplines)" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lautstärke variieren (Alle Modi)"
+            "value" : "Lautstärke variieren (Alle Disziplinen)"
           }
         }
       }

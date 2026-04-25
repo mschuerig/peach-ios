@@ -479,8 +479,8 @@ With two disciplines, several MVP names are now ambiguous. These renames must be
 | `NextNoteStrategy` | `NextPitchDiscriminationStrategy` | Returns a `PitchDiscriminationTrial`, not a generic note; method is `nextPitchDiscriminationTrial()` |
 
 **Names that remain unchanged:**
-- `TrainingDataStore` — stores all training data (both modes); "training" means "ear training"
-- `TrainingSettings` — shared settings (note range, reference pitch, note duration) apply to both modes
+- `TrainingDataStore` — stores all training data (both disciplines); "training" means "ear training"
+- `TrainingSettings` — shared settings (note range, reference pitch, note duration) apply to both disciplines
 - `PitchDiscriminationObserver`, `PitchDiscriminationTrial`, `CompletedPitchDiscriminationTrial` — already specific
 - `PerceptualProfile` — the concrete class conforms to both pitch comparison and matching protocols
 - `NotePlayer` — generic by design, serves both disciplines
@@ -1281,13 +1281,13 @@ No separate interval cases. The interval set is a parameter — FR66 (unison = p
 **Start Screen routing — four buttons, two screens:**
 
 ```swift
-// Unison modes
+// Unison disciplines
 NavigationLink(value: .pitchDiscrimination(intervals: [.prime]))       { Text("Pitch Comparison") }
 NavigationLink(value: .pitchMatching(intervals: [.prime]))    { Text("Pitch Matching") }
 
 // Visual separator
 
-// Interval modes
+// Interval disciplines
 NavigationLink(value: .pitchDiscrimination(intervals: [.perfectFifth]))    { Text("Interval Pitch Comparison") }
 NavigationLink(value: .pitchMatching(intervals: [.perfectFifth])) { Text("Interval Pitch Matching") }
 ```
@@ -1497,7 +1497,7 @@ PeachTests/
 
 **Pattern Consistency:** `Interval` and `TuningSystem` follow existing value type patterns (`MIDINote`, `Cents`, `Frequency`). Session parameterization follows existing patterns (sessions already accept configuration via init/start parameters). `SoundSourceProvider` follows the protocol-first pattern used throughout (`NotePlayer`, `NextPitchDiscriminationStrategy`, `PitchDiscriminationProfile`).
 
-**FR66 Compliance:** Unison modes use the same code paths as interval modes with `intervals: [.prime]`. No code duplication, no conditional branching based on "is this interval mode" — the prime case flows through the same generalized logic.
+**FR66 Compliance:** Unison disciplines use the same code paths as interval disciplines with `intervals: [.prime]`. No code duplication, no conditional branching based on "is this an interval discipline" — the prime case flows through the same generalized logic.
 
 **Backward Compatibility:** Existing data migrates cleanly — `targetNote` defaults to `referenceNote` (unison), `tuningSystem` defaults to `.equalTemperament`. `NavigationDestination.pitchDiscrimination(intervals: [.prime])` replaces `.training` with the same behavior. The NotePlayer protocol change requires updating all call sites but preserves the same semantics.
 
@@ -1561,13 +1561,13 @@ enum TrainingDiscipline: CaseIterable {
 }
 ```
 
-Each mode has a `TrainingDisciplineConfig` with independent parameters for:
+Each discipline has a `TrainingDisciplineConfig` with independent parameters for:
 - Display name and unit label
 - Optimal baseline (expert-level target)
 - EWMA half-life for smoothing
 - Session gap for bucket grouping
 
-`ProgressTimeline` tracks all four modes independently, conforms to both observer protocols, and provides trend analysis per mode. It is injected as an observer into both sessions and as an `@Environment` dependency for profile views.
+`ProgressTimeline` tracks all four disciplines independently, conforms to both observer protocols, and provides trend analysis per discipline. It is injected as an observer into both sessions and as an `@Environment` dependency for profile views.
 
 ### Logging Standards
 
@@ -1581,7 +1581,7 @@ Each mode has a `TrainingDisciplineConfig` with independent parameters for:
 | Component | Responsibility |
 |---|---|
 | `TrainingConstants` | Shared configuration constants used by both sessions: feedback duration, default velocity, default amplitude |
-| `TrainingDisciplineConfig` | Per-mode configuration for progress tracking: display names, EWMA parameters, baselines |
+| `TrainingDisciplineConfig` | Per-discipline configuration for progress tracking: display names, EWMA parameters, baselines |
 | `ProgressTimeline` | Progress tracking across four disciplines with EWMA smoothing, adaptive bucketing, and trend analysis. Conforms to both observer protocols |
 | `DirectedInterval` | Value type combining `Interval` + `Direction` (up/down) for settings and session parameterization |
 
@@ -1655,7 +1655,7 @@ Musical domain value types currently live in `Core/Audio/` alongside audio infra
 
 #### B. PerceptualProfile Cleanup
 
-PRD mandates pre-work: remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-mode extension. This must complete before rhythm implementation.
+PRD mandates pre-work: remove stale MIDI-note-indexed comparison tracking, normalize naming conventions, prepare class for multi-discipline extension. This must complete before rhythm implementation.
 
 Specific cleanup:
 - Review and remove any unused per-MIDI-note tracking that doesn't serve current pitch training functionality
@@ -2219,13 +2219,13 @@ enum TrainingDiscipline: CaseIterable {
 }
 ```
 
-Each new mode gets a `TrainingDisciplineConfig` with:
+Each new discipline gets a `TrainingDisciplineConfig` with:
 - Display name and unit label (percentage of sixteenth note, per FR87)
 - Optimal baseline (expert-level target for rhythm accuracy)
 - EWMA half-life for smoothing
 - Session gap for bucket grouping
 
-`ProgressTimeline` updated to track all six modes, conforming to the new rhythm observer protocols.
+`ProgressTimeline` updated to track all six disciplines, conforming to the new rhythm observer protocols.
 
 ### Visualization
 
@@ -2278,15 +2278,15 @@ No parameterization for rhythm destinations — tempo is read from settings, not
 **Start Screen** grows to 6 training buttons (FR104):
 
 ```swift
-// Pitch modes
+// Pitch disciplines
 NavigationLink(value: .pitchDiscrimination(intervals: [.prime]))       { Text("Pitch Comparison") }
 NavigationLink(value: .pitchMatching(intervals: [.prime]))          { Text("Pitch Matching") }
 
-// Interval modes
+// Interval disciplines
 NavigationLink(value: .pitchDiscrimination(intervals: [.perfectFifth])) { Text("Interval Pitch Comparison") }
 NavigationLink(value: .pitchMatching(intervals: [.perfectFifth]))   { Text("Interval Pitch Matching") }
 
-// Rhythm modes
+// Rhythm disciplines
 NavigationLink(value: .rhythmOffsetDetection)                            { Text("Rhythm Comparison") }
 NavigationLink(value: .rhythmMatching)                              { Text("Rhythm Matching") }
 ```
@@ -2366,7 +2366,7 @@ Peach/
 │   │   ├── PitchMatchingProfile.swift
 │   │   ├── RhythmProfile.swift           # NEW — protocol
 │   │   ├── ProgressTimeline.swift        # Updated: 6 disciplines, rhythm observers
-│   │   ├── TrainingDisciplineConfig.swift      # Updated: rhythm mode configs
+│   │   ├── TrainingDisciplineConfig.swift      # Updated: rhythm discipline configs
 │   │   ├── ChartLayoutCalculator.swift
 │   │   └── GranularityZoneConfig.swift
 │   ├── Training/
@@ -2475,7 +2475,7 @@ PeachTests/
 │   │   └── (other existing test files)
 │   ├── Profile/
 │   │   ├── PerceptualProfileTests.swift         # Updated: rhythm profile tests
-│   │   ├── ProgressTimelineTests.swift          # Updated: 6 modes
+│   │   ├── ProgressTimelineTests.swift          # Updated: 6 disciplines
 │   │   └── (other existing test files)
 │   └── Training/
 │       ├── CompletedRhythmOffsetDetectionTrialTests.swift # NEW
@@ -2626,7 +2626,7 @@ This collects metrics from multiple keys, merges them chronologically, and rebui
 
 **PerceptualProfile** — typed key-value store for measurement series. Stores `[StatisticsKey: TrainingDisciplineStatistics]`. Returns `StatisticalSummary.continuous(stats)` from `statistics(for:)`. Observer conformances remain as thin routing (domain event → `StatisticsKey` + value → store). All legacy convenience methods removed.
 
-**ProgressTimeline** — pure presentation layer, uniform for all modes:
+**ProgressTimeline** — pure presentation layer, uniform for all disciplines:
 
 ```swift
 func state(for mode: TrainingDiscipline) -> TrainingDisciplineState {
@@ -2643,7 +2643,7 @@ func buckets(for mode: TrainingDiscipline) -> [TimeBucket] {
 }
 ```
 
-No rhythm special cases. No pitch special cases. One code path for all modes.
+No rhythm special cases. No pitch special cases. One code path for all disciplines.
 
 **Consumers of removed APIs:**
 - `comparisonMean`, `matchingMean/StdDev/SampleCount`, `trainedTempoRanges`, `rhythmOverallAccuracy` — all dead code (zero production consumers), deleted
@@ -2675,7 +2675,7 @@ No rhythm special cases. No pitch special cases. One code path for all modes.
 16. **Profile Screen + spectrogram** — `RhythmSpectrogramView`, `RhythmProfileCardView`
 17. **Settings** — tempo setting for rhythm training
 18. **CSV format v2** — `CSVImportParserV2`, `CSVExportSchemaV2`, exporter/importer updates
-19. **TrainingDiscipline extension** — 6 modes, `TrainingDisciplineConfig` for rhythm modes
+19. **TrainingDiscipline extension** — 6 disciplines, `TrainingDisciplineConfig` for rhythm disciplines
 20. **Localization** — rhythm UI strings (English + German)
 
 ### v0.4 Architecture Validation

@@ -29,7 +29,7 @@ Peach is a pitch and rhythm ear training app for iOS, iPadOS, and macOS. It trai
 - SoundFont-based audio with sub-10ms latency and 0.1-cent precision for pitch
 - Sample-accurate percussion sequencing for rhythm training (±1 sample precision)
 - Pitch matching with real-time frequency adjustment via slider
-- Interval training generalizing both pitch modes to musical intervals
+- Interval training generalizing both pitch disciplines to musical intervals
 - Rhythm offset detection: judge whether a note is early or late relative to the beat
 - Continuous rhythm matching: tap into gaps in a looping rhythmic pattern
 - Perceptual profile visualization with progress timeline across all six disciplines
@@ -216,8 +216,8 @@ graph TB
 | Building Block | Responsibility |
 |---------------|---------------|
 | **Composition Root** | Creates all services, wires the dependency graph, injects everything via SwiftUI environment. The only place that knows the full object graph. Manages four sessions, two audio layers, and their respective adapters. |
-| **Pitch Comparison** | Training loop where two notes play in sequence and the user judges higher/lower. Owns the `PitchDiscriminationSession` state machine. Works in both unison and interval modes via parameterization. |
-| **Pitch Matching** | Training loop where a reference note plays and the user tunes a second note to match. Owns the `PitchMatchingSession` state machine, pitch slider interaction. Works in both unison and interval modes. |
+| **Pitch Comparison** | Training loop where two notes play in sequence and the user judges higher/lower. Owns the `PitchDiscriminationSession` state machine. Works in both unison and interval disciplines via parameterization. |
+| **Pitch Matching** | Training loop where a reference note plays and the user tunes a second note to match. Owns the `PitchMatchingSession` state machine, pitch slider interaction. Works in both unison and interval disciplines. |
 | **Rhythm Offset Detection** | Training loop where a four-note rhythmic pattern plays with one note offset from the beat. User judges whether the offset note is early or late. Owns the `TimingOffsetDetectionSession` state machine. Uses `RhythmPlayer` for sample-accurate pattern playback. |
 | **Continuous Rhythm Matching** | Continuous training loop where a repeating four-step pattern plays with one gap per cycle. User taps to fill the gap. Timing accuracy is measured. Owns the `ContinuousRhythmMatchingSession` and acts as `StepProvider` for the `StepSequencer`. |
 | **Profile** | Visualizes the user's perceptual abilities: piano keyboard heatmap, progress chart across all six training disciplines, spectrogram for rhythm, chart export. |
@@ -767,7 +767,7 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 **Status:** Implemented.
 
 **Consequences:**
-- (+) No code duplication between unison and interval modes
+- (+) No code duplication between unison and interval disciplines
 - (+) Data model stores interval implicitly (derived from reference and target notes)
 - (-) Session code must handle MIDI range edge cases when interval > prime
 

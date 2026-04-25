@@ -995,7 +995,7 @@ Pitch Matching is a second training paradigm where the user tunes a note to matc
 
 **No binary correct/incorrect.** Pitch matching results are continuous (signed cent offset), not binary. There is no concept of "right" or "wrong" — only proximity. This is consistent with Peach's anti-scoring philosophy.
 
-**Separate profile tracking.** Pitch comparison training and pitch matching results are stored and tracked independently — both in the data store and in the perceptual profile. The two modes measure different skills (passive pitch comparison vs. active production) with potentially different thresholds.
+**Separate profile tracking.** Pitch comparison training and pitch matching results are stored and tracked independently — both in the data store and in the perceptual profile. The two disciplines measure different skills (passive pitch comparison vs. active production) with potentially different thresholds.
 
 ### Post-Release Feedback Design
 
@@ -1334,7 +1334,7 @@ The Pitch Matching button sits below Start Training on the Start Screen. It shou
 **Accessibility:**
 - VoiceOver announcement: "4 cents sharp" or "27 cents flat" or "Dead center" — the arrow direction and magnitude are communicated verbally
 
-**Haptic feedback:** None for pitch matching. The pitch comparison training's haptic contract (haptic on incorrect only) remains unique to pitch comparison mode. Pitch matching feedback is purely visual. This may be revisited based on usage experience.
+**Haptic feedback:** None for pitch matching. The pitch comparison training's haptic contract (haptic on incorrect only) remains unique to the pitch comparison discipline. Pitch matching feedback is purely visual. This may be revisited based on usage experience.
 
 #### Component Implementation Strategy
 
@@ -1362,7 +1362,7 @@ The Pitch Matching button sits below Start Training on the Start Screen. It shou
 | Pitch Matching | `.bordered` or similar | Secondary | Below Start Training |
 | Settings, Profile, Info | Icon-only SF Symbols | Tertiary | Same positions as current |
 
-The Start Training button retains its hero status. Pitch Matching is clearly a second mode — visible and accessible, but not competing for the primary position. The visual hierarchy communicates: "this is the main thing; here's another thing you can do."
+The Start Training button retains its hero status. Pitch Matching is clearly a second discipline — visible and accessible, but not competing for the primary position. The visual hierarchy communicates: "this is the main thing; here's another thing you can do."
 
 #### Feedback Pattern Comparison
 
@@ -1459,7 +1459,7 @@ Interval training generalizes both existing disciplines from unison to musical i
 **Key UX facts:**
 - The target interval is displayed at the top of the training screen because it varies per exercise — the system randomly selects from the user's configured interval set
 - For v0.3, the interval is fixed to a single value: perfect fifth up (700 cents in 12-TET). Future iterations will add user-configurable interval sets (up to octave, both directions) and random selection from the configured set
-- Existing unison modes are the prime (unison) case of the interval variants — same underlying sessions, same screens, with interval fixed to prime
+- Existing unison disciplines are the prime (unison) case of the interval variants — same underlying sessions, same screens, with interval fixed to prime
 - Screens are reused, not duplicated — the Pitch Comparison Screen and Pitch Matching Screen gain an interval indicator; in unison mode, no interval indicator is shown
 
 ### Key Design Decisions
@@ -1625,12 +1625,12 @@ flowchart TD
 | Interval Pitch Matching | `.bordered` | Below Interval Pitch Comparison |
 
 **Design rationale:**
-- Pitch Comparison retains `.borderedProminent` as the hero action — it's the entry point for new users and the most-used mode
+- Pitch Comparison retains `.borderedProminent` as the hero action — it's the entry point for new users and the most-used discipline
 - Pitch Matching retains its current secondary position
 - A subtle visual separator (extra spacing, a thin divider, or a section label like "Intervals") groups the interval disciplines
 - Interval buttons use `.bordered` style — same prominence as Pitch Matching, visually subordinate to Pitch Comparison
 - The vertical stack preserves the one-handed, thumb-friendly layout
-- Four buttons is the maximum for this design. If future modes are added beyond interval training, a different organizational pattern would be needed
+- Four buttons is the maximum for this design. If future disciplines are added beyond interval training, a different organizational pattern would be needed
 
 **Naming:** The PRD specifies button labels as "Pitch Comparison", "Pitch Matching", "Interval Pitch Comparison", "Interval Pitch Matching". These are clear and descriptive. No abbreviation needed.
 
@@ -1714,7 +1714,7 @@ Key point: "Interval Pitch Comparison" navigates to the same Pitch Comparison Sc
 
 #### Interruption Pattern — No Change
 
-Identical to unison modes. Any interruption during interval training follows the same rule: stop audio, discard incomplete exercise, leave training screen. No special interval-specific interruption handling.
+Identical to unison disciplines. Any interruption during interval training follows the same rule: stop audio, discard incomplete exercise, leave training screen. No special interval-specific interruption handling.
 
 #### Empty States — No Interval-Specific Addition
 
@@ -1737,7 +1737,7 @@ The target interval label at the top of the screen is a standard `Text` view tha
 **VoiceOver interval training workflow:**
 The target interval label is a standard `Text` view and is automatically accessible. VoiceOver will read "Perfect Fifth Up" when the user navigates to it. For future versions with per-exercise interval changes, VoiceOver should announce the new interval when it changes — using `.accessibilityAddTraits(.updatesFrequently)` or a live region pattern.
 
-The rest of the accessibility story is identical to unison modes — no new accessibility challenges are introduced by interval training.
+The rest of the accessibility story is identical to unison disciplines — no new accessibility challenges are introduced by interval training.
 
 #### Testing — Interval Training Additions
 
@@ -1753,13 +1753,13 @@ The rest of the accessibility story is identical to unison modes — no new acce
 
 ## Amendment: Sharing
 
-**Context:** The app currently uses `.fileExporter()` for CSV export and `.fileImporter()` for CSV import, accessed from the Settings screen. The Profile Screen displays per-mode progress charts with no sharing capability. This amendment replaces the file exporter with a share sheet for CSV export, and adds chart image sharing to the Profile Screen.
+**Context:** The app currently uses `.fileExporter()` for CSV export and `.fileImporter()` for CSV import, accessed from the Settings screen. The Profile Screen displays per-discipline progress charts with no sharing capability. This amendment replaces the file exporter with a share sheet for CSV export, and adds chart image sharing to the Profile Screen.
 
 **Design Decisions:**
 
 1. **CSV export switches from `.fileExporter()` to `ShareLink`** — The share sheet includes "Save to Files" (covering iCloud), plus AirDrop, Messages, Mail, and third-party apps. The separate file exporter is redundant. CSV import remains via `.fileImporter()` unchanged.
 
-2. **Chart image sharing via per-chart share button** — Each `ProgressChartView` card gets a share icon in its headline row. Tapping renders the chart as a shareable image including the chart title (mode name, EWMA, stddev, trend) and a localized timestamp.
+2. **Chart image sharing via per-chart share button** — Each `ProgressChartView` card gets a share icon in its headline row. Tapping renders the chart as a shareable image including the chart title (discipline name, EWMA, stddev, trend) and a localized timestamp.
 
 3. **Filenames include minute-precision timestamps** — `peach-training-data-2026-03-15-1432.csv` for data, `peach-pitch-comparison-2026-03-15-1432.png` for chart images. Discipline name is slugified into the chart filename.
 
@@ -1786,7 +1786,7 @@ The rest of the accessibility story is identical to unison modes — no new acce
 - Tapping the share button renders the chart card as an image and presents the system share sheet
 
 **Rendered image content:**
-- Chart title row: mode display name, current EWMA value, stddev, trend arrow
+- Chart title row: discipline display name, current EWMA value, stddev, trend arrow
 - The full chart visualization (EWMA line, stddev band, session dots, baseline, zone backgrounds)
 - Localized timestamp below the chart: formatted using the user's locale settings (e.g., "15. März 2026, 14:32" in German, "March 15, 2026, 2:32 PM" in English) — using standard `Date.FormatStyle` with locale-aware formatting
 - App attribution: small "Peach" text near the timestamp
@@ -1805,7 +1805,7 @@ The rest of the accessibility story is identical to unison modes — no new acce
 
 ### Sharing — Responsive & Accessibility
 
-- Share buttons receive appropriate accessibility labels: "Share [mode name] chart" / "Export training data"
+- Share buttons receive appropriate accessibility labels: "Share [discipline name] chart" / "Export training data"
 - VoiceOver announces the share sheet when it appears (system behavior, no custom work needed)
 - Share button scales with Dynamic Type alongside the headline row
 - No changes to existing accessibility patterns for charts or settings
@@ -2142,11 +2142,11 @@ Band count, threshold values, and BPM range are all parameterized — no hardcod
 - Same auto-save via `@AppStorage` pattern as all other settings
 - Takes effect on the next rhythm exercise
 
-##### Feedback Line — Rhythm Modes
+##### Feedback Line — Rhythm Disciplines
 
-The existing feedback line (below the headline, showing correctness indicator + summary stat) is reused for both rhythm modes:
+The existing feedback line (below the headline, showing correctness indicator + summary stat) is reused for both rhythm disciplines:
 
-| Mode | Correctness indicator | Summary stat |
+| Discipline | Correctness indicator | Summary stat |
 |---|---|---|
 | Rhythm Comparison | Green checkmark / red cross | Current difficulty as `RhythmDeviation` (e.g., "4%") |
 | Rhythm Matching | — (no binary correct/incorrect) | Signed `RhythmDeviation` with directional arrow (e.g., "← 3% early" or "→ 8% late") |
@@ -2180,7 +2180,7 @@ Peach now has three feedback patterns, all displayed in the same summary stat li
 | Pitch Matching | — | Arrow + signed `Cents` | None |
 | Rhythm Matching | — | Arrow + signed `RhythmDeviation` | None |
 
-The comparison modes (pitch and rhythm) share the binary correct/incorrect pattern. The matching modes (pitch and rhythm) share the continuous accuracy pattern. Feedback duration (~400ms) is identical across all modes.
+The comparison disciplines (pitch and rhythm) share the binary correct/incorrect pattern. The matching disciplines (pitch and rhythm) share the continuous accuracy pattern. Feedback duration (~400ms) is identical across all disciplines.
 
 #### Navigation Pattern — Extended
 

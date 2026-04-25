@@ -179,7 +179,7 @@ struct SettingsScreen: View {
     private var difficultySection: some View {
         Section(String(localized: "Difficulty")) {
             VStack(alignment: .leading) {
-                Text("Vary Loudness (All Modes)")
+                Text("Vary Loudness (All Disciplines)")
                 Slider(value: $varyLoudness, in: 0...1) {
                     Text("Vary Loudness")
                 } minimumValueLabel: {
