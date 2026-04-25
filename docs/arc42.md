@@ -1,8 +1,8 @@
 # Peach — arc42 Architecture Documentation
 
-**Version:** 2.0
-**Date:** 2026-03-23
-**Status:** Current with codebase as of v0.4 (rhythm training)
+**Version:** 3.0
+**Date:** 2026-04-25
+**Status:** Current with codebase as of v0.5 (three-platform release)
 
 ---
 
@@ -10,7 +10,7 @@
 
 ### 1.1 Requirements Overview
 
-Peach is a pitch and rhythm ear training app for iOS. It trains musicians' perception through three complementary training paradigms — **Pitch Comparison**, **Pitch Matching**, and **Rhythm Training** — each with multiple variants. The app builds a perceptual profile of the user's abilities and adaptively adjusts difficulty.
+Peach is a pitch and rhythm ear training app for iOS, iPadOS, and macOS. It trains musicians' perception through three complementary training paradigms — **Pitch Comparison**, **Pitch Matching**, and **Rhythm Training** — each with multiple variants. The app builds a perceptual profile of the user's abilities and adaptively adjusts difficulty.
 
 **Training paradigms:**
 
@@ -34,7 +34,7 @@ Peach is a pitch and rhythm ear training app for iOS. It trains musicians' perce
 - Continuous rhythm matching: tap into gaps in a looping rhythmic pattern
 - Perceptual profile visualization with progress timeline across all six disciplines
 - Local persistence of all training data
-- iPhone + iPad, portrait + landscape, English + German
+- iPhone + iPad + Mac (native SwiftUI, not Catalyst), portrait + landscape on iOS/iPadOS, English + German
 
 ### 1.2 Quality Goals
 
@@ -59,13 +59,13 @@ Peach is a pitch and rhythm ear training app for iOS. It trains musicians' perce
 
 | Constraint | Consequence |
 |-----------|-------------|
-| **iOS 26+ only** | Use latest APIs freely; no backward compatibility code |
+| **iOS/iPadOS/macOS 26+ only** | Use latest APIs freely; no backward compatibility code |
 | **Swift 6.2 with strict concurrency** | Default `@MainActor` isolation; `Sendable` enforced at compile time; `async/await` only |
 | **Zero third-party dependencies** | All functionality built on Apple frameworks; no supply chain risk |
 | **Entirely on-device** | No network layer, no backend, no authentication; all data local |
 | **Solo developer learning iOS** | Architecture must be approachable; favor clarity over abstraction depth |
 | **Test-first development** | All services behind protocols; all business logic unit-tested |
-| **SwiftUI lifecycle** | No UIKit in views; UIKit only through protocol abstractions |
+| **SwiftUI lifecycle** | No UIKit/AppKit in views; platform APIs only through port protocol abstractions in `Core/Ports/` |
 | **Single Xcode module** | No multi-module SPM; access control via `private`/`internal` |
 
 ---
@@ -74,17 +74,19 @@ Peach is a pitch and rhythm ear training app for iOS. It trains musicians' perce
 
 ### 3.1 Business Context
 
-Peach is a standalone on-device app with no external system integrations at runtime. The user interacts directly with the app; the app interacts with device hardware (audio, haptics) and local storage.
+Peach is a standalone on-device app with no external system integrations at runtime. The user interacts directly with the app; the app interacts with device hardware (audio, haptics, MIDI controllers) and local storage. It runs on iPhone, iPad, and Mac as a single universal binary.
 
 ```mermaid
 graph LR
     User["Musician"]
     Peach["Peach App"]
     Audio["Device Audio"]
-    Haptics["Haptic Engine"]
+    Haptics["Haptic Engine<br/>(iOS/iPadOS only)"]
     Storage["Local Storage"]
     FS["File System"]
     SF2["Bundled SoundFont"]
+    MIDI["MIDI Controller<br/>(iOS + macOS)"]
+    KB["Keyboard<br/>(macOS)"]
 
     User -- "starts training,<br/>answers, adjusts slider,<br/>taps rhythm" --> Peach
     Peach -- "plays pitched tones<br/>and percussion patterns" --> Audio
@@ -93,38 +95,46 @@ graph LR
     Peach -- "imports/exports<br/>CSV data" --> FS
     Peach -- "reads instrument +<br/>percussion presets" --> SF2
     Peach -- "shows profile,<br/>feedback, progress" --> User
+    MIDI -- "note on/off,<br/>pitch bend" --> Peach
+    KB -- "keyboard shortcuts<br/>for training actions" --> Peach
 ```
 
 | Neighbor | Purpose | Technology |
 |----------|---------|------------|
 | Device Audio | Pitched tone playback at precise frequencies; sample-accurate percussion pattern scheduling | AVAudioEngine + AVAudioUnitSampler (multi-channel) |
-| Haptic Engine | Tactile feedback on incorrect pitch comparison and rhythm offset detection answers | UIKit (via protocol abstraction) |
+| Haptic Engine | Tactile feedback on incorrect pitch comparison and rhythm offset detection answers (iOS/iPadOS only; no-op on macOS) | UIKit via `HapticFeedback` port protocol |
 | Local Storage | Persistent training records (every completed exercise across all six disciplines) | SwiftData (SQLite-backed) |
 | File System | Backup and restore of training history | CSV with versioned format |
 | Bundled SoundFont | Instrument sound samples (piano, cello, etc.) and percussion click sounds | SF2 file with RIFF/PHDR metadata |
+| MIDI Controller | External input for training interactions (note on/off, pitch bend for pitch matching) | CoreMIDI via `MIDIInput` port protocol |
+| Keyboard | macOS keyboard shortcuts for training actions (higher/lower, early/late, start/stop) | SwiftUI `.keyboardShortcut` via `PeachCommands` |
 
 ### 3.2 Technical Context
 
 ```mermaid
 graph TB
-    subgraph "iOS Device"
+    subgraph "Apple Device (iPhone / iPad / Mac)"
         subgraph "Peach Process"
             SwiftUI["SwiftUI Views"]
+            Platform["Platform Layer<br/>(App/Platform/)"]
             Sessions["Training Sessions (4)"]
-            Core["Core Services"]
+            Core["Core Services<br/>+ Port Protocols"]
             SwiftData["SwiftData"]
         end
         AVAudio["AVAudioEngine<br/>(multi-channel)"]
-        UIKit["UIKit (Haptics)"]
+        PlatformAPIs["Platform APIs<br/>(UIKit / AppKit)"]
         UserDefaults["UserDefaults"]
         SQLite["SQLite"]
+        CoreMIDI["CoreMIDI"]
     end
 
     SwiftUI --> Sessions
+    SwiftUI --> Platform
     Sessions --> Core
     Core --> SwiftData
     Core --> AVAudio
-    Sessions -.-> UIKit
+    Platform -.-> PlatformAPIs
+    Platform -.-> CoreMIDI
     SwiftUI -.-> UserDefaults
     SwiftData --> SQLite
 ```
@@ -141,6 +151,7 @@ graph TB
 | **Data integrity** | SwiftData atomic writes; single data store accessor; only completed exercises are persisted | Section 8.3 |
 | **Testability** | Protocol-first design; composition root wires all dependencies; mocks with deterministic timing | Section 8.4 |
 | **Simplicity** | Feature-based directory structure; zero dependencies; domain types replacing raw primitives; thin views with zero business logic; discipline registry for additive extensibility | Sections 5.1, 8.2, 8.7 |
+| **Portability** | Platform-agnostic Core with port protocols; platform differences isolated in `App/Platform/`; single universal binary for all three Apple platforms | Sections 8.8, ADR-9 |
 
 **Key technology decisions:**
 
@@ -197,9 +208,10 @@ graph TB
 **Dependency rules:**
 
 - Feature screens depend on Core — never on each other
-- Core has no UI framework imports (no SwiftUI, no UIKit, no Charts)
+- Core has no UI framework imports (no SwiftUI, no UIKit, no AppKit, no Charts)
+- Core defines platform-agnostic port protocols (`Core/Ports/`); platform-specific implementations live in `App/Platform/`
 - SwiftData is encapsulated inside the Data component
-- UIKit is used only for haptic feedback, behind a protocol
+- `#if os()` conditionals appear only in `App/Platform/` and the composition root — never in Core or feature directories
 
 | Building Block | Responsibility |
 |---------------|---------------|
@@ -401,12 +413,12 @@ The step sequencer pre-schedules batches of 500 cycles for seamless audio. The s
 
 ## 7. Deployment View
 
-Peach is a standalone iOS app with no server infrastructure.
+Peach is a standalone multiplatform app with no server infrastructure. A single universal binary runs on all three Apple platforms.
 
 ```mermaid
 graph TB
-    subgraph "iOS Device (iPhone / iPad)"
-        subgraph "App Bundle"
+    subgraph "Apple Device (iPhone / iPad / Mac)"
+        subgraph "App Bundle (universal binary)"
             Binary["Peach executable"]
             SF2["Samples.sf2 (SoundFont)<br/>pitched + percussion"]
             Strings["Localizable.xcstrings (EN + DE)"]
@@ -424,10 +436,12 @@ graph TB
 
 | Aspect | Detail |
 |--------|--------|
-| **Devices** | iPhone + iPad, iOS 26.0+, portrait + landscape |
+| **Platforms** | iPhone (iOS 26+), iPad (iPadOS 26+), Mac (macOS 26+) — single universal binary, native SwiftUI (not Catalyst) |
+| **Layout** | Portrait + landscape on iOS/iPadOS; macOS uses platform-split `ContentView` (`ContentView+iOS.swift`, `ContentView+macOS.swift`) |
 | **Storage** | SwiftData/SQLite for training records (4 record types); UserDefaults for settings |
 | **Audio** | AVAudioEngine with bundled GM SoundFont (~25MB); channel 0 for pitched instruments, channel 1 for percussion |
-| **Distribution** | App Store / TestFlight (not yet submitted) |
+| **macOS features** | Keyboard shortcuts for all training interactions, native Settings scene (Cmd+,), full menu bar (Training, Profile, Help, File menus) |
+| **Distribution** | App Store / TestFlight for all three platforms (not yet submitted) |
 | **CI/CD** | Local `bin/test.sh` (iOS + macOS) before each commit; no pipeline yet |
 
 ---
@@ -599,6 +613,68 @@ The `TrainingDisciplineRegistry` is a singleton initialized at app startup. It r
 
 No changes to existing disciplines, the profile, the data store, or the CSV infrastructure.
 
+### 8.8 Platform Abstraction (Ports/Adapters)
+
+Peach runs on three Apple platforms from a single codebase. Platform differences are isolated behind port protocols in `Core/Ports/`, with platform-specific implementations in `App/Platform/`. This pattern was established in Epic 67 to eliminate scattered `#if os()` conditionals from Core and feature code.
+
+```mermaid
+graph LR
+    subgraph "Core/Ports/ (platform-agnostic)"
+        HF["HapticFeedback"]
+        ASC["AudioSessionConfiguring"]
+        AIO["AudioInterruptionObserving"]
+        BP["BackgroundPolicy"]
+    end
+
+    subgraph "App/Platform/ (platform-specific)"
+        HFM["HapticFeedbackManager<br/>(iOS: UIKit / macOS: no-op)"]
+        IOSC["IOSAudioSession-<br/>Configurator"]
+        MOSC["MacOSAudioSession-<br/>Configurator"]
+        IOAIO["IOSAudioInterruption-<br/>Observer"]
+        PN["PlatformNotifications"]
+    end
+
+    subgraph "Composition Root"
+        CR["PeachApp.swift<br/>(#if os selects impl)"]
+    end
+
+    HF -.-> HFM
+    ASC -.-> IOSC & MOSC
+    AIO -.-> IOAIO
+    BP -.-> PN
+    CR --> HFM & IOSC & MOSC & IOAIO & PN
+```
+
+**Port protocols and their platform implementations:**
+
+| Port Protocol | Purpose | iOS/iPadOS | macOS |
+|--------------|---------|-----------|-------|
+| `HapticFeedback` | Tactile feedback on incorrect answers | UIKit impact feedback | No-op |
+| `AudioSessionConfiguring` | Audio session category and activation | `AVAudioSession` configuration | Minimal (no `AVAudioSession`) |
+| `AudioInterruptionObserving` | Audio interruption notifications (phone call, etc.) | `AVAudioSession.interruptionNotification` | Not applicable |
+| `BackgroundPolicy` | App lifecycle transition handling | `UIApplication` notifications | `NSApplication` notifications |
+
+**`#if os()` policy:**
+
+- Port abstractions are the preferred mechanism for platform differences
+- `#if os()` conditionals are permitted only in `App/Platform/` implementations and the composition root (`PeachApp.swift`)
+- Never use `#if os()` in `Core/`, feature directories, or test code
+- Currently 16 files contain `#if os()` — all in `App/Platform/` or `PeachApp.swift`
+
+**macOS-specific features (beyond port implementations):**
+
+- `PeachCommands` — keyboard shortcuts for all training interactions (higher/lower, early/late, start/stop)
+- Native `Settings` scene accessible via Cmd+, (standard macOS convention)
+- Full menu bar: Training, Profile, Help, File menus
+- Platform-split `ContentView` — `ContentView+iOS.swift` and `ContentView+macOS.swift` provide platform-appropriate navigation and layout
+
+**Adding new platform-conditional behavior:**
+
+1. Define a port protocol in `Core/Ports/`
+2. Implement platform-specific variants in `App/Platform/`
+3. Select the correct implementation in `PeachApp.swift` using `#if os()`
+4. Inject via SwiftUI environment
+
 ---
 
 ## 9. Architecture Decisions
@@ -723,6 +799,22 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 - (+) Channels are isolated — pitched and percussion playback don't interfere
 - (-) `SoundFontEngine` is the most complex low-level component in the codebase; the render-thread callback with pre-allocated buffer and lock-free synchronization is difficult to debug
 
+### ADR-9: Platform Abstraction via Port Protocols
+
+**Context:** Adding macOS support (Epic 66) introduced platform-conditional code (`#if os(iOS)`, `#if os(macOS)`) for haptic feedback, audio session management, lifecycle notifications, and UI layout. Initially these conditionals were scattered across multiple layers. Epic 67 consolidated them behind port protocols.
+
+**Decision:** Define platform-agnostic port protocols in `Core/Ports/`. Implement platform-specific behavior in `App/Platform/`. Select implementations at the composition root using `#if os()`. Core and feature code programs against port protocols only — never importing UIKit, AppKit, or using `#if os()` directly.
+
+**Status:** Implemented.
+
+**Consequences:**
+- (+) Core and feature code is completely platform-agnostic — no `#if os()` outside `App/Platform/`
+- (+) Adding a new platform (visionOS, watchOS) requires only new port implementations and composition root wiring
+- (+) Each port is independently testable via mocks
+- (+) macOS-specific features (keyboard shortcuts, menu bar, Settings scene) are cleanly isolated in their own files
+- (-) Four port protocols and their implementations add indirection for what are currently simple platform differences
+- (-) Some ports have trivial macOS implementations (e.g., haptic feedback is a no-op)
+
 ---
 
 ## 10. Quality Requirements
@@ -737,8 +829,9 @@ Quality
 │   └── Rhythm Precision (±1 sample timing accuracy)
 ├── Usability
 │   ├── Training Feel (reflexive pace, no UI bottlenecks, grid-aligned rhythm)
-│   ├── Responsiveness (portrait + landscape, iPhone + iPad)
-│   └── Accessibility (VoiceOver, 44x44pt tap targets)
+│   ├── Responsiveness (portrait + landscape on iOS/iPadOS; native layout on macOS)
+│   ├── Accessibility (VoiceOver, Dynamic Type, keyboard navigation)
+│   └── Platform consistency (same training experience across iPhone, iPad, Mac)
 ├── Reliability
 │   ├── Data Integrity (atomic writes, crash resilience)
 │   └── Error Resilience (sessions as error boundaries)
@@ -747,7 +840,8 @@ Quality
 │   ├── Simplicity (zero dependencies, approachable architecture)
 │   └── Extensibility (discipline registry for additive growth)
 └── Portability
-    └── Localization (English + German)
+    ├── Localization (English + German)
+    └── Multiplatform (iOS, iPadOS, macOS from single codebase)
 ```
 
 ### 10.2 Quality Scenarios
@@ -766,6 +860,8 @@ Quality
 | QS-10 | Responsiveness | Rotate device during training | Layout adapts; no data loss; training continues |
 | QS-11 | Localization | Switch device language to German | All user-facing strings display in German |
 | QS-12 | Extensibility | Developer adds a new training discipline | Only new files created; no changes to existing disciplines, profile, or data store |
+| QS-13 | Platform Consistency | Same training exercise on iPhone and Mac | Identical training behavior; Mac uses keyboard shortcuts instead of tap targets |
+| QS-14 | Portability | Developer adds a new platform-conditional behavior | New port protocol + implementation; no changes to Core or feature code |
 
 ---
 
@@ -805,8 +901,12 @@ Quality
 | **Interval** | Musical distance from prime (unison, 0 semitones) through octave (12 semitones). |
 | **Kazez Algorithm** | Psychoacoustic staircase that adjusts difficulty via `p * (1 ± k * sqrt(p))`. Coefficients: narrowing 0.05, widening 0.09. Used for both pitch comparison and rhythm offset detection. |
 | **MIDI Note** | Standardized pitch number (0-127). 60 = middle C, 69 = A4. |
+| **PeachCommands** | SwiftUI `Commands` type providing macOS menu bar entries and keyboard shortcuts for training interactions. |
 | **Perceptual Profile** | In-memory model of the user's pitch and rhythm perception, rebuilt from training records on startup. Keyed by `StatisticsKey`. |
+| **Pitch Bend** | MIDI mechanism for fine-tuning pitch. Peach uses a ±200 cent range with 14-bit resolution (~0.024 cents per step). |
 | **Pitch Comparison** | Training mode: two notes in sequence, user judges higher or lower. |
+| **Platform Implementation** | A concrete type in `App/Platform/` that conforms to a port protocol with platform-specific behavior (e.g., `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`). |
+| **Port** | A platform-agnostic protocol in `Core/Ports/` that abstracts a platform-specific capability (e.g., `HapticFeedback`, `AudioSessionConfiguring`). See Section 8.8. |
 | **Pitch Matching** | Training mode: user tunes a note to match a reference pitch via slider. |
 | **Reference Note** | The anchor note in a training exercise. Always an exact MIDI note. |
 | **RhythmDirection** | Whether a timing offset is early (before the beat) or late (after the beat). |

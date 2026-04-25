@@ -33,7 +33,7 @@ date: '2026-02-12'
 
 ### Project Vision
 
-Peach is a pitch comparison ear training app for iOS built on the philosophy of "training, not testing." Where existing apps like InTune escalate difficulty until failure to produce a score, Peach builds a perceptual profile of the user's hearing and relentlessly targets weak spots. No scores, no gamification, no sessions. Every comparison makes the user better; no single answer matters.
+Peach is a pitch and rhythm ear training app for iOS, iPadOS, and macOS built on the philosophy of "training, not testing." Where existing apps like InTune escalate difficulty until failure to produce a score, Peach builds a perceptual profile of the user's hearing and relentlessly targets weak spots. No scores, no gamification, no sessions. Every comparison makes the user better; no single answer matters.
 
 The interaction is radically simple: two notes play in sequence, the user taps higher or lower. The intelligence lives entirely in the adaptive algorithm, not the UI. The app is designed for incidental use — 30 seconds on the bus, a minute during a practice break — with zero friction between wanting to train and training.
 
@@ -59,7 +59,7 @@ Primary persona: a working musician who knows their intonation needs work, has t
 
 2. **The profile as intrinsic motivation** — The perceptual profile visualization can be the app's emotional hook. Watching the confidence band tighten over weeks is inherently satisfying without needing badges or points. The data itself is the reward.
 
-3. **Native iOS 26 design language** — As a greenfield app targeting iOS 26 exclusively, Peach can fully embrace Apple's latest Liquid Glass design language from day one, creating a polished, modern feel that's rare in music training apps.
+3. **Native Apple platform design language** — As a greenfield app targeting iOS/iPadOS/macOS 26, Peach fully embraces Apple's latest design language on each platform, creating a polished, modern feel that's rare in music training apps.
 
 ## Core User Experience
 
@@ -71,13 +71,14 @@ The loop must feel **reflexive, not deliberative**. The user should be reacting 
 
 ### Platform Strategy
 
-- **Native iOS (Swift/SwiftUI, iOS 26+)** — single-platform, no cross-platform considerations
-- **iPhone primary, iPad supported** — designed for the phone in your hand, scales up gracefully
-- **Portrait primary, landscape supported** — one-handed portrait use is the default context
+- **Native Apple platforms (Swift/SwiftUI, iOS/iPadOS/macOS 26+)** — single universal binary for iPhone, iPad, and Mac
+- **iPhone primary, iPad and Mac supported** — designed for the phone in your hand, scales up to tablet and desktop
+- **Portrait primary, landscape supported** — one-handed portrait use is the default context on iOS/iPadOS; macOS uses native window layout
 - **Entirely offline** — no network dependency, no loading states, no connectivity concerns
 - **Audio output required** — speaker or headphones; no microphone, no camera, no permissions dialogs
-- **Haptic engine** — wrong-answer feedback channel that works even when the user isn't looking at the screen
-- **Liquid Glass design language** — fully embrace iOS 26 aesthetics as a greenfield app
+- **Haptic engine** — wrong-answer feedback channel on iOS/iPadOS (no-op on macOS)
+- **Platform-native design language** — Liquid Glass on iOS/iPadOS 26, macOS native conventions on Mac
+- **macOS input** — keyboard shortcuts for all training interactions; MIDI controller support on both iOS and macOS
 
 ### Effortless Interactions
 
@@ -248,11 +249,11 @@ Apps like Apple's Mindfulness (Breathe) demonstrate that a calm, minimal interfa
 
 **Apple Human Interface Guidelines (HIG) + Stock SwiftUI** — no customization layer, no theming, no bespoke component library.
 
-Peach uses SwiftUI's built-in components exactly as Apple designed them. Standard buttons, standard navigation, standard layout patterns, standard Liquid Glass appearance on iOS 26. The app should look and feel like it belongs on the platform — indistinguishable from a first-party Apple app in its interaction patterns.
+Peach uses SwiftUI's built-in components exactly as Apple designed them. Standard buttons, standard navigation, standard layout patterns, platform-native appearance on each device. The app should look and feel like it belongs on the platform — indistinguishable from a first-party Apple app in its interaction patterns.
 
 ### Rationale for Selection
 
-1. **HIG compliance is a UX feature, not a constraint.** Users already know how iOS apps work. Every standard SwiftUI component carries years of learned behavior — tap targets, gestures, navigation patterns, accessibility. Using stock components means zero learning curve for the app's chrome, so all cognitive attention goes to the training content (the sounds).
+1. **HIG compliance is a UX feature, not a constraint.** Users already know how Apple platform apps work. Every standard SwiftUI component carries years of learned behavior — tap targets, gestures, navigation patterns, accessibility. Using stock components means zero learning curve for the app's chrome, so all cognitive attention goes to the training content (the sounds).
 
 2. **"Disappearing UI" demands platform-native interaction.** The core experience principle is that the UI should disappear during training. Non-standard components draw attention to themselves. Stock components are invisible precisely because they're familiar.
 

@@ -1,6 +1,6 @@
 # Story 70.4: Update Project Documentation for Three-Platform Release
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -16,23 +16,23 @@ so that future contributors understand the distribution model.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Update `docs/project-context.md` (AC: #1)
-  - [ ] 1.1 Ensure the Technology Stack section lists all three platforms: iOS, iPadOS, macOS (native)
-  - [ ] 1.2 Document distribution model: single universal app on App Store for iPhone, iPad, and Mac
-  - [ ] 1.3 Verify the "Universal app" line reflects reality (currently says "iPhone + iPad + Mac (native, not Catalyst)")
-  - [ ] 1.4 Add any macOS-specific rules discovered during Epics 66–67 (e.g., platform-conditional patterns, port abstractions)
-- [ ] Task 2: Update architecture documentation (AC: #2)
-  - [ ] 2.1 Document the ports/adapters pattern in `Peach/Core/Ports/` for platform abstraction
-  - [ ] 2.2 Document which ports have platform-specific implementations: `HapticFeedback`, `AudioSessionInterruptionMonitor`, lifecycle notifications
-  - [ ] 2.3 Document the `#if os()` usage policy: prefer port abstractions, use `#if os()` only at the composition root or in platform-specific implementations
-  - [ ] 2.4 Reference Epic 67 as the origin of the platform abstraction approach
-- [ ] Task 3: Update the PRD (AC: #3)
-  - [ ] 3.1 Locate the PRD and update platform scope to list macOS as a first-class target
-  - [ ] 3.2 Add macOS-specific features: keyboard shortcuts, native Settings scene (Cmd+,), menu bar integration
-  - [ ] 3.3 Document MIDI input as cross-platform (iOS and macOS)
-- [ ] Task 4: Verify consistency across all docs (AC: #1, #2, #3)
-  - [ ] 4.1 Ensure no document still describes Peach as iOS-only
-  - [ ] 4.2 Ensure platform list is consistent: iOS, iPadOS, macOS everywhere
+- [x] Task 1: Update `docs/project-context.md` (AC: #1)
+  - [x] 1.1 Ensure the Technology Stack section lists all three platforms: iOS, iPadOS, macOS (native)
+  - [x] 1.2 Document distribution model: single universal app on App Store for iPhone, iPad, and Mac
+  - [x] 1.3 Verify the "Universal app" line reflects reality (currently says "iPhone + iPad + Mac (native, not Catalyst)")
+  - [x] 1.4 Add any macOS-specific rules discovered during Epics 66–67 (e.g., platform-conditional patterns, port abstractions)
+- [x] Task 2: Update architecture documentation (AC: #2)
+  - [x] 2.1 Document the ports/adapters pattern in `Peach/Core/Ports/` for platform abstraction
+  - [x] 2.2 Document which ports have platform-specific implementations: `HapticFeedback`, `AudioSessionInterruptionMonitor`, lifecycle notifications
+  - [x] 2.3 Document the `#if os()` usage policy: prefer port abstractions, use `#if os()` only at the composition root or in platform-specific implementations
+  - [x] 2.4 Reference Epic 67 as the origin of the platform abstraction approach
+- [x] Task 3: Update the PRD (AC: #3)
+  - [x] 3.1 Locate the PRD and update platform scope to list macOS as a first-class target
+  - [x] 3.2 Add macOS-specific features: keyboard shortcuts, native Settings scene (Cmd+,), menu bar integration
+  - [x] 3.3 Document MIDI input as cross-platform (iOS and macOS)
+- [x] Task 4: Verify consistency across all docs (AC: #1, #2, #3)
+  - [x] 4.1 Ensure no document still describes Peach as iOS-only
+  - [x] 4.2 Ensure platform list is consistent: iOS, iPadOS, macOS everywhere
 
 ## Dev Notes
 
@@ -77,10 +77,26 @@ This is a **documentation-only story**. No code changes.
 ## Dev Agent Record
 
 ### Agent Model Used
+Claude Opus 4.6 + arc42 Documentation Architect agent (for Task 2)
+
 ### Debug Log References
+None — documentation-only story, no code changes.
+
 ### Completion Notes List
+- **Task 1**: Updated `project-context.md`: deployment target now lists all three platforms, distribution model expanded, added "Platform Abstraction" section documenting port protocols and `#if os()` policy, added guidance for new platform-conditional components.
+- **Task 2**: Updated `arc42.md` (v2.0 → v3.0) via arc42 documentation architect agent: updated 10 sections including business/technical context diagrams, deployment view, dependency rules, new Section 8.8 (Platform Abstraction), new ADR-9, quality tree/scenarios, and glossary entries. Cross-section consistency verified.
+- **Task 3**: Updated `prd.md`: platform scope updated throughout, "Mobile App Specific Requirements" renamed to "Platform-Specific Requirements", added macOS-specific FRs (FR105-FR108), MIDI documented as cross-platform.
+- **Task 4**: Verified consistency across all living docs. Also updated `architecture.md` (5 fixes) and `ux-design-specification.md` (6 fixes). Historical documents (brainstorming, research reports, old stories) left as point-in-time snapshots.
+
 ### File List
+- docs/project-context.md (modified)
+- docs/arc42.md (modified)
+- docs/planning-artifacts/prd.md (modified)
+- docs/planning-artifacts/architecture.md (modified)
+- docs/planning-artifacts/ux-design-specification.md (modified)
+- docs/implementation-artifacts/sprint-status.yaml (modified)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-04-25: All tasks completed — updated five documentation files to reflect three-platform (iOS, iPadOS, macOS) scope

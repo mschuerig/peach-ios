@@ -12,8 +12,10 @@ classification:
   complexity: low
   projectContext: greenfield
 workflowType: 'prd'
-lastEdited: '2026-03-18'
+lastEdited: '2026-04-25'
 editHistory:
+  - date: '2026-04-25'
+    changes: 'Updated platform scope to three platforms (iOS, iPadOS, macOS); added macOS-specific FRs (FR105-FR108: keyboard shortcuts, Settings scene, menu bar, platform-split layout); updated MIDI as cross-platform; renamed section to Platform-Specific Requirements'
   - date: '2026-03-18'
     changes: 'Added rhythm training (v0.4 scope): rhythm comparison, rhythm matching, 2D difficulty model (time offset × tempo), asymmetric early/late tracking, spectrogram visualization, sample-accurate audio engine, CSV format v2, percussion playback; two new user journeys (9-10); 37 new FRs (FR68-FR104); rhythm timing NFRs'
   - date: '2026-02-28'
@@ -29,13 +31,13 @@ editHistory:
 
 ## Executive Summary
 
-Peach is an ear training app for iOS. It trains musicians' perception through pitch and rhythm modes. **Pitch training** offers two complementary approaches: **Pitch Comparison** (two notes in sequence — user answers higher or lower) and **Pitch Matching** (user tunes a note to match a reference pitch). Both build a perceptual profile across the user's range and relentlessly target weak spots. Each has an **interval variant** that generalizes from unison to any musical interval. **Rhythm training** adds two modes: **Rhythm Comparison** (judge whether a note is early or late) and **Rhythm Matching** (tap the beat at the correct moment) — building a tempo-indexed rhythm profile with asymmetric early/late tracking.
+Peach is an ear training app for iOS, iPadOS, and macOS. It trains musicians' perception through pitch and rhythm modes. **Pitch training** offers two complementary approaches: **Pitch Comparison** (two notes in sequence — user answers higher or lower) and **Pitch Matching** (user tunes a note to match a reference pitch). Both build a perceptual profile across the user's range and relentlessly target weak spots. Each has an **interval variant** that generalizes from unison to any musical interval. **Rhythm training** adds two modes: **Rhythm Comparison** (judge whether a note is early or late) and **Rhythm Matching** (tap the beat at the correct moment) — building a tempo-indexed rhythm profile with asymmetric early/late tracking.
 
 **Target users:** Musicians (singers, string, woodwind, brass players) for whom intonation is a practical challenge.
 
 **Design philosophy: "Training, not testing."** Existing pitch training apps like InTune follow a test-and-score paradigm — escalating difficulty until failure. Peach inverts this: it builds a perceptual profile of the user's hearing and relentlessly targets weak spots. No scores, no gamification, no sessions. Every exercise makes the user better; no single answer matters.
 
-**Technology:** Native iOS (Swift/SwiftUI), entirely on-device, no backend. This is a personal/learning project with three goals: improve pitch perception, learn iOS development, and explore AI-assisted development.
+**Technology:** Native Apple platforms (Swift/SwiftUI), entirely on-device, no backend. Single universal binary for iPhone, iPad, and Mac (native SwiftUI, not Catalyst). This is a personal/learning project with three goals: improve pitch perception, learn iOS development, and explore AI-assisted development.
 
 ## Success Criteria
 
@@ -53,14 +55,14 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 
 ### Business Success
 
-- The app is installed on Michael's iPhone and works according to MVP scope
+- The app is installed on Michael's iPhone and Mac and works according to MVP scope
 - This is a personal/learning project — no commercial metrics apply
 - Secondary success: meaningful learning in iOS/SwiftUI development and AI-assisted workflows
 
 ### Technical Success
 
 - Test-first development with comprehensive coverage — non-negotiable
-- Modern, modular architecture using latest Swift/SwiftUI and iOS 26 frameworks
+- Modern, modular architecture using latest Swift/SwiftUI and Apple platform 26 frameworks
 - No backward compatibility constraints — always target latest
 - Adaptive algorithm parameters are tunable and discoverable during development
 - Audio playback is smooth with proper envelopes (no clicks or artifacts)
@@ -94,7 +96,7 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 - Perceptual profile visualization (piano keyboard + confidence band — current snapshot only)
 - Summary statistics: arithmetic mean and standard deviation of detectable cent differences over current training range (shown as trend)
 - Local persistence of all per-answer training data
-- iPhone + iPad, portrait + landscape
+- iPhone + iPad + Mac (native, not Catalyst), portrait + landscape on iOS/iPadOS
 - English + German localization
 - Audio interruption handling (discard incomplete comparison)
 - Consistent Settings/Profile navigation from both Start Screen and Training Screen
@@ -374,20 +376,21 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 | Temporal progress visualization | 3 | Future |
 | Per-note detail view | 3 | Future |
 
-## Mobile App Specific Requirements
+## Platform-Specific Requirements
 
-### Platform & Device
+### Platforms & Devices
 
-- Native iOS: Swift / SwiftUI (latest iteration), targeting iOS 26 minimum
+- Native Apple platforms: Swift / SwiftUI (latest iteration), targeting iOS/iPadOS/macOS 26 minimum
 - No backward compatibility — always target latest
-- iPhone and iPad, with iPad supporting windowed/compact mode
-- Portrait (primary) + landscape
-- No cross-platform considerations
+- iPhone, iPad, and Mac as a single universal binary (native SwiftUI, not Catalyst)
+- Portrait (primary) + landscape on iOS/iPadOS
+- macOS uses platform-split layout with native window management
 
 ### Device Capabilities
 
 - Audio output (speaker and headphones) — no microphone required
-- Haptic engine for wrong-answer feedback
+- Haptic engine for wrong-answer feedback (iOS/iPadOS only; no-op on macOS)
+- MIDI controller input for training interactions (iOS and macOS)
 - System volume only — no in-app audio controls
 - No camera, location, contacts, push notifications, or other permissions
 
@@ -496,10 +499,17 @@ Peach is an ear training app for iOS. It trains musicians' perception through pi
 
 ### Device & Platform
 
-- **FR39:** User can use the app on iPhone and iPad
-- **FR40:** User can use the app in portrait and landscape orientations
+- **FR39:** User can use the app on iPhone, iPad, and Mac
+- **FR40:** User can use the app in portrait and landscape orientations (iOS/iPadOS)
 - **FR41:** User can use the app in iPad windowed/compact mode
-- **FR42:** User can operate the training loop one-handed with large, imprecise-tap-friendly controls
+- **FR42:** User can operate the training loop one-handed with large, imprecise-tap-friendly controls (iOS/iPadOS)
+
+### macOS-Specific
+
+- **FR105:** User can control all training interactions via keyboard shortcuts (higher/lower, early/late, start/stop)
+- **FR106:** User can access app settings via a native Settings scene (Cmd+,)
+- **FR107:** User can navigate the app via a full menu bar with Training, Profile, Help, and File menus
+- **FR108:** System provides platform-appropriate layout using a platform-split ContentView (no forced mobile layout on Mac)
 
 ### Info Screen
 

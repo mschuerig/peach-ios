@@ -35,17 +35,17 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 - VoiceOver, contrast, and accessibility basics
 
 **Scale & Complexity:**
-- Primary domain: Native iOS (Swift/SwiftUI, iOS 26+)
+- Primary domain: Native Apple platforms (Swift/SwiftUI, iOS/iPadOS/macOS 26+)
 - Complexity level: Low-to-moderate
 - Estimated architectural components: 5-6 core modules (Audio Engine, Adaptive Algorithm, Data Persistence, Profile Computation, UI Layer, Settings)
 
 ### Technical Constraints & Dependencies
 
-- **iOS 26 minimum, latest Swift/SwiftUI** — no backward compatibility. Enables use of newest APIs without legacy constraints.
+- **iOS/iPadOS/macOS 26 minimum, latest Swift/SwiftUI** — no backward compatibility. Enables use of newest APIs without legacy constraints.
 - **Entirely on-device** — no network layer, no backend, no authentication. All data local.
 - **Test-first development** — comprehensive coverage is a non-negotiable constraint, influencing how modules are structured (testable boundaries, injectable dependencies).
 - **Solo developer learning iOS** — architecture should be approachable, not over-engineered. Favor clarity over abstraction depth.
-- **iPhone + iPad, portrait + landscape** — responsive layout considerations but no complex platform-specific branching.
+- **iPhone + iPad + Mac** — responsive layout on iOS/iPadOS; platform-split ContentView on macOS; platform differences isolated behind port protocols in `Core/Ports/`.
 
 ### Cross-Cutting Concerns Identified
 
@@ -59,23 +59,23 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 
 ### Primary Technology Domain
 
-Native iOS application — Swift / SwiftUI, targeting iOS 26+
+Native Apple platforms application — Swift / SwiftUI, targeting iOS/iPadOS/macOS 26+
 
 ### Starter Evaluation
 
-For native iOS, the starter is Xcode 26's built-in iOS App template with SwiftUI lifecycle. No third-party scaffolding tools apply. The architectural decisions are the technology choices configured within the project.
+For native Apple platforms, the starter is Xcode 26's built-in Multiplatform App template with SwiftUI lifecycle. No third-party scaffolding tools apply. The architectural decisions are the technology choices configured within the project.
 
-### Selected Foundation: Xcode 26.3 iOS App Template
+### Selected Foundation: Xcode 26.3 Multiplatform App Template
 
-**Rationale:** Only viable option for native iOS. Xcode 26.3 ships with Swift 6.2.3, explicit modules by default, integrated agentic coding support (Claude Agent, Codex via MCP), and updated SwiftUI with Liquid Glass design language support.
+**Rationale:** Xcode 26.3 supports multiplatform SwiftUI development with a single codebase. Ships with Swift 6.2.3, explicit modules by default, integrated agentic coding support (Claude Agent, Codex via MCP), and updated SwiftUI with Liquid Glass design language support.
 
-**Initialization:** Create new Xcode project → iOS → App → SwiftUI lifecycle, Swift language, SwiftData storage
+**Initialization:** Create new Xcode project → Multiplatform → App → SwiftUI lifecycle, Swift language, SwiftData storage
 
 ### Technology Decisions
 
 **Language & Runtime:**
 - Swift 6.2.3 (Xcode 26.3)
-- iOS 26 deployment target — no backward compatibility
+- iOS/iPadOS/macOS 26 deployment target — no backward compatibility
 - Explicit Swift modules enabled (Xcode 26 default)
 
 **UI Framework:**

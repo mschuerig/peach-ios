@@ -559,7 +559,7 @@ development_status:
   70-1-platform-polish-audit-ios-ipados: done
   70-2-platform-polish-audit-macos: done
   70-3-fix-platform-issues-found-in-audit: done
-  70-4-update-project-documentation-for-three-platform-release: ready-for-dev
+  70-4-update-project-documentation-for-three-platform-release: review
   epic-70-retrospective: optional
 
   # Epic 71: Face of Peach — App Store Metadata & Screenshots

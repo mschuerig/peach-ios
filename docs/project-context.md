@@ -17,7 +17,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 ## Technology Stack & Versions
 
 - **Swift 6.2** — strict concurrency enforced; default MainActor isolation enabled (`SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`) — all code is implicitly `@MainActor` unless marked `nonisolated`; `Sendable` checked at compile time
-- **iOS 26.0** deployment target — use latest APIs freely, no backward compatibility
+- **iOS/iPadOS/macOS 26** deployment target — use latest APIs freely, no backward compatibility
 - **SwiftUI** — declarative UI with SwiftUI lifecycle; **no UIKit in views** (UIKit only through protocol abstractions like `HapticFeedback`)
 - **SwiftData** — `@Model` for persistence; **only `TrainingDataStore` accesses SwiftData** — no direct `ModelContext` usage elsewhere
 - **AVAudioEngine** — `SoundFontPlayer` is the sole `NotePlayer` implementation; owns a single `AVAudioEngine` with `AVAudioUnitSampler` for SF2 playback
@@ -26,7 +26,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **@AppStorage** — user preferences; keys centralized in `SettingsKeys.swift`
 - **String Catalogs** — English + German localization via `Localizable.xcstrings`
 - **Zero third-party dependencies** — do not add external packages without explicit approval
-- **Universal app** — iPhone + iPad + Mac (native, not Catalyst), portrait + landscape
+- **Universal app** — single binary on the App Store for iPhone, iPad, and Mac (native SwiftUI, not Catalyst); portrait + landscape on iOS/iPadOS
 
 ## Critical Implementation Rules
 
@@ -96,12 +96,20 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **All service instantiation happens in `PeachApp.swift`** — this is the single dependency graph source of truth
 - **Never create service instances elsewhere** — new services get wired here and injected via environment
 
+**Platform Abstraction (ports/adapters, established in Epic 67):**
+- **Port protocols in `Core/Ports/`** — `HapticFeedback`, `AudioSessionConfiguring`, `AudioInterruptionObserving`, `BackgroundPolicy`; platform-agnostic contracts that `Core/` code programs against
+- **Platform implementations in `App/Platform/`** — each port has iOS and/or macOS implementations (e.g., `HapticFeedbackManager` with `#if os()` internally, `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`, `PlatformNotifications`)
+- **`#if os()` policy** — prefer port abstractions; use `#if os()` only at the composition root (`PeachApp.swift`) or within `App/Platform/` implementations, never in `Core/` or feature directories
+- **macOS no-ops** — haptic feedback is a no-op on macOS; audio session configuration is minimal (no `AVAudioSession` on macOS)
+- **macOS-specific features** — keyboard shortcuts (`PeachCommands`), native Settings scene (Cmd+,), menu bar integration, platform-split `ContentView` (`ContentView+iOS.swift`, `ContentView+macOS.swift`)
+
 **When Adding New Components:**
 - New injectable service → add `@Entry var myService = MyService()` in `App/EnvironmentKeys.swift`, wire in `PeachApp.swift`
 - New `PitchDiscriminationObserver` or `PitchMatchingObserver` → add to observer array in `PeachApp.swift`; inject only needed mocks in tests
 - New SwiftData `@Model` → register in `ModelContainer` schema in `PeachApp.swift`
 - New layout logic → extract to `static` methods for unit testability
 - New state transitions → respect existing guards in `PitchDiscriminationSession`; use `waitForState` helper in tests
+- New platform-conditional behavior → define a port protocol in `Core/Ports/`, implement in `App/Platform/`, compose in `PeachApp.swift`
 
 ### Testing Rules
 
@@ -288,4 +296,4 @@ Never run only specific test files — always the complete suite. Both platforms
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-03-10 (Refactored TrainingSettings into session-specific types; removed TrainingConstants)
+Last Updated: 2026-04-25 (Added three-platform scope, platform abstraction rules, and port/adapter guidance)
