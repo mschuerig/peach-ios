@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-25 # Story 70.2 done
+# last_updated: 2026-04-25 # Story 71.1 review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -565,7 +565,7 @@ development_status:
   # Epic 71: Face of Peach — App Store Metadata & Screenshots
   # Work order: all stories independent
   epic-71: in-progress
-  71-1-write-app-store-description-and-keywords: ready-for-dev
+  71-1-write-app-store-description-and-keywords: review
   71-2-write-app-store-review-notes: ready-for-dev
   71-3-capture-iphone-and-ipad-screenshots: ready-for-dev
   71-4-capture-macos-screenshots: ready-for-dev
