@@ -89,10 +89,10 @@ None — content authoring story; no test runs.
 - **Character counts** (verified by counting characters in the raw text within the code fences):
   - EN subtitle: 26 / 30
   - EN keywords: 89 / 100
-  - EN description: 2,515 / 4,000
+  - EN description: 1,718 / 4,000
   - DE subtitle: 24 / 30
   - DE keywords: 94 / 100
-  - DE description: 2,825 / 4,000
+  - DE description: 1,962 / 4,000
 - **German tone**: informal "du"/imperative throughout; uses "Gehörbildung" (standard German term for ear training) in subtitle and copy.
 - **Keyword strategy**: comma-separated, no spaces between terms (maximises term budget). Excludes words present in the app name ("Peach") and subtitle ("Ear", "Training", "Musicians" / "Gehörbildung", "Musiker") since Apple already indexes those for search.
 
@@ -106,3 +106,4 @@ None — content authoring story; no test runs.
 
 - 2026-03-29: Story created
 - 2026-04-25: Drafted English and German App Store metadata (description, subtitle, keywords); reconciled stale 7-mode AC text with the actual six in-app training disciplines after confirming with user. Status → review.
+- 2026-04-25: Code-review revision — rewrote both descriptions in a sober, factual register per user direction (no marketing tone, no motivational framing, no gatekeeping). Fixed two factual errors flagged by review: sparkline location (Start screen, not Profile) and cross-device sync implication (no automatic sync; CSV export/import only). Replaced "universal binary" with neutral phrasing. Removed the gendered "Sängerinnen, Sänger und Instrumentalisten" target-audience section along with the rest of the marketing chrome. Description lengths dropped from 2,515 → 1,718 (EN) and 2,825 → 1,962 (DE). Status remains `review` for user to comb over before release.
