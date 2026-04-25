@@ -55,11 +55,7 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
                     Label("Help", systemImage: "questionmark.circle")
                 }
 
-                NavigationLink(value: NavigationDestination.settings) {
-                    Image(systemName: "gearshape")
-                        .imageScale(.large)
-                }
-                .accessibilityLabel("Settings")
+                PlatformSettingsButton(imageScale: .large)
 
                 NavigationLink(value: NavigationDestination.profile) {
                     Image(systemName: "chart.xyaxis.line")

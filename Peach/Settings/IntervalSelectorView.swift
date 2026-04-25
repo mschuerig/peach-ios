@@ -59,6 +59,7 @@ struct IntervalSelectorView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 6))
         }
         .buttonStyle(.plain)
+        .platformHoverEffect()
         .disabled(isPrimeDown || isLastActive)
         .opacity(isPrimeDown ? 0.3 : 1.0)
     }

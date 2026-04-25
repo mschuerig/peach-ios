@@ -558,7 +558,7 @@ development_status:
   epic-70: in-progress
   70-1-platform-polish-audit-ios-ipados: done
   70-2-platform-polish-audit-macos: done
-  70-3-fix-platform-issues-found-in-audit: ready-for-dev
+  70-3-fix-platform-issues-found-in-audit: review
   70-4-update-project-documentation-for-three-platform-release: ready-for-dev
   epic-70-retrospective: optional
 

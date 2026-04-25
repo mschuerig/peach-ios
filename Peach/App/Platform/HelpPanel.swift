@@ -37,7 +37,10 @@ final class HelpPanelController: NSObject, NSWindowDelegate {
 
     private func showView<V: View>(title: String, content: V) {
         let hosted = ScrollView {
-            content.padding()
+            content
+                .padding()
+                .frame(maxWidth: 500)
+                .frame(maxWidth: .infinity)
         }
         .frame(minWidth: 350, minHeight: 250)
 

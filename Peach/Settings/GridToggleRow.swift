@@ -24,6 +24,7 @@ struct GridToggleRow<Element: CaseIterable & Hashable>: View where Element.AllCa
                             .clipShape(RoundedRectangle(cornerRadius: 6))
                     }
                     .buttonStyle(.plain)
+                    .platformHoverEffect()
                     .disabled(isLast)
                 }
             }

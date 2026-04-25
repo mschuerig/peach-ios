@@ -20,6 +20,42 @@ extension View {
         #error("Unsupported platform")
         #endif
     }
+
+    func platformHoverEffect() -> some View {
+        #if os(iOS)
+        self.hoverEffect(.highlight)
+        #elseif os(macOS)
+        self
+        #else
+        #error("Unsupported platform")
+        #endif
+    }
+}
+
+struct PlatformSettingsButton: View {
+    var imageScale: Image.Scale = .medium
+
+    #if os(macOS)
+    @Environment(\.openWindow) private var openWindow
+    #endif
+
+    var body: some View {
+        #if os(iOS)
+        NavigationLink(value: NavigationDestination.settings) {
+            Image(systemName: "gearshape")
+                .imageScale(imageScale)
+        }
+        .accessibilityLabel("Settings")
+        #elseif os(macOS)
+        Button {
+            openWindow(id: "settings")
+        } label: {
+            Image(systemName: "gearshape")
+                .imageScale(imageScale)
+        }
+        .accessibilityLabel("Settings")
+        #endif
+    }
 }
 
 extension Color {

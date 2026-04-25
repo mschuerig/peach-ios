@@ -8,6 +8,7 @@ struct RhythmSpectrogramView: View {
 
     @State private var selectedCell: SelectedCell?
     @State private var cachedData: SpectrogramData?
+    @ScaledMetric(relativeTo: .caption2) private var yAxisLabelWidth: CGFloat = 44
 
     private let thresholds = SpectrogramThresholds.default
 
@@ -105,7 +106,7 @@ struct RhythmSpectrogramView: View {
                 ForEach(data.trainedRanges.reversed(), id: \.self) { range in
                     Text(Self.rangeLabel(range))
                         .font(.caption2)
-                        .frame(width: 44, height: cellSize, alignment: .leading)
+                        .frame(width: yAxisLabelWidth, height: cellSize, alignment: .leading)
                         .padding(.leading, 4)
                 }
             }
@@ -125,6 +126,8 @@ struct RhythmSpectrogramView: View {
             .fill(Self.cellColor(for: level))
             .frame(width: size, height: size)
             .border(Color.primary.opacity(0.1), width: 0.5)
+            .contentShape(Rectangle())
+            .platformHoverEffect()
             .onTapGesture {
                 guard hasData else { return }
                 if selectedCell?.tempoRange == cell.tempoRange && selectedCell?.columnIndex == cell.columnIndex {

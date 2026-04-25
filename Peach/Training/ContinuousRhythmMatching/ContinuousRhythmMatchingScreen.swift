@@ -6,6 +6,8 @@ struct ContinuousRhythmMatchingScreen: View {
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isTouchActive = false
+    @ScaledMetric private var buttonIconSize: CGFloat = 80
+    @ScaledMetric private var buttonIconSizeCompact: CGFloat = 60
 
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
@@ -85,7 +87,7 @@ struct ContinuousRhythmMatchingScreen: View {
     private var tapButton: some View {
         VStack(spacing: 12) {
             Image(systemName: "hand.tap")
-                .font(.system(size: Self.buttonIconSize(isCompact: isCompactHeight)))
+                .font(.system(size: isCompactHeight ? buttonIconSizeCompact : buttonIconSize))
             Text("Tap")
                 .font(Self.buttonTextFont(isCompact: isCompactHeight))
                 .fontWeight(.semibold)
@@ -96,6 +98,7 @@ struct ContinuousRhythmMatchingScreen: View {
         .background(.tint, in: RoundedRectangle(cornerRadius: 12))
         .opacity(isTouchActive ? 0.7 : 1.0)
         .contentShape(Rectangle())
+        .platformHoverEffect()
         // DragGesture(minimumDistance: 0) fires on touch-down for timing accuracy —
         // a standard Button fires on touch-up, adding ~100ms latency that matters for
         // rhythm training. Accessibility traits (.isButton) and action (.default) are

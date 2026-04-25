@@ -57,29 +57,18 @@ struct PeachCommands: Commands {
                 Divider()
             }
 
+            let currentDestination = commandState?.trainingLifecycle?.currentTrainingDestination
             Section("Pitch") {
-                Button("Compare Pitch") {
-                    navigate(to: .pitchDiscrimination(isIntervalMode: false))
-                }
-                Button("Match Pitch") {
-                    navigate(to: .pitchMatching(isIntervalMode: false))
-                }
+                trainingButton("Compare Pitch", destination: .pitchDiscrimination(isIntervalMode: false), currentDestination: currentDestination)
+                trainingButton("Match Pitch", destination: .pitchMatching(isIntervalMode: false), currentDestination: currentDestination)
             }
             Section("Intervals") {
-                Button("Compare Intervals") {
-                    navigate(to: .pitchDiscrimination(isIntervalMode: true))
-                }
-                Button("Match Intervals") {
-                    navigate(to: .pitchMatching(isIntervalMode: true))
-                }
+                trainingButton("Compare Intervals", destination: .pitchDiscrimination(isIntervalMode: true), currentDestination: currentDestination)
+                trainingButton("Match Intervals", destination: .pitchMatching(isIntervalMode: true), currentDestination: currentDestination)
             }
             Section("Rhythm") {
-                Button("Compare Timing") {
-                    navigate(to: .timingOffsetDetection)
-                }
-                Button("Fill the Gap") {
-                    navigate(to: .continuousRhythmMatching)
-                }
+                trainingButton("Compare Timing", destination: .timingOffsetDetection, currentDestination: currentDestination)
+                trainingButton("Fill the Gap", destination: .continuousRhythmMatching, currentDestination: currentDestination)
             }
         }
     }
@@ -91,6 +80,7 @@ struct PeachCommands: Commands {
             Button("Show Profile") {
                 navigate(to: .profile)
             }
+            .keyboardShortcut("p", modifiers: .command)
         }
     }
 
@@ -150,6 +140,20 @@ struct PeachCommands: Commands {
     }
 
     // MARK: - Navigation
+
+    @ViewBuilder
+    private func trainingButton(_ title: LocalizedStringKey, destination: NavigationDestination, currentDestination: NavigationDestination?) -> some View {
+        let isCurrent = currentDestination == destination
+        Button {
+            navigate(to: destination)
+        } label: {
+            if isCurrent {
+                Label(title, systemImage: "checkmark")
+            } else {
+                Text(title)
+            }
+        }
+    }
 
     private func navigate(to destination: NavigationDestination) {
         commandState?.navigationRequest = NavigationRequest(destination: destination)

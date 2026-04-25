@@ -31,6 +31,8 @@ struct ProfileScreen: View {
                 }
             }
             .padding()
+            .frame(maxWidth: 700)
+            .frame(maxWidth: .infinity)
             .accessibilityElement(children: .contain)
             .accessibilityLabel(Self.accessibilitySummary(progressTimeline: progressTimeline))
         }

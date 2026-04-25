@@ -53,10 +53,7 @@ struct StartScreen: View {
                 }
                 .accessibilityLabel("Profile")
 
-                NavigationLink(value: NavigationDestination.settings) {
-                    Image(systemName: "gearshape")
-                }
-                .accessibilityLabel("Settings")
+                PlatformSettingsButton()
             }
         }
         .navigationDestination(for: NavigationDestination.self) { destination in
@@ -97,13 +94,15 @@ struct StartScreen: View {
     }
 
     private var landscapeLayout: some View {
-        HStack(alignment: .top, spacing: Self.sectionSpacing(isCompact: true)) {
-            pitchSection
-                .frame(maxWidth: .infinity)
-            intervalsSection
-                .frame(maxWidth: .infinity)
-            rhythmSection
-                .frame(maxWidth: .infinity)
+        ScrollView(.vertical) {
+            HStack(alignment: .top, spacing: Self.sectionSpacing(isCompact: true)) {
+                pitchSection
+                    .frame(maxWidth: .infinity)
+                intervalsSection
+                    .frame(maxWidth: .infinity)
+                rhythmSection
+                    .frame(maxWidth: .infinity)
+            }
         }
     }
 
@@ -210,6 +209,8 @@ private struct TrainingCardButtonStyle: ButtonStyle {
         configuration.label
             .opacity(configuration.isPressed ? 0.7 : 1.0)
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+            .contentShape(Rectangle())
+            .platformHoverEffect()
     }
 }
 

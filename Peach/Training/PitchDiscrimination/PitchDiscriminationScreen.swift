@@ -13,6 +13,9 @@ struct PitchDiscriminationScreen: View {
         isIntervalMode ? userSettings.intervals : [.prime]
     }
 
+    @ScaledMetric private var buttonIconSize: CGFloat = 80
+    @ScaledMetric private var buttonIconSizeCompact: CGFloat = 60
+
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
     }
@@ -134,7 +137,7 @@ struct PitchDiscriminationScreen: View {
         } label: {
             VStack(spacing: 12) {
                 Image(systemName: direction.iconName)
-                    .font(.system(size: Self.buttonIconSize(isCompact: isCompactHeight)))
+                    .font(.system(size: isCompactHeight ? buttonIconSizeCompact : buttonIconSize))
                 Text(direction.label)
                     .font(Self.buttonTextFont(isCompact: isCompactHeight))
                     .fontWeight(.semibold)

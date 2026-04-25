@@ -30,7 +30,8 @@ struct HelpContentView: View {
                 }
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(maxWidth: 700, alignment: .leading)
+        .frame(maxWidth: .infinity)
     }
 }
 
