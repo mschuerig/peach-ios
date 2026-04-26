@@ -7686,3 +7686,68 @@ so that the `Release` build (and therefore the App Store binary) ships only the 
 9. **Given** a `Release` build **When** launched **Then** four disciplines are registered, only Pitch and Intervals categories appear in StartScreen/PeachCommands/Profile/Help, and no rhythm-discipline UI is reachable.
 10. **Given** a `Research` build **When** launched **Then** six disciplines are registered and behavior is identical to the pre-76.4 app.
 11. **Given** both platforms **When** built and tested in both `Debug` and `Research` configurations **Then** all tests pass with zero new warnings.
+
+---
+
+## Epic 77: Plugin-Style Discipline Contributions
+
+**Theme:** Treat each training discipline as a statically-compiled plugin that contributes everything it needs (settings sections, profile cards, scoped help, CSV columns, parsers, record types, and any feature-local storage) from its own subdirectory. Aggregating screens and Core services iterate the registry; no central file enumerates discipline-specific concerns. Adding a new discipline is purely additive; toggling one is a one-line, compile-time change.
+
+**Motivation:** After the 76.x series, discipline iteration is data-driven and the registry is the runtime source of truth — but several seams still leak feature-specific knowledge into central files: `SettingsScreen` / `ProfileScreen` / `HelpContent` host category-gated UI; CSV/data declarations may drift back to `Peach/Core/Data/`; and `UserSettings` enumerates one feature-only entry (`enabledGapPositions`). Cleaning these seams completes the colocation discipline so future disciplines truly drop in from a single feature directory.
+
+**Approach:** Story 77.1 (already in review) introduced a contribution protocol for UI surfaces and per-discipline compile-time activation. The follow-up stories generalize and tighten that work: 77.2 finishes the colocation by moving rhythm section views and any remaining UI fragments into the rhythm feature directory; 77.3 audits the data layer for feature-specific declarations outside `Peach/Training/<Feature>/`; 77.4 removes `enabledGapPositions` from the central `UserSettings` port and pushes its storage end-to-end into the ContinuousRhythmMatching feature directory.
+
+**Work order:** 77.1 → 77.2 → 77.3 → 77.4 (77.2 builds on 77.1's contribution protocol; 77.3 and 77.4 are independent of each other and may run in either order after 77.2).
+
+### Story 77.1: Plugin-style discipline UI contributions and per-discipline compile-time activation
+
+As a **developer adding, removing, or toggling a training discipline**,
+I want each discipline to declare the UI surfaces it contributes (settings sections, profile card, scoped help, navigation) **and** I want to be able to enable or disable any individual discipline at compile time from a single file,
+so that adding a discipline is purely additive, removing or muting one is a one-line change in one place, and screens that aggregate the registry need no edits when the active set changes.
+
+(See `docs/implementation-artifacts/77-1-plugin-style-discipline-ui-contributions.md` for full acceptance criteria and dev record.)
+
+### Story 77.2: Discipline-owned UI contributions in feature directories
+
+As **a developer adding or modifying a training discipline's UI contributions**,
+I want every settings section, profile card view, and discipline-scoped help view that is specific to one discipline (or one category) to live inside that feature's subdirectory,
+so that 77.1's "discipline-as-plugin" model is realized end-to-end: a feature directory contains every file that belongs only to that feature, and the central screens (`SettingsScreen`, `ProfileScreen`, `HelpContent`) contain no feature-specific UI fragments.
+
+**Acceptance Criteria:**
+
+1. **Given** the post-77.1 state where rhythm section views are declared as `private struct`s in `Peach/Settings/SettingsContributions.swift` **When** 77.2 ships **Then** `RhythmTempoSettingsSection` and `RhythmGapPositionsSettingsSection` (and any rhythm-only profile card view) live under `Peach/Training/ContinuousRhythmMatching/` (or a shared rhythm subdirectory if both rhythm disciplines need access). The Settings/Profile/HelpContent folders contain no view types whose name starts with `Rhythm`.
+2. **Given** `Peach/Core/Training/Discipline/UIContributions.swift` (or its successor) **When** inspected **Then** the enum-based `SettingsSectionKind` / `ProfileCardKind` / `ProfileHelpKind` indirection is replaced (or supplemented) by view-producing protocol methods on a SwiftUI-aware `TrainingDisciplineUI: TrainingDiscipline` refinement that lives in the App layer. Concrete disciplines return their own `AnyView`-typed contributions; the central enums and the App-layer dispatcher mappings are removed.
+3. **Given** `SettingsScreen`, `ProfileScreen`, and `HelpContent` **When** inspected **Then** they iterate `registry.all` (filtered to the SwiftUI-aware refinement) and ask each registered discipline for its contributions directly. None of them branch on a kind enum; none of them name a concrete category or discipline.
+4. **Given** the `CategoryLiteralAuditTests` from 77.1 **When** extended **Then** they also assert that `SettingsContributions.swift` and `ProfileContributions.swift` either no longer exist or contain no rhythm-specific view types. The audit covers the full set of central files (`SettingsScreen.swift`, `ProfileScreen.swift`, `HelpContent.swift`, plus the two contribution dispatcher files if they survive).
+5. **Given** a developer adds a new discipline that contributes a settings section **When** they follow the protocol **Then** they create one new file in the feature directory and conform to the SwiftUI-aware protocol. They do not add a case to a central enum and do not edit any central screen or help file.
+6. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations pass with zero new warnings.
+
+### Story 77.3: Discipline-owned data declarations
+
+As **a developer adding or modifying a training discipline's data layer**,
+I want every CSV column, record type, and parsing concern that is specific to one discipline to be declared in that discipline's feature directory rather than in a central data file,
+so that the colocation principle established by 77.2 also covers the data layer, and Core/Data services depend only on the registry's aggregated views.
+
+**Acceptance Criteria:**
+
+1. **Given** the current data-layer code (`Peach/Core/Data/`, `Peach/Core/Training/`, and discipline conformance files) **When** audited **Then** an inventory in Completion Notes lists every feature-specific data declaration (CSV columns, csvTrainingType, parseCSVRow, recordType, feedRecords, plus any feature-specific record subtypes or helpers) and its current location, making it explicit which declarations are already feature-local and which (if any) are not.
+2. **Given** the audit's findings **When** any feature-specific declaration is found outside `Peach/Training/<Feature>/` **Then** it is moved into the appropriate feature directory. After this story, a grep in `Peach/Core/Data/` for any specific discipline name (`unisonPitch`, `intervalPitch`, `rhythm`, `timingOffset`, `continuousRhythm`) returns zero hits.
+3. **Given** `TrainingDataExporter`, `CSVImportParser`, `TrainingDataImporter`, `TrainingDataStore`, `CSVExportSchema` **When** inspected **Then** they consume only the registry's aggregated views (`csvParsers`, `csvDisciplineColumns`, `recordTypes`, `all`) and do not directly reference any concrete discipline type or string identifier.
+4. **Given** the existing CSV import/export round-trip tests **When** run **Then** all tests pass for all six disciplines on both Debug and Research configurations, both iOS and macOS.
+5. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations are green; `bin/build.sh && bin/build.sh -p mac` produces zero new warnings.
+
+### Story 77.4: Feature-owned storage for enabledGapPositions
+
+As **a developer maintaining the central `UserSettings` port**,
+I want the `enabledGapPositions` setting — the only entry that exists for exactly one discipline — moved out of `Peach/Core/Ports/UserSettings.swift` and `Peach/Settings/SettingsKeys.swift` into the ContinuousRhythmMatching feature directory,
+so that the central settings port no longer implicitly enumerates discipline-specific concerns and adding a new discipline with feature-local settings doesn't require editing any central type.
+
+**Acceptance Criteria:**
+
+1. **Given** `Peach/Core/Ports/UserSettings.swift`, `Peach/Settings/SettingsKeys.swift`, and `Peach/Settings/AppUserSettings.swift` **When** inspected after this story **Then** `enabledGapPositions` (and the `defaultEnabledGapPositions` constant) are absent from all three files. The three files no longer reference `StepPosition` either.
+2. **Given** `Peach/Training/ContinuousRhythmMatching/` **When** inspected **Then** it contains the UserDefaults key string (`"enabledGapPositions"` — preserved verbatim), the default `Set<StepPosition>` value (preserved verbatim from `SettingsKeys.defaultEnabledGapPositions`), and the `GapPositionEncoding` helper (moved from `Peach/Settings/`). These may live in a single new file or be folded into existing feature files.
+3. **Given** `ContinuousRhythmMatchingSettings.from(_:)` (or its successor) **When** producing the feature settings struct **Then** it composes shared values from `UserSettings` (e.g., `tempoBPM`) and reads `enabledGapPositions` from the feature-owned key. The mechanism (UserDefaults parameter, feature-local port inside the feature directory rather than `Peach/Core/Ports/`, or equivalent) is dev's choice; document the choice.
+4. **Given** `RhythmGapPositionsSettingsSection` (after 77.2 it lives in the feature directory) **When** inspected **Then** its `@AppStorage` binds to a feature-owned key constant, not to `SettingsKeys.enabledGapPositions`.
+5. **Given** an existing user with `"enabledGapPositions"` set in UserDefaults from a pre-77.4 build **When** they launch a post-77.4 build **Then** their selection is read correctly. The UserDefaults key string and `GapPositionEncoding` format are byte-identical to before this story (no migration code required).
+6. **Given** `Peach/Core/Ports/UserSettings.swift` and `Peach/Settings/SettingsKeys.swift` **When** inspected **Then** every entry corresponds to a value used by ≥2 disciplines or by app-wide infrastructure. Surviving entries (e.g., `varyLoudness` for both pitch sessions, `tempoBPM` for both rhythm sessions, `noteRange` / `tuningSystem` / `intervals` / `noteGap` / `noteDuration` for the pitch family, `referencePitch` / `soundSource` / `velocity` for app-wide audio configuration, `autoStartTraining` for app-wide UX) are documented in Completion Notes with one-line notes on which disciplines or subsystems each serves.
+7. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations are green; `bin/build.sh && bin/build.sh -p mac` produces zero new warnings.
