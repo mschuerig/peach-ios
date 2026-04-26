@@ -642,7 +642,7 @@ development_status:
   # plugin-style contribution model. There is NO planned runtime central-activation UI.
   # Activation is compile-time, single-file, per-discipline — a developer-ergonomics feature.
   epic-77: in-progress
-  77-1-plugin-style-discipline-ui-contributions: review
+  77-1-plugin-style-discipline-ui-contributions: done
   77-2-discipline-owned-ui-contributions: ready-for-dev
   77-3-discipline-owned-data-declarations: ready-for-dev
   77-4-feature-owned-gap-positions-storage: ready-for-dev

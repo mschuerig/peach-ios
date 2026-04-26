@@ -18,7 +18,7 @@ enum SettingsSectionKind: String, CaseIterable, Sendable, Hashable {
 /// vs. spectrogram). Adding a new card type means adding a case here and a
 /// branch in the App-layer mapping; no `switch discipline.category` ever
 /// appears in the screen itself.
-enum ProfileCardKind: Sendable, Hashable {
+enum ProfileCardKind: CaseIterable, Sendable, Hashable {
     case progressChart
     case rhythmSpectrogram
 }

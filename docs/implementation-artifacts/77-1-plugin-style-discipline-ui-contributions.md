@@ -1,6 +1,6 @@
 # Story 77.1: Plugin-style discipline UI contributions and per-discipline compile-time activation
 
-Status: review
+Status: done
 
 ## Story
 
@@ -215,6 +215,7 @@ Activation refactor uses Shape A: `DisciplineBootstrap` holds a list of `(active
 - `Peach/Profile/ProfileContributions.swift`
 - `PeachTests/Core/Training/RegistryContributionsTests.swift`
 - `PeachTests/App/CategoryLiteralAuditTests.swift`
+- `PeachTests/Settings/SettingsScreenAggregationTests.swift` (review-fix P2)
 
 **Modified**
 - `Peach/Core/Training/Discipline/TrainingDiscipline.swift`
@@ -288,3 +289,4 @@ Per-discipline activation makes `if activeCategories.contains(.rhythm)` not just
 - 2026-04-26: Drafted from 76.4 review deferred items I1 / P10 / P14 plus user direction toward a "plugin-style" contribution model. Status → backlog.
 - 2026-04-26: Reframed. Removed false claim that a runtime "central activation" feature is planned (it is not). Expanded scope to include a single-place, compile-time, per-discipline activation mechanism (new AC 4). Renumbered subsequent ACs (5–7) and tasks (5–7). Story title and user-story updated to reflect the dual scope. Status remains backlog.
 - 2026-04-26: Implemented. Added enum-typed `SettingsSectionKind` / `ProfileCardKind` / `ProfileHelpKind` contributions to `TrainingDiscipline`; rhythm disciplines now declare their own settings sections, profile card, and spectrogram help; `SettingsScreen` / `ProfileScreen` / `HelpContent` aggregate contributions instead of branching on category literals. `DisciplineBootstrap` adopts a per-discipline activation list (Shape A) preserving the `PEACH_RESEARCH` envelope. New tests cover contribution aggregation, profile-card mapping exhaustiveness, and a source-level audit blocking re-introduction of category-literal gates. All four configurations green (iOS / macOS × Debug / Debug Research). Status → review.
+- 2026-04-27: Code review fixes (P1–P6). P1: replaced `isResearchBuild: Bool` with `#if PEACH_RESEARCH` so timing-discipline factories are physically excluded from the App Store binary, not gated at runtime. P3: strengthened `CategoryLiteralAuditTests` to regex matching equality tests, switch-on-category, and `if case .rhythm/.pitch/.intervals` patterns (bare `case` deliberately omitted to avoid false positives on screen-local enums sharing case names). P4: made `ProfileCardKind` `CaseIterable` and converted the mapping-exhaustiveness test to a parameterized test driven by `allCases`. P2: refactored `SettingsScreen.body` to consume `orderedSectionIdentifiers(contributions:)` (a static helper), and added `SettingsScreenAggregationTests` pinning the aggregation invariant under multiple registry shapes. P5: added shared-registry coverage in `RegistryContributionsTests` (synthetic-subset tests via `_withSharedReplacedForTesting` for both contribution kinds and profile-card mapping). P6: added a `#if PEACH_RESEARCH`-gated test pinning `[.rhythmTempo, .rhythmGapPositions]` display order under the canonical bootstrap. All four configurations green.

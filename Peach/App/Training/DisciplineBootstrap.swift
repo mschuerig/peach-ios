@@ -23,27 +23,24 @@ import Foundation
 /// The two `(Research)` build configurations (`Debug (Research)` and
 /// `Release (Research)`) define the `PEACH_RESEARCH` Swift compilation flag.
 /// The pitch disciplines are active in every configuration; the timing
-/// disciplines default to `active: isResearchBuild` so they ship in the
-/// Research cut and are compiled out of the App Store cut. The per-discipline
-/// flag here lets a developer override that envelope locally without
-/// touching the project's build configuration matrix.
+/// rows are wrapped in `#if PEACH_RESEARCH` so their types are not even
+/// referenced — and therefore not linked — in the App Store cut. The
+/// per-discipline `active` flag inside the envelope lets a developer override
+/// activation locally without touching the project's build configuration
+/// matrix.
 enum DisciplineBootstrap {
 
-    #if PEACH_RESEARCH
-    private static let isResearchBuild = true
-    #else
-    private static let isResearchBuild = false
-    #endif
-
     static let allDisciplines: [any TrainingDiscipline] = {
-        let candidates: [(active: Bool, factory: () -> any TrainingDiscipline)] = [
-            (true,             { UnisonPitchDiscriminationDiscipline() }),
-            (true,             { IntervalPitchDiscriminationDiscipline() }),
-            (true,             { UnisonPitchMatchingDiscipline() }),
-            (true,             { IntervalPitchMatchingDiscipline() }),
-            (isResearchBuild,  { TimingOffsetDetectionDiscipline() }),
-            (isResearchBuild,  { ContinuousRhythmMatchingDiscipline() }),
+        var candidates: [(active: Bool, factory: () -> any TrainingDiscipline)] = [
+            (true, { UnisonPitchDiscriminationDiscipline() }),
+            (true, { IntervalPitchDiscriminationDiscipline() }),
+            (true, { UnisonPitchMatchingDiscipline() }),
+            (true, { IntervalPitchMatchingDiscipline() }),
         ]
+        #if PEACH_RESEARCH
+        candidates.append((true, { TimingOffsetDetectionDiscipline() }))
+        candidates.append((true, { ContinuousRhythmMatchingDiscipline() }))
+        #endif
         return candidates.compactMap { $0.active ? $0.factory() : nil }
     }()
 }
