@@ -7,8 +7,9 @@ import Foundation
 /// Registration of the timing disciplines is gated on the `PEACH_RESEARCH`
 /// Swift compilation flag, defined by the two `(Research)` build
 /// configurations (`Debug (Research)` and `Release (Research)`). The plain
-/// `Debug` and `Release` configurations register four disciplines (the
-/// App Store cut); the `(Research)` configurations register all six.
+/// `Debug` and `Release` configurations register the pitch disciplines only
+/// (the App Store cut); the `(Research)` configurations additionally register
+/// the timing disciplines.
 enum DisciplineBootstrap {
     static let allDisciplines: [any TrainingDiscipline] = {
         var disciplines: [any TrainingDiscipline] = [

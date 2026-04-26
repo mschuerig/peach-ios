@@ -174,6 +174,7 @@ extension SettingsCoordinator {
 
 // MARK: - Preview Environment Modifier
 
+#if DEBUG
 extension View {
     func previewEnvironment() -> some View {
         self
@@ -187,3 +188,4 @@ extension View {
             .environment(\.continuousRhythmMatchingSession, .stub)
     }
 }
+#endif

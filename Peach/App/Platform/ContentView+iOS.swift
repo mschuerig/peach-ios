@@ -17,8 +17,10 @@ struct ContentView: View {
     }
 }
 
+#if DEBUG
 #Preview {
     ContentView()
         .previewEnvironment()
 }
+#endif
 #endif

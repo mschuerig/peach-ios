@@ -264,28 +264,31 @@ struct SettingsTests {
 
     // MARK: - Settings Help Sections
 
-    @Test("helpSections returns one entry per visible settings group")
-    func helpSectionsCount() async {
-        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
-        // Training Range, Intervals, Sound, Difficulty, Data (+ Rhythm when registered).
-        let expectedCount = 5 + (rhythmActive ? 1 : 0)
-        #expect(HelpContent.settings.count == expectedCount)
+    @Test("each settings help section has a unique title")
+    func helpSectionsUnique() async {
+        let titles = HelpContent.settings.map(\.title)
+        #expect(titles.count == Set(titles).count, "Duplicate titles in settings help")
     }
 
-    @Test("help section titles match settings groups in order")
-    func helpSectionTitlesMatchSettingsGroups() async {
-        var expectedTitles: [String] = [
-            String(localized: "Training Range"),
-            String(localized: "Intervals"),
-            String(localized: "Sound"),
-            String(localized: "Difficulty"),
-        ]
-        if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
-            expectedTitles.append(String(localized: "Rhythm"))
-        }
-        expectedTitles.append(String(localized: "Data"))
-        let actualTitles = HelpContent.settings.map(\.title)
-        #expect(actualTitles == expectedTitles)
+    @Test("the rhythm settings help section appears iff the rhythm category is registered")
+    func rhythmHelpSectionMatchesRegistry() async {
+        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
+        let rhythmTitle = String(localized: "Rhythm")
+        let hasRhythmSection = HelpContent.settings.contains { $0.title == rhythmTitle }
+        #expect(hasRhythmSection == rhythmActive)
+    }
+
+    @Test("settings help sections always include the registry-independent groups",
+          arguments: [
+              String(localized: "Training Range"),
+              String(localized: "Intervals"),
+              String(localized: "Sound"),
+              String(localized: "Difficulty"),
+              String(localized: "Data"),
+          ])
+    func alwaysOnSettingsSectionPresent(_ title: String) async {
+        let titles = Set(HelpContent.settings.map(\.title))
+        #expect(titles.contains(title), "Always-on section '\(title)' missing from settings help")
     }
 
     @Test("each help section has a non-empty body")

@@ -177,9 +177,11 @@ struct PitchDiscriminationScreen: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview {
     NavigationStack {
         PitchDiscriminationScreen(isIntervalMode: false)
     }
     .previewEnvironment()
 }
+#endif

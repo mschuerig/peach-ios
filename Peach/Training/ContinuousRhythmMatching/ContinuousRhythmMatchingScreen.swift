@@ -140,9 +140,11 @@ struct ContinuousRhythmMatchingScreen: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview {
     NavigationStack {
         ContinuousRhythmMatchingScreen()
     }
     .previewEnvironment()
 }
+#endif

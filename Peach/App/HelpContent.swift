@@ -93,14 +93,14 @@ enum HelpContent {
             ),
             HelpSection(
                 title: String(localized: "Difficulty"),
-                body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
+                body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.\n\n**Note Gap** adds a pause between the two notes in pitch comparison. At zero, notes play back-to-back.")
             ),
         ]
         if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
             sections.append(
                 HelpSection(
                     title: String(localized: "Rhythm"),
-                    body: String(localized: "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
+                    body: String(localized: "**Tempo** controls the playback speed of rhythm patterns, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat the gap can land on. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
                 )
             )
         }
@@ -113,50 +113,59 @@ enum HelpContent {
         return sections
     }()
 
-    static let profile: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "Your Progress Chart",
-                          comment: "Chart overview help title"),
-            body: String(localized: "This chart shows how your pitch perception is developing over time.",
-                         comment: "Chart overview help body")
-        ),
-        HelpSection(
-            title: String(localized: "Trend Line",
-                          comment: "EWMA line help title"),
-            body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.",
-                         comment: "EWMA line help body")
-        ),
-        HelpSection(
-            title: String(localized: "Variability Band",
-                          comment: "Stddev band help title"),
-            body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results.",
-                         comment: "Stddev band help body")
-        ),
-        HelpSection(
-            title: String(localized: "Target Baseline",
-                          comment: "Baseline help title"),
-            body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.",
-                         comment: "Baseline help body")
-        ),
-        HelpSection(
-            title: String(localized: "Time Zones",
-                          comment: "Granularity zone help title"),
-            body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
-                         comment: "Granularity zone help body")
-        ),
-        HelpSection(
-            title: String(localized: "Rhythm Spectrogram",
-                          comment: "Spectrogram overview help title"),
-            body: String(localized: "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was.",
-                         comment: "Spectrogram overview help body")
-        ),
-        HelpSection(
-            title: String(localized: "Spectrogram Colors",
-                          comment: "Spectrogram color help title"),
-            body: String(localized: "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits.",
-                         comment: "Spectrogram color help body")
-        ),
-    ]
+    static let profile: [HelpSection] = {
+        var sections: [HelpSection] = [
+            HelpSection(
+                title: String(localized: "Your Progress Chart",
+                              comment: "Chart overview help title"),
+                body: String(localized: "This chart shows how your pitch perception is developing over time.",
+                             comment: "Chart overview help body")
+            ),
+            HelpSection(
+                title: String(localized: "Trend Line",
+                              comment: "EWMA line help title"),
+                body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.",
+                             comment: "EWMA line help body")
+            ),
+            HelpSection(
+                title: String(localized: "Variability Band",
+                              comment: "Stddev band help title"),
+                body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results.",
+                             comment: "Stddev band help body")
+            ),
+            HelpSection(
+                title: String(localized: "Target Baseline",
+                              comment: "Baseline help title"),
+                body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.",
+                             comment: "Baseline help body")
+            ),
+            HelpSection(
+                title: String(localized: "Time Zones",
+                              comment: "Granularity zone help title"),
+                body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
+                             comment: "Granularity zone help body")
+            ),
+        ]
+        if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
+            sections.append(
+                HelpSection(
+                    title: String(localized: "Rhythm Spectrogram",
+                                  comment: "Spectrogram overview help title"),
+                    body: String(localized: "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was.",
+                                 comment: "Spectrogram overview help body")
+                )
+            )
+            sections.append(
+                HelpSection(
+                    title: String(localized: "Spectrogram Colors",
+                                  comment: "Spectrogram color help title"),
+                    body: String(localized: "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits.",
+                                 comment: "Spectrogram color help body")
+                )
+            )
+        }
+        return sections
+    }()
 
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
 

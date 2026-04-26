@@ -145,9 +145,11 @@ struct TimingOffsetDetectionScreen: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview {
     NavigationStack {
         TimingOffsetDetectionScreen()
     }
     .previewEnvironment()
 }
+#endif

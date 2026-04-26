@@ -155,21 +155,8 @@ struct CSVImportParserTests {
         })
     }
 
-    @Test("missing column fails validation")
-    func missingColumnFailsValidation() async {
-        let incompleteHeader = "trainingType,timestamp,referenceNote"
-        let csv = CSVExportSchema.metadataLine + "\n" + incompleteHeader + "\n" + validPitchDiscriminationRow
-        let result = CSVImportParser.parse(csv)
-        #expect(result.errors.contains { error in
-            if case .invalidHeader = error { return true }
-            return false
-        })
-        #expect(pitchDiscriminations(from: result).isEmpty)
-        #expect(pitchMatchings(from: result).isEmpty)
-    }
-
-    @Test("wrong column name fails validation")
-    func wrongColumnFailsValidation() async {
+    @Test("header missing trainingType column fails validation")
+    func headerMissingTrainingTypeFailsValidation() async {
         let wrongHeader = CSVExportSchema.headerRow.replacingOccurrences(of: "trainingType", with: "type")
         let csv = CSVExportSchema.metadataLine + "\n" + wrongHeader + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
@@ -179,15 +166,88 @@ struct CSVImportParserTests {
         })
     }
 
-    @Test("extra column fails validation")
-    func extraColumnFailsValidation() async {
-        let extraHeader = CSVExportSchema.headerRow + ",extraColumn"
-        let csv = CSVExportSchema.metadataLine + "\n" + extraHeader + "\n" + validPitchDiscriminationRow
+    @Test("header missing discipline columns produces per-row errors")
+    func headerMissingDisciplineColumnsProducesPerRowErrors() async {
+        // Header with only common columns: trainingType + timestamp pass header
+        // validation, but the pitch row's field count won't match.
+        let header = "trainingType,timestamp"
+        let csv = CSVExportSchema.metadataLine + "\n" + header + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
-        #expect(result.errors.contains { error in
-            if case .invalidHeader = error { return true }
-            return false
-        })
+        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(result.errors.contains { if case .invalidRowData = $0 { return true } else { return false } })
+        #expect(pitchDiscriminations(from: result).isEmpty)
+    }
+
+    @Test("extra unknown column in header is tolerated")
+    func extraColumnDoesNotFailValidation() async {
+        let extraHeader = CSVExportSchema.headerRow + ",extraColumn"
+        let baseFields = Array(CSVParserHelpers.parseCSVLine(validPitchDiscriminationRow)
+            .prefix(CSVExportSchema.allColumns.count))
+        let extendedRow = (baseFields + [""]).map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
+        let csv = ([CSVExportSchema.metadataLine, extraHeader, extendedRow]).joined(separator: "\n")
+        let result = CSVImportParser.parse(csv)
+        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(pitchDiscriminations(from: result).count == 1)
+    }
+
+    @Test("reordered columns are accepted (header is name-keyed)")
+    func reorderedColumnsAccepted() async {
+        // Swap columns 0 and 1 in both header and row; parser should still
+        // dispatch by name.
+        var swappedColumns = CSVExportSchema.allColumns
+        swappedColumns.swapAt(0, 1)
+        let header = swappedColumns.joined(separator: ",")
+
+        var swappedFields = Array(CSVParserHelpers.parseCSVLine(validPitchDiscriminationRow)
+            .prefix(CSVExportSchema.allColumns.count))
+        swappedFields.swapAt(0, 1)
+        let row = swappedFields.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
+
+        let csv = ([CSVExportSchema.metadataLine, header, row]).joined(separator: "\n")
+        let result = CSVImportParser.parse(csv)
+        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(pitchDiscriminations(from: result).count == 1)
+    }
+
+    // MARK: - Cross-build compatibility
+    //
+    // Files exported by any build configuration must import successfully in any
+    // other build configuration: rows for unregistered disciplines surface as
+    // per-row errors but do not abort the import.
+
+    @Test("19-column research-shape header parses pitch rows under any registry")
+    func researchShapeHeaderParsesPitchRowsAnywhere() async {
+        // Hard-coded V3 19-column header — what a Debug (Research) build emits.
+        // In plain Debug, the timing columns are unknown; per-row dispatch must
+        // still let pitch rows through.
+        let researchHeader = "trainingType,timestamp,referenceNote,referenceNoteName,targetNote,targetNoteName,interval,tuningSystem,centOffset,isCorrect,initialCentOffset,userCentError,tempoBPM,offsetMs,meanOffsetMs,meanOffsetMsPosition0,meanOffsetMsPosition1,meanOffsetMsPosition2,meanOffsetMsPosition3"
+        let csv = ([
+            CSVExportSchema.metadataLine,
+            researchHeader,
+            validPitchDiscriminationRow,
+            validPitchMatchingRow,
+        ]).joined(separator: "\n")
+        let result = CSVImportParser.parse(csv)
+        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(pitchDiscriminations(from: result).count == 1)
+        #expect(pitchMatchings(from: result).count == 1)
+    }
+
+    @Test("12-column pitch-only header parses cleanly under any registry")
+    func pitchOnlyHeaderParsesCleanlyAnywhere() async {
+        // Hard-coded 12-column pitch-only header — what plain Debug emits.
+        // In Debug (Research), the header is a strict subset; the parser
+        // tolerates the missing timing columns.
+        let pitchHeader = "trainingType,timestamp,referenceNote,referenceNoteName,targetNote,targetNoteName,interval,tuningSystem,centOffset,isCorrect,initialCentOffset,userCentError"
+        let pitchRow = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,"
+        let csv = ([
+            CSVExportSchema.metadataLine,
+            pitchHeader,
+            pitchRow,
+        ]).joined(separator: "\n")
+        let result = CSVImportParser.parse(csv)
+        #expect(result.errors.isEmpty)
+        #expect(pitchDiscriminations(from: result).count == 1)
     }
 
     // MARK: - RFC 4180 CSV Line Parsing (via integration)

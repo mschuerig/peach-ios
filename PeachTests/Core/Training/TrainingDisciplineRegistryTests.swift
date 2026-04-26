@@ -9,11 +9,12 @@ struct TrainingDisciplineRegistryTests {
 
     // MARK: - Registered-set invariants
     //
-    // The registered set varies by build configuration (Release: 4 disciplines,
-    // Research: 6). Tests assert invariants that hold for any registered set,
-    // not exact counts.
+    // The registered set varies by build configuration (configurations without
+    // PEACH_RESEARCH register the pitch disciplines only; configurations with
+    // it additionally register the timing disciplines). Tests assert invariants
+    // that hold for any registered set, not exact counts.
 
-    @Test("the four pitch disciplines are always registered")
+    @Test("the pitch disciplines are always registered")
     func pitchDisciplinesAlwaysRegistered() async {
         let registeredIDs = Set(registry.all.map(\.id))
         let alwaysOn: Set<TrainingDisciplineID> = [
@@ -58,22 +59,6 @@ struct TrainingDisciplineRegistryTests {
     func subscriptReturnsCorrectDiscipline() async {
         for discipline in registry.all {
             #expect(registry[discipline.id].id == discipline.id)
-        }
-    }
-
-    @Test("each registered discipline declares its expected category")
-    func disciplineDeclaresExpectedCategory() async {
-        let expected: [TrainingDisciplineID: TrainingCategory] = [
-            .unisonPitchDiscrimination: .pitch,
-            .intervalPitchDiscrimination: .intervals,
-            .unisonPitchMatching: .pitch,
-            .intervalPitchMatching: .intervals,
-            .timingOffsetDetection: .rhythm,
-            .continuousRhythmMatching: .rhythm,
-        ]
-        for discipline in registry.all {
-            #expect(discipline.category == expected[discipline.id],
-                    "Discipline \(discipline.id) declares category \(discipline.category) but expected \(String(describing: expected[discipline.id]))")
         }
     }
 

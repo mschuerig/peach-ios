@@ -42,12 +42,12 @@
         }
       }
     },
-    "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions." : {
+    "**Tempo** controls the playback speed of rhythm patterns, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat the gap can land on. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Tempo** steuert die Geschwindigkeit aller Rhythmus-Disziplinen, gemessen in Schlägen pro Minute (BPM). Ein langsameres Tempo ist leichter; erhöhe es, wenn sich dein Timing verbessert.\n\n**Lücken-Positionen** bestimmen, welche Unterteilungen des Schlags im „Lücke füllen“-Training verwendet werden. Jeder Schlag wird in vier 16tel-Positionen unterteilt: Beat (Grundschlag), E, Und, A. Deaktiviere Positionen, um dich auf bestimmte Unterteilungen zu konzentrieren."
+            "value" : "**Tempo** steuert die Wiedergabegeschwindigkeit der Rhythmusmuster, gemessen in Schlägen pro Minute (BPM). Ein langsameres Tempo ist leichter; erhöhe es, wenn sich dein Timing verbessert.\n\n**Lücken-Positionen** bestimmen, auf welchen Unterteilungen des Schlags die Lücke liegen kann. Jeder Schlag wird in vier 16tel-Positionen unterteilt: Beat (Grundschlag), E, Und, A. Deaktiviere Positionen, um dich auf bestimmte Unterteilungen zu konzentrieren."
           }
         }
       }
@@ -84,12 +84,12 @@
         }
       }
     },
-    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back." : {
+    "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.\n\n**Note Gap** adds a pause between the two notes in pitch comparison. At zero, notes play back-to-back." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt. Gilt für alle Disziplinen.\n\n**Pause** fügt eine Pause zwischen den beiden Tönen im Vergleichstraining ein. Bei null spielen die Töne direkt hintereinander."
+            "value" : "**Lautstärke variieren** ändert die Lautstärke der Töne zufällig. Das macht das Training schwieriger, aber realistischer — in echter Musik werden Töne selten gleich laut gespielt.\n\n**Pause** fügt eine Pause zwischen den beiden Tönen beim Tonhöhenvergleich ein. Bei null spielen die Töne direkt hintereinander."
           }
         }
       }
@@ -1100,17 +1100,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lücke füllen – Rhythmus"
-          }
-        }
-      }
-    },
-    "Fill the Gap Help" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe: Lücke füllen"
           }
         }
       }
@@ -2225,17 +2214,6 @@
         }
       }
     },
-    "Pitch Compare Help" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe: Tonhöhe vergleichen"
-          }
-        }
-      }
-    },
     "Pitch Comparison" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -2243,17 +2221,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tonhöhenvergleich"
-          }
-        }
-      }
-    },
-    "Pitch Match Help" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe: Tonhöhe treffen"
           }
         }
       }
@@ -2519,17 +2486,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Rhythmus – Treffen"
-          }
-        }
-      }
-    },
-    "Rhythm Compare Help" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Hilfe: Timing vergleichen"
           }
         }
       }

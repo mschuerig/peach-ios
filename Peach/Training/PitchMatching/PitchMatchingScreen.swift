@@ -118,9 +118,11 @@ struct PitchMatchingScreen: View {
 
 // MARK: - Previews
 
+#if DEBUG
 #Preview {
     NavigationStack {
         PitchMatchingScreen(isIntervalMode: false)
     }
     .previewEnvironment()
 }
+#endif

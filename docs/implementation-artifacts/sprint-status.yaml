@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-26 # Story 76.4 → done
+# last_updated: 2026-04-26 # Story 76.4 → done; story 77.1 drafted
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -633,6 +633,13 @@ development_status:
   76-1-relocate-trainingdisciplineid-to-app: done
   76-2-discipline-category-and-bootstrap-relocation: done
   76-3-data-driven-discipline-iteration-by-category: done
-  76-4-build-gated-timing-disciplines: review
+  76-4-build-gated-timing-disciplines: done
   76-5-bootstrap-registry-for-swiftui-previews: ready-for-dev
   epic-76-retrospective: optional
+
+  # Epic 77: Plugin-Style Discipline Contributions — Prerequisite for Central Activation
+  # Source: 76.4 review deferred items (I1, P10, P14) plus user direction toward a
+  # plugin-style contribution model and a future central-activation feature.
+  # Work order: 77.1 first (contribution protocol), 77.2 later (central-activation UI).
+  epic-77: backlog
+  77-1-plugin-style-discipline-ui-contributions: backlog

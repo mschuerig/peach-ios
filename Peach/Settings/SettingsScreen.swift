@@ -40,7 +40,6 @@ struct SettingsScreen: View {
 
     @State private var enabledGapPositions: Set<StepPosition> = []
 
-    private let activeCategories = TrainingDisciplineRegistry.shared.activeCategories
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
@@ -57,7 +56,7 @@ struct SettingsScreen: View {
             intervalSection
             soundSection
             difficultySection
-            if activeCategories.contains(.rhythm) {
+            if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
                 rhythmSection
                 gapPositionsSection
             }
@@ -312,9 +311,11 @@ struct SettingsScreen: View {
     }
 }
 
+#if DEBUG
 #Preview {
     NavigationStack {
         SettingsScreen()
     }
     .previewEnvironment()
 }
+#endif

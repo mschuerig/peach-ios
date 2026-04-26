@@ -1,6 +1,6 @@
 # Story 76.4: Build-gated timing disciplines via PEACH_RESEARCH flag
 
-Status: review
+Status: done
 
 ## Story
 

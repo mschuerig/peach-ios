@@ -17,74 +17,51 @@ struct CSVExportSchemaTests {
         #expect(CSVExportSchema.metadataLine == "# peach-export-format:3")
     }
 
-    // MARK: - Header Row
+    // MARK: - Header Row Invariants
+    //
+    // The wire format is column-name keyed: import looks columns up by name,
+    // not by position. Tests assert structural invariants that hold under any
+    // discipline registration, not specific column counts or positions.
 
-    @Test("headerRow places pitch columns immediately after common columns")
-    func headerRowPitchColumns() async {
-        let header = CSVExportSchema.headerRow
-        let columns = header.split(separator: ",").map(String.init)
-
-        // Common columns (always present)
-        #expect(columns[0] == "trainingType")
-        #expect(columns[1] == "timestamp")
-        // Pitch discrimination columns
-        #expect(columns[2] == "referenceNote")
-        #expect(columns[3] == "referenceNoteName")
-        #expect(columns[4] == "targetNote")
-        #expect(columns[5] == "targetNoteName")
-        #expect(columns[6] == "interval")
-        #expect(columns[7] == "tuningSystem")
-        #expect(columns[8] == "centOffset")
-        #expect(columns[9] == "isCorrect")
-        // Pitch matching adds
-        #expect(columns[10] == "initialCentOffset")
-        #expect(columns[11] == "userCentError")
+    @Test("headerRow starts with common columns")
+    func headerRowStartsWithCommonColumns() async {
+        let columns = CSVExportSchema.headerRow.split(separator: ",").map(String.init)
+        let common = CSVExportSchema.commonColumns
+        #expect(Array(columns.prefix(common.count)) == common)
     }
 
-    #if PEACH_RESEARCH
-    @Test("headerRow appends rhythm columns when rhythm disciplines registered")
-    func headerRowRhythmColumns() async {
-        let header = CSVExportSchema.headerRow
-        let columns = header.split(separator: ",").map(String.init)
-
-        #expect(columns.count == 19)
-        // Rhythm offset detection adds (isCorrect/tempoBPM already present)
-        #expect(columns[12] == "tempoBPM")
-        #expect(columns[13] == "offsetMs")
-        // Continuous rhythm matching adds
-        #expect(columns[14] == "meanOffsetMs")
-        #expect(columns[15] == "meanOffsetMsPosition0")
-        #expect(columns[16] == "meanOffsetMsPosition1")
-        #expect(columns[17] == "meanOffsetMsPosition2")
-        #expect(columns[18] == "meanOffsetMsPosition3")
+    @Test("headerRow contains every registered discipline's csvColumns")
+    func headerRowContainsAllRegisteredDisciplineColumns() async {
+        let headerSet = Set(CSVExportSchema.headerRow.split(separator: ",").map(String.init))
+        for discipline in TrainingDisciplineRegistry.shared.all {
+            for column in discipline.csvColumns {
+                #expect(headerSet.contains(column),
+                        "headerRow missing column '\(column)' for discipline '\(discipline.csvTrainingType)'")
+            }
+        }
     }
-    #endif
 
-    @Test("columnIndex maps common and pitch columns to correct indices")
-    func columnIndexMapsPitchColumns() async {
+    @Test("headerRow has no duplicate column names")
+    func headerRowHasNoDuplicates() async {
+        let columns = CSVExportSchema.headerRow.split(separator: ",").map(String.init)
+        #expect(columns.count == Set(columns).count)
+    }
+
+    @Test("columnIndex is bijective with allColumns")
+    func columnIndexIsBijective() async {
+        let columns = CSVExportSchema.allColumns
         let index = CSVExportSchema.columnIndex
-        #expect(index["trainingType"] == 0)
-        #expect(index["timestamp"] == 1)
-        #expect(index["referenceNote"] == 2)
-        #expect(index["userCentError"] == 11)
+        #expect(index.count == columns.count)
+        for (position, name) in columns.enumerated() {
+            #expect(index[name] == position)
+        }
     }
 
-    #if PEACH_RESEARCH
-    @Test("columnIndex covers full schema when rhythm disciplines registered")
-    func columnIndexMapsFullSchema() async {
-        let index = CSVExportSchema.columnIndex
-        #expect(index["meanOffsetMsPosition3"] == 18)
-        #expect(index.count == 19)
-    }
-    #endif
-
-    @Test("allColumns are assembled dynamically from registry")
+    @Test("allColumns are assembled from common columns plus registry columns")
     func allColumnsFromRegistry() async {
         let columns = CSVExportSchema.allColumns
-        // Common columns come first
-        #expect(columns[0] == "trainingType")
-        #expect(columns[1] == "timestamp")
-        // Remaining columns come from discipline registration order
-        #expect(columns.count == 2 + TrainingDisciplineRegistry.shared.csvDisciplineColumns.count)
+        let common = CSVExportSchema.commonColumns
+        #expect(Array(columns.prefix(common.count)) == common)
+        #expect(columns.count == common.count + TrainingDisciplineRegistry.shared.csvDisciplineColumns.count)
     }
 }

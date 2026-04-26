@@ -3,10 +3,10 @@
 # bin/build.sh — Build Peach and produce a clean summary.
 #
 # Usage:
-#   bin/build.sh                       # Peach (Debug) — 4 disciplines, no opt
-#   bin/build.sh --research            # Peach (Debug, Research) — 6 disciplines
-#   bin/build.sh --release             # Peach (Release) — 4 disciplines, optimised
-#   bin/build.sh --release --research  # Peach (Release, Research) — 6 disciplines, optimised
+#   bin/build.sh                       # Peach (Debug) — pitch disciplines, no opt
+#   bin/build.sh --research            # Peach (Debug, Research) — pitch + timing disciplines
+#   bin/build.sh --release             # Peach (Release) — pitch disciplines, optimised
+#   bin/build.sh --release --research  # Peach (Release, Research) — pitch + timing, optimised
 #   bin/build.sh -p mac                # build for macOS
 #   bin/build.sh -p ipad               # build for iPad Simulator
 #   bin/build.sh -t                    # build for testing (compiles test target too)
@@ -39,6 +39,7 @@ for arg in "$@"; do
     case "$arg" in
         --research) ARGS+=("-R") ;;
         --release)  ARGS+=("-L") ;;
+        --*) echo "Unknown option: $arg" >&2; exit 1 ;;
         *) ARGS+=("$arg") ;;
     esac
 done

@@ -90,8 +90,10 @@ private struct MainWindowReader: NSViewRepresentable {
     }
 }
 
+#if DEBUG
 #Preview {
     ContentView()
         .previewEnvironment()
 }
+#endif
 #endif

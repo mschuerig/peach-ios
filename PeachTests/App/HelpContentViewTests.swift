@@ -79,4 +79,24 @@ struct HelpContentViewTests {
         // (AttributedString(markdown: "") succeeds)
         #expect(section.attributedBody != nil)
     }
+
+    // MARK: - Active-Category Shape Invariants
+
+    @Test("settings has rhythm section iff registry has rhythm category")
+    func settingsRhythmSectionMatchesActiveCategories() async {
+        let titles = HelpContent.settings.map(\.title)
+        let hasRhythmSection = titles.contains(String(localized: "Rhythm"))
+        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
+        #expect(hasRhythmSection == rhythmActive)
+    }
+
+    @Test("profile has spectrogram sections iff registry has rhythm category")
+    func profileSpectrogramSectionsMatchActiveCategories() async {
+        let titles = HelpContent.profile.map(\.title)
+        let spectrogramTitle = String(localized: "Rhythm Spectrogram",
+                                       comment: "Spectrogram overview help title")
+        let hasSpectrogramSection = titles.contains(spectrogramTitle)
+        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
+        #expect(hasSpectrogramSection == rhythmActive)
+    }
 }

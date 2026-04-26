@@ -3,10 +3,10 @@
 # bin/test.sh — Run Peach tests and produce a clean summary.
 #
 # Usage:
-#   bin/test.sh                        # Peach (Debug) — 4 disciplines
-#   bin/test.sh --research             # Peach (Debug, Research) — 6 disciplines
-#   bin/test.sh --release              # Peach (Release) — 4 disciplines, optimised
-#   bin/test.sh --release --research   # Peach (Release, Research) — 6, optimised
+#   bin/test.sh                        # Peach (Debug) — pitch disciplines
+#   bin/test.sh --research             # Peach (Debug, Research) — pitch + timing disciplines
+#   bin/test.sh --release              # Peach (Release) — pitch disciplines, optimised
+#   bin/test.sh --release --research   # Peach (Release, Research) — pitch + timing, optimised
 #   bin/test.sh -p mac                 # run tests on macOS
 #   bin/test.sh -p ipad                # run tests on iPad Simulator
 #   bin/test.sh -f                     # show only failures (quiet on success)
@@ -16,6 +16,8 @@
 #                                        (useful when this script's parsing breaks)
 #   bin/test.sh -S                     # run ONLY stress tests (sets RUN_STRESS_TESTS=1)
 #   bin/test.sh -a                     # run ALL tests including stress tests
+#   bin/test.sh -c                     # clean before testing (useful when module
+#                                        caches go stale across configurations)
 #
 # Platforms:
 #   ios (default)  — iPhone 17 Pro Simulator
@@ -40,6 +42,7 @@ for arg in "$@"; do
     case "$arg" in
         --research) ARGS+=("-R") ;;
         --release)  ARGS+=("-L") ;;
+        --*) echo "Unknown option: $arg" >&2; exit 1 ;;
         *) ARGS+=("$arg") ;;
     esac
 done
@@ -53,8 +56,9 @@ STRESS_ONLY=false
 ALL_TESTS=false
 RESEARCH=false
 RELEASE=false
+CLEAN=false
 
-while getopts "fvrs:SaRLp:" opt; do
+while getopts "fvrs:SacRLp:" opt; do
     case $opt in
         f) FAILURES_ONLY=true ;;
         v) VERBOSE=true ;;
@@ -62,10 +66,11 @@ while getopts "fvrs:SaRLp:" opt; do
         s) FILTER="$OPTARG" ;;
         S) STRESS_ONLY=true ;;
         a) ALL_TESTS=true ;;
+        c) CLEAN=true ;;
         R) RESEARCH=true ;;
         L) RELEASE=true ;;
         p) PLATFORM="$OPTARG" ;;
-        *) echo "Usage: $0 [-f] [-v] [-r] [-s SuiteName] [-S] [-a] [--research] [--release] [-p ios|ipad|mac]" >&2; exit 1 ;;
+        *) echo "Usage: $0 [-f] [-v] [-r] [-s SuiteName] [-S] [-a] [-c] [--research] [--release] [-p ios|ipad|mac]" >&2; exit 1 ;;
     esac
 done
 
@@ -129,7 +134,11 @@ trap 'restore_scheme' EXIT INT TERM
 # --- Build the xcodebuild command ---
 # Note: do NOT use -quiet — it suppresses the per-test pass/fail lines
 # we need for the summary.
-CMD=(xcodebuild test -scheme "$SCHEME" -destination "$DESTINATION")
+if $CLEAN; then
+    CMD=(xcodebuild clean test -scheme "$SCHEME" -destination "$DESTINATION")
+else
+    CMD=(xcodebuild test -scheme "$SCHEME" -destination "$DESTINATION")
+fi
 
 # Add filter if specified
 if [[ -n "$FILTER" ]]; then

@@ -32,7 +32,7 @@ Peach is a pitch and rhythm ear training app for iOS, iPadOS, and macOS. It trai
 - Interval training generalizing both pitch disciplines to musical intervals
 - Rhythm offset detection: judge whether a note is early or late relative to the beat
 - Continuous rhythm matching: tap into gaps in a looping rhythmic pattern
-- Perceptual profile visualization with progress timeline across all six disciplines
+- Perceptual profile visualization with progress timeline across every registered discipline
 - Local persistence of all training data
 - iPhone + iPad + Mac (native SwiftUI, not Catalyst), portrait + landscape on iOS/iPadOS, English + German
 
@@ -103,7 +103,7 @@ graph LR
 |----------|---------|------------|
 | Device Audio | Pitched tone playback at precise frequencies; sample-accurate percussion pattern scheduling | AVAudioEngine + AVAudioUnitSampler (multi-channel) |
 | Haptic Engine | Tactile feedback on incorrect pitch comparison and rhythm offset detection answers (iOS/iPadOS only; no-op on macOS) | UIKit via `HapticFeedback` port protocol |
-| Local Storage | Persistent training records (every completed exercise across all six disciplines) | SwiftData (SQLite-backed) |
+| Local Storage | Persistent training records (every completed exercise across every registered discipline) | SwiftData (SQLite-backed) |
 | File System | Backup and restore of training history | CSV with versioned format |
 | Bundled SoundFont | Instrument sound samples (piano, cello, etc.) and percussion click sounds | SF2 file with RIFF/PHDR metadata |
 | MIDI Controller | External input for training interactions (note on/off, pitch bend for pitch matching) | CoreMIDI via `MIDIInput` port protocol |
@@ -220,11 +220,11 @@ graph TB
 | **Pitch Matching** | Training loop where a reference note plays and the user tunes a second note to match. Owns the `PitchMatchingSession` state machine, pitch slider interaction. Works in both unison and interval disciplines. |
 | **Rhythm Offset Detection** | Training loop where a four-note rhythmic pattern plays with one note offset from the beat. User judges whether the offset note is early or late. Owns the `TimingOffsetDetectionSession` state machine. Uses `RhythmPlayer` for sample-accurate pattern playback. |
 | **Continuous Rhythm Matching** | Continuous training loop where a repeating four-step pattern plays with one gap per cycle. User taps to fill the gap. Timing accuracy is measured. Owns the `ContinuousRhythmMatchingSession` and acts as `StepProvider` for the `StepSequencer`. |
-| **Profile** | Visualizes the user's perceptual abilities: piano keyboard heatmap, progress chart across all six training disciplines, spectrogram for rhythm, chart export. |
+| **Profile** | Visualizes the user's perceptual abilities: piano keyboard heatmap, progress chart across every registered discipline, spectrogram for rhythm, chart export. |
 | **Settings** | User configuration: note range, note duration, reference pitch, sound source, interval selection, tuning system, tempo, gap position, data import/export. |
 | **Audio** | Tone generation and percussion sequencing. Provides three protocol boundaries: `NotePlayer` (pitched playback), `RhythmPlayer` (pattern-based percussion), and `StepSequencer` (continuous cycle-based sequencing). `SoundFontEngine` is the shared multi-channel audio engine. Implements the two-world architecture (see Section 8.1). |
 | **Algorithm** | Decides the next exercise based on the user's profile. `KazezNoteStrategy` implements the staircase for pitch comparison (see ADR-4). `AdaptiveTimingOffsetDetectionStrategy` adapts the same staircase for rhythm timing. Both strategies conform to their respective protocol (`NextPitchDiscriminationStrategy`, `NextTimingOffsetDetectionStrategy`). |
-| **Training** | Shared training infrastructure: `TrainingSession` protocol, `TrainingDiscipline` protocol, `TrainingDisciplineRegistry` (see Section 8.7), `TrainingDisciplineConfig`, `TrainingDisciplineID` (six cases), `StatisticsKey`, observer protocols, session-specific settings snapshots, `Resettable`, `ProfileUpdating`. |
+| **Training** | Shared training infrastructure: `TrainingSession` protocol, `TrainingDiscipline` protocol, `TrainingDisciplineRegistry` (see Section 8.7), `TrainingDisciplineConfig`, `TrainingDisciplineID` (slug-wrapping struct with named factories per registered discipline), `StatisticsKey`, observer protocols, session-specific settings snapshots, `Resettable`, `ProfileUpdating`. |
 | **Data** | Sole accessor to SwiftData persistence. Stores every completed exercise across four record types. Handles CSV import/export with discipline-driven column ownership. |
 | **Profile Model** | In-memory perceptual profile rebuilt from training records on startup. Keyed by `StatisticsKey` — either `.pitch(TrainingDisciplineID)` or `.rhythm(TrainingDisciplineID, TempoRange, RhythmDirection)`. Uses Welford's algorithm for running statistics. Builder pattern for initialization. Progress timeline with EWMA smoothing and adaptive time bucketing. |
 | **Music** | Domain value types for the logical world: `MIDINote`, `Cents`, `Frequency`, `Interval`, `DetunedMIDINote`, `TuningSystem`, `NoteDuration`, `AmplitudeDB`, `MIDIVelocity`, `SoundSourceID`, `TempoBPM`, `TempoRange`, `RhythmOffset`, `RhythmDirection`, `SampleRate`, `PitchBendValue`, `StepPosition`. |
@@ -606,7 +606,7 @@ The `TrainingDiscipline` protocol + `TrainingDisciplineRegistry` is the extensib
 
 `TrainingDisciplineRegistry` lives in `Core/Training/Discipline/` and defines the registry mechanism only — Core does not know which disciplines exist. Concrete registration lives in `App/Training/DisciplineBootstrap.swift`, which `PeachApp.init()` passes into `TrainingDisciplineRegistry.bootstrap(disciplines:)` before any view code accesses `.shared`.
 
-The set of registered disciplines is build-configuration-dependent. The `Release` configuration registers four disciplines (pitch unison/interval, pitch-matching unison/interval). The `Research` configuration additionally registers two timing disciplines (`TimingOffsetDetectionDiscipline`, `ContinuousRhythmMatchingDiscipline`) gated behind the `PEACH_RESEARCH` Swift compilation flag set only on that configuration; the `Debug` configuration also registers them so development and tests see the full set.
+The set of registered disciplines is build-configuration-dependent. Configurations without the `PEACH_RESEARCH` Swift compilation flag (`Debug`, `Release`) register the pitch disciplines only (pitch unison/interval, pitch-matching unison/interval). Configurations with the flag (`Debug (Research)`, `Release (Research)`) additionally register `TimingOffsetDetectionDiscipline` and `ContinuousRhythmMatchingDiscipline`. The flag is referenced only in `App/Training/DisciplineBootstrap.swift`; everywhere else, the registered set is the source of truth.
 
 The timing disciplines require sub-20 ms input latency to be musically useful. iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter. Only wired USB MIDI is reliable enough — so the timing disciplines are released only to a small group of TestFlight participants via the `Research` configuration, not to the App Store.
 

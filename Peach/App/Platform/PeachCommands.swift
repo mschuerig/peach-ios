@@ -124,9 +124,14 @@ struct PeachCommands: Commands {
 
             Divider()
 
-            ForEach(TrainingDisciplineRegistry.shared.all, id: \.id) { discipline in
-                Button(discipline.config.displayName) {
-                    HelpPanelController.shared.show(content: .discipline(discipline.id))
+            let registry = TrainingDisciplineRegistry.shared
+            ForEach(registry.activeCategories, id: \.self) { category in
+                Section(category.localizedTitle) {
+                    ForEach(registry.disciplines(in: category), id: \.id) { discipline in
+                        Button(discipline.config.displayName) {
+                            HelpPanelController.shared.show(content: .discipline(discipline.id))
+                        }
+                    }
                 }
             }
         }

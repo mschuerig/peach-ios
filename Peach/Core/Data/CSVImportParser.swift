@@ -75,12 +75,22 @@ enum CSVImportParser {
             return ImportResult(records: [:], errors: [.unsupportedVersion(version: fromVersion)])
         }
 
-        let currentColumns = CSVExportSchema.allColumns
-        let headerRow = currentColumns.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
+        // Reconstruct using the union of registry-derived columns and any keys
+        // present in the migrated rows. This preserves columns the current
+        // build doesn't recognize, so per-row dispatch can decide per row.
+        let registryColumns = CSVExportSchema.allColumns
+        var reconstructedColumns = registryColumns
+        var seenColumns = Set(registryColumns)
+        for dict in migratedRows {
+            for key in dict.keys where seenColumns.insert(key).inserted {
+                reconstructedColumns.append(key)
+            }
+        }
 
+        let headerRow = reconstructedColumns.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
         var reconstructedLines = [headerRow]
         for dict in migratedRows {
-            let fields = currentColumns.map { CSVParserHelpers.escapeField(dict[$0] ?? "") }
+            let fields = reconstructedColumns.map { CSVParserHelpers.escapeField(dict[$0] ?? "") }
             reconstructedLines.append(fields.joined(separator: ","))
         }
 
@@ -99,21 +109,14 @@ enum CSVImportParser {
         }
 
         let headerColumns = CSVParserHelpers.parseCSVLine(headerLine)
-        let expectedColumns = CSVExportSchema.allColumns
 
-        if headerColumns.count != expectedColumns.count {
-            errors.append(.invalidHeader(
-                expected: "\(expectedColumns.count) columns",
-                actual: "\(headerColumns.count) columns"
-            ))
+        // Header is column-name keyed: any column ordering is accepted, extra
+        // columns are tolerated, and missing discipline columns surface as
+        // per-row errors at parse time. Only the common dispatch columns must
+        // be present for any row to be parseable.
+        for required in CSVExportSchema.commonColumns where !headerColumns.contains(required) {
+            errors.append(.invalidHeader(expected: required, actual: "(missing)"))
             return ImportResult(records: [:], errors: errors)
-        }
-
-        for (index, expectedColumn) in expectedColumns.enumerated() {
-            if headerColumns[index] != expectedColumn {
-                errors.append(.invalidHeader(expected: expectedColumn, actual: headerColumns[index]))
-                return ImportResult(records: [:], errors: errors)
-            }
         }
 
         let columnIndex = Dictionary(uniqueKeysWithValues: headerColumns.enumerated().map { ($1, $0) })
@@ -125,12 +128,12 @@ enum CSVImportParser {
             let rowNumber = index + 1
             let fields = CSVParserHelpers.parseCSVLine(line)
 
-            guard fields.count == expectedColumns.count else {
+            guard fields.count == headerColumns.count else {
                 errors.append(.invalidRowData(
                     row: rowNumber,
                     column: "row",
                     value: "\(fields.count) fields",
-                    reason: "expected \(expectedColumns.count) fields"
+                    reason: "expected \(headerColumns.count) fields"
                 ))
                 continue
             }
