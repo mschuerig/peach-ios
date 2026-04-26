@@ -637,9 +637,9 @@ development_status:
   76-5-bootstrap-registry-for-swiftui-previews: done
   epic-76-retrospective: optional
 
-  # Epic 77: Plugin-Style Discipline Contributions — Prerequisite for Central Activation
+  # Epic 77: Plugin-Style Discipline Contributions and Per-Discipline Compile-Time Activation
   # Source: 76.4 review deferred items (I1, P10, P14) plus user direction toward a
-  # plugin-style contribution model and a future central-activation feature.
-  # Work order: 77.1 first (contribution protocol), 77.2 later (central-activation UI).
+  # plugin-style contribution model. There is NO planned runtime central-activation UI.
+  # Activation is compile-time, single-file, per-discipline — a developer-ergonomics feature.
   epic-77: backlog
   77-1-plugin-style-discipline-ui-contributions: backlog
