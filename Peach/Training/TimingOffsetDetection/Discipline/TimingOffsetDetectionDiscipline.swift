@@ -27,6 +27,10 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = TimingOffsetDetectionRecord.self
 
+    var helpSections: [HelpSection] { HelpContent.timingOffsetDetection }
+
+    let navigationDestination: NavigationDestination = .timingOffsetDetection
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(TimingOffsetDetectionRecord.self) {
             let offset = TimingOffset(.milliseconds(record.offsetMs))

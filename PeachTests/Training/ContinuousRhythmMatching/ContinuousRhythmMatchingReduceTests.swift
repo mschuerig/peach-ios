@@ -1,6 +1,7 @@
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 /// Pure state transition tests for ContinuousRhythmMatchingSession.reduce.
 @Suite("ContinuousRhythmMatchingSession.reduce")
 struct ContinuousRhythmMatchingReduceTests {
@@ -161,3 +162,4 @@ struct ContinuousRhythmMatchingReduceTests {
         }
     }
 }
+#endif

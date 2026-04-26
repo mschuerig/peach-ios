@@ -79,6 +79,7 @@ struct PeachSchemaTests {
         #expect(fetched[0].userCentError == 2.5)
     }
 
+#if PEACH_RESEARCH
     @Test("round-trip: insert and fetch TimingOffsetDetectionRecord")
     func roundTripTimingOffsetDetection() async throws {
         let container = try makeContainer()
@@ -124,6 +125,7 @@ struct PeachSchemaTests {
         #expect(fetched[0].meanOffsetMsPosition2 == 13.0)
         #expect(fetched[0].meanOffsetMsPosition3 == 15.0)
     }
+#endif
 
     // MARK: - Helpers
 

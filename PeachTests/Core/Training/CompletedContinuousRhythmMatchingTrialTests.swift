@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("CompletedContinuousRhythmMatchingTrial")
 struct CompletedContinuousRhythmMatchingTrialTests {
 
@@ -116,3 +117,4 @@ struct CompletedContinuousRhythmMatchingTrialTests {
         #expect(trial.gapResults[1].offset.direction == .late)
     }
 }
+#endif

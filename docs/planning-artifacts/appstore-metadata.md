@@ -15,25 +15,23 @@ Length: 26
 
 ### Keywords (limit: 100)
 
-`pitch,intonation,interval,tuning,rhythm,midi,perception,solfege,singer,choir,violin,cello`
+`pitch,intonation,interval,tuning,midi,perception,solfege,singer,choir,violin,cello`
 
-Length: 89
+Length: 82
 
 ### Description (limit: 4,000)
 
 ```
-Peach is an ear-training app. It generates short exercises that ask you to compare or produce pitches and rhythmic offsets, records your responses, and adjusts the difficulty over time.
+Peach is an ear-training app. It generates short exercises that ask you to compare or produce pitches, records your responses, and adjusts the difficulty over time.
 
-The app contains six training disciplines:
+The training disciplines:
 
 • Compare Pitch — Two notes play; you decide which is higher.
 • Match Pitch — Adjust a slider until the note matches the reference.
 • Compare Intervals — An interval plays; you judge whether it is in tune.
 • Match Intervals — Adjust the second note to form the target interval.
-• Compare Timing — A note plays; you decide whether it arrives early or late.
-• Fill the Gap — Tap the missing beat at the right moment in a repeating pattern.
 
-For pitch tasks, the algorithm narrows the cent difference between notes as your responses become more accurate. For rhythm tasks, it narrows the millisecond offset and tracks early and late deviations separately at each tempo.
+The algorithm narrows the cent difference between notes as your responses become more accurate.
 
 The Profile screen shows per-discipline progress charts, summary statistics, and trend indicators. The home screen shows a small progress sparkline next to each discipline.
 
@@ -65,25 +63,23 @@ Length: 24
 
 ### Keywords (limit: 100)
 
-`tonhöhe,intervall,intonation,stimmung,rhythmus,midi,solfeggio,chor,gesang,geige,cello,bratsche`
+`tonhöhe,intervall,intonation,stimmung,midi,solfeggio,chor,gesang,geige,cello,bratsche`
 
-Length: 94
+Length: 85
 
 ### Description (limit: 4,000)
 
 ```
-Peach ist eine Gehörbildungs-App. Sie erzeugt kurze Übungen, in denen du Tonhöhen oder rhythmische Abweichungen vergleichst oder selbst triffst, speichert deine Antworten und passt die Schwierigkeit im Laufe der Zeit an.
+Peach ist eine Gehörbildungs-App. Sie erzeugt kurze Übungen, in denen du Tonhöhen vergleichst oder selbst triffst, speichert deine Antworten und passt die Schwierigkeit im Laufe der Zeit an.
 
-Die App enthält sechs Übungsdisziplinen:
+Die Übungsdisziplinen:
 
 • Tonhöhe vergleichen — Zwei Töne erklingen; du entscheidest, welcher höher ist.
 • Tonhöhe treffen — Stelle einen Schieberegler so ein, dass der Ton den Referenzton trifft.
 • Intervalle vergleichen — Ein Intervall erklingt; du beurteilst, ob es sauber ist.
 • Intervalle treffen — Stelle den zweiten Ton so ein, dass er das Zielintervall ergibt.
-• Timing vergleichen — Ein Ton erklingt; du entscheidest, ob er zu früh oder zu spät kommt.
-• Lücke füllen — Tippe den fehlenden Schlag in einem wiederkehrenden Muster im richtigen Moment.
 
-Bei Tonhöhenaufgaben verkleinert der Algorithmus den Cent-Unterschied zwischen den Tönen, sobald deine Antworten genauer werden. Bei Rhythmusaufgaben verkleinert er den Millisekundenversatz und behandelt zu frühe und zu späte Abweichungen pro Tempo getrennt.
+Der Algorithmus verkleinert den Cent-Unterschied zwischen den Tönen, sobald deine Antworten genauer werden.
 
 Auf dem Profil-Screen siehst du pro Disziplin Verlaufsdiagramme, Statistiken und Trendangaben. Auf dem Startbildschirm zeigt eine kleine Verlaufsgrafik den Fortschritt je Disziplin.
 
@@ -116,20 +112,18 @@ Peach is an ear-training app for musicians. "Ear training" is the practice of re
 
 How to use it
 
-Launch the app. The Start screen shows six training disciplines grouped into three sections (Pitch, Intervals, Rhythm). Tap a discipline to begin a session — a sequence of short trials, a few seconds each. After a few completed sessions, the Profile screen displays per-discipline progress charts and statistics. On a fresh install the Profile screen is empty by design; it requires data from completed sessions to draw anything.
+Launch the app. The Start screen shows training disciplines grouped into sections (Pitch, Intervals). Tap a discipline to begin a session — a sequence of short trials, a few seconds each. After a few completed sessions, the Profile screen displays per-discipline progress charts and statistics. On a fresh install the Profile screen is empty by design; it requires data from completed sessions to draw anything.
 
-The six training disciplines
+The training disciplines
 
 - Compare Pitch — Two notes play; tap "Higher" or "Lower" to indicate which one was higher.
 - Match Pitch — A reference note plays; drag a vertical slider until your note matches the reference, then release to submit.
 - Compare Intervals — Like Compare Pitch, but the two notes are separated by a musical interval (for example a fifth) instead of a small pitch difference.
 - Match Intervals — Like Match Pitch, but the target is a specific interval above or below the reference note.
-- Compare Timing — Four metronome clicks play; the third click may arrive slightly early or late. Tap "Early" or "Late" to indicate which.
-- Fill the Gap — A repeating 16th-note pattern plays with one beat missing. Tap the on-screen "Tap" button at the moment the missing beat should sound.
 
 Non-obvious interactions
 
-- MIDI input is optional and auto-detected. Every discipline works fully with on-screen controls. If a MIDI keyboard or controller is connected (USB, Bluetooth, or Network MIDI), the app accepts input from it: the pitch-bend wheel adjusts pitch in the Match disciplines, and any key triggers the tap in Fill the Gap. No setup or pairing flow inside the app.
+- MIDI input is optional and auto-detected. Every discipline works fully with on-screen controls. If a MIDI keyboard or controller is connected (USB, Bluetooth, or Network MIDI), the app accepts input from it: the pitch-bend wheel adjusts pitch in the Match disciplines. No setup or pairing flow inside the app.
 - Sound source and tuning system are selectable in Settings (piano, strings, sine wave, and others; Equal Temperament or Just Intonation).
 - CSV export and import are in Settings → Data, for backup or transfer between devices.
 - Reset in Settings permanently deletes all training data.

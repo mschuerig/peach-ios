@@ -3,6 +3,7 @@ import SwiftUI
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("RhythmTimingFeedbackIndicator")
 struct RhythmTimingFeedbackIndicatorTests {
 
@@ -164,3 +165,4 @@ struct RhythmTimingFeedbackIndicatorTests {
         #expect(label == String(localized: "Dead center"))
     }
 }
+#endif

@@ -3,6 +3,7 @@ import SwiftData
 import Foundation
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionRecord Tests")
 struct TimingOffsetDetectionRecordTests {
 
@@ -124,3 +125,4 @@ struct TimingOffsetDetectionRecordTests {
         #expect(abs(retrieved.timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 }
+#endif

@@ -186,6 +186,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(dict["interval"] == "P5")
     }
 
+#if PEACH_RESEARCH
     @Test("TimingOffsetDetection csvKeyValuePairs produces correct columns")
     func timingOffsetDetectionCSVKeyValuePairs() async {
         let discipline = TimingOffsetDetectionDiscipline()
@@ -214,6 +215,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(dict["meanOffsetMsPosition2"] == "")
         #expect(dict["meanOffsetMsPosition3"] == "")
     }
+#endif
 
     // MARK: - Task 1.3: parseCSVRow round-trip
 
@@ -316,6 +318,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(parsed.timestamp == original.timestamp)
     }
 
+#if PEACH_RESEARCH
     @Test("TimingOffsetDetection round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
     func timingOffsetDetectionRoundTrip() async throws {
         let discipline = TimingOffsetDetectionDiscipline()
@@ -352,6 +355,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(parsed.meanOffsetMsPosition3 == original.meanOffsetMsPosition3)
         #expect(parsed.timestamp == original.timestamp)
     }
+#endif
 
     // MARK: - Task 1.4: mergeImportRecords skips duplicates, imports non-duplicates
 
@@ -441,6 +445,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(mergeResult.skipped == 1)
     }
 
+#if PEACH_RESEARCH
     @Test("TimingOffsetDetection mergeImportRecords skips duplicates and imports new records")
     func timingOffsetDetectionMergeDuplicates() async throws {
         let store = try makeStore()
@@ -484,6 +489,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(mergeResult.imported == 1)
         #expect(mergeResult.skipped == 1)
     }
+#endif
 
     // MARK: - Task 1.5: fetchExportRecords filtering
 
@@ -538,6 +544,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(records.count == 2)
     }
 
+#if PEACH_RESEARCH
     @Test("TimingOffsetDetection fetchExportRecords returns all records")
     func timingOffsetDetectionFetchAll() async throws {
         let store = try makeStore()
@@ -561,4 +568,5 @@ struct TrainingDisciplineImplementationTests {
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)
     }
+#endif
 }

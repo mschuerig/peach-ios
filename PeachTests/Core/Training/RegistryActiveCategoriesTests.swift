@@ -5,16 +5,17 @@ import SwiftData
 
 /// Synthetic discipline fixture for exercising registry algorithms over
 /// arbitrary category mixes without depending on the real bootstrap list.
-private struct SyntheticDiscipline: TrainingDiscipline, Sendable {
+struct SyntheticDiscipline: TrainingDiscipline, Sendable {
     let id: TrainingDisciplineID
     let category: TrainingCategory
+    var isHero: Bool = false
 
     var config: TrainingDisciplineConfig {
         TrainingDisciplineConfig(
             displayName: id.slug,
             shortLabel: id.slug,
             systemImageName: "questionmark",
-            isHero: false,
+            isHero: isHero,
             helpDescription: "",
             unitLabel: "u",
             optimalBaseline: 0,
@@ -25,6 +26,10 @@ private struct SyntheticDiscipline: TrainingDiscipline, Sendable {
     var statisticsKeys: [StatisticsKey] { [.pitch(id)] }
 
     var recordType: any PersistentModel.Type { PitchDiscriminationRecord.self }
+
+    var helpSections: [HelpSection] { [] }
+
+    var navigationDestination: NavigationDestination { .profile }
 
     var csvTrainingType: String { id.slug }
 
@@ -134,4 +139,44 @@ struct RegistryActiveCategoriesTests {
         let registry = make(("only-rhythm", .rhythm))
         #expect(registry.activeCategories == [.rhythm])
     }
+}
+
+@Suite("TrainingDisciplineRegistry — hero cardinality")
+struct RegistryHeroCardinalityTests {
+
+    @Test("a single hero per category is accepted")
+    func singleHeroPerCategoryAccepted() async {
+        let registry = TrainingDisciplineRegistry(disciplines: [
+            SyntheticDiscipline(id: TrainingDisciplineID("p1"), category: .pitch, isHero: true),
+            SyntheticDiscipline(id: TrainingDisciplineID("p2"), category: .pitch, isHero: false),
+            SyntheticDiscipline(id: TrainingDisciplineID("i1"), category: .intervals, isHero: true),
+        ])
+        #expect(registry.all.count == 3)
+    }
+
+    @Test("zero heros in a category is accepted")
+    func zeroHeroesAccepted() async {
+        let registry = TrainingDisciplineRegistry(disciplines: [
+            SyntheticDiscipline(id: TrainingDisciplineID("p1"), category: .pitch, isHero: false),
+            SyntheticDiscipline(id: TrainingDisciplineID("p2"), category: .pitch, isHero: false),
+        ])
+        #expect(registry.all.count == 2)
+    }
+
+    // Exit tests run the closure in a subprocess and observe its exit status.
+    // Subprocess support is only available on macOS in our toolchain, so this
+    // violation-path test is gated to macOS.
+    #if os(macOS)
+    @Test("two heros in the same category trip a precondition")
+    func twoHeroesInSameCategoryTraps() async {
+        await #expect(processExitsWith: .failure) {
+            await MainActor.run {
+                _ = TrainingDisciplineRegistry(disciplines: [
+                    SyntheticDiscipline(id: TrainingDisciplineID("a"), category: .pitch, isHero: true),
+                    SyntheticDiscipline(id: TrainingDisciplineID("b"), category: .pitch, isHero: true),
+                ])
+            }
+        }
+    }
+    #endif
 }

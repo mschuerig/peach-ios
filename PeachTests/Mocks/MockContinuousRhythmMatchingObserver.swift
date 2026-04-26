@@ -1,6 +1,7 @@
 import Foundation
 @testable import Peach
 
+#if PEACH_RESEARCH
 final class MockContinuousRhythmMatchingObserver: ContinuousRhythmMatchingObserver {
     // MARK: - Test State Tracking
 
@@ -49,3 +50,4 @@ final class MockContinuousRhythmMatchingObserver: ContinuousRhythmMatchingObserv
         completionWaiters.removeAll()
     }
 }
+#endif

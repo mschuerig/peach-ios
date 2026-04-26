@@ -3,6 +3,7 @@ import SwiftData
 import Foundation
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("ContinuousRhythmMatchingRecord Tests")
 struct ContinuousRhythmMatchingRecordTests {
 
@@ -130,3 +131,4 @@ struct ContinuousRhythmMatchingRecordTests {
         #expect(abs(retrieved.timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 }
+#endif

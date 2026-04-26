@@ -1,6 +1,7 @@
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("ContinuousRhythmMatchingScreen")
 struct ContinuousRhythmMatchingScreenTests {
 
@@ -40,3 +41,4 @@ struct ContinuousRhythmMatchingScreenTests {
         #expect(ContinuousRhythmMatchingScreen.cycleProgressText(4) == "4/16")
     }
 }
+#endif

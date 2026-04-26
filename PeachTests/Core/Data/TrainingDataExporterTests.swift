@@ -235,6 +235,7 @@ struct TrainingDataExporterTests {
         #expect(lines.count == 5)
     }
 
+#if PEACH_RESEARCH
     // MARK: - Rhythm Record Tests
 
     @Test("export with rhythm offset detection records produces correct CSV")
@@ -422,4 +423,5 @@ struct TrainingDataExporterTests {
         #expect(discriminators.contains("pitchMatching"))
         #expect(discriminators.contains("rhythmOffsetDetection"))
     }
+#endif
 }

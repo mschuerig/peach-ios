@@ -1,6 +1,7 @@
 import Foundation
 @testable import Peach
 
+#if PEACH_RESEARCH
 final class MockNextTimingOffsetDetectionStrategy: NextTimingOffsetDetectionStrategy {
 
     // MARK: - Test State Tracking
@@ -48,3 +49,4 @@ final class MockNextTimingOffsetDetectionStrategy: NextTimingOffsetDetectionStra
         onNextTrialCalled = nil
     }
 }
+#endif

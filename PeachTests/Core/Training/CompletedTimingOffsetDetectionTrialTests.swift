@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("CompletedTimingOffsetDetectionTrial")
 struct CompletedTimingOffsetDetectionTrialTests {
 
@@ -62,3 +63,4 @@ struct CompletedTimingOffsetDetectionTrialTests {
         #expect(sendable is CompletedTimingOffsetDetectionTrial)
     }
 }
+#endif

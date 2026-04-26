@@ -2,6 +2,7 @@ import SwiftUI
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("ContinuousRhythmMatchingDotView")
 struct ContinuousRhythmMatchingDotViewTests {
 
@@ -76,3 +77,4 @@ struct ContinuousRhythmMatchingDotViewTests {
     }
 
 }
+#endif

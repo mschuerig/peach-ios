@@ -3,16 +3,19 @@
 # bin/test.sh — Run Peach tests and produce a clean summary.
 #
 # Usage:
-#   bin/test.sh                  # run all tests on iOS Simulator (default)
-#   bin/test.sh -p mac           # run tests on macOS
-#   bin/test.sh -p ipad          # run tests on iPad Simulator
-#   bin/test.sh -f               # show only failures (quiet on success)
-#   bin/test.sh -v               # verbose: show full xcodebuild output
-#   bin/test.sh -s SuiteName     # filter: only run tests matching SuiteName
-#   bin/test.sh -r               # raw: just run xcodebuild, no parsing
-#                                  (useful when this script's parsing breaks)
-#   bin/test.sh -S               # run ONLY stress tests (sets RUN_STRESS_TESTS=1)
-#   bin/test.sh -a               # run ALL tests including stress tests
+#   bin/test.sh                        # Peach (Debug) — 4 disciplines
+#   bin/test.sh --research             # Peach (Debug, Research) — 6 disciplines
+#   bin/test.sh --release              # Peach (Release) — 4 disciplines, optimised
+#   bin/test.sh --release --research   # Peach (Release, Research) — 6, optimised
+#   bin/test.sh -p mac                 # run tests on macOS
+#   bin/test.sh -p ipad                # run tests on iPad Simulator
+#   bin/test.sh -f                     # show only failures (quiet on success)
+#   bin/test.sh -v                     # verbose: show full xcodebuild output
+#   bin/test.sh -s SuiteName           # filter: only run tests matching SuiteName
+#   bin/test.sh -r                     # raw: just run xcodebuild, no parsing
+#                                        (useful when this script's parsing breaks)
+#   bin/test.sh -S                     # run ONLY stress tests (sets RUN_STRESS_TESTS=1)
+#   bin/test.sh -a                     # run ALL tests including stress tests
 #
 # Platforms:
 #   ios (default)  — iPhone 17 Pro Simulator
@@ -27,20 +30,31 @@
 
 set -euo pipefail
 
-# --- Configuration (edit these if your project changes) ---
-SCHEME="Peach"
+# --- Configuration ---
 PLATFORM="ios"
-SCHEME_PATH="Peach.xcodeproj/xcshareddata/xcschemes/Peach.xcscheme"
 
 # --- Parse arguments ---
+# Translate the long forms --research / --release into short forms before getopts.
+ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        --research) ARGS+=("-R") ;;
+        --release)  ARGS+=("-L") ;;
+        *) ARGS+=("$arg") ;;
+    esac
+done
+set -- "${ARGS[@]}"
+
 FAILURES_ONLY=false
 VERBOSE=false
 RAW=false
 FILTER=""
 STRESS_ONLY=false
 ALL_TESTS=false
+RESEARCH=false
+RELEASE=false
 
-while getopts "fvrs:Sap:" opt; do
+while getopts "fvrs:SaRLp:" opt; do
     case $opt in
         f) FAILURES_ONLY=true ;;
         v) VERBOSE=true ;;
@@ -48,10 +62,24 @@ while getopts "fvrs:Sap:" opt; do
         s) FILTER="$OPTARG" ;;
         S) STRESS_ONLY=true ;;
         a) ALL_TESTS=true ;;
+        R) RESEARCH=true ;;
+        L) RELEASE=true ;;
         p) PLATFORM="$OPTARG" ;;
-        *) echo "Usage: $0 [-f] [-v] [-r] [-s SuiteName] [-S] [-a] [-p ios|ipad|mac]" >&2; exit 1 ;;
+        *) echo "Usage: $0 [-f] [-v] [-r] [-s SuiteName] [-S] [-a] [--research] [--release] [-p ios|ipad|mac]" >&2; exit 1 ;;
     esac
 done
+
+# --- Pick scheme from the 2×2 matrix ---
+if $RELEASE && $RESEARCH; then
+    SCHEME="Peach (Release, Research)"
+elif $RELEASE; then
+    SCHEME="Peach (Release)"
+elif $RESEARCH; then
+    SCHEME="Peach (Debug, Research)"
+else
+    SCHEME="Peach (Debug)"
+fi
+SCHEME_PATH="Peach.xcodeproj/xcshareddata/xcschemes/${SCHEME}.xcscheme"
 
 # --- Resolve destination from platform ---
 case "$PLATFORM" in
@@ -123,7 +151,7 @@ if $VERBOSE; then
     "${CMD[@]}" 2>&1 | tee "$TMPFILE"
     XCODE_EXIT=${PIPESTATUS[0]}
 else
-    echo "Running tests..."
+    echo "Running $SCHEME tests..."
     "${CMD[@]}" > "$TMPFILE" 2>&1 || true
 fi
 

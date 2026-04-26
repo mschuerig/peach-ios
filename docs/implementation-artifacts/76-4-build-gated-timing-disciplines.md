@@ -1,6 +1,6 @@
 # Story 76.4: Build-gated timing disciplines via PEACH_RESEARCH flag
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -341,3 +341,4 @@ Option A is simpler and acceptable for this story. Document the choice in Comple
 
 - 2026-04-25: Story drafted as Story 76.4 of Epic 76. Renumbered from original 76.3 when a new 76.1 (relocate `TrainingDisciplineID` to App) was inserted. Status → ready-for-dev. Depends on Stories 76.1, 76.2, and 76.3.
 - 2026-04-26: Added AC 12 (move discipline-keyed dispatch onto the discipline), AC 13 (per-category hero cardinality at registry init), and AC 14 (cache `trainingDisciplinesDescription`) plus matching tasks. Added Dev Note documenting `TrainingCategory` extensibility as an accepted closed-enum design. Findings sourced from the 76.3 adversarial code review (deferred items D1–D3, D4).
+- 2026-04-26: Implementation completed. Scope expanded from 2 schemes to a full 2×2 matrix (`Peach (Debug)`, `Peach (Debug, Research)`, `Peach (Release)`, `Peach (Release, Research)`) backed by four configurations (`Debug`, `Debug (Research)`, `Release`, `Release (Research)`); `bin/build.sh` and `bin/test.sh` accept `--research` and `--release` to select among them, and a new `-t` flag drives `build-for-testing`. `DisciplineBootstrap` now gates the two timing disciplines on `PEACH_RESEARCH` alone (no `DEBUG` fall-through). `Release` configurations gained `ENABLE_TESTABILITY = YES` so the test action links against the optimised module. Test code that depended on the V3 19-column CSV layout was made schema-aware (`makeCSV` trims trailing fields to the active schema) and rhythm-only test files/blocks are now gated on `#if PEACH_RESEARCH`. All four configurations × iOS/macOS pass: Debug 1416/1410, Debug Research 1777/1771, Release 1416/1410, Release Research 1777/1771. Status → done.

@@ -1,6 +1,7 @@
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TimingDotView Tests")
 struct TimingDotViewTests {
 
@@ -54,3 +55,4 @@ struct TimingDotViewTests {
         #expect(TimingDotView.isTestedNote(index: 3) == false)
     }
 }
+#endif

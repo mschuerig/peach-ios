@@ -25,6 +25,7 @@ extension PerceptualProfile.Builder {
         }
     }
 
+#if PEACH_RESEARCH
     func feedTimingOffsetDetections(_ records: [TimingOffsetDetectionRecord]) {
         for record in records {
             let offset = TimingOffset(.milliseconds(record.offsetMs))
@@ -36,6 +37,7 @@ extension PerceptualProfile.Builder {
             )
         }
     }
+#endif
 }
 
 // MARK: - Test-Only Convenience Extensions
@@ -140,6 +142,7 @@ extension PerceptualProfile {
         statistics(for: .pitch(mode))?.ewma
     }
 
+#if PEACH_RESEARCH
     var trainedTempoRanges: [TempoRange] {
         var ranges = Set<TempoRange>()
         for range in TempoRange.defaultRanges {
@@ -171,4 +174,5 @@ extension PerceptualProfile {
         guard totalCount > 0 else { return nil }
         return weightedSum / Double(totalCount)
     }
+#endif
 }

@@ -108,7 +108,7 @@ struct StartScreen: View {
                 .foregroundStyle(.secondary)
 
             ForEach(TrainingDisciplineRegistry.shared.disciplines(in: category), id: \.id) { discipline in
-                NavigationLink(value: discipline.id.navigationDestination) {
+                NavigationLink(value: discipline.navigationDestination) {
                     trainingCard(for: discipline)
                 }
                 .buttonStyle(TrainingCardButtonStyle())

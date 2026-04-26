@@ -57,6 +57,7 @@ struct DuplicateKeyTests {
 
     // MARK: - RhythmDuplicateKey
 
+#if PEACH_RESEARCH
     @Test("rhythm duplicate keys with same fields are equal")
     func rhythmDuplicateKeysEquality() async {
         let date = Date(timeIntervalSinceReferenceDate: 1000)
@@ -74,4 +75,5 @@ struct DuplicateKeyTests {
 
         #expect(key1 != key2)
     }
+#endif
 }

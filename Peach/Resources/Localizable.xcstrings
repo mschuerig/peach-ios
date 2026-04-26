@@ -1105,6 +1105,7 @@
       }
     },
     "Fill the Gap Help" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2225,6 +2226,7 @@
       }
     },
     "Pitch Compare Help" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2246,6 +2248,7 @@
       }
     },
     "Pitch Match Help" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2521,6 +2524,7 @@
       }
     },
     "Rhythm Compare Help" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

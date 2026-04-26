@@ -64,7 +64,7 @@ struct PeachCommands: Commands {
                     ForEach(registry.disciplines(in: category), id: \.id) { discipline in
                         trainingButton(
                             discipline.config.displayName,
-                            destination: discipline.id.navigationDestination,
+                            destination: discipline.navigationDestination,
                             currentDestination: currentDestination
                         )
                     }
@@ -174,7 +174,7 @@ enum HelpSheetContent: Identifiable, Hashable {
         case .about:
             HelpContent.about
         case .discipline(let id):
-            id.helpSections
+            TrainingDisciplineRegistry.shared[id].helpSections
         }
     }
 }

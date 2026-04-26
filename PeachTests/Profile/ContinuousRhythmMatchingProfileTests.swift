@@ -2,6 +2,7 @@ import Testing
 import SwiftUI
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("Continuous Rhythm Matching Profile Tests")
 struct ContinuousRhythmMatchingProfileTests {
 
@@ -121,3 +122,4 @@ struct ContinuousRhythmMatchingProfileTests {
         #expect(fileName.hasSuffix(".png"))
     }
 }
+#endif

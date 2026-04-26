@@ -1,6 +1,11 @@
 import Foundation
 import os
 
+// Explicit @MainActor: workaround in the family of swiftlang/swift#88173
+// and #85663 (default-isolation + isolated deinit + -O fragility).
+// Without it, Research-config test builds fail with
+// "Deinit is marked isolated, but containing class is not isolated to an actor".
+@MainActor
 final class AudioSessionInterruptionMonitor {
 
     private let notificationCenter: NotificationCenter

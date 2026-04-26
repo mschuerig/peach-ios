@@ -19,13 +19,12 @@ struct CSVExportSchemaTests {
 
     // MARK: - Header Row
 
-    @Test("headerRow contains 19 columns in correct order")
-    func headerRowContains19Columns() async {
+    @Test("headerRow places pitch columns immediately after common columns")
+    func headerRowPitchColumns() async {
         let header = CSVExportSchema.headerRow
         let columns = header.split(separator: ",").map(String.init)
 
-        #expect(columns.count == 19)
-        // Common columns
+        // Common columns (always present)
         #expect(columns[0] == "trainingType")
         #expect(columns[1] == "timestamp")
         // Pitch discrimination columns
@@ -40,6 +39,15 @@ struct CSVExportSchemaTests {
         // Pitch matching adds
         #expect(columns[10] == "initialCentOffset")
         #expect(columns[11] == "userCentError")
+    }
+
+    #if PEACH_RESEARCH
+    @Test("headerRow appends rhythm columns when rhythm disciplines registered")
+    func headerRowRhythmColumns() async {
+        let header = CSVExportSchema.headerRow
+        let columns = header.split(separator: ",").map(String.init)
+
+        #expect(columns.count == 19)
         // Rhythm offset detection adds (isCorrect/tempoBPM already present)
         #expect(columns[12] == "tempoBPM")
         #expect(columns[13] == "offsetMs")
@@ -50,16 +58,25 @@ struct CSVExportSchemaTests {
         #expect(columns[17] == "meanOffsetMsPosition2")
         #expect(columns[18] == "meanOffsetMsPosition3")
     }
+    #endif
 
-    @Test("columnIndex maps all column names to correct indices")
-    func columnIndexMapsCorrectly() async {
+    @Test("columnIndex maps common and pitch columns to correct indices")
+    func columnIndexMapsPitchColumns() async {
         let index = CSVExportSchema.columnIndex
         #expect(index["trainingType"] == 0)
         #expect(index["timestamp"] == 1)
         #expect(index["referenceNote"] == 2)
+        #expect(index["userCentError"] == 11)
+    }
+
+    #if PEACH_RESEARCH
+    @Test("columnIndex covers full schema when rhythm disciplines registered")
+    func columnIndexMapsFullSchema() async {
+        let index = CSVExportSchema.columnIndex
         #expect(index["meanOffsetMsPosition3"] == 18)
         #expect(index.count == 19)
     }
+    #endif
 
     @Test("allColumns are assembled dynamically from registry")
     func allColumnsFromRegistry() async {

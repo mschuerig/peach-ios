@@ -25,6 +25,12 @@ protocol TrainingDiscipline: Sendable {
     /// The SwiftData model type this discipline persists.
     var recordType: any PersistentModel.Type { get }
 
+    /// Help sections shown when the user opens the help sheet for this discipline.
+    var helpSections: [HelpSection] { get }
+
+    /// Routing target for navigating to this discipline's training screen.
+    var navigationDestination: NavigationDestination { get }
+
     /// Feeds stored records into a profile builder for initial profile construction.
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws
 

@@ -26,10 +26,12 @@ struct TrainingDisciplineTests {
         #expect(TrainingDisciplineID.intervalPitchMatching.slug == "interval-matching")
     }
 
+#if PEACH_RESEARCH
     @Test("slug returns timing-offset-detection for timing offset detection")
     func slugTimingOffsetDetection() async {
         #expect(TrainingDisciplineID.timingOffsetDetection.slug == "timing-offset-detection")
     }
+#endif
 
     // MARK: - statisticsKeys
 
@@ -41,6 +43,7 @@ struct TrainingDisciplineTests {
         }
     }
 
+#if PEACH_RESEARCH
     @Test("rhythm modes return 12 keys (6 tempo ranges x 2 directions)")
     func rhythmModesReturn12Keys() async {
         for mode in [TrainingDisciplineID.timingOffsetDetection, .continuousRhythmMatching] {
@@ -53,4 +56,5 @@ struct TrainingDisciplineTests {
             }
         }
     }
+#endif
 }

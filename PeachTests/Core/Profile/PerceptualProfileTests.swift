@@ -299,6 +299,7 @@ struct PerceptualProfileTests {
         #expect(profile.comparisonMean(for: .prime) == 40.0) // (50+30)/2
     }
 
+#if PEACH_RESEARCH
     // MARK: - Rhythm Offset Detection via Observer
 
     @Test("TimingOffsetDetectionObserver routes to correct key")
@@ -507,4 +508,5 @@ struct PerceptualProfileTests {
             }
         }
     }
+#endif
 }

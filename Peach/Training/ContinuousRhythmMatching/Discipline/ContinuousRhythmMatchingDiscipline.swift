@@ -27,6 +27,10 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = ContinuousRhythmMatchingRecord.self
 
+    var helpSections: [HelpSection] { HelpContent.continuousRhythmMatching }
+
+    let navigationDestination: NavigationDestination = .continuousRhythmMatching
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self) {
             let offset = TimingOffset(.milliseconds(record.meanOffsetMs))

@@ -60,8 +60,17 @@ final class TrainingDisciplineRegistry: Sendable {
         self.byID = byID
 
         var seenCategories: Set<TrainingCategory> = []
+        var heroByCategory: [TrainingCategory: TrainingDisciplineID] = [:]
         for discipline in disciplines {
             seenCategories.insert(discipline.category)
+            if discipline.config.isHero {
+                if let existing = heroByCategory[discipline.category] {
+                    preconditionFailure(
+                        "Multiple hero disciplines registered for category \(discipline.category): \(existing) and \(discipline.id)"
+                    )
+                }
+                heroByCategory[discipline.category] = discipline.id
+            }
         }
         self.activeCategories = TrainingCategory.allCases.filter(seenCategories.contains)
 

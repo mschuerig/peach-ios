@@ -267,6 +267,7 @@ struct TrainingDataTransferServiceTests {
         #expect(message.contains("2"))
     }
 
+#if PEACH_RESEARCH
     // MARK: - Rhythm-Aware Import
 
     @Test("performImport with rhythm-only records returns correct summary")
@@ -286,4 +287,5 @@ struct TrainingDataTransferServiceTests {
         #expect(summary.totalImported == 1)
         #expect(try dataStore.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 1)
     }
+#endif
 }

@@ -8,7 +8,16 @@ struct CSVImportParserTests {
     // MARK: - Test Helpers
 
     private func makeCSV(_ rows: [String]) -> String {
-        ([CSVExportSchema.metadataLine, CSVExportSchema.headerRow] + rows).joined(separator: "\n")
+        // Test rows use the V3 19-column layout. When the active schema has fewer
+        // columns (e.g. PEACH_RESEARCH disabled drops rhythm columns), trim each
+        // row's trailing fields so it matches the dynamic header column count.
+        let schemaColumnCount = CSVExportSchema.allColumns.count
+        let alignedRows = rows.map { row -> String in
+            let fields = CSVParserHelpers.parseCSVLine(row)
+            let trimmed = Array(fields.prefix(schemaColumnCount))
+            return trimmed.map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
+        }
+        return ([CSVExportSchema.metadataLine, CSVExportSchema.headerRow] + alignedRows).joined(separator: "\n")
     }
 
     private func fixedDate() -> Date {
@@ -203,9 +212,10 @@ struct CSVImportParserTests {
 
     @Test("handles Windows-style CRLF line endings")
     func handlesCRLFLineEndings() async {
-        let meta = CSVExportSchema.metadataLine
-        let header = CSVExportSchema.headerRow
-        let csv = meta + "\r\n" + header + "\r\n" + validPitchDiscriminationRow + "\r\n" + validPitchMatchingRow
+        // Build via makeCSV (which trims rows to the active schema), then swap
+        // newlines for CRLF to test the parser's line-ending handling.
+        let csv = makeCSV([validPitchDiscriminationRow, validPitchMatchingRow])
+            .replacingOccurrences(of: "\n", with: "\r\n")
         let result = CSVImportParser.parse(csv)
         #expect(pitchDiscriminations(from: result).count == 1)
         #expect(pitchMatchings(from: result).count == 1)
@@ -498,6 +508,7 @@ struct CSVImportParserTests {
         #expect(matchings[0].userCentError == 3.2)
     }
 
+#if PEACH_RESEARCH
     @Test("v2 rhythm offset detection CSV imports successfully after migration")
     func v2TimingOffsetDetectionImports() async {
         let csv = makeV2CSV(["rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"])
@@ -520,6 +531,7 @@ struct CSVImportParserTests {
         #expect(continuous[0].tempoBPM == 120)
         #expect(continuous[0].meanOffsetMs == 5.3)
     }
+#endif
 
     @Test("v1 CSV imports successfully through v1→v2→v3 migration chain")
     func v1ImportsThroughFullChain() async {
@@ -561,6 +573,7 @@ struct CSVImportParserTests {
         }
     }
 
+#if PEACH_RESEARCH
     @Test("v2 CSV with mixed pitch and rhythm rows imports all types")
     func v2MixedTypesImport() async {
         let csv = makeV2CSV([
@@ -574,6 +587,7 @@ struct CSVImportParserTests {
         #expect(pitchMatchings(from: result).count == 1)
         #expect(rhythmOffsetDetections(from: result).count == 1)
     }
+#endif
 
     // MARK: - Version Dispatch
 
@@ -599,6 +613,7 @@ struct CSVImportParserTests {
         }
     }
 
+#if PEACH_RESEARCH
     // MARK: - Rhythm Types
 
     @Test("parses rhythm offset detection row")
@@ -634,9 +649,11 @@ struct CSVImportParserTests {
         #expect(rhythmOffsetDetections(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
+#endif
 
     // MARK: - Round-Trip
 
+#if PEACH_RESEARCH
     @Test("round-trip preserves all record types")
     func roundTrip() async {
         let pitchDiscRow = "pitchDiscrimination,2026-03-03T14:30:00Z,60,C4,64,E4,M3,equalTemperament,15.5,true,,,,,,,,,"
@@ -697,4 +714,5 @@ struct CSVImportParserTests {
         #expect(imported.meanOffsetMsPosition3 == 0.0)
         #expect(imported.timestamp == fixedDate())
     }
+#endif
 }

@@ -1,6 +1,7 @@
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TimingStatsView Tests")
 struct TimingStatsViewTests {
 
@@ -56,3 +57,4 @@ struct TimingStatsViewTests {
         #expect(label.contains("10%"))
     }
 }
+#endif

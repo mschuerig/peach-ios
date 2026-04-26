@@ -455,6 +455,7 @@ struct TrainingDataStoreTests {
         #expect(fetched[0].userCentError == 5.0)
     }
 
+#if PEACH_RESEARCH
     // MARK: - Rhythm Offset Detection CRUD Tests
 
     @Test("Save and retrieve a single rhythm offset detection record")
@@ -672,6 +673,7 @@ struct TrainingDataStoreTests {
         // Position 3 (.fourth): not used
         #expect(fetched[0].meanOffsetMsPosition3 == nil)
     }
+#endif
 
     // MARK: - Transaction Rollback
 

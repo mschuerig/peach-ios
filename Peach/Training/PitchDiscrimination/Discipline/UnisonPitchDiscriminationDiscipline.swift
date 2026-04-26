@@ -21,6 +21,10 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = PitchDiscriminationRecord.self
 
+    var helpSections: [HelpSection] { HelpContent.pitchDiscrimination }
+
+    let navigationDestination: NavigationDestination = .pitchDiscrimination(isIntervalMode: false)
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(PitchDiscriminationRecord.self) where record.interval == 0 {
             builder.addPoint(

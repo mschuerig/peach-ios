@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("SpectrogramData")
 struct SpectrogramDataTests {
 
@@ -476,3 +477,4 @@ struct SpectrogramDataTests {
         }
     }
 }
+#endif

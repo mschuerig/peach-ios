@@ -1,6 +1,7 @@
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionFeedbackView Tests")
 struct TimingOffsetDetectionFeedbackViewTests {
 
@@ -32,3 +33,4 @@ struct TimingOffsetDetectionFeedbackViewTests {
         #expect(correct != incorrect, "Correct and incorrect labels must be distinct for VoiceOver")
     }
 }
+#endif

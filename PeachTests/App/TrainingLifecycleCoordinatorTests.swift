@@ -3,6 +3,7 @@ import SwiftUI
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TrainingLifecycleCoordinator")
 struct TrainingLifecycleCoordinatorTests {
 
@@ -475,3 +476,4 @@ private final class MockTrainingSession: TrainingSession {
         onStopCalled?()
     }
 }
+#endif

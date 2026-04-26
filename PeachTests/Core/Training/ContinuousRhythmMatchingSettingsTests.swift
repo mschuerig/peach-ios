@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("ContinuousRhythmMatchingSettings")
 struct ContinuousRhythmMatchingSettingsTests {
 
@@ -54,3 +55,4 @@ struct ContinuousRhythmMatchingSettingsTests {
         #expect(sendable is ContinuousRhythmMatchingSettings)
     }
 }
+#endif

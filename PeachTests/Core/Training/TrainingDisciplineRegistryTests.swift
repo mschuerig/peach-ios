@@ -7,43 +7,74 @@ struct TrainingDisciplineRegistryTests {
 
     private let registry = TrainingDisciplineRegistry(disciplines: DisciplineBootstrap.allDisciplines)
 
-    // MARK: - All discipline IDs are registered
+    // MARK: - Registered-set invariants
+    //
+    // The registered set varies by build configuration (Release: 4 disciplines,
+    // Research: 6). Tests assert invariants that hold for any registered set,
+    // not exact counts.
 
-    @Test("all canonical TrainingDisciplineIDs are registered in the registry")
-    func allDisciplineIDsRegistered() async {
+    @Test("the four pitch disciplines are always registered")
+    func pitchDisciplinesAlwaysRegistered() async {
+        let registeredIDs = Set(registry.all.map(\.id))
+        let alwaysOn: Set<TrainingDisciplineID> = [
+            .unisonPitchDiscrimination,
+            .intervalPitchDiscrimination,
+            .unisonPitchMatching,
+            .intervalPitchMatching,
+        ]
+        #expect(alwaysOn.isSubset(of: registeredIDs))
+    }
+
+    @Test("registered IDs are a subset of the canonical catalog")
+    func registeredIDsAreSubsetOfCanonical() async {
         let registeredIDs = Set(registry.all.map(\.id))
         let allIDs = Set(TrainingDisciplineID.canonicalIDs)
-
-        #expect(registeredIDs == allIDs)
+        #expect(registeredIDs.isSubset(of: allIDs))
     }
 
-    @Test("registry contains exactly 6 disciplines")
-    func registryContainsSixDisciplines() async {
-        #expect(registry.all.count == 6)
+    @Test("no discipline ID is registered twice")
+    func noDuplicateIDs() async {
+        let ids = registry.all.map(\.id)
+        #expect(ids.count == Set(ids).count)
     }
 
-    // Iterates `canonicalIDs` (not `registry.all`) on purpose: this asserts the
-    // structural invariant that every declared canonical ID resolves through the
-    // subscript. Iterating `registry.all` would only exercise registered IDs and
-    // miss the case where a canonical ID exists but is not registered.
-    @Test("subscript returns correct discipline for each ID")
-    func subscriptReturnsCorrectDiscipline() async {
-        for disciplineID in TrainingDisciplineID.canonicalIDs {
-            let discipline = registry[disciplineID]
-            #expect(discipline.id == disciplineID)
+    @Test("every active category has at least one registered discipline")
+    func activeCategoryNonEmpty() async {
+        for category in registry.activeCategories {
+            #expect(!registry.disciplines(in: category).isEmpty,
+                    "Category \(category) is active but has no disciplines")
         }
     }
 
-    @Test("each discipline declares the expected category", arguments: [
-        (TrainingDisciplineID.unisonPitchDiscrimination, TrainingCategory.pitch),
-        (TrainingDisciplineID.intervalPitchDiscrimination, TrainingCategory.intervals),
-        (TrainingDisciplineID.unisonPitchMatching, TrainingCategory.pitch),
-        (TrainingDisciplineID.intervalPitchMatching, TrainingCategory.intervals),
-        (TrainingDisciplineID.timingOffsetDetection, TrainingCategory.rhythm),
-        (TrainingDisciplineID.continuousRhythmMatching, TrainingCategory.rhythm),
-    ])
-    func disciplineDeclaresExpectedCategory(_ id: TrainingDisciplineID, _ expected: TrainingCategory) async {
-        #expect(registry[id].category == expected)
+    @Test("every registered discipline's category is in TrainingCategory.allCases")
+    func registeredCategoryIsCanonical() async {
+        for discipline in registry.all {
+            #expect(TrainingCategory.allCases.contains(discipline.category),
+                    "Discipline \(discipline.id) declares unknown category \(discipline.category)")
+        }
+    }
+
+    @Test("subscript returns the discipline whose id matches the lookup")
+    func subscriptReturnsCorrectDiscipline() async {
+        for discipline in registry.all {
+            #expect(registry[discipline.id].id == discipline.id)
+        }
+    }
+
+    @Test("each registered discipline declares its expected category")
+    func disciplineDeclaresExpectedCategory() async {
+        let expected: [TrainingDisciplineID: TrainingCategory] = [
+            .unisonPitchDiscrimination: .pitch,
+            .intervalPitchDiscrimination: .intervals,
+            .unisonPitchMatching: .pitch,
+            .intervalPitchMatching: .intervals,
+            .timingOffsetDetection: .rhythm,
+            .continuousRhythmMatching: .rhythm,
+        ]
+        for discipline in registry.all {
+            #expect(discipline.category == expected[discipline.id],
+                    "Discipline \(discipline.id) declares category \(discipline.category) but expected \(String(describing: expected[discipline.id]))")
+        }
     }
 
     // MARK: - No CSV column name overlaps

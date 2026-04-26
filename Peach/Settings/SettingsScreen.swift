@@ -39,6 +39,8 @@ struct SettingsScreen: View {
     @Environment(\.settingsCoordinator) private var coordinator
 
     @State private var enabledGapPositions: Set<StepPosition> = []
+
+    private let activeCategories = TrainingDisciplineRegistry.shared.activeCategories
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
     @State private var showResetError = false
@@ -55,8 +57,10 @@ struct SettingsScreen: View {
             intervalSection
             soundSection
             difficultySection
-            rhythmSection
-            gapPositionsSection
+            if activeCategories.contains(.rhythm) {
+                rhythmSection
+                gapPositionsSection
+            }
             dataSection
         }
         .platformFormStyle()

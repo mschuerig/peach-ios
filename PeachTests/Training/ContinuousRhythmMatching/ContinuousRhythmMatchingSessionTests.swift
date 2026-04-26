@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("ContinuousRhythmMatchingSession")
 struct ContinuousRhythmMatchingSessionTests {
 
@@ -956,3 +957,4 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 }
+#endif

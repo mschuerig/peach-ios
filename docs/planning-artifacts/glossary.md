@@ -13,7 +13,7 @@
 
 | Term | Definition |
 |---|---|
-| **Training Discipline** | Replaces "Training Mode" — an ear training discipline such as pitch discrimination, pitch matching, rhythm offset detection, or rhythm matching. Each discipline has independent progress tracking via `TrainingDisciplineConfig`. User-facing names: "Hear & Compare" (threshold tasks) and "Tune & Match" (reproduction tasks), each with "Single Notes" (unison) and "Intervals" variants. |
+| **Training Discipline** | An ear training discipline such as pitch discrimination, pitch matching, rhythm offset detection, or rhythm matching. Each discipline has independent progress tracking via `TrainingDisciplineConfig`. The set is build-gated: Release/App Store ships four pitch disciplines (two unison, two interval); Debug and `PEACH_RESEARCH` builds additionally include the two rhythm disciplines. User-facing names: "Hear & Compare" (threshold tasks) and "Tune & Match" (reproduction tasks), each with "Single Notes" (unison) and "Intervals" variants. |
 | **Trial** | One atomic presentation-response cycle — a single exercise where the user hears stimuli and responds. The fundamental unit of training across all disciplines. Specific trial types: `PitchDiscriminationTrial`, `PitchMatchingTrial`, `RhythmOffsetDetectionTrial`. |
 | **Pitch Discrimination** | A threshold task: two sequential notes are played, and the user judges whether the second is higher or lower than the first. The atomic unit of pitch discrimination training. Contains a reference note, a target note (possibly at a different interval), and a cent offset applied to the target. Formerly "Pitch Comparison". |
 | **Completed Pitch Discrimination Trial** | A pitch discrimination trial bundled with the user's answer, tuning system, and timestamp. Contains the original trial, whether the user answered higher, whether the answer was correct, and the tuning system. Used for recording and analysis. Formerly "Completed Pitch Comparison". |
@@ -38,7 +38,7 @@
 | **Next Pitch Discrimination Strategy** | A protocol defining how the next pitch discrimination trial is selected based on the user's perceptual profile and training settings. Takes interval and tuning system parameters. Implementations determine which note to present and what cent offset to use. Formerly "Next Pitch Comparison Strategy". |
 | **Kazez Note Strategy** | The default implementation of `NextPitchDiscriminationStrategy`. A psychoacoustic staircase algorithm that narrows difficulty on correct answers and widens on incorrect, with asymmetric step sizes and square-root scaling. Named coefficients: `narrowingFactor` (0.95), `wideningFactor` (1.3), `convergenceExponent` (0.5). |
 | **Perceptual Profile** | The concrete `@Observable` class tracking both pitch discrimination and pitch matching abilities. Conforms to both `PitchDiscriminationProfile` and `PitchMatchingProfile` protocols. For pitch discrimination: tracks per-note statistics (mean detection threshold, standard deviation, sample count) for all 128 MIDI notes using Welford's algorithm. For matching: tracks overall matching accuracy (mean absolute error, standard deviation). In-memory only — rebuilt from records on startup, updated incrementally during training. |
-| **Training Discipline Config** | A `TrainingDisciplineConfig` struct holding per-discipline configuration for progress tracking: display name, unit label, optimal baseline, EWMA half-life, and session gap. Six instances correspond to the six training disciplines. Formerly "Training Mode Config". |
+| **Training Discipline Config** | A `TrainingDisciplineConfig` struct holding per-discipline configuration for progress tracking: display name, unit label, optimal baseline, EWMA half-life, and session gap. One instance per registered discipline. |
 
 ### Profile & Statistics
 
@@ -54,7 +54,7 @@
 | **Welford's Algorithm** | An incremental statistical method for calculating mean and variance without storing all historical data. Enables efficient real-time profile updates as each trial completes. Used internally by `PerceptualProfile` (operating on raw `Double` values, not `Cents` wrappers). |
 | **Cold Start** | The initial state for a new user or untrained note. All notes have zero sample count, no statistical data exists. Pitch discrimination trials default to 100-cent differences, and note selection prioritizes untrained notes as weak spots. |
 | **Confidence Band** | The visual representation of detection thresholds across the note range, overlaid on the piano keyboard in the perceptual profile visualization. |
-| **Progress Timeline** | A `ProgressTimeline` class that tracks training progress over time for all six training disciplines independently. Uses EWMA smoothing with adaptive time bucketing. Provides trend analysis (improving/stable/declining) and latest values for each discipline. Conforms to both `PitchDiscriminationObserver` and `PitchMatchingObserver`. |
+| **Progress Timeline** | A `ProgressTimeline` class that tracks training progress over time for every registered training discipline independently. Uses EWMA smoothing with adaptive time bucketing. Provides trend analysis (improving/stable/declining) and latest values for each discipline. Conforms to both `PitchDiscriminationObserver` and `PitchMatchingObserver`. |
 | **EWMA** | Exponentially Weighted Moving Average — a smoothing technique that gives more weight to recent data points. Used by `ProgressTimeline` to smooth raw training metrics over time, with a configurable half-life (default 7 days). |
 | **Time Bucket** | A grouping of training records by time proximity for progress tracking. Records within a `sessionGap` (30 minutes) of each other are grouped into the same bucket. Each bucket's metric is averaged, then EWMA-smoothed across buckets. `BucketSize` enum determines display resolution (hourly, daily, weekly, monthly). |
 
@@ -98,11 +98,11 @@
 
 | Term | Definition |
 |---|---|
-| **Start Screen** | The app's home screen. Shows six training discipline buttons (four pitch — two unison, two interval — and two rhythm), the Profile Preview (tappable), and buttons for Settings, Profile, and Info screens. |
+| **Start Screen** | The app's home screen. Shows one button per registered training discipline (four pitch in App Store builds; additionally two rhythm in Debug and `PEACH_RESEARCH` builds), the Profile Preview (tappable), and buttons for Settings, Profile, and Info screens. |
 | **Info Screen** | Displays app name, developer, copyright, and version number. |
 | **Pitch Discrimination Screen** | The active pitch discrimination training interface. Shows Higher/Lower buttons and the Pitch Discrimination Feedback Indicator, plus interval label when in interval mode. Navigating away stops training. Formerly "Pitch Comparison Screen". |
 | **Pitch Matching Screen** | The active pitch matching interface. Shows the Vertical Pitch Slider and Pitch Matching Feedback Indicator, plus interval label when in interval mode. Navigating away stops the session. |
-| **Profile Screen** | The full perceptual profile visualization. Shows the piano keyboard with confidence band overlay, summary statistics with trend, pitch matching accuracy, and progress timeline cards for all six training disciplines. |
+| **Profile Screen** | The full perceptual profile visualization. Shows the piano keyboard with confidence band overlay, summary statistics with trend, pitch matching accuracy, and one progress timeline card per registered training discipline. |
 | **Settings Screen** | Configuration interface. Contains note range, note duration, reference pitch, sound source selection, and interval selector. |
 
 ## Controls

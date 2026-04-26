@@ -3,12 +3,18 @@
 # bin/build.sh — Build Peach and produce a clean summary.
 #
 # Usage:
-#   bin/build.sh            # build for iOS Simulator (default)
-#   bin/build.sh -p mac     # build for macOS
-#   bin/build.sh -p ipad    # build for iPad Simulator
-#   bin/build.sh -v         # verbose: show full xcodebuild output
-#   bin/build.sh -w         # treat warnings as errors (exit 1 if any)
-#   bin/build.sh -r         # raw: just run xcodebuild, no parsing
+#   bin/build.sh                       # Peach (Debug) — 4 disciplines, no opt
+#   bin/build.sh --research            # Peach (Debug, Research) — 6 disciplines
+#   bin/build.sh --release             # Peach (Release) — 4 disciplines, optimised
+#   bin/build.sh --release --research  # Peach (Release, Research) — 6 disciplines, optimised
+#   bin/build.sh -p mac                # build for macOS
+#   bin/build.sh -p ipad               # build for iPad Simulator
+#   bin/build.sh -t                    # build for testing (compiles test target too)
+#   bin/build.sh -v                    # verbose: show full xcodebuild output
+#   bin/build.sh -w                    # treat warnings as errors (exit 1 if any)
+#   bin/build.sh -r                    # raw: just run xcodebuild, no parsing
+#   bin/build.sh -c                    # clean before building (useful when module
+#                                        caches go stale across configurations)
 #
 # Platforms:
 #   ios (default)  — iPhone 17 Pro Simulator
@@ -23,23 +29,53 @@
 set -euo pipefail
 
 # --- Configuration ---
-SCHEME="Peach"
 PLATFORM="ios"
 
 # --- Parse arguments ---
+# Translate the long forms --research / --release into short forms before getopts
+# so we don't need a separate parser.
+ARGS=()
+for arg in "$@"; do
+    case "$arg" in
+        --research) ARGS+=("-R") ;;
+        --release)  ARGS+=("-L") ;;
+        *) ARGS+=("$arg") ;;
+    esac
+done
+set -- "${ARGS[@]}"
+
 VERBOSE=false
 WARNINGS_AS_ERRORS=false
 RAW=false
+RESEARCH=false
+RELEASE=false
+CLEAN=false
+FOR_TESTING=false
 
-while getopts "vwrp:" opt; do
+while getopts "vwrRLctp:" opt; do
     case $opt in
         v) VERBOSE=true ;;
         w) WARNINGS_AS_ERRORS=true ;;
         r) RAW=true ;;
+        R) RESEARCH=true ;;
+        L) RELEASE=true ;;
+        c) CLEAN=true ;;
+        t) FOR_TESTING=true ;;
         p) PLATFORM="$OPTARG" ;;
-        *) echo "Usage: $0 [-v] [-w] [-r] [-p ios|ipad|mac]" >&2; exit 1 ;;
+        *) echo "Usage: $0 [-v] [-w] [-r] [-c] [-t] [--research] [--release] [-p ios|ipad|mac]" >&2; exit 1 ;;
     esac
 done
+
+# --- Pick scheme from the 2×2 matrix ---
+if $RELEASE && $RESEARCH; then
+    SCHEME="Peach (Release, Research)"
+elif $RELEASE; then
+    SCHEME="Peach (Release)"
+elif $RESEARCH; then
+    SCHEME="Peach (Debug, Research)"
+else
+    SCHEME="Peach (Debug)"
+fi
 
 # --- Resolve destination from platform ---
 case "$PLATFORM" in
@@ -50,7 +86,17 @@ case "$PLATFORM" in
 esac
 
 # --- Build command ---
-CMD=(xcodebuild build -scheme "$SCHEME" -destination "$DESTINATION")
+if $FOR_TESTING; then
+    ACTION="build-for-testing"
+else
+    ACTION="build"
+fi
+if $CLEAN; then
+    ACTION="clean $ACTION"
+fi
+# Word-split intentional so "clean build" becomes two arguments.
+# shellcheck disable=SC2206
+CMD=(xcodebuild $ACTION -scheme "$SCHEME" -destination "$DESTINATION")
 
 # --- Raw mode ---
 if $RAW; then
@@ -66,7 +112,7 @@ trap 'rm -f "$TMPFILE"' EXIT
 if $VERBOSE; then
     "${CMD[@]}" 2>&1 | tee "$TMPFILE"
 else
-    echo "Building..."
+    echo "Building $SCHEME..."
     "${CMD[@]}" > "$TMPFILE" 2>&1 || true
 fi
 

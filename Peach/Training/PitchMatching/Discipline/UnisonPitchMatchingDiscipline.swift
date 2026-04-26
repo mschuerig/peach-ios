@@ -21,6 +21,10 @@ struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = PitchMatchingRecord.self
 
+    var helpSections: [HelpSection] { HelpContent.pitchMatching }
+
+    let navigationDestination: NavigationDestination = .pitchMatching(isIntervalMode: false)
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(PitchMatchingRecord.self) where record.interval == 0 {
             builder.addPoint(

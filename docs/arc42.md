@@ -597,19 +597,25 @@ The composition root wires:
 
 The `TrainingDiscipline` protocol + `TrainingDisciplineRegistry` is the extensibility pattern for disciplines. Each discipline self-describes via a single struct conformance:
 
-- **Identity:** `TrainingDisciplineID` (stable string-backed enum with six cases)
+- **Identity:** `TrainingDisciplineID` (slug-wrapping struct in `Core/Training/`; named factories live in `App/Training/DisciplineIDs.swift`)
 - **Display:** `TrainingDisciplineConfig` (localized name, unit label, optimal baseline, statistics parameters)
+- **Category:** `TrainingCategory` (`pitch`, `intervals`, `rhythm`) for grouped display. Categories with no registered disciplines vanish from UI surfaces automatically.
 - **Statistics:** `statisticsKeys` — the set of `StatisticsKey` values this discipline contributes to the profile. Pitch disciplines return one key; rhythm disciplines return `tempoRange × direction` permutations.
 - **Persistence:** `recordType` (the SwiftData `@Model` type), `feedRecords(from:into:)` (populates profile at startup)
 - **CSV:** `csvTrainingType`, `csvColumns`, `csvKeyValuePairs(for:)`, `parseCSVRow(...)`, `fetchExportRecords(from:)`, `parsedRecords(from:)`, `mergeImportRecords(from:into:)`
 
-The `TrainingDisciplineRegistry` is a singleton initialized at app startup. It registers all six disciplines, aggregates CSV columns, builds the parser dispatch table, and provides the `feedAllRecords(from:into:)` entry point for profile construction.
+`TrainingDisciplineRegistry` lives in `Core/Training/Discipline/` and defines the registry mechanism only — Core does not know which disciplines exist. Concrete registration lives in `App/Training/DisciplineBootstrap.swift`, which `PeachApp.init()` passes into `TrainingDisciplineRegistry.bootstrap(disciplines:)` before any view code accesses `.shared`.
+
+The set of registered disciplines is build-configuration-dependent. The `Release` configuration registers four disciplines (pitch unison/interval, pitch-matching unison/interval). The `Research` configuration additionally registers two timing disciplines (`TimingOffsetDetectionDiscipline`, `ContinuousRhythmMatchingDiscipline`) gated behind the `PEACH_RESEARCH` Swift compilation flag set only on that configuration; the `Debug` configuration also registers them so development and tests see the full set.
+
+The timing disciplines require sub-20 ms input latency to be musically useful. iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter. Only wired USB MIDI is reliable enough — so the timing disciplines are released only to a small group of TestFlight participants via the `Research` configuration, not to the App Store.
 
 **Adding a new discipline** requires:
-1. Create the discipline struct conformance in its feature directory
-2. Register it in `TrainingDisciplineRegistry.init()`
-3. Create the SwiftData `@Model` record type
-4. Create the session, screen, observer protocol, and adapters
+1. Declare its `TrainingDisciplineID` named factory in `App/Training/DisciplineIDs.swift`
+2. Create the discipline struct conformance in its feature directory
+3. Add it to `App/Training/DisciplineBootstrap.swift`
+4. Create the SwiftData `@Model` record type
+5. Create the session, screen, observer protocol, and adapters
 
 No changes to existing disciplines, the profile, the data store, or the CSV infrastructure.
 
@@ -921,8 +927,8 @@ Quality
 | **Target Note** | The note the user judges against or tunes toward. May differ from reference by an interval and a cent offset. |
 | **TempoBPM** | Musical tempo in beats per minute. Derives sixteenth note and quarter note durations. |
 | **TempoRange** | A band of tempos (slow: 40-79, medium: 80-119, fast: 120-200 BPM) used to group rhythm statistics. |
-| **Training Discipline** | A self-describing unit of training functionality. Six disciplines exist: unison/interval pitch comparison, unison/interval pitch matching, rhythm offset detection, continuous rhythm matching. |
-| **TrainingDisciplineRegistry** | Singleton that registers all active disciplines and provides aggregate operations (profile feeding, CSV column aggregation, parser dispatch). |
+| **Training Discipline** | A self-describing unit of training functionality. Four to six disciplines exist depending on build configuration: unison/interval pitch comparison and pitch matching always, plus rhythm offset detection and continuous rhythm matching in the `Debug` and `Research` configurations. |
+| **TrainingDisciplineRegistry** | Singleton (in `Core/Training/Discipline/`) that holds the disciplines registered by `App/Training/DisciplineBootstrap.swift` at startup and provides aggregate operations (profile feeding, CSV column aggregation, parser dispatch). |
 | **Tuning System** | Defines how intervals map to cent offsets (and thus frequencies). Currently: 12-TET and just intonation. |
 | **Two-World Architecture** | Separation of logical types (MIDI notes, intervals, cents, tempos) from physical types (frequencies, sample offsets). Bridged by TuningSystem (pitch) and SampleRate × Duration (rhythm). |
 | **Welford's Algorithm** | Incremental method for computing running mean and variance without storing all historical data. |

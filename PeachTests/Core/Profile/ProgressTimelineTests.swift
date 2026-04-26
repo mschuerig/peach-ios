@@ -17,7 +17,9 @@ struct ProgressTimelineTests {
         let profile = PerceptualProfile { builder in
             builder.feedPitchDiscriminations(pitchDiscriminationRecords)
             builder.feedPitchMatchings(pitchMatchingRecords)
+#if PEACH_RESEARCH
             builder.feedTimingOffsetDetections(timingOffsetDetectionRecords)
+#endif
         }
         return ProgressTimeline(profile: profile)
     }
@@ -1002,6 +1004,7 @@ struct ProgressTimelineTests {
 
     // MARK: - Rhythm Mode Tests
 
+    #if PEACH_RESEARCH
     @Test("timingOffsetDetection state is active with timing offset detection data")
     func timingOffsetDetectionActive() async {
         let records = [
@@ -1049,4 +1052,5 @@ struct ProgressTimelineTests {
         #expect(timeline.recordCount(for: .timingOffsetDetection) == 2)
         #expect(timeline.currentEWMA(for: .timingOffsetDetection) != nil)
     }
+    #endif
 }

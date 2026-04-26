@@ -264,21 +264,26 @@ struct SettingsTests {
 
     // MARK: - Settings Help Sections
 
-    @Test("helpSections returns six sections matching settings groups")
+    @Test("helpSections returns one entry per visible settings group")
     func helpSectionsCount() async {
-        #expect(HelpContent.settings.count == 6)
+        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
+        // Training Range, Intervals, Sound, Difficulty, Data (+ Rhythm when registered).
+        let expectedCount = 5 + (rhythmActive ? 1 : 0)
+        #expect(HelpContent.settings.count == expectedCount)
     }
 
     @Test("help section titles match settings groups in order")
     func helpSectionTitlesMatchSettingsGroups() async {
-        let expectedTitles = [
+        var expectedTitles: [String] = [
             String(localized: "Training Range"),
             String(localized: "Intervals"),
             String(localized: "Sound"),
             String(localized: "Difficulty"),
-            String(localized: "Rhythm"),
-            String(localized: "Data"),
         ]
+        if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
+            expectedTitles.append(String(localized: "Rhythm"))
+        }
+        expectedTitles.append(String(localized: "Data"))
         let actualTitles = HelpContent.settings.map(\.title)
         #expect(actualTitles == expectedTitles)
     }

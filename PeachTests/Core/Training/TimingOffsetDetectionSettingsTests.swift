@@ -2,6 +2,7 @@ import Testing
 import Foundation
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionSettings Tests")
 struct TimingOffsetDetectionSettingsTests {
 
@@ -36,3 +37,4 @@ struct TimingOffsetDetectionSettingsTests {
         #expect(settings.minOffsetPercentage == 1.0)
     }
 }
+#endif

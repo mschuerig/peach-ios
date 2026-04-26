@@ -452,6 +452,7 @@ struct TrainingDataImporterTests {
         #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
     }
 
+#if PEACH_RESEARCH
     // MARK: - Rhythm Record Helpers
 
     private func makeTimingOffsetDetection(minutesOffset: Double = 0, tempoBPM: Int = 120) -> TimingOffsetDetectionRecord {
@@ -584,6 +585,7 @@ struct TrainingDataImporterTests {
         #expect(summary.totalSkipped == 1)
         #expect(summary.totalImported == 0)
     }
+#endif
 
     // MARK: - Millisecond Timestamp Precision
 

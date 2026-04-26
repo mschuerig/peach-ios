@@ -21,6 +21,10 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = PitchDiscriminationRecord.self
 
+    var helpSections: [HelpSection] { HelpContent.pitchDiscrimination }
+
+    let navigationDestination: NavigationDestination = .pitchDiscrimination(isIntervalMode: true)
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(PitchDiscriminationRecord.self) where record.interval != 0 {
             builder.addPoint(

@@ -77,32 +77,41 @@ enum HelpContent {
         ),
     ]
 
-    static let settings: [HelpSection] = [
-        HelpSection(
-            title: String(localized: "Training Range"),
-            body: String(localized: "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.")
-        ),
-        HelpSection(
-            title: String(localized: "Intervals"),
-            body: String(localized: "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.")
-        ),
-        HelpSection(
-            title: String(localized: "Sound"),
-            body: String(localized: "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.")
-        ),
-        HelpSection(
-            title: String(localized: "Difficulty"),
-            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
-        ),
-        HelpSection(
-            title: String(localized: "Rhythm"),
-            body: String(localized: "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
-        ),
-        HelpSection(
-            title: String(localized: "Data"),
-            body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
-        ),
-    ]
+    static let settings: [HelpSection] = {
+        var sections: [HelpSection] = [
+            HelpSection(
+                title: String(localized: "Training Range"),
+                body: String(localized: "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.")
+            ),
+            HelpSection(
+                title: String(localized: "Intervals"),
+                body: String(localized: "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.")
+            ),
+            HelpSection(
+                title: String(localized: "Sound"),
+                body: String(localized: "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.")
+            ),
+            HelpSection(
+                title: String(localized: "Difficulty"),
+                body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume. Applies to all disciplines.\n\n**Note Gap** adds a pause between the two notes in Compare training. At zero, notes play back-to-back.")
+            ),
+        ]
+        if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
+            sections.append(
+                HelpSection(
+                    title: String(localized: "Rhythm"),
+                    body: String(localized: "**Tempo** controls the speed for all rhythm disciplines, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat are used in Fill the Gap training. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
+                )
+            )
+        }
+        sections.append(
+            HelpSection(
+                title: String(localized: "Data"),
+                body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
+            )
+        )
+        return sections
+    }()
 
     static let profile: [HelpSection] = [
         HelpSection(
@@ -152,9 +161,10 @@ enum HelpContent {
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
 
     /// Markdown body for the "Training Disciplines" section of the Info screen.
-    /// Generated from the registry: emits one paragraph per registered discipline,
-    /// grouped by category.
-    static var trainingDisciplinesDescription: String {
+    /// Generated once from the registry at first access: one paragraph per
+    /// registered discipline, grouped by category. The registry's contents do
+    /// not change after bootstrap, so this is safe to cache.
+    static let trainingDisciplinesDescription: String = {
         let registry = TrainingDisciplineRegistry.shared
         var paragraphs: [String] = []
         for category in registry.activeCategories {
@@ -164,7 +174,7 @@ enum HelpContent {
             }
         }
         return paragraphs.joined(separator: "\n\n")
-    }
+    }()
 
     static let gettingStartedText = String(localized: "Just pick a discipline on the home screen and start practicing. Peach adapts to your skill level automatically.")
 

@@ -2,6 +2,7 @@ import Foundation
 import Testing
 @testable import Peach
 
+#if PEACH_RESEARCH
 @Suite("TimingDirection")
 struct TimingDirectionTests {
 
@@ -31,3 +32,4 @@ struct TimingDirectionTests {
         #expect(set.count == 2)
     }
 }
+#endif
