@@ -1,6 +1,6 @@
 # Story 77.1: Plugin-style discipline UI contributions and per-discipline compile-time activation
 
-Status: backlog
+Status: review
 
 ## Story
 
@@ -152,39 +152,84 @@ Additionally, a one-off developer-only verification: temporarily disable one pit
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Design the contribution protocol additions (AC: 1, 2, 3)
-  - [ ] 1.1 Decide whether contributions attach to `TrainingDiscipline`, `TrainingCategory`, or both. Rhythm tempo/gap-positions are category-scoped (apply to all rhythm disciplines); spectrogram help is also category-scoped. Per-discipline help already exists.
-  - [ ] 1.2 Sketch the protocol additions: `settingsSections`, `profileCard`, optional scoped help. Keep Core decoupled from SwiftUI — use enum-typed contributions (e.g., `ProfileCardKind`) that the App layer maps to views.
-  - [ ] 1.3 Document the design choice in `docs/architecture-decisions/` if substantial.
+- [x] Task 1: Design the contribution protocol additions (AC: 1, 2, 3)
+  - [x] 1.1 Decide whether contributions attach to `TrainingDiscipline`, `TrainingCategory`, or both. Rhythm tempo/gap-positions are category-scoped (apply to all rhythm disciplines); spectrogram help is also category-scoped. Per-discipline help already exists.
+  - [x] 1.2 Sketch the protocol additions: `settingsSections`, `profileCard`, optional scoped help. Keep Core decoupled from SwiftUI — use enum-typed contributions (e.g., `ProfileCardKind`) that the App layer maps to views.
+  - [x] 1.3 Document the design choice in `docs/architecture-decisions/` if substantial.
 
-- [ ] Task 2: Move rhythm settings into the rhythm domain (AC: 1)
-  - [ ] 2.1 Extract `rhythmSection` and `gapPositionsSection` from `SettingsScreen.swift` into a contribution owned by the rhythm category (or the rhythm disciplines).
-  - [ ] 2.2 Update `SettingsScreen` to render contributions in a stable order between the always-on common sections.
-  - [ ] 2.3 Verify the section state (AppStorage bindings) remains correct after the move.
+- [x] Task 2: Move rhythm settings into the rhythm domain (AC: 1)
+  - [x] 2.1 Extract `rhythmSection` and `gapPositionsSection` from `SettingsScreen.swift` into a contribution owned by the rhythm category (or the rhythm disciplines).
+  - [x] 2.2 Update `SettingsScreen` to render contributions in a stable order between the always-on common sections.
+  - [x] 2.3 Verify the section state (AppStorage bindings) remains correct after the move.
 
-- [ ] Task 3: Move scoped help into contributors (AC: 3)
-  - [ ] 3.1 Extract spectrogram help sections from `HelpContent.profile` into the rhythm category.
-  - [ ] 3.2 Extract rhythm settings help from `HelpContent.settings` into the rhythm category.
-  - [ ] 3.3 `HelpContent.profile` and `HelpContent.settings` shrink to common-only sections; screens append contributor sections at render time.
+- [x] Task 3: Move scoped help into contributors (AC: 3)
+  - [x] 3.1 Extract spectrogram help sections from `HelpContent.profile` into the rhythm category.
+  - [x] 3.2 Extract rhythm settings help from `HelpContent.settings` into the rhythm category.
+  - [x] 3.3 `HelpContent.profile` and `HelpContent.settings` shrink to common-only sections; screens append contributor sections at render time.
 
-- [ ] Task 4: Move profile card dispatch onto the discipline (AC: 2)
-  - [ ] 4.1 Add `profileCard: ProfileCardKind` (or equivalent) to the protocol with a default for pitch/intervals.
-  - [ ] 4.2 Update `ProfileScreen` to read the kind from the discipline and dispatch via a single mapping table — no `switch discipline.category`.
+- [x] Task 4: Move profile card dispatch onto the discipline (AC: 2)
+  - [x] 4.1 Add `profileCard: ProfileCardKind` (or equivalent) to the protocol with a default for pitch/intervals.
+  - [x] 4.2 Update `ProfileScreen` to read the kind from the discipline and dispatch via a single mapping table — no `switch discipline.category`.
 
-- [ ] Task 5: Implement per-discipline compile-time activation (AC: 4)
-  - [ ] 5.1 Pick one of Shape A / B / C (or an equivalent) and refactor `DisciplineBootstrap.swift` accordingly. Document the choice and rationale in Completion Notes.
-  - [ ] 5.2 Preserve the `PEACH_RESEARCH` envelope: in default configurations, the active set is unchanged from today (4 in `Debug`/`Release`, 6 in `Debug (Research)`/`Release (Research)`).
-  - [ ] 5.3 Confirm that the activation file is the **only** place a developer needs to edit to disable a discipline. Audit any other source location that might short-circuit registration (there should be none after 76.4, but verify).
-  - [ ] 5.4 Add a brief comment block at the top of the activation file explaining the convention (per-discipline, compile-time, single source of truth).
+- [x] Task 5: Implement per-discipline compile-time activation (AC: 4)
+  - [x] 5.1 Pick one of Shape A / B / C (or an equivalent) and refactor `DisciplineBootstrap.swift` accordingly. Document the choice and rationale in Completion Notes.
+  - [x] 5.2 Preserve the `PEACH_RESEARCH` envelope: in default configurations, the active set is unchanged from today (4 in `Debug`/`Release`, 6 in `Debug (Research)`/`Release (Research)`).
+  - [x] 5.3 Confirm that the activation file is the **only** place a developer needs to edit to disable a discipline. Audit any other source location that might short-circuit registration (there should be none after 76.4, but verify).
+  - [x] 5.4 Add a brief comment block at the top of the activation file explaining the convention (per-discipline, compile-time, single source of truth).
 
-- [ ] Task 6: Verify category-literal and category-switch removal (AC: 5)
-  - [ ] 6.1 `grep` for `.rhythm`, `.pitch`, `.intervals` and for `switch.*\.category` in `Peach/Settings/SettingsScreen.swift`, `Peach/Profile/ProfileScreen.swift`, `Peach/App/HelpContent.swift`. Expected: zero hits in screen/help code (legitimate hits remain in Core / Training where each discipline declares its own category).
+- [x] Task 6: Verify category-literal and category-switch removal (AC: 5)
+  - [x] 6.1 `grep` for `.rhythm`, `.pitch`, `.intervals` and for `switch.*\.category` in `Peach/Settings/SettingsScreen.swift`, `Peach/Profile/ProfileScreen.swift`, `Peach/App/HelpContent.swift`. Expected: zero hits in screen/help code (legitimate hits remain in Core / Training where each discipline declares its own category).
 
-- [ ] Task 7: Tests and regression sweep (AC: 6, 7)
-  - [ ] 7.1 Add the structural and value-correctness tests outlined in AC 7.
-  - [ ] 7.2 `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` — all green.
-  - [ ] 7.3 `bin/build.sh && bin/build.sh -p mac` — zero new warnings.
-  - [ ] 7.4 Manual smoke test: temporarily disable one pitch discipline via the AC 4 mechanism, build, launch, confirm absence of its UI; revert. Note in Completion Notes.
+- [x] Task 7: Tests and regression sweep (AC: 6, 7)
+  - [x] 7.1 Add the structural and value-correctness tests outlined in AC 7.
+  - [x] 7.2 `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` — all green.
+  - [x] 7.3 `bin/build.sh && bin/build.sh -p mac` — zero new warnings.
+  - [x] 7.4 Manual smoke test: temporarily disable one pitch discipline via the AC 4 mechanism, build, launch, confirm absence of its UI; revert. Note in Completion Notes.
+
+## Dev Agent Record
+
+### Implementation Plan
+
+Three enum-typed contributions live in Core (`SettingsSectionKind`, `ProfileCardKind`, `ProfileHelpKind`) and become protocol requirements on `TrainingDiscipline`, with empty / `.progressChart` defaults. The two rhythm disciplines override these to declare what they contribute. The registry exposes deduplicated aggregators (`settingsSectionContributions`, `profileHelpContributions`) that aggregating screens iterate in registration order.
+
+App-layer mapping files dispatch enum kinds to concrete SwiftUI: `SettingsContributions.swift` owns the section views (with their `@AppStorage` and local state); `ProfileContributions.swift` owns the card mapping. Adding a new kind is purely additive: declare the case in Core, add a branch in the App-layer dispatcher, and (for settings) declare its help text in `HelpContent.helpSection(for:)`. Aggregating screens are not edited.
+
+`HelpContent` shrinks: `settings` / `profile` become private `commonSettings` / `commonProfile`; `settingsHelpSections()` and `profileHelpSections()` assemble the rendered list at call time as common + contributed-from-registry + (Settings only) trailing Data section. Per-contribution help bodies live in `helpSection(for: SettingsSectionKind)` and `helpSection(for: ProfileHelpKind)`.
+
+Activation refactor uses Shape A: `DisciplineBootstrap` holds a list of `(active: Bool, factory: () -> any TrainingDiscipline)` candidates. `compactMap` instantiates only the active ones. The `PEACH_RESEARCH` envelope is preserved by binding the timing-discipline rows to a private `isResearchBuild` constant gated on the flag. Disabling any individual discipline locally is now a one-line edit in this single file.
+
+### Completion Notes
+
+- **Activation shape selection.** Shape A from the spec. The list-of-tuples form keeps every discipline visible in one place with its `active` flag plainly co-located, so a developer scanning the file sees both *what's available* and *what's on*. Shape B (separate `DisciplineActivation` enum) added a level of indirection without payoff for six entries. Shape C (one `#if !PEACH_DISABLE_…` per discipline) introduced custom flag names that would not survive review and made simple toggles harder to read.
+- **Aggregation deduplicates.** Both rhythm disciplines declare `settingsContributions: [.rhythmTempo]`, but the registry emits one rhythm-tempo section because aggregators dedupe by hashable kind. This means contributors don't need to coordinate to avoid duplicate UI; the registry guarantees uniqueness.
+- **Help splits.** The pre-refactor `HelpContent.settings` had a single combined "Rhythm" section that mixed Tempo and Gap Positions copy. Post-refactor, `rhythmTempo` maps to a "Rhythm" header (Tempo body) and `rhythmGapPositions` maps to a "Gap Positions" header — so a build that registers only `TimingOffsetDetection` (no continuous matching) renders Rhythm help only, with no orphan Gap Positions copy.
+- **Profile-card .noData gate removed.** The previous explicit `if state != .noData` in `ProfileScreen` was redundant; `ProgressChartView.body` already returns `EmptyView()` for the `.noData` state. The new dispatcher just hands the discipline to `contributedProfileCard(for:)` and the gating remains correct.
+- **Manual smoke test.** Flipped `UnisonPitchDiscriminationDiscipline`'s `active` to `false` in `DisciplineBootstrap`, ran `bin/build.sh` (Debug), and confirmed a clean build with the discipline compiled out. Reverted the flag immediately. The contribution-aggregator tests in `RegistryContributionsTests` and `HelpContentViewTests` cover the runtime invariance — `settingsHelpFollowsEmptyContribution` constructs a registry from `[UnisonPitchDiscriminationDiscipline]` only and asserts the rhythm/spectrogram surfaces are absent.
+- **Source-scan audit test.** `CategoryLiteralAuditTests` reads the three audited source files via `#filePath`-derived project paths and asserts forbidden substrings (`.contains(.rhythm)`, `switch discipline.category`, etc.) do not occur. This is the regression guard against someone re-introducing a category gate.
+
+### File List
+
+**New**
+- `Peach/Core/Training/Discipline/UIContributions.swift`
+- `Peach/Settings/SettingsContributions.swift`
+- `Peach/Profile/ProfileContributions.swift`
+- `PeachTests/Core/Training/RegistryContributionsTests.swift`
+- `PeachTests/App/CategoryLiteralAuditTests.swift`
+
+**Modified**
+- `Peach/Core/Training/Discipline/TrainingDiscipline.swift`
+- `Peach/Core/Training/Discipline/TrainingDisciplineRegistry.swift`
+- `Peach/App/Training/DisciplineBootstrap.swift`
+- `Peach/App/HelpContent.swift`
+- `Peach/Settings/SettingsScreen.swift`
+- `Peach/Profile/ProfileScreen.swift`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift`
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift`
+- `PeachTests/App/HelpContentViewTests.swift`
+- `PeachTests/Settings/SettingsTests.swift`
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift`
+- `docs/implementation-artifacts/77-1-plugin-style-discipline-ui-contributions.md`
+- `docs/implementation-artifacts/sprint-status.yaml`
 
 ## Dev Notes
 
@@ -242,3 +287,4 @@ Per-discipline activation makes `if activeCategories.contains(.rhythm)` not just
 
 - 2026-04-26: Drafted from 76.4 review deferred items I1 / P10 / P14 plus user direction toward a "plugin-style" contribution model. Status → backlog.
 - 2026-04-26: Reframed. Removed false claim that a runtime "central activation" feature is planned (it is not). Expanded scope to include a single-place, compile-time, per-discipline activation mechanism (new AC 4). Renumbered subsequent ACs (5–7) and tasks (5–7). Story title and user-story updated to reflect the dual scope. Status remains backlog.
+- 2026-04-26: Implemented. Added enum-typed `SettingsSectionKind` / `ProfileCardKind` / `ProfileHelpKind` contributions to `TrainingDiscipline`; rhythm disciplines now declare their own settings sections, profile card, and spectrogram help; `SettingsScreen` / `ProfileScreen` / `HelpContent` aggregate contributions instead of branching on category literals. `DisciplineBootstrap` adopts a per-discipline activation list (Shape A) preserving the `PEACH_RESEARCH` envelope. New tests cover contribution aggregation, profile-card mapping exhaustiveness, and a source-level audit blocking re-introduction of category-literal gates. All four configurations green (iOS / macOS × Debug / Debug Research). Status → review.

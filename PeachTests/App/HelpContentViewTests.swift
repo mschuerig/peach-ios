@@ -84,23 +84,56 @@ struct HelpContentViewTests {
         #expect(section.attributedBody != nil)
     }
 
-    // MARK: - Active-Category Shape Invariants
+    // MARK: - Contribution-driven assembly
 
-    @Test("settings has rhythm section iff registry has rhythm category")
-    func settingsRhythmSectionMatchesActiveCategories() async {
-        let titles = HelpContent.settings.map(\.title)
-        let hasRhythmSection = titles.contains(String(localized: "Rhythm"))
-        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
-        #expect(hasRhythmSection == rhythmActive)
+    @Test("settingsHelpSections contains a Rhythm section iff a discipline contributes rhythmTempo")
+    func settingsRhythmHelpFollowsContribution() async {
+        let titles = HelpContent.settingsHelpSections().map(\.title)
+        let hasRhythmHelp = titles.contains(String(localized: "Rhythm"))
+        let contributed = TrainingDisciplineRegistry.shared
+            .settingsSectionContributions
+            .contains(.rhythmTempo)
+        #expect(hasRhythmHelp == contributed)
     }
 
-    @Test("profile has spectrogram sections iff registry has rhythm category")
-    func profileSpectrogramSectionsMatchActiveCategories() async {
-        let titles = HelpContent.profile.map(\.title)
+    @Test("profileHelpSections contains spectrogram help iff a discipline contributes it")
+    func profileSpectrogramHelpFollowsContribution() async {
+        let titles = HelpContent.profileHelpSections().map(\.title)
         let spectrogramTitle = String(localized: "Rhythm Spectrogram",
                                        comment: "Spectrogram overview help title")
-        let hasSpectrogramSection = titles.contains(spectrogramTitle)
-        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
-        #expect(hasSpectrogramSection == rhythmActive)
+        let hasSpectrogramHelp = titles.contains(spectrogramTitle)
+        let contributed = TrainingDisciplineRegistry.shared
+            .profileHelpContributions
+            .contains(.rhythmSpectrogramOverview)
+        #expect(hasSpectrogramHelp == contributed)
+    }
+
+    @Test("settingsHelpSections always begins with the common sections and ends with Data")
+    func settingsHelpHasCommonAndDataAnchors() async {
+        let sections = HelpContent.settingsHelpSections()
+        let titles = sections.map(\.title)
+        #expect(titles.first == String(localized: "Training Range"))
+        #expect(titles.last == String(localized: "Data"))
+    }
+
+    @Test("settingsHelpSections drops contributed sections when no discipline contributes")
+    func settingsHelpFollowsEmptyContribution() {
+        let pitchOnly: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
+        TrainingDisciplineRegistry._withSharedReplacedForTesting(disciplines: pitchOnly) {
+            let titles = HelpContent.settingsHelpSections().map(\.title)
+            #expect(!titles.contains(String(localized: "Rhythm")))
+            #expect(!titles.contains(String(localized: "Gap Positions")))
+        }
+    }
+
+    @Test("profileHelpSections drops spectrogram help when no discipline contributes")
+    func profileHelpFollowsEmptyContribution() {
+        let pitchOnly: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
+        TrainingDisciplineRegistry._withSharedReplacedForTesting(disciplines: pitchOnly) {
+            let titles = HelpContent.profileHelpSections().map(\.title)
+            let spectrogramTitle = String(localized: "Rhythm Spectrogram",
+                                          comment: "Spectrogram overview help title")
+            #expect(!titles.contains(spectrogramTitle))
+        }
     }
 }

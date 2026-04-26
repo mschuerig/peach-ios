@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-26 # Story 76.5 → review
+# last_updated: 2026-04-26 # Story 77.1 → review
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -641,5 +641,5 @@ development_status:
   # Source: 76.4 review deferred items (I1, P10, P14) plus user direction toward a
   # plugin-style contribution model. There is NO planned runtime central-activation UI.
   # Activation is compile-time, single-file, per-discipline — a developer-ergonomics feature.
-  epic-77: backlog
-  77-1-plugin-style-discipline-ui-contributions: backlog
+  epic-77: in-progress
+  77-1-plugin-style-discipline-ui-contributions: review

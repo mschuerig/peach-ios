@@ -31,6 +31,15 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let navigationDestination: NavigationDestination = .continuousRhythmMatching
 
+    let profileCard: ProfileCardKind = .rhythmSpectrogram
+
+    let settingsContributions: [SettingsSectionKind] = [.rhythmTempo, .rhythmGapPositions]
+
+    let profileHelpContributions: [ProfileHelpKind] = [
+        .rhythmSpectrogramOverview,
+        .rhythmSpectrogramColors,
+    ]
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self) {
             let offset = TimingOffset(.milliseconds(record.meanOffsetMs))

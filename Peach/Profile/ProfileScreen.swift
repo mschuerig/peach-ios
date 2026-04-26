@@ -19,15 +19,7 @@ struct ProfileScreen: View {
                     TipView(currentTip)
                 }
                 ForEach(TrainingDisciplineRegistry.shared.all, id: \.id) { discipline in
-                    switch discipline.category {
-                    case .rhythm:
-                        RhythmProfileCardView(mode: discipline.id)
-                    case .pitch, .intervals:
-                        let state = progressTimeline.state(for: discipline.id)
-                        if state != .noData {
-                            ProgressChartView(mode: discipline.id)
-                        }
-                    }
+                    contributedProfileCard(for: discipline)
                 }
             }
             .padding()
@@ -50,7 +42,7 @@ struct ProfileScreen: View {
         .platformHelp(
             isPresented: $showHelpSheet,
             title: String(localized: "Profile Help"),
-            sections: HelpContent.profile
+            sections: HelpContent.profileHelpSections()
         )
     }
 
@@ -68,6 +60,7 @@ struct ProfileScreen: View {
     }
 }
 
+#if DEBUG
 #Preview("With Data") {
     PreviewSupport.bootstrapRegistryIfNeeded()
     return NavigationStack {
@@ -94,3 +87,4 @@ struct ProfileScreen: View {
         ProfileScreen()
     }
 }
+#endif

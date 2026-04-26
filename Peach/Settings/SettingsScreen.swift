@@ -29,16 +29,8 @@ struct SettingsScreen: View {
     @AppStorage(SettingsKeys.noteGap)
     private var noteGap: Double = SettingsKeys.defaultNoteGapSeconds
 
-    @AppStorage(SettingsKeys.tempoBPM)
-    private var tempoBPM: Int = SettingsKeys.defaultTempoBPM.value
-
-    @AppStorage(SettingsKeys.enabledGapPositions)
-    private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
-
     @Environment(\.soundSourceProvider) private var soundSourceProvider
     @Environment(\.settingsCoordinator) private var coordinator
-
-    @State private var enabledGapPositions: Set<StepPosition> = []
 
     @State private var showHelpSheet = false
     @State private var showResetConfirmation = false
@@ -56,9 +48,8 @@ struct SettingsScreen: View {
             intervalSection
             soundSection
             difficultySection
-            if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
-                rhythmSection
-                gapPositionsSection
+            ForEach(TrainingDisciplineRegistry.shared.settingsSectionContributions, id: \.self) { kind in
+                contributedSettingsSection(for: kind)
             }
             dataSection
         }
@@ -69,14 +60,10 @@ struct SettingsScreen: View {
         .platformHelp(
             isPresented: $showHelpSheet,
             title: String(localized: "Settings Help"),
-            sections: HelpContent.settings
+            sections: HelpContent.settingsHelpSections()
         )
         .onAppear {
-            enabledGapPositions = GapPositionEncoding.decodeWithDefault(enabledGapPositionsEncoded)
             coordinator.refreshExport()
-        }
-        .onChange(of: enabledGapPositions) {
-            enabledGapPositionsEncoded = GapPositionEncoding.encode(enabledGapPositions)
         }
         .platformFileImporter(
             isPresented: $showFileImporter,
@@ -198,30 +185,6 @@ struct SettingsScreen: View {
                 step: 0.1
             )
             .accessibilityValue(Text("\(noteGap, specifier: "%.1f") seconds"))
-        }
-    }
-
-    private var gapPositionsSection: some View {
-        Section {
-            GridToggleRow(selection: $enabledGapPositions) { position in
-                "\(position.rawValue + 1)"
-            }
-        } header: {
-            Text(String(localized: "Gap Positions"))
-        } footer: {
-            Text(String(localized: "Select which gap positions to practice. At least one must remain active."))
-        }
-    }
-
-    private var rhythmSection: some View {
-        Section(String(localized: "Rhythm")) {
-            Stepper(
-                "Tempo: \(tempoBPM) BPM",
-                value: $tempoBPM,
-                in: 40...200,
-                step: 1
-            )
-            .accessibilityValue(Text("\(tempoBPM) beats per minute"))
         }
     }
 

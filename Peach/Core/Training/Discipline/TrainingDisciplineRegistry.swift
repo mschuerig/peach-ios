@@ -107,6 +107,8 @@ final class TrainingDisciplineRegistry: Sendable {
         self.csvParsers = parsers
         self.csvDisciplineColumns = columns
         self.recordTypes = distinctRecordTypes
+        self.settingsSectionContributions = Self.deduplicate(disciplines.flatMap(\.settingsContributions))
+        self.profileHelpContributions = Self.deduplicate(disciplines.flatMap(\.profileHelpContributions))
     }
 
     /// Disciplines registered under the given category, preserving registration order.
@@ -137,4 +139,25 @@ final class TrainingDisciplineRegistry: Sendable {
 
     /// All unique discipline-specific CSV columns, in registration order (deduplicated).
     let csvDisciplineColumns: [String]
+
+    // MARK: - Aggregated UI Contributions
+
+    /// Settings-section contributions of every registered discipline, deduplicated
+    /// while preserving registration order. The screen renders one section per
+    /// kind regardless of how many disciplines declare it (e.g. rhythm tempo
+    /// is declared by both rhythm disciplines but appears once).
+    let settingsSectionContributions: [SettingsSectionKind]
+
+    /// Profile help contributions of every registered discipline, deduplicated
+    /// while preserving registration order.
+    let profileHelpContributions: [ProfileHelpKind]
+
+    private static func deduplicate<T: Hashable>(_ items: [T]) -> [T] {
+        var seen = Set<T>()
+        var result: [T] = []
+        for item in items where seen.insert(item).inserted {
+            result.append(item)
+        }
+        return result
+    }
 }

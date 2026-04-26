@@ -270,16 +270,18 @@ struct SettingsTests {
 
     @Test("each settings help section has a unique title")
     func helpSectionsUnique() async {
-        let titles = HelpContent.settings.map(\.title)
+        let titles = HelpContent.settingsHelpSections().map(\.title)
         #expect(titles.count == Set(titles).count, "Duplicate titles in settings help")
     }
 
-    @Test("the rhythm settings help section appears iff the rhythm category is registered")
-    func rhythmHelpSectionMatchesRegistry() async {
-        let rhythmActive = TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm)
+    @Test("the rhythm settings help section appears iff a discipline contributes rhythmTempo")
+    func rhythmHelpSectionMatchesContribution() async {
+        let contributed = TrainingDisciplineRegistry.shared
+            .settingsSectionContributions
+            .contains(.rhythmTempo)
         let rhythmTitle = String(localized: "Rhythm")
-        let hasRhythmSection = HelpContent.settings.contains { $0.title == rhythmTitle }
-        #expect(hasRhythmSection == rhythmActive)
+        let hasRhythmSection = HelpContent.settingsHelpSections().contains { $0.title == rhythmTitle }
+        #expect(hasRhythmSection == contributed)
     }
 
     @Test("settings help sections always include the registry-independent groups",
@@ -291,13 +293,13 @@ struct SettingsTests {
               String(localized: "Data"),
           ])
     func alwaysOnSettingsSectionPresent(_ title: String) async {
-        let titles = Set(HelpContent.settings.map(\.title))
+        let titles = Set(HelpContent.settingsHelpSections().map(\.title))
         #expect(titles.contains(title), "Always-on section '\(title)' missing from settings help")
     }
 
     @Test("each help section has a non-empty body")
     func helpSectionBodiesNonEmpty() async {
-        for section in HelpContent.settings {
+        for section in HelpContent.settingsHelpSections() {
             #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
         }
     }
@@ -305,7 +307,7 @@ struct SettingsTests {
     @Test("concert pitch help contains practical 440 Hz context")
     func concertPitchHelpContainsPracticalContext() async {
         let soundTitle = String(localized: "Sound")
-        let soundSection = HelpContent.settings.first { $0.title == soundTitle }
+        let soundSection = HelpContent.settingsHelpSections().first { $0.title == soundTitle }
         #expect(soundSection != nil)
         #expect(soundSection?.body.contains("440") == true)
     }
@@ -313,7 +315,7 @@ struct SettingsTests {
     @Test("tuning system help contains Equal Temperament reference")
     func tuningSystemHelpContainsKeyTerm() async {
         let soundTitle = String(localized: "Sound")
-        let soundSection = HelpContent.settings.first { $0.title == soundTitle }
+        let soundSection = HelpContent.settingsHelpSections().first { $0.title == soundTitle }
         #expect(soundSection != nil)
         let bodyLower = soundSection?.body.lowercased() ?? ""
         #expect(bodyLower.contains("equal temperament") || bodyLower.contains("gleichstufig"))

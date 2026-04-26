@@ -31,6 +31,15 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
 
     let navigationDestination: NavigationDestination = .timingOffsetDetection
 
+    let profileCard: ProfileCardKind = .rhythmSpectrogram
+
+    let settingsContributions: [SettingsSectionKind] = [.rhythmTempo]
+
+    let profileHelpContributions: [ProfileHelpKind] = [
+        .rhythmSpectrogramOverview,
+        .rhythmSpectrogramColors,
+    ]
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(TimingOffsetDetectionRecord.self) {
             let offset = TimingOffset(.milliseconds(record.offsetMs))

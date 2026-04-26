@@ -9,6 +9,9 @@ struct SyntheticDiscipline: TrainingDiscipline, Sendable {
     let id: TrainingDisciplineID
     let category: TrainingCategory
     var isHero: Bool = false
+    var profileCard: ProfileCardKind = .progressChart
+    var settingsContributions: [SettingsSectionKind] = []
+    var profileHelpContributions: [ProfileHelpKind] = []
 
     var config: TrainingDisciplineConfig {
         TrainingDisciplineConfig(

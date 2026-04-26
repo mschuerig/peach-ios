@@ -77,95 +77,124 @@ enum HelpContent {
         ),
     ]
 
-    static let settings: [HelpSection] = {
-        var sections: [HelpSection] = [
-            HelpSection(
-                title: String(localized: "Training Range"),
-                body: String(localized: "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.")
-            ),
-            HelpSection(
-                title: String(localized: "Intervals"),
-                body: String(localized: "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.")
-            ),
-            HelpSection(
-                title: String(localized: "Sound"),
-                body: String(localized: "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.")
-            ),
-            HelpSection(
-                title: String(localized: "Difficulty"),
-                body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.\n\n**Note Gap** adds a pause between the two notes in pitch comparison. At zero, notes play back-to-back.")
-            ),
-        ]
-        if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
-            sections.append(
-                HelpSection(
-                    title: String(localized: "Rhythm"),
-                    body: String(localized: "**Tempo** controls the playback speed of rhythm patterns, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.\n\n**Gap Positions** control which subdivisions of the beat the gap can land on. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
-                )
-            )
-        }
-        sections.append(
-            HelpSection(
-                title: String(localized: "Data"),
-                body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
-            )
-        )
-        return sections
-    }()
+    /// Always-on common help for the Settings screen. Scoped help for
+    /// disciplines' contributed sections is spliced in by
+    /// ``settingsHelpSections()``; do not edit this list to add per-discipline
+    /// help.
+    private static let commonSettings: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Training Range"),
+            body: String(localized: "Set the **lowest** and **highest note** for your training. A wider range is more challenging. If you're just starting out, try a smaller range and expand it as your ear improves.")
+        ),
+        HelpSection(
+            title: String(localized: "Intervals"),
+            body: String(localized: "Intervals are the distance between two notes. Choose which intervals you want to practice. Start with a few and add more as you gain confidence.")
+        ),
+        HelpSection(
+            title: String(localized: "Sound"),
+            body: String(localized: "Pick the **sound** you want to train with — each instrument has a different character.\n\n**Duration** controls how long each note plays.\n\n**Concert Pitch** sets the reference tuning. Most musicians use 440 Hz. Some orchestras tune to 442 Hz.\n\n**Tuning System** determines how intervals are calculated. Equal Temperament divides the octave into 12 equal steps and is standard for most Western music. Just Intonation uses pure frequency ratios and sounds smoother for some intervals.")
+        ),
+        HelpSection(
+            title: String(localized: "Difficulty"),
+            body: String(localized: "**Vary Loudness** changes the volume of notes randomly. This makes training harder but more realistic — in real music, notes are rarely played at the same volume.\n\n**Note Gap** adds a pause between the two notes in pitch comparison. At zero, notes play back-to-back.")
+        ),
+    ]
 
-    static let profile: [HelpSection] = {
-        var sections: [HelpSection] = [
-            HelpSection(
-                title: String(localized: "Your Progress Chart",
-                              comment: "Chart overview help title"),
-                body: String(localized: "This chart shows how your pitch perception is developing over time.",
-                             comment: "Chart overview help body")
-            ),
-            HelpSection(
-                title: String(localized: "Trend Line",
-                              comment: "EWMA line help title"),
-                body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.",
-                             comment: "EWMA line help body")
-            ),
-            HelpSection(
-                title: String(localized: "Variability Band",
-                              comment: "Stddev band help title"),
-                body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results.",
-                             comment: "Stddev band help body")
-            ),
-            HelpSection(
-                title: String(localized: "Target Baseline",
-                              comment: "Baseline help title"),
-                body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.",
-                             comment: "Baseline help body")
-            ),
-            HelpSection(
-                title: String(localized: "Time Zones",
-                              comment: "Granularity zone help title"),
-                body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
-                             comment: "Granularity zone help body")
-            ),
-        ]
-        if TrainingDisciplineRegistry.shared.activeCategories.contains(.rhythm) {
-            sections.append(
-                HelpSection(
-                    title: String(localized: "Rhythm Spectrogram",
-                                  comment: "Spectrogram overview help title"),
-                    body: String(localized: "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was.",
-                                 comment: "Spectrogram overview help body")
-                )
+    private static let dataSettingsHelp = HelpSection(
+        title: String(localized: "Data"),
+        body: String(localized: "**Export** saves your training data as a file you can keep as a backup or transfer to another device.\n\n**Import** loads training data from a file. You can replace your current data or merge it with existing records.\n\n**Reset** permanently deletes all training data and resets your profile. This cannot be undone.")
+    )
+
+    /// Always-on common help for the Profile screen. Scoped help for
+    /// disciplines' contributed cards is spliced in by ``profileHelpSections()``.
+    private static let commonProfile: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Your Progress Chart",
+                          comment: "Chart overview help title"),
+            body: String(localized: "This chart shows how your pitch perception is developing over time.",
+                         comment: "Chart overview help body")
+        ),
+        HelpSection(
+            title: String(localized: "Trend Line",
+                          comment: "EWMA line help title"),
+            body: String(localized: "The blue line shows your smoothed average — it filters out random ups and downs to reveal your real progress.",
+                         comment: "EWMA line help body")
+        ),
+        HelpSection(
+            title: String(localized: "Variability Band",
+                          comment: "Stddev band help title"),
+            body: String(localized: "The shaded area around the line shows how consistent you are — a narrower band means more reliable results.",
+                         comment: "Stddev band help body")
+        ),
+        HelpSection(
+            title: String(localized: "Target Baseline",
+                          comment: "Baseline help title"),
+            body: String(localized: "The green dashed line is your goal — as the trend line approaches it, your ear is getting sharper.",
+                         comment: "Baseline help body")
+        ),
+        HelpSection(
+            title: String(localized: "Time Zones",
+                          comment: "Granularity zone help title"),
+            body: String(localized: "The chart groups your data by time: months on the left, recent days in the middle, and today's sessions on the right.",
+                         comment: "Granularity zone help body")
+        ),
+    ]
+
+    /// Help for a single contributed Settings section. Each
+    /// ``SettingsSectionKind`` declared by a discipline has matching help.
+    static func helpSection(for kind: SettingsSectionKind) -> HelpSection {
+        switch kind {
+        case .rhythmTempo:
+            return HelpSection(
+                title: String(localized: "Rhythm"),
+                body: String(localized: "**Tempo** controls the playback speed of rhythm patterns, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.")
             )
-            sections.append(
-                HelpSection(
-                    title: String(localized: "Spectrogram Colors",
-                                  comment: "Spectrogram color help title"),
-                    body: String(localized: "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits.",
-                                 comment: "Spectrogram color help body")
-                )
+        case .rhythmGapPositions:
+            return HelpSection(
+                title: String(localized: "Gap Positions"),
+                body: String(localized: "**Gap Positions** control which subdivisions of the beat the gap can land on. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
             )
         }
+    }
+
+    /// Help for a single contributed Profile help kind.
+    static func helpSection(for kind: ProfileHelpKind) -> HelpSection {
+        switch kind {
+        case .rhythmSpectrogramOverview:
+            return HelpSection(
+                title: String(localized: "Rhythm Spectrogram",
+                              comment: "Spectrogram overview help title"),
+                body: String(localized: "The colored grid shows your rhythm accuracy across tempo ranges over time. Each row is a tempo range, each column a time period. The color tells you how precise your timing was.",
+                             comment: "Spectrogram overview help body")
+            )
+        case .rhythmSpectrogramColors:
+            return HelpSection(
+                title: String(localized: "Spectrogram Colors",
+                              comment: "Spectrogram color help title"),
+                body: String(localized: "Teal means excellent, green is precise, yellow is moderate, orange is loose, and red means erratic. Tap any cell for a detailed breakdown of early and late hits.",
+                             comment: "Spectrogram color help body")
+            )
+        }
+    }
+
+    /// Assembled Settings help: common sections, contributed scoped sections
+    /// (one per active ``SettingsSectionKind``), and the trailing Data section.
+    static func settingsHelpSections() -> [HelpSection] {
+        var sections = commonSettings
+        sections += TrainingDisciplineRegistry.shared
+            .settingsSectionContributions
+            .map(helpSection(for:))
+        sections.append(dataSettingsHelp)
         return sections
-    }()
+    }
+
+    /// Assembled Profile help: common sections plus contributed scoped sections
+    /// (one per active ``ProfileHelpKind``), in registration order.
+    static func profileHelpSections() -> [HelpSection] {
+        commonProfile + TrainingDisciplineRegistry.shared
+            .profileHelpContributions
+            .map(helpSection(for:))
+    }
 
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
 
