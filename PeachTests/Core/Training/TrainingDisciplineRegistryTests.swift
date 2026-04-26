@@ -22,6 +22,10 @@ struct TrainingDisciplineRegistryTests {
         #expect(registry.all.count == 6)
     }
 
+    // Iterates `canonicalIDs` (not `registry.all`) on purpose: this asserts the
+    // structural invariant that every declared canonical ID resolves through the
+    // subscript. Iterating `registry.all` would only exercise registered IDs and
+    // miss the case where a canonical ID exists but is not registered.
     @Test("subscript returns correct discipline for each ID")
     func subscriptReturnsCorrectDiscipline() async {
         for disciplineID in TrainingDisciplineID.canonicalIDs {

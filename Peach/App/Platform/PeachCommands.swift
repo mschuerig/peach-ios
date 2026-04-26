@@ -154,7 +154,7 @@ struct PeachCommands: Commands {
 
 // MARK: - Help Sheet Content
 
-enum HelpSheetContent: Identifiable, Hashable, Codable {
+enum HelpSheetContent: Identifiable, Hashable {
     case about
     case discipline(TrainingDisciplineID)
 
@@ -174,7 +174,7 @@ enum HelpSheetContent: Identifiable, Hashable, Codable {
         case .about:
             HelpContent.about
         case .discipline(let id):
-            HelpContent.sections(for: id)
+            id.helpSections
         }
     }
 }

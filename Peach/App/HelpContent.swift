@@ -153,14 +153,11 @@ enum HelpContent {
 
     /// Markdown body for the "Training Disciplines" section of the Info screen.
     /// Generated from the registry: emits one paragraph per registered discipline,
-    /// grouped by category, with optional category intros.
+    /// grouped by category.
     static var trainingDisciplinesDescription: String {
         let registry = TrainingDisciplineRegistry.shared
         var paragraphs: [String] = []
         for category in registry.activeCategories {
-            if let intro = category.localizedIntro {
-                paragraphs.append(intro)
-            }
             for discipline in registry.disciplines(in: category) {
                 let config = discipline.config
                 paragraphs.append("**\(config.displayName)** – \(config.helpDescription)")
@@ -198,22 +195,4 @@ enum HelpContent {
     ]
 
     static var about: [HelpSection] { info + acknowledgments }
-
-    /// Resolves help sections for a given discipline. Unison/interval variants
-    /// of the same training type share the same help content because the
-    /// underlying mechanics are identical.
-    static func sections(for id: TrainingDisciplineID) -> [HelpSection] {
-        switch id {
-        case .unisonPitchDiscrimination, .intervalPitchDiscrimination:
-            pitchDiscrimination
-        case .unisonPitchMatching, .intervalPitchMatching:
-            pitchMatching
-        case .timingOffsetDetection:
-            timingOffsetDetection
-        case .continuousRhythmMatching:
-            continuousRhythmMatching
-        default:
-            []
-        }
-    }
 }

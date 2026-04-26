@@ -1228,7 +1228,6 @@
       }
     },
     "Hear a note and slide to match its pitch." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1562,7 +1561,6 @@
       }
     },
     "Listen to two notes and decide which one is higher." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1706,7 +1704,6 @@
       }
     },
     "Match pitches using musical intervals." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3219,7 +3216,6 @@
       }
     },
     "The same idea, but with musical intervals between notes." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

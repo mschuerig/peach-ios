@@ -64,17 +64,23 @@ struct RegistryActiveCategoriesTests {
 
     // MARK: - disciplines(in:)
 
-    @Test("disciplines(in:) returns disciplines for the given category in registration order")
-    func disciplinesInPreservesRegistrationOrder() async {
+    @Test("disciplines(in:) returns disciplines for the given category in registration order", arguments: [
+        (TrainingCategory.pitch, ["a", "c", "g"]),
+        (TrainingCategory.intervals, ["b", "f"]),
+        (TrainingCategory.rhythm, ["d", "e"]),
+    ])
+    func disciplinesInPreservesRegistrationOrder(category: TrainingCategory, expected: [String]) async {
         let registry = make(
             ("a", .pitch),
             ("b", .intervals),
             ("c", .pitch),
             ("d", .rhythm),
-            ("e", .pitch)
+            ("e", .rhythm),
+            ("f", .intervals),
+            ("g", .pitch)
         )
-        let pitchSlugs = registry.disciplines(in: .pitch).map(\.id.slug)
-        #expect(pitchSlugs == ["a", "c", "e"])
+        let slugs = registry.disciplines(in: category).map(\.id.slug)
+        #expect(slugs == expected)
     }
 
     @Test("disciplines(in:) returns empty for a category with no registrations")

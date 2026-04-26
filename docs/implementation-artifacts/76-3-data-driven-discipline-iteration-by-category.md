@@ -1,6 +1,6 @@
 # Story 76.3: Data-driven discipline iteration by category
 
-Status: review
+Status: done
 
 ## Story
 
@@ -309,3 +309,4 @@ If hero styling on the first card per category produces a worse visual than hero
 
 - 2026-04-25: Story drafted as Story 76.3 of Epic 76. Renumbered from original 76.2 when a new 76.1 (relocate `TrainingDisciplineID` to App) was inserted. Status → ready-for-dev. Depends on Stories 76.1 and 76.2.
 - 2026-04-26: Implementation complete. Registry exposes `activeCategories` + `disciplines(in:)`. Six disciplines now carry display metadata in `TrainingDisciplineConfig`. StartScreen, PeachCommands, ProfileScreen, and HelpContent iterate the registry; metadata-querying tests on `canonicalIDs` migrated to `registry.all`. Behavior unchanged in this build (all six disciplines still registered). Both platforms green (1773 iOS, 1766 macOS). Status → review.
+- 2026-04-26: Adversarial code review (`/bmad-code-review 76.3`). Applied P-fixes: stale `extractionState` cleanup in `Localizable.xcstrings`; removed unused `TrainingCategoryDisplay.localizedIntro`; deleted dead branch + unused `HelpContent.sections(for:)` function; replaced ID side-table dispatch in `HelpSheetContent` with new `TrainingDisciplineID.helpSections` extension in `Peach/App/TrainingDisciplineHelp.swift` (mirrors `TrainingDisciplineNavigation.swift`); dropped unused `Codable` from `HelpSheetContent`; expanded `RegistryActiveCategoriesTests.disciplinesInPreservesRegistrationOrder` to parameterize all three categories; added structural-invariant explanatory comment in `TrainingDisciplineRegistryTests`. Deferred findings tracked: D1/D2/D3 → AC 12/13/14 in 76.4; D5 → new story 76.5; D4 documented as accepted closed-enum design in 76.4 Dev Notes. Both platforms green (1775 iOS, 1767 macOS). Status → done.

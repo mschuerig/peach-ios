@@ -10,10 +10,4 @@ extension TrainingCategory {
         case .rhythm:    String(localized: "Rhythm")
         }
     }
-
-    /// Optional localized intro paragraph rendered before this category's
-    /// disciplines in the Info screen description. Returns `nil` when no
-    /// intro is desired, in which case the generator emits only the
-    /// per-discipline paragraphs.
-    var localizedIntro: String? { nil }
 }

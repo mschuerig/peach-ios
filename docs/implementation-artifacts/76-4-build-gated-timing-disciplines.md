@@ -167,6 +167,38 @@ Bulk-edit scope is the listed files only. Historical artifacts (completed story 
 
 If the script changes from AC 4 are deferred, document the equivalent `xcodebuild -configuration Research ...` invocation used to verify.
 
+### AC 12: Discipline-keyed dispatch lives on the discipline, not on the ID
+
+**Given** the App-layer extensions on `TrainingDisciplineID`
+**When** inspected
+**Then** the exhaustive `switch self { ... default: preconditionFailure }` pattern in `Peach/App/TrainingDisciplineHelp.swift` (`var helpSections`) and `Peach/App/TrainingDisciplineNavigation.swift` (`var navigationDestination`) is removed in favor of the corresponding values being declared on the `TrainingDiscipline` protocol (or on each concrete `*Discipline` type, exposed through the registry).
+
+Rationale: with the `Release` build registering only four of the six canonical IDs, looking up `helpSections` or `navigationDestination` for an unregistered ID via the side-table extension is a build-config-dependent trap. Moving these onto the discipline itself makes the trap structurally impossible — code only obtains a `TrainingDiscipline` instance through the registry, which only contains registered disciplines.
+
+The `TrainingDisciplineID` extensions are deleted; callers obtain the help sections and navigation destination by indexing the registry first (`registry[id].navigationDestination`) or by holding the `TrainingDiscipline` value directly.
+
+This may be implemented within story 76.4 if the dev judges the scope manageable, or extracted to a 76.5 follow-up story; either is acceptable. If extracted, the extracted story file MUST be created before 76.4 is marked done so the finding is tracked, not lost.
+
+### AC 13: Per-category hero cardinality is enforced at registry init
+
+**Given** `TrainingDisciplineRegistry.init(disciplines:)`
+**When** constructed with a discipline list
+**Then** the initializer asserts that no `TrainingCategory` contains more than one discipline whose `config.isHero == true`. Violations trip a `precondition` (or `preconditionFailure`) carrying the offending category and slugs, so a misconfigured bootstrap fails loudly at startup rather than producing inconsistent UI later.
+
+Rationale: today nothing prevents two disciplines in the same category from declaring themselves hero. StartScreen's per-category card layout would then render two prominent cards in one section, which violates the visual hierarchy the flag was introduced to encode. The check is cheap (`O(n)` over registered disciplines, runs once at app launch).
+
+May be implemented within 76.4 or as part of the 76.5 hardening story.
+
+### AC 14: `HelpContent.trainingDisciplinesDescription` is computed once
+
+**Given** `Peach/App/HelpContent.swift`
+**When** inspected
+**Then** the `static var trainingDisciplinesDescription: String` computed property is replaced with a `static let` (or a `lazy` static) so the discipline-paragraph join is performed at most once per process. Today every read iterates `registry.activeCategories × registry.disciplines(in:)` and rebuilds the string; the registry contents do not change after bootstrap, so caching is safe.
+
+Rationale: cheap fix, removes wasted work on every help-screen render, and makes the intent (a constant view of the registry's current state) explicit.
+
+May be implemented within 76.4 or as part of the 76.5 hardening story.
+
 ## Tasks / Subtasks
 
 - [ ] Task 1: Add `Research` build configuration (AC: 1)
@@ -215,6 +247,17 @@ If the script changes from AC 4 are deferred, document the equivalent `xcodebuil
   - [ ] 11.2 `bin/build.sh --research && bin/build.sh --research -p mac` — zero new warnings
   - [ ] 11.3 `bin/test.sh && bin/test.sh -p mac` — green
   - [ ] 11.4 `bin/test.sh --research && bin/test.sh --research -p mac` — green
+- [ ] Task 12: Move discipline-keyed dispatch onto the discipline (AC: 12)
+  - [ ] 12.1 Add `helpSections: [HelpSection]` and `navigationDestination: NavigationDestination` requirements (or default-implementations) to `TrainingDiscipline`, or expose them via concrete `*Discipline` types
+  - [ ] 12.2 Update each concrete discipline to provide its own values (six implementations)
+  - [ ] 12.3 Update `PeachCommands.swift`, `HelpSheetContent`, and any other callers to obtain values from the discipline value, not from the ID extension
+  - [ ] 12.4 Delete `Peach/App/TrainingDisciplineHelp.swift` and `Peach/App/TrainingDisciplineNavigation.swift`
+  - [ ] 12.5 If extracting to a 76.5 follow-up rather than landing here, create the 76.5 story file before marking 76.4 done
+- [ ] Task 13: Enforce per-category hero cardinality at registry init (AC: 13)
+  - [ ] 13.1 In `TrainingDisciplineRegistry.init(disciplines:)`, group disciplines by category and assert at most one `config.isHero == true` per category
+  - [ ] 13.2 Add a unit test exercising the violation path (`make("a", .pitch, isHero: true), ("b", .pitch, isHero: true)` traps)
+- [ ] Task 14: Cache `HelpContent.trainingDisciplinesDescription` (AC: 14)
+  - [ ] 14.1 Replace `static var` with `static let` (or `lazy` static) in `Peach/App/HelpContent.swift`
 
 ## Dev Notes
 
@@ -280,6 +323,10 @@ This may be tracked as a new story under Epic 72 (TestFlight Beta) or as a one-o
 
 Option A is simpler and acceptable for this story. Document the choice in Completion Notes. If A causes user confusion, file a follow-up; this is a hobby-project release with limited test users so the cost is low.
 
+### Known limitation: `TrainingCategory` requires source edits to extend
+
+`TrainingCategory` is a closed `enum: CaseIterable` with hardcoded ordering (`pitch, intervals, rhythm`). Adding a fourth category — should that ever be desired — requires editing the enum, its `localizedTitle`/`systemImage` switches, and any UI that references specific cases. This is intentional for now: the three categories cover the ear-training domain Peach addresses, and a domain-typed enum gives compile-time exhaustiveness on each consumer's switch. Listed here so that, if a fourth category becomes a real requirement, the design choice is revisited rather than discovered as friction. Not blocking and not scheduled.
+
 ### References
 
 - `MEMORY.md → feedback_design_by_contract_and_separation.md` — build flag belongs to App, not Core
@@ -293,3 +340,4 @@ Option A is simpler and acceptable for this story. Document the choice in Comple
 ## Change Log
 
 - 2026-04-25: Story drafted as Story 76.4 of Epic 76. Renumbered from original 76.3 when a new 76.1 (relocate `TrainingDisciplineID` to App) was inserted. Status → ready-for-dev. Depends on Stories 76.1, 76.2, and 76.3.
+- 2026-04-26: Added AC 12 (move discipline-keyed dispatch onto the discipline), AC 13 (per-category hero cardinality at registry init), and AC 14 (cache `trainingDisciplinesDescription`) plus matching tasks. Added Dev Note documenting `TrainingCategory` extensibility as an accepted closed-enum design. Findings sourced from the 76.3 adversarial code review (deferred items D1–D3, D4).
