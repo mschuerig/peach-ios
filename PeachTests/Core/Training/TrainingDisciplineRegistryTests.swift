@@ -126,16 +126,16 @@ struct TrainingDisciplineRegistryTests {
         #expect(typeIDs.count == Set(typeIDs).count)
     }
 
-    // MARK: - bootstrap idempotency
+    // MARK: - shared-registry test primitive
 
-    @Test("bootstrap is idempotent — second call does not trap and first call wins")
-    func bootstrapIsIdempotent() async {
-        TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)
-        let firstShared = TrainingDisciplineRegistry.shared
-
-        TrainingDisciplineRegistry.bootstrap(disciplines: [UnisonPitchDiscriminationDiscipline()])
-        let secondShared = TrainingDisciplineRegistry.shared
-
-        #expect(firstShared === secondShared)
+    @Test("_withSharedReplacedForTesting installs the given disciplines for the body's duration")
+    func withSharedReplacedInstallsAndScopes() {
+        let custom: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
+        TrainingDisciplineRegistry._withSharedReplacedForTesting(disciplines: custom) {
+            let registered = Set(TrainingDisciplineRegistry.shared.all.map(\.id))
+            #expect(registered == Set(custom.map(\.id)))
+        }
+        let restored = Set(TrainingDisciplineRegistry.shared.all.map(\.id))
+        #expect(restored == Set(DisciplineBootstrap.allDisciplines.map(\.id)))
     }
 }

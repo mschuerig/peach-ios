@@ -5,6 +5,10 @@ import Foundation
 @Suite("ProgressTimeline Tests")
 struct ProgressTimelineTests {
 
+    init() {
+        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
+    }
+
     // MARK: - Helpers
 
     private let now = Date()

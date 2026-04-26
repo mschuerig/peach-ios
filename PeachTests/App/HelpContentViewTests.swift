@@ -4,6 +4,10 @@ import Testing
 @Suite("HelpContentView Tests")
 struct HelpContentViewTests {
 
+    init() {
+        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
+    }
+
     @Test("HelpSection can be instantiated with title and body")
     func helpSectionCanBeInstantiated() async {
         let section = HelpSection(title: "Test Title", body: "Test body text")

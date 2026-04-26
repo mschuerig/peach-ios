@@ -25,17 +25,25 @@ final class TrainingDisciplineRegistry: Sendable {
         }
     }
 
-    /// Initializes the shared registry with the App-provided concrete disciplines.
-    ///
-    /// First call wins: subsequent calls are no-ops, even if the discipline list
-    /// differs. Idempotency makes it safe to call from SwiftUI preview helpers
-    /// that may run repeatedly in the same process.
+    /// Must be called exactly once at app startup before any access to ``shared``.
     static func bootstrap(disciplines: [any TrainingDiscipline]) {
         _shared.withLock { registry in
-            guard registry == nil else { return }
+            precondition(registry == nil, "TrainingDisciplineRegistry.bootstrap(disciplines:) called more than once")
             registry = TrainingDisciplineRegistry(disciplines: disciplines)
         }
     }
+
+    #if DEBUG
+    /// Atomically replaces the shared registry. DEBUG-only; for use by SwiftUI
+    /// preview helpers (which may render repeatedly in the same process) and
+    /// tests that need a known registry. Production code MUST use
+    /// ``bootstrap(disciplines:)`` exactly once at app launch.
+    static func _replaceSharedForTesting(disciplines: [any TrainingDiscipline]) {
+        _shared.withLock { registry in
+            registry = TrainingDisciplineRegistry(disciplines: disciplines)
+        }
+    }
+    #endif
 
     /// All registered disciplines in display order.
     let all: [any TrainingDiscipline]

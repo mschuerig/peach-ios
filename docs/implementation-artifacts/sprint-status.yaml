@@ -634,7 +634,7 @@ development_status:
   76-2-discipline-category-and-bootstrap-relocation: done
   76-3-data-driven-discipline-iteration-by-category: done
   76-4-build-gated-timing-disciplines: done
-  76-5-bootstrap-registry-for-swiftui-previews: review
+  76-5-bootstrap-registry-for-swiftui-previews: done
   epic-76-retrospective: optional
 
   # Epic 77: Plugin-Style Discipline Contributions — Prerequisite for Central Activation

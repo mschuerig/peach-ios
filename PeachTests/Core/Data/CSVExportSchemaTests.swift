@@ -5,6 +5,10 @@ import Foundation
 @Suite("CSVExportSchema Tests")
 struct CSVExportSchemaTests {
 
+    init() {
+        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
+    }
+
     // MARK: - Format Version
 
     @Test("formatVersion is 3")

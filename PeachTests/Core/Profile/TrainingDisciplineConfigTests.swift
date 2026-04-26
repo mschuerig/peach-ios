@@ -5,6 +5,10 @@ import Foundation
 @Suite("TrainingDisciplineConfig Tests")
 struct TrainingDisciplineConfigTests {
 
+    init() {
+        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
+    }
+
     @Test("unison comparison has expected parameters")
     func unisonComparison() async {
         let config = TrainingDisciplineID.unisonPitchDiscrimination.config

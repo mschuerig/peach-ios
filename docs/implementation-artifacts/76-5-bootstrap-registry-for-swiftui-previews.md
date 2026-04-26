@@ -1,6 +1,6 @@
 # Story 76.5: Bootstrap `TrainingDisciplineRegistry` for SwiftUI previews
 
-Status: review
+Status: done
 
 ## Story
 
@@ -146,3 +146,4 @@ A `bootstrapIfNeeded` outside the type would have to peek at internal state, whi
 
 - 2026-04-26: Quick Spec drafted from 76.3 review deferred item D5. Status → ready-for-dev.
 - 2026-04-26: Implementation complete. Idempotent bootstrap with first-call-wins semantics; `PreviewSupport` helper wired into 7 preview blocks across 6 files. iOS + macOS tests green (1427 / 1422 passed). Status → review.
+- 2026-04-26: Code review complete. P1/S1 fixed (production `bootstrap` precondition restored; DEBUG-gated `_replaceSharedForTesting` added for previews/tests). D1 fixed (per-suite `init()` declares canonical-registry dependency in 7 test suites; `_withSharedReplacedForTesting` scope helper added in `PeachTests/Helpers/RegistryTestSupport.swift`). D2 reclassified to reject (preview-environment asymmetry correctly reflects actual environment usage in StartScreen/ProfileScreen/InfoScreen). iOS + macOS tests green (1428 / 1422 passed). Status → done.
