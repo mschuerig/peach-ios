@@ -88,5 +88,6 @@ struct InfoScreen: View {
 }
 
 #Preview {
-    InfoScreen()
+    PreviewSupport.bootstrapRegistryIfNeeded()
+    return InfoScreen()
 }

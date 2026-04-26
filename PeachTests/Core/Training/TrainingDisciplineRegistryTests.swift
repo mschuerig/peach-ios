@@ -125,4 +125,17 @@ struct TrainingDisciplineRegistryTests {
         let typeIDs = types.map { ObjectIdentifier($0) }
         #expect(typeIDs.count == Set(typeIDs).count)
     }
+
+    // MARK: - bootstrap idempotency
+
+    @Test("bootstrap is idempotent — second call does not trap and first call wins")
+    func bootstrapIsIdempotent() async {
+        TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)
+        let firstShared = TrainingDisciplineRegistry.shared
+
+        TrainingDisciplineRegistry.bootstrap(disciplines: [UnisonPitchDiscriminationDiscipline()])
+        let secondShared = TrainingDisciplineRegistry.shared
+
+        #expect(firstShared === secondShared)
+    }
 }

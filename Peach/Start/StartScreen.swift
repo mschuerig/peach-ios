@@ -161,7 +161,8 @@ private struct TrainingCardButtonStyle: ButtonStyle {
 }
 
 #Preview {
-    NavigationStack {
+    PreviewSupport.bootstrapRegistryIfNeeded()
+    return NavigationStack {
         StartScreen()
     }
 }

@@ -313,7 +313,8 @@ struct SettingsScreen: View {
 
 #if DEBUG
 #Preview {
-    NavigationStack {
+    PreviewSupport.bootstrapRegistryIfNeeded()
+    return NavigationStack {
         SettingsScreen()
     }
     .previewEnvironment()

@@ -69,7 +69,8 @@ struct ProfileScreen: View {
 }
 
 #Preview("With Data") {
-    NavigationStack {
+    PreviewSupport.bootstrapRegistryIfNeeded()
+    return NavigationStack {
         ProfileScreen()
             .environment(\.progressTimeline, {
                 let profile = PerceptualProfile { builder in
@@ -88,7 +89,8 @@ struct ProfileScreen: View {
 }
 
 #Preview("Cold Start") {
-    NavigationStack {
+    PreviewSupport.bootstrapRegistryIfNeeded()
+    return NavigationStack {
         ProfileScreen()
     }
 }
