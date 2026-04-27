@@ -36,13 +36,11 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
 
     var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
 
-    var settingsSections: AnyView {
-        AnyView(
-            Group {
-                RhythmTempoSettingsSection()
-                RhythmGapPositionsSettingsSection()
-            }
-        )
+    var settingsSections: [DisciplineSettingsSection] {
+        [
+            DisciplineSettingsSection(id: SharedRhythmSectionID.tempo) { RhythmTempoSettingsSection() },
+            DisciplineSettingsSection(id: SharedRhythmSectionID.gapPositions) { RhythmGapPositionsSettingsSection() },
+        ]
     }
 
     var settingsHelp: [HelpSection] { ContinuousRhythmMatchingHelp.settingsHelp }

@@ -13,18 +13,29 @@ import SwiftUI
 /// All view-producing requirements have defaults. A discipline overrides
 /// only the surfaces it owns; everything else inherits the default and
 /// renders trivially.
+///
+/// ## Per-category shared sections
+///
+/// Some sections (e.g. the rhythm tempo section) are naturally shared by
+/// every discipline in a category. Each discipline that needs the section
+/// declares it with a stable ``DisciplineSettingsSection/id``; the
+/// aggregating screen renders the first declarer's section and skips
+/// subsequent declarations with the same id. This keeps disciplines
+/// self-contained — disabling one rhythm discipline does not silently
+/// remove a section the other still depends on.
 protocol TrainingDisciplineUI: TrainingDiscipline {
     /// Profile card rendered for this discipline on ``ProfileScreen``.
     /// Default: ``ProgressChartView`` keyed by ``id``.
     var profileCard: AnyView { get }
 
-    /// Settings sections rendered for this discipline on ``SettingsScreen``.
-    /// Default: empty.
-    var settingsSections: AnyView { get }
+    /// Settings sections rendered for this discipline on ``SettingsScreen``,
+    /// each keyed by a stable id. Default: none.
+    var settingsSections: [DisciplineSettingsSection] { get }
 
     /// Help sections shown in the ``SettingsScreen`` help sheet for this
-    /// discipline. Default: none. Sections describing per-feature settings
-    /// (e.g. rhythm tempo) move with the settings sections themselves.
+    /// discipline. Default: none. Aggregators dedupe by content so that
+    /// shared per-category help (e.g. rhythm tempo) declared by multiple
+    /// disciplines renders only once.
     var settingsHelp: [HelpSection] { get }
 
     /// Help sections shown in the ``ProfileScreen`` help sheet for this
@@ -34,7 +45,7 @@ protocol TrainingDisciplineUI: TrainingDiscipline {
 
 extension TrainingDisciplineUI {
     var profileCard: AnyView { AnyView(ProgressChartView(mode: id)) }
-    var settingsSections: AnyView { AnyView(EmptyView()) }
+    var settingsSections: [DisciplineSettingsSection] { [] }
     var settingsHelp: [HelpSection] { [] }
     var profileHelp: [HelpSection] { [] }
 }

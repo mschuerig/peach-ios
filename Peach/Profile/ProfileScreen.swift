@@ -49,7 +49,7 @@ struct ProfileScreen: View {
     // MARK: - Accessibility
 
     static func accessibilitySummary(progressTimeline: ProgressTimeline) -> String {
-        let activeDisciplines = TrainingDisciplineRegistry.shared.all.filter {
+        let activeDisciplines = TrainingDisciplineRegistry.shared.allUI.filter {
             progressTimeline.state(for: $0.id) != .noData
         }
         guard !activeDisciplines.isEmpty else {

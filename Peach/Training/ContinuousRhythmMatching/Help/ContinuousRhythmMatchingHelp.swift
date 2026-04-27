@@ -17,17 +17,28 @@ enum ContinuousRhythmMatchingHelp {
         ),
     ]
 
-    /// Per-feature help shown in the Settings help sheet for ``ContinuousRhythmMatchingDiscipline``.
-    static let settingsHelp: [HelpSection] = [
+    /// Help for the rhythm tempo settings section. Declared separately from
+    /// ``gapPositionsSettingsHelp`` so that ``TimingOffsetDetectionDiscipline``
+    /// — which renders the tempo section but not the gap-positions section —
+    /// can reference only the help that accompanies its settings.
+    static let tempoSettingsHelp: [HelpSection] = [
         HelpSection(
             title: String(localized: "Rhythm"),
             body: String(localized: "**Tempo** controls the playback speed of rhythm patterns, measured in beats per minute (BPM). A lower tempo is easier; increase it as your timing improves.")
         ),
+    ]
+
+    /// Help for the rhythm gap-positions settings section.
+    static let gapPositionsSettingsHelp: [HelpSection] = [
         HelpSection(
             title: String(localized: "Gap Positions"),
             body: String(localized: "**Gap Positions** control which subdivisions of the beat the gap can land on. Each beat is divided into four 16th-note positions: Beat (downbeat), E, And, A. Disable positions to focus on specific subdivisions.")
         ),
     ]
+
+    /// Per-feature help shown in the Settings help sheet for
+    /// ``ContinuousRhythmMatchingDiscipline``: tempo plus gap positions.
+    static let settingsHelp: [HelpSection] = tempoSettingsHelp + gapPositionsSettingsHelp
 
     /// Per-feature help shown in the Profile help sheet for the rhythm spectrogram.
     static let profileHelp: [HelpSection] = [

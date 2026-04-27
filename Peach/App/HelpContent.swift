@@ -66,25 +66,44 @@ enum HelpContent {
 
     /// Assembled Settings help: common sections, then each registered
     /// discipline's ``TrainingDisciplineUI/settingsHelp`` in registration
-    /// order, then the trailing Data section.
+    /// order, then the trailing Data section. Identical entries declared by
+    /// multiple disciplines (e.g. the rhythm tempo help mirrored by both
+    /// rhythm disciplines) render once.
     static func settingsHelpSections() -> [HelpSection] {
         var sections = commonSettings
-        for discipline in TrainingDisciplineRegistry.shared.allUI {
-            sections.append(contentsOf: discipline.settingsHelp)
-        }
+        sections.append(contentsOf: dedupedDisciplineHelp(\.settingsHelp))
         sections.append(dataSettingsHelp)
         return sections
     }
 
     /// Assembled Profile help: common sections, then each registered
     /// discipline's ``TrainingDisciplineUI/profileHelp`` in registration
-    /// order.
+    /// order. Identical entries declared by multiple disciplines render once.
     static func profileHelpSections() -> [HelpSection] {
         var sections = commonProfile
-        for discipline in TrainingDisciplineRegistry.shared.allUI {
-            sections.append(contentsOf: discipline.profileHelp)
-        }
+        sections.append(contentsOf: dedupedDisciplineHelp(\.profileHelp))
         return sections
+    }
+
+    /// Concatenates the per-discipline help at `keyPath` in registration
+    /// order, dropping later entries whose `(title, body)` already appeared.
+    /// Content-based dedup lets multiple disciplines safely declare the
+    /// same shared section without aggregators needing to know which
+    /// discipline "owns" it.
+    private static func dedupedDisciplineHelp(
+        _ keyPath: KeyPath<any TrainingDisciplineUI, [HelpSection]>
+    ) -> [HelpSection] {
+        var seen: Set<String> = []
+        var result: [HelpSection] = []
+        for discipline in TrainingDisciplineRegistry.shared.allUI {
+            for section in discipline[keyPath: keyPath] {
+                let key = "\(section.title)|\(section.body)"
+                if seen.insert(key).inserted {
+                    result.append(section)
+                }
+            }
+        }
+        return result
     }
 
     static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")

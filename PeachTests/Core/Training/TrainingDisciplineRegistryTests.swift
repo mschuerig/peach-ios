@@ -62,6 +62,20 @@ struct TrainingDisciplineRegistryTests {
         }
     }
 
+    /// ``TrainingDisciplineRegistry/allUI`` filters via `compactMap`; if a
+    /// future production discipline forgets the ``TrainingDisciplineUI``
+    /// conformance, every aggregating screen would silently omit it. This
+    /// test trips on the production bootstrap list before that can ship.
+    @Test("every registered discipline conforms to TrainingDisciplineUI")
+    func everyDisciplineConformsToUI() async {
+        let total = registry.all.count
+        let ui = registry.allUI.count
+        #expect(
+            ui == total,
+            "allUI dropped \(total - ui) discipline(s) — every production discipline must conform to TrainingDisciplineUI"
+        )
+    }
+
     // MARK: - No CSV column name overlaps
 
     @Test("no discipline declares a common column as its own")

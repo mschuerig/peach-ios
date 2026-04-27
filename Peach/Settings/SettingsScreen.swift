@@ -48,8 +48,8 @@ struct SettingsScreen: View {
             intervalSection
             soundSection
             difficultySection
-            ForEach(TrainingDisciplineRegistry.shared.allUI, id: \.id) { discipline in
-                discipline.settingsSections
+            ForEach(disciplineSettingsSections, id: \.id) { section in
+                section.view
             }
             dataSection
         }
@@ -89,6 +89,18 @@ struct SettingsScreen: View {
     }
 
     // MARK: - Sections
+
+    /// Flattened, id-deduplicated discipline-contributed sections in
+    /// registration order. Per-category shared sections (e.g. the rhythm
+    /// tempo section) are declared by every discipline that needs them and
+    /// share a stable id; the first declarer renders, subsequent declarers
+    /// are skipped. Aggregation lives on ``DisciplineSettingsSection`` so
+    /// tests can pin the contract without instantiating this view.
+    private var disciplineSettingsSections: [DisciplineSettingsSection] {
+        DisciplineSettingsSection.aggregated(
+            from: TrainingDisciplineRegistry.shared.allUI
+        )
+    }
 
     private var trainingRangeSection: some View {
         Section(String(localized: "Training Range")) {

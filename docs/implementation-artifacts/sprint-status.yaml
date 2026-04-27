@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-27 # Story 77.2 review (discipline-owned UI contributions)
+# last_updated: 2026-04-27 # Story 77.2 done (discipline-owned UI contributions)
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -643,7 +643,7 @@ development_status:
   # Activation is compile-time, single-file, per-discipline — a developer-ergonomics feature.
   epic-77: in-progress
   77-1-plugin-style-discipline-ui-contributions: done
-  77-2-discipline-owned-ui-contributions: review
+  77-2-discipline-owned-ui-contributions: done
   77-3-discipline-owned-data-declarations: ready-for-dev
   77-4-feature-owned-gap-positions-storage: ready-for-dev
   77-5-update-architecture-documentation-for-plugin-style-disciplines: ready-for-dev

@@ -13,6 +13,7 @@ struct SyntheticUIDiscipline: TrainingDisciplineUI, Sendable {
     var isHero: Bool = false
     var ownSettingsHelp: [HelpSection] = []
     var ownProfileHelp: [HelpSection] = []
+    var ownSettingsSectionIDs: [String] = []
 
     var config: TrainingDisciplineConfig {
         TrainingDisciplineConfig(
@@ -36,6 +37,11 @@ struct SyntheticUIDiscipline: TrainingDisciplineUI, Sendable {
 
     var settingsHelp: [HelpSection] { ownSettingsHelp }
     var profileHelp: [HelpSection] { ownProfileHelp }
+    var settingsSections: [DisciplineSettingsSection] {
+        ownSettingsSectionIDs.map { sectionID in
+            DisciplineSettingsSection(id: sectionID) { EmptyView() }
+        }
+    }
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {}
     func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] { [] }

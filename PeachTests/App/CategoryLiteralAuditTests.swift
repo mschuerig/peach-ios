@@ -27,8 +27,11 @@ struct CategoryLiteralAuditTests {
         ("SettingsSectionKind", #"\bSettingsSectionKind\b"#),
         ("ProfileCardKind", #"\bProfileCardKind\b"#),
         ("ProfileHelpKind", #"\bProfileHelpKind\b"#),
-        ("contributedSettingsSection(", #"\bcontributedSettingsSection\("#),
-        ("contributedProfileCard(", #"\bcontributedProfileCard\("#),
+        ("contributedSettingsSection(", #"\bcontributedSettingsSection\b"#),
+        ("contributedProfileCard(", #"\bcontributedProfileCard\b"#),
+        ("settingsContributions", #"\bsettingsContributions\b"#),
+        ("settingsSectionContributions", #"\bsettingsSectionContributions\b"#),
+        ("profileHelpContributions", #"\bprofileHelpContributions\b"#),
     ]
 
     @Test("aggregating screens contain no category-literal gates", arguments: [

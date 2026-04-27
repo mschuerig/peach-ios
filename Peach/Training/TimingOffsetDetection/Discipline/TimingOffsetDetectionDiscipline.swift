@@ -41,11 +41,29 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     /// ``ContinuousRhythmMatching`` feature directory by the 77.2 spec.
     var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
 
-    // ``settingsSections``, ``settingsHelp``, ``profileHelp`` use the protocol
-    // defaults. The rhythm tempo and gap-position settings, plus the rhythm
-    // spectrogram help, are contributed by ``ContinuousRhythmMatchingDiscipline``;
-    // having both rhythm disciplines contribute the same surfaces would render
-    // them twice (SwiftUI does not coalesce structurally identical sections).
+    /// Declares the rhythm tempo section so this discipline remains
+    /// self-contained: tempo configuration is meaningful for timing-offset
+    /// training even when ``ContinuousRhythmMatchingDiscipline`` is not
+    /// registered. The aggregating screen dedupes by ``DisciplineSettingsSection/id``,
+    /// so when both rhythm disciplines are active the section renders once.
+    var settingsSections: [DisciplineSettingsSection] {
+        [
+            DisciplineSettingsSection(id: SharedRhythmSectionID.tempo) { RhythmTempoSettingsSection() },
+        ]
+    }
+
+    /// Mirrors the rhythm tempo help so disabling
+    /// ``ContinuousRhythmMatchingDiscipline`` does not silently strip help
+    /// for a setting timing-offset training still consumes. Help aggregation
+    /// dedupes by content, so this declaration is a no-op when both rhythm
+    /// disciplines are active.
+    var settingsHelp: [HelpSection] { ContinuousRhythmMatchingHelp.tempoSettingsHelp }
+
+    /// Mirrors the rhythm spectrogram profile help for the same reason as
+    /// ``settingsHelp``: the card this discipline renders is the rhythm
+    /// spectrogram, and its help should accompany it whether or not
+    /// ``ContinuousRhythmMatchingDiscipline`` is registered.
+    var profileHelp: [HelpSection] { ContinuousRhythmMatchingHelp.profileHelp }
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(TimingOffsetDetectionRecord.self) {

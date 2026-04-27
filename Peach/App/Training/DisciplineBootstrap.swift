@@ -10,7 +10,9 @@ import Foundation
 /// individual training discipline. Activation is **per-discipline**,
 /// **compile-time only**, and lives in one list. There is no runtime toggle,
 /// no `UserDefaults` flag, and no debug menu — toggling a discipline always
-/// requires a rebuild. To disable a discipline locally, comment its line out.
+/// requires a rebuild. To disable a discipline locally, comment out its
+/// line in the appropriate block (the always-on block for pitch
+/// disciplines, the `#if PEACH_RESEARCH` block for timing disciplines).
 ///
 /// ## The `PEACH_RESEARCH` envelope
 ///
