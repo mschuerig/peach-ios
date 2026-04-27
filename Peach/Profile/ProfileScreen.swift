@@ -18,8 +18,8 @@ struct ProfileScreen: View {
                 if let currentTip = tipGroup.currentTip {
                     TipView(currentTip)
                 }
-                ForEach(TrainingDisciplineRegistry.shared.all, id: \.id) { discipline in
-                    contributedProfileCard(for: discipline)
+                ForEach(TrainingDisciplineRegistry.shared.allUI, id: \.id) { discipline in
+                    discipline.profileCard
                 }
             }
             .padding()

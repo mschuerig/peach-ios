@@ -34,7 +34,7 @@ struct TimingOffsetDetectionScreen: View {
             return session.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .trainingScreen(
-            helpSections: HelpContent.timingOffsetDetection,
+            helpSections: TimingOffsetDetectionHelp.trainingScreen,
             destination: .timingOffsetDetection
         ) {
             HStack(spacing: 6) {

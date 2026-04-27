@@ -15,11 +15,20 @@ struct CategoryLiteralAuditTests {
     /// aggregating screens may switch over screen-local enums whose cases
     /// share names with ``TrainingCategory``; the `switch <expr>.category`
     /// pattern catches the head of any actual category switch.
+    ///
+    /// Story 77.2 also forbids any reference to the deleted central kind
+    /// enums and dispatcher helpers; mentioning their names from these
+    /// aggregating screens would betray the deflationary plugin model.
     private static let forbiddenPatterns: [(label: String, pattern: String)] = [
         (".contains(.rhythm/.pitch/.intervals)", #"\.contains\(\s*\.(rhythm|pitch|intervals)\s*\)"#),
         (".category == .rhythm/.pitch/.intervals", #"\.category\s*==\s*\.(rhythm|pitch|intervals)\b"#),
         ("switch <expr>.category", #"\bswitch\s+[\w.]+\.category\b"#),
         ("if case .rhythm/.pitch/.intervals", #"\bif\s+case\s+\.(rhythm|pitch|intervals)\b"#),
+        ("SettingsSectionKind", #"\bSettingsSectionKind\b"#),
+        ("ProfileCardKind", #"\bProfileCardKind\b"#),
+        ("ProfileHelpKind", #"\bProfileHelpKind\b"#),
+        ("contributedSettingsSection(", #"\bcontributedSettingsSection\("#),
+        ("contributedProfileCard(", #"\bcontributedProfileCard\("#),
     ]
 
     @Test("aggregating screens contain no category-literal gates", arguments: [

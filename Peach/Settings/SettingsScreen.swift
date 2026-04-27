@@ -44,14 +44,14 @@ struct SettingsScreen: View {
 
     var body: some View {
         Form {
-            ForEach(
-                Self.orderedSectionIdentifiers(
-                    contributions: TrainingDisciplineRegistry.shared.settingsSectionContributions
-                ),
-                id: \.self
-            ) { identifier in
-                section(for: identifier)
+            trainingRangeSection
+            intervalSection
+            soundSection
+            difficultySection
+            ForEach(TrainingDisciplineRegistry.shared.allUI, id: \.id) { discipline in
+                discipline.settingsSections
             }
+            dataSection
         }
         .platformFormStyle()
         .navigationTitle("Settings")
@@ -85,43 +85,6 @@ struct SettingsScreen: View {
             } label: {
                 Label("Help", systemImage: "questionmark.circle")
             }
-        }
-    }
-
-    // MARK: - Section ordering
-
-    enum SectionIdentifier: Hashable {
-        case trainingRange
-        case intervals
-        case sound
-        case difficulty
-        case contributed(SettingsSectionKind)
-        case data
-    }
-
-    static func orderedSectionIdentifiers(
-        contributions: [SettingsSectionKind]
-    ) -> [SectionIdentifier] {
-        var identifiers: [SectionIdentifier] = [
-            .trainingRange,
-            .intervals,
-            .sound,
-            .difficulty,
-        ]
-        identifiers.append(contentsOf: contributions.map(SectionIdentifier.contributed))
-        identifiers.append(.data)
-        return identifiers
-    }
-
-    @ViewBuilder
-    private func section(for identifier: SectionIdentifier) -> some View {
-        switch identifier {
-        case .trainingRange: trainingRangeSection
-        case .intervals: intervalSection
-        case .sound: soundSection
-        case .difficulty: difficultySection
-        case .contributed(let kind): contributedSettingsSection(for: kind)
-        case .data: dataSection
         }
     }
 

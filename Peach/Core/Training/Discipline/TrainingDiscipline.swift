@@ -7,6 +7,11 @@ import Foundation
 ///
 /// Each discipline is a conforming struct defined in its respective feature directory.
 /// The ``TrainingDisciplineRegistry`` is the single place that knows which disciplines are active.
+///
+/// View-producing requirements live on the App-layer refinement
+/// ``TrainingDisciplineUI``; Core stays Foundation-only so Core/Data services
+/// (`TrainingDataExporter`, `CSVImportParser`, `TrainingDataStore`) can consume
+/// the registry without pulling SwiftUI into the data layer.
 protocol TrainingDiscipline: Sendable {
     /// Stable identifier for this discipline.
     var id: TrainingDisciplineID { get }
@@ -30,31 +35,6 @@ protocol TrainingDiscipline: Sendable {
 
     /// Routing target for navigating to this discipline's training screen.
     var navigationDestination: NavigationDestination { get }
-
-    // MARK: - UI Contributions
-    //
-    // Disciplines are statically-compiled plugins: each one contributes the
-    // pieces of UI it owns rather than letting screens gate fragments by
-    // category. The App layer maps these enum-typed identifiers to concrete
-    // SwiftUI views and ``HelpSection`` values, keeping Core decoupled from
-    // SwiftUI. Aggregating screens deduplicate equal contributions across the
-    // registered set, so a category-scoped contribution (e.g. rhythm tempo)
-    // can be declared by every discipline in that category and still appear
-    // exactly once.
-
-    /// The profile card this discipline renders on ``ProfileScreen``.
-    var profileCard: ProfileCardKind { get }
-
-    /// Settings sections this discipline contributes to ``SettingsScreen``.
-    /// Default: none. Each section is rendered between the always-on common
-    /// sections in stable order.
-    var settingsContributions: [SettingsSectionKind] { get }
-
-    /// Scoped help sections this discipline contributes to the profile help
-    /// sheet. Default: none. Sections describing a shared visualization
-    /// (e.g. the rhythm spectrogram) are typically declared by every
-    /// discipline that uses the visualization; the screen deduplicates.
-    var profileHelpContributions: [ProfileHelpKind] { get }
 
     /// Feeds stored records into a profile builder for initial profile construction.
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws
@@ -89,10 +69,4 @@ protocol TrainingDiscipline: Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int)
-}
-
-extension TrainingDiscipline {
-    var profileCard: ProfileCardKind { .progressChart }
-    var settingsContributions: [SettingsSectionKind] { [] }
-    var profileHelpContributions: [ProfileHelpKind] { [] }
 }

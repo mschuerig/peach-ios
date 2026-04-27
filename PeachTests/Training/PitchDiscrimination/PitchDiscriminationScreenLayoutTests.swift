@@ -46,7 +46,7 @@ struct PitchDiscriminationScreenLayoutTests {
 
     @Test("helpSections returns five sections for comparison training")
     func helpSectionsCount() async {
-        #expect(HelpContent.pitchDiscrimination.count == 5)
+        #expect(PitchDiscriminationHelp.trainingScreen.count == 5)
     }
 
     @Test("help section titles match expected order")
@@ -58,13 +58,13 @@ struct PitchDiscriminationScreenLayoutTests {
             String(localized: "Difficulty"),
             String(localized: "Intervals"),
         ]
-        let actualTitles = HelpContent.pitchDiscrimination.map(\.title)
+        let actualTitles = PitchDiscriminationHelp.trainingScreen.map(\.title)
         #expect(actualTitles == expectedTitles)
     }
 
     @Test("each help section has a non-empty body")
     func helpSectionBodiesNonEmpty() async {
-        for section in HelpContent.pitchDiscrimination {
+        for section in PitchDiscriminationHelp.trainingScreen {
             #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
         }
     }
@@ -72,7 +72,7 @@ struct PitchDiscriminationScreenLayoutTests {
     @Test("intervals help section explains interval training")
     func intervalsHelpContainsKeyTerms() async {
         let intervalsTitle = String(localized: "Intervals")
-        let intervalsSection = HelpContent.pitchDiscrimination.first { $0.title == intervalsTitle }
+        let intervalsSection = PitchDiscriminationHelp.trainingScreen.first { $0.title == intervalsTitle }
         #expect(intervalsSection != nil)
         let body = intervalsSection?.body.lowercased() ?? ""
         #expect(body.contains("interval"))

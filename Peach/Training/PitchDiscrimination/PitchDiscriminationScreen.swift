@@ -43,7 +43,7 @@ struct PitchDiscriminationScreen: View {
             return pitchDiscriminationSession.handleShortcutKey(keyPress.characters) ? .handled : .ignored
         }
         .trainingScreen(
-            helpSections: HelpContent.pitchDiscrimination,
+            helpSections: PitchDiscriminationHelp.trainingScreen,
             destination: .pitchDiscrimination(isIntervalMode: isIntervalMode)
         ) {
             HStack(spacing: 6) {

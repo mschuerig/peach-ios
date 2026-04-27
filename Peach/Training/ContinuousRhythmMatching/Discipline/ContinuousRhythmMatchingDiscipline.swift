@@ -1,7 +1,8 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
-struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
+struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
     let id = TrainingDisciplineID.continuousRhythmMatching
 
     let category: TrainingCategory = .rhythm
@@ -27,18 +28,26 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = ContinuousRhythmMatchingRecord.self
 
-    var helpSections: [HelpSection] { HelpContent.continuousRhythmMatching }
+    var helpSections: [HelpSection] { ContinuousRhythmMatchingHelp.trainingScreen }
 
     let navigationDestination: NavigationDestination = .continuousRhythmMatching
 
-    let profileCard: ProfileCardKind = .rhythmSpectrogram
+    // MARK: - UI
 
-    let settingsContributions: [SettingsSectionKind] = [.rhythmTempo, .rhythmGapPositions]
+    var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
 
-    let profileHelpContributions: [ProfileHelpKind] = [
-        .rhythmSpectrogramOverview,
-        .rhythmSpectrogramColors,
-    ]
+    var settingsSections: AnyView {
+        AnyView(
+            Group {
+                RhythmTempoSettingsSection()
+                RhythmGapPositionsSettingsSection()
+            }
+        )
+    }
+
+    var settingsHelp: [HelpSection] { ContinuousRhythmMatchingHelp.settingsHelp }
+
+    var profileHelp: [HelpSection] { ContinuousRhythmMatchingHelp.profileHelp }
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self) {
@@ -133,7 +142,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
     }
 
     func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel] {
-        parseResult.records["continuousRhythmMatching"] ?? []
+        parseResult.records[csvTrainingType] ?? []
     }
 
     func mergeImportRecords(
@@ -141,11 +150,11 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDiscipline, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: "continuousRhythmMatching")
+        var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: csvTrainingType)
         var imported = 0, skipped = 0
         for record in parsedRecords(from: parseResult) {
             guard let r = record as? ContinuousRhythmMatchingRecord else { continue }
-            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: "continuousRhythmMatching")
+            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: csvTrainingType)
             if existingKeys.contains(key) {
                 skipped += 1
             } else {

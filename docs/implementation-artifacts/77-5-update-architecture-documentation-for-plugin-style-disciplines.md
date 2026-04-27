@@ -76,9 +76,9 @@ The rewrite preserves the section's existing flavor: prose-first, mermaid-diagra
 **Then** Section 9 gains a new entry `### ADR-10: Per-Discipline Compile-Time Activation` placed after ADR-9 in the existing template:
 
 - **Context:** the v0.5 / 76.4 state allowed only category-grained activation via `PEACH_RESEARCH`; per-discipline experimentation required hunting through gates in screens; central category gates became misleading once one rhythm discipline could be excluded while the other registered.
-- **Decision:** per-discipline activation lives in a single file (`Peach/App/Training/DisciplineBootstrap.swift`) as a candidates list of `(active: Bool, factory: () -> any TrainingDiscipline)` tuples; the four pitch disciplines are unconditionally active; the two timing disciplines are gated by `#if PEACH_RESEARCH` so they are physically absent from App Store binaries; any developer can flip one Bool to disable a discipline locally without touching screens.
+- **Decision:** per-discipline activation lives in a single file (`Peach/App/Training/DisciplineBootstrap.swift`) as a list of `() -> any TrainingDiscipline` factories; the four pitch disciplines are unconditionally listed; the two timing disciplines are gated by `#if PEACH_RESEARCH` so they are physically absent from App Store binaries; any developer disables a discipline locally by commenting out its factory line.
 - **Status:** Implemented (epic 77.1, refined by 77.2 / 77.3 / 77.4).
-- **Consequences:** standard arc42 (+) / (–) bullets — additive (one Bool flip), honest binary (App Store has no dormant timing code), preserves the published `Debug` / `Debug (Research)` / `Release` / `Release (Research)` matrix; against: requires rebuild to toggle (no live experimentation), one-off candidate flipping is per-developer state that should not be committed.
+- **Consequences:** standard arc42 (+) / (–) bullets — additive (one-line edit), honest binary (App Store has no dormant timing code), preserves the published `Debug` / `Debug (Research)` / `Release` / `Release (Research)` matrix; against: requires rebuild to toggle (no live experimentation), one-off discipline disabling is per-developer state that should not be committed.
 
 ADR-10 references story 77.1 in its body (see ADR-7 / ADR-8 / ADR-9 for the citation style — story numbers, not file paths).
 

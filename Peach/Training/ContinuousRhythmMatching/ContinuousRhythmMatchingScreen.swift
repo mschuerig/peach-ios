@@ -35,7 +35,7 @@ struct ContinuousRhythmMatchingScreen: View {
             return .handled
         }
         .trainingScreen(
-            helpSections: HelpContent.continuousRhythmMatching,
+            helpSections: ContinuousRhythmMatchingHelp.trainingScreen,
             destination: .continuousRhythmMatching
         ) {
             HStack(spacing: 6) {

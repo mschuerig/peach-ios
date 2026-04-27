@@ -10,13 +10,7 @@ import Foundation
 /// individual training discipline. Activation is **per-discipline**,
 /// **compile-time only**, and lives in one list. There is no runtime toggle,
 /// no `UserDefaults` flag, and no debug menu — toggling a discipline always
-/// requires a rebuild.
-///
-/// ## How to disable a discipline locally
-///
-/// Flip the discipline's `active` flag in ``candidates`` to `false`. Inactive
-/// candidates are not constructed and not registered, so every aggregating
-/// screen renders without that discipline's UI on the next launch.
+/// requires a rebuild. To disable a discipline locally, comment its line out.
 ///
 /// ## The `PEACH_RESEARCH` envelope
 ///
@@ -24,23 +18,20 @@ import Foundation
 /// `Release (Research)`) define the `PEACH_RESEARCH` Swift compilation flag.
 /// The pitch disciplines are active in every configuration; the timing
 /// rows are wrapped in `#if PEACH_RESEARCH` so their types are not even
-/// referenced — and therefore not linked — in the App Store cut. The
-/// per-discipline `active` flag inside the envelope lets a developer override
-/// activation locally without touching the project's build configuration
-/// matrix.
+/// referenced — and therefore not linked — in the App Store cut.
 enum DisciplineBootstrap {
 
     static let allDisciplines: [any TrainingDiscipline] = {
-        var candidates: [(active: Bool, factory: () -> any TrainingDiscipline)] = [
-            (true, { UnisonPitchDiscriminationDiscipline() }),
-            (true, { IntervalPitchDiscriminationDiscipline() }),
-            (true, { UnisonPitchMatchingDiscipline() }),
-            (true, { IntervalPitchMatchingDiscipline() }),
+        var disciplines: [any TrainingDiscipline] = [
+            UnisonPitchDiscriminationDiscipline(),
+            IntervalPitchDiscriminationDiscipline(),
+            UnisonPitchMatchingDiscipline(),
+            IntervalPitchMatchingDiscipline(),
         ]
         #if PEACH_RESEARCH
-        candidates.append((true, { TimingOffsetDetectionDiscipline() }))
-        candidates.append((true, { ContinuousRhythmMatchingDiscipline() }))
+        disciplines.append(TimingOffsetDetectionDiscipline())
+        disciplines.append(ContinuousRhythmMatchingDiscipline())
         #endif
-        return candidates.compactMap { $0.active ? $0.factory() : nil }
+        return disciplines
     }()
 }

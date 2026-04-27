@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
+struct UnisonPitchMatchingDiscipline: TrainingDisciplineUI, Sendable {
     let id = TrainingDisciplineID.unisonPitchMatching
 
     let category: TrainingCategory = .pitch
@@ -21,7 +21,7 @@ struct UnisonPitchMatchingDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = PitchMatchingRecord.self
 
-    var helpSections: [HelpSection] { HelpContent.pitchMatching }
+    var helpSections: [HelpSection] { PitchMatchingHelp.trainingScreen }
 
     let navigationDestination: NavigationDestination = .pitchMatching(isIntervalMode: false)
 

@@ -53,7 +53,7 @@ struct PitchMatchingScreen: View {
             pitchMatchingSession.commitCurrentPitch() ? .handled : .ignored
         }
         .trainingScreen(
-            helpSections: HelpContent.pitchMatching,
+            helpSections: PitchMatchingHelp.trainingScreen,
             destination: .pitchMatching(isIntervalMode: isIntervalMode)
         ) {
             HStack(spacing: 6) {

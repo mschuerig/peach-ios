@@ -1,6 +1,6 @@
 # Story 77.2: Discipline-owned UI contributions and feature-directory colocation
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -105,41 +105,41 @@ Document the choice in Completion Notes.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define `TrainingDisciplineUI` and split the protocol (AC: 1)
-  - [ ] 1.1 Create `Peach/App/Training/TrainingDisciplineUI.swift` (or analogous App-layer location). Refine `TrainingDiscipline`. Provide default implementations for all four view-producing requirements.
-  - [ ] 1.2 Decide and document the registry-access mechanism (AC 4 shapes). Default recommendation: App-layer extension on the registry with `compactMap` cast.
-  - [ ] 1.3 Update App-layer call sites that need view-producing methods to refer to `TrainingDisciplineUI`.
+- [x] Task 1: Define `TrainingDisciplineUI` and split the protocol (AC: 1)
+  - [x] 1.1 Create `Peach/App/Training/TrainingDisciplineUI.swift` (or analogous App-layer location). Refine `TrainingDiscipline`. Provide default implementations for all four view-producing requirements.
+  - [x] 1.2 Decide and document the registry-access mechanism (AC 4 shapes). Default recommendation: App-layer extension on the registry with `compactMap` cast.
+  - [x] 1.3 Update App-layer call sites that need view-producing methods to refer to `TrainingDisciplineUI`.
 
-- [ ] Task 2: Migrate each discipline to declare its own UI (AC: 2)
-  - [ ] 2.1 `ContinuousRhythmMatchingDiscipline` overrides `profileCard`, `settingsSections`, `settingsHelp`, `profileHelp`.
-  - [ ] 2.2 `TimingOffsetDetectionDiscipline` overrides only what it currently contributes (likely just `settingsHelp` / `profileHelp` for shared rhythm sections; tempo section may stay shared via the rhythm category).
-  - [ ] 2.3 The four pitch/intervals disciplines inherit the protocol defaults; verify nothing currently rendered for them is silently lost.
+- [x] Task 2: Migrate each discipline to declare its own UI (AC: 2)
+  - [x] 2.1 `ContinuousRhythmMatchingDiscipline` overrides `profileCard`, `settingsSections`, `settingsHelp`, `profileHelp`.
+  - [x] 2.2 `TimingOffsetDetectionDiscipline` overrides only what it currently contributes (likely just `settingsHelp` / `profileHelp` for shared rhythm sections; tempo section may stay shared via the rhythm category).
+  - [x] 2.3 The four pitch/intervals disciplines inherit the protocol defaults; verify nothing currently rendered for them is silently lost.
 
-- [ ] Task 3: Move feature-specific UI files into feature directories (AC: 2)
-  - [ ] 3.1 Move `RhythmTempoSettingsSection`, `RhythmGapPositionsSettingsSection`, `GapPositionEncoding` into `Peach/Training/ContinuousRhythmMatching/Settings/`.
-  - [ ] 3.2 Move `RhythmProfileCardView` into `Peach/Training/ContinuousRhythmMatching/Profile/`.
-  - [ ] 3.3 Move per-feature help bodies into `Peach/Training/<Feature>/Help/<Feature>Help.swift`. Each returns `[HelpSection]`.
+- [x] Task 3: Move feature-specific UI files into feature directories (AC: 2)
+  - [x] 3.1 Move `RhythmTempoSettingsSection`, `RhythmGapPositionsSettingsSection`, `GapPositionEncoding` into `Peach/Training/ContinuousRhythmMatching/Settings/`.
+  - [x] 3.2 Move `RhythmProfileCardView` into `Peach/Training/ContinuousRhythmMatching/Profile/`.
+  - [x] 3.3 Move per-feature help bodies into `Peach/Training/<Feature>/Help/<Feature>Help.swift`. Each returns `[HelpSection]`.
 
-- [ ] Task 4: Delete central infrastructure (AC: 3)
-  - [ ] 4.1 Delete `UIContributions.swift`, `SettingsContributions.swift`, `ProfileContributions.swift`.
-  - [ ] 4.2 Remove `settingsSectionContributions`, `profileHelpContributions`, `deduplicate(_:)` from `TrainingDisciplineRegistry`.
-  - [ ] 4.3 Remove `settingsContributions` and `profileHelpContributions` requirements (and their default implementations) from `TrainingDiscipline`.
-  - [ ] 4.4 Delete per-feature help routing from `HelpContent`. Keep only common help and the aggregating helpers (which now iterate the registry's UI list).
+- [x] Task 4: Delete central infrastructure (AC: 3)
+  - [x] 4.1 Delete `UIContributions.swift`, `SettingsContributions.swift`, `ProfileContributions.swift`.
+  - [x] 4.2 Remove `settingsSectionContributions`, `profileHelpContributions`, `deduplicate(_:)` from `TrainingDisciplineRegistry`.
+  - [x] 4.3 Remove `settingsContributions` and `profileHelpContributions` requirements (and their default implementations) from `TrainingDiscipline`.
+  - [x] 4.4 Delete per-feature help routing from `HelpContent`. Keep only common help and the aggregating helpers (which now iterate the registry's UI list).
 
-- [ ] Task 5: Update aggregating screens (AC: 4)
-  - [ ] 5.1 `SettingsScreen` iterates UI list and renders `discipline.settingsSections`.
-  - [ ] 5.2 `ProfileScreen` iterates UI list and renders `discipline.profileCard`.
-  - [ ] 5.3 `HelpContent.settingsHelpSections()` and `profileHelpSections()` aggregate via the registry's UI list.
+- [x] Task 5: Update aggregating screens (AC: 4)
+  - [x] 5.1 `SettingsScreen` iterates UI list and renders `discipline.settingsSections`.
+  - [x] 5.2 `ProfileScreen` iterates UI list and renders `discipline.profileCard`.
+  - [x] 5.3 `HelpContent.settingsHelpSections()` and `profileHelpSections()` aggregate via the registry's UI list.
 
-- [ ] Task 6: Update audit + functional tests (AC: 5, 6)
-  - [ ] 6.1 Extend `CategoryLiteralAuditTests`'s forbidden list to include the deleted enum names and dispatcher symbols.
-  - [ ] 6.2 Replace `RegistryContributionsTests` with tests for the new protocol contract (default vs. overridden contributions, registration-order preservation).
-  - [ ] 6.3 Add a synthetic single-discipline registry test asserting only that discipline's contributions render.
+- [x] Task 6: Update audit + functional tests (AC: 5, 6)
+  - [x] 6.1 Extend `CategoryLiteralAuditTests`'s forbidden list to include the deleted enum names and dispatcher symbols.
+  - [x] 6.2 Replace `RegistryContributionsTests` with tests for the new protocol contract (default vs. overridden contributions, registration-order preservation).
+  - [x] 6.3 Add a synthetic single-discipline registry test asserting only that discipline's contributions render.
 
-- [ ] Task 7: Build/test sweep + smoke documentation (AC: 7, 8)
-  - [ ] 7.1 `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` all green.
-  - [ ] 7.2 `bin/build.sh && bin/build.sh -p mac` — zero new warnings.
-  - [ ] 7.3 Document in Completion Notes how adding a hypothetical new discipline now reduces to "new directory + one bootstrap line."
+- [x] Task 7: Build/test sweep + smoke documentation (AC: 7, 8)
+  - [x] 7.1 `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` all green.
+  - [x] 7.2 `bin/build.sh && bin/build.sh -p mac` — zero new warnings.
+  - [x] 7.3 Document in Completion Notes how adding a hypothetical new discipline now reduces to "new directory + one bootstrap line."
 
 ## Dev Notes
 
@@ -186,6 +186,83 @@ Recommend (1) unless ugliness is in the eye of the implementer.
 - `Peach/App/HelpContent.swift` — to be slimmed.
 - `Peach/Training/ContinuousRhythmMatching/` — destination for the rhythm-specific section views, profile card, encoding helper, and help bodies.
 
+## Dev Agent Record
+
+### Completion Notes
+
+**Registry-access mechanism (AC 4):** Adopted Option 1 — App-layer extension on `TrainingDisciplineRegistry`. `Peach/App/Training/TrainingDisciplineUI.swift` defines the protocol *and* extends the Core registry with `var allUI: [any TrainingDisciplineUI] { all.compactMap { $0 as? any TrainingDisciplineUI } }`. The `compactMap` cast always succeeds for production disciplines (every concrete discipline conforms to UI). Synthetic test fixtures conforming only to `TrainingDiscipline` are silently filtered, which is the desired behaviour — registry tests asserting UI behaviour use a `SyntheticUIDiscipline` fixture instead.
+
+**Why not move the registry to App?** The Core registry stays in Core because `TrainingDataExporter`, `CSVImportParser`, and `TrainingDataStore` already consume it from the data layer; moving the registry would either pull SwiftUI into Core (violates the no-SwiftUI rule) or split the registry into two parallel objects. The compactMap cast is a one-line workaround that keeps the data-layer consumer surface unchanged.
+
+**Adding a new discipline (AC 8):** Reduced to two operations:
+1. Create `Peach/Training/<NewDiscipline>/` containing a `<NewDiscipline>Discipline.swift` conforming to `TrainingDisciplineUI` (overriding only the surfaces that differ from the defaults — `profileCard` defaults to `ProgressChartView`, `settingsSections` to `EmptyView`, `settingsHelp` and `profileHelp` to `[]`).
+2. Add one factory line to `DisciplineBootstrap.candidates`.
+
+No central enum, no central switch, no help-routing branch, no aggregator edit. Every aggregating screen (`SettingsScreen`, `ProfileScreen`, `HelpContent.settingsHelpSections()`, `HelpContent.profileHelpSections()`) iterates `TrainingDisciplineRegistry.shared.allUI` and discovers the new discipline at next render.
+
+**Per-category-shared contributions:** Both rhythm disciplines' tempo settings is handled by `RhythmTempoSettingsSection` in `Peach/Training/ContinuousRhythmMatching/Settings/`. Currently only `ContinuousRhythmMatchingDiscipline` declares `settingsSections` (which renders the tempo + gap-positions sections); `TimingOffsetDetectionDiscipline` declares neither. The pre-existing `enabledGapPositions` / `tempoBPM` `@AppStorage` keys are still shared between both rhythm disciplines, so timing-offset training picks up the same tempo configured for fill-the-gap. No deduplication mechanism needed — the section renders once.
+
+**SwiftUI → AnyView at the dispatch boundary:** `TrainingDisciplineUI` returns `AnyView` for `profileCard` and `settingsSections` so `[any TrainingDisciplineUI]` is iterable in a heterogeneous collection. The wrappers exist only at the screen-aggregation boundary; render-hot subviews stay strongly typed.
+
+**Boy Scout cleanup during simplify-code:** Removed unused `ownSettingsSections: AnyView?` and `ownProfileCard: AnyView?` properties (and their `??` getter overrides) from the test fixture `SyntheticUIDiscipline` — no test sets them, and the protocol defaults already cover the non-overriding case.
+
+**Verification:** All four configurations green — `bin/test.sh` (1446 passed), `bin/test.sh -p mac` (1440), `bin/test.sh --research` (1805), `bin/test.sh -p mac --research` (1799). Both `bin/build.sh` and `bin/build.sh -p mac` succeed with no Swift warnings (the single warning surfaced is the unrelated `appintentsmetadataprocessor` Xcode tooling notice).
+
+### File List
+
+**Added:**
+
+- `Peach/App/Training/TrainingDisciplineUI.swift` — App-layer protocol refinement + `TrainingDisciplineRegistry.allUI` extension
+- `Peach/Training/ContinuousRhythmMatching/Settings/GapPositionEncoding.swift` (moved)
+- `Peach/Training/ContinuousRhythmMatching/Settings/RhythmTempoSettingsSection.swift` (moved)
+- `Peach/Training/ContinuousRhythmMatching/Settings/RhythmGapPositionsSettingsSection.swift` (moved)
+- `Peach/Training/ContinuousRhythmMatching/Profile/RhythmProfileCardView.swift` (moved)
+- `Peach/Training/ContinuousRhythmMatching/Help/ContinuousRhythmMatchingHelp.swift`
+- `Peach/Training/PitchDiscrimination/Help/PitchDiscriminationHelp.swift`
+- `Peach/Training/PitchMatching/Help/PitchMatchingHelp.swift`
+- `Peach/Training/TimingOffsetDetection/Help/TimingOffsetDetectionHelp.swift`
+
+**Deleted:**
+
+- `Peach/Core/Training/Discipline/UIContributions.swift`
+- `Peach/Settings/SettingsContributions.swift`
+- `Peach/Settings/GapPositionEncoding.swift` (relocated)
+- `Peach/Profile/ProfileContributions.swift`
+- `Peach/Profile/RhythmProfileCardView.swift` (relocated)
+
+**Modified — production:**
+
+- `Peach/App/HelpContent.swift` — slimmed to common-only sections + aggregators
+- `Peach/App/Training/DisciplineBootstrap.swift` — dropped the unused per-candidate `active: Bool` flag and the redundant factory closures; the bootstrap is now a plain `[any TrainingDiscipline]` array (with `#if PEACH_RESEARCH` appends inside an IIFE) and disabling a discipline locally means commenting its line out (post-review cleanup; the flag had been hard-coded `true` everywhere since 77.1, and the factory closures only existed to support it)
+- `Peach/Core/Training/Discipline/TrainingDiscipline.swift` — removed UI requirements
+- `Peach/Core/Training/Discipline/TrainingDisciplineRegistry.swift` — removed aggregated contributions
+- `Peach/Profile/ProfileScreen.swift` — iterates `allUI`, calls `discipline.profileCard`
+- `Peach/Settings/SettingsScreen.swift` — iterates `allUI`, calls `discipline.settingsSections`
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — conforms to `TrainingDisciplineUI`, declares own UI
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift` — references `ContinuousRhythmMatchingHelp.trainingScreen`
+- `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift` — conforms to `TrainingDisciplineUI`
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift` — conforms to `TrainingDisciplineUI`
+- `Peach/Training/PitchDiscrimination/PitchDiscriminationScreen.swift` — references `PitchDiscriminationHelp.trainingScreen`
+- `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift` — conforms to `TrainingDisciplineUI`
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift` — conforms to `TrainingDisciplineUI`
+- `Peach/Training/PitchMatching/PitchMatchingScreen.swift` — references `PitchMatchingHelp.trainingScreen`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — conforms to `TrainingDisciplineUI`
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionScreen.swift` — references `TimingOffsetDetectionHelp.trainingScreen`
+- `Peach/Resources/Localizable.xcstrings` — moved entries follow the moved files
+
+**Modified — tests:**
+
+- `PeachTests/App/CategoryLiteralAuditTests.swift` — extended forbidden list with `SettingsSectionKind`, `ProfileCardKind`, `ProfileHelpKind`, `contributedSettingsSection(`, `contributedProfileCard(`
+- `PeachTests/App/HelpContentViewTests.swift` — uses `allUI.flatMap(\.settingsHelp/.profileHelp)`
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift` — `SyntheticDiscipline` slimmed to `TrainingDiscipline`-only conformance
+- `PeachTests/Core/Training/RegistryContributionsTests.swift` — replaced with new contract tests using `SyntheticUIDiscipline`
+- `PeachTests/Settings/SettingsScreenAggregationTests.swift` — replaced with help-aggregation tests using `SyntheticUIDiscipline`
+- `PeachTests/Settings/SettingsTests.swift` — uses `allUI.flatMap(\.settingsHelp)` for rhythm-help check
+- `PeachTests/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreenTests.swift`, `PeachTests/Training/PitchDiscrimination/PitchDiscriminationScreenLayoutTests.swift`, `PeachTests/Training/PitchMatching/PitchMatchingScreenTests.swift`, `PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionScreenLayoutTests.swift` — reference `<Feature>Help.trainingScreen`
+
 ## Change Log
 
 - 2026-04-27: Drafted following architect-led discussion of plugin-shaped contributions. Status → ready-for-dev.
+- 2026-04-27: Implementation complete. Protocol split landed at `Peach/App/Training/TrainingDisciplineUI.swift` with App-layer `allUI` extension on the Core registry. Per-feature UI moved into `Peach/Training/<Feature>/{Settings,Profile,Help}/`. Central kinds + dispatchers deleted. Aggregating screens iterate the UI-typed list. All four test configurations green. Status → review.
+- 2026-04-27: Post-review cleanup — collapsed `DisciplineBootstrap` to a plain `[any TrainingDiscipline]` array (IIFE wrapping the `#if PEACH_RESEARCH` appends). The previous `(active: Bool, factory: () -> any TrainingDiscipline)` tuple shape and the closure indirection only existed to support a per-candidate kill switch that had been hard-coded `true` everywhere since 77.1; commenting out a line achieves the same local-disable effect with less ceremony. ADR-10 description in story 77.5 updated to match. Both Debug and Debug (Research) builds verified.
+- 2026-04-27: Post-review cleanup (simplify-code) — replaced three hardcoded `"continuousRhythmMatching"` string literals in `ContinuousRhythmMatchingDiscipline.parsedRecords(_:)` and `mergeImportRecords(...)` with `csvTrainingType` (the property that already holds that string). Pre-existing single-source-of-truth violation; `TimingOffsetDetectionDiscipline` already used `csvTrainingType` correctly. iOS Research test sweep (1805 tests) green.

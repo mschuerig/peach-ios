@@ -1,7 +1,8 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
-struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
+struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     let id = TrainingDisciplineID.timingOffsetDetection
 
     let category: TrainingCategory = .rhythm
@@ -27,18 +28,24 @@ struct TimingOffsetDetectionDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = TimingOffsetDetectionRecord.self
 
-    var helpSections: [HelpSection] { HelpContent.timingOffsetDetection }
+    var helpSections: [HelpSection] { TimingOffsetDetectionHelp.trainingScreen }
 
     let navigationDestination: NavigationDestination = .timingOffsetDetection
 
-    let profileCard: ProfileCardKind = .rhythmSpectrogram
+    // MARK: - UI
 
-    let settingsContributions: [SettingsSectionKind] = [.rhythmTempo]
+    /// Renders the same rhythm spectrogram card that ``ContinuousRhythmMatchingDiscipline``
+    /// renders; the card is keyed by `mode` so each discipline gets its own
+    /// per-mode timeline. Cross-feature reference is intentional and documented:
+    /// the card is genuinely shared rhythm-category UI, owned by the
+    /// ``ContinuousRhythmMatching`` feature directory by the 77.2 spec.
+    var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
 
-    let profileHelpContributions: [ProfileHelpKind] = [
-        .rhythmSpectrogramOverview,
-        .rhythmSpectrogramColors,
-    ]
+    // ``settingsSections``, ``settingsHelp``, ``profileHelp`` use the protocol
+    // defaults. The rhythm tempo and gap-position settings, plus the rhythm
+    // spectrogram help, are contributed by ``ContinuousRhythmMatchingDiscipline``;
+    // having both rhythm disciplines contribute the same surfaces would render
+    // them twice (SwiftUI does not coalesce structurally identical sections).
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
         for record in try store.fetchAllSorted(TimingOffsetDetectionRecord.self) {

@@ -2,96 +2,85 @@ import Testing
 import Foundation
 @testable import Peach
 
-@Suite("SettingsScreen — section aggregation")
+/// Aggregation contract for the help sheet shown by ``SettingsScreen``: the
+/// common sections come first, then each registered discipline's
+/// ``TrainingDisciplineUI/settingsHelp`` in registration order, then the
+/// trailing Data section. Owned by Story 77.2.
+@Suite("Settings help — discipline aggregation")
 struct SettingsScreenAggregationTests {
 
-    // MARK: - Helper math
-
-    @Test("with no contributions, common sections + Data render in order")
-    func emptyContributionsYieldsCommonSectionsPlusData() {
-        #expect(
-            SettingsScreen.orderedSectionIdentifiers(contributions: []) == [
-                .trainingRange,
-                .intervals,
-                .sound,
-                .difficulty,
-                .data,
-            ]
-        )
-    }
-
-    @Test("contributed sections appear after Difficulty and before Data")
-    func contributedSectionsRenderBetweenDifficultyAndData() {
-        let actual = SettingsScreen.orderedSectionIdentifiers(
-            contributions: [.rhythmTempo, .rhythmGapPositions]
-        )
-        #expect(actual == [
-            .trainingRange,
-            .intervals,
-            .sound,
-            .difficulty,
-            .contributed(.rhythmTempo),
-            .contributed(.rhythmGapPositions),
-            .data,
-        ])
-    }
-
-    @Test("contributed-section ordering follows the input list verbatim")
-    func contributedOrderFollowsInputList() {
-        let actual = SettingsScreen.orderedSectionIdentifiers(
-            contributions: [.rhythmGapPositions, .rhythmTempo]
-        )
-        #expect(Array(actual.dropFirst(4).dropLast()) == [
-            .contributed(.rhythmGapPositions),
-            .contributed(.rhythmTempo),
-        ])
-    }
-
-    // MARK: - Wiring through the shared registry
-
-    @Test("SettingsScreen reads contributions from the shared registry")
-    func screenConsumesSharedRegistryContributions() {
+    @Test("with no per-discipline help, common sections render and end with Data")
+    func emptyContributionsYieldCommonSectionsPlusData() {
         TrainingDisciplineRegistry._withSharedReplacedForTesting(
             disciplines: [
-                SyntheticDiscipline(
-                    id: TrainingDisciplineID("r1"),
-                    category: .rhythm,
-                    settingsContributions: [.rhythmTempo, .rhythmGapPositions]
-                ),
+                SyntheticUIDiscipline(id: TrainingDisciplineID("p"), category: .pitch),
             ]
         ) {
-            let identifiers = SettingsScreen.orderedSectionIdentifiers(
-                contributions: TrainingDisciplineRegistry.shared.settingsSectionContributions
-            )
-            #expect(identifiers == [
-                .trainingRange,
-                .intervals,
-                .sound,
-                .difficulty,
-                .contributed(.rhythmTempo),
-                .contributed(.rhythmGapPositions),
-                .data,
-            ])
+            let titles = HelpContent.settingsHelpSections().map(\.title)
+            #expect(titles.first == String(localized: "Training Range"))
+            #expect(titles.last == String(localized: "Data"))
+            #expect(!titles.contains(where: { $0 == "Tempo" || $0 == "Gap" }))
         }
     }
 
-    @Test("a synthetic subset with no settings contributions yields no contributed sections")
-    func syntheticSubsetWithNoContributionsYieldsNoContributed() {
+    @Test("per-discipline settings help renders between the common sections and the Data section")
+    func contributedSectionsRenderBetweenCommonAndData() {
         TrainingDisciplineRegistry._withSharedReplacedForTesting(
             disciplines: [
-                SyntheticDiscipline(id: TrainingDisciplineID("p"), category: .pitch),
+                SyntheticUIDiscipline(
+                    id: TrainingDisciplineID("rhythm"),
+                    category: .rhythm,
+                    ownSettingsHelp: [
+                        HelpSection(title: "Tempo", body: ""),
+                        HelpSection(title: "Gap", body: ""),
+                    ]
+                ),
             ]
         ) {
-            let identifiers = SettingsScreen.orderedSectionIdentifiers(
-                contributions: TrainingDisciplineRegistry.shared.settingsSectionContributions
-            )
-            #expect(identifiers == [
-                .trainingRange,
-                .intervals,
-                .sound,
-                .difficulty,
-                .data,
-            ])
+            let titles = HelpContent.settingsHelpSections().map(\.title)
+            let dataIdx = titles.firstIndex(of: String(localized: "Data"))!
+            let tempoIdx = titles.firstIndex(of: "Tempo")!
+            let gapIdx = titles.firstIndex(of: "Gap")!
+            #expect(tempoIdx < gapIdx)
+            #expect(gapIdx < dataIdx)
+        }
+    }
+
+    @Test("ordering of per-discipline help follows registration order")
+    func contributedOrderFollowsRegistrationOrder() {
+        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+            disciplines: [
+                SyntheticUIDiscipline(
+                    id: TrainingDisciplineID("first"),
+                    category: .rhythm,
+                    ownSettingsHelp: [HelpSection(title: "First", body: "")]
+                ),
+                SyntheticUIDiscipline(
+                    id: TrainingDisciplineID("second"),
+                    category: .pitch,
+                    ownSettingsHelp: [HelpSection(title: "Second", body: "")]
+                ),
+            ]
+        ) {
+            let titles = HelpContent.settingsHelpSections().map(\.title)
+            #expect(titles.firstIndex(of: "First")! < titles.firstIndex(of: "Second")!)
+        }
+    }
+
+    @Test("profile help aggregates common sections plus per-discipline profileHelp")
+    func profileHelpAggregatesCommonAndDiscipline() {
+        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+            disciplines: [
+                SyntheticUIDiscipline(
+                    id: TrainingDisciplineID("rhythm"),
+                    category: .rhythm,
+                    ownProfileHelp: [HelpSection(title: "Spectrogram", body: "")]
+                ),
+            ]
+        ) {
+            let titles = HelpContent.profileHelpSections().map(\.title)
+            #expect(titles.first == String(localized: "Your Progress Chart"))
+            #expect(titles.contains("Spectrogram"))
         }
     }
 }

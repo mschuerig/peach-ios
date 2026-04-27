@@ -86,25 +86,26 @@ struct HelpContentViewTests {
 
     // MARK: - Contribution-driven assembly
 
-    @Test("settingsHelpSections contains a Rhythm section iff a discipline contributes rhythmTempo")
+    @Test("settingsHelpSections contains a Rhythm section iff a discipline contributes a Rhythm-titled help section")
     func settingsRhythmHelpFollowsContribution() async {
+        let rhythmTitle = String(localized: "Rhythm")
         let titles = HelpContent.settingsHelpSections().map(\.title)
-        let hasRhythmHelp = titles.contains(String(localized: "Rhythm"))
-        let contributed = TrainingDisciplineRegistry.shared
-            .settingsSectionContributions
-            .contains(.rhythmTempo)
+        let hasRhythmHelp = titles.contains(rhythmTitle)
+        let contributed = TrainingDisciplineRegistry.shared.allUI
+            .flatMap(\.settingsHelp)
+            .contains { $0.title == rhythmTitle }
         #expect(hasRhythmHelp == contributed)
     }
 
     @Test("profileHelpSections contains spectrogram help iff a discipline contributes it")
     func profileSpectrogramHelpFollowsContribution() async {
-        let titles = HelpContent.profileHelpSections().map(\.title)
         let spectrogramTitle = String(localized: "Rhythm Spectrogram",
                                        comment: "Spectrogram overview help title")
+        let titles = HelpContent.profileHelpSections().map(\.title)
         let hasSpectrogramHelp = titles.contains(spectrogramTitle)
-        let contributed = TrainingDisciplineRegistry.shared
-            .profileHelpContributions
-            .contains(.rhythmSpectrogramOverview)
+        let contributed = TrainingDisciplineRegistry.shared.allUI
+            .flatMap(\.profileHelp)
+            .contains { $0.title == spectrogramTitle }
         #expect(hasSpectrogramHelp == contributed)
     }
 

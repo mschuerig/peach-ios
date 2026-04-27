@@ -274,12 +274,12 @@ struct SettingsTests {
         #expect(titles.count == Set(titles).count, "Duplicate titles in settings help")
     }
 
-    @Test("the rhythm settings help section appears iff a discipline contributes rhythmTempo")
+    @Test("the rhythm settings help section appears iff a discipline contributes a Rhythm-titled help section")
     func rhythmHelpSectionMatchesContribution() async {
-        let contributed = TrainingDisciplineRegistry.shared
-            .settingsSectionContributions
-            .contains(.rhythmTempo)
         let rhythmTitle = String(localized: "Rhythm")
+        let contributed = TrainingDisciplineRegistry.shared.allUI
+            .flatMap(\.settingsHelp)
+            .contains { $0.title == rhythmTitle }
         let hasRhythmSection = HelpContent.settingsHelpSections().contains { $0.title == rhythmTitle }
         #expect(hasRhythmSection == contributed)
     }

@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
+struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
     let id = TrainingDisciplineID.intervalPitchDiscrimination
 
     let category: TrainingCategory = .intervals
@@ -21,7 +21,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDiscipline, Sendable {
 
     let recordType: any PersistentModel.Type = PitchDiscriminationRecord.self
 
-    var helpSections: [HelpSection] { HelpContent.pitchDiscrimination }
+    var helpSections: [HelpSection] { PitchDiscriminationHelp.trainingScreen }
 
     let navigationDestination: NavigationDestination = .pitchDiscrimination(isIntervalMode: true)
 
