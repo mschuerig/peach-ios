@@ -1,6 +1,6 @@
 # Story 77.7: Collapse merge-import boilerplate across disciplines
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -91,23 +91,23 @@ A reasonable target is ≤ 8 lines per `mergeImportRecords` body.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Pick the helper location and signature (AC: 1)
-  - [ ] 1.1 Survey the four call sites; identify whether the shared parts (encode + insert + key insert + counter increments) belong on the scope, on `JSONEnvelope`, or as a free function.
-  - [ ] 1.2 Define the signature so the discipline supplies a `(Date, Payload) -> Key` closure and an `inout Set<Key>` it can pass through.
-  - [ ] 1.3 Confirm the chosen signature does not require new imports in feature directories.
+- [x] Task 1: Pick the helper location and signature (AC: 1)
+  - [x] 1.1 Survey the four call sites; identify whether the shared parts (encode + insert + key insert + counter increments) belong on the scope, on `JSONEnvelope`, or as a free function.
+  - [x] 1.2 Define the signature so the discipline supplies a `(Date, Payload) -> Key` closure and an `inout Set<Key>` it can pass through.
+  - [x] 1.3 Confirm the chosen signature does not require new imports in feature directories.
 
-- [ ] Task 2: Extract the helper (AC: 1, 4)
-  - [ ] 2.1 Implement the helper.
-  - [ ] 2.2 Add a focused unit test exercising the encode-and-insert-if-new contract: empty existing-keys set, all-duplicate input, mixed input, throwing-encoder failure path.
+- [x] Task 2: Extract the helper (AC: 1, 4)
+  - [x] 2.1 Implement the helper.
+  - [x] 2.2 Add a focused unit test exercising the encode-and-insert-if-new contract: empty existing-keys set, all-duplicate input, mixed input, throwing-encoder failure path.
 
-- [ ] Task 3: Migrate the four disciplines (AC: 2, 3, 4)
-  - [ ] 3.1 Replace each discipline's inline loop with a call to the helper.
-  - [ ] 3.2 If `parsedRecords` returns existentials, confine the cast to one site per discipline (or change `parsedRecords` to return a typed array — coordinate with 77.8 if it lands first).
-  - [ ] 3.3 Confirm imported/skipped counts match the pre-change behaviour for every test using `MergeImport`-style fixtures.
+- [x] Task 3: Migrate the four disciplines (AC: 2, 3, 4)
+  - [x] 3.1 Replace each discipline's inline loop with a call to the helper.
+  - [x] 3.2 If `parsedRecords` returns existentials, confine the cast to one site per discipline (or change `parsedRecords` to return a typed array — coordinate with 77.8 if it lands first).
+  - [x] 3.3 Confirm imported/skipped counts match the pre-change behaviour for every test using `MergeImport`-style fixtures.
 
-- [ ] Task 4: Build/test (AC: 5)
-  - [ ] 4.1 All four test configurations green.
-  - [ ] 4.2 Build: zero new warnings.
+- [x] Task 4: Build/test (AC: 5)
+  - [x] 4.1 All four test configurations green.
+  - [x] 4.2 Build: zero new warnings.
 
 ## Dev Notes
 
@@ -136,3 +136,33 @@ If 77.8 (associated `Payload` type) lands first, this helper becomes a default p
 ## Change Log
 
 - 2026-04-28: Drafted as a deferred 77.4 review finding. Status → ready-for-dev.
+- 2026-04-28: Implemented helper `TrainingDataStore.TransactionScope.mergeImportPayloads(_:existingKeys:keyFor:)` and migrated all six conforming disciplines (the story narrative said "four"; six discipline files actually carried the loop body — pitch and matching × unison/interval, plus the two rhythm disciplines). Status → review.
+
+## Dev Agent Record
+
+### Implementation Plan
+
+- Helper location: extension on `TrainingDataStore.TransactionScope` in `Peach/Core/Data/TransactionScope+MergeImport.swift`. Same module as `JSONEnvelope`/`TrainingRecord`, no new imports required at call sites (Foundation only). Reads naturally as `scope.mergeImportPayloads(...)` next to the existing `scope.insert(envelope)`.
+- Signature: generic over `P: TrainingDisciplinePayload` and `K: Hashable`; takes typed `[(timestamp: Date, payload: P)]`, an `inout Set<K>` (so in-batch duplicates are caught after the first successful insert), and a `keyFor: (Date, P) -> K` closure. Returns the same `(imported: Int, skipped: Int)` tuple the protocol method returns.
+- Existential cast: confined to a single `compactMap` per discipline, immediately before the helper call. Disappears when 77.8 lands the typed `Payload` associated type.
+- Order preserved as encode → `scope.insert` → `existingKeys.insert` so a throwing encoder cannot leave the local key set ahead of what was actually persisted.
+
+### Completion Notes
+
+- Helper consolidates the encode-and-insert-if-new loop that was duplicated across six disciplines. Each discipline's `mergeImportRecords` body is now ≤ 8 lines (build set, typed conversion, helper call).
+- All four test configurations green: iOS Debug 1460 passed, macOS Debug 1454, iOS Debug (Research) 1804, macOS Debug (Research) 1798.
+- Both builds clean (only the pre-existing `appintentsmetadataprocessor` warning, unchanged by this story).
+- Added 5 unit tests in `PeachTests/Core/Data/TransactionScopeMergeImportTests.swift`: empty existing-keys, all-duplicate, mixed input, in-batch dedup, throwing-encoder.
+
+### File List
+
+- Added: `Peach/Core/Data/TransactionScope+MergeImport.swift`
+- Added: `PeachTests/Core/Data/TransactionScopeMergeImportTests.swift`
+- Modified: `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift`
+- Modified: `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift`
+- Modified: `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift`
+- Modified: `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift`
+- Modified: `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift`
+- Modified: `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift`
+- Modified: `docs/implementation-artifacts/77-7-collapse-merge-import-boilerplate.md`
+- Modified: `docs/implementation-artifacts/sprint-status.yaml`

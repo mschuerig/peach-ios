@@ -84,19 +84,13 @@ struct UnisonPitchMatchingDiscipline: TrainingDisciplineUI, Sendable {
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildPitchDuplicateKeys(matchingsIn: store, trainingType: csvTrainingType)
-        var imported = 0, skipped = 0
-        for entry in parsedRecords(from: parseResult) {
-            guard let p = entry.payload as? PitchMatchingPayload else { continue }
-            let key = PitchDuplicateKey(timestamp: entry.timestamp, payload: p, trainingType: csvTrainingType)
-            if existingKeys.contains(key) {
-                skipped += 1
-            } else {
-                let envelope = try JSONEnvelope.encode(p, timestamp: entry.timestamp)
-                scope.insert(envelope)
-                existingKeys.insert(key)
-                imported += 1
-            }
+        let typed = parsedRecords(from: parseResult).compactMap { entry in
+            (entry.payload as? PitchMatchingPayload).map { (entry.timestamp, $0) }
         }
-        return (imported, skipped)
+        return try scope.mergeImportPayloads(
+            typed,
+            existingKeys: &existingKeys,
+            keyFor: { PitchDuplicateKey(timestamp: $0, payload: $1, trainingType: csvTrainingType) }
+        )
     }
 }

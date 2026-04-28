@@ -158,19 +158,13 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildRhythmDuplicateKeys(continuousRhythmMatchingsIn: store, trainingType: csvTrainingType)
-        var imported = 0, skipped = 0
-        for entry in parsedRecords(from: parseResult) {
-            guard let p = entry.payload as? ContinuousRhythmMatchingPayload else { continue }
-            let key = RhythmDuplicateKey(timestamp: entry.timestamp, tempoBPM: p.tempoBPM, trainingType: csvTrainingType)
-            if existingKeys.contains(key) {
-                skipped += 1
-            } else {
-                let envelope = try JSONEnvelope.encode(p, timestamp: entry.timestamp)
-                scope.insert(envelope)
-                existingKeys.insert(key)
-                imported += 1
-            }
+        let typed = parsedRecords(from: parseResult).compactMap { entry in
+            (entry.payload as? ContinuousRhythmMatchingPayload).map { (entry.timestamp, $0) }
         }
-        return (imported, skipped)
+        return try scope.mergeImportPayloads(
+            typed,
+            existingKeys: &existingKeys,
+            keyFor: { RhythmDuplicateKey(timestamp: $0, tempoBPM: $1.tempoBPM, trainingType: csvTrainingType) }
+        )
     }
 }
