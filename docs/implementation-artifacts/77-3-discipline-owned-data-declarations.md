@@ -1,6 +1,6 @@
 # Story 77.3: Discipline-owned data declarations
 
-Status: review
+Status: done
 
 ## Story
 

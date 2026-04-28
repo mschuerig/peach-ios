@@ -1,4 +1,4 @@
-# Story 77.4: Feature-owned storage for enabledGapPositions
+# Story 77.6: Feature-owned storage for enabledGapPositions
 
 Status: ready-for-dev
 
@@ -53,14 +53,14 @@ Document the chosen mechanism in Completion Notes.
 
 ### AC 4: Section view binds to the feature key
 
-**Given** `RhythmGapPositionsSettingsSection` (after 77.2 it lives in the feature directory)
+**Given** `RhythmGapPositionsSettingsSection` (since 77.2 it lives in the feature directory)
 **When** inspected
 **Then** its `@AppStorage` binds to a feature-owned key constant, not to `SettingsKeys.enabledGapPositions`.
 
 ### AC 5: UserDefaults key and encoding preserved
 
-**Given** an existing user with `"enabledGapPositions"` set in UserDefaults from a pre-77.4 build
-**When** they launch a post-77.4 build
+**Given** an existing user with `"enabledGapPositions"` set in UserDefaults from a pre-77.6 build
+**When** they launch a post-77.6 build
 **Then** their selection is read correctly. The UserDefaults key string and `GapPositionEncoding` format are byte-identical to before this story (no migration code required).
 
 ### AC 6: No central type enumerates discipline-specific settings
@@ -145,4 +145,5 @@ If a future story finds that the pitch family wants its own scope type for share
 
 ## Change Log
 
-- 2026-04-27: Drafted. Status → ready-for-dev.
+- 2026-04-27: Drafted as Story 77.4. Status → ready-for-dev.
+- 2026-04-28: Renumbered to 77.6 to reflect post-architecture-session work order (envelope storage and CSV migration plugin take 77.4 and 77.5). Story content is unchanged; this work is independent of the envelope/CSV redesign.

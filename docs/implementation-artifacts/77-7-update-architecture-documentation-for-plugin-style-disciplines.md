@@ -1,18 +1,18 @@
-# Story 77.5: Update architecture documentation for plugin-style disciplines
+# Story 77.7: Update architecture documentation for plugin-style disciplines
 
 Status: ready-for-dev
 
 ## Story
 
 As **a future contributor (human or agent) reading the architecture docs to understand how training disciplines plug into Peach**,
-I want `docs/planning-artifacts/architecture.md` and `docs/arc42.md` to reflect the post-77.x plugin model — discipline-owned UI/data/feature-local storage, the SwiftUI-aware `TrainingDisciplineUI` refinement, the per-discipline compile-time activation switch, and the `Peach/Training/<Feature>/` colocation rule — written for the audience each document serves,
-so that nobody bases new work on the obsolete v0.5 picture (central enums, `TrainingDiscipline` enum exhaustiveness, category-gated screens, central `enabledGapPositions`) and the "add a new discipline" instructions are accurate end-to-end.
+I want `docs/planning-artifacts/architecture.md` and `docs/arc42.md` to reflect the post-77.x plugin model — discipline-owned UI, JSON-envelope persistence with discipline-owned Codable payloads, history+derivation CSV migration, feature-local storage, the SwiftUI-aware `TrainingDisciplineUI` refinement, the per-discipline compile-time activation switch, and the `Peach/Training/<Feature>/` colocation rule — written for the audience each document serves,
+so that nobody bases new work on the obsolete v0.5 picture (central enums, `TrainingDiscipline` enum exhaustiveness, category-gated screens, central `enabledGapPositions`, per-discipline `@Model` types, central CSV migration enumeration) and the "add a new discipline" instructions are accurate end-to-end.
 
 ## Background
 
 Epic 77 substantially changes how disciplines extend the app, but the documents still describe the v0.5 / pre-77 world:
 
-- `docs/planning-artifacts/architecture.md` ends at v0.8 (Schema Versioning, 2026-04-something). Its v0.5 amendment (lines 2695–2982) is the most recent description of the discipline registry; it describes ports/adapters and the `TrainingDiscipline` protocol but knows nothing about UI contributions, the `TrainingDisciplineUI` refinement, the central kinds enums introduced and then deleted by 77.1/77.2, the per-discipline compile-time activation switch, or `enabledGapPositions` leaving `Core/Ports/UserSettings`.
+- `docs/planning-artifacts/architecture.md` ends at v0.8 (Schema Versioning, 2026-04-something). Its v0.5 amendment (lines 2695–2982) is the most recent description of the discipline registry; it describes ports/adapters and the `TrainingDiscipline` protocol but knows nothing about UI contributions, the `TrainingDisciplineUI` refinement, the central kinds enums introduced and then deleted by 77.1/77.2, the per-discipline compile-time activation switch, the JSON-envelope persistence model introduced by 77.4 (and the dissolution of per-discipline `@Model` types it replaces), the history+derivation CSV migration plugin contract introduced by 77.5, or `enabledGapPositions` leaving `Core/Ports/UserSettings` (77.6).
 - `docs/arc42.md` (header: "Status: Current with codebase as of v0.5") explicitly tracks v0.5. Section 8.7 ("Training Discipline Registry") and the "Adding a new discipline requires…" enumeration still describe the v0.5 surface — no UI contributions, no compile-time per-discipline switch, no feature-directory colocation rule for view types and feature-local storage.
 
 The two documents have **different audiences and different reading contracts**:
@@ -22,7 +22,7 @@ The two documents have **different audiences and different reading contracts**:
 
 This story applies the appropriate update style to each document. It does **not** rewrite either document from scratch and does **not** consolidate across them.
 
-This story runs **after** 77.2 / 77.3 / 77.4 reach `done` so the documentation describes the actual landed state, not a moving target. Wait for those three before starting.
+This story runs **after** 77.2 / 77.3 / 77.4 / 77.5 / 77.6 reach `done` so the documentation describes the actual landed state, not a moving target. Wait for all five before starting.
 
 ## Acceptance Criteria
 
@@ -32,16 +32,18 @@ This story runs **after** 77.2 / 77.3 / 77.4 reach `done` so the documentation d
 **When** epic 77's documentation update lands
 **Then** a new versioned amendment section is appended after `## v0.8 Architecture Amendment — Schema Versioning`, named `## v0.9 Architecture Amendment — Plugin-Style Discipline Contributions` (or whatever next-integer version fits if v0.9 has been used by another in-flight change). The amendment follows the existing template:
 
-- A leading paragraph stating motivation and the implementation-stories pointer (`Epic 77 (77.1, 77.2, 77.3, 77.4) in docs/implementation-artifacts/`).
-- An explicit `**Supersedes:**` block naming each part of the v0.5 amendment that no longer holds. At minimum, it must supersede the v0.5 "Discipline Registry" section's claim that the protocol surface is closed (it now splits across `TrainingDiscipline` in Core and `TrainingDisciplineUI` in App), the "Expected Result / Adding a discipline requires…" enumeration (it is shorter now and lives in the feature directory), and any v0.5 statement that places UI fragments in central screens. If 77.2 deletes `Peach/Settings/SettingsContributions.swift`, `Peach/Profile/ProfileContributions.swift`, and `Peach/Core/Training/Discipline/UIContributions.swift`, the amendment must say so by name (the v0.5 directory snapshots are file-by-file; the v0.9 supersession must be too).
+- A leading paragraph stating motivation and the implementation-stories pointer (`Epic 77 (77.1, 77.2, 77.3, 77.4, 77.5, 77.6) in docs/implementation-artifacts/`).
+- An explicit `**Supersedes:**` block naming each part of the v0.5 amendment that no longer holds. At minimum, it must supersede the v0.5 "Discipline Registry" section's claim that the protocol surface is closed (it now splits across `TrainingDiscipline` in Core and `TrainingDisciplineUI` in App), the "Expected Result / Adding a discipline requires…" enumeration (it is shorter now and lives in the feature directory), any v0.5 statement that places UI fragments in central screens, the v0.5 statement that each discipline persists via its own SwiftData `@Model` (replaced by the envelope model in 77.4), and the v0.5 statement that CSV migrations are enumerated centrally (replaced by per-discipline history+derivation in 77.5). If 77.2 deletes `Peach/Settings/SettingsContributions.swift`, `Peach/Profile/ProfileContributions.swift`, and `Peach/Core/Training/Discipline/UIContributions.swift`, the amendment must say so by name. Likewise if 77.4 removes `extension SchemaV1 { @Model … }` from each feature directory and 77.5 deletes `V1ToV2Migration.swift` / `V2ToV3Migration.swift` (the v0.5 directory snapshots are file-by-file; the v0.9 supersession must be too).
 - Subsections covering, at minimum:
   1. **Two-protocol split along the Core/App seam.** Why the split exists (Core's no-SwiftUI rule for data services), the exact members on `TrainingDisciplineUI` (`profileCard: AnyView`, `settingsSections: AnyView`, `settingsHelp: [HelpSection]`, `profileHelp: [HelpSection]`), the defaults each provides, and where the protocol file lives (`Peach/App/Training/TrainingDisciplineUI.swift` or wherever 77.2 places it).
-  2. **Feature-directory colocation rule.** Every feature-specific view, struct, encoding helper, help body, and feature-local UserDefaults key lives under `Peach/Training/<Feature>/`. State this as an architectural rule, list the file moves 77.2 / 77.3 / 77.4 perform, and name the audit guardrail (`CategoryLiteralAuditTests` and any extensions added in 77.2 / 77.3 / 77.4).
+  2. **Feature-directory colocation rule.** Every feature-specific view, struct, payload type, encoding helper, help body, and feature-local UserDefaults key lives under `Peach/Training/<Feature>/`. State this as an architectural rule, list the file moves 77.2 / 77.3 / 77.4 / 77.6 perform, and name the audit guardrail (`CategoryLiteralAuditTests` and any extensions added in 77.2 / 77.3 / 77.4 / 77.5 / 77.6).
   3. **Per-discipline compile-time activation.** Document the single source-of-truth file (`Peach/App/Training/DisciplineBootstrap.swift`), the chosen activation shape (Shape A: `(active: Bool, factory: () -> any TrainingDiscipline)` candidates list with `compactMap`), the `PEACH_RESEARCH` envelope behavior (`#if PEACH_RESEARCH` physically excludes timing-discipline factories from the App Store binary), and the explicit non-goals (no runtime UI, no `UserDefaults` flag, no debug menu — see story 77.1's "What this story is NOT").
-  4. **Feature-local storage for `enabledGapPositions`.** Document that `enabledGapPositions` is no longer in `Core/Ports/UserSettings.swift`, `Settings/SettingsKeys.swift`, or `Settings/AppUserSettings.swift`; the UserDefaults key string and `GapPositionEncoding` are now under `Peach/Training/ContinuousRhythmMatching/`; the byte-identical key string and encoding preserve backwards-compatibility with pre-77.4 user data; the chosen wiring mechanism for `ContinuousRhythmMatchingSettings.from(_:)` (UserDefaults parameter, feature-local port, or whatever 77.4 picks).
-  5. **Updated "Adding a new discipline requires" sequence.** Replace the v0.5 enumeration (which lived under "Expected Result") with the post-77 sequence: create `Peach/Training/<Feature>/` with the discipline conformance to `TrainingDisciplineUI`, the SwiftData `@Model` record type, the session, the screen, observer protocol, adapters, any feature-local UserDefaults storage, scoped help, settings sections, and profile card view; add one factory line to `DisciplineBootstrap.candidates`; add a `NavigationDestination` case; add localization strings. Compare to v0.5: the four-step list becomes "new directory + one bootstrap line + nav case + strings" — explicitly call out what is no longer needed (no central enum case, no central screen edit, no central help-content edit, no central UserSettings edit).
-  6. **Updated project structure snapshot for `Peach/Training/<Feature>/`.** Show one representative feature directory (e.g., `ContinuousRhythmMatching/`) listing the post-77.2 / 77.3 / 77.4 file inventory: discipline conformance, session, screen, observer protocol, adapters, settings sections, profile card view, help bodies, feature-local UserDefaults keys (for CRM only), encoding helper. Mirror the level of detail used in the v0.5 directory snapshots — agents reading this section need to know what files exist and where.
-  7. **Updated central-files inventory for `Peach/Settings/`, `Peach/Profile/`, `Peach/App/HelpContent.swift`, and `Peach/Core/Ports/UserSettings.swift`.** Show what these files contain *after* 77.x: only common / cross-cutting code, no feature-specific fragments, no category-literal gates, no enumeration of discipline-only settings.
+  4. **JSON-envelope persistence (77.4).** Document the single `@Model TrainingRecord` envelope (`disciplineIdentifier: String`, `timestamp: Date`, `payloadVersion: Int`, `payloadData: Data`); the `TrainingDisciplinePayload: Codable, Sendable` protocol with `disciplineIdentifier` and `currentPayloadVersion`; that `SchemaV1.models` is `[TrainingRecord.self]` and never grows; that `extension SchemaV1 { @Model … }` declarations and top-level record-type typealiases are gone; that adapters mediate envelope ↔ payload encode/decode; the explicit no-deployed-user / no-migration decision and its gating on `72-1`. Show the envelope shape and one representative payload struct (e.g., `PitchDiscriminationPayload`) as short code blocks. Cite story 77.4.
+  5. **History+derivation CSV migration (77.5).** Document the `csvHistory` member on `TrainingDiscipline`: each entry is a snapshot at a CSV format version (identifier + columns + optional value transforms from previous version); the runner derives column-rename / trainingType-rename / value-transform operations by diffing adjacent entries; the central `V1ToV2Migration.swift` / `V2ToV3Migration.swift` files are deleted; the runner's contract for absent-at-version (no operation) and retired-at-version (rows dropped) cases. Cite story 77.5.
+  6. **Feature-local storage for `enabledGapPositions` (77.6).** Document that `enabledGapPositions` is no longer in `Core/Ports/UserSettings.swift`, `Settings/SettingsKeys.swift`, or `Settings/AppUserSettings.swift`; the UserDefaults key string and `GapPositionEncoding` are now under `Peach/Training/ContinuousRhythmMatching/`; the byte-identical key string and encoding preserve backwards-compatibility with pre-77.6 user data; the chosen wiring mechanism for `ContinuousRhythmMatchingSettings.from(_:)` (UserDefaults parameter, feature-local port, or whatever 77.6 picks).
+  7. **Updated "Adding a new discipline requires" sequence.** Replace the v0.5 enumeration (which lived under "Expected Result") with the post-77 sequence: create `Peach/Training/<Feature>/` with the discipline conformance to `TrainingDisciplineUI`, the Codable payload struct conforming to `TrainingDisciplinePayload`, the session, the screen, observer protocol, store adapter, any feature-local UserDefaults storage, scoped help, settings sections, profile card view, and a `csvHistory` declaration; add one factory line to `DisciplineBootstrap.candidates`; add a `NavigationDestination` case; add localization strings. Compare to v0.5: the four-step list becomes "new directory + one bootstrap line + nav case + strings" — explicitly call out what is no longer needed (no central enum case, no central screen edit, no central help-content edit, no central UserSettings edit, no SwiftData schema edit, no central CSV migration edit).
+  8. **Updated project structure snapshot for `Peach/Training/<Feature>/`.** Show one representative feature directory (e.g., `ContinuousRhythmMatching/`) listing the post-77 file inventory: discipline conformance, payload struct, session, screen, observer protocol, store adapter, settings sections, profile card view, help bodies, feature-local UserDefaults keys (for CRM only), encoding helper. Mirror the level of detail used in the v0.5 directory snapshots — agents reading this section need to know what files exist and where.
+  9. **Updated central-files inventory for `Peach/Core/Data/`, `Peach/Settings/`, `Peach/Profile/`, `Peach/App/HelpContent.swift`, and `Peach/Core/Ports/UserSettings.swift`.** Show what these files contain *after* 77.x: only common / cross-cutting code, the single `TrainingRecord` envelope and the migration runner in `Peach/Core/Data/`, no feature-specific fragments, no category-literal gates, no enumeration of discipline-only settings, no per-discipline `@Model` types or `V*Migration.swift` files.
 
 The amendment is **append-only**: do not edit the v0.5 / v0.6 / v0.7 / v0.8 sections in place. Pre-existing sections retain their historical text. The new amendment section is the authoritative current statement and supersedes the listed pieces.
 
@@ -77,7 +79,7 @@ The rewrite preserves the section's existing flavor: prose-first, mermaid-diagra
 
 - **Context:** the v0.5 / 76.4 state allowed only category-grained activation via `PEACH_RESEARCH`; per-discipline experimentation required hunting through gates in screens; central category gates became misleading once one rhythm discipline could be excluded while the other registered.
 - **Decision:** per-discipline activation lives in a single file (`Peach/App/Training/DisciplineBootstrap.swift`) as a list of `() -> any TrainingDiscipline` factories; the four pitch disciplines are unconditionally listed; the two timing disciplines are gated by `#if PEACH_RESEARCH` so they are physically absent from App Store binaries; any developer disables a discipline locally by commenting out its factory line.
-- **Status:** Implemented (epic 77.1, refined by 77.2 / 77.3 / 77.4).
+- **Status:** Implemented (epic 77.1, refined by 77.2 / 77.3 / 77.4 / 77.5 / 77.6).
 - **Consequences:** standard arc42 (+) / (–) bullets — additive (one-line edit), honest binary (App Store has no dormant timing code), preserves the published `Debug` / `Debug (Research)` / `Release` / `Release (Research)` matrix; against: requires rebuild to toggle (no live experimentation), one-off discipline disabling is per-developer state that should not be committed.
 
 ADR-10 references story 77.1 in its body (see ADR-7 / ADR-8 / ADR-9 for the citation style — story numbers, not file paths).
@@ -91,15 +93,15 @@ ADR-10 references story 77.1 in its body (see ADR-7 / ADR-8 / ADR-9 for the cita
 - **Header (lines 1–6):** version bumped (e.g., `**Version:** 3.1`), date bumped to today, `Status:` line updated to reflect epic-77 amendments. Keep the format identical to today's header.
 - **Section 4 Solution Strategy (line 153 specifically):** the `Simplicity` row mentions "discipline registry for additive extensibility" — extend or rephrase to reflect plugin-style colocation, but do **not** restructure the table. One-row tweak only if the existing wording is now misleading; otherwise leave as-is.
 - **Section 12 Glossary:** add or update entries for `TrainingDisciplineUI`, `DisciplineBootstrap`, and adjust the `TrainingDisciplineRegistry` definition (line 931) to reflect the protocol split. Add a `**PEACH_RESEARCH**` entry if not already present (it is referenced throughout but not defined). Glossary entries are one-line definitions in the existing tabular style.
-- **Section 11 Technical Debt:** remove or update the `Original architecture document partially outdated` row (line 890) if 77.5 lands the v0.9 amendment that would resolve the partial-outdate-ness. If `architecture.md` is now fully current with the post-77 codebase, the row can shrink to "predates implementation; arc42 + v0.6+ amendments are the current source of truth" or be removed entirely — dev's call based on the actual landed state of `architecture.md`.
+- **Section 11 Technical Debt:** remove or update the `Original architecture document partially outdated` row (line 890) if 77.7 lands the v0.9 amendment that would resolve the partial-outdate-ness. If `architecture.md` is now fully current with the post-77 codebase, the row can shrink to "predates implementation; arc42 + v0.6+ amendments are the current source of truth" or be removed entirely — dev's call based on the actual landed state of `architecture.md`.
 
 Do not touch any section that does not make a claim invalidated by epic 77. Section 5.1 / 5.2 / 5.3 (building blocks) describe sessions and audio and are not affected. Section 6 (runtime view) is not affected. Sections 7–8.6 are not affected.
 
-### AC 6: `epics.md` Story 77.5 entry added
+### AC 6: `epics.md` Story 77.7 entry added
 
-**Given** `docs/planning-artifacts/epics.md` enumerates epic 77's stories at lines 7702–7754 (77.1 → 77.4)
-**When** 77.5 is added to the canonical story list
-**Then** a new section `### Story 77.5: Update architecture documentation for plugin-style disciplines` is appended after the 77.4 section, in the same style: user story (`As a … I want … so that …`), `**Acceptance Criteria:**` numbered list summarizing the AC 1–AC 5 checks above (one-sentence-per-AC summary, not the full text). The work-order paragraph at line 7700 is updated to read `**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 (77.5 documents the landed state and runs last).`
+**Given** `docs/planning-artifacts/epics.md` enumerates epic 77's stories (77.1 → 77.6 after the 2026-04-28 renumbering)
+**When** 77.7 is added to the canonical story list
+**Then** a new section `### Story 77.7: Update architecture documentation for plugin-style disciplines` is appended after the 77.4 section, in the same style: user story (`As a … I want … so that …`), `**Acceptance Criteria:**` numbered list summarizing the AC 1–AC 5 checks above (one-sentence-per-AC summary, not the full text). The work-order paragraph at line 7700 is updated to read `**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 (77.5 documents the landed state and runs last).`
 
 ### AC 7: Internal and external consistency
 
@@ -107,9 +109,9 @@ Do not touch any section that does not make a claim invalidated by epic 77. Sect
 **When** the four touched documents are read in sequence
 **Then** they agree:
 
-- File paths, type names, and protocol members named in `architecture.md` v0.9 match the actual landed state of the codebase after 77.4 (no aspirational references to a `TrainingDisciplineUI` member that 77.2 did not implement, no references to a `Peach/Settings/SettingsContributions.swift` that 77.2 deleted).
+- File paths, type names, and protocol members named in `architecture.md` v0.9 match the actual landed state of the codebase after 77.6 (no aspirational references to a `TrainingDisciplineUI` member that 77.2 did not implement, no references to a `Peach/Settings/SettingsContributions.swift` that 77.2 deleted, no references to per-discipline `@Model` types that 77.4 dissolved, no references to `V*Migration.swift` files that 77.5 deleted).
 - Names used in `arc42.md` match `architecture.md` (`TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`).
-- Story 77.5's own status moves from `ready-for-dev` → `review` → `done` in the usual workflow; `epics.md` stays canonical (the AC-1–AC-5 summaries in epics 77.5 do not duplicate the full text from this file).
+- Story 77.7's own status moves from `ready-for-dev` → `review` → `done` in the usual workflow; `epics.md` stays canonical (the AC-1–AC-5 summaries in the epics 77.7 entry do not duplicate the full text from this file).
 
 A grep for legacy claims should return zero hits **in the touched sections only**:
 
@@ -127,15 +129,15 @@ Pre-77 amendments (v0.5–v0.8) keep their historical text — do not rewrite hi
 ## Tasks / Subtasks
 
 - [ ] Task 1: Verify the landed post-77 state before writing anything (AC: 1, 7)
-  - [ ] 1.1 Confirm 77.2, 77.3, 77.4 are all `done` in `sprint-status.yaml`. If any are still `ready-for-dev` / `in-progress` / `review`, halt — this story documents the landed state and must run after the implementation stories land.
-  - [ ] 1.2 Read each of 77.2 / 77.3 / 77.4's `## Dev Agent Record` → `Completion Notes` and `File List` to extract the actual landed file paths, the chosen `TrainingDisciplineUI` member set, the chosen registry-access mechanism (App-layer extension vs. parallel typed list vs. registry-in-App), the chosen `enabledGapPositions` wiring (UserDefaults parameter vs. feature-local port).
+  - [ ] 1.1 Confirm 77.2, 77.3, 77.4, 77.5, 77.6 are all `done` in `sprint-status.yaml`. If any are still `ready-for-dev` / `in-progress` / `review`, halt — this story documents the landed state and must run after the implementation stories land.
+  - [ ] 1.2 Read each of 77.2 / 77.3 / 77.4 / 77.5 / 77.6's `## Dev Agent Record` → `Completion Notes` and `File List` to extract the actual landed file paths, the chosen `TrainingDisciplineUI` member set, the chosen registry-access mechanism (App-layer extension vs. parallel typed list vs. registry-in-App), the chosen `TrainingDisciplinePayload` adapter shape, the chosen `csvHistory` shape and runner contract, and the chosen `enabledGapPositions` wiring (UserDefaults parameter vs. feature-local port).
   - [ ] 1.3 Read 77.1's `Completion Notes` for the activation shape rationale (Shape A) and the `#if PEACH_RESEARCH` decision; this is the authoritative source for the ADR-10 rationale.
   - [ ] 1.4 Read the `TrainingDiscipline` and `TrainingDisciplineUI` source files directly — protocol member names and defaults must match actual code, not story prose. If the source disagrees with the story, the source wins; flag the discrepancy in Completion Notes.
 
 - [ ] Task 2: Write the `architecture.md` v0.9 amendment (AC: 1, 2)
   - [ ] 2.1 Append after the v0.8 amendment (line 3097). Do not edit any earlier section in place.
-  - [ ] 2.2 Lead with motivation, implementation-stories pointer (`Epic 77 (77.1, 77.2, 77.3, 77.4)`), and the explicit `**Supersedes:**` block.
-  - [ ] 2.3 Write subsections for the seven topics in AC 1: protocol split, colocation rule, activation, feature-local storage, "Adding a new discipline" sequence, project structure snapshot, central-files inventory.
+  - [ ] 2.2 Lead with motivation, implementation-stories pointer (`Epic 77 (77.1, 77.2, 77.3, 77.4, 77.5, 77.6)`), and the explicit `**Supersedes:**` block.
+  - [ ] 2.3 Write subsections for the nine topics in AC 1: protocol split, colocation rule, activation, JSON-envelope persistence, history+derivation CSV migration, feature-local storage, "Adding a new discipline" sequence, project structure snapshot, central-files inventory.
   - [ ] 2.4 Use literal type names, file paths, and code snippets per AC 2.
   - [ ] 2.5 Add `[Source: docs/implementation-artifacts/77-N-...md]` references at subsection ends.
 
@@ -155,16 +157,16 @@ Pre-77 amendments (v0.5–v0.8) keep their historical text — do not rewrite hi
   - [ ] 5.3 Section 12 Glossary: add `TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`; update `TrainingDisciplineRegistry` definition (line 931) to reflect the protocol split.
   - [ ] 5.4 Section 11 Technical Debt: re-evaluate the `Original architecture document partially outdated` row (line 890) and update or remove based on the v0.9 amendment's coverage.
 
-- [ ] Task 6: Append Story 77.5 to `epics.md` (AC: 6)
-  - [ ] 6.1 Append `### Story 77.5: …` after the 77.4 section (line 7754).
-  - [ ] 6.2 Update the work-order paragraph at line 7700 to include 77.5.
+- [ ] Task 6: Append Story 77.7 to `epics.md` (AC: 6)
+  - [ ] 6.1 Append `### Story 77.7: …` after the 77.6 section.
+  - [ ] 6.2 Confirm the work-order paragraph already includes 77.7 (added during the 2026-04-28 renumbering); if not, add it.
   - [ ] 6.3 Use one-sentence-per-AC summaries; do not duplicate this story file's full text.
 
 - [ ] Task 7: Verify and ship (AC: 7, 8)
-  - [ ] 7.1 Read the four touched sections back-to-back as a sequence: `architecture.md` v0.9 → `arc42.md` Section 8.7 → ADR-10 → `epics.md` Story 77.5. Check for name disagreements (member names, file paths, flag names).
+  - [ ] 7.1 Read the four touched sections back-to-back as a sequence: `architecture.md` v0.9 → `arc42.md` Section 8.7 → ADR-10 → `epics.md` Story 77.7. Check for name disagreements (member names, file paths, flag names).
   - [ ] 7.2 Grep the touched sections for the legacy phrases listed in AC 7. Expected: zero hits.
   - [ ] 7.3 `bin/test.sh && bin/test.sh -p mac` green; `bin/build.sh && bin/build.sh -p mac` no new warnings.
-  - [ ] 7.4 Update story file Status to `review`; update `sprint-status.yaml` `77-5-…: review` with last_updated bumped.
+  - [ ] 7.4 Update story file Status to `review`; update `sprint-status.yaml` `77-7-…: review` with last_updated bumped.
 
 ## Dev Notes
 
@@ -223,12 +225,15 @@ If a future epic re-organizes ports (e.g., a feature-local port for CRM gap posi
 - Story 77.1 — `docs/implementation-artifacts/77-1-plugin-style-discipline-ui-contributions.md`. Authoritative source for the activation mechanism (Shape A, `#if PEACH_RESEARCH`), the plugin framing, and the rejection of runtime activation.
 - Story 77.2 — `docs/implementation-artifacts/77-2-discipline-owned-ui-contributions.md`. Authoritative source for the `TrainingDisciplineUI` protocol split, the file-move list, and the central-deletion list.
 - Story 77.3 — `docs/implementation-artifacts/77-3-discipline-owned-data-declarations.md`. Authoritative source for the data-layer audit findings (likely no-op or near-no-op).
-- Story 77.4 — `docs/implementation-artifacts/77-4-feature-owned-gap-positions-storage.md`. Authoritative source for the `enabledGapPositions` move and the chosen wiring mechanism.
+- Story 77.4 — `docs/implementation-artifacts/77-4-json-envelope-storage-redesign.md`. Authoritative source for the envelope `@Model TrainingRecord`, the `TrainingDisciplinePayload` protocol, and the no-deployed-user / no-migration decision.
+- Story 77.5 — `docs/implementation-artifacts/77-5-csv-migration-plugin-contract.md`. Authoritative source for the `csvHistory` shape, the runner's history-diffing contract, and the deletion of `V1ToV2Migration.swift` / `V2ToV3Migration.swift`.
+- Story 77.6 — `docs/implementation-artifacts/77-6-feature-owned-gap-positions-storage.md`. Authoritative source for the `enabledGapPositions` move and the chosen wiring mechanism.
 - `docs/planning-artifacts/architecture.md` — line 2695 (v0.5 start), line 2701 (`**Supersedes:**` example), line 2877 (v0.5 "Expected Result / Adding a discipline" enumeration), line 2897 (v0.5 directory snapshot), line 2962 (v0.5 service-boundaries table), line 2974 (v0.5 validation), line 3097 (v0.8 end / v0.9 insertion point).
 - `docs/arc42.md` — line 1 (header), line 153 (Section 4 row), lines 596–620 (Section 8.7), line 808 (ADR-9 / ADR-10 insertion point), line 822 (ADR-9 closing), line 890 (Section 11 outdated-architecture row), line 925 (Section 12 `StatisticsKey` for style reference), line 931 (`TrainingDisciplineRegistry` glossary entry).
-- `docs/planning-artifacts/epics.md` — line 7692 (Epic 77 start), line 7700 (work-order paragraph), line 7702 (story-list entries), line 7754 (insertion point for 77.5 entry).
-- Memory: `feedback_arc42_intent_not_implementation` — arc42 conveys What/Why at a high level; code/architecture.md has the How details. Story 77.5 honors this split.
+- `docs/planning-artifacts/epics.md` — Epic 77 section. Story-list entries 77.1 → 77.6 are present after the 2026-04-28 renumbering; this story appends the 77.7 entry.
+- Memory: `feedback_arc42_intent_not_implementation` — arc42 conveys What/Why at a high level; code/architecture.md has the How details. Story 77.7 honors this split.
 
 ## Change Log
 
-- 2026-04-27: Drafted as the documentation-update follow-up after 77.1 / 77.2 / 77.3 / 77.4 land. Status → ready-for-dev.
+- 2026-04-27: Drafted as Story 77.5, the documentation-update follow-up after 77.1 / 77.2 / 77.3 / 77.4 land. Status → ready-for-dev.
+- 2026-04-28: Renumbered to 77.7 (envelope storage and CSV migration plugin take 77.4 and 77.5; gap-positions storage moves to 77.6). Scope expanded to also document 77.4 (JSON envelope persistence) and 77.5 (history+derivation CSV migration). The "runs after" gate now includes 77.5 and 77.6.
