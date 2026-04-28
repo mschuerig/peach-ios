@@ -4,8 +4,8 @@ import SwiftUI
 /// the active subset into the `enabledGapPositions` `@AppStorage` key via
 /// ``GapPositionEncoding``.
 struct RhythmGapPositionsSettingsSection: View {
-    @AppStorage(SettingsKeys.enabledGapPositions)
-    private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(SettingsKeys.defaultEnabledGapPositions)
+    @AppStorage(ContinuousRhythmMatchingSettingsKeys.enabledGapPositions)
+    private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions)
 
     @State private var enabledGapPositions: Set<StepPosition> = []
 

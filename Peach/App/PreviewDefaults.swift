@@ -33,9 +33,12 @@ final class StubUserSettings: UserSettings {
     let tuningSystem: TuningSystem = .equalTemperament
     let noteGap: Duration = SettingsKeys.defaultNoteGap
     let tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM
-    let enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions
     let velocity: MIDIVelocity = SettingsKeys.defaultVelocity
     let autoStartTraining = SettingsKeys.defaultAutoStartTraining
+}
+
+final class StubContinuousRhythmMatchingUserSettings: ContinuousRhythmMatchingUserSettings {
+    let enabledGapPositions: Set<StepPosition> = ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions
 }
 
 final class StubPitchDiscriminationDataStore: PitchDiscriminationObserver {
@@ -143,6 +146,7 @@ extension TrainingLifecycleCoordinator {
             timingOffsetDetectionSession: .stub,
             continuousRhythmMatchingSession: .stub,
             userSettings: StubUserSettings(),
+            crmUserSettings: StubContinuousRhythmMatchingUserSettings(),
             backgroundPolicy: IOSBackgroundPolicy()
         )
     }()

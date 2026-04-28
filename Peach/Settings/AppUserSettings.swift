@@ -67,13 +67,6 @@ final class AppUserSettings: UserSettings {
         return system
     }
 
-    var enabledGapPositions: Set<StepPosition> {
-        guard let raw = defaults.string(forKey: SettingsKeys.enabledGapPositions) else {
-            return SettingsKeys.defaultEnabledGapPositions
-        }
-        return GapPositionEncoding.decodeWithDefault(raw)
-    }
-
     var velocity: MIDIVelocity { SettingsKeys.defaultVelocity }
 
     var autoStartTraining: Bool {

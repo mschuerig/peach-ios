@@ -10,10 +10,13 @@ struct ContinuousRhythmMatchingSettings: Sendable {
         self.enabledGapPositions = enabledGapPositions
     }
 
-    static func from(_ userSettings: UserSettings) -> ContinuousRhythmMatchingSettings {
+    static func from(
+        _ userSettings: UserSettings,
+        _ crmUserSettings: ContinuousRhythmMatchingUserSettings
+    ) -> ContinuousRhythmMatchingSettings {
         ContinuousRhythmMatchingSettings(
             tempo: userSettings.tempoBPM,
-            enabledGapPositions: userSettings.enabledGapPositions
+            enabledGapPositions: crmUserSettings.enabledGapPositions
         )
     }
 }

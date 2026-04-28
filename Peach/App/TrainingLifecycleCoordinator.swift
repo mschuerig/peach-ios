@@ -29,6 +29,7 @@ final class TrainingLifecycleCoordinator {
     private let timingOffsetDetectionSession: TimingOffsetDetectionSession
     private let continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
     private let userSettings: any UserSettings
+    private let crmUserSettings: any ContinuousRhythmMatchingUserSettings
     private let backgroundPolicy: BackgroundPolicy
     var activeSession: (any TrainingSession)?
 
@@ -46,6 +47,7 @@ final class TrainingLifecycleCoordinator {
         timingOffsetDetectionSession: TimingOffsetDetectionSession,
         continuousRhythmMatchingSession: ContinuousRhythmMatchingSession,
         userSettings: any UserSettings,
+        crmUserSettings: any ContinuousRhythmMatchingUserSettings,
         backgroundPolicy: BackgroundPolicy
     ) {
         self.pitchDiscriminationSession = pitchDiscriminationSession
@@ -53,6 +55,7 @@ final class TrainingLifecycleCoordinator {
         self.timingOffsetDetectionSession = timingOffsetDetectionSession
         self.continuousRhythmMatchingSession = continuousRhythmMatchingSession
         self.userSettings = userSettings
+        self.crmUserSettings = crmUserSettings
         self.backgroundPolicy = backgroundPolicy
         self.autoStartSetting = userSettings.autoStartTraining
     }
@@ -162,7 +165,7 @@ final class TrainingLifecycleCoordinator {
         case .timingOffsetDetection:
             timingOffsetDetectionSession.start(settings: .from(userSettings))
         case .continuousRhythmMatching:
-            continuousRhythmMatchingSession.start(settings: .from(userSettings))
+            continuousRhythmMatchingSession.start(settings: .from(userSettings, crmUserSettings))
         case .settings, .profile:
             break
         }

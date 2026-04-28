@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-28 # Story 77.5 done (review + fixes complete); story 77.10 inserted (test isolation for shared registries) — pre-existing 77.10 (architecture docs) renumbered to 77.11.
+# last_updated: 2026-04-28 # Story 77.6 review (feature-owned enabledGapPositions storage).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -647,7 +647,7 @@ development_status:
   77-3-discipline-owned-data-declarations: done
   77-4-json-envelope-storage-redesign: done
   77-5-csv-migration-plugin-contract: done
-  77-6-feature-owned-gap-positions-storage: ready-for-dev
+  77-6-feature-owned-gap-positions-storage: review
   77-7-collapse-merge-import-boilerplate: ready-for-dev # Deferred from 77.4 review
   77-8-typed-discipline-payload-associated-type: ready-for-dev # Deferred from 77.4 review
   77-9-payload-streaming-iteration: ready-for-dev # Deferred from 77.4 review

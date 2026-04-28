@@ -19,6 +19,6 @@ enum GapPositionEncoding {
 
     static func decodeWithDefault(_ string: String) -> Set<StepPosition> {
         let decoded = decode(string)
-        return decoded.isEmpty ? SettingsKeys.defaultEnabledGapPositions : decoded
+        return decoded.isEmpty ? ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions : decoded
     }
 }

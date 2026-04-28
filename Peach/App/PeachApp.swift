@@ -38,6 +38,7 @@ struct PeachApp: App {
     @State private var settingsCoordinator: SettingsCoordinator
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
+    private let crmUserSettings = AppContinuousRhythmMatchingUserSettings()
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
@@ -93,7 +94,8 @@ struct PeachApp: App {
                 profile: profile,
                 transferService: transferService,
                 notePlayer: audio.notePlayer,
-                userSettings: userSettings
+                userSettings: userSettings,
+                crmUserSettings: crmUserSettings
             )
             _trainingLifecycle = State(wrappedValue: coordinators.lifecycle)
             _settingsCoordinator = State(wrappedValue: coordinators.settings)
@@ -214,7 +216,8 @@ struct PeachApp: App {
             profile: profile,
             transferService: transferService,
             notePlayer: notePlayer,
-            userSettings: userSettings
+            userSettings: userSettings,
+            crmUserSettings: crmUserSettings
         )
         trainingLifecycle = coordinators.lifecycle
         settingsCoordinator = coordinators.settings
@@ -516,7 +519,8 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         transferService: TrainingDataTransferService,
         notePlayer: any NotePlayer,
-        userSettings: any UserSettings
+        userSettings: any UserSettings,
+        crmUserSettings: any ContinuousRhythmMatchingUserSettings
     ) -> (lifecycle: TrainingLifecycleCoordinator, settings: SettingsCoordinator) {
         let lifecycle = TrainingLifecycleCoordinator(
             pitchDiscriminationSession: pitchDiscriminationSession,
@@ -524,6 +528,7 @@ struct PeachApp: App {
             timingOffsetDetectionSession: timingOffsetDetectionSession,
             continuousRhythmMatchingSession: continuousRhythmMatchingSession,
             userSettings: userSettings,
+            crmUserSettings: crmUserSettings,
             backgroundPolicy: makeBackgroundPolicy()
         )
         let settings = SettingsCoordinator(

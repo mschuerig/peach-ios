@@ -27,9 +27,10 @@ struct ContinuousRhythmMatchingSettingsTests {
     func fromUserSettingsReadsGapPositions() async {
         let userSettings = MockUserSettings()
         userSettings.tempoBPM = TempoBPM(100)
-        userSettings.enabledGapPositions = [.first, .third]
+        let crmUserSettings = MockContinuousRhythmMatchingUserSettings()
+        crmUserSettings.enabledGapPositions = [.first, .third]
 
-        let settings = ContinuousRhythmMatchingSettings.from(userSettings)
+        let settings = ContinuousRhythmMatchingSettings.from(userSettings, crmUserSettings)
 
         #expect(settings.tempo == TempoBPM(100))
         #expect(settings.enabledGapPositions == [.first, .third])
@@ -38,7 +39,8 @@ struct ContinuousRhythmMatchingSettingsTests {
     @Test("from user settings uses default gap positions when all enabled")
     func fromUserSettingsDefaultGapPositions() async {
         let userSettings = MockUserSettings()
-        let settings = ContinuousRhythmMatchingSettings.from(userSettings)
+        let crmUserSettings = MockContinuousRhythmMatchingUserSettings()
+        let settings = ContinuousRhythmMatchingSettings.from(userSettings, crmUserSettings)
         #expect(settings.enabledGapPositions == Set(StepPosition.allCases))
     }
 

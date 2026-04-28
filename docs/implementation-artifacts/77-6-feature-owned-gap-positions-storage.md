@@ -1,6 +1,6 @@
 # Story 77.6: Feature-owned storage for enabledGapPositions
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -85,31 +85,31 @@ Document the chosen mechanism in Completion Notes.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Move feature-owned storage (AC: 1, 2)
-  - [ ] 1.1 Create the feature-owned settings keys file under `Peach/Training/ContinuousRhythmMatching/` (path is dev's call).
-  - [ ] 1.2 Move the key string constant, default value, and `GapPositionEncoding` into that location.
-  - [ ] 1.3 Remove `enabledGapPositions` and `defaultEnabledGapPositions` from `SettingsKeys.swift`, `UserSettings.swift`, and `AppUserSettings.swift`. Remove any remaining `StepPosition` import from those three files.
+- [x] Task 1: Move feature-owned storage (AC: 1, 2)
+  - [x] 1.1 Create the feature-owned settings keys file under `Peach/Training/ContinuousRhythmMatching/` (path is dev's call).
+  - [x] 1.2 Move the key string constant, default value, and `GapPositionEncoding` into that location.
+  - [x] 1.3 Remove `enabledGapPositions` and `defaultEnabledGapPositions` from `SettingsKeys.swift`, `UserSettings.swift`, and `AppUserSettings.swift`. Remove any remaining `StepPosition` import from those three files.
 
-- [ ] Task 2: Wire the CRM session (AC: 3)
-  - [ ] 2.1 Pick a mechanism (UserDefaults parameter, feature-local port, or equivalent). Document the choice.
-  - [ ] 2.2 Update `ContinuousRhythmMatchingSettings.from(_:)` accordingly.
-  - [ ] 2.3 Update App-layer composition root if a new dependency is introduced.
+- [x] Task 2: Wire the CRM session (AC: 3)
+  - [x] 2.1 Pick a mechanism (UserDefaults parameter, feature-local port, or equivalent). Document the choice.
+  - [x] 2.2 Update `ContinuousRhythmMatchingSettings.from(_:)` accordingly.
+  - [x] 2.3 Update App-layer composition root if a new dependency is introduced.
 
-- [ ] Task 3: Update the section view (AC: 4)
-  - [ ] 3.1 Rebind `RhythmGapPositionsSettingsSection`'s `@AppStorage` to the feature-owned key constant.
+- [x] Task 3: Update the section view (AC: 4)
+  - [x] 3.1 Rebind `RhythmGapPositionsSettingsSection`'s `@AppStorage` to the feature-owned key constant.
 
-- [ ] Task 4: Verify backwards-compatibility (AC: 5)
-  - [ ] 4.1 Confirm the UserDefaults key string is byte-identical (`"enabledGapPositions"`).
-  - [ ] 4.2 Confirm the encoding format produced by `GapPositionEncoding` is unchanged.
-  - [ ] 4.3 Optional: write a small test that round-trips a legacy-format string through the new feature-owned reader.
+- [x] Task 4: Verify backwards-compatibility (AC: 5)
+  - [x] 4.1 Confirm the UserDefaults key string is byte-identical (`"enabledGapPositions"`).
+  - [x] 4.2 Confirm the encoding format produced by `GapPositionEncoding` is unchanged.
+  - [x] 4.3 Optional: write a small test that round-trips a legacy-format string through the new feature-owned reader.
 
-- [ ] Task 5: Audit (AC: 6)
-  - [ ] 5.1 Review the surviving entries in `UserSettings.swift` and `SettingsKeys.swift`. For each, write a one-line note in Completion Notes identifying which disciplines or subsystems consume it.
-  - [ ] 5.2 If any entry has only a single feature consumer that wasn't anticipated, flag it for follow-up rather than expanding this story's scope.
+- [x] Task 5: Audit (AC: 6)
+  - [x] 5.1 Review the surviving entries in `UserSettings.swift` and `SettingsKeys.swift`. For each, write a one-line note in Completion Notes identifying which disciplines or subsystems consume it.
+  - [x] 5.2 If any entry has only a single feature consumer that wasn't anticipated, flag it for follow-up rather than expanding this story's scope.
 
-- [ ] Task 6: Build/test (AC: 7)
-  - [ ] 6.1 All four test configurations green.
-  - [ ] 6.2 Build: zero new warnings.
+- [x] Task 6: Build/test (AC: 7)
+  - [x] 6.1 All four test configurations green.
+  - [x] 6.2 Build: zero new warnings.
 
 ## Dev Notes
 
@@ -143,7 +143,70 @@ If a future story finds that the pitch family wants its own scope type for share
 - `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSettings.swift` — feature settings struct to update.
 - `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — consumer to update if the signature changes.
 
+## Dev Agent Record
+
+### Completion Notes
+
+**Mechanism chosen (AC 3): feature-local port `ContinuousRhythmMatchingUserSettings`.**
+
+A new protocol `ContinuousRhythmMatchingUserSettings` lives inside the feature directory (`Peach/Training/ContinuousRhythmMatching/Settings/ContinuousRhythmMatchingUserSettings.swift`) — *not* in `Peach/Core/Ports/`. The concrete `AppContinuousRhythmMatchingUserSettings` reads from `UserDefaults` using the feature-owned key. `ContinuousRhythmMatchingSettings.from(_:_:)` now takes both the central `UserSettings` (for `tempoBPM`) and the feature-local port. The App composition root constructs both, and `TrainingLifecycleCoordinator` accepts the feature port alongside `userSettings`. Rationale: matches the existing `UserSettings` adapter pattern, keeps the storage chain end-to-end inside the feature directory, and gives tests a focused mock.
+
+**Backwards compatibility (AC 5).** The UserDefaults key string is byte-identical (`"enabledGapPositions"`). `GapPositionEncoding` was already moved into the feature directory in story 77.2; only its single reference to the central default constant was redirected to `ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions`. The encoding format is unchanged. Existing users' `@AppStorage` values are read correctly by the new feature-owned reader (`AppContinuousRhythmMatchingUserSettings`); a round-trip test in `AppContinuousRhythmMatchingUserSettingsTests` exercises the legacy-format string explicitly.
+
+**Audit of surviving central settings (AC 6).** Each entry in `Peach/Core/Ports/UserSettings.swift` and `Peach/Settings/SettingsKeys.swift` after this story:
+
+- `noteRange` — used by PitchMatching and PitchDiscrimination (≥2 disciplines).
+- `noteDuration` — used by PitchMatching and PitchDiscrimination (≥2 disciplines).
+- `referencePitch` — used by PitchMatching, PitchDiscrimination, and `SettingsCoordinator` (app-wide audio configuration).
+- `soundSource` — used by `PeachApp` to resolve the active preset (app-wide audio configuration).
+- `varyLoudness` — used by PitchMatching and PitchDiscrimination (≥2 disciplines).
+- `intervals` — used by PitchMatching and PitchDiscrimination (≥2 disciplines).
+- `tuningSystem` — used by PitchMatching and PitchDiscrimination (≥2 disciplines).
+- `tempoBPM` — used by ContinuousRhythmMatching and TimingOffsetDetection (≥2 disciplines).
+- `velocity` — used by PitchMatching, PitchDiscrimination, and `SettingsCoordinator` (app-wide audio configuration).
+- `autoStartTraining` — used by `TrainingLifecycleCoordinator` (app-wide UX preference).
+- `noteGap` — **single consumer** (PitchDiscrimination only). The story Dev Notes anticipated `noteGap` as shared by the pitch family, but PitchMatching does not consume it. Flagged for follow-up per Task 5.2; not expanded into this story's scope. A future story may either move it into the PitchDiscrimination feature directory or surface it in PitchMatching if the product wants to inherit gap behaviour there.
+
+A grep for `enabledGapPositions` or `defaultEnabledGapPositions` under `Peach/Core` and `Peach/Settings` returns zero hits.
+
+**Test results (AC 7).** All four configurations green:
+
+- iOS Debug: 1455 tests passed (3 new tests added).
+- macOS Debug: 1449 tests passed.
+- iOS Debug (Research): 1799 tests passed.
+- macOS Debug (Research): 1793 tests passed.
+
+`bin/build.sh` and `bin/build.sh -p mac` succeed with the single pre-existing AppIntents framework-extraction warning (not introduced by this story).
+
+### File List
+
+**New:**
+
+- `Peach/Training/ContinuousRhythmMatching/Settings/ContinuousRhythmMatchingSettingsKeys.swift`
+- `Peach/Training/ContinuousRhythmMatching/Settings/ContinuousRhythmMatchingUserSettings.swift`
+- `PeachTests/Mocks/MockContinuousRhythmMatchingUserSettings.swift`
+- `PeachTests/Training/ContinuousRhythmMatching/AppContinuousRhythmMatchingUserSettingsTests.swift`
+
+**Modified:**
+
+- `Peach/App/PeachApp.swift` (composition root constructs `AppContinuousRhythmMatchingUserSettings`, threads it through `buildCoordinators`)
+- `Peach/App/TrainingLifecycleCoordinator.swift` (accepts the feature port; `start(.continuousRhythmMatching)` calls `from(userSettings, crmUserSettings)`)
+- `Peach/App/PreviewDefaults.swift` (new `StubContinuousRhythmMatchingUserSettings`; coordinator stub wires it; `StubUserSettings` no longer carries `enabledGapPositions`)
+- `Peach/Core/Ports/UserSettings.swift` (removed `enabledGapPositions` requirement)
+- `Peach/Settings/AppUserSettings.swift` (removed `enabledGapPositions` reader)
+- `Peach/Settings/SettingsKeys.swift` (removed `enabledGapPositions` key and `defaultEnabledGapPositions`)
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSettings.swift` (`from(_:_:)` takes the feature port)
+- `Peach/Training/ContinuousRhythmMatching/Settings/GapPositionEncoding.swift` (default fallback now references the feature-owned constant)
+- `Peach/Training/ContinuousRhythmMatching/Settings/RhythmGapPositionsSettingsSection.swift` (`@AppStorage` binds to feature-owned key constant)
+- `PeachTests/Mocks/MockUserSettings.swift` (removed `enabledGapPositions`)
+- `PeachTests/Settings/AppUserSettingsTests.swift` (removed `enabledGapPositionsDefault` test)
+- `PeachTests/Core/Training/ContinuousRhythmMatchingSettingsTests.swift` (uses `MockContinuousRhythmMatchingUserSettings`; `from` calls take both ports)
+- `PeachTests/App/TrainingLifecycleCoordinatorTests.swift` (`makeCoordinator` helper accepts the feature port)
+- `docs/implementation-artifacts/77-6-feature-owned-gap-positions-storage.md`
+- `docs/implementation-artifacts/sprint-status.yaml`
+
 ## Change Log
 
 - 2026-04-27: Drafted as Story 77.4. Status → ready-for-dev.
 - 2026-04-28: Renumbered to 77.6 to reflect post-architecture-session work order (envelope storage and CSV migration plugin take 77.4 and 77.5). Story content is unchanged; this work is independent of the envelope/CSV redesign.
+- 2026-04-28: Implemented. `enabledGapPositions` storage moved end-to-end into `Peach/Training/ContinuousRhythmMatching/`. New feature-local port `ContinuousRhythmMatchingUserSettings` introduced (in the feature directory, not Core). Status → review.

@@ -71,12 +71,6 @@ struct AppUserSettingsTests {
         #expect(settings.tempoBPM == SettingsKeys.defaultTempoBPM)
     }
 
-    @Test("enabledGapPositions returns default when no UserDefaults value set")
-    func enabledGapPositionsDefault() async {
-        let settings = makeSettings()
-        #expect(settings.enabledGapPositions == SettingsKeys.defaultEnabledGapPositions)
-    }
-
     @Test("autoStartTraining returns default when no UserDefaults value set")
     func autoStartTrainingDefault() async {
         let settings = makeSettings()

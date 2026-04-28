@@ -430,7 +430,8 @@ struct TrainingLifecycleCoordinatorTests {
 
     private func makeCoordinator(
         policy: BackgroundPolicy,
-        userSettings: MockUserSettings = MockUserSettings()
+        userSettings: MockUserSettings = MockUserSettings(),
+        crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings()
     ) -> TrainingLifecycleCoordinator {
         let notePlayer = MockNotePlayer()
         notePlayer.instantPlayback = true
@@ -460,6 +461,7 @@ struct TrainingLifecycleCoordinatorTests {
                 audioInterruptionObserver: NoOpAudioInterruptionObserver()
             ),
             userSettings: userSettings,
+            crmUserSettings: crmUserSettings,
             backgroundPolicy: policy
         )
     }

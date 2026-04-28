@@ -10,7 +10,6 @@ protocol UserSettings {
     var tuningSystem: TuningSystem { get }
     var noteGap: Duration { get }
     var tempoBPM: TempoBPM { get }
-    var enabledGapPositions: Set<StepPosition> { get }
     var velocity: MIDIVelocity { get }
     var autoStartTraining: Bool { get }
 }

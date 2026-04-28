@@ -29,9 +29,6 @@ final class MockUserSettings: UserSettings {
     var tempoBPM: TempoBPM = SettingsKeys.defaultTempoBPM {
         didSet { onSettingsChanged?() }
     }
-    var enabledGapPositions: Set<StepPosition> = SettingsKeys.defaultEnabledGapPositions {
-        didSet { onSettingsChanged?() }
-    }
     var velocity: MIDIVelocity = SettingsKeys.defaultVelocity {
         didSet { onSettingsChanged?() }
     }
@@ -55,7 +52,6 @@ final class MockUserSettings: UserSettings {
         tuningSystem = SettingsKeys.defaultTuningSystem
         noteGap = SettingsKeys.defaultNoteGap
         tempoBPM = SettingsKeys.defaultTempoBPM
-        enabledGapPositions = SettingsKeys.defaultEnabledGapPositions
         velocity = SettingsKeys.defaultVelocity
         autoStartTraining = SettingsKeys.defaultAutoStartTraining
         onSettingsChanged = nil
