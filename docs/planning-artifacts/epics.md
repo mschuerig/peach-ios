@@ -7695,9 +7695,9 @@ so that the `Release` build (and therefore the App Store binary) ships only the 
 
 **Motivation:** After the 76.x series, discipline iteration is data-driven and the registry is the runtime source of truth — but several seams still leak feature-specific knowledge into central files: `SettingsScreen` / `ProfileScreen` / `HelpContent` host category-gated UI; CSV/data declarations may drift back to `Peach/Core/Data/`; and `UserSettings` enumerates one feature-only entry (`enabledGapPositions`). Cleaning these seams completes the colocation discipline so future disciplines truly drop in from a single feature directory.
 
-**Approach:** 77.1 introduced a contribution protocol for UI surfaces and per-discipline compile-time activation. 77.2 finished the UI colocation by moving rhythm section views and remaining UI fragments into the rhythm feature directory. 77.3 relocated `@Model` record bodies and CSV row parsers into per-feature directories. The 2026-04-28 architecture session then established that the SwiftData layer should dissolve into a single JSON envelope: 77.4 introduces `@Model TrainingRecord` with discipline-owned Codable payloads and removes per-discipline `@Model` types entirely; 77.5 replaces the central `V*Migration.swift` chain with a per-discipline `csvHistory` declaration plus a runner that derives operations by diffing adjacent history entries; 77.6 removes `enabledGapPositions` from the central `UserSettings` port and pushes its storage end-to-end into the ContinuousRhythmMatching feature directory. 77.4's review surfaced three deferred follow-ups now tracked as their own stories: 77.7 collapses the four near-identical merge-import loops into a shared helper; 77.8 adopts an `associatedtype Payload` on `TrainingDiscipline` to remove the existential casts inside discipline implementations; 77.9 adds a streaming/batched payload-iteration API on `TrainingDataStore`. 77.10 documents the landed picture in `architecture.md` (v0.9 amendment) and `arc42.md` (Section 8.7 rewrite + ADR-10).
+**Approach:** 77.1 introduced a contribution protocol for UI surfaces and per-discipline compile-time activation. 77.2 finished the UI colocation by moving rhythm section views and remaining UI fragments into the rhythm feature directory. 77.3 relocated `@Model` record bodies and CSV row parsers into per-feature directories. The 2026-04-28 architecture session then established that the SwiftData layer should dissolve into a single JSON envelope: 77.4 introduces `@Model TrainingRecord` with discipline-owned Codable payloads and removes per-discipline `@Model` types entirely; 77.5 replaces the central `V*Migration.swift` chain with a per-discipline `csvHistory` declaration plus a runner that derives operations by diffing adjacent history entries; 77.6 removes `enabledGapPositions` from the central `UserSettings` port and pushes its storage end-to-end into the ContinuousRhythmMatching feature directory. 77.4's review surfaced three deferred follow-ups now tracked as their own stories: 77.7 collapses the four near-identical merge-import loops into a shared helper; 77.8 adopts an `associatedtype Payload` on `TrainingDiscipline` to remove the existential casts inside discipline implementations; 77.9 adds a streaming/batched payload-iteration API on `TrainingDataStore`. 77.10 (deferred from 77.1 / 77.5 reviews) eliminates the process-wide `_replaceSharedForTesting` mutation pattern on `TrainingDisciplineRegistry` and `CSVHistoryRegistry` so Swift Testing's parallel suite execution stops racing on shared state. 77.11 documents the landed picture in `architecture.md` (v0.9 amendment) and `arc42.md` (Section 8.7 rewrite + ADR-10).
 
-**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 → 77.6 → (77.7, 77.8, 77.9 in any order or in parallel) → 77.10. 77.2 builds on 77.1's contribution protocol. 77.4 (envelope storage) precedes 77.5 (CSV migration plugin) because the migration runner round-trips through the payload structs introduced in 77.4. 77.6 (gap positions) is independent of 77.4/77.5 and may run in parallel with them after 77.3. 77.7 / 77.8 / 77.9 are deferred 77.4 review findings and may run in parallel with each other (with light coordination if 77.7 and 77.8 land together). 77.10 documents the landed state and runs last.
+**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 → 77.6 → (77.7, 77.8, 77.9, 77.10 in any order or in parallel) → 77.11. 77.2 builds on 77.1's contribution protocol. 77.4 (envelope storage) precedes 77.5 (CSV migration plugin) because the migration runner round-trips through the payload structs introduced in 77.4. 77.6 (gap positions) is independent of 77.4/77.5 and may run in parallel with them after 77.3. 77.7 / 77.8 / 77.9 are deferred 77.4 review findings; 77.10 is a deferred 77.1 / 77.5 review finding. They may run in parallel (with light coordination if 77.7 and 77.8 land together). 77.11 documents the landed state and runs last.
 
 ### Story 77.1: Plugin-style discipline UI contributions and per-discipline compile-time activation
 
@@ -7846,7 +7846,26 @@ This story was deferred from 77.4's review and takes up the recurring `feedback_
 
 (See `docs/implementation-artifacts/77-9-payload-streaming-iteration.md` for the worked design notes.)
 
-### Story 77.10: Update architecture documentation for plugin-style disciplines
+### Story 77.10: Test isolation for shared registries
+
+As **a developer running the test suite under Swift Testing's default parallel execution**,
+I want test code to stop mutating the process-wide `TrainingDisciplineRegistry.shared` and `CSVHistoryRegistry.shared` slots,
+so that suites running in parallel cannot observe each other's swapped registries mid-test, the `_replaceSharedForTesting` debug-only escape hatch can shrink (or disappear), and shared-state-induced flakiness is eliminated as a class.
+
+This story takes up the `feedback_never_defer_preexisting` Boy Scout obligation for a concern surfaced as 77.1 review item D5 and again as 77.5 review item D1. The race occurs because both registries expose a `#if DEBUG` `_replaceSharedForTesting(...)` method that atomically replaces the contents of a process-wide slot; tests using it (directly or via `RegistryTestSupport._withSharedReplacedForTesting`) install fixtures that any concurrently-running suite reads. Two viable shapes — registry injection or a `TaskLocal` override consulted by `.shared` — are both race-free; choice is dev's.
+
+**Acceptance Criteria:**
+
+1. **Given** the test target after this story **When** any test installs fixture disciplines or fixture CSV histories **Then** the installation is **scoped to the current test** (registry instance passed in, or task-local override consulted by `.shared`); no test path writes to the `Mutex<TrainingDisciplineRegistry?>` / `Mutex<CSVHistoryRegistry?>` slot during test execution.
+2. **Given** the `#if DEBUG` `_replaceSharedForTesting(...)` methods **When** inspected **Then** they are either removed entirely or reduced to preview-only use (callable from `PreviewSupport`, not from tests); the 12+ test files calling them are migrated to the new mechanism.
+3. **Given** `PeachTests/Helpers/RegistryTestSupport.swift` **When** inspected **Then** the `_withSharedReplacedForTesting` helper is replaced by an injection-style helper or retired, with the file's doc comment explaining why the new shape is race-free.
+4. **Given** SwiftUI previews depend on a populated registry **When** rendered after this story **Then** preview rendering works unchanged (`PreviewSupport.bootstrapRegistryIfNeeded()` updated only as needed).
+5. **Given** the change preserves `Sendable` **When** inspected **Then** no `@unchecked Sendable`, no `nonisolated(unsafe)`, no swallowed concurrency-warning regressions.
+6. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run with default parallel execution **Then** all four configurations pass; a focused stress check (chosen suite × repetitions, or full suite ×10) passes consistently. The pre-change suite must be observed to fail this stress check at least intermittently — document the observed pre-change failure mode in Completion Notes.
+
+(See `docs/implementation-artifacts/77-10-test-isolation-for-shared-registries.md` for the worked design notes.)
+
+### Story 77.11: Update architecture documentation for plugin-style disciplines
 
 As **a future contributor (human or agent) reading the architecture docs to understand how training disciplines plug into Peach**,
 I want `docs/planning-artifacts/architecture.md` and `docs/arc42.md` to reflect the post-77.x plugin model — discipline-owned UI, JSON-envelope persistence with discipline-owned Codable payloads, history+derivation CSV migration, feature-local storage, the SwiftUI-aware `TrainingDisciplineUI` refinement, the per-discipline compile-time activation switch, and the `Peach/Training/<Feature>/` colocation rule — written for the audience each document serves,
@@ -7854,7 +7873,7 @@ so that nobody bases new work on the obsolete v0.5 picture and the "add a new di
 
 The two documents have different audiences: `architecture.md` is the agent-facing, append-only sequence of versioned amendments carrying file-by-file inventories and exact protocol surfaces; `arc42.md` is the human-facing single-narrative document carrying intent and ADRs. This story applies the appropriate update style to each.
 
-This story runs after 77.2 / 77.3 / 77.4 / 77.5 / 77.6 / 77.7 / 77.8 / 77.9 reach `done` so the documentation describes the landed state.
+This story runs after 77.2 / 77.3 / 77.4 / 77.5 / 77.6 / 77.7 / 77.8 / 77.9 / 77.10 reach `done` so the documentation describes the landed state.
 
 **Acceptance Criteria:**
 

@@ -18,6 +18,14 @@ struct CSVHistory: Sendable, Equatable {
     init(entries: [CSVHistoryEntry]) {
         precondition(!entries.isEmpty, "CSVHistory must have at least one entry")
         precondition(
+            entries.allSatisfy { $0.version >= 1 },
+            "CSVHistory entry versions must be >= 1"
+        )
+        precondition(
+            entries.allSatisfy { !$0.trainingType.isEmpty },
+            "CSVHistory entry trainingType must be non-empty"
+        )
+        precondition(
             entries.map(\.version) == entries.map(\.version).sorted(),
             "CSVHistory entries must be ordered by ascending version"
         )
@@ -76,6 +84,11 @@ struct CSVHistoryEntry: Sendable, Equatable {
 /// Each case operates on the row dictionary directly. Transforms apply to all
 /// rows in the step — column ownership is the discipline's, but column data
 /// lives in every row uniformly.
+///
+/// **Ordering contract.** Within a step, transforms are collected in registry
+/// order over ``CSVHistoryRegistry/histories`` and applied sequentially to each
+/// row. Declarers must avoid two transforms that touch overlapping `from`/`to`
+/// keys in the same step; the runner enforces this with a precondition.
 enum CSVValueTransform: Sendable, Equatable {
     /// Move the value from `from` to `to`, preserving any pre-existing `to`
     /// value. The `from` key is removed from the row in either case.

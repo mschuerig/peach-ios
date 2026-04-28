@@ -1,4 +1,4 @@
-# Story 77.10: Update architecture documentation for plugin-style disciplines
+# Story 77.11: Update architecture documentation for plugin-style disciplines
 
 Status: ready-for-dev
 
@@ -93,15 +93,15 @@ ADR-10 references story 77.1 in its body (see ADR-7 / ADR-8 / ADR-9 for the cita
 - **Header (lines 1–6):** version bumped (e.g., `**Version:** 3.1`), date bumped to today, `Status:` line updated to reflect epic-77 amendments. Keep the format identical to today's header.
 - **Section 4 Solution Strategy (line 153 specifically):** the `Simplicity` row mentions "discipline registry for additive extensibility" — extend or rephrase to reflect plugin-style colocation, but do **not** restructure the table. One-row tweak only if the existing wording is now misleading; otherwise leave as-is.
 - **Section 12 Glossary:** add or update entries for `TrainingDisciplineUI`, `DisciplineBootstrap`, and adjust the `TrainingDisciplineRegistry` definition (line 931) to reflect the protocol split. Add a `**PEACH_RESEARCH**` entry if not already present (it is referenced throughout but not defined). Glossary entries are one-line definitions in the existing tabular style.
-- **Section 11 Technical Debt:** remove or update the `Original architecture document partially outdated` row (line 890) if 77.10 lands the v0.9 amendment that would resolve the partial-outdate-ness. If `architecture.md` is now fully current with the post-77 codebase, the row can shrink to "predates implementation; arc42 + v0.6+ amendments are the current source of truth" or be removed entirely — dev's call based on the actual landed state of `architecture.md`.
+- **Section 11 Technical Debt:** remove or update the `Original architecture document partially outdated` row (line 890) if 77.11 lands the v0.9 amendment that would resolve the partial-outdate-ness. If `architecture.md` is now fully current with the post-77 codebase, the row can shrink to "predates implementation; arc42 + v0.6+ amendments are the current source of truth" or be removed entirely — dev's call based on the actual landed state of `architecture.md`.
 
 Do not touch any section that does not make a claim invalidated by epic 77. Section 5.1 / 5.2 / 5.3 (building blocks) describe sessions and audio and are not affected. Section 6 (runtime view) is not affected. Sections 7–8.6 are not affected.
 
-### AC 6: `epics.md` Story 77.10 entry added
+### AC 6: `epics.md` Story 77.11 entry added
 
-**Given** `docs/planning-artifacts/epics.md` enumerates epic 77's stories (77.1 → 77.9 after the 2026-04-28 renumberings)
-**When** 77.10 is added to the canonical story list
-**Then** a new section `### Story 77.10: Update architecture documentation for plugin-style disciplines` is appended after the 77.4 section, in the same style: user story (`As a … I want … so that …`), `**Acceptance Criteria:**` numbered list summarizing the AC 1–AC 5 checks above (one-sentence-per-AC summary, not the full text). The work-order paragraph at line 7700 is updated to read `**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 (77.5 documents the landed state and runs last).`
+**Given** `docs/planning-artifacts/epics.md` enumerates epic 77's stories (77.1 → 77.10 after the 2026-04-28 renumberings)
+**When** 77.11 is added to the canonical story list
+**Then** a new section `### Story 77.11: Update architecture documentation for plugin-style disciplines` is appended after the 77.10 section, in the same style: user story (`As a … I want … so that …`), `**Acceptance Criteria:**` numbered list summarizing the AC 1–AC 5 checks above (one-sentence-per-AC summary, not the full text). The work-order paragraph already includes 77.11 as the last story (documents the landed state and runs after the others).
 
 ### AC 7: Internal and external consistency
 
@@ -111,7 +111,7 @@ Do not touch any section that does not make a claim invalidated by epic 77. Sect
 
 - File paths, type names, and protocol members named in `architecture.md` v0.9 match the actual landed state of the codebase after 77.6 (no aspirational references to a `TrainingDisciplineUI` member that 77.2 did not implement, no references to a `Peach/Settings/SettingsContributions.swift` that 77.2 deleted, no references to per-discipline `@Model` types that 77.4 dissolved, no references to `V*Migration.swift` files that 77.5 deleted).
 - Names used in `arc42.md` match `architecture.md` (`TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`).
-- Story 77.10's own status moves from `ready-for-dev` → `review` → `done` in the usual workflow; `epics.md` stays canonical (the AC-1–AC-5 summaries in the epics 77.10 entry do not duplicate the full text from this file).
+- Story 77.11's own status moves from `ready-for-dev` → `review` → `done` in the usual workflow; `epics.md` stays canonical (the AC-1–AC-5 summaries in the epics 77.11 entry do not duplicate the full text from this file).
 
 A grep for legacy claims should return zero hits **in the touched sections only**:
 
@@ -157,16 +157,16 @@ Pre-77 amendments (v0.5–v0.8) keep their historical text — do not rewrite hi
   - [ ] 5.3 Section 12 Glossary: add `TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`; update `TrainingDisciplineRegistry` definition (line 931) to reflect the protocol split.
   - [ ] 5.4 Section 11 Technical Debt: re-evaluate the `Original architecture document partially outdated` row (line 890) and update or remove based on the v0.9 amendment's coverage.
 
-- [ ] Task 6: Append Story 77.10 to `epics.md` (AC: 6)
-  - [ ] 6.1 Append `### Story 77.10: …` after the 77.9 section.
-  - [ ] 6.2 Confirm the work-order paragraph already includes 77.10 (added during the 2026-04-28 renumbering); if not, add it.
+- [ ] Task 6: Append Story 77.11 to `epics.md` (AC: 6)
+  - [ ] 6.1 Append `### Story 77.11: …` after the 77.10 section.
+  - [ ] 6.2 Confirm the work-order paragraph already includes 77.11 (added during the 2026-04-28 renumbering); if not, add it.
   - [ ] 6.3 Use one-sentence-per-AC summaries; do not duplicate this story file's full text.
 
 - [ ] Task 7: Verify and ship (AC: 7, 8)
-  - [ ] 7.1 Read the four touched sections back-to-back as a sequence: `architecture.md` v0.9 → `arc42.md` Section 8.7 → ADR-10 → `epics.md` Story 77.10. Check for name disagreements (member names, file paths, flag names).
+  - [ ] 7.1 Read the four touched sections back-to-back as a sequence: `architecture.md` v0.9 → `arc42.md` Section 8.7 → ADR-10 → `epics.md` Story 77.11. Check for name disagreements (member names, file paths, flag names).
   - [ ] 7.2 Grep the touched sections for the legacy phrases listed in AC 7. Expected: zero hits.
   - [ ] 7.3 `bin/test.sh && bin/test.sh -p mac` green; `bin/build.sh && bin/build.sh -p mac` no new warnings.
-  - [ ] 7.4 Update story file Status to `review`; update `sprint-status.yaml` `77-10-…: review` with last_updated bumped.
+  - [ ] 7.4 Update story file Status to `review`; update `sprint-status.yaml` `77-11-…: review` with last_updated bumped.
 
 ## Dev Notes
 
@@ -233,11 +233,12 @@ If a future epic re-organizes ports (e.g., a feature-local port for CRM gap posi
 - Story 77.9 — `docs/implementation-artifacts/77-9-payload-streaming-iteration.md`. Authoritative source for the streaming/batched payload-iteration API on `TrainingDataStore`.
 - `docs/planning-artifacts/architecture.md` — line 2695 (v0.5 start), line 2701 (`**Supersedes:**` example), line 2877 (v0.5 "Expected Result / Adding a discipline" enumeration), line 2897 (v0.5 directory snapshot), line 2962 (v0.5 service-boundaries table), line 2974 (v0.5 validation), line 3097 (v0.8 end / v0.9 insertion point).
 - `docs/arc42.md` — line 1 (header), line 153 (Section 4 row), lines 596–620 (Section 8.7), line 808 (ADR-9 / ADR-10 insertion point), line 822 (ADR-9 closing), line 890 (Section 11 outdated-architecture row), line 925 (Section 12 `StatisticsKey` for style reference), line 931 (`TrainingDisciplineRegistry` glossary entry).
-- `docs/planning-artifacts/epics.md` — Epic 77 section. Story-list entries 77.1 → 77.9 are present after the 2026-04-28 renumberings; this story appends the 77.10 entry.
-- Memory: `feedback_arc42_intent_not_implementation` — arc42 conveys What/Why at a high level; code/architecture.md has the How details. Story 77.10 honors this split.
+- `docs/planning-artifacts/epics.md` — Epic 77 section. Story-list entries 77.1 → 77.10 are present; this story appends the 77.11 entry.
+- Memory: `feedback_arc42_intent_not_implementation` — arc42 conveys What/Why at a high level; code/architecture.md has the How details. Story 77.11 honors this split.
 
 ## Change Log
 
 - 2026-04-27: Drafted as Story 77.5, the documentation-update follow-up after 77.1 / 77.2 / 77.3 / 77.4 land. Status → ready-for-dev.
 - 2026-04-28: Renumbered to 77.10 (envelope storage and CSV migration plugin take 77.4 and 77.5; gap-positions storage moves to 77.6). Scope expanded to also document 77.4 (JSON envelope persistence) and 77.5 (history+derivation CSV migration). The "runs after" gate now includes 77.5 and 77.6.
 - 2026-04-28: Renumbered from 77.7 to 77.10 to make room for three new stories (77.7 merge-import helper, 77.8 typed payload associated type, 77.9 payload streaming) deferred from the 77.4 review. The "runs after" gate now includes 77.7 / 77.8 / 77.9.
+- 2026-04-28: Renumbered to 77.11 to make room for 77.10 (test isolation for shared registries) deferred from the 77.5 review. The "runs after" gate now includes 77.10.

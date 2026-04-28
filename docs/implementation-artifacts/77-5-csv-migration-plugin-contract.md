@@ -1,6 +1,6 @@
 # Story 77.5: CSV migration plugin contract (history+derivation)
 
-Status: review
+Status: done
 
 ## Story
 
@@ -54,10 +54,9 @@ The exact shape is dev's call; the test is that:
 
 - For each discipline, the runner compares the discipline's history entries at *v* and *v+1*:
   - If the `trainingType` differs, rows whose current `trainingType` matches the *v* identifier are renamed to the *v+1* identifier.
-  - If new columns appear at *v+1*, those columns are populated with empty defaults (matching today's behavior for added columns).
-  - If columns are removed at *v+1*, they are stripped (today there are none, but the runner handles it).
-  - If a discipline has no entry at *v* but does at *v+1*, no operation runs for that discipline at this step (it was introduced at *v+1*; there is nothing to migrate from *v*).
-  - If a discipline has an entry at *v* but none at *v+1*, the discipline was retired; rows belonging to it are dropped. (Not used today; included in the contract for completeness.)
+  - If a discipline has no entry at *v* but does at *v+1*, no operation runs for that discipline at this step (it was introduced at *v+1*; there is nothing to migrate from *v*). When the new entry declares a `previousTrainingType`, rows under the retired identifier are renamed into the new identifier — this is how rows of a now-retired discipline get inherited (e.g., `rhythmMatching` → `continuousRhythmMatching` at v3).
+  - The convention "no entry at *v+1* means identity unchanged from the previous entry" is load-bearing across this contract: a history with entries at v1 and v2 (and nothing for v3) is unchanged at v3, not retired. Discipline retirement is therefore **out of scope for this story**: there is no agreed declaration shape for it, and no current data exercises it. If a future story needs retirement, it must add an explicit retirement marker on `CSVHistoryEntry` (e.g., `retiredAtVersion`) — absence of an entry must continue to mean "unchanged."
+- Column-level adds and drops are *not* materialized into row dictionaries by the runner. `CSVImportParser.parseMigratedLines` reconstructs each row against the union of `CSVExportSchema.allColumns` (registry-derived) and any keys present in the migrated rows; missing column keys default to empty strings. Removed columns survive on the migrated row dictionary and are kept in the reconstructed header (no discipline currently drops columns; this is acceptable for the foreseeable future).
 - The today-special-case `userOffsetMs → meanOffsetMs` value transform in `V2ToV3Migration` is handled by allowing a per-step *value transform* hook in the history entry — see AC 3.
 
 ### AC 3: Value transforms have a per-history hook
@@ -239,3 +238,4 @@ The legacy `V1ToV2Migration` added empty `tempoBPM`/`offsetMs`/`userOffsetMs` co
 
 - 2026-04-28: Drafted as the CSV migration follow-up to 77.3, redesigned around history+derivation per the architect/dev session. Supersedes the earlier 77.6 draft (which framed the work as per-step contributions). Status → ready-for-dev.
 - 2026-04-28: Implemented. Migration runner derived from `CSVHistoryRegistry`, decoupled from `TrainingDisciplineRegistry` so v2 → v3 migrations work in non-research builds. All four configurations green. Status → review.
+- 2026-04-28: Code review fixes — added preconditions for conflicting trainingType renames, transitive renames within a step, and overlapping `CSVValueTransform` keys; tightened `CSVHistory.init` to validate `version >= 1` and non-empty `trainingType`; documented the registry-order ordering contract on `CSVValueTransform`. AC 2 reworded to scope retirement out of this story (absence of an entry = identity unchanged) and to make column add/drop deferral to `CSVImportParser` explicit. Pre-existing parallel-test race (D1) tracked as new story 77.10 (test isolation for shared registries). All four configurations green. Status → done.

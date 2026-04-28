@@ -48,12 +48,44 @@ enum CSVMigrationChain {
 
             globalTransforms.append(contentsOf: next.valueTransformsFromPrevious)
 
+            let renameSource: String?
             if let previousEntry = history.entries.last(where: { $0.version < nextVersion }) {
-                if previousEntry.trainingType != next.trainingType {
-                    trainingTypeRenames[previousEntry.trainingType] = next.trainingType
-                }
-            } else if let retiredIdentifier = next.previousTrainingType {
-                trainingTypeRenames[retiredIdentifier] = next.trainingType
+                renameSource = previousEntry.trainingType != next.trainingType ? previousEntry.trainingType : nil
+            } else {
+                renameSource = next.previousTrainingType
+            }
+            if let source = renameSource {
+                precondition(
+                    trainingTypeRenames[source] == nil,
+                    "Conflicting trainingType rename at v\(nextVersion): \(source) is renamed by more than one history"
+                )
+                trainingTypeRenames[source] = next.trainingType
+            }
+        }
+
+        // Two histories must not contribute a chain (A→B and B→C) within the
+        // same step: applyStep applies a row's rename once, so the chain would
+        // truncate silently. Detect at construction.
+        let renameTargets = Set(trainingTypeRenames.values)
+        let renameSources = Set(trainingTypeRenames.keys)
+        let chained = renameTargets.intersection(renameSources)
+        precondition(
+            chained.isEmpty,
+            "Transitive trainingType rename at v\(nextVersion): \(chained.sorted()) appears as both source and target"
+        )
+
+        // Transforms run sequentially in registry order; overlapping from/to
+        // keys would make the result depend on declaration order. Disallow.
+        var transformKeys: Set<String> = []
+        for transform in globalTransforms {
+            switch transform {
+            case let .renameColumnWithFallback(from, to):
+                let touched: Set<String> = [from, to]
+                precondition(
+                    transformKeys.isDisjoint(with: touched),
+                    "Overlapping CSVValueTransform keys at v\(nextVersion): \(touched.intersection(transformKeys).sorted())"
+                )
+                transformKeys.formUnion(touched)
             }
         }
 
