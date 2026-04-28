@@ -9,6 +9,7 @@ import Foundation
 enum PreviewSupport {
     static func bootstrapRegistryIfNeeded() {
         TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
+        CSVHistoryRegistry._replaceSharedForTesting(histories: DisciplineBootstrap.allCSVHistories)
     }
 }
 #endif

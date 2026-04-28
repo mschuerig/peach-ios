@@ -43,6 +43,7 @@ struct PeachApp: App {
 
     init() {
         TrainingDisciplineRegistry.bootstrap(disciplines: DisciplineBootstrap.allDisciplines)
+        CSVHistoryRegistry.bootstrap(histories: DisciplineBootstrap.allCSVHistories)
 
         #if os(macOS)
         configureSingleWindowApp()

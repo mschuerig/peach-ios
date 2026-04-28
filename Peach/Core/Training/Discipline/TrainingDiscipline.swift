@@ -45,6 +45,12 @@ protocol TrainingDiscipline: Sendable {
     /// Column names specific to this discipline (excluding common columns: trainingType, timestamp).
     var csvColumns: [String] { get }
 
+    /// CSV format history: the format versions this discipline appeared in,
+    /// the trainingType identifier and columns at each version, and any
+    /// value transforms attached to a version's introduction.
+    /// The migration runner derives v → v+1 operations from these snapshots.
+    var csvHistory: CSVHistory { get }
+
     /// Produces key-value pairs from a payload for CSV export.
     /// Keys are column names from ``csvColumns``.
     func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)]

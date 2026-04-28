@@ -40,6 +40,8 @@ struct IntervalPitchMatchingDiscipline: TrainingDisciplineUI, Sendable {
         "interval", "tuningSystem", "initialCentOffset", "userCentError",
     ]
 
+    var csvHistory: CSVHistory { PitchMatchingCSVHistory.history }
+
     func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
         guard let p = payload as? PitchMatchingPayload else {
             assertionFailure("Expected PitchMatchingPayload, got \(type(of: payload))")

@@ -72,6 +72,8 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         "meanOffsetMsPosition2", "meanOffsetMsPosition3",
     ]
 
+    var csvHistory: CSVHistory { ContinuousRhythmMatchingCSVHistory.history }
+
     func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
         guard let p = payload as? ContinuousRhythmMatchingPayload else {
             assertionFailure("Expected ContinuousRhythmMatchingPayload, got \(type(of: payload))")

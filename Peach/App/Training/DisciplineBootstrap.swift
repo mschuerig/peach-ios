@@ -36,4 +36,20 @@ enum DisciplineBootstrap {
         #endif
         return disciplines
     }()
+
+    /// CSV histories for every discipline known to the codebase, including
+    /// disciplines that are not active in the current build.
+    ///
+    /// The migration runner must be able to migrate rows belonging to any
+    /// historical discipline regardless of build configuration: a v2 CSV
+    /// containing `rhythmMatching` rows imported into a non-research build
+    /// must still be transformed to v3 shape, even though the discipline that
+    /// would parse the migrated rows is not registered. Active-discipline
+    /// gating happens later, at row dispatch.
+    static let allCSVHistories: [CSVHistory] = [
+        PitchDiscriminationCSVHistory.history,
+        PitchMatchingCSVHistory.history,
+        TimingOffsetDetectionCSVHistory.history,
+        ContinuousRhythmMatchingCSVHistory.history,
+    ]
 }

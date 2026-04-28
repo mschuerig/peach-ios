@@ -41,6 +41,8 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         "interval", "tuningSystem", "centOffset", "isCorrect",
     ]
 
+    var csvHistory: CSVHistory { PitchDiscriminationCSVHistory.history }
+
     func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
         guard let p = payload as? PitchDiscriminationPayload else {
             assertionFailure("Expected PitchDiscriminationPayload, got \(type(of: payload))")

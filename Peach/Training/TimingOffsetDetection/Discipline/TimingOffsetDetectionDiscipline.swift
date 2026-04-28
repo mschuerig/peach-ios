@@ -87,6 +87,8 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
 
     let csvColumns = ["isCorrect", "tempoBPM", "offsetMs"]
 
+    var csvHistory: CSVHistory { TimingOffsetDetectionCSVHistory.history }
+
     func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
         guard let p = payload as? TimingOffsetDetectionPayload else {
             assertionFailure("Expected TimingOffsetDetectionPayload, got \(type(of: payload))")

@@ -32,6 +32,11 @@ struct SyntheticUIDiscipline: TrainingDisciplineUI, Sendable {
     var navigationDestination: NavigationDestination { .profile }
     var csvTrainingType: String { id.slug }
     var csvColumns: [String] { ["__synthetic_\(id.slug)"] }
+    var csvHistory: CSVHistory {
+        CSVHistory(entries: [
+            CSVHistoryEntry(version: 1, trainingType: id.slug, columns: ["__synthetic_\(id.slug)"]),
+        ])
+    }
 
     var settingsHelp: [HelpSection] { ownSettingsHelp }
     var profileHelp: [HelpSection] { ownProfileHelp }

@@ -32,6 +32,12 @@ struct SyntheticDiscipline: TrainingDiscipline, Sendable {
 
     var csvColumns: [String] { ["__synthetic_\(id.slug)"] }
 
+    var csvHistory: CSVHistory {
+        CSVHistory(entries: [
+            CSVHistoryEntry(version: 1, trainingType: id.slug, columns: ["__synthetic_\(id.slug)"]),
+        ])
+    }
+
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {}
 
     func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] { [] }

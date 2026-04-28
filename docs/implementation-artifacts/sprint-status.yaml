@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-28 # Story 77.4 review: JSON envelope storage redesign.
+# last_updated: 2026-04-28 # Story 77.5 review: CSV migration plugin contract.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -646,7 +646,7 @@ development_status:
   77-2-discipline-owned-ui-contributions: done
   77-3-discipline-owned-data-declarations: done
   77-4-json-envelope-storage-redesign: done
-  77-5-csv-migration-plugin-contract: ready-for-dev
+  77-5-csv-migration-plugin-contract: review
   77-6-feature-owned-gap-positions-storage: ready-for-dev
   77-7-collapse-merge-import-boilerplate: ready-for-dev # Deferred from 77.4 review
   77-8-typed-discipline-payload-associated-type: ready-for-dev # Deferred from 77.4 review

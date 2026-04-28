@@ -1,6 +1,6 @@
 # Story 77.5: CSV migration plugin contract (history+derivation)
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -106,26 +106,26 @@ The exact name and shape of the `valueTransformsFromPrevious` API is dev's call.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Design the history type and runner contract (AC: 1, 2, 3)
-  - [ ] 1.1 Read `V1ToV2Migration.swift`, `V2ToV3Migration.swift`, `CSVFormatMigration.swift`, and the four `<Feature>Discipline.swift` files. Catalog every operation: trainingType renames, column adds, column drops (none today), value transforms (one today: userOffsetMs → meanOffsetMs).
-  - [ ] 1.2 Decide the shape of `CSVHistory` / `CSVHistoryEntry` and the per-step `valueTransformsFromPrevious` hook. Write a paragraph in Dev Notes explaining the choice (e.g., "history-of-snapshots, runner diffs adjacent" vs. "history-of-deltas, runner concatenates"). The user has a strong stated preference for the snapshot-and-derive shape — use it unless there is a concrete reason it cannot work.
-  - [ ] 1.3 Add the `csvHistory` member to the `TrainingDiscipline` protocol with no default. (Every discipline must declare its history; absence is the bug.)
+- [x] Task 1: Design the history type and runner contract (AC: 1, 2, 3)
+  - [x] 1.1 Read `V1ToV2Migration.swift`, `V2ToV3Migration.swift`, `CSVFormatMigration.swift`, and the four `<Feature>Discipline.swift` files. Catalog every operation: trainingType renames, column adds, column drops (none today), value transforms (one today: userOffsetMs → meanOffsetMs).
+  - [x] 1.2 Decide the shape of `CSVHistory` / `CSVHistoryEntry` and the per-step `valueTransformsFromPrevious` hook. Write a paragraph in Dev Notes explaining the choice (e.g., "history-of-snapshots, runner diffs adjacent" vs. "history-of-deltas, runner concatenates"). The user has a strong stated preference for the snapshot-and-derive shape — use it unless there is a concrete reason it cannot work.
+  - [x] 1.3 Add the `csvHistory` member to the `TrainingDiscipline` protocol with no default. (Every discipline must declare its history; absence is the bug.)
 
-- [ ] Task 2: Author each discipline's history (AC: 1, 3)
-  - [ ] 2.1 `PitchDiscrimination`: v1 (`pitchComparison`, columns), v2 (`pitchDiscrimination`, same columns).
-  - [ ] 2.2 `PitchMatching`: v1 entry (no rename through v3).
-  - [ ] 2.3 `TimingOffsetDetection` (was `RhythmOffsetDetection`): trace its CSV identity through v1/v2/v3. v2 added `tempoBPM` and `offsetMs`; verify whether the discipline existed at v1 (the `V1ToV2Migration` adds `tempoBPM`/`offsetMs`/`userOffsetMs` with empty defaults — this implies *some* rhythm discipline was emitting rows at v1 that had to be brought up to v2 shape, or that the v2 runner pre-emptively widened all rows. Walk the actual schema files to settle this and document the answer.).
-  - [ ] 2.4 `ContinuousRhythmMatching`: v3 entry only (introduced at v3). Carries the `userOffsetMs → meanOffsetMs` value transform on its v3 entry.
+- [x] Task 2: Author each discipline's history (AC: 1, 3)
+  - [x] 2.1 `PitchDiscrimination`: v1 (`pitchComparison`, columns), v2 (`pitchDiscrimination`, same columns).
+  - [x] 2.2 `PitchMatching`: v1 entry (no rename through v3).
+  - [x] 2.3 `TimingOffsetDetection` (was `RhythmOffsetDetection`): trace its CSV identity through v1/v2/v3. v2 added `tempoBPM` and `offsetMs`; verify whether the discipline existed at v1 (the `V1ToV2Migration` adds `tempoBPM`/`offsetMs`/`userOffsetMs` with empty defaults — this implies *some* rhythm discipline was emitting rows at v1 that had to be brought up to v2 shape, or that the v2 runner pre-emptively widened all rows. Walk the actual schema files to settle this and document the answer.).
+  - [x] 2.4 `ContinuousRhythmMatching`: v3 entry only (introduced at v3). Carries the `userOffsetMs → meanOffsetMs` value transform on its v3 entry.
 
-- [ ] Task 3: Implement the runner (AC: 2, 4)
-  - [ ] 3.1 Replace `CSVMigrationChain.migrations` with a runner that, for each (v, v+1) step, asks every discipline (`TrainingDisciplineRegistry.shared.all` filtered to those with a history entry at *v*) for its v→v+1 deltas and applies them.
-  - [ ] 3.2 Confirm the runner produces *exactly* the same row outputs as the current `V1ToV2Migration` + `V2ToV3Migration` pipeline does today, for the same inputs. Use a test that diffs the two pipelines against a fixture if helpful (it can be deleted at the end).
-  - [ ] 3.3 Delete `V1ToV2Migration.swift` and `V2ToV3Migration.swift`.
+- [x] Task 3: Implement the runner (AC: 2, 4)
+  - [x] 3.1 Replace `CSVMigrationChain.migrations` with a runner that, for each (v, v+1) step, asks every history (from `CSVHistoryRegistry.shared`) for its v→v+1 deltas and applies them.
+  - [x] 3.2 Confirm the runner produces *exactly* the same row outputs as the current `V1ToV2Migration` + `V2ToV3Migration` pipeline does today, for the same inputs.
+  - [x] 3.3 Delete `V1ToV2Migration.swift` and `V2ToV3Migration.swift`.
 
-- [ ] Task 4: Verify (AC: 5, 6, 7)
-  - [ ] 4.1 Grep `Peach/Core/Data/` for each specific discipline name. Expected: zero hits.
-  - [ ] 4.2 Run all four test configurations. Confirm CSV import round-trip tests pass.
-  - [ ] 4.3 Build all four configurations; zero new warnings.
+- [x] Task 4: Verify (AC: 5, 6, 7)
+  - [x] 4.1 Grep `Peach/Core/Data/` for each specific discipline name. Expected: zero hits.
+  - [x] 4.2 Run all four test configurations. Confirm CSV import round-trip tests pass.
+  - [x] 4.3 Build all four configurations; zero new warnings.
 
 ## Dev Notes
 
@@ -177,6 +177,65 @@ Default to shape 1 unless implementation reveals a problem.
 - `Peach/Core/Data/CSVFormatMigration.swift` — the protocol and chain to either repurpose or replace.
 - `Peach/Core/Training/Discipline/TrainingDiscipline.swift` — the protocol receiving the new `csvHistory` member.
 
+## Dev Agent Record
+
+### Implementation Plan
+
+Snapshot-and-derive shape: each discipline (or shared group) declares a `CSVHistory` of `CSVHistoryEntry` snapshots — one per CSV format version where the discipline's identity changed. The runner inspects each history's entry at `v+1` and derives operations for the (v → v+1) step:
+
+- trainingType rename: when the entry at `v+1` differs from the same history's previous entry.
+- previous-identifier rename (retired discipline import): when a history first appears at `v+1` and declares `previousTrainingType`.
+- value transforms: any `CSVValueTransform` declared on the `v+1` entry (currently used only for the `userOffsetMs → meanOffsetMs` rename-with-fallback at v3).
+
+Column adds/drops are handled implicitly by `CSVImportParser.parseMigratedLines`, which reconstructs each row against the union of registry-declared columns and any keys present in the migrated rows.
+
+### Decoupling histories from active disciplines
+
+The migration runner cannot read `TrainingDisciplineRegistry.shared`: in non-research builds, timing disciplines are excluded from the registry, but a v2 CSV containing `rhythmMatching` rows must still migrate to v3 shape regardless. A separate `CSVHistoryRegistry` is bootstrapped at app startup with `DisciplineBootstrap.allCSVHistories` — the union of all known histories, NOT gated by `PEACH_RESEARCH`. The histories themselves live as static enums (`PitchDiscriminationCSVHistory.history`, `PitchMatchingCSVHistory.history`, `TimingOffsetDetectionCSVHistory.history`, `ContinuousRhythmMatchingCSVHistory.history`) under each feature's `Discipline/` subfolder, so they're unconditionally compiled even when the discipline they belong to is build-flag-gated out of the active list.
+
+The `csvHistory` protocol member on `TrainingDiscipline` (Task 1.3) provides the compile-time guarantee that every new discipline declares a history; the runtime path reads only `CSVHistoryRegistry.shared.histories`.
+
+### TimingOffsetDetection at v1
+
+The legacy `V1ToV2Migration` added empty `tempoBPM`/`offsetMs`/`userOffsetMs` columns to all v1 rows — pre-emptively widening the row dictionary so the v2 schema was satisfied. The schema files confirm no rhythm discipline existed at v1; the v1→v2 migration simply added the columns to a pure-pitch v1 CSV in anticipation of v2's rhythm columns. In the new contract, `TimingOffsetDetectionCSVHistory` declares its first entry at v2 (as `rhythmOffsetDetection`); column reconstruction in `parseMigratedLines` already produces empty defaults for any column declared in the registry but missing from a row, so explicit empty-default operations are unnecessary.
+
+### Completion Notes
+
+- `CSVFormatMigration` protocol removed; `CSVMigrationChain` is now a single 70-line file that derives all operations from `CSVHistoryRegistry.shared`.
+- `V1ToV2Migration.swift` and `V2ToV3Migration.swift` deleted (AC 4).
+- AC 5 (zero discipline names in `Peach/Core/Data/`) verified via grep.
+- AC 6 (round-trip tests) — full suite pass on all four configurations.
+- AC 7 — all four configurations green; iOS build clean (1 pre-existing AppIntents warning).
+
+## File List
+
+### New
+- `Peach/Core/Training/Discipline/CSVHistory.swift` — `CSVHistory`, `CSVHistoryEntry`, `CSVValueTransform` types.
+- `Peach/Core/Training/Discipline/CSVHistoryRegistry.swift` — bootstrapped registry of all known CSV histories, decoupled from the discipline registry.
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationCSVHistory.swift` — shared by Unison + Interval pitch discrimination (v1 `pitchComparison`, v2 `pitchDiscrimination`).
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingCSVHistory.swift` — shared by Unison + Interval pitch matching (single v1 entry).
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionCSVHistory.swift` — v2 entry only (`rhythmOffsetDetection`).
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingCSVHistory.swift` — v3 entry with `previousTrainingType: "rhythmMatching"` and `userOffsetMs → meanOffsetMs` value transform.
+
+### Modified
+- `Peach/Core/Data/CSVFormatMigration.swift` — replaced `CSVFormatMigration` protocol + per-version migration list with history-derived `CSVMigrationChain`.
+- `Peach/Core/Training/Discipline/TrainingDiscipline.swift` — added `csvHistory: CSVHistory` protocol requirement.
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift`, `IntervalPitchDiscriminationDiscipline.swift` — return `PitchDiscriminationCSVHistory.history`.
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift`, `IntervalPitchMatchingDiscipline.swift` — return `PitchMatchingCSVHistory.history`.
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — return `TimingOffsetDetectionCSVHistory.history`.
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — return `ContinuousRhythmMatchingCSVHistory.history`.
+- `Peach/App/Training/DisciplineBootstrap.swift` — added `allCSVHistories` (union of all histories, not build-flag-gated).
+- `Peach/App/PeachApp.swift` — bootstrap `CSVHistoryRegistry` alongside `TrainingDisciplineRegistry`.
+- `Peach/App/PreviewSupport.swift` — bootstrap `CSVHistoryRegistry` for previews.
+- `PeachTests/Core/Data/CSVFormatMigrationTests.swift` — rewritten against `CSVMigrationChain.migrate(...)`; suite renamed to "CSVMigrationChain".
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift`, `RegistryContributionsTests.swift` — added `csvHistory` to synthetic discipline fixtures.
+- `docs/implementation-artifacts/sprint-status.yaml` — story status `ready-for-dev` → `review`.
+
+### Deleted
+- `Peach/Core/Data/V1ToV2Migration.swift`
+- `Peach/Core/Data/V2ToV3Migration.swift`
+
 ## Change Log
 
 - 2026-04-28: Drafted as the CSV migration follow-up to 77.3, redesigned around history+derivation per the architect/dev session. Supersedes the earlier 77.6 draft (which framed the work as per-step contributions). Status → ready-for-dev.
+- 2026-04-28: Implemented. Migration runner derived from `CSVHistoryRegistry`, decoupled from `TrainingDisciplineRegistry` so v2 → v3 migrations work in non-research builds. All four configurations green. Status → review.
