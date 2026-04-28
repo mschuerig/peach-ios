@@ -14,12 +14,51 @@ struct TrainingDataImportActionTests {
 
     private func makeStore() throws -> TrainingDataStore {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        let container = try ModelContainer(for: TrainingRecord.self, configurations: config)
         return TrainingDataStore(modelContext: ModelContext(container))
     }
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
         Date(timeIntervalSinceReferenceDate: 794_394_000 + minutesOffset * 60)
+    }
+
+    private func makeDiscriminationEntry(
+        minutesOffset: Double,
+        referenceNote: Int = 60,
+        targetNote: Int = 62,
+        centOffset: Double = 25.0,
+        isCorrect: Bool = true
+    ) -> (timestamp: Date, payload: any TrainingDisciplinePayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchDiscriminationPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                centOffset: centOffset,
+                isCorrect: isCorrect,
+                interval: 0,
+                tuningSystem: "equalTemperament"
+            ) as any TrainingDisciplinePayload
+        )
+    }
+
+    private func saveDiscrimination(
+        _ store: TrainingDataStore,
+        minutesOffset: Double,
+        referenceNote: Int = 60,
+        targetNote: Int = 62,
+        centOffset: Double = 25.0,
+        isCorrect: Bool = true
+    ) throws {
+        let payload = PitchDiscriminationPayload(
+            referenceNote: referenceNote,
+            targetNote: targetNote,
+            centOffset: centOffset,
+            isCorrect: isCorrect,
+            interval: 0,
+            tuningSystem: "equalTemperament"
+        )
+        try store.save(JSONEnvelope.encode(payload, timestamp: fixedDate(minutesOffset: minutesOffset)))
     }
 
     /// Simulates the import action closure wired in PeachApp
@@ -44,10 +83,10 @@ struct TrainingDataImportActionTests {
         let profile = PerceptualProfile()
 
         let comparisons = [
-            PitchDiscriminationRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate()),
-            PitchDiscriminationRecord(referenceNote: 64, targetNote: 66, centOffset: 30.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1))
+            makeDiscriminationEntry(minutesOffset: 0, centOffset: 25.0, isCorrect: true),
+            makeDiscriminationEntry(minutesOffset: 1, referenceNote: 64, targetNote: 66, centOffset: 30.0, isCorrect: false)
         ]
-        let parseResult = CSVImportParser.ImportResult(records: ["pitchDiscrimination": comparisons], errors: [])
+        let parseResult = CSVImportParser.ImportResult(payloads: ["pitchDiscrimination": comparisons], errors: [])
 
         let summary = try performImportAction(
             parseResult: parseResult, mode: .replace,
@@ -66,15 +105,14 @@ struct TrainingDataImportActionTests {
         let profile = PerceptualProfile()
 
         // Pre-existing record
-        let existing = PitchDiscriminationRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate())
-        try store.save(existing)
+        try saveDiscrimination(store, minutesOffset: 0, centOffset: 25.0)
 
         // Import: one duplicate, one new
         let comparisons = [
-            PitchDiscriminationRecord(referenceNote: 60, targetNote: 62, centOffset: 25.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate()),
-            PitchDiscriminationRecord(referenceNote: 64, targetNote: 66, centOffset: 30.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1))
+            makeDiscriminationEntry(minutesOffset: 0, centOffset: 25.0, isCorrect: true),
+            makeDiscriminationEntry(minutesOffset: 1, referenceNote: 64, targetNote: 66, centOffset: 30.0, isCorrect: false)
         ]
-        let parseResult = CSVImportParser.ImportResult(records: ["pitchDiscrimination": comparisons], errors: [])
+        let parseResult = CSVImportParser.ImportResult(payloads: ["pitchDiscrimination": comparisons], errors: [])
 
         let summary = try performImportAction(
             parseResult: parseResult, mode: .merge,
@@ -96,16 +134,15 @@ struct TrainingDataImportActionTests {
 
         // Pre-existing records
         for i in 0..<3 {
-            let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 62, centOffset: Double(20 + i), isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: Double(i)))
-            try store.save(record)
+            try saveDiscrimination(store, minutesOffset: Double(i), centOffset: Double(20 + i))
         }
 
         // Import 2 new records via merge
         let comparisons = [
-            PitchDiscriminationRecord(referenceNote: 67, targetNote: 69, centOffset: 15.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 10)),
-            PitchDiscriminationRecord(referenceNote: 72, targetNote: 74, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 11))
+            makeDiscriminationEntry(minutesOffset: 10, referenceNote: 67, targetNote: 69, centOffset: 15.0),
+            makeDiscriminationEntry(minutesOffset: 11, referenceNote: 72, targetNote: 74, centOffset: 10.0)
         ]
-        let parseResult = CSVImportParser.ImportResult(records: ["pitchDiscrimination": comparisons], errors: [])
+        let parseResult = CSVImportParser.ImportResult(payloads: ["pitchDiscrimination": comparisons], errors: [])
 
         _ = try performImportAction(
             parseResult: parseResult, mode: .merge,
@@ -113,7 +150,7 @@ struct TrainingDataImportActionTests {
         )
 
         // Profile should have all 5 records (3 existing + 2 imported)
-        let allRecords = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let allRecords = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(allRecords.count == 5)
     }
 
@@ -124,16 +161,18 @@ struct TrainingDataImportActionTests {
         let profile = PerceptualProfile()
         let timeline = ProgressTimeline(profile: profile)
 
-        let records = (0..<25).map { i in
-            PitchDiscriminationRecord(
-                referenceNote: 60, targetNote: 60, centOffset: Double(50 - i), isCorrect: true,
-                interval: 0, tuningSystem: "equalTemperament",
-                timestamp: Date(timeIntervalSince1970: Double(i) * 3600)
+        let entries: [(timestamp: Date, payload: PitchDiscriminationPayload)] = (0..<25).map { i in
+            (
+                Date(timeIntervalSince1970: Double(i) * 3600),
+                PitchDiscriminationPayload(
+                    referenceNote: 60, targetNote: 60, centOffset: Double(50 - i), isCorrect: true,
+                    interval: 0, tuningSystem: "equalTemperament"
+                )
             )
         }
 
         profile.replaceAll { builder in
-            builder.feedPitchDiscriminations(records)
+            builder.feedPitchDiscriminations(entries)
         }
 
         #expect(timeline.state(for: .unisonPitchDiscrimination) == .active)

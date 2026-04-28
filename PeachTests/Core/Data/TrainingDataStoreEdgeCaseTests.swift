@@ -11,7 +11,11 @@ struct TrainingDataStoreEdgeCaseTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: TrainingRecord.self, configurations: config)
+    }
+
+    private func envelope(for payload: any TrainingDisciplinePayload, timestamp: Date = Date()) throws -> TrainingRecord {
+        try JSONEnvelope.encode(payload, timestamp: timestamp)
     }
 
     // MARK: - Edge Case Tests
@@ -22,13 +26,12 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record1 = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        let record2 = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        let payload = PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
 
-        try store.save(record1)
-        try store.save(record2)
+        try store.save(envelope(for: payload))
+        try store.save(envelope(for: payload))
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.count == 2)
     }
 
@@ -38,16 +41,16 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let minRecord = PitchDiscriminationRecord(referenceNote: 0, targetNote: 0, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        let maxRecord = PitchDiscriminationRecord(referenceNote: 127, targetNote: 127, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")
+        let minPayload = PitchDiscriminationPayload(referenceNote: 0, targetNote: 0, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        let maxPayload = PitchDiscriminationPayload(referenceNote: 127, targetNote: 127, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")
 
-        try store.save(minRecord)
-        try store.save(maxRecord)
+        try store.save(envelope(for: minPayload))
+        try store.save(envelope(for: maxPayload))
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.count == 2)
-        #expect(fetched.contains { $0.referenceNote == 0 })
-        #expect(fetched.contains { $0.referenceNote == 127 })
+        #expect(fetched.contains { $0.payload.referenceNote == 0 })
+        #expect(fetched.contains { $0.payload.referenceNote == 127 })
     }
 
     @Test("Fractional cent offsets are stored with precision")
@@ -56,7 +59,7 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 60,
             targetNote: 60,
             centOffset: 12.3,
@@ -65,75 +68,11 @@ struct TrainingDataStoreEdgeCaseTests {
             tuningSystem: "equalTemperament"
         )
 
-        try store.save(record)
+        try store.save(envelope(for: payload))
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].centOffset == 12.3)
-    }
-
-    // MARK: - Error Handling Tests
-
-    @Test("FetchAll throws DataStoreError.fetchFailed when context is invalid")
-    func fetchAllThrowsOnInvalidContext() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(record)
-
-        do {
-            _ = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        } catch let error as Peach.DataStoreError {
-            switch error {
-            case .fetchFailed(let message):
-                #expect(message.contains("Failed to fetch"))
-            default:
-                Issue.record("Expected fetchFailed error")
-            }
-        }
-    }
-
-    @Test("Save throws DataStoreError.saveFailed on context save failure")
-    func saveThrowsOnContextFailure() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-
-        do {
-            try store.save(record)
-        } catch let error as Peach.DataStoreError {
-            switch error {
-            case .saveFailed(let message):
-                #expect(message.contains("Failed to save"))
-            default:
-                Issue.record("Expected saveFailed error")
-            }
-        }
-    }
-
-    @Test("Delete throws DataStoreError.deleteFailed on context save failure")
-    func deleteThrowsOnContextFailure() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(record)
-
-        do {
-            try store.delete(record)
-        } catch let error as Peach.DataStoreError {
-            switch error {
-            case .deleteFailed(let message):
-                #expect(message.contains("Failed to delete"))
-            default:
-                Issue.record("Expected deleteFailed error")
-            }
-        }
+        #expect(fetched[0].payload.centOffset == 12.3)
     }
 
     // MARK: - Atomic Replace Tests
@@ -144,22 +83,25 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let existing = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(existing)
+        let existing = PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        try store.save(envelope(for: existing))
 
-        let newComparison = PitchDiscriminationRecord(referenceNote: 72, targetNote: 72, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")
-        let newMatching = PitchMatchingRecord(referenceNote: 69, targetNote: 69, initialCentOffset: 30.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
+        let newDiscrimination = PitchDiscriminationPayload(referenceNote: 72, targetNote: 72, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")
+        let newMatching = PitchMatchingPayload(referenceNote: 69, targetNote: 69, initialCentOffset: 30.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
 
-        var records: [any PersistentModel] = [newComparison, newMatching]
-        try store.replaceAllRecords(records)
+        let envelopes: [TrainingRecord] = [
+            try envelope(for: newDiscrimination),
+            try envelope(for: newMatching),
+        ]
+        try store.replaceAllRecords(envelopes)
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        let matchings = try store.fetchAllSorted(PitchMatchingRecord.self)
+        let comparisons = try store.fetchPayloads(PitchDiscriminationPayload.self)
+        let matchings = try store.fetchPayloads(PitchMatchingPayload.self)
 
         #expect(comparisons.count == 1)
-        #expect(comparisons[0].referenceNote == 72)
+        #expect(comparisons[0].payload.referenceNote == 72)
         #expect(matchings.count == 1)
-        #expect(matchings[0].referenceNote == 69)
+        #expect(matchings[0].payload.referenceNote == 69)
     }
 
     @Test("replaceAllRecords with empty arrays clears all data")
@@ -168,18 +110,15 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let comparison = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        let matching = PitchMatchingRecord(referenceNote: 69, targetNote: 69, initialCentOffset: 30.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(comparison)
-        try store.save(matching)
+        let discrimination = PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        let matching = PitchMatchingPayload(referenceNote: 69, targetNote: 69, initialCentOffset: 30.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
+        try store.save(envelope(for: discrimination))
+        try store.save(envelope(for: matching))
 
         try store.replaceAllRecords([])
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        let matchings = try store.fetchAllSorted(PitchMatchingRecord.self)
-
-        #expect(comparisons.isEmpty)
-        #expect(matchings.isEmpty)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).isEmpty)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).isEmpty)
     }
 
     @Test("replaceAllRecords handles multiple records of both types")
@@ -188,21 +127,20 @@ struct TrainingDataStoreEdgeCaseTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let comparisons = (0..<5).map { i in
-            PitchDiscriminationRecord(referenceNote: 60 + i, targetNote: 60 + i, centOffset: Double(i) * 10, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        let discriminations = (0..<5).map { i in
+            PitchDiscriminationPayload(referenceNote: 60 + i, targetNote: 60 + i, centOffset: Double(i) * 10, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
         }
         let matchings = (0..<3).map { i in
-            PitchMatchingRecord(referenceNote: 69 + i, targetNote: 69 + i, initialCentOffset: Double(i) * 15, userCentError: Double(i), interval: 0, tuningSystem: "equalTemperament")
+            PitchMatchingPayload(referenceNote: 69 + i, targetNote: 69 + i, initialCentOffset: Double(i) * 15, userCentError: Double(i), interval: 0, tuningSystem: "equalTemperament")
         }
 
-        var records: [any PersistentModel] = comparisons + matchings
-        try store.replaceAllRecords(records)
+        var envelopes: [TrainingRecord] = []
+        for d in discriminations { envelopes.append(try envelope(for: d)) }
+        for m in matchings { envelopes.append(try envelope(for: m)) }
+        try store.replaceAllRecords(envelopes)
 
-        let fetchedComparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        let fetchedMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
-
-        #expect(fetchedComparisons.count == 5)
-        #expect(fetchedMatchings.count == 3)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 5)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 3)
     }
 
     @Test("DataStoreError cases have descriptive messages")

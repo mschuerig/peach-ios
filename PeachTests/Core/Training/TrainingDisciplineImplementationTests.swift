@@ -11,10 +11,7 @@ struct TrainingDisciplineImplementationTests {
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         return try ModelContainer(
-            for: PitchDiscriminationRecord.self,
-            PitchMatchingRecord.self,
-            TimingOffsetDetectionRecord.self,
-            ContinuousRhythmMatchingRecord.self,
+            for: TrainingRecord.self,
             configurations: config
         )
     }
@@ -29,23 +26,35 @@ struct TrainingDisciplineImplementationTests {
         Date(timeIntervalSinceReferenceDate: 794_394_000 + minutesOffset * 60)
     }
 
-    private func makeImportResult(
-        pitchDiscriminations: [PitchDiscriminationRecord] = [],
-        pitchMatchings: [PitchMatchingRecord] = [],
-        timingOffsetDetections: [TimingOffsetDetectionRecord] = [],
-        continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = []
-    ) -> CSVImportParser.ImportResult {
-        var records: [String: [any PersistentModel]] = [:]
-        if !pitchDiscriminations.isEmpty { records["pitchDiscrimination"] = pitchDiscriminations }
-        if !pitchMatchings.isEmpty { records["pitchMatching"] = pitchMatchings }
-        if !timingOffsetDetections.isEmpty { records["rhythmOffsetDetection"] = timingOffsetDetections }
-        if !continuousRhythmMatchings.isEmpty { records["continuousRhythmMatching"] = continuousRhythmMatchings }
-        return CSVImportParser.ImportResult(records: records, errors: [])
+    private func envelope(for payload: any TrainingDisciplinePayload, timestamp: Date) throws -> TrainingRecord {
+        try JSONEnvelope.encode(payload, timestamp: timestamp)
     }
 
-    // MARK: - Record Factories
+    private func makeImportResult(
+        pitchDiscriminations: [(timestamp: Date, payload: PitchDiscriminationPayload)] = [],
+        pitchMatchings: [(timestamp: Date, payload: PitchMatchingPayload)] = [],
+        timingOffsetDetections: [(timestamp: Date, payload: TimingOffsetDetectionPayload)] = [],
+        continuousRhythmMatchings: [(timestamp: Date, payload: ContinuousRhythmMatchingPayload)] = []
+    ) -> CSVImportParser.ImportResult {
+        var payloads: [String: [(timestamp: Date, payload: any TrainingDisciplinePayload)]] = [:]
+        if !pitchDiscriminations.isEmpty {
+            payloads["pitchDiscrimination"] = pitchDiscriminations.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !pitchMatchings.isEmpty {
+            payloads["pitchMatching"] = pitchMatchings.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !timingOffsetDetections.isEmpty {
+            payloads["rhythmOffsetDetection"] = timingOffsetDetections.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !continuousRhythmMatchings.isEmpty {
+            payloads["continuousRhythmMatching"] = continuousRhythmMatchings.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        return CSVImportParser.ImportResult(payloads: payloads, errors: [])
+    }
 
-    private func makePitchDiscriminationRecord(
+    // MARK: - Payload Factories
+
+    private func makePitchDiscriminationEntry(
         referenceNote: Int = 60,
         targetNote: Int = 64,
         centOffset: Double = 15.5,
@@ -53,19 +62,21 @@ struct TrainingDisciplineImplementationTests {
         interval: Int = 0,
         tuningSystem: String = "equalTemperament",
         minutesOffset: Double = 0
-    ) -> PitchDiscriminationRecord {
-        PitchDiscriminationRecord(
-            referenceNote: referenceNote,
-            targetNote: targetNote,
-            centOffset: centOffset,
-            isCorrect: isCorrect,
-            interval: interval,
-            tuningSystem: tuningSystem,
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    ) -> (timestamp: Date, payload: PitchDiscriminationPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchDiscriminationPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                centOffset: centOffset,
+                isCorrect: isCorrect,
+                interval: interval,
+                tuningSystem: tuningSystem
+            )
         )
     }
 
-    private func makePitchMatchingRecord(
+    private func makePitchMatchingEntry(
         referenceNote: Int = 69,
         targetNote: Int = 72,
         initialCentOffset: Double = 25.0,
@@ -73,33 +84,38 @@ struct TrainingDisciplineImplementationTests {
         interval: Int = 0,
         tuningSystem: String = "equalTemperament",
         minutesOffset: Double = 0
-    ) -> PitchMatchingRecord {
-        PitchMatchingRecord(
-            referenceNote: referenceNote,
-            targetNote: targetNote,
-            initialCentOffset: initialCentOffset,
-            userCentError: userCentError,
-            interval: interval,
-            tuningSystem: tuningSystem,
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    ) -> (timestamp: Date, payload: PitchMatchingPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchMatchingPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                initialCentOffset: initialCentOffset,
+                userCentError: userCentError,
+                interval: interval,
+                tuningSystem: tuningSystem
+            )
         )
     }
 
-    private func makeTimingOffsetDetectionRecord(
+#if PEACH_RESEARCH
+    private func makeTimingOffsetDetectionEntry(
         tempoBPM: Int = 100,
         offsetMs: Double = 12.5,
         isCorrect: Bool = true,
         minutesOffset: Double = 0
-    ) -> TimingOffsetDetectionRecord {
-        TimingOffsetDetectionRecord(
-            tempoBPM: tempoBPM,
-            offsetMs: offsetMs,
-            isCorrect: isCorrect,
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    ) -> (timestamp: Date, payload: TimingOffsetDetectionPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            TimingOffsetDetectionPayload(
+                tempoBPM: tempoBPM,
+                offsetMs: offsetMs,
+                isCorrect: isCorrect
+            )
         )
     }
 
-    private func makeContinuousRhythmMatchingRecord(
+    private func makeContinuousRhythmMatchingEntry(
         tempoBPM: Int = 100,
         meanOffsetMs: Double = 8.5,
         position0: Double? = 5.0,
@@ -107,26 +123,29 @@ struct TrainingDisciplineImplementationTests {
         position2: Double? = nil,
         position3: Double? = nil,
         minutesOffset: Double = 0
-    ) -> ContinuousRhythmMatchingRecord {
-        ContinuousRhythmMatchingRecord(
-            tempoBPM: tempoBPM,
-            meanOffsetMs: meanOffsetMs,
-            meanOffsetMsPosition0: position0,
-            meanOffsetMsPosition1: position1,
-            meanOffsetMsPosition2: position2,
-            meanOffsetMsPosition3: position3,
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    ) -> (timestamp: Date, payload: ContinuousRhythmMatchingPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            ContinuousRhythmMatchingPayload(
+                tempoBPM: tempoBPM,
+                meanOffsetMs: meanOffsetMs,
+                meanOffsetMsPosition0: position0,
+                meanOffsetMsPosition1: position1,
+                meanOffsetMsPosition2: position2,
+                meanOffsetMsPosition3: position3
+            )
         )
     }
+#endif
 
     // MARK: - Task 1.2: csvKeyValuePairs produces expected column values
 
     @Test("UnisonPitchDiscrimination csvKeyValuePairs produces correct columns")
     func unisonPitchDiscriminationCSVKeyValuePairs() async {
         let discipline = UnisonPitchDiscriminationDiscipline()
-        let record = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true, interval: 0)
+        let entry = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true, interval: 0)
 
-        let pairs = discipline.csvKeyValuePairs(for: record)
+        let pairs = discipline.csvKeyValuePairs(for: entry.payload)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
 
         #expect(dict["referenceNote"] == "60")
@@ -142,9 +161,9 @@ struct TrainingDisciplineImplementationTests {
     @Test("IntervalPitchDiscrimination csvKeyValuePairs produces correct columns")
     func intervalPitchDiscriminationCSVKeyValuePairs() async {
         let discipline = IntervalPitchDiscriminationDiscipline()
-        let record = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 67, centOffset: -8.3, isCorrect: false, interval: 7)
+        let entry = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 67, centOffset: -8.3, isCorrect: false, interval: 7)
 
-        let pairs = discipline.csvKeyValuePairs(for: record)
+        let pairs = discipline.csvKeyValuePairs(for: entry.payload)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
 
         #expect(dict["referenceNote"] == "60")
@@ -158,9 +177,9 @@ struct TrainingDisciplineImplementationTests {
     @Test("UnisonPitchMatching csvKeyValuePairs produces correct columns")
     func unisonPitchMatchingCSVKeyValuePairs() async {
         let discipline = UnisonPitchMatchingDiscipline()
-        let record = makePitchMatchingRecord(referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2, interval: 0)
+        let entry = makePitchMatchingEntry(referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2, interval: 0)
 
-        let pairs = discipline.csvKeyValuePairs(for: record)
+        let pairs = discipline.csvKeyValuePairs(for: entry.payload)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
 
         #expect(dict["referenceNote"] == "69")
@@ -174,9 +193,9 @@ struct TrainingDisciplineImplementationTests {
     @Test("IntervalPitchMatching csvKeyValuePairs produces correct columns")
     func intervalPitchMatchingCSVKeyValuePairs() async {
         let discipline = IntervalPitchMatchingDiscipline()
-        let record = makePitchMatchingRecord(referenceNote: 60, targetNote: 67, initialCentOffset: -12.0, userCentError: 1.5, interval: 7)
+        let entry = makePitchMatchingEntry(referenceNote: 60, targetNote: 67, initialCentOffset: -12.0, userCentError: 1.5, interval: 7)
 
-        let pairs = discipline.csvKeyValuePairs(for: record)
+        let pairs = discipline.csvKeyValuePairs(for: entry.payload)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
 
         #expect(dict["referenceNote"] == "60")
@@ -190,9 +209,9 @@ struct TrainingDisciplineImplementationTests {
     @Test("TimingOffsetDetection csvKeyValuePairs produces correct columns")
     func timingOffsetDetectionCSVKeyValuePairs() async {
         let discipline = TimingOffsetDetectionDiscipline()
-        let record = makeTimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
+        let entry = makeTimingOffsetDetectionEntry(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
 
-        let pairs = discipline.csvKeyValuePairs(for: record)
+        let pairs = discipline.csvKeyValuePairs(for: entry.payload)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
 
         #expect(dict["tempoBPM"] == "120")
@@ -203,9 +222,9 @@ struct TrainingDisciplineImplementationTests {
     @Test("ContinuousRhythmMatching csvKeyValuePairs produces correct columns")
     func continuousRhythmMatchingCSVKeyValuePairs() async {
         let discipline = ContinuousRhythmMatchingDiscipline()
-        let record = makeContinuousRhythmMatchingRecord(tempoBPM: 90, meanOffsetMs: 7.2, position0: 5.0, position1: 10.0, position2: nil, position3: nil)
+        let entry = makeContinuousRhythmMatchingEntry(tempoBPM: 90, meanOffsetMs: 7.2, position0: 5.0, position1: 10.0, position2: nil, position3: nil)
 
-        let pairs = discipline.csvKeyValuePairs(for: record)
+        let pairs = discipline.csvKeyValuePairs(for: entry.payload)
         let dict = Dictionary(uniqueKeysWithValues: pairs)
 
         #expect(dict["tempoBPM"] == "90")
@@ -238,121 +257,127 @@ struct TrainingDisciplineImplementationTests {
         return (fields, columnIndex)
     }
 
-    @Test("UnisonPitchDiscrimination round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    @Test("UnisonPitchDiscrimination round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func unisonPitchDiscriminationRoundTrip() async throws {
         let discipline = UnisonPitchDiscriminationDiscipline()
-        let original = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true, interval: 0)
+        let original = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true, interval: 0)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "pitchDiscrimination", timestamp: original.timestamp,
-            pairs: discipline.csvKeyValuePairs(for: original))
+            pairs: discipline.csvKeyValuePairs(for: original.payload))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? PitchDiscriminationRecord)
+        let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
+        let payload = try #require(parsed.payload as? PitchDiscriminationPayload)
 
-        #expect(parsed.referenceNote == original.referenceNote)
-        #expect(parsed.targetNote == original.targetNote)
-        #expect(parsed.centOffset == original.centOffset)
-        #expect(parsed.isCorrect == original.isCorrect)
-        #expect(parsed.interval == original.interval)
-        #expect(parsed.tuningSystem == original.tuningSystem)
+        #expect(payload.referenceNote == original.payload.referenceNote)
+        #expect(payload.targetNote == original.payload.targetNote)
+        #expect(payload.centOffset == original.payload.centOffset)
+        #expect(payload.isCorrect == original.payload.isCorrect)
+        #expect(payload.interval == original.payload.interval)
+        #expect(payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
-    @Test("IntervalPitchDiscrimination round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    @Test("IntervalPitchDiscrimination round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func intervalPitchDiscriminationRoundTrip() async throws {
         let discipline = IntervalPitchDiscriminationDiscipline()
-        let original = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 67, centOffset: -8.3, isCorrect: false, interval: 7)
+        let original = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 67, centOffset: -8.3, isCorrect: false, interval: 7)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "pitchDiscrimination", timestamp: original.timestamp,
-            pairs: discipline.csvKeyValuePairs(for: original))
+            pairs: discipline.csvKeyValuePairs(for: original.payload))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? PitchDiscriminationRecord)
+        let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
+        let payload = try #require(parsed.payload as? PitchDiscriminationPayload)
 
-        #expect(parsed.referenceNote == original.referenceNote)
-        #expect(parsed.targetNote == original.targetNote)
-        #expect(parsed.centOffset == original.centOffset)
-        #expect(parsed.isCorrect == original.isCorrect)
-        #expect(parsed.interval == original.interval)
-        #expect(parsed.tuningSystem == original.tuningSystem)
+        #expect(payload.referenceNote == original.payload.referenceNote)
+        #expect(payload.targetNote == original.payload.targetNote)
+        #expect(payload.centOffset == original.payload.centOffset)
+        #expect(payload.isCorrect == original.payload.isCorrect)
+        #expect(payload.interval == original.payload.interval)
+        #expect(payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
-    @Test("UnisonPitchMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    @Test("UnisonPitchMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func unisonPitchMatchingRoundTrip() async throws {
         let discipline = UnisonPitchMatchingDiscipline()
-        let original = makePitchMatchingRecord(referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2, interval: 0)
+        let original = makePitchMatchingEntry(referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2, interval: 0)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "pitchMatching", timestamp: original.timestamp,
-            pairs: discipline.csvKeyValuePairs(for: original))
+            pairs: discipline.csvKeyValuePairs(for: original.payload))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? PitchMatchingRecord)
+        let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
+        let payload = try #require(parsed.payload as? PitchMatchingPayload)
 
-        #expect(parsed.referenceNote == original.referenceNote)
-        #expect(parsed.targetNote == original.targetNote)
-        #expect(parsed.initialCentOffset == original.initialCentOffset)
-        #expect(parsed.userCentError == original.userCentError)
-        #expect(parsed.interval == original.interval)
-        #expect(parsed.tuningSystem == original.tuningSystem)
+        #expect(payload.referenceNote == original.payload.referenceNote)
+        #expect(payload.targetNote == original.payload.targetNote)
+        #expect(payload.initialCentOffset == original.payload.initialCentOffset)
+        #expect(payload.userCentError == original.payload.userCentError)
+        #expect(payload.interval == original.payload.interval)
+        #expect(payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
-    @Test("IntervalPitchMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    @Test("IntervalPitchMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func intervalPitchMatchingRoundTrip() async throws {
         let discipline = IntervalPitchMatchingDiscipline()
-        let original = makePitchMatchingRecord(referenceNote: 60, targetNote: 67, initialCentOffset: -12.0, userCentError: 1.5, interval: 7)
+        let original = makePitchMatchingEntry(referenceNote: 60, targetNote: 67, initialCentOffset: -12.0, userCentError: 1.5, interval: 7)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "pitchMatching", timestamp: original.timestamp,
-            pairs: discipline.csvKeyValuePairs(for: original))
+            pairs: discipline.csvKeyValuePairs(for: original.payload))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? PitchMatchingRecord)
+        let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
+        let payload = try #require(parsed.payload as? PitchMatchingPayload)
 
-        #expect(parsed.referenceNote == original.referenceNote)
-        #expect(parsed.targetNote == original.targetNote)
-        #expect(parsed.initialCentOffset == original.initialCentOffset)
-        #expect(parsed.userCentError == original.userCentError)
-        #expect(parsed.interval == original.interval)
-        #expect(parsed.tuningSystem == original.tuningSystem)
+        #expect(payload.referenceNote == original.payload.referenceNote)
+        #expect(payload.targetNote == original.payload.targetNote)
+        #expect(payload.initialCentOffset == original.payload.initialCentOffset)
+        #expect(payload.userCentError == original.payload.userCentError)
+        #expect(payload.interval == original.payload.interval)
+        #expect(payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
 #if PEACH_RESEARCH
-    @Test("TimingOffsetDetection round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    @Test("TimingOffsetDetection round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func timingOffsetDetectionRoundTrip() async throws {
         let discipline = TimingOffsetDetectionDiscipline()
-        let original = makeTimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
+        let original = makeTimingOffsetDetectionEntry(tempoBPM: 120, offsetMs: -5.3, isCorrect: true)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "rhythmOffsetDetection", timestamp: original.timestamp,
-            pairs: discipline.csvKeyValuePairs(for: original))
+            pairs: discipline.csvKeyValuePairs(for: original.payload))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? TimingOffsetDetectionRecord)
+        let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
+        let payload = try #require(parsed.payload as? TimingOffsetDetectionPayload)
 
-        #expect(parsed.tempoBPM == original.tempoBPM)
-        #expect(parsed.offsetMs == original.offsetMs)
-        #expect(parsed.isCorrect == original.isCorrect)
+        #expect(payload.tempoBPM == original.payload.tempoBPM)
+        #expect(payload.offsetMs == original.payload.offsetMs)
+        #expect(payload.isCorrect == original.payload.isCorrect)
         #expect(parsed.timestamp == original.timestamp)
     }
 
-    @Test("ContinuousRhythmMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal record")
+    @Test("ContinuousRhythmMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func continuousRhythmMatchingRoundTrip() async throws {
         let discipline = ContinuousRhythmMatchingDiscipline()
-        let original = makeContinuousRhythmMatchingRecord(tempoBPM: 90, meanOffsetMs: 7.2, position0: 5.0, position1: 10.0, position2: nil, position3: nil)
+        let original = makeContinuousRhythmMatchingEntry(tempoBPM: 90, meanOffsetMs: 7.2, position0: 5.0, position1: 10.0, position2: nil, position3: nil)
 
         let (fields, columnIndex) = try buildCSVFields(
             trainingType: "continuousRhythmMatching", timestamp: original.timestamp,
-            pairs: discipline.csvKeyValuePairs(for: original))
+            pairs: discipline.csvKeyValuePairs(for: original.payload))
 
-        let parsed = try #require(try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get() as? ContinuousRhythmMatchingRecord)
+        let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
+        let payload = try #require(parsed.payload as? ContinuousRhythmMatchingPayload)
 
-        #expect(parsed.tempoBPM == original.tempoBPM)
-        #expect(parsed.meanOffsetMs == original.meanOffsetMs)
-        #expect(parsed.meanOffsetMsPosition0 == original.meanOffsetMsPosition0)
-        #expect(parsed.meanOffsetMsPosition1 == original.meanOffsetMsPosition1)
-        #expect(parsed.meanOffsetMsPosition2 == original.meanOffsetMsPosition2)
-        #expect(parsed.meanOffsetMsPosition3 == original.meanOffsetMsPosition3)
+        #expect(payload.tempoBPM == original.payload.tempoBPM)
+        #expect(payload.meanOffsetMs == original.payload.meanOffsetMs)
+        #expect(payload.meanOffsetMsPosition0 == original.payload.meanOffsetMsPosition0)
+        #expect(payload.meanOffsetMsPosition1 == original.payload.meanOffsetMsPosition1)
+        #expect(payload.meanOffsetMsPosition2 == original.payload.meanOffsetMsPosition2)
+        #expect(payload.meanOffsetMsPosition3 == original.payload.meanOffsetMsPosition3)
         #expect(parsed.timestamp == original.timestamp)
     }
 #endif
@@ -364,13 +389,13 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = UnisonPitchDiscriminationDiscipline()
 
-        let existing = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 64, interval: 0, minutesOffset: 0)
-        try store.save(existing)
+        let existing = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 64, interval: 0, minutesOffset: 0)
+        try store.save(envelope(for: existing.payload, timestamp: existing.timestamp))
 
-        let duplicate = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 64, interval: 0, minutesOffset: 0)
-        let newRecord = makePitchDiscriminationRecord(referenceNote: 60, targetNote: 64, interval: 0, minutesOffset: 5)
+        let duplicate = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 64, interval: 0, minutesOffset: 0)
+        let newEntry = makePitchDiscriminationEntry(referenceNote: 60, targetNote: 64, interval: 0, minutesOffset: 5)
 
-        let importResult = makeImportResult(pitchDiscriminations: [duplicate, newRecord])
+        let importResult = makeImportResult(pitchDiscriminations: [duplicate, newEntry])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -386,10 +411,10 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = IntervalPitchDiscriminationDiscipline()
 
-        let unisonRecord = makePitchDiscriminationRecord(interval: 0, minutesOffset: 0)
-        let intervalRecord = makePitchDiscriminationRecord(interval: 7, minutesOffset: 1)
+        let unisonEntry = makePitchDiscriminationEntry(interval: 0, minutesOffset: 0)
+        let intervalEntry = makePitchDiscriminationEntry(interval: 7, minutesOffset: 1)
 
-        let importResult = makeImportResult(pitchDiscriminations: [unisonRecord, intervalRecord])
+        let importResult = makeImportResult(pitchDiscriminations: [unisonEntry, intervalEntry])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -405,13 +430,13 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = UnisonPitchMatchingDiscipline()
 
-        let existing = makePitchMatchingRecord(referenceNote: 69, targetNote: 72, interval: 0, minutesOffset: 0)
-        try store.save(existing)
+        let existing = makePitchMatchingEntry(referenceNote: 69, targetNote: 72, interval: 0, minutesOffset: 0)
+        try store.save(envelope(for: existing.payload, timestamp: existing.timestamp))
 
-        let duplicate = makePitchMatchingRecord(referenceNote: 69, targetNote: 72, interval: 0, minutesOffset: 0)
-        let newRecord = makePitchMatchingRecord(referenceNote: 69, targetNote: 72, interval: 0, minutesOffset: 5)
+        let duplicate = makePitchMatchingEntry(referenceNote: 69, targetNote: 72, interval: 0, minutesOffset: 0)
+        let newEntry = makePitchMatchingEntry(referenceNote: 69, targetNote: 72, interval: 0, minutesOffset: 5)
 
-        let importResult = makeImportResult(pitchMatchings: [duplicate, newRecord])
+        let importResult = makeImportResult(pitchMatchings: [duplicate, newEntry])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -427,14 +452,14 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = IntervalPitchMatchingDiscipline()
 
-        let existing = makePitchMatchingRecord(referenceNote: 60, targetNote: 67, interval: 7, minutesOffset: 0)
-        try store.save(existing)
+        let existing = makePitchMatchingEntry(referenceNote: 60, targetNote: 67, interval: 7, minutesOffset: 0)
+        try store.save(envelope(for: existing.payload, timestamp: existing.timestamp))
 
-        let unisonRecord = makePitchMatchingRecord(interval: 0, minutesOffset: 1)
-        let duplicate = makePitchMatchingRecord(referenceNote: 60, targetNote: 67, interval: 7, minutesOffset: 0)
-        let newRecord = makePitchMatchingRecord(referenceNote: 60, targetNote: 67, interval: 7, minutesOffset: 5)
+        let unisonEntry = makePitchMatchingEntry(interval: 0, minutesOffset: 1)
+        let duplicate = makePitchMatchingEntry(referenceNote: 60, targetNote: 67, interval: 7, minutesOffset: 0)
+        let newEntry = makePitchMatchingEntry(referenceNote: 60, targetNote: 67, interval: 7, minutesOffset: 5)
 
-        let importResult = makeImportResult(pitchMatchings: [unisonRecord, duplicate, newRecord])
+        let importResult = makeImportResult(pitchMatchings: [unisonEntry, duplicate, newEntry])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -451,13 +476,13 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = TimingOffsetDetectionDiscipline()
 
-        let existing = makeTimingOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 0)
-        try store.save(existing)
+        let existing = makeTimingOffsetDetectionEntry(tempoBPM: 100, minutesOffset: 0)
+        try store.save(envelope(for: existing.payload, timestamp: existing.timestamp))
 
-        let duplicate = makeTimingOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 0)
-        let newRecord = makeTimingOffsetDetectionRecord(tempoBPM: 100, minutesOffset: 5)
+        let duplicate = makeTimingOffsetDetectionEntry(tempoBPM: 100, minutesOffset: 0)
+        let newEntry = makeTimingOffsetDetectionEntry(tempoBPM: 100, minutesOffset: 5)
 
-        let importResult = makeImportResult(timingOffsetDetections: [duplicate, newRecord])
+        let importResult = makeImportResult(timingOffsetDetections: [duplicate, newEntry])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -473,13 +498,13 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = ContinuousRhythmMatchingDiscipline()
 
-        let existing = makeContinuousRhythmMatchingRecord(tempoBPM: 100, minutesOffset: 0)
-        try store.save(existing)
+        let existing = makeContinuousRhythmMatchingEntry(tempoBPM: 100, minutesOffset: 0)
+        try store.save(envelope(for: existing.payload, timestamp: existing.timestamp))
 
-        let duplicate = makeContinuousRhythmMatchingRecord(tempoBPM: 100, minutesOffset: 0)
-        let newRecord = makeContinuousRhythmMatchingRecord(tempoBPM: 100, minutesOffset: 5)
+        let duplicate = makeContinuousRhythmMatchingEntry(tempoBPM: 100, minutesOffset: 0)
+        let newEntry = makeContinuousRhythmMatchingEntry(tempoBPM: 100, minutesOffset: 5)
 
-        let importResult = makeImportResult(continuousRhythmMatchings: [duplicate, newRecord])
+        let importResult = makeImportResult(continuousRhythmMatchings: [duplicate, newEntry])
 
         var mergeResult: (imported: Int, skipped: Int) = (0, 0)
         try store.withinTransaction { scope in
@@ -498,9 +523,9 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = UnisonPitchDiscriminationDiscipline()
 
-        try store.save(makePitchDiscriminationRecord(interval: 0, minutesOffset: 0))
-        try store.save(makePitchDiscriminationRecord(interval: 7, minutesOffset: 1))
-        try store.save(makePitchDiscriminationRecord(interval: 0, minutesOffset: 2))
+        try store.save(envelope(for: makePitchDiscriminationEntry(interval: 0, minutesOffset: 0).payload, timestamp: fixedDate(minutesOffset: 0)))
+        try store.save(envelope(for: makePitchDiscriminationEntry(interval: 7, minutesOffset: 1).payload, timestamp: fixedDate(minutesOffset: 1)))
+        try store.save(envelope(for: makePitchDiscriminationEntry(interval: 0, minutesOffset: 2).payload, timestamp: fixedDate(minutesOffset: 2)))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)
@@ -511,9 +536,9 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = IntervalPitchDiscriminationDiscipline()
 
-        try store.save(makePitchDiscriminationRecord(interval: 0, minutesOffset: 0))
-        try store.save(makePitchDiscriminationRecord(interval: 7, minutesOffset: 1))
-        try store.save(makePitchDiscriminationRecord(interval: 4, minutesOffset: 2))
+        try store.save(envelope(for: makePitchDiscriminationEntry(interval: 0, minutesOffset: 0).payload, timestamp: fixedDate(minutesOffset: 0)))
+        try store.save(envelope(for: makePitchDiscriminationEntry(interval: 7, minutesOffset: 1).payload, timestamp: fixedDate(minutesOffset: 1)))
+        try store.save(envelope(for: makePitchDiscriminationEntry(interval: 4, minutesOffset: 2).payload, timestamp: fixedDate(minutesOffset: 2)))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)
@@ -524,8 +549,8 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = UnisonPitchMatchingDiscipline()
 
-        try store.save(makePitchMatchingRecord(interval: 0, minutesOffset: 0))
-        try store.save(makePitchMatchingRecord(interval: 3, minutesOffset: 1))
+        try store.save(envelope(for: makePitchMatchingEntry(interval: 0, minutesOffset: 0).payload, timestamp: fixedDate(minutesOffset: 0)))
+        try store.save(envelope(for: makePitchMatchingEntry(interval: 3, minutesOffset: 1).payload, timestamp: fixedDate(minutesOffset: 1)))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 1)
@@ -536,9 +561,9 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = IntervalPitchMatchingDiscipline()
 
-        try store.save(makePitchMatchingRecord(interval: 0, minutesOffset: 0))
-        try store.save(makePitchMatchingRecord(interval: 3, minutesOffset: 1))
-        try store.save(makePitchMatchingRecord(interval: 5, minutesOffset: 2))
+        try store.save(envelope(for: makePitchMatchingEntry(interval: 0, minutesOffset: 0).payload, timestamp: fixedDate(minutesOffset: 0)))
+        try store.save(envelope(for: makePitchMatchingEntry(interval: 3, minutesOffset: 1).payload, timestamp: fixedDate(minutesOffset: 1)))
+        try store.save(envelope(for: makePitchMatchingEntry(interval: 5, minutesOffset: 2).payload, timestamp: fixedDate(minutesOffset: 2)))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)
@@ -550,8 +575,8 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = TimingOffsetDetectionDiscipline()
 
-        try store.save(makeTimingOffsetDetectionRecord(minutesOffset: 0))
-        try store.save(makeTimingOffsetDetectionRecord(minutesOffset: 1))
+        try store.save(envelope(for: makeTimingOffsetDetectionEntry(minutesOffset: 0).payload, timestamp: fixedDate(minutesOffset: 0)))
+        try store.save(envelope(for: makeTimingOffsetDetectionEntry(minutesOffset: 1).payload, timestamp: fixedDate(minutesOffset: 1)))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)
@@ -562,8 +587,8 @@ struct TrainingDisciplineImplementationTests {
         let store = try makeStore()
         let discipline = ContinuousRhythmMatchingDiscipline()
 
-        try store.save(makeContinuousRhythmMatchingRecord(minutesOffset: 0))
-        try store.save(makeContinuousRhythmMatchingRecord(minutesOffset: 1))
+        try store.save(envelope(for: makeContinuousRhythmMatchingEntry(minutesOffset: 0).payload, timestamp: fixedDate(minutesOffset: 0)))
+        try store.save(envelope(for: makeContinuousRhythmMatchingEntry(minutesOffset: 1).payload, timestamp: fixedDate(minutesOffset: 1)))
 
         let records = try discipline.fetchExportRecords(from: store)
         #expect(records.count == 2)

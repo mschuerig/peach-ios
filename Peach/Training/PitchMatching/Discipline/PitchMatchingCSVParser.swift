@@ -1,7 +1,6 @@
 import Foundation
-import SwiftData
 
-/// Shared CSV row parsing for PitchMatchingRecord.
+/// Shared CSV row parsing for ``PitchMatchingPayload``.
 /// Used by all pitch-matching disciplines.
 enum PitchMatchingCSVParser {
 
@@ -9,7 +8,7 @@ enum PitchMatchingCSVParser {
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<any PersistentModel, CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let refNoteIdx = columnIndex["referenceNote"],
               let targetNoteIdx = columnIndex["targetNote"],
@@ -55,15 +54,14 @@ enum PitchMatchingCSVParser {
             return .failure(.invalidRowData(row: rowNumber, column: "userCentError", value: userCentErrorStr, reason: "not a valid number"))
         }
 
-        let record = PitchMatchingRecord(
+        let payload = PitchMatchingPayload(
             referenceNote: referenceNote,
             targetNote: targetNote,
             initialCentOffset: initialCentOffset,
             userCentError: userCentError,
             interval: intervalRaw,
-            tuningSystem: tuningSystemStr,
-            timestamp: timestamp
+            tuningSystem: tuningSystemStr
         )
-        return .success(record)
+        return .success((timestamp: timestamp, payload: payload))
     }
 }

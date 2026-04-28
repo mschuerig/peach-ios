@@ -65,10 +65,7 @@ struct SettingsCoordinatorTests {
     private func makeCoordinator(notePlayer: any NotePlayer) -> SettingsCoordinator {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try! ModelContainer(
-            for: PitchDiscriminationRecord.self,
-            PitchMatchingRecord.self,
-            TimingOffsetDetectionRecord.self,
-            ContinuousRhythmMatchingRecord.self,
+            for: TrainingRecord.self,
             configurations: config
         )
         let context = ModelContext(container)

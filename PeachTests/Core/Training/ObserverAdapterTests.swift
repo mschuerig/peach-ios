@@ -1,5 +1,4 @@
 import Testing
-import SwiftData
 import Foundation
 @testable import Peach
 
@@ -16,14 +15,14 @@ private final class MockProfileUpdating: ProfileUpdating {
 // MARK: - Mock TrainingRecordPersisting
 
 private final class MockRecordPersisting: TrainingRecordPersisting {
-    var savedRecords: [any PersistentModel] = []
+    var savedEnvelopes: [TrainingRecord] = []
     var saveCallCount = 0
     var errorToThrow: (any Error)?
 
-    func save(_ record: some PersistentModel) throws {
+    func save(_ envelope: TrainingRecord) throws {
         if let error = errorToThrow { throw error }
         saveCallCount += 1
-        savedRecords.append(record)
+        savedEnvelopes.append(envelope)
     }
 }
 
@@ -259,7 +258,7 @@ struct StoreAdapterTests {
 
     // MARK: - PitchDiscriminationStoreAdapter
 
-    @Test("PitchDiscrimination store adapter creates and saves correct record")
+    @Test("PitchDiscrimination store adapter creates and saves correct envelope")
     func pitchDiscriminationStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = PitchDiscriminationStoreAdapter(store: store)
@@ -278,18 +277,20 @@ struct StoreAdapterTests {
         adapter.pitchDiscriminationCompleted(completed)
 
         #expect(store.saveCallCount == 1)
-        let saved = try #require(store.savedRecords[0] as? PitchDiscriminationRecord)
-        #expect(saved.referenceNote == 60)
-        #expect(saved.targetNote == 67)
-        #expect(saved.centOffset == 15.0)
-        #expect(saved.interval == 7)
-        #expect(saved.tuningSystem == "equalTemperament")
-        #expect(saved.timestamp == fixedDate())
+        let envelope = store.savedEnvelopes[0]
+        #expect(envelope.disciplineIdentifier == PitchDiscriminationPayload.disciplineIdentifier)
+        let payload = try JSONEnvelope.decode(PitchDiscriminationPayload.self, from: envelope)
+        #expect(payload.referenceNote == 60)
+        #expect(payload.targetNote == 67)
+        #expect(payload.centOffset == 15.0)
+        #expect(payload.interval == 7)
+        #expect(payload.tuningSystem == "equalTemperament")
+        #expect(envelope.timestamp == fixedDate())
     }
 
     // MARK: - PitchMatchingStoreAdapter
 
-    @Test("PitchMatching store adapter creates and saves correct record")
+    @Test("PitchMatching store adapter creates and saves correct envelope")
     func pitchMatchingStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = PitchMatchingStoreAdapter(store: store)
@@ -306,20 +307,22 @@ struct StoreAdapterTests {
         adapter.pitchMatchingCompleted(completed)
 
         #expect(store.saveCallCount == 1)
-        let saved = try #require(store.savedRecords[0] as? PitchMatchingRecord)
-        #expect(saved.referenceNote == 60)
-        #expect(saved.targetNote == 67)
-        #expect(saved.initialCentOffset == 25.0)
-        #expect(saved.userCentError == -3.5)
-        #expect(saved.interval == 7)
-        #expect(saved.tuningSystem == "equalTemperament")
-        #expect(saved.timestamp == fixedDate())
+        let envelope = store.savedEnvelopes[0]
+        #expect(envelope.disciplineIdentifier == PitchMatchingPayload.disciplineIdentifier)
+        let payload = try JSONEnvelope.decode(PitchMatchingPayload.self, from: envelope)
+        #expect(payload.referenceNote == 60)
+        #expect(payload.targetNote == 67)
+        #expect(payload.initialCentOffset == 25.0)
+        #expect(payload.userCentError == -3.5)
+        #expect(payload.interval == 7)
+        #expect(payload.tuningSystem == "equalTemperament")
+        #expect(envelope.timestamp == fixedDate())
     }
 
 #if PEACH_RESEARCH
     // MARK: - TimingOffsetDetectionStoreAdapter
 
-    @Test("TimingOffsetDetection store adapter creates and saves correct record")
+    @Test("TimingOffsetDetection store adapter creates and saves correct envelope")
     func rhythmOffsetDetectionStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = TimingOffsetDetectionStoreAdapter(store: store)
@@ -334,16 +337,18 @@ struct StoreAdapterTests {
         adapter.timingOffsetDetectionCompleted(result)
 
         #expect(store.saveCallCount == 1)
-        let saved = try #require(store.savedRecords[0] as? TimingOffsetDetectionRecord)
-        #expect(saved.tempoBPM == 120)
-        #expect(saved.offsetMs == -8.5)
-        #expect(saved.isCorrect == true)
-        #expect(saved.timestamp == fixedDate())
+        let envelope = store.savedEnvelopes[0]
+        #expect(envelope.disciplineIdentifier == TimingOffsetDetectionPayload.disciplineIdentifier)
+        let payload = try JSONEnvelope.decode(TimingOffsetDetectionPayload.self, from: envelope)
+        #expect(payload.tempoBPM == 120)
+        #expect(payload.offsetMs == -8.5)
+        #expect(payload.isCorrect == true)
+        #expect(envelope.timestamp == fixedDate())
     }
 
     // MARK: - ContinuousRhythmMatchingStoreAdapter
 
-    @Test("ContinuousRhythmMatching store adapter creates record with position means")
+    @Test("ContinuousRhythmMatching store adapter creates envelope with position means")
     func continuousRhythmMatchingStoreAdapter() async throws {
         let store = MockRecordPersisting()
         let adapter = ContinuousRhythmMatchingStoreAdapter(store: store)
@@ -361,13 +366,15 @@ struct StoreAdapterTests {
         adapter.continuousRhythmMatchingCompleted(result)
 
         #expect(store.saveCallCount == 1)
-        let saved = try #require(store.savedRecords[0] as? ContinuousRhythmMatchingRecord)
-        #expect(saved.tempoBPM == 100)
-        #expect(saved.meanOffsetMsPosition0 == 15.0)
-        #expect(saved.meanOffsetMsPosition1 == -5.0)
-        #expect(saved.meanOffsetMsPosition2 == nil)
-        #expect(saved.meanOffsetMsPosition3 == nil)
-        #expect(saved.timestamp == fixedDate())
+        let envelope = store.savedEnvelopes[0]
+        #expect(envelope.disciplineIdentifier == ContinuousRhythmMatchingPayload.disciplineIdentifier)
+        let payload = try JSONEnvelope.decode(ContinuousRhythmMatchingPayload.self, from: envelope)
+        #expect(payload.tempoBPM == 100)
+        #expect(payload.meanOffsetMsPosition0 == 15.0)
+        #expect(payload.meanOffsetMsPosition1 == -5.0)
+        #expect(payload.meanOffsetMsPosition2 == nil)
+        #expect(payload.meanOffsetMsPosition3 == nil)
+        #expect(envelope.timestamp == fixedDate())
     }
 #endif
 

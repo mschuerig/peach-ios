@@ -3,7 +3,7 @@ import SwiftData
 import Foundation
 @testable import Peach
 
-/// Core CRUD and persistence tests for TrainingDataStore
+/// Core CRUD and persistence tests for TrainingDataStore (envelope-only API).
 @Suite("TrainingDataStore Tests")
 struct TrainingDataStoreTests {
 
@@ -11,140 +11,90 @@ struct TrainingDataStoreTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: TrainingRecord.self, configurations: config)
     }
 
     private func makeFileBasedContainer() throws -> ModelContainer {
         let tempDir = FileManager.default.temporaryDirectory
         let config = ModelConfiguration(url: tempDir.appendingPathComponent("test-\(UUID().uuidString).store"))
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: TrainingRecord.self, configurations: config)
+    }
+
+    private func envelope(
+        for payload: any TrainingDisciplinePayload,
+        timestamp: Date = Date()
+    ) throws -> TrainingRecord {
+        try JSONEnvelope.encode(payload, timestamp: timestamp)
     }
 
     // MARK: - Save and Fetch Tests
 
-    @Test("Save and retrieve a single record")
-    func saveAndRetrieveSingleRecord() async throws {
+    @Test("Save and retrieve a single payload")
+    func saveAndRetrieveSinglePayload() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 60,
             targetNote: 60,
             centOffset: 50.0,
             isCorrect: true,
             interval: 0,
-            tuningSystem: "equalTemperament",
-            timestamp: Date()
+            tuningSystem: "equalTemperament"
         )
+        try store.save(try envelope(for: payload))
 
-        try store.save(record)
-
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
 
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[0].targetNote == 60)
-        #expect(fetched[0].centOffset == 50.0)
-        #expect(fetched[0].isCorrect == true)
-        #expect(fetched[0].interval == 0)
-        #expect(fetched[0].tuningSystem == "equalTemperament")
+        #expect(fetched[0].payload == payload)
     }
 
-    @Test("FetchAll returns multiple records in timestamp order")
-    func fetchMultipleRecordsInOrder() async throws {
+    @Test("FetchPayloads returns multiple payloads in timestamp order")
+    func fetchMultiplePayloadsInOrder() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let now = Date()
-        let record1 = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: now.addingTimeInterval(-60))
-        let record2 = PitchDiscriminationRecord(referenceNote: 62, targetNote: 62, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: now.addingTimeInterval(-30))
-        let record3 = PitchDiscriminationRecord(referenceNote: 64, targetNote: 64, centOffset: 30.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: now)
+        try store.save(try envelope(for: PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament"), timestamp: now.addingTimeInterval(-60)))
+        try store.save(try envelope(for: PitchDiscriminationPayload(referenceNote: 62, targetNote: 62, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament"), timestamp: now.addingTimeInterval(-30)))
+        try store.save(try envelope(for: PitchDiscriminationPayload(referenceNote: 64, targetNote: 64, centOffset: 30.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament"), timestamp: now))
 
-        try store.save(record1)
-        try store.save(record2)
-        try store.save(record3)
-
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
 
         #expect(fetched.count == 3)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[1].referenceNote == 62)
-        #expect(fetched[2].referenceNote == 64)
+        #expect(fetched[0].payload.referenceNote == 60)
+        #expect(fetched[1].payload.referenceNote == 62)
+        #expect(fetched[2].payload.referenceNote == 64)
     }
 
-    @Test("All fields remain intact after save and retrieval")
+    @Test("All payload fields remain intact after save and retrieval")
     func allFieldsIntact() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 72,
             targetNote: 72,
             centOffset: 123.45,
             isCorrect: false,
             interval: 0,
-            tuningSystem: "equalTemperament",
-            timestamp: timestamp
+            tuningSystem: "equalTemperament"
         )
 
-        try store.save(record)
+        try store.save(try envelope(for: payload, timestamp: timestamp))
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.count == 1)
-        let retrieved = fetched[0]
-        #expect(retrieved.referenceNote == 72)
-        #expect(retrieved.targetNote == 72)
-        #expect(retrieved.centOffset == 123.45)
-        #expect(retrieved.isCorrect == false)
-        #expect(retrieved.interval == 0)
-        #expect(retrieved.tuningSystem == "equalTemperament")
-        #expect(abs(retrieved.timestamp.timeIntervalSince(timestamp)) < 0.001)
+        #expect(fetched[0].payload == payload)
+        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
-    // MARK: - Delete Tests
-
-    @Test("Delete removes record")
-    func deleteRecord() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(record)
-
-        var fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(fetched.count == 1)
-
-        try store.delete(record)
-
-        fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(fetched.isEmpty)
-    }
-
-    @Test("Delete only removes specified record")
-    func deleteSpecificRecord() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record1 = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        let record2 = PitchDiscriminationRecord(referenceNote: 62, targetNote: 62, centOffset: 20.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(record1)
-        try store.save(record2)
-
-        try store.delete(record1)
-
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 62)
-    }
-
-    // MARK: - Persistence Tests
+    // MARK: - Persistence
 
     @Test("Records persist across context recreation (simulated restart)")
     func persistenceAcrossRestart() async throws {
@@ -153,8 +103,7 @@ struct TrainingDataStoreTests {
         do {
             let context1 = ModelContext(container)
             let store1 = TrainingDataStore(modelContext: context1)
-
-            let record = PitchDiscriminationRecord(
+            let payload = PitchDiscriminationPayload(
                 referenceNote: 69,
                 targetNote: 69,
                 centOffset: 75.0,
@@ -162,60 +111,39 @@ struct TrainingDataStoreTests {
                 interval: 0,
                 tuningSystem: "equalTemperament"
             )
-            try store1.save(record)
+            try store1.save(try envelope(for: payload))
         }
 
         let context2 = ModelContext(container)
         let store2 = TrainingDataStore(modelContext: context2)
-
-        let fetched = try store2.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store2.fetchPayloads(PitchDiscriminationPayload.self)
 
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 69)
-        #expect(fetched[0].centOffset == 75.0)
+        #expect(fetched[0].payload.referenceNote == 69)
+        #expect(fetched[0].payload.centOffset == 75.0)
     }
 
-    // MARK: - Atomic Write Tests
+    // MARK: - Empty Store
 
-    @Test("Atomic write behavior - successful save is complete")
-    func atomicWriteSuccess() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(record)
-
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[0].targetNote == 60)
-        #expect(fetched[0].centOffset == 10.0)
-        #expect(fetched[0].isCorrect == true)
-    }
-
-    // MARK: - Empty Store Tests
-
-    @Test("FetchAll returns empty array when no records exist")
+    @Test("FetchPayloads returns empty array when no envelopes exist")
     func fetchFromEmptyStore() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.isEmpty)
     }
 
-    // MARK: - Pitch Matching Save and Fetch Tests
+    // MARK: - Pitch Matching
 
-    @Test("Save and retrieve a single pitch matching record")
-    func saveAndRetrievePitchMatchingRecord() async throws {
+    @Test("Save and retrieve a single pitch matching payload")
+    func saveAndRetrievePitchMatching() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let record = PitchMatchingRecord(
+        let payload = PitchMatchingPayload(
             referenceNote: 69,
             targetNote: 69,
             initialCentOffset: 42.5,
@@ -223,80 +151,44 @@ struct TrainingDataStoreTests {
             interval: 0,
             tuningSystem: "equalTemperament"
         )
+        try store.save(try envelope(for: payload))
 
-        try store.save(record)
-
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-
+        let fetched = try store.fetchPayloads(PitchMatchingPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 69)
-        #expect(fetched[0].targetNote == 69)
-        #expect(fetched[0].initialCentOffset == 42.5)
-        #expect(fetched[0].userCentError == -12.3)
+        #expect(fetched[0].payload == payload)
     }
 
-    @Test("FetchAllPitchMatching returns records in timestamp order")
-    func fetchPitchMatchingInOrder() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let now = Date()
-        let record1 = PitchMatchingRecord(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament", timestamp: now.addingTimeInterval(-60))
-        let record2 = PitchMatchingRecord(referenceNote: 64, targetNote: 64, initialCentOffset: 20.0, userCentError: -3.0, interval: 0, tuningSystem: "equalTemperament", timestamp: now.addingTimeInterval(-30))
-        let record3 = PitchMatchingRecord(referenceNote: 72, targetNote: 72, initialCentOffset: 30.0, userCentError: 1.5, interval: 0, tuningSystem: "equalTemperament", timestamp: now)
-
-        try store.save(record1)
-        try store.save(record2)
-        try store.save(record3)
-
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-
-        #expect(fetched.count == 3)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[1].referenceNote == 64)
-        #expect(fetched[2].referenceNote == 72)
-    }
-
-    @Test("FetchAllPitchMatching returns empty array when no records exist")
+    @Test("FetchPayloads PitchMatchingPayload returns empty array when no envelopes exist")
     func fetchPitchMatchingFromEmptyStore() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-
+        let fetched = try store.fetchPayloads(PitchMatchingPayload.self)
         #expect(fetched.isEmpty)
     }
 
-    // MARK: - Delete All Tests
+    // MARK: - DeleteAll
 
-    @Test("DeleteAll removes both comparison and pitch matching records")
-    func deleteAllRemovesBothTypes() async throws {
+    @Test("DeleteAll removes envelopes for all disciplines")
+    func deleteAllRemovesAllDisciplines() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let comparisonRecord = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(comparisonRecord)
-
-        let pitchRecord1 = PitchMatchingRecord(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
-        let pitchRecord2 = PitchMatchingRecord(referenceNote: 64, targetNote: 64, initialCentOffset: 20.0, userCentError: -3.0, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(pitchRecord1)
-        try store.save(pitchRecord2)
+        try store.save(try envelope(for: PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")))
+        try store.save(try envelope(for: PitchMatchingPayload(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")))
+        try store.save(try envelope(for: PitchMatchingPayload(referenceNote: 64, targetNote: 64, initialCentOffset: 20.0, userCentError: -3.0, interval: 0, tuningSystem: "equalTemperament")))
 
         try store.deleteAll()
 
-        let comparisonFetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(comparisonFetched.isEmpty)
-
-        let pitchFetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-        #expect(pitchFetched.isEmpty)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).isEmpty)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).isEmpty)
     }
 
-    // MARK: - PitchMatchingObserver Conformance Tests
+    // MARK: - Adapter (Observer) Conformance
 
-    @Test("PitchMatchingObserver conformance saves record with all fields via observer")
+    @Test("PitchMatchingStoreAdapter saves payload via store")
     func pitchMatchingObserverSaves() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
@@ -314,54 +206,30 @@ struct TrainingDataStoreTests {
 
         PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-
+        let fetched = try store.fetchPayloads(PitchMatchingPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 69)
-        #expect(fetched[0].targetNote == 69)
-        #expect(fetched[0].initialCentOffset == 42.5)
-        #expect(fetched[0].userCentError == -12.3)
-        #expect(fetched[0].interval == 0)
-        #expect(fetched[0].tuningSystem == "equalTemperament")
+        #expect(fetched[0].payload.referenceNote == 69)
+        #expect(fetched[0].payload.targetNote == 69)
+        #expect(fetched[0].payload.initialCentOffset == 42.5)
+        #expect(fetched[0].payload.userCentError == -12.3)
+        #expect(fetched[0].payload.interval == 0)
+        #expect(fetched[0].payload.tuningSystem == "equalTemperament")
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
-    @Test("PitchMatchingObserver saves multiple records from repeated calls")
-    func pitchMatchingObserverSavesMultiple() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let completed = CompletedPitchMatchingTrial(
-            referenceNote: 69,
-            targetNote: 69,
-            initialCentOffset: 42.5,
-            userCentError: -12.3,
-            tuningSystem: .equalTemperament
-        )
-
-        PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
-        PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
-
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-        #expect(fetched.count == 2)
-    }
-
-    // MARK: - PitchDiscriminationObserver Conformance Tests
-
-    @Test("PitchDiscriminationObserver conformance saves record with derived interval and tuningSystem")
-    func comparisonObserverSaves() async throws {
+    @Test("PitchDiscriminationStoreAdapter saves payload via store with derived interval")
+    func pitchDiscriminationObserverSaves() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let comparison = PitchDiscriminationTrial(
+        let trial = PitchDiscriminationTrial(
             referenceNote: 60,
             targetNote: DetunedMIDINote(note: 60, offset: Cents(25.0))
         )
         let completed = CompletedPitchDiscriminationTrial(
-            trial: comparison,
+            trial: trial,
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament,
             timestamp: timestamp
@@ -369,48 +237,45 @@ struct TrainingDataStoreTests {
 
         PitchDiscriminationStoreAdapter(store: store).pitchDiscriminationCompleted(completed)
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[0].targetNote == 60)
-        #expect(fetched[0].centOffset == 25.0)
-        #expect(fetched[0].isCorrect == true)
-        #expect(fetched[0].interval == 0)
-        #expect(fetched[0].tuningSystem == "equalTemperament")
+        #expect(fetched[0].payload.referenceNote == 60)
+        #expect(fetched[0].payload.targetNote == 60)
+        #expect(fetched[0].payload.centOffset == 25.0)
+        #expect(fetched[0].payload.isCorrect == true)
+        #expect(fetched[0].payload.interval == 0)
+        #expect(fetched[0].payload.tuningSystem == "equalTemperament")
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
-    // MARK: - Interval Context Verification (Story 23.4)
-
-    @Test("PitchDiscriminationObserver persists correct interval and tuningSystem for non-prime interval")
-    func comparisonObserverWithInterval() async throws {
+    @Test("PitchDiscriminationStoreAdapter persists correct interval for non-prime")
+    func discriminationObserverWithInterval() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let comparison = PitchDiscriminationTrial(
+        let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
             targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0))
         )
         let completed = CompletedPitchDiscriminationTrial(
-            trial: comparison,
+            trial: trial,
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament
         )
 
         PitchDiscriminationStoreAdapter(store: store).pitchDiscriminationCompleted(completed)
 
-        let fetched = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[0].targetNote == 67)
-        #expect(fetched[0].interval == 7)
-        #expect(fetched[0].tuningSystem == "equalTemperament")
-        #expect(fetched[0].centOffset == 25.0)
+        #expect(fetched[0].payload.referenceNote == 60)
+        #expect(fetched[0].payload.targetNote == 67)
+        #expect(fetched[0].payload.interval == 7)
+        #expect(fetched[0].payload.tuningSystem == "equalTemperament")
+        #expect(fetched[0].payload.centOffset == 25.0)
     }
 
-    @Test("PitchMatchingObserver persists correct interval and tuningSystem for non-prime interval")
+    @Test("PitchMatchingStoreAdapter persists correct interval for non-prime")
     func pitchMatchingObserverWithInterval() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
@@ -426,105 +291,51 @@ struct TrainingDataStoreTests {
 
         PitchMatchingStoreAdapter(store: store).pitchMatchingCompleted(completed)
 
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
+        let fetched = try store.fetchPayloads(PitchMatchingPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[0].targetNote == 67)
-        #expect(fetched[0].interval == 7)
-        #expect(fetched[0].tuningSystem == "equalTemperament")
-        #expect(fetched[0].initialCentOffset == 30.0)
-        #expect(fetched[0].userCentError == -5.0)
-    }
-
-    // MARK: - Pitch Matching Atomic Write Tests
-
-    @Test("Pitch matching atomic write - successful save is complete")
-    func pitchMatchingAtomicWriteSuccess() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = PitchMatchingRecord(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(record)
-
-        let fetched = try store.fetchAllSorted(PitchMatchingRecord.self)
-        #expect(fetched.count == 1)
-        #expect(fetched[0].referenceNote == 60)
-        #expect(fetched[0].targetNote == 60)
-        #expect(fetched[0].initialCentOffset == 10.0)
-        #expect(fetched[0].userCentError == 5.0)
+        #expect(fetched[0].payload.referenceNote == 60)
+        #expect(fetched[0].payload.targetNote == 67)
+        #expect(fetched[0].payload.interval == 7)
+        #expect(fetched[0].payload.tuningSystem == "equalTemperament")
+        #expect(fetched[0].payload.initialCentOffset == 30.0)
+        #expect(fetched[0].payload.userCentError == -5.0)
     }
 
 #if PEACH_RESEARCH
-    // MARK: - Rhythm Offset Detection CRUD Tests
+    // MARK: - Timing Offset Detection
 
-    @Test("Save and retrieve a single rhythm offset detection record")
-    func saveAndRetrieveTimingOffsetDetectionRecord() async throws {
+    @Test("Save and retrieve a single timing offset detection payload")
+    func saveAndRetrieveTimingOffsetDetection() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let record = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -15.5, isCorrect: true, timestamp: timestamp)
+        let payload = TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: -15.5, isCorrect: true)
+        try store.save(try envelope(for: payload, timestamp: timestamp))
 
-        try store.save(record)
-
-        let fetched = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
-
+        let fetched = try store.fetchPayloads(TimingOffsetDetectionPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].tempoBPM == 120)
-        #expect(fetched[0].offsetMs == -15.5)
-        #expect(fetched[0].isCorrect == true)
+        #expect(fetched[0].payload == payload)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
-    @Test("FetchAllTimingOffsetDetections returns records in timestamp order")
-    func fetchTimingOffsetDetectionsInOrder() async throws {
+    @Test("DeleteAll removes timing offset detection envelopes too")
+    func deleteAllRemovesTimingOffsetDetection() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let now = Date()
-        let record1 = TimingOffsetDetectionRecord(tempoBPM: 100, offsetMs: -10.0, isCorrect: true, timestamp: now.addingTimeInterval(-60))
-        let record2 = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.0, isCorrect: false, timestamp: now.addingTimeInterval(-30))
-        let record3 = TimingOffsetDetectionRecord(tempoBPM: 140, offsetMs: -3.0, isCorrect: true, timestamp: now)
+        try store.save(try envelope(for: PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")))
+        try store.save(try envelope(for: TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)))
 
-        try store.save(record1)
-        try store.save(record2)
-        try store.save(record3)
+        try store.deleteAll()
 
-        let fetched = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
-
-        #expect(fetched.count == 3)
-        #expect(fetched[0].tempoBPM == 100)
-        #expect(fetched[1].tempoBPM == 120)
-        #expect(fetched[2].tempoBPM == 140)
+        #expect(try store.fetchPayloads(TimingOffsetDetectionPayload.self).isEmpty)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).isEmpty)
     }
 
-    @Test("deleteAllTimingOffsetDetections deletes only timing offset detection records")
-    func deleteAllTimingOffsetDetectionsOnly() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let pitchRecord = PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
-        try store.save(pitchRecord)
-
-        let rhythmCompRecord = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
-        try store.save(rhythmCompRecord)
-
-        try store.deleteAll(TimingOffsetDetectionRecord.self)
-
-        let rhythmComps = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
-        #expect(rhythmComps.isEmpty)
-
-        let pitchComps = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(pitchComps.count == 1)
-    }
-
-    // MARK: - Rhythm Observer Conformance Tests
-
-    @Test("TimingOffsetDetectionObserver conformance saves record with correct fields")
+    @Test("TimingOffsetDetectionStoreAdapter saves payload via store")
     func timingOffsetDetectionObserverSaves() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
@@ -540,103 +351,39 @@ struct TrainingDataStoreTests {
 
         TimingOffsetDetectionStoreAdapter(store: store).timingOffsetDetectionCompleted(completed)
 
-        let fetched = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
-
+        let fetched = try store.fetchPayloads(TimingOffsetDetectionPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].tempoBPM == 120)
-        #expect(fetched[0].offsetMs == -15.0)
-        #expect(fetched[0].isCorrect == true)
+        #expect(fetched[0].payload.tempoBPM == 120)
+        #expect(fetched[0].payload.offsetMs == -15.0)
+        #expect(fetched[0].payload.isCorrect == true)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
-    // MARK: - Continuous Rhythm Matching CRUD Tests
+    // MARK: - Continuous Rhythm Matching
 
-    @Test("Save and retrieve a single continuous rhythm matching record")
-    func saveAndRetrieveContinuousRhythmMatchingRecord() async throws {
+    @Test("Save and retrieve a single continuous rhythm matching payload")
+    func saveAndRetrieveContinuousRhythmMatching() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
         let timestamp = Date()
-        let record = ContinuousRhythmMatchingRecord(
+        let payload = ContinuousRhythmMatchingPayload(
             tempoBPM: 120,
             meanOffsetMs: -8.5,
             meanOffsetMsPosition0: -5.0,
-            timestamp: timestamp
+            meanOffsetMsPosition1: nil,
+            meanOffsetMsPosition2: nil,
+            meanOffsetMsPosition3: nil
         )
+        try store.save(try envelope(for: payload, timestamp: timestamp))
 
-        try store.save(record)
-
-        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
-
+        let fetched = try store.fetchPayloads(ContinuousRhythmMatchingPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].tempoBPM == 120)
-        #expect(fetched[0].meanOffsetMs == -8.5)
-        #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
+        #expect(fetched[0].payload == payload)
     }
 
-    @Test("FetchAllContinuousRhythmMatchings returns records in timestamp order")
-    func fetchContinuousRhythmMatchingsInOrder() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let now = Date()
-        let record1 = ContinuousRhythmMatchingRecord(tempoBPM: 80, meanOffsetMs: -5.0, timestamp: now.addingTimeInterval(-60))
-        let record2 = ContinuousRhythmMatchingRecord(tempoBPM: 100, meanOffsetMs: 2.0, timestamp: now.addingTimeInterval(-30))
-        let record3 = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: 0.5, timestamp: now)
-
-        try store.save(record1)
-        try store.save(record2)
-        try store.save(record3)
-
-        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
-
-        #expect(fetched.count == 3)
-        #expect(fetched[0].tempoBPM == 80)
-        #expect(fetched[1].tempoBPM == 100)
-        #expect(fetched[2].tempoBPM == 120)
-    }
-
-    @Test("deleteAllContinuousRhythmMatchings deletes only continuous rhythm matching records")
-    func deleteAllContinuousRhythmMatchingsOnly() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let continuousRecord = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0)
-        try store.save(continuousRecord)
-
-        let rhythmOffsetRecord = TimingOffsetDetectionRecord(tempoBPM: 100, offsetMs: 3.0, isCorrect: true)
-        try store.save(rhythmOffsetRecord)
-
-        try store.deleteAll(ContinuousRhythmMatchingRecord.self)
-
-        let continuous = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
-        #expect(continuous.isEmpty)
-
-        let rhythmOffsets = try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
-        #expect(rhythmOffsets.count == 1)
-    }
-
-    @Test("deleteAll removes continuous rhythm matching records too")
-    func deleteAllIncludesContinuousRhythmMatching() async throws {
-        let container = try makeTestContainer()
-        let context = ModelContext(container)
-        let store = TrainingDataStore(modelContext: context)
-
-        let record = ContinuousRhythmMatchingRecord(tempoBPM: 120, meanOffsetMs: -5.0)
-        try store.save(record)
-
-        try store.deleteAll()
-
-        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
-        #expect(fetched.isEmpty)
-    }
-
-    // MARK: - ContinuousRhythmMatchingObserver Conformance Tests
-
-    @Test("ContinuousRhythmMatchingObserver conformance saves record with correct fields")
+    @Test("ContinuousRhythmMatchingStoreAdapter saves payload via store with computed positions")
     func continuousRhythmMatchingObserverSaves() async throws {
         let container = try makeTestContainer()
         let context = ModelContext(container)
@@ -656,22 +403,17 @@ struct TrainingDataStoreTests {
 
         ContinuousRhythmMatchingStoreAdapter(store: store).continuousRhythmMatchingCompleted(trial)
 
-        let fetched = try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
-
+        let fetched = try store.fetchPayloads(ContinuousRhythmMatchingPayload.self)
         #expect(fetched.count == 1)
-        #expect(fetched[0].tempoBPM == 120)
+        #expect(fetched[0].payload.tempoBPM == 120)
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
 
-        // Position 0 (.first): mean of -10 and -8 = -9.0
-        let pos0 = try #require(fetched[0].meanOffsetMsPosition0)
+        let pos0 = try #require(fetched[0].payload.meanOffsetMsPosition0)
         #expect(abs(pos0 - (-9.0)) < 0.001)
-        // Position 1 (.second): not used
-        #expect(fetched[0].meanOffsetMsPosition1 == nil)
-        // Position 2 (.third): single value 5.0
-        let pos2 = try #require(fetched[0].meanOffsetMsPosition2)
+        #expect(fetched[0].payload.meanOffsetMsPosition1 == nil)
+        let pos2 = try #require(fetched[0].payload.meanOffsetMsPosition2)
         #expect(abs(pos2 - 5.0) < 0.001)
-        // Position 3 (.fourth): not used
-        #expect(fetched[0].meanOffsetMsPosition3 == nil)
+        #expect(fetched[0].payload.meanOffsetMsPosition3 == nil)
     }
 #endif
 
@@ -683,34 +425,42 @@ struct TrainingDataStoreTests {
         let context = ModelContext(container)
         let store = TrainingDataStore(modelContext: context)
 
-        let committed = PitchDiscriminationRecord(
+        let committed = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 10.0, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: Date()
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        try store.save(committed)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
+        try store.save(try envelope(for: committed))
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 1)
 
         struct TestError: Error {}
         do {
             try store.withinTransaction { scope in
-                scope.insert(PitchDiscriminationRecord(
-                    referenceNote: 72, targetNote: 76, centOffset: 5.0, isCorrect: false,
-                    interval: 4, tuningSystem: "equalTemperament", timestamp: Date()
-                ))
-                scope.insert(PitchMatchingRecord(
-                    referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-                    interval: 3, tuningSystem: "equalTemperament", timestamp: Date()
-                ))
+                let pitchEnvelope = try JSONEnvelope.encode(
+                    PitchDiscriminationPayload(
+                        referenceNote: 72, targetNote: 76, centOffset: 5.0, isCorrect: false,
+                        interval: 4, tuningSystem: "equalTemperament"
+                    ),
+                    timestamp: Date()
+                )
+                scope.insert(pitchEnvelope)
+                let matchingEnvelope = try JSONEnvelope.encode(
+                    PitchMatchingPayload(
+                        referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
+                        interval: 3, tuningSystem: "equalTemperament"
+                    ),
+                    timestamp: Date()
+                )
+                scope.insert(matchingEnvelope)
                 throw TestError()
             }
         } catch {
             #expect(error is TestError)
         }
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        let matchings = try store.fetchAllSorted(PitchMatchingRecord.self)
+        let comparisons = try store.fetchPayloads(PitchDiscriminationPayload.self)
+        let matchings = try store.fetchPayloads(PitchMatchingPayload.self)
         #expect(comparisons.count == 1)
-        #expect(comparisons[0].referenceNote == 60)
+        #expect(comparisons[0].payload.referenceNote == 60)
         #expect(matchings.count == 0)
     }
 }

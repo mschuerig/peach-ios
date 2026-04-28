@@ -1,6 +1,6 @@
 # Story 77.4: JSON envelope storage redesign
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -135,50 +135,50 @@ A small shared helper (e.g., `extension TrainingDataStore { func fetchPayloads<P
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Define the envelope and payload protocol (AC: 1, 3)
-  - [ ] 1.1 Create `Peach/Core/Data/TrainingRecord.swift` with the `@Model TrainingRecord` envelope and direct `Timestamped` conformance.
-  - [ ] 1.2 Create `Peach/Core/Training/Discipline/TrainingDisciplinePayload.swift` with the `TrainingDisciplinePayload: Codable, Sendable` protocol carrying `disciplineIdentifier` and `currentPayloadVersion`.
-  - [ ] 1.3 Add a small encoder/decoder helper (e.g., `JSONEnvelope`) for `Payload ↔ Data` conversion. Use `JSONEncoder` / `JSONDecoder` with sortedKeys output (deterministic ordering aids future debugging) and ISO-8601 dates if a payload ever embeds a `Date` (none do today).
+- [x] Task 1: Define the envelope and payload protocol (AC: 1, 3)
+  - [x] 1.1 Create `Peach/Core/Data/TrainingRecord.swift` with the `@Model TrainingRecord` envelope and direct `Timestamped` conformance.
+  - [x] 1.2 Create `Peach/Core/Training/Discipline/TrainingDisciplinePayload.swift` with the `TrainingDisciplinePayload: Codable, Sendable` protocol carrying `disciplineIdentifier` and `currentPayloadVersion`.
+  - [x] 1.3 Add a small encoder/decoder helper (e.g., `JSONEnvelope`) for `Payload ↔ Data` conversion. Use `JSONEncoder` / `JSONDecoder` with sortedKeys output (deterministic ordering aids future debugging) and ISO-8601 dates if a payload ever embeds a `Date` (none do today).
 
-- [ ] Task 2: Create payload structs for the four disciplines (AC: 3, 4)
-  - [ ] 2.1 `PitchDiscriminationPayload` with the same fields as `PitchDiscriminationRecord`.
-  - [ ] 2.2 `PitchMatchingPayload` with the same fields as `PitchMatchingRecord`.
-  - [ ] 2.3 `TimingOffsetDetectionPayload` with the same fields as `RhythmOffsetDetectionRecord`. Use the public name (no `RhythmOffsetDetection*` legacy hop).
-  - [ ] 2.4 `ContinuousRhythmMatchingPayload` with the same fields as `ContinuousRhythmMatchingRecord`.
-  - [ ] 2.5 Each payload sets `currentPayloadVersion = 1`.
+- [x] Task 2: Create payload structs for the four disciplines (AC: 3, 4)
+  - [x] 2.1 `PitchDiscriminationPayload` with the same fields as `PitchDiscriminationRecord`.
+  - [x] 2.2 `PitchMatchingPayload` with the same fields as `PitchMatchingRecord`.
+  - [x] 2.3 `TimingOffsetDetectionPayload` with the same fields as `RhythmOffsetDetectionRecord`. Use the public name (no `RhythmOffsetDetection*` legacy hop).
+  - [x] 2.4 `ContinuousRhythmMatchingPayload` with the same fields as `ContinuousRhythmMatchingRecord`.
+  - [x] 2.5 Each payload sets `currentPayloadVersion = 1`.
 
-- [ ] Task 3: Rewrite store adapters (AC: 5)
-  - [ ] 3.1 Each `<Feature>StoreAdapter.swift` exposes `save(_ payload:)`, `fetchAll() -> [(timestamp, payload)]`, and any duplicate-detection helper its session/CSV importer needs. The adapter wraps envelope encode/decode.
-  - [ ] 3.2 Add (optional) shared helper on `TrainingDataStore` that fetches all envelopes filtered to a `disciplineIdentifier` and decodes them.
+- [x] Task 3: Rewrite store adapters (AC: 5)
+  - [x] 3.1 Each `<Feature>StoreAdapter.swift` exposes `save(_ payload:)`, `fetchAll() -> [(timestamp, payload)]`, and any duplicate-detection helper its session/CSV importer needs. The adapter wraps envelope encode/decode.
+  - [x] 3.2 Add (optional) shared helper on `TrainingDataStore` that fetches all envelopes filtered to a `disciplineIdentifier` and decodes them.
 
-- [ ] Task 4: Reduce `TrainingDataStore` to envelope-only API (AC: 6)
-  - [ ] 4.1 Replace `deleteAll()` body with a single `modelContext.delete(model: TrainingRecord.self)` call inside a transaction.
-  - [ ] 4.2 Replace `replaceAllRecords(_:)`'s iteration of `recordTypes`. Decide whether this method survives at all: callers in CSV import already build `[TrainingRecord]` envelopes — the method may just take `[TrainingRecord]`.
-  - [ ] 4.3 Remove generic `fetchAll<T>` / `fetchAllSorted<T>` / `deleteAll<T>`. If a caller still needs them after Task 5, expose envelope-typed equivalents.
-  - [ ] 4.4 Remove `recordTypes` from `TrainingDisciplineRegistry`. Remove the registry dependency from `TrainingDataStore`.
+- [x] Task 4: Reduce `TrainingDataStore` to envelope-only API (AC: 6)
+  - [x] 4.1 Replace `deleteAll()` body with a single `modelContext.delete(model: TrainingRecord.self)` call inside a transaction.
+  - [x] 4.2 Replace `replaceAllRecords(_:)`'s iteration of `recordTypes`. Decide whether this method survives at all: callers in CSV import already build `[TrainingRecord]` envelopes — the method may just take `[TrainingRecord]`.
+  - [x] 4.3 Remove generic `fetchAll<T>` / `fetchAllSorted<T>` / `deleteAll<T>`. If a caller still needs them after Task 5, expose envelope-typed equivalents.
+  - [x] 4.4 Remove `recordTypes` from `TrainingDisciplineRegistry`. Remove the registry dependency from `TrainingDataStore`.
 
-- [ ] Task 5: Update `TrainingDiscipline` protocol and conformances (AC: 7)
-  - [ ] 5.1 Remove `var recordType: any PersistentModel.Type` from the protocol.
-  - [ ] 5.2 Reshape `feedRecords(from:into:)`, `fetchExportRecords(from:)`, `parsedRecords(from:)`, `mergeImportRecords(...)` to use payload structs. Exact signatures are dev's choice; the test is that no signature contains `PersistentModel`.
-  - [ ] 5.3 Update each discipline's conformance.
+- [x] Task 5: Update `TrainingDiscipline` protocol and conformances (AC: 7)
+  - [x] 5.1 Remove `var recordType: any PersistentModel.Type` from the protocol.
+  - [x] 5.2 Reshape `feedRecords(from:into:)`, `fetchExportRecords(from:)`, `parsedRecords(from:)`, `mergeImportRecords(...)` to use payload structs. Exact signatures are dev's choice; the test is that no signature contains `PersistentModel`.
+  - [x] 5.3 Update each discipline's conformance.
 
-- [ ] Task 6: Update sessions and consumers (AC: 8)
-  - [ ] 6.1 Each `<Feature>Session.swift` (or its observer/persistence collaborator) calls the adapter's `save(_:)` with a freshly built payload struct. Remove direct `@Model` initializer calls.
-  - [ ] 6.2 Profile / statistics consumers get payload structs from the adapter (via `feedRecords`).
-  - [ ] 6.3 CSV exporter and importer (`TrainingDataExporter`, `TrainingDataImporter`, `CSVImportParser`) round-trip through payload structs. The CSV wire format is unchanged; column-name / parsing logic is unchanged.
+- [x] Task 6: Update sessions and consumers (AC: 8)
+  - [x] 6.1 Each `<Feature>Session.swift` (or its observer/persistence collaborator) calls the adapter's `save(_:)` with a freshly built payload struct. Remove direct `@Model` initializer calls.
+  - [x] 6.2 Profile / statistics consumers get payload structs from the adapter (via `feedRecords`).
+  - [x] 6.3 CSV exporter and importer (`TrainingDataExporter`, `TrainingDataImporter`, `CSVImportParser`) round-trip through payload structs. The CSV wire format is unchanged; column-name / parsing logic is unchanged.
 
-- [ ] Task 7: Delete the four old `@Model` files and migrate `Timestamped` (AC: 4)
-  - [ ] 7.1 Replace each `<Feature>Record.swift` with `<Feature>Payload.swift` (rename if convenient).
-  - [ ] 7.2 Confirm `Timestamped` is now a property of `TrainingRecord` only (or of payload structs that need sortable behavior — but the envelope's timestamp is the canonical sort key).
+- [x] Task 7: Delete the four old `@Model` files and migrate `Timestamped` (AC: 4)
+  - [x] 7.1 Replace each `<Feature>Record.swift` with `<Feature>Payload.swift` (rename if convenient).
+  - [x] 7.2 Confirm `Timestamped` is now a property of `TrainingRecord` only (or of payload structs that need sortable behavior — but the envelope's timestamp is the canonical sort key).
 
-- [ ] Task 8: Tests (AC: 11)
-  - [ ] 8.1 Update tests that constructed `<Feature>Record(...)` directly to construct `<Feature>Payload(...)`.
-  - [ ] 8.2 Add a small round-trip test per discipline: build a payload, encode it through `TrainingRecord`, decode it back, assert equality. (Defensive against silent JSON-key drift.)
-  - [ ] 8.3 Run all four configurations: iOS Debug, iOS Research, macOS Debug, macOS Research.
-  - [ ] 8.4 Build all four configurations: zero new warnings.
+- [x] Task 8: Tests (AC: 11)
+  - [x] 8.1 Update tests that constructed `<Feature>Record(...)` directly to construct `<Feature>Payload(...)`.
+  - [x] 8.2 Add a small round-trip test per discipline: build a payload, encode it through `TrainingRecord`, decode it back, assert equality. (Defensive against silent JSON-key drift.)
+  - [x] 8.3 Run all four configurations: iOS Debug, iOS Research, macOS Debug, macOS Research.
+  - [x] 8.4 Build all four configurations: zero new warnings.
 
-- [ ] Task 9: Document the no-migration decision (AC: 9)
-  - [ ] 9.1 In Completion Notes, record: "Pre-77.4 SwiftData stores are not migrated. Acceptable because TestFlight has not been uploaded; only Michael's two test devices have any data, which is dev-test data." Cite `72-1-archive-and-upload-first-build-to-testflight` as the gate that has not been crossed.
+- [x] Task 9: Document the no-migration decision (AC: 9)
+  - [x] 9.1 In Completion Notes, record: "Pre-77.4 SwiftData stores are not migrated. Acceptable because TestFlight has not been uploaded; only Michael's two test devices have any data, which is dev-test data." Cite `72-1-archive-and-upload-first-build-to-testflight` as the gate that has not been crossed.
 
 ## Dev Notes
 
@@ -238,6 +238,87 @@ After this story, the bootstrap-order constraint documented in `PeachSchema.swif
 - `Peach/Core/Data/PeachSchema.swift` — `SchemaV1.models` to be reduced to a single entry.
 - `Peach/Core/Training/Discipline/TrainingDiscipline.swift` — protocol to lose `recordType` and `PersistentModel`.
 
+## Dev Agent Record
+
+### Completion Notes
+
+- Pre-77.4 SwiftData stores are not migrated. Acceptable because TestFlight has not been uploaded; only Michael's two test devices have any data, which is dev-test data. Gate: `72-1-archive-and-upload-first-build-to-testflight` has not been crossed.
+- `SchemaV1.models = [TrainingRecord.self]`. The four discipline `@Model` types (`PitchDiscriminationRecord`, `PitchMatchingRecord`, `TimingOffsetDetectionRecord`, `ContinuousRhythmMatchingRecord`) and their `extension SchemaV1 { @Model … }` / typealias / `Timestamped`-via-typealias scaffolding are gone.
+- `TrainingDiscipline` no longer references `PersistentModel`. `TrainingDisciplineRegistry.recordTypes` removed. `TrainingDataStore` is non-generic; persistence operates on `TrainingRecord` envelopes, while higher layers use payload-typed helpers (`fetchPayloads(_:)`, `save(_ envelope:)`).
+- Each discipline owns a `Codable` payload struct conforming to `TrainingDisciplinePayload` and a store adapter that mediates envelope ↔ payload encoding via `JSONEnvelope`.
+- CSV wire format is unchanged. Story 77.5 will redesign the per-discipline CSV migration plugin contract on top of these payload structs.
+- All four configurations green: iOS Debug, iOS Research, macOS Debug, macOS Research.
+
+### File List
+
+**Added**
+
+- `Peach/Core/Data/JSONEnvelope.swift`
+- `Peach/Core/Data/TrainingRecord.swift`
+- `Peach/Core/Training/Discipline/TrainingDisciplinePayload.swift`
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingPayload.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationPayload.swift`
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingPayload.swift`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionPayload.swift`
+- `PeachTests/Core/Data/PayloadRoundTripTests.swift`
+- `PeachTests/Core/Data/TrainingRecordTests.swift`
+
+**Deleted**
+
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingRecord.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationRecord.swift`
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingRecord.swift`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionRecord.swift`
+- `PeachTests/Core/Data/ContinuousRhythmMatchingRecordTests.swift`
+- `PeachTests/Core/Data/PitchMatchingRecordTests.swift`
+- `PeachTests/Core/Data/TimingOffsetDetectionRecordTests.swift`
+
+**Modified**
+
+- `Peach/Core/Data/CSVImportParser.swift`
+- `Peach/Core/Data/PeachSchema.swift`
+- `Peach/Core/Data/TrainingDataImporter.swift`
+- `Peach/Core/Data/TrainingDataStore.swift`
+- `Peach/Core/Ports/Persistence/TrainingRecordPersisting.swift`
+- `Peach/Core/Training/Discipline/TrainingDiscipline.swift`
+- `Peach/Core/Training/Discipline/TrainingDisciplineRegistry.swift`
+- `Peach/Core/Training/DuplicateKey.swift`
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingStoreAdapter.swift`
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationCSVParser.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift`
+- `Peach/Training/PitchDiscrimination/PitchDiscriminationObserver.swift`
+- `Peach/Training/PitchDiscrimination/PitchDiscriminationStoreAdapter.swift`
+- `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift`
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingCSVParser.swift`
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift`
+- `Peach/Training/PitchMatching/PitchMatchingStoreAdapter.swift`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift`
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionStoreAdapter.swift`
+- `PeachTests/App/SettingsCoordinatorTests.swift`
+- `PeachTests/Core/Data/CSVImportParserTests.swift`
+- `PeachTests/Core/Data/PeachSchemaTests.swift`
+- `PeachTests/Core/Data/TrainingDataExporterTests.swift`
+- `PeachTests/Core/Data/TrainingDataImporterTests.swift`
+- `PeachTests/Core/Data/TrainingDataStoreEdgeCaseTests.swift`
+- `PeachTests/Core/Data/TrainingDataStoreTests.swift`
+- `PeachTests/Core/Data/TrainingDataTransferServiceTests.swift`
+- `PeachTests/Core/Profile/ProgressTimelineTests.swift`
+- `PeachTests/Core/Training/DuplicateKeyTests.swift`
+- `PeachTests/Core/Training/ObserverAdapterTests.swift`
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift`
+- `PeachTests/Core/Training/RegistryContributionsTests.swift`
+- `PeachTests/Core/Training/TrainingDisciplineImplementationTests.swift`
+- `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift`
+- `PeachTests/Helpers/PerceptualProfileTestHelpers.swift`
+- `PeachTests/Profile/ExportChartViewTests.swift`
+- `PeachTests/Settings/SettingsTests.swift`
+- `PeachTests/Settings/TrainingDataImportActionTests.swift`
+- `PeachTests/Training/PitchDiscrimination/MockTrainingDataStore.swift`
+- `PeachTests/Training/PitchDiscrimination/PitchDiscriminationSessionIntegrationTests.swift`
+
 ## Change Log
 
 - 2026-04-28: Drafted as the JSON-envelope storage redesign that supersedes 77.3's two enumerated exceptions (`SchemaV1.models` aggregation and `Timestamped`-via-typealias). Status → ready-for-dev.
+- 2026-04-28: Implemented JSON envelope storage. SchemaV1 reduced to single `TrainingRecord` type; four discipline payload structs replace `@Model` records; `TrainingDataStore` non-generic; `recordTypes` removed. All four configs green. Status → review.

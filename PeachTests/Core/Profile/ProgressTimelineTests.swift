@@ -13,20 +13,37 @@ struct ProgressTimelineTests {
 
     private let now = Date()
 
+    private typealias DiscriminationEntry = (timestamp: Date, payload: PitchDiscriminationPayload)
+    private typealias MatchingEntry = (timestamp: Date, payload: PitchMatchingPayload)
+#if PEACH_RESEARCH
+    private typealias TimingEntry = (timestamp: Date, payload: TimingOffsetDetectionPayload)
+#endif
+
     private func makeTimeline(
-        pitchDiscriminationRecords: [PitchDiscriminationRecord] = [],
-        pitchMatchingRecords: [PitchMatchingRecord] = [],
-        timingOffsetDetectionRecords: [TimingOffsetDetectionRecord] = []
+        pitchDiscriminationRecords: [DiscriminationEntry] = [],
+        pitchMatchingRecords: [MatchingEntry] = []
     ) -> ProgressTimeline {
         let profile = PerceptualProfile { builder in
             builder.feedPitchDiscriminations(pitchDiscriminationRecords)
             builder.feedPitchMatchings(pitchMatchingRecords)
-#if PEACH_RESEARCH
-            builder.feedTimingOffsetDetections(timingOffsetDetectionRecords)
-#endif
         }
         return ProgressTimeline(profile: profile)
     }
+
+#if PEACH_RESEARCH
+    private func makeTimeline(
+        pitchDiscriminationRecords: [DiscriminationEntry] = [],
+        pitchMatchingRecords: [MatchingEntry] = [],
+        timingOffsetDetectionRecords: [TimingEntry]
+    ) -> ProgressTimeline {
+        let profile = PerceptualProfile { builder in
+            builder.feedPitchDiscriminations(pitchDiscriminationRecords)
+            builder.feedPitchMatchings(pitchMatchingRecords)
+            builder.feedTimingOffsetDetections(timingOffsetDetectionRecords)
+        }
+        return ProgressTimeline(profile: profile)
+    }
+#endif
 
     private func makePitchDiscriminationRecord(
         centOffset: Double,
@@ -34,15 +51,18 @@ struct ProgressTimelineTests {
         interval: Int = 0,
         hoursAgo: Double = 1,
         date: Date? = nil
-    ) -> PitchDiscriminationRecord {
-        PitchDiscriminationRecord(
-            referenceNote: 60,
-            targetNote: 60,
-            centOffset: centOffset,
-            isCorrect: isCorrect,
-            interval: interval,
-            tuningSystem: "equalTemperament",
-            timestamp: date ?? now.addingTimeInterval(-hoursAgo * 3600)
+    ) -> DiscriminationEntry {
+        let timestamp = date ?? now.addingTimeInterval(-hoursAgo * 3600)
+        return (
+            timestamp,
+            PitchDiscriminationPayload(
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: centOffset,
+                isCorrect: isCorrect,
+                interval: interval,
+                tuningSystem: "equalTemperament"
+            )
         )
     }
 
@@ -50,25 +70,27 @@ struct ProgressTimelineTests {
         userCentError: Double,
         interval: Int = 0,
         hoursAgo: Double = 1
-    ) -> PitchMatchingRecord {
-        PitchMatchingRecord(
-            referenceNote: 60,
-            targetNote: 60,
-            initialCentOffset: 50.0,
-            userCentError: userCentError,
-            interval: interval,
-            tuningSystem: "equalTemperament",
-            timestamp: now.addingTimeInterval(-hoursAgo * 3600)
+    ) -> MatchingEntry {
+        (
+            now.addingTimeInterval(-hoursAgo * 3600),
+            PitchMatchingPayload(
+                referenceNote: 60,
+                targetNote: 60,
+                initialCentOffset: 50.0,
+                userCentError: userCentError,
+                interval: interval,
+                tuningSystem: "equalTemperament"
+            )
         )
     }
 
-    private func makePitchDiscriminationRecords(count: Int, centOffset: Double = 10.0, interval: Int = 0) -> [PitchDiscriminationRecord] {
+    private func makePitchDiscriminationRecords(count: Int, centOffset: Double = 10.0, interval: Int = 0) -> [DiscriminationEntry] {
         (0..<count).map { i in
             makePitchDiscriminationRecord(centOffset: centOffset, interval: interval, hoursAgo: Double(count - i))
         }
     }
 
-    private func makePitchMatchingRecords(count: Int, userCentError: Double = 5.0, interval: Int = 0) -> [PitchMatchingRecord] {
+    private func makePitchMatchingRecords(count: Int, userCentError: Double = 5.0, interval: Int = 0) -> [MatchingEntry] {
         (0..<count).map { i in
             makePitchMatchingRecord(userCentError: userCentError, interval: interval, hoursAgo: Double(count - i))
         }
@@ -440,7 +462,7 @@ struct ProgressTimelineTests {
 
     @Test("improving trend when latest value is below EWMA and within stddev")
     func improvingTrend() async {
-        var records: [PitchDiscriminationRecord] = []
+        var records: [DiscriminationEntry] = []
         for i in 0..<10 {
             records.append(makePitchDiscriminationRecord(centOffset: 20.0, hoursAgo: Double(12 - i)))
         }
@@ -452,7 +474,7 @@ struct ProgressTimelineTests {
 
     @Test("declining trend when latest value is outside 1 stddev above mean")
     func decliningTrend() async {
-        var records: [PitchDiscriminationRecord] = []
+        var records: [DiscriminationEntry] = []
         for i in 0..<10 {
             records.append(makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: Double(12 - i)))
         }
@@ -489,7 +511,7 @@ struct ProgressTimelineTests {
     @Test("declining trend from high centOffset added via profile")
     func decliningTrendFromProfileUpdate() async {
         // Start with correct records at low centOffset
-        var records: [PitchDiscriminationRecord] = []
+        var records: [DiscriminationEntry] = []
         for i in 0..<10 {
             records.append(makePitchDiscriminationRecord(centOffset: 8.0, hoursAgo: Double(12 - i)))
         }
@@ -516,7 +538,7 @@ struct ProgressTimelineTests {
 
     @Test("value exactly at runningMean + stddev is stable, not declining")
     func boundaryAtMeanPlusStddev() async {
-        var records: [PitchDiscriminationRecord] = []
+        var records: [DiscriminationEntry] = []
         for i in 0..<5 {
             records.append(makePitchDiscriminationRecord(centOffset: 10.0, hoursAgo: Double(12 - i)))
         }
@@ -539,7 +561,7 @@ struct ProgressTimelineTests {
 
     @Test("pitch matching declining when latest error is outside stddev")
     func pitchMatchingDecliningWhenOutsideStddev() async {
-        var records: [PitchMatchingRecord] = []
+        var records: [MatchingEntry] = []
         for i in 0..<10 {
             records.append(makePitchMatchingRecord(userCentError: 3.0, hoursAgo: Double(12 - i)))
         }
@@ -555,17 +577,19 @@ struct ProgressTimelineTests {
     func subBucketsMonthToDay() async {
         let calendar = Calendar.current
         let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now.addingTimeInterval(-45 * 86400)))!
-        let records = (0..<20).map { i in
+        let records: [DiscriminationEntry] = (0..<20).map { i in
             let dayOffset = Double(i % 28)
             let timestamp = monthStart.addingTimeInterval(dayOffset * 86400 + Double(i) * 60)
-            return PitchDiscriminationRecord(
-                referenceNote: 60,
-                targetNote: 60,
-                centOffset: 10.0 + Double(i),
-                isCorrect: true,
-                interval: 0,
-                tuningSystem: "equalTemperament",
-                timestamp: timestamp
+            return (
+                timestamp,
+                PitchDiscriminationPayload(
+                    referenceNote: 60,
+                    targetNote: 60,
+                    centOffset: 10.0 + Double(i),
+                    isCorrect: true,
+                    interval: 0,
+                    tuningSystem: "equalTemperament"
+                )
             )
         }
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
@@ -928,17 +952,19 @@ struct ProgressTimelineTests {
     func subBucketRecordCountConsistency() async {
         let calendar = Calendar.current
         let monthStart = calendar.date(from: calendar.dateComponents([.year, .month], from: now.addingTimeInterval(-90 * 86400)))!
-        let records = (0..<15).map { i in
+        let records: [DiscriminationEntry] = (0..<15).map { i in
             let dayOffset = Double(i)
             let timestamp = monthStart.addingTimeInterval(dayOffset * 86400 + Double(i) * 60)
-            return PitchDiscriminationRecord(
-                referenceNote: 60,
-                targetNote: 60,
-                centOffset: 10.0,
-                isCorrect: true,
-                interval: 0,
-                tuningSystem: "equalTemperament",
-                timestamp: timestamp
+            return (
+                timestamp,
+                PitchDiscriminationPayload(
+                    referenceNote: 60,
+                    targetNote: 60,
+                    centOffset: 10.0,
+                    isCorrect: true,
+                    interval: 0,
+                    tuningSystem: "equalTemperament"
+                )
             )
         }
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
@@ -1009,10 +1035,14 @@ struct ProgressTimelineTests {
     // MARK: - Rhythm Mode Tests
 
     #if PEACH_RESEARCH
+    private func timingEntry(tempoBPM: Int, offsetMs: Double, isCorrect: Bool, timestamp: Date) -> TimingEntry {
+        (timestamp, TimingOffsetDetectionPayload(tempoBPM: tempoBPM, offsetMs: offsetMs, isCorrect: isCorrect))
+    }
+
     @Test("timingOffsetDetection state is active with timing offset detection data")
     func timingOffsetDetectionActive() async {
         let records = [
-            TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -20.0, isCorrect: true, timestamp: now.addingTimeInterval(-3600))
+            timingEntry(tempoBPM: 120, offsetMs: -20.0, isCorrect: true, timestamp: now.addingTimeInterval(-3600))
         ]
         let timeline = makeTimeline(timingOffsetDetectionRecords: records)
         #expect(timeline.state(for: .timingOffsetDetection) == .active)
@@ -1021,7 +1051,7 @@ struct ProgressTimelineTests {
     @Test("timingOffsetDetection remains noData when only incorrect records exist")
     func timingOffsetDetectionNoDataWhenIncorrect() async {
         let records = [
-            TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: -20.0, isCorrect: false, timestamp: now.addingTimeInterval(-3600))
+            timingEntry(tempoBPM: 120, offsetMs: -20.0, isCorrect: false, timestamp: now.addingTimeInterval(-3600))
         ]
         let timeline = makeTimeline(timingOffsetDetectionRecords: records)
         #expect(timeline.state(for: .timingOffsetDetection) == .noData)
@@ -1030,7 +1060,7 @@ struct ProgressTimelineTests {
     @Test("timingOffsetDetection buckets are produced from timing data")
     func timingOffsetDetectionBuckets() async {
         let records = (0..<5).map { i in
-            TimingOffsetDetectionRecord(
+            timingEntry(
                 tempoBPM: 120,
                 offsetMs: -20.0 + Double(i),
                 isCorrect: true,
@@ -1048,9 +1078,9 @@ struct ProgressTimelineTests {
     func rhythmModesMergeAcrossKeys() async {
         let records = [
             // slow tempo (60 BPM), early
-            TimingOffsetDetectionRecord(tempoBPM: 60, offsetMs: -10.0, isCorrect: true, timestamp: now.addingTimeInterval(-3600)),
+            timingEntry(tempoBPM: 60, offsetMs: -10.0, isCorrect: true, timestamp: now.addingTimeInterval(-3600)),
             // fast tempo (180 BPM), late
-            TimingOffsetDetectionRecord(tempoBPM: 180, offsetMs: 15.0, isCorrect: true, timestamp: now.addingTimeInterval(-3500)),
+            timingEntry(tempoBPM: 180, offsetMs: 15.0, isCorrect: true, timestamp: now.addingTimeInterval(-3500)),
         ]
         let timeline = makeTimeline(timingOffsetDetectionRecords: records)
         #expect(timeline.recordCount(for: .timingOffsetDetection) == 2)

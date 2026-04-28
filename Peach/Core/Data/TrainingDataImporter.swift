@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 enum TrainingDataImporter {
 
@@ -48,16 +47,19 @@ enum TrainingDataImporter {
         _ parseResult: CSVImportParser.ImportResult,
         into store: TrainingDataStore
     ) throws -> ImportSummary {
-        var allRecords: [any PersistentModel] = []
+        var allEnvelopes: [TrainingRecord] = []
         var perDiscipline: [TrainingDisciplineID: (imported: Int, skipped: Int)] = [:]
 
         for discipline in TrainingDisciplineRegistry.shared.all {
-            let records = discipline.parsedRecords(from: parseResult)
-            allRecords.append(contentsOf: records)
-            perDiscipline[discipline.id] = (imported: records.count, skipped: 0)
+            let parsed = discipline.parsedRecords(from: parseResult)
+            for entry in parsed {
+                let envelope = try JSONEnvelope.encode(entry.payload, timestamp: entry.timestamp)
+                allEnvelopes.append(envelope)
+            }
+            perDiscipline[discipline.id] = (imported: parsed.count, skipped: 0)
         }
 
-        try store.replaceAllRecords(allRecords)
+        try store.replaceAllRecords(allEnvelopes)
         return ImportSummary(perDiscipline: perDiscipline, parseErrorCount: parseResult.errors.count)
     }
 

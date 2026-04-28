@@ -1,12 +1,12 @@
 import Foundation
 @testable import Peach
 
-final class MockTrainingDataStore: PitchDiscriminationObserver, PitchMatchingObserver {
+final class MockTrainingDataStore: TrainingRecordPersisting, PitchDiscriminationObserver, PitchMatchingObserver {
     // MARK: - Comparison Test State Tracking
 
     var saveCallCount = 0
-    var lastSavedRecord: PitchDiscriminationRecord?
-    var savedRecords: [PitchDiscriminationRecord] = []
+    var lastSavedRecord: PitchDiscriminationPayload?
+    var savedRecords: [PitchDiscriminationPayload] = []
     var shouldThrowError = false
     var errorToThrow: DataStoreError = .saveFailed("Mock error")
 
@@ -18,8 +18,8 @@ final class MockTrainingDataStore: PitchDiscriminationObserver, PitchMatchingObs
     // MARK: - Pitch Matching Test State Tracking
 
     var savePitchMatchingCallCount = 0
-    var lastSavedPitchMatchingRecord: PitchMatchingRecord?
-    var savedPitchMatchingRecords: [PitchMatchingRecord] = []
+    var lastSavedPitchMatchingRecord: PitchMatchingPayload?
+    var savedPitchMatchingRecords: [PitchMatchingPayload] = []
 
     // MARK: - Test Control
 
@@ -29,34 +29,29 @@ final class MockTrainingDataStore: PitchDiscriminationObserver, PitchMatchingObs
     var onPitchDiscriminationCompletedCalled: (() -> Void)?
     var onPitchMatchingCompletedCalled: (() -> Void)?
 
-    // MARK: - Pitch Discrimination Record Storage
+    // MARK: - TrainingRecordPersisting
 
-    func save(_ record: PitchDiscriminationRecord) throws {
-        saveCallCount += 1
-        lastSavedRecord = record
-
-        onSaveCalled?()
-
+    func save(_ envelope: TrainingRecord) throws {
         if shouldThrowError {
             throw errorToThrow
         }
 
-        savedRecords.append(record)
-    }
-
-    // MARK: - Pitch Matching Methods
-
-    func save(_ record: PitchMatchingRecord) throws {
-        savePitchMatchingCallCount += 1
-        lastSavedPitchMatchingRecord = record
-
-        onSavePitchMatchingCalled?()
-
-        if shouldThrowError {
-            throw errorToThrow
+        switch envelope.disciplineIdentifier {
+        case PitchDiscriminationPayload.disciplineIdentifier:
+            let payload = try JSONEnvelope.decode(PitchDiscriminationPayload.self, from: envelope)
+            saveCallCount += 1
+            lastSavedRecord = payload
+            savedRecords.append(payload)
+            onSaveCalled?()
+        case PitchMatchingPayload.disciplineIdentifier:
+            let payload = try JSONEnvelope.decode(PitchMatchingPayload.self, from: envelope)
+            savePitchMatchingCallCount += 1
+            lastSavedPitchMatchingRecord = payload
+            savedPitchMatchingRecords.append(payload)
+            onSavePitchMatchingCalled?()
+        default:
+            break
         }
-
-        savedPitchMatchingRecords.append(record)
     }
 
     // MARK: - Test Helpers
@@ -83,18 +78,8 @@ final class MockTrainingDataStore: PitchDiscriminationObserver, PitchMatchingObs
     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
         onPitchDiscriminationCompletedCalled?()
         completedTrials.append(completed)
-        // Create record for backward compatibility with tests that check savedRecords
-        let trial = completed.trial
-        let record = PitchDiscriminationRecord(
-            referenceNote: trial.referenceNote.rawValue,
-            targetNote: trial.targetNote.note.rawValue,
-            centOffset: trial.targetNote.offset.rawValue,
-            isCorrect: completed.isCorrect,
-            interval: 0,
-            tuningSystem: "equalTemperament",
-            timestamp: completed.timestamp
-        )
-        try? save(record)
+        // Forward via the adapter so save() is exercised consistently with prod.
+        PitchDiscriminationStoreAdapter(store: self).pitchDiscriminationCompleted(completed)
     }
 
     // MARK: - PitchMatchingObserver Protocol
@@ -102,16 +87,6 @@ final class MockTrainingDataStore: PitchDiscriminationObserver, PitchMatchingObs
     func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
         onPitchMatchingCompletedCalled?()
         completedPitchMatchings.append(result)
-        // Create record for backward compatibility with tests that check savedPitchMatchingRecords
-        let record = PitchMatchingRecord(
-            referenceNote: result.referenceNote.rawValue,
-            targetNote: result.targetNote.rawValue,
-            initialCentOffset: result.initialCentOffset.rawValue,
-            userCentError: result.userCentError.rawValue,
-            interval: 0,
-            tuningSystem: "equalTemperament",
-            timestamp: result.timestamp
-        )
-        try? save(record)
+        PitchMatchingStoreAdapter(store: self).pitchMatchingCompleted(result)
     }
 }

@@ -10,7 +10,7 @@ struct TrainingDataExporterTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: TrainingRecord.self, configurations: config)
     }
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
@@ -27,22 +27,26 @@ struct TrainingDataExporterTests {
         return TrainingDataStore(modelContext: context)
     }
 
+    private func saveEnvelope(_ store: TrainingDataStore, _ payload: any TrainingDisciplinePayload, timestamp: Date) throws {
+        try store.save(JSONEnvelope.encode(payload, timestamp: timestamp))
+    }
+
     // MARK: - Mixed Record Tests
 
     @Test("export with mixed comparison and pitch matching records produces correctly sorted CSV")
     func exportMixedRecords() async throws {
         let store = try makeStore()
 
-        let comparison = PitchDiscriminationRecord(
+        let comparison = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let pitchMatching = PitchMatchingRecord(
+        let pitchMatching = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 3, tuningSystem: "equalTemperament"
         )
-        try store.save(comparison)
-        try store.save(pitchMatching)
+        try saveEnvelope(store, comparison, timestamp: fixedDate(minutesOffset: 1))
+        try saveEnvelope(store, pitchMatching, timestamp: fixedDate(minutesOffset: 0))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -75,11 +79,11 @@ struct TrainingDataExporterTests {
     func exportComparisonOnly() async throws {
         let store = try makeStore()
 
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate()
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        try store.save(record)
+        try saveEnvelope(store, payload, timestamp: fixedDate())
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -96,11 +100,11 @@ struct TrainingDataExporterTests {
     func exportPitchMatchingOnly() async throws {
         let store = try makeStore()
 
-        let record = PitchMatchingRecord(
+        let payload = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate()
+            interval: 3, tuningSystem: "equalTemperament"
         )
-        try store.save(record)
+        try saveEnvelope(store, payload, timestamp: fixedDate())
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -128,27 +132,27 @@ struct TrainingDataExporterTests {
     func timestampOrdering() async throws {
         let store = try makeStore()
 
-        let pm1 = PitchMatchingRecord(
+        let pm1 = PitchMatchingPayload(
             referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 1.0,
-            interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 0, tuningSystem: "equalTemperament"
         )
-        let comp1 = PitchDiscriminationRecord(
+        let comp1 = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 62, centOffset: 5.0, isCorrect: true,
-            interval: 2, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
+            interval: 2, tuningSystem: "equalTemperament"
         )
-        let pm2 = PitchMatchingRecord(
+        let pm2 = PitchMatchingPayload(
             referenceNote: 64, targetNote: 64, initialCentOffset: 20.0, userCentError: -2.0,
-            interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 2)
+            interval: 0, tuningSystem: "equalTemperament"
         )
-        let comp2 = PitchDiscriminationRecord(
+        let comp2 = PitchDiscriminationPayload(
             referenceNote: 67, targetNote: 72, centOffset: -10.0, isCorrect: false,
-            interval: 5, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 3)
+            interval: 5, tuningSystem: "equalTemperament"
         )
 
-        try store.save(pm1)
-        try store.save(comp1)
-        try store.save(pm2)
-        try store.save(comp2)
+        try saveEnvelope(store, pm1, timestamp: fixedDate(minutesOffset: 0))
+        try saveEnvelope(store, comp1, timestamp: fixedDate(minutesOffset: 1))
+        try saveEnvelope(store, pm2, timestamp: fixedDate(minutesOffset: 2))
+        try saveEnvelope(store, comp2, timestamp: fixedDate(minutesOffset: 3))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -167,16 +171,16 @@ struct TrainingDataExporterTests {
         let store = try makeStore()
 
         let timestamp = fixedDate()
-        let comparison = PitchDiscriminationRecord(
+        let comparison = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let pitchMatching = PitchMatchingRecord(
+        let pitchMatching = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 3, tuningSystem: "equalTemperament"
         )
-        try store.save(comparison)
-        try store.save(pitchMatching)
+        try saveEnvelope(store, comparison, timestamp: timestamp)
+        try saveEnvelope(store, pitchMatching, timestamp: timestamp)
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -192,11 +196,11 @@ struct TrainingDataExporterTests {
     func csvStartsWithMetadataAndHeader() async throws {
         let store = try makeStore()
 
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 60, centOffset: 0.0, isCorrect: true,
-            interval: 0, tuningSystem: "equalTemperament", timestamp: fixedDate()
+            interval: 0, tuningSystem: "equalTemperament"
         )
-        try store.save(record)
+        try saveEnvelope(store, payload, timestamp: fixedDate())
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -212,22 +216,22 @@ struct TrainingDataExporterTests {
     func rowCountEqualsRecordsPlusMetadataAndHeader() async throws {
         let store = try makeStore()
 
-        let comp = PitchDiscriminationRecord(
+        let comp = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let pm1 = PitchMatchingRecord(
+        let pm1 = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
+            interval: 3, tuningSystem: "equalTemperament"
         )
-        let pm2 = PitchMatchingRecord(
+        let pm2 = PitchMatchingPayload(
             referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: -1.5,
-            interval: 0, tuningSystem: "justIntonation", timestamp: fixedDate(minutesOffset: 2)
+            interval: 0, tuningSystem: "justIntonation"
         )
 
-        try store.save(comp)
-        try store.save(pm1)
-        try store.save(pm2)
+        try saveEnvelope(store, comp, timestamp: fixedDate(minutesOffset: 0))
+        try saveEnvelope(store, pm1, timestamp: fixedDate(minutesOffset: 1))
+        try saveEnvelope(store, pm2, timestamp: fixedDate(minutesOffset: 2))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -242,10 +246,8 @@ struct TrainingDataExporterTests {
     func exportTimingOffsetDetection() async throws {
         let store = try makeStore()
 
-        let record = TimingOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: -15.3, isCorrect: true, timestamp: fixedDate()
-        )
-        try store.save(record)
+        let payload = TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: -15.3, isCorrect: true)
+        try saveEnvelope(store, payload, timestamp: fixedDate())
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -264,21 +266,21 @@ struct TrainingDataExporterTests {
     func exportAllTypes() async throws {
         let store = try makeStore()
 
-        let pitchDisc = PitchDiscriminationRecord(
+        let pitchDisc = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let rhythmOffset = TimingOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 1)
+        let rhythmOffset = TimingOffsetDetectionPayload(
+            tempoBPM: 120, offsetMs: -10.0, isCorrect: false
         )
-        let pitchMatch = PitchMatchingRecord(
+        let pitchMatch = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 2)
+            interval: 3, tuningSystem: "equalTemperament"
         )
 
-        try store.save(pitchDisc)
-        try store.save(rhythmOffset)
-        try store.save(pitchMatch)
+        try saveEnvelope(store, pitchDisc, timestamp: fixedDate(minutesOffset: 0))
+        try saveEnvelope(store, rhythmOffset, timestamp: fixedDate(minutesOffset: 1))
+        try saveEnvelope(store, pitchMatch, timestamp: fixedDate(minutesOffset: 2))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -297,17 +299,17 @@ struct TrainingDataExporterTests {
     func v2ExportImportableByV2Parser() async throws {
         let store = try makeStore()
 
-        let comparison = PitchDiscriminationRecord(
+        let comparison = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        try store.save(comparison)
+        try saveEnvelope(store, comparison, timestamp: fixedDate(minutesOffset: 0))
 
         let csv = try TrainingDataExporter.export(from: store)
         let result = CSVImportParser.parse(csv)
 
         #expect(result.errors.isEmpty)
-        #expect((result.records["pitchDiscrimination"] ?? []).count == 1)
+        #expect((result.payloads["pitchDiscrimination"] ?? []).count == 1)
     }
 
     // MARK: - V2 Comprehensive Tests
@@ -316,10 +318,8 @@ struct TrainingDataExporterTests {
     func headerInExport() async throws {
         let store = try makeStore()
 
-        let record = TimingOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: 5.0, isCorrect: true, timestamp: fixedDate()
-        )
-        try store.save(record)
+        let payload = TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: 5.0, isCorrect: true)
+        try saveEnvelope(store, payload, timestamp: fixedDate())
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -335,10 +335,8 @@ struct TrainingDataExporterTests {
     func rhythmOnlyExport() async throws {
         let store = try makeStore()
 
-        let offset = TimingOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: -5.0, isCorrect: true, timestamp: fixedDate(minutesOffset: 0)
-        )
-        try store.save(offset)
+        let offset = TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: -5.0, isCorrect: true)
+        try saveEnvelope(store, offset, timestamp: fixedDate(minutesOffset: 0))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -366,21 +364,19 @@ struct TrainingDataExporterTests {
     func allRowsHave19Fields() async throws {
         let store = try makeStore()
 
-        let pitchDisc = PitchDiscriminationRecord(
+        let pitchDisc = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let pitchMatch = PitchMatchingRecord(
+        let pitchMatch = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
+            interval: 3, tuningSystem: "equalTemperament"
         )
-        let rhythmOffset = TimingOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
-        )
+        let rhythmOffset = TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: -10.0, isCorrect: false)
 
-        try store.save(pitchDisc)
-        try store.save(pitchMatch)
-        try store.save(rhythmOffset)
+        try saveEnvelope(store, pitchDisc, timestamp: fixedDate(minutesOffset: 0))
+        try saveEnvelope(store, pitchMatch, timestamp: fixedDate(minutesOffset: 1))
+        try saveEnvelope(store, rhythmOffset, timestamp: fixedDate(minutesOffset: 2))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
@@ -396,21 +392,19 @@ struct TrainingDataExporterTests {
     func discriminatorColumnCorrectness() async throws {
         let store = try makeStore()
 
-        let pitchDisc = PitchDiscriminationRecord(
+        let pitchDisc = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let pitchMatch = PitchMatchingRecord(
+        let pitchMatch = PitchMatchingPayload(
             referenceNote: 69, targetNote: 72, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 3, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 1)
+            interval: 3, tuningSystem: "equalTemperament"
         )
-        let rhythmOffset = TimingOffsetDetectionRecord(
-            tempoBPM: 120, offsetMs: -10.0, isCorrect: false, timestamp: fixedDate(minutesOffset: 2)
-        )
+        let rhythmOffset = TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: -10.0, isCorrect: false)
 
-        try store.save(pitchDisc)
-        try store.save(pitchMatch)
-        try store.save(rhythmOffset)
+        try saveEnvelope(store, pitchDisc, timestamp: fixedDate(minutesOffset: 0))
+        try saveEnvelope(store, pitchMatch, timestamp: fixedDate(minutesOffset: 1))
+        try saveEnvelope(store, rhythmOffset, timestamp: fixedDate(minutesOffset: 2))
 
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)

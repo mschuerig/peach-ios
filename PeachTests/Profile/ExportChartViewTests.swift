@@ -7,28 +7,37 @@ import SwiftUI
 @MainActor
 struct ExportChartViewTests {
 
-    private func makeTimeline(records: [PitchDiscriminationRecord]) -> ProgressTimeline {
+    private func makeTimeline(entries: [(timestamp: Date, payload: PitchDiscriminationPayload)]) -> ProgressTimeline {
         let profile = PerceptualProfile { builder in
-            builder.feedPitchDiscriminations(records)
+            builder.feedPitchDiscriminations(entries)
         }
         return ProgressTimeline(profile: profile)
+    }
+
+    private func makeDiscriminationEntry(timestamp: Date, centOffset: Double) -> (timestamp: Date, payload: PitchDiscriminationPayload) {
+        (
+            timestamp,
+            PitchDiscriminationPayload(
+                referenceNote: 60,
+                targetNote: 60,
+                centOffset: centOffset,
+                isCorrect: true,
+                interval: 0,
+                tuningSystem: "equalTemperament"
+            )
+        )
     }
 
     @Test("renders without crashing with mock data")
     func rendersWithMockData() async {
         let now = Date()
-        let records = (0..<10).map { i in
-            PitchDiscriminationRecord(
-                referenceNote: 60,
-                targetNote: 60,
-                centOffset: Double(10 + i),
-                isCorrect: true,
-                interval: 0,
-                tuningSystem: "equalTemperament",
-                timestamp: now.addingTimeInterval(-Double(10 - i) * 3600)
+        let entries = (0..<10).map { i in
+            makeDiscriminationEntry(
+                timestamp: now.addingTimeInterval(-Double(10 - i) * 3600),
+                centOffset: Double(10 + i)
             )
         }
-        let timeline = makeTimeline(records: records)
+        let timeline = makeTimeline(entries: entries)
         let view = ExportChartView(mode: .unisonPitchDiscrimination, progressTimeline: timeline, date: now)
 
         // Verify the view can be rendered by ImageRenderer without crashing
@@ -53,18 +62,13 @@ struct ExportChartViewTests {
     @Test("ChartImageRenderer.render produces a file URL with correct filename pattern")
     func renderProducesFileURL() async {
         let now = Date()
-        let records = (0..<5).map { i in
-            PitchDiscriminationRecord(
-                referenceNote: 60,
-                targetNote: 60,
-                centOffset: Double(10 + i),
-                isCorrect: true,
-                interval: 0,
-                tuningSystem: "equalTemperament",
-                timestamp: now.addingTimeInterval(-Double(5 - i) * 3600)
+        let entries = (0..<5).map { i in
+            makeDiscriminationEntry(
+                timestamp: now.addingTimeInterval(-Double(5 - i) * 3600),
+                centOffset: Double(10 + i)
             )
         }
-        let timeline = makeTimeline(records: records)
+        let timeline = makeTimeline(entries: entries)
         let url = ChartImageRenderer.render(mode: .unisonPitchDiscrimination, progressTimeline: timeline, date: now)
 
         #expect(url != nil)

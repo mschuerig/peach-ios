@@ -10,14 +10,15 @@ struct TimingOffsetDetectionStoreAdapter: TimingOffsetDetectionObserver {
     }
 
     func timingOffsetDetectionCompleted(_ result: CompletedTimingOffsetDetectionTrial) {
-        let record = TimingOffsetDetectionRecord(
+        let payload = TimingOffsetDetectionPayload(
             tempoBPM: result.tempo.value,
             offsetMs: result.offset.duration / .milliseconds(1),
-            isCorrect: result.isCorrect,
-            timestamp: result.timestamp
+            isCorrect: result.isCorrect
         )
+
         do {
-            try store.save(record)
+            let envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Timing offset detection save error: \(error.localizedDescription)")
         } catch {

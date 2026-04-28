@@ -7,7 +7,7 @@ import Foundation
 /// of data storage and profile updates.
 ///
 /// ## Conforming Types
-/// - TrainingDataStore: Persists pitch matching results
+/// - PitchMatchingStoreAdapter: Persists pitch matching results
 /// - PerceptualProfile: Updates pitch matching accuracy statistics
 protocol PitchMatchingObserver {
     /// Called when a pitch matching exercise is completed

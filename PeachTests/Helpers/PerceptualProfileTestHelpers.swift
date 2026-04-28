@@ -4,36 +4,36 @@ import Foundation
 // MARK: - Builder Helpers for Tests
 
 extension PerceptualProfile.Builder {
-    func feedPitchDiscriminations(_ records: [PitchDiscriminationRecord]) {
-        for record in records {
-            let mode: TrainingDisciplineID = record.interval == 0 ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
+    func feedPitchDiscriminations(_ entries: [(timestamp: Date, payload: PitchDiscriminationPayload)]) {
+        for entry in entries {
+            let mode: TrainingDisciplineID = entry.payload.interval == 0 ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
             addPoint(
-                MetricPoint(timestamp: record.timestamp, value: abs(record.centOffset)),
+                MetricPoint(timestamp: entry.timestamp, value: abs(entry.payload.centOffset)),
                 for: .pitch(mode),
-                isCorrect: record.isCorrect
+                isCorrect: entry.payload.isCorrect
             )
         }
     }
 
-    func feedPitchMatchings(_ records: [PitchMatchingRecord]) {
-        for record in records {
-            let mode: TrainingDisciplineID = record.interval == 0 ? .unisonPitchMatching : .intervalPitchMatching
+    func feedPitchMatchings(_ entries: [(timestamp: Date, payload: PitchMatchingPayload)]) {
+        for entry in entries {
+            let mode: TrainingDisciplineID = entry.payload.interval == 0 ? .unisonPitchMatching : .intervalPitchMatching
             addPoint(
-                MetricPoint(timestamp: record.timestamp, value: abs(record.userCentError)),
+                MetricPoint(timestamp: entry.timestamp, value: abs(entry.payload.userCentError)),
                 for: .pitch(mode)
             )
         }
     }
 
 #if PEACH_RESEARCH
-    func feedTimingOffsetDetections(_ records: [TimingOffsetDetectionRecord]) {
-        for record in records {
-            let offset = TimingOffset(.milliseconds(record.offsetMs))
-            guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
+    func feedTimingOffsetDetections(_ entries: [(timestamp: Date, payload: TimingOffsetDetectionPayload)]) {
+        for entry in entries {
+            let offset = TimingOffset(.milliseconds(entry.payload.offsetMs))
+            guard let range = TempoRange.range(for: TempoBPM(entry.payload.tempoBPM)) else { continue }
             addPoint(
-                MetricPoint(timestamp: record.timestamp, value: abs(record.offsetMs)),
+                MetricPoint(timestamp: entry.timestamp, value: abs(entry.payload.offsetMs)),
                 for: .rhythm(.timingOffsetDetection, range, offset.direction),
-                isCorrect: record.isCorrect
+                isCorrect: entry.payload.isCorrect
             )
         }
     }

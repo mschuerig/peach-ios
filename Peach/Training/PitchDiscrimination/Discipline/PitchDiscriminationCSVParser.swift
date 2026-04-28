@@ -1,7 +1,6 @@
 import Foundation
-import SwiftData
 
-/// Shared CSV row parsing for PitchDiscriminationRecord.
+/// Shared CSV row parsing for ``PitchDiscriminationPayload``.
 /// Used by all pitch-discrimination disciplines.
 enum PitchDiscriminationCSVParser {
 
@@ -9,7 +8,7 @@ enum PitchDiscriminationCSVParser {
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<any PersistentModel, CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let refNoteIdx = columnIndex["referenceNote"],
               let targetNoteIdx = columnIndex["targetNote"],
@@ -55,15 +54,14 @@ enum PitchDiscriminationCSVParser {
             return .failure(.invalidRowData(row: rowNumber, column: "isCorrect", value: isCorrectStr, reason: "must be 'true' or 'false'"))
         }
 
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: referenceNote,
             targetNote: targetNote,
             centOffset: centOffset,
             isCorrect: isCorrectStr == "true",
             interval: intervalRaw,
-            tuningSystem: tuningSystemStr,
-            timestamp: timestamp
+            tuningSystem: tuningSystemStr
         )
-        return .success(record)
+        return .success((timestamp: timestamp, payload: payload))
     }
 }

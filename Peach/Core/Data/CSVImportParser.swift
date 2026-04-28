@@ -1,18 +1,17 @@
 import Foundation
-@preconcurrency import SwiftData
 
 enum CSVImportParser {
 
     struct ImportResult {
-        var records: [String: [any PersistentModel]]
+        var payloads: [String: [(timestamp: Date, payload: any TrainingDisciplinePayload)]]
         var errors: [CSVImportError]
 
         var isEmpty: Bool {
-            records.values.allSatisfy { $0.isEmpty }
+            payloads.values.allSatisfy { $0.isEmpty }
         }
 
         var totalRecordCount: Int {
-            records.values.reduce(0) { $0 + $1.count }
+            payloads.values.reduce(0) { $0 + $1.count }
         }
     }
 
@@ -20,22 +19,22 @@ enum CSVImportParser {
         let lines = CSVParserHelpers.splitIntoLines(csvContent)
 
         guard let firstLine = lines.first, !firstLine.isEmpty else {
-            return ImportResult(records: [:], errors: [.missingVersion])
+            return ImportResult(payloads: [:], errors: [.missingVersion])
         }
 
         guard firstLine.hasPrefix(CSVExportSchema.metadataPrefix) else {
-            return ImportResult(records: [:], errors: [.missingVersion])
+            return ImportResult(payloads: [:], errors: [.missingVersion])
         }
 
         let versionString = String(firstLine.dropFirst(CSVExportSchema.metadataPrefix.count))
         guard let version = Int(versionString) else {
-            return ImportResult(records: [:], errors: [.invalidFormatMetadata(line: firstLine)])
+            return ImportResult(payloads: [:], errors: [.invalidFormatMetadata(line: firstLine)])
         }
 
         let currentVersion = CSVExportSchema.formatVersion
 
         guard version >= 1, version <= currentVersion else {
-            return ImportResult(records: [:], errors: [.unsupportedVersion(version: version)])
+            return ImportResult(payloads: [:], errors: [.unsupportedVersion(version: version)])
         }
 
         let remainingLines = Array(lines.dropFirst())
@@ -51,7 +50,7 @@ enum CSVImportParser {
 
     private static func parseMigratedLines(_ lines: [String], fromVersion: Int) -> ImportResult {
         guard let headerLine = lines.first, !headerLine.isEmpty else {
-            return ImportResult(records: [:], errors: [.invalidHeader(expected: "(header)", actual: "(empty)")])
+            return ImportResult(payloads: [:], errors: [.invalidHeader(expected: "(header)", actual: "(empty)")])
         }
 
         let headerColumns = CSVParserHelpers.parseCSVLine(headerLine)
@@ -72,7 +71,7 @@ enum CSVImportParser {
             to: CSVExportSchema.formatVersion,
             rows: rowDicts
         ) else {
-            return ImportResult(records: [:], errors: [.unsupportedVersion(version: fromVersion)])
+            return ImportResult(payloads: [:], errors: [.unsupportedVersion(version: fromVersion)])
         }
 
         // Reconstruct using the union of registry-derived columns and any keys
@@ -100,12 +99,12 @@ enum CSVImportParser {
     // MARK: - Line Parsing
 
     private static func parseLines(_ lines: [String]) -> ImportResult {
-        var records: [String: [any PersistentModel]] = [:]
+        var payloads: [String: [(timestamp: Date, payload: any TrainingDisciplinePayload)]] = [:]
         var errors: [CSVImportError] = []
 
         guard let headerLine = lines.first, !headerLine.isEmpty else {
             errors.append(.invalidHeader(expected: CSVExportSchema.headerRow, actual: "(empty)"))
-            return ImportResult(records: [:], errors: errors)
+            return ImportResult(payloads: [:], errors: errors)
         }
 
         let headerColumns = CSVParserHelpers.parseCSVLine(headerLine)
@@ -116,7 +115,7 @@ enum CSVImportParser {
         // be present for any row to be parseable.
         for required in CSVExportSchema.commonColumns where !headerColumns.contains(required) {
             errors.append(.invalidHeader(expected: required, actual: "(missing)"))
-            return ImportResult(records: [:], errors: errors)
+            return ImportResult(payloads: [:], errors: errors)
         }
 
         let columnIndex = Dictionary(uniqueKeysWithValues: headerColumns.enumerated().map { ($1, $0) })
@@ -153,13 +152,13 @@ enum CSVImportParser {
             }
 
             switch discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: rowNumber) {
-            case .success(let record):
-                records[trainingType, default: []].append(record)
+            case .success(let parsed):
+                payloads[trainingType, default: []].append(parsed)
             case .failure(let error):
                 errors.append(error)
             }
         }
 
-        return ImportResult(records: records, errors: errors)
+        return ImportResult(payloads: payloads, errors: errors)
     }
 }

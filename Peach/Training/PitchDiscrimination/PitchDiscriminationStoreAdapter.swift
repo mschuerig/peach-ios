@@ -12,18 +12,18 @@ struct PitchDiscriminationStoreAdapter: PitchDiscriminationObserver {
     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
         let trial = completed.trial
         let interval = abs(trial.referenceNote - trial.targetNote.note)
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: trial.referenceNote.rawValue,
             targetNote: trial.targetNote.note.rawValue,
             centOffset: trial.targetNote.offset.rawValue,
             isCorrect: completed.isCorrect,
             interval: interval,
-            tuningSystem: completed.tuningSystem.identifier,
-            timestamp: completed.timestamp
+            tuningSystem: completed.tuningSystem.identifier
         )
 
         do {
-            try store.save(record)
+            let envelope = try JSONEnvelope.encode(payload, timestamp: completed.timestamp)
+            try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Pitch discrimination save error: \(error.localizedDescription)")
         } catch {

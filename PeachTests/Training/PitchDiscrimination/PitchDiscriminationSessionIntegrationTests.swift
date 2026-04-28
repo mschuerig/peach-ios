@@ -181,14 +181,15 @@ struct PitchDiscriminationSessionIntegrationTests {
 
     @Test("Profile loaded from pre-populated data store reflects stored records")
     func profileLoadedFromDataStore() async {
-        let records = [
-            PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: Date()),
-            PitchDiscriminationRecord(referenceNote: 60, targetNote: 60, centOffset: 30.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament", timestamp: Date()),
-            PitchDiscriminationRecord(referenceNote: 62, targetNote: 62, centOffset: -40.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament", timestamp: Date())
+        let now = Date()
+        let entries: [(timestamp: Date, payload: PitchDiscriminationPayload)] = [
+            (now, PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 50.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")),
+            (now, PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 30.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")),
+            (now, PitchDiscriminationPayload(referenceNote: 62, targetNote: 62, centOffset: -40.0, isCorrect: false, interval: 0, tuningSystem: "equalTemperament")),
         ]
 
         let profile = PerceptualProfile { builder in
-            builder.feedPitchDiscriminations(records)
+            builder.feedPitchDiscriminations(entries)
         }
 
         // Only correct answers contribute: mean of [50, 30] = 40.0

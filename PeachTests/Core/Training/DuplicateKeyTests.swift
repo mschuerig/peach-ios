@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 import Testing
 @testable import Peach
 
@@ -25,30 +24,28 @@ struct DuplicateKeyTests {
         #expect(key1 != key2)
     }
 
-    @Test("pitch duplicate key from PitchDiscriminationRecord")
-    func pitchDuplicateKeyFromDiscriminationRecord() async {
+    @Test("pitch duplicate key from PitchDiscriminationPayload")
+    func pitchDuplicateKeyFromDiscriminationPayload() async {
         let date = Date(timeIntervalSinceReferenceDate: 5000)
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 62, centOffset: 15.0,
-            isCorrect: true, interval: 0, tuningSystem: "equalTemperament",
-            timestamp: date
+            isCorrect: true, interval: 0, tuningSystem: "equalTemperament"
         )
-        let key = PitchDuplicateKey(record: record)
+        let key = PitchDuplicateKey(timestamp: date, payload: payload)
 
         #expect(key.referenceNote == 60)
         #expect(key.targetNote == 62)
         #expect(key.trainingType == "pitchDiscrimination")
     }
 
-    @Test("pitch duplicate key from PitchMatchingRecord")
-    func pitchDuplicateKeyFromMatchingRecord() async {
+    @Test("pitch duplicate key from PitchMatchingPayload")
+    func pitchDuplicateKeyFromMatchingPayload() async {
         let date = Date(timeIntervalSinceReferenceDate: 5000)
-        let record = PitchMatchingRecord(
+        let payload = PitchMatchingPayload(
             referenceNote: 60, targetNote: 67, initialCentOffset: 30.0,
-            userCentError: 5.0, interval: 7, tuningSystem: "equalTemperament",
-            timestamp: date
+            userCentError: 5.0, interval: 7, tuningSystem: "equalTemperament"
         )
-        let key = PitchDuplicateKey(record: record)
+        let key = PitchDuplicateKey(timestamp: date, payload: payload)
 
         #expect(key.referenceNote == 60)
         #expect(key.targetNote == 67)

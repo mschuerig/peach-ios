@@ -1,4 +1,3 @@
-import SwiftData
 import Foundation
 import Synchronization
 
@@ -89,8 +88,6 @@ final class TrainingDisciplineRegistry: Sendable {
         var parsers: [String: any TrainingDiscipline] = [:]
         var columns: [String] = []
         var seenColumns = Set<String>()
-        var seenRecordTypes = Set<ObjectIdentifier>()
-        var distinctRecordTypes: [any PersistentModel.Type] = []
         for discipline in disciplines {
             if parsers[discipline.csvTrainingType] == nil {
                 parsers[discipline.csvTrainingType] = discipline
@@ -100,13 +97,9 @@ final class TrainingDisciplineRegistry: Sendable {
                        "Discipline '\(discipline.csvTrainingType)' must not declare common column '\(column)'")
                 columns.append(column)
             }
-            if seenRecordTypes.insert(ObjectIdentifier(discipline.recordType)).inserted {
-                distinctRecordTypes.append(discipline.recordType)
-            }
         }
         self.csvParsers = parsers
         self.csvDisciplineColumns = columns
-        self.recordTypes = distinctRecordTypes
     }
 
     /// Disciplines registered under the given category, preserving registration order.
@@ -127,9 +120,6 @@ final class TrainingDisciplineRegistry: Sendable {
             try discipline.feedRecords(from: store, into: builder)
         }
     }
-
-    /// The distinct record types across all registered disciplines (deduplicated).
-    let recordTypes: [any PersistentModel.Type]
 
     /// Lookup: one discipline per CSV training type (first registered wins).
     /// Used by the import parser to dispatch row parsing by training type string.

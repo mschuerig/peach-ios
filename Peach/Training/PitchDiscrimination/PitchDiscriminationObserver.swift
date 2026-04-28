@@ -7,17 +7,18 @@ import Foundation
 /// of data storage, analytics, and feedback mechanisms.
 ///
 /// ## Conforming Types
-/// - TrainingDataStore: Persists pitch discrimination results
+/// - PitchDiscriminationStoreAdapter: Persists pitch discrimination results
 /// - PerceptualProfile: Updates detection threshold statistics
 /// - ProgressTimeline: Tracks accuracy trends and timeline data per training discipline
 /// - HapticFeedbackManager: Provides haptic feedback
 ///
 /// ## Usage
 /// ```swift
-/// extension TrainingDataStore: PitchDiscriminationObserver {
+/// struct PitchDiscriminationStoreAdapter: PitchDiscriminationObserver {
 ///     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
-///         let record = PitchDiscriminationRecord(...)
-///         try? save(record)
+///         let payload = PitchDiscriminationPayload(...)
+///         let envelope = try JSONEnvelope.encode(payload, timestamp: completed.timestamp)
+///         try? store.save(envelope)
 ///     }
 /// }
 /// ```

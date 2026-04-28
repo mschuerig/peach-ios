@@ -133,13 +133,6 @@ struct TrainingDisciplineRegistryTests {
         }
     }
 
-    @Test("recordTypes returns distinct model types")
-    func recordTypesDistinct() async {
-        let types = registry.recordTypes
-        let typeIDs = types.map { ObjectIdentifier($0) }
-        #expect(typeIDs.count == Set(typeIDs).count)
-    }
-
     // MARK: - shared-registry test primitive
 
     @Test("_withSharedReplacedForTesting installs the given disciplines for the body's duration")

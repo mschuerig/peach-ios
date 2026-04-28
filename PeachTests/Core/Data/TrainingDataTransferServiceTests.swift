@@ -10,7 +10,7 @@ struct TrainingDataTransferServiceTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: TrainingRecord.self, configurations: config)
     }
 
     private func makeService(
@@ -33,28 +33,72 @@ struct TrainingDataTransferServiceTests {
         Date(timeIntervalSinceReferenceDate: 794_394_000 + minutesOffset * 60)
     }
 
-    private func makeComparison(minutesOffset: Double = 0, referenceNote: Int = 60, targetNote: Int = 64) -> PitchDiscriminationRecord {
-        PitchDiscriminationRecord(
-            referenceNote: referenceNote,
-            targetNote: targetNote,
-            centOffset: 15.5,
-            isCorrect: true,
-            interval: 4,
-            tuningSystem: "equalTemperament",
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    private func makeDiscriminationEntry(
+        minutesOffset: Double = 0,
+        referenceNote: Int = 60,
+        targetNote: Int = 64
+    ) -> (timestamp: Date, payload: PitchDiscriminationPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchDiscriminationPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                centOffset: 15.5,
+                isCorrect: true,
+                interval: 4,
+                tuningSystem: "equalTemperament"
+            )
         )
     }
 
-    private func makePitchMatching(minutesOffset: Double = 0, referenceNote: Int = 69, targetNote: Int = 72) -> PitchMatchingRecord {
-        PitchMatchingRecord(
-            referenceNote: referenceNote,
-            targetNote: targetNote,
-            initialCentOffset: 25.0,
-            userCentError: 3.2,
-            interval: 3,
-            tuningSystem: "equalTemperament",
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    private func makeMatchingEntry(
+        minutesOffset: Double = 0,
+        referenceNote: Int = 69,
+        targetNote: Int = 72
+    ) -> (timestamp: Date, payload: PitchMatchingPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchMatchingPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                initialCentOffset: 25.0,
+                userCentError: 3.2,
+                interval: 3,
+                tuningSystem: "equalTemperament"
+            )
         )
+    }
+
+    private func envelope(for payload: any TrainingDisciplinePayload, timestamp: Date) throws -> TrainingRecord {
+        try JSONEnvelope.encode(payload, timestamp: timestamp)
+    }
+
+    private func saveDiscrimination(
+        _ store: TrainingDataStore,
+        minutesOffset: Double = 0,
+        referenceNote: Int = 60,
+        targetNote: Int = 64
+    ) throws {
+        let entry = makeDiscriminationEntry(minutesOffset: minutesOffset, referenceNote: referenceNote, targetNote: targetNote)
+        try store.save(envelope(for: entry.payload, timestamp: entry.timestamp))
+    }
+
+    private func makeImportResult(
+        pitchDiscriminations: [(timestamp: Date, payload: PitchDiscriminationPayload)] = [],
+        pitchMatchings: [(timestamp: Date, payload: PitchMatchingPayload)] = [],
+        timingOffsetDetections: [(timestamp: Date, payload: TimingOffsetDetectionPayload)] = []
+    ) -> CSVImportParser.ImportResult {
+        var payloads: [String: [(timestamp: Date, payload: any TrainingDisciplinePayload)]] = [:]
+        if !pitchDiscriminations.isEmpty {
+            payloads["pitchDiscrimination"] = pitchDiscriminations.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !pitchMatchings.isEmpty {
+            payloads["pitchMatching"] = pitchMatchings.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !timingOffsetDetections.isEmpty {
+            payloads["rhythmOffsetDetection"] = timingOffsetDetections.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        return CSVImportParser.ImportResult(payloads: payloads, errors: [])
     }
 
     // MARK: - exportFileName Tests
@@ -84,7 +128,7 @@ struct TrainingDataTransferServiceTests {
     @Test("refreshExport returns CSV string when records exist")
     func refreshExportWithRecords() async throws {
         let (service, dataStore) = try makeService()
-        try dataStore.save(makeComparison())
+        try saveDiscrimination(dataStore)
         service.refreshExport()
         let csv = try #require(service.exportCSV)
         #expect(csv.contains("pitchDiscrimination"))
@@ -100,7 +144,7 @@ struct TrainingDataTransferServiceTests {
     @Test("refreshExport produces file URL when records exist")
     func refreshExportProducesFileURL() async throws {
         let (service, dataStore) = try makeService()
-        try dataStore.save(makeComparison())
+        try saveDiscrimination(dataStore)
         service.refreshExport()
         guard let url = service.exportFileURL else {
             Issue.record("Expected exportFileURL to be set")
@@ -120,7 +164,7 @@ struct TrainingDataTransferServiceTests {
     @Test("export file URL contains CSV data matching exportCSV")
     func exportFileURLContainsCSVData() async throws {
         let (service, dataStore) = try makeService()
-        try dataStore.save(makeComparison())
+        try saveDiscrimination(dataStore)
         service.refreshExport()
         guard let url = service.exportFileURL else {
             Issue.record("Expected exportFileURL to be set")
@@ -155,31 +199,31 @@ struct TrainingDataTransferServiceTests {
     @Test("performImport with replace mode returns correct summary")
     func performImportReplace() async throws {
         let (service, dataStore) = try makeService()
-        try dataStore.save(makeComparison(minutesOffset: 0))
+        try saveDiscrimination(dataStore, minutesOffset: 0)
 
-        let parseResult = CSVImportParser.ImportResult(
-            records: [
-                "pitchDiscrimination": [makeComparison(minutesOffset: 10), makeComparison(minutesOffset: 11)],
-                "pitchMatching": [makePitchMatching(minutesOffset: 12)],
+        let parseResult = makeImportResult(
+            pitchDiscriminations: [
+                makeDiscriminationEntry(minutesOffset: 10),
+                makeDiscriminationEntry(minutesOffset: 11),
             ],
-            errors: []
+            pitchMatchings: [makeMatchingEntry(minutesOffset: 12)]
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
-        #expect(try dataStore.fetchAllSorted(PitchDiscriminationRecord.self).count == 2)
+        #expect(try dataStore.fetchPayloads(PitchDiscriminationPayload.self).count == 2)
     }
 
     @Test("performImport with merge mode returns correct summary")
     func performImportMerge() async throws {
         let (service, dataStore) = try makeService()
-        try dataStore.save(makeComparison(minutesOffset: 0))
+        try saveDiscrimination(dataStore, minutesOffset: 0)
 
-        let parseResult = CSVImportParser.ImportResult(
-            records: [
-                "pitchDiscrimination": [makeComparison(minutesOffset: 0), makeComparison(minutesOffset: 5)],
-            ],
-            errors: []
+        let parseResult = makeImportResult(
+            pitchDiscriminations: [
+                makeDiscriminationEntry(minutesOffset: 0),
+                makeDiscriminationEntry(minutesOffset: 5),
+            ]
         )
         let summary = try service.performImport(parseResult: parseResult, mode: .merge)
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
@@ -194,12 +238,9 @@ struct TrainingDataTransferServiceTests {
             callbackCalled = true
         }
 
-        let parseResult = CSVImportParser.ImportResult(
-            records: [
-                "pitchDiscrimination": [makeComparison()],
-                "pitchMatching": [makePitchMatching()],
-            ],
-            errors: []
+        let parseResult = makeImportResult(
+            pitchDiscriminations: [makeDiscriminationEntry()],
+            pitchMatchings: [makeMatchingEntry()]
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
 
@@ -211,11 +252,8 @@ struct TrainingDataTransferServiceTests {
         let (service, _) = try makeService()
         #expect(service.exportCSV == nil)
 
-        let parseResult = CSVImportParser.ImportResult(
-            records: [
-                "pitchDiscrimination": [makeComparison()],
-            ],
-            errors: []
+        let parseResult = makeImportResult(
+            pitchDiscriminations: [makeDiscriminationEntry()]
         )
         _ = try service.performImport(parseResult: parseResult, mode: .replace)
         #expect(service.exportCSV != nil)
@@ -274,18 +312,16 @@ struct TrainingDataTransferServiceTests {
     func performImportRhythmOnly() async throws {
         let (service, dataStore) = try makeService()
 
-        let timingOffset = TimingOffsetDetectionRecord(tempoBPM: 120, offsetMs: 5.3, isCorrect: true, timestamp: fixedDate())
-
-        let parseResult = CSVImportParser.ImportResult(
-            records: [
-                "rhythmOffsetDetection": [timingOffset],
-            ],
-            errors: []
+        let entry: (timestamp: Date, payload: TimingOffsetDetectionPayload) = (
+            fixedDate(),
+            TimingOffsetDetectionPayload(tempoBPM: 120, offsetMs: 5.3, isCorrect: true)
         )
+
+        let parseResult = makeImportResult(timingOffsetDetections: [entry])
         let summary = try service.performImport(parseResult: parseResult, mode: .replace)
         #expect(summary.imported(for: .timingOffsetDetection) == 1)
         #expect(summary.totalImported == 1)
-        #expect(try dataStore.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 1)
+        #expect(try dataStore.fetchPayloads(TimingOffsetDetectionPayload.self).count == 1)
     }
 #endif
 }

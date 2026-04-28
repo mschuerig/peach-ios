@@ -11,18 +11,18 @@ struct PitchMatchingStoreAdapter: PitchMatchingObserver {
 
     func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
         let interval = abs(result.referenceNote - result.targetNote)
-        let record = PitchMatchingRecord(
+        let payload = PitchMatchingPayload(
             referenceNote: result.referenceNote.rawValue,
             targetNote: result.targetNote.rawValue,
             initialCentOffset: result.initialCentOffset.rawValue,
             userCentError: result.userCentError.rawValue,
             interval: interval,
-            tuningSystem: result.tuningSystem.identifier,
-            timestamp: result.timestamp
+            tuningSystem: result.tuningSystem.identifier
         )
 
         do {
-            try store.save(record)
+            let envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Pitch matching save error: \(error.localizedDescription)")
         } catch {

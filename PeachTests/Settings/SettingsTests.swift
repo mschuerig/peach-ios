@@ -422,56 +422,34 @@ struct SettingsTests {
     @Test("Reset deletes all records from SwiftData")
     func resetDeletesAllRecords() async throws {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
-        let context = container.mainContext
-
-        // Insert comparison records
-        let comparison1 = PitchDiscriminationRecord(
-            referenceNote: 60,
-            targetNote: 61,
-            centOffset: 2.0,
-            isCorrect: true,
-            interval: 1,
-            tuningSystem: "equalTemperament"
-        )
-        let comparison2 = PitchDiscriminationRecord(
-            referenceNote: 72,
-            targetNote: 73,
-            centOffset: 2.5,
-            isCorrect: false,
-            interval: 1,
-            tuningSystem: "equalTemperament"
-        )
-        context.insert(comparison1)
-        context.insert(comparison2)
-
-        // Insert pitch matching records
-        let pitchMatching1 = PitchMatchingRecord(
-            referenceNote: 69,
-            targetNote: 69,
-            initialCentOffset: 42.5,
-            userCentError: -12.3,
-            interval: 0,
-            tuningSystem: "equalTemperament"
-        )
-        context.insert(pitchMatching1)
-        try context.save()
-
-        // Verify records exist
-        let comparisonCountBefore = try context.fetchCount(FetchDescriptor<PitchDiscriminationRecord>())
-        #expect(comparisonCountBefore == 2)
-        let pitchCountBefore = try context.fetchCount(FetchDescriptor<PitchMatchingRecord>())
-        #expect(pitchCountBefore == 1)
-
-        // Delete all using TrainingDataStore.deleteAll() (same as SettingsScreen)
+        let container = try ModelContainer(for: TrainingRecord.self, configurations: config)
+        let context = ModelContext(container)
         let dataStore = TrainingDataStore(modelContext: context)
+
+        let comparison1 = PitchDiscriminationPayload(
+            referenceNote: 60, targetNote: 61, centOffset: 2.0, isCorrect: true,
+            interval: 1, tuningSystem: "equalTemperament"
+        )
+        let comparison2 = PitchDiscriminationPayload(
+            referenceNote: 72, targetNote: 73, centOffset: 2.5, isCorrect: false,
+            interval: 1, tuningSystem: "equalTemperament"
+        )
+        let pitchMatching1 = PitchMatchingPayload(
+            referenceNote: 69, targetNote: 69, initialCentOffset: 42.5, userCentError: -12.3,
+            interval: 0, tuningSystem: "equalTemperament"
+        )
+
+        try dataStore.save(JSONEnvelope.encode(comparison1, timestamp: Date()))
+        try dataStore.save(JSONEnvelope.encode(comparison2, timestamp: Date()))
+        try dataStore.save(JSONEnvelope.encode(pitchMatching1, timestamp: Date()))
+
+        #expect(try dataStore.fetchPayloads(PitchDiscriminationPayload.self).count == 2)
+        #expect(try dataStore.fetchPayloads(PitchMatchingPayload.self).count == 1)
+
         try dataStore.deleteAll()
 
-        // Verify all records deleted
-        let comparisonCountAfter = try context.fetchCount(FetchDescriptor<PitchDiscriminationRecord>())
-        #expect(comparisonCountAfter == 0)
-        let pitchCountAfter = try context.fetchCount(FetchDescriptor<PitchMatchingRecord>())
-        #expect(pitchCountAfter == 0)
+        #expect(try dataStore.fetchPayloads(PitchDiscriminationPayload.self).isEmpty)
+        #expect(try dataStore.fetchPayloads(PitchMatchingPayload.self).isEmpty)
     }
 
     // MARK: - Task 5: Range Functions

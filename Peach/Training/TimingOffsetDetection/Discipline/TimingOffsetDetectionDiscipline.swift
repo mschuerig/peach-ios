@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 import SwiftUI
 
 struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
@@ -25,8 +24,6 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
             }
         }
     }
-
-    let recordType: any PersistentModel.Type = TimingOffsetDetectionRecord.self
 
     var helpSections: [HelpSection] { TimingOffsetDetectionHelp.trainingScreen }
 
@@ -66,13 +63,14 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     var profileHelp: [HelpSection] { ContinuousRhythmMatchingHelp.profileHelp }
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllSorted(TimingOffsetDetectionRecord.self) {
-            let offset = TimingOffset(.milliseconds(record.offsetMs))
-            guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
+        for entry in try store.fetchPayloads(TimingOffsetDetectionPayload.self) {
+            let p = entry.payload
+            let offset = TimingOffset(.milliseconds(p.offsetMs))
+            guard let range = TempoRange.range(for: TempoBPM(p.tempoBPM)) else { continue }
             builder.addPoint(
-                MetricPoint(timestamp: record.timestamp, value: abs(record.offsetMs)),
+                MetricPoint(timestamp: entry.timestamp, value: abs(p.offsetMs)),
                 for: .rhythm(id, range, offset.direction),
-                isCorrect: record.isCorrect
+                isCorrect: p.isCorrect
             )
         }
     }
@@ -83,19 +81,23 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
 
     let csvColumns = ["isCorrect", "tempoBPM", "offsetMs"]
 
-    func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
-        guard let r = record as? TimingOffsetDetectionRecord else {
-            assertionFailure("Expected TimingOffsetDetectionRecord, got \(type(of: record))")
+    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
+        guard let p = payload as? TimingOffsetDetectionPayload else {
+            assertionFailure("Expected TimingOffsetDetectionPayload, got \(type(of: payload))")
             return []
         }
         return [
-            ("isCorrect", r.isCorrect ? "true" : "false"),
-            ("tempoBPM", "\(r.tempoBPM)"),
-            ("offsetMs", CSVParserHelpers.formatDouble(r.offsetMs)),
+            ("isCorrect", p.isCorrect ? "true" : "false"),
+            ("tempoBPM", "\(p.tempoBPM)"),
+            ("offsetMs", CSVParserHelpers.formatDouble(p.offsetMs)),
         ]
     }
 
-    func parseCSVRow(fields: [String], columnIndex: [String: Int], rowNumber: Int) -> Result<any PersistentModel, CSVImportError> {
+    func parseCSVRow(
+        fields: [String],
+        columnIndex: [String: Int],
+        rowNumber: Int
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let isCorrectIdx = columnIndex["isCorrect"],
               let tempoBPMIdx = columnIndex["tempoBPM"],
@@ -123,22 +125,21 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
             return .failure(.invalidRowData(row: rowNumber, column: "offsetMs", value: offsetMsStr, reason: "not a valid number"))
         }
 
-        let record = TimingOffsetDetectionRecord(
+        let payload = TimingOffsetDetectionPayload(
             tempoBPM: tempoBPM,
             offsetMs: offsetMs,
-            isCorrect: isCorrectStr == "true",
-            timestamp: timestamp
+            isCorrect: isCorrectStr == "true"
         )
-        return .success(record)
+        return .success((timestamp: timestamp, payload: payload))
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllSorted(TimingOffsetDetectionRecord.self)
-            .map { ($0.timestamp, $0 as any PersistentModel) }
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+        try store.fetchPayloads(TimingOffsetDetectionPayload.self)
+            .map { ($0.timestamp, $0.payload) }
     }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel] {
-        parseResult.records[csvTrainingType] ?? []
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+        parseResult.payloads[csvTrainingType] ?? []
     }
 
     func mergeImportRecords(
@@ -146,15 +147,16 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: csvTrainingType)
+        var existingKeys = try buildRhythmDuplicateKeys(from: store)
         var imported = 0, skipped = 0
-        for record in parsedRecords(from: parseResult) {
-            guard let r = record as? TimingOffsetDetectionRecord else { continue }
-            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: csvTrainingType)
+        for entry in parsedRecords(from: parseResult) {
+            guard let p = entry.payload as? TimingOffsetDetectionPayload else { continue }
+            let key = RhythmDuplicateKey(timestamp: entry.timestamp, tempoBPM: p.tempoBPM, trainingType: csvTrainingType)
             if existingKeys.contains(key) {
                 skipped += 1
             } else {
-                scope.insert(r)
+                let envelope = try JSONEnvelope.encode(p, timestamp: entry.timestamp)
+                scope.insert(envelope)
                 existingKeys.insert(key)
                 imported += 1
             }

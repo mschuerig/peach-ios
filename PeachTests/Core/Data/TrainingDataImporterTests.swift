@@ -10,7 +10,7 @@ struct TrainingDataImporterTests {
 
     private func makeTestContainer() throws -> ModelContainer {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: PitchDiscriminationRecord.self, PitchMatchingRecord.self, TimingOffsetDetectionRecord.self, ContinuousRhythmMatchingRecord.self, configurations: config)
+        return try ModelContainer(for: TrainingRecord.self, configurations: config)
     }
 
     private func makeStore() throws -> TrainingDataStore {
@@ -21,6 +21,10 @@ struct TrainingDataImporterTests {
 
     private func fixedDate(minutesOffset: Double = 0) -> Date {
         Date(timeIntervalSinceReferenceDate: 794_394_000 + minutesOffset * 60)
+    }
+
+    private func envelope(for payload: any TrainingDisciplinePayload, timestamp: Date) throws -> TrainingRecord {
+        try JSONEnvelope.encode(payload, timestamp: timestamp)
     }
 
     // MARK: - ImportSummary Tests
@@ -68,56 +72,96 @@ struct TrainingDataImporterTests {
     // MARK: - Import Result Helpers
 
     private func makeImportResult(
-        pitchDiscriminations: [PitchDiscriminationRecord] = [],
-        pitchMatchings: [PitchMatchingRecord] = [],
-        rhythmOffsetDetections: [TimingOffsetDetectionRecord] = [],
-        continuousRhythmMatchings: [ContinuousRhythmMatchingRecord] = [],
+        pitchDiscriminations: [(timestamp: Date, payload: PitchDiscriminationPayload)] = [],
+        pitchMatchings: [(timestamp: Date, payload: PitchMatchingPayload)] = [],
+        rhythmOffsetDetections: [(timestamp: Date, payload: TimingOffsetDetectionPayload)] = [],
+        continuousRhythmMatchings: [(timestamp: Date, payload: ContinuousRhythmMatchingPayload)] = [],
         errors: [CSVImportError] = []
     ) -> CSVImportParser.ImportResult {
-        var records: [String: [any PersistentModel]] = [:]
-        if !pitchDiscriminations.isEmpty { records["pitchDiscrimination"] = pitchDiscriminations }
-        if !pitchMatchings.isEmpty { records["pitchMatching"] = pitchMatchings }
-        if !rhythmOffsetDetections.isEmpty { records["rhythmOffsetDetection"] = rhythmOffsetDetections }
-        if !continuousRhythmMatchings.isEmpty { records["continuousRhythmMatching"] = continuousRhythmMatchings }
-        return CSVImportParser.ImportResult(records: records, errors: errors)
+        var payloads: [String: [(timestamp: Date, payload: any TrainingDisciplinePayload)]] = [:]
+        if !pitchDiscriminations.isEmpty {
+            payloads["pitchDiscrimination"] = pitchDiscriminations.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !pitchMatchings.isEmpty {
+            payloads["pitchMatching"] = pitchMatchings.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !rhythmOffsetDetections.isEmpty {
+            payloads["rhythmOffsetDetection"] = rhythmOffsetDetections.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        if !continuousRhythmMatchings.isEmpty {
+            payloads["continuousRhythmMatching"] = continuousRhythmMatchings.map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+        }
+        return CSVImportParser.ImportResult(payloads: payloads, errors: errors)
     }
 
-    private func makeComparison(minutesOffset: Double = 0, referenceNote: Int = 60, targetNote: Int = 64) -> PitchDiscriminationRecord {
-        PitchDiscriminationRecord(
-            referenceNote: referenceNote,
-            targetNote: targetNote,
-            centOffset: 15.5,
-            isCorrect: true,
-            interval: 4,
-            tuningSystem: "equalTemperament",
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    private func makeDiscriminationEntry(
+        minutesOffset: Double = 0,
+        referenceNote: Int = 60,
+        targetNote: Int = 64
+    ) -> (timestamp: Date, payload: PitchDiscriminationPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchDiscriminationPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                centOffset: 15.5,
+                isCorrect: true,
+                interval: 4,
+                tuningSystem: "equalTemperament"
+            )
         )
     }
 
-    private func makePitchMatching(minutesOffset: Double = 0, referenceNote: Int = 69, targetNote: Int = 72) -> PitchMatchingRecord {
-        PitchMatchingRecord(
-            referenceNote: referenceNote,
-            targetNote: targetNote,
-            initialCentOffset: 25.0,
-            userCentError: 3.2,
-            interval: 3,
-            tuningSystem: "equalTemperament",
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    private func makeMatchingEntry(
+        minutesOffset: Double = 0,
+        referenceNote: Int = 69,
+        targetNote: Int = 72
+    ) -> (timestamp: Date, payload: PitchMatchingPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            PitchMatchingPayload(
+                referenceNote: referenceNote,
+                targetNote: targetNote,
+                initialCentOffset: 25.0,
+                userCentError: 3.2,
+                interval: 3,
+                tuningSystem: "equalTemperament"
+            )
         )
+    }
+
+    private func saveDiscrimination(
+        _ store: TrainingDataStore,
+        minutesOffset: Double = 0,
+        referenceNote: Int = 60,
+        targetNote: Int = 64
+    ) throws {
+        let e = makeDiscriminationEntry(minutesOffset: minutesOffset, referenceNote: referenceNote, targetNote: targetNote)
+        try store.save(envelope(for: e.payload, timestamp: e.timestamp))
+    }
+
+    private func saveMatching(
+        _ store: TrainingDataStore,
+        minutesOffset: Double = 0,
+        referenceNote: Int = 69,
+        targetNote: Int = 72
+    ) throws {
+        let e = makeMatchingEntry(minutesOffset: minutesOffset, referenceNote: referenceNote, targetNote: targetNote)
+        try store.save(envelope(for: e.payload, timestamp: e.timestamp))
     }
 
     @Test("replace mode deletes existing and inserts all imported")
     func replaceModeDeletesAndInserts() async throws {
         let store = try makeStore()
 
-        try store.save(makeComparison(minutesOffset: 0))
-        try store.save(makePitchMatching(minutesOffset: 1))
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
-        #expect(try store.fetchAllSorted(PitchMatchingRecord.self).count == 1)
+        try saveDiscrimination(store, minutesOffset: 0)
+        try saveMatching(store, minutesOffset: 1)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 1)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 1)
 
         let importResult = makeImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 10), makeComparison(minutesOffset: 11)],
-            pitchMatchings: [makePitchMatching(minutesOffset: 12)]
+            pitchDiscriminations: [makeDiscriminationEntry(minutesOffset: 10), makeDiscriminationEntry(minutesOffset: 11)],
+            pitchMatchings: [makeMatchingEntry(minutesOffset: 12)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
@@ -127,28 +171,24 @@ struct TrainingDataImporterTests {
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.skipped(for: .intervalPitchMatching) == 0)
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        let pitchMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
-        #expect(comparisons.count == 2)
-        #expect(pitchMatchings.count == 1)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 2)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 1)
     }
 
     @Test("replace with empty import deletes all existing")
     func replaceModeEmptyImport() async throws {
         let store = try makeStore()
 
-        try store.save(makeComparison(minutesOffset: 0))
-        try store.save(makePitchMatching(minutesOffset: 1))
+        try saveDiscrimination(store, minutesOffset: 0)
+        try saveMatching(store, minutesOffset: 1)
 
         let summary = try TrainingDataImporter.importData(makeImportResult(), mode: .replace, into: store)
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.imported(for: .intervalPitchMatching) == 0)
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        let pitchMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
-        #expect(comparisons.count == 0)
-        #expect(pitchMatchings.count == 0)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 0)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 0)
     }
 
     @Test("replace mode passes through parse error count")
@@ -160,7 +200,7 @@ struct TrainingDataImporterTests {
             .invalidRowData(row: 2, column: "test", value: "bad", reason: "bad")
         ]
         let importResult = makeImportResult(
-            pitchDiscriminations: [makeComparison()],
+            pitchDiscriminations: [makeDiscriminationEntry()],
             errors: errors
         )
 
@@ -176,12 +216,12 @@ struct TrainingDataImporterTests {
     func mergeInsertNonDuplicateComparison() async throws {
         let store = try makeStore()
 
-        try store.save(makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64))
+        try saveDiscrimination(store, minutesOffset: 0, referenceNote: 60, targetNote: 64)
 
         let importResult = makeImportResult(
             pitchDiscriminations: [
-                makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64),
-                makeComparison(minutesOffset: 5, referenceNote: 60, targetNote: 64)
+                makeDiscriminationEntry(minutesOffset: 0, referenceNote: 60, targetNote: 64),
+                makeDiscriminationEntry(minutesOffset: 5, referenceNote: 60, targetNote: 64)
             ]
         )
 
@@ -190,20 +230,19 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
-        #expect(comparisons.count == 2)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 2)
     }
 
     @Test("merge inserts only non-duplicate pitch matchings")
     func mergeInsertNonDuplicatePitchMatching() async throws {
         let store = try makeStore()
 
-        try store.save(makePitchMatching(minutesOffset: 0, referenceNote: 69, targetNote: 72))
+        try saveMatching(store, minutesOffset: 0, referenceNote: 69, targetNote: 72)
 
         let importResult = makeImportResult(
             pitchMatchings: [
-                makePitchMatching(minutesOffset: 0, referenceNote: 69, targetNote: 72),
-                makePitchMatching(minutesOffset: 5, referenceNote: 69, targetNote: 72)
+                makeMatchingEntry(minutesOffset: 0, referenceNote: 69, targetNote: 72),
+                makeMatchingEntry(minutesOffset: 5, referenceNote: 69, targetNote: 72)
             ]
         )
 
@@ -212,44 +251,44 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.skipped(for: .intervalPitchMatching) == 1)
 
-        let pitchMatchings = try store.fetchAllSorted(PitchMatchingRecord.self)
-        #expect(pitchMatchings.count == 2)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 2)
     }
 
     @Test("merge does not modify existing records")
     func mergeDoesNotModifyExisting() async throws {
         let store = try makeStore()
 
-        let existing = PitchDiscriminationRecord(
+        let timestamp = fixedDate(minutesOffset: 0)
+        let existing = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        try store.save(existing)
+        try store.save(envelope(for: existing, timestamp: timestamp))
 
-        let duplicate = PitchDiscriminationRecord(
+        let duplicate = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 99.9, isCorrect: false,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate(minutesOffset: 0)
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let importResult = makeImportResult(pitchDiscriminations: [duplicate])
+        let importResult = makeImportResult(pitchDiscriminations: [(timestamp, duplicate)])
 
         _ = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
-        let comparisons = try store.fetchAllSorted(PitchDiscriminationRecord.self)
+        let comparisons = try store.fetchPayloads(PitchDiscriminationPayload.self)
         #expect(comparisons.count == 1)
-        #expect(comparisons[0].centOffset == 15.5)
-        #expect(comparisons[0].isCorrect == true)
+        #expect(comparisons[0].payload.centOffset == 15.5)
+        #expect(comparisons[0].payload.isCorrect == true)
     }
 
     @Test("merge with all duplicates imports zero")
     func mergeAllDuplicates() async throws {
         let store = try makeStore()
 
-        try store.save(makeComparison(minutesOffset: 0))
-        try store.save(makePitchMatching(minutesOffset: 1))
+        try saveDiscrimination(store, minutesOffset: 0)
+        try saveMatching(store, minutesOffset: 1)
 
         let importResult = makeImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 0)],
-            pitchMatchings: [makePitchMatching(minutesOffset: 1)]
+            pitchDiscriminations: [makeDiscriminationEntry(minutesOffset: 0)],
+            pitchMatchings: [makeMatchingEntry(minutesOffset: 1)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
@@ -264,8 +303,8 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let importResult = makeImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 0), makeComparison(minutesOffset: 1)],
-            pitchMatchings: [makePitchMatching(minutesOffset: 2)]
+            pitchDiscriminations: [makeDiscriminationEntry(minutesOffset: 0), makeDiscriminationEntry(minutesOffset: 1)],
+            pitchMatchings: [makeMatchingEntry(minutesOffset: 2)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
@@ -279,17 +318,17 @@ struct TrainingDataImporterTests {
     func mergeMixedDuplicates() async throws {
         let store = try makeStore()
 
-        try store.save(makeComparison(minutesOffset: 0))
-        try store.save(makePitchMatching(minutesOffset: 1))
+        try saveDiscrimination(store, minutesOffset: 0)
+        try saveMatching(store, minutesOffset: 1)
 
         let importResult = makeImportResult(
             pitchDiscriminations: [
-                makeComparison(minutesOffset: 0),
-                makeComparison(minutesOffset: 5)
+                makeDiscriminationEntry(minutesOffset: 0),
+                makeDiscriminationEntry(minutesOffset: 5)
             ],
             pitchMatchings: [
-                makePitchMatching(minutesOffset: 1),
-                makePitchMatching(minutesOffset: 6)
+                makeMatchingEntry(minutesOffset: 1),
+                makeMatchingEntry(minutesOffset: 6)
             ]
         )
 
@@ -300,8 +339,8 @@ struct TrainingDataImporterTests {
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.skipped(for: .intervalPitchMatching) == 1)
 
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 2)
-        #expect(try store.fetchAllSorted(PitchMatchingRecord.self).count == 2)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 2)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 2)
     }
 
     // MARK: - Edge Case Tests
@@ -352,12 +391,12 @@ struct TrainingDataImporterTests {
 
         let importResult = makeImportResult(
             pitchDiscriminations: [
-                makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64),
-                makeComparison(minutesOffset: 0, referenceNote: 60, targetNote: 64)
+                makeDiscriminationEntry(minutesOffset: 0, referenceNote: 60, targetNote: 64),
+                makeDiscriminationEntry(minutesOffset: 0, referenceNote: 60, targetNote: 64)
             ],
             pitchMatchings: [
-                makePitchMatching(minutesOffset: 1, referenceNote: 69, targetNote: 72),
-                makePitchMatching(minutesOffset: 1, referenceNote: 69, targetNote: 72)
+                makeMatchingEntry(minutesOffset: 1, referenceNote: 69, targetNote: 72),
+                makeMatchingEntry(minutesOffset: 1, referenceNote: 69, targetNote: 72)
             ]
         )
 
@@ -367,8 +406,8 @@ struct TrainingDataImporterTests {
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.imported(for: .intervalPitchMatching) == 1)
         #expect(summary.skipped(for: .intervalPitchMatching) == 1)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
-        #expect(try store.fetchAllSorted(PitchMatchingRecord.self).count == 1)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 1)
+        #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 1)
     }
 
     @Test("records with identical timestamps but different training types are not duplicates")
@@ -376,17 +415,17 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let timestamp = fixedDate()
-        let existing = PitchDiscriminationRecord(
+        let existing = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        try store.save(existing)
+        try store.save(envelope(for: existing, timestamp: timestamp))
 
-        let imported = PitchMatchingRecord(
+        let imported = PitchMatchingPayload(
             referenceNote: 60, targetNote: 64, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let importResult = makeImportResult(pitchMatchings: [imported])
+        let importResult = makeImportResult(pitchMatchings: [(timestamp, imported)])
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
@@ -399,27 +438,27 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let timestamp = fixedDate()
-        try store.save(PitchDiscriminationRecord(
+        try store.save(envelope(for: PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
-        ))
+            interval: 4, tuningSystem: "equalTemperament"
+        ), timestamp: timestamp))
 
         let importResult = makeImportResult(pitchDiscriminations: [
-            PitchDiscriminationRecord(
+            (timestamp, PitchDiscriminationPayload(
                 referenceNote: 60, targetNote: 67, centOffset: 10.0, isCorrect: false,
-                interval: 7, tuningSystem: "equalTemperament", timestamp: timestamp
-            ),
-            PitchDiscriminationRecord(
+                interval: 7, tuningSystem: "equalTemperament"
+            )),
+            (timestamp, PitchDiscriminationPayload(
                 referenceNote: 65, targetNote: 64, centOffset: 5.0, isCorrect: true,
-                interval: 1, tuningSystem: "equalTemperament", timestamp: timestamp
-            )
+                interval: 1, tuningSystem: "equalTemperament"
+            )),
         ])
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 3)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 3)
     }
 
     // MARK: - CSV Round-Trip Duplicate Detection
@@ -428,40 +467,45 @@ struct TrainingDataImporterTests {
     func mergeDetectsDuplicatesAfterRoundTrip() async throws {
         let store = try makeStore()
 
-        // Use a whole-second timestamp since CSV export uses ISO8601 without fractional seconds
         let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.0)
-        let record = PitchDiscriminationRecord(
+        let payload = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        try store.save(record)
+        try store.save(envelope(for: payload, timestamp: timestamp))
 
         let exported = timestamp.formatted(.iso8601)
         let reimported = try Date.ISO8601FormatStyle(includingFractionalSeconds: false).parse(exported)
 
-        let importedRecord = PitchDiscriminationRecord(
-            referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: reimported
-        )
-        let importResult = makeImportResult(pitchDiscriminations: [importedRecord])
+        let importResult = makeImportResult(pitchDiscriminations: [(reimported, payload)])
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 0)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 1)
     }
 
 #if PEACH_RESEARCH
     // MARK: - Rhythm Record Helpers
 
-    private func makeTimingOffsetDetection(minutesOffset: Double = 0, tempoBPM: Int = 120) -> TimingOffsetDetectionRecord {
-        TimingOffsetDetectionRecord(
-            tempoBPM: tempoBPM,
-            offsetMs: 5.3,
-            isCorrect: true,
-            timestamp: fixedDate(minutesOffset: minutesOffset)
+    private func makeTimingOffsetDetectionEntry(
+        minutesOffset: Double = 0,
+        tempoBPM: Int = 120
+    ) -> (timestamp: Date, payload: TimingOffsetDetectionPayload) {
+        (
+            fixedDate(minutesOffset: minutesOffset),
+            TimingOffsetDetectionPayload(tempoBPM: tempoBPM, offsetMs: 5.3, isCorrect: true)
         )
+    }
+
+    private func saveTimingOffset(
+        _ store: TrainingDataStore,
+        minutesOffset: Double = 0,
+        tempoBPM: Int = 120
+    ) throws {
+        let e = makeTimingOffsetDetectionEntry(minutesOffset: minutesOffset, tempoBPM: tempoBPM)
+        try store.save(envelope(for: e.payload, timestamp: e.timestamp))
     }
 
     // MARK: - Rhythm Replace Mode
@@ -471,32 +515,32 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let importResult = makeImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 0)],
-            rhythmOffsetDetections: [makeTimingOffsetDetection(minutesOffset: 1)]
+            pitchDiscriminations: [makeDiscriminationEntry(minutesOffset: 0)],
+            rhythmOffsetDetections: [makeTimingOffsetDetectionEntry(minutesOffset: 1)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.imported(for: .timingOffsetDetection) == 1)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
-        #expect(try store.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 1)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 1)
+        #expect(try store.fetchPayloads(TimingOffsetDetectionPayload.self).count == 1)
     }
 
     @Test("replace mode replaces existing rhythm records")
     func replaceModeReplacesExistingRhythm() async throws {
         let store = try makeStore()
 
-        try store.save(makeTimingOffsetDetection(minutesOffset: 0))
+        try saveTimingOffset(store, minutesOffset: 0)
 
         let importResult = makeImportResult(
-            rhythmOffsetDetections: [makeTimingOffsetDetection(minutesOffset: 10), makeTimingOffsetDetection(minutesOffset: 11)]
+            rhythmOffsetDetections: [makeTimingOffsetDetectionEntry(minutesOffset: 10), makeTimingOffsetDetectionEntry(minutesOffset: 11)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
 
         #expect(summary.imported(for: .timingOffsetDetection) == 2)
-        #expect(try store.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 2)
+        #expect(try store.fetchPayloads(TimingOffsetDetectionPayload.self).count == 2)
     }
 
     // MARK: - Rhythm Merge Mode
@@ -505,12 +549,12 @@ struct TrainingDataImporterTests {
     func mergeInsertNonDuplicateTimingOffset() async throws {
         let store = try makeStore()
 
-        try store.save(makeTimingOffsetDetection(minutesOffset: 0, tempoBPM: 120))
+        try saveTimingOffset(store, minutesOffset: 0, tempoBPM: 120)
 
         let importResult = makeImportResult(
             rhythmOffsetDetections: [
-                makeTimingOffsetDetection(minutesOffset: 0, tempoBPM: 120),
-                makeTimingOffsetDetection(minutesOffset: 5, tempoBPM: 120),
+                makeTimingOffsetDetectionEntry(minutesOffset: 0, tempoBPM: 120),
+                makeTimingOffsetDetectionEntry(minutesOffset: 5, tempoBPM: 120),
             ]
         )
 
@@ -518,17 +562,17 @@ struct TrainingDataImporterTests {
 
         #expect(summary.imported(for: .timingOffsetDetection) == 1)
         #expect(summary.skipped(for: .timingOffsetDetection) == 1)
-        #expect(try store.fetchAllSorted(TimingOffsetDetectionRecord.self).count == 2)
+        #expect(try store.fetchPayloads(TimingOffsetDetectionPayload.self).count == 2)
     }
 
     @Test("rhythm records with same timestamp but different tempo are not duplicates")
     func sameTimestampDifferentTempoNotDuplicate() async throws {
         let store = try makeStore()
 
-        try store.save(makeTimingOffsetDetection(minutesOffset: 0, tempoBPM: 120))
+        try saveTimingOffset(store, minutesOffset: 0, tempoBPM: 120)
 
         let importResult = makeImportResult(
-            rhythmOffsetDetections: [makeTimingOffsetDetection(minutesOffset: 0, tempoBPM: 90)]
+            rhythmOffsetDetections: [makeTimingOffsetDetectionEntry(minutesOffset: 0, tempoBPM: 90)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
@@ -543,8 +587,8 @@ struct TrainingDataImporterTests {
 
         let importResult = makeImportResult(
             rhythmOffsetDetections: [
-                makeTimingOffsetDetection(minutesOffset: 0, tempoBPM: 120),
-                makeTimingOffsetDetection(minutesOffset: 0, tempoBPM: 120),
+                makeTimingOffsetDetectionEntry(minutesOffset: 0, tempoBPM: 120),
+                makeTimingOffsetDetectionEntry(minutesOffset: 0, tempoBPM: 120),
             ]
         )
 
@@ -561,8 +605,8 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let importResult = makeImportResult(
-            pitchDiscriminations: [makeComparison(minutesOffset: 0)],
-            rhythmOffsetDetections: [makeTimingOffsetDetection(minutesOffset: 1)]
+            pitchDiscriminations: [makeDiscriminationEntry(minutesOffset: 0)],
+            rhythmOffsetDetections: [makeTimingOffsetDetectionEntry(minutesOffset: 1)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .replace, into: store)
@@ -574,10 +618,10 @@ struct TrainingDataImporterTests {
     func totalSkippedIncludesRhythm() async throws {
         let store = try makeStore()
 
-        try store.save(makeTimingOffsetDetection(minutesOffset: 0))
+        try saveTimingOffset(store, minutesOffset: 0)
 
         let importResult = makeImportResult(
-            rhythmOffsetDetections: [makeTimingOffsetDetection(minutesOffset: 0)]
+            rhythmOffsetDetections: [makeTimingOffsetDetectionEntry(minutesOffset: 0)]
         )
 
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
@@ -594,22 +638,24 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let base = Date(timeIntervalSinceReferenceDate: 794_394_000.0)
-        let record1 = PitchDiscriminationRecord(
+        let payload1 = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: base
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let record2 = PitchDiscriminationRecord(
+        let payload2 = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 12.0, isCorrect: false,
-            interval: 4, tuningSystem: "equalTemperament",
-            timestamp: base.addingTimeInterval(0.5)
+            interval: 4, tuningSystem: "equalTemperament"
         )
 
-        let importResult = makeImportResult(pitchDiscriminations: [record1, record2])
+        let importResult = makeImportResult(pitchDiscriminations: [
+            (base, payload1),
+            (base.addingTimeInterval(0.5), payload2),
+        ])
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 2)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 0)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 2)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 2)
     }
 
     @Test("two records at the exact same millisecond with same key fields are deduplicated")
@@ -617,20 +663,23 @@ struct TrainingDataImporterTests {
         let store = try makeStore()
 
         let timestamp = Date(timeIntervalSinceReferenceDate: 794_394_000.123)
-        let record1 = PitchDiscriminationRecord(
+        let payload1 = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let record2 = PitchDiscriminationRecord(
+        let payload2 = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 99.0, isCorrect: false,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: timestamp
+            interval: 4, tuningSystem: "equalTemperament"
         )
 
-        let importResult = makeImportResult(pitchDiscriminations: [record1, record2])
+        let importResult = makeImportResult(pitchDiscriminations: [
+            (timestamp, payload1),
+            (timestamp, payload2),
+        ])
         let summary = try TrainingDataImporter.importData(importResult, mode: .merge, into: store)
 
         #expect(summary.imported(for: .intervalPitchDiscrimination) == 1)
         #expect(summary.skipped(for: .intervalPitchDiscrimination) == 1)
-        #expect(try store.fetchAllSorted(PitchDiscriminationRecord.self).count == 1)
+        #expect(try store.fetchPayloads(PitchDiscriminationPayload.self).count == 1)
     }
 }

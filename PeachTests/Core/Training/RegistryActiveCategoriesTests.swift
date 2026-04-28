@@ -1,6 +1,5 @@
 import Testing
 import Foundation
-import SwiftData
 @testable import Peach
 
 /// Synthetic discipline fixture for exercising registry algorithms over
@@ -25,8 +24,6 @@ struct SyntheticDiscipline: TrainingDiscipline, Sendable {
 
     var statisticsKeys: [StatisticsKey] { [.pitch(id)] }
 
-    var recordType: any PersistentModel.Type { PitchDiscriminationRecord.self }
-
     var helpSections: [HelpSection] { [] }
 
     var navigationDestination: NavigationDestination { .profile }
@@ -37,19 +34,19 @@ struct SyntheticDiscipline: TrainingDiscipline, Sendable {
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {}
 
-    func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] { [] }
+    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] { [] }
 
     func parseCSVRow(
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<any PersistentModel, CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
         .failure(.invalidRowData(row: rowNumber, column: "synthetic", value: "", reason: "synthetic"))
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] { [] }
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] { [] }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel] { [] }
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] { [] }
 
     func mergeImportRecords(
         from parseResult: CSVImportParser.ImportResult,

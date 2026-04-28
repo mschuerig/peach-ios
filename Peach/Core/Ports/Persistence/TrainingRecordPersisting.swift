@@ -1,9 +1,8 @@
-import SwiftData
-
-/// Port protocol for persisting training records.
+/// Port protocol for persisting training-record envelopes.
 ///
-/// Discipline-specific adapters map their trial results to records and delegate
-/// persistence to this protocol, keeping the data store free of discipline knowledge.
+/// Discipline-specific adapters encode their payloads into ``TrainingRecord``
+/// envelopes and delegate persistence to this protocol, keeping the data store
+/// free of discipline knowledge.
 protocol TrainingRecordPersisting {
-    func save(_ record: some PersistentModel) throws
+    func save(_ envelope: TrainingRecord) throws
 }

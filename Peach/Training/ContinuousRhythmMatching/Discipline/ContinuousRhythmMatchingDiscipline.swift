@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 import SwiftUI
 
 struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
@@ -26,8 +25,6 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         }
     }
 
-    let recordType: any PersistentModel.Type = ContinuousRhythmMatchingRecord.self
-
     var helpSections: [HelpSection] { ContinuousRhythmMatchingHelp.trainingScreen }
 
     let navigationDestination: NavigationDestination = .continuousRhythmMatching
@@ -48,11 +45,12 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
     var profileHelp: [HelpSection] { ContinuousRhythmMatchingHelp.profileHelp }
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self) {
-            let offset = TimingOffset(.milliseconds(record.meanOffsetMs))
-            guard let range = TempoRange.range(for: TempoBPM(record.tempoBPM)) else { continue }
+        for entry in try store.fetchPayloads(ContinuousRhythmMatchingPayload.self) {
+            let p = entry.payload
+            let offset = TimingOffset(.milliseconds(p.meanOffsetMs))
+            guard let range = TempoRange.range(for: TempoBPM(p.tempoBPM)) else { continue }
             builder.addPoint(
-                MetricPoint(timestamp: record.timestamp, value: abs(record.meanOffsetMs)),
+                MetricPoint(timestamp: entry.timestamp, value: abs(p.meanOffsetMs)),
                 for: .rhythm(id, range, offset.direction)
             )
         }
@@ -68,22 +66,26 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         "meanOffsetMsPosition2", "meanOffsetMsPosition3",
     ]
 
-    func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
-        guard let r = record as? ContinuousRhythmMatchingRecord else {
-            assertionFailure("Expected ContinuousRhythmMatchingRecord, got \(type(of: record))")
+    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
+        guard let p = payload as? ContinuousRhythmMatchingPayload else {
+            assertionFailure("Expected ContinuousRhythmMatchingPayload, got \(type(of: payload))")
             return []
         }
         return [
-            ("tempoBPM", "\(r.tempoBPM)"),
-            ("meanOffsetMs", CSVParserHelpers.formatDouble(r.meanOffsetMs)),
-            ("meanOffsetMsPosition0", CSVParserHelpers.formatOptionalDouble(r.meanOffsetMsPosition0)),
-            ("meanOffsetMsPosition1", CSVParserHelpers.formatOptionalDouble(r.meanOffsetMsPosition1)),
-            ("meanOffsetMsPosition2", CSVParserHelpers.formatOptionalDouble(r.meanOffsetMsPosition2)),
-            ("meanOffsetMsPosition3", CSVParserHelpers.formatOptionalDouble(r.meanOffsetMsPosition3)),
+            ("tempoBPM", "\(p.tempoBPM)"),
+            ("meanOffsetMs", CSVParserHelpers.formatDouble(p.meanOffsetMs)),
+            ("meanOffsetMsPosition0", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition0)),
+            ("meanOffsetMsPosition1", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition1)),
+            ("meanOffsetMsPosition2", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition2)),
+            ("meanOffsetMsPosition3", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition3)),
         ]
     }
 
-    func parseCSVRow(fields: [String], columnIndex: [String: Int], rowNumber: Int) -> Result<any PersistentModel, CSVImportError> {
+    func parseCSVRow(
+        fields: [String],
+        columnIndex: [String: Int],
+        rowNumber: Int
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let tempoBPMIdx = columnIndex["tempoBPM"],
               let meanOffsetMsIdx = columnIndex["meanOffsetMs"] else {
@@ -122,25 +124,24 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
             }
         }
 
-        let record = ContinuousRhythmMatchingRecord(
+        let payload = ContinuousRhythmMatchingPayload(
             tempoBPM: tempoBPM,
             meanOffsetMs: meanOffsetMs,
             meanOffsetMsPosition0: positionValues[0],
             meanOffsetMsPosition1: positionValues[1],
             meanOffsetMsPosition2: positionValues[2],
-            meanOffsetMsPosition3: positionValues[3],
-            timestamp: timestamp
+            meanOffsetMsPosition3: positionValues[3]
         )
-        return .success(record)
+        return .success((timestamp: timestamp, payload: payload))
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllSorted(ContinuousRhythmMatchingRecord.self)
-            .map { ($0.timestamp, $0 as any PersistentModel) }
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+        try store.fetchPayloads(ContinuousRhythmMatchingPayload.self)
+            .map { ($0.timestamp, $0.payload) }
     }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel] {
-        parseResult.records[csvTrainingType] ?? []
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+        parseResult.payloads[csvTrainingType] ?? []
     }
 
     func mergeImportRecords(
@@ -148,15 +149,16 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildRhythmDuplicateKeys(from: store, trainingType: csvTrainingType)
+        var existingKeys = try buildRhythmDuplicateKeys(from: store)
         var imported = 0, skipped = 0
-        for record in parsedRecords(from: parseResult) {
-            guard let r = record as? ContinuousRhythmMatchingRecord else { continue }
-            let key = RhythmDuplicateKey(timestamp: r.timestamp, tempoBPM: r.tempoBPM, trainingType: csvTrainingType)
+        for entry in parsedRecords(from: parseResult) {
+            guard let p = entry.payload as? ContinuousRhythmMatchingPayload else { continue }
+            let key = RhythmDuplicateKey(timestamp: entry.timestamp, tempoBPM: p.tempoBPM, trainingType: csvTrainingType)
             if existingKeys.contains(key) {
                 skipped += 1
             } else {
-                scope.insert(r)
+                let envelope = try JSONEnvelope.encode(p, timestamp: entry.timestamp)
+                scope.insert(envelope)
                 existingKeys.insert(key)
                 imported += 1
             }

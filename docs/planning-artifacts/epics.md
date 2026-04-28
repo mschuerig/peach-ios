@@ -7695,9 +7695,9 @@ so that the `Release` build (and therefore the App Store binary) ships only the 
 
 **Motivation:** After the 76.x series, discipline iteration is data-driven and the registry is the runtime source of truth — but several seams still leak feature-specific knowledge into central files: `SettingsScreen` / `ProfileScreen` / `HelpContent` host category-gated UI; CSV/data declarations may drift back to `Peach/Core/Data/`; and `UserSettings` enumerates one feature-only entry (`enabledGapPositions`). Cleaning these seams completes the colocation discipline so future disciplines truly drop in from a single feature directory.
 
-**Approach:** 77.1 introduced a contribution protocol for UI surfaces and per-discipline compile-time activation. 77.2 finished the UI colocation by moving rhythm section views and remaining UI fragments into the rhythm feature directory. 77.3 relocated `@Model` record bodies and CSV row parsers into per-feature directories. The 2026-04-28 architecture session then established that the SwiftData layer should dissolve into a single JSON envelope: 77.4 introduces `@Model TrainingRecord` with discipline-owned Codable payloads and removes per-discipline `@Model` types entirely; 77.5 replaces the central `V*Migration.swift` chain with a per-discipline `csvHistory` declaration plus a runner that derives operations by diffing adjacent history entries; 77.6 removes `enabledGapPositions` from the central `UserSettings` port and pushes its storage end-to-end into the ContinuousRhythmMatching feature directory; 77.7 documents the landed picture in `architecture.md` (v0.9 amendment) and `arc42.md` (Section 8.7 rewrite + ADR-10).
+**Approach:** 77.1 introduced a contribution protocol for UI surfaces and per-discipline compile-time activation. 77.2 finished the UI colocation by moving rhythm section views and remaining UI fragments into the rhythm feature directory. 77.3 relocated `@Model` record bodies and CSV row parsers into per-feature directories. The 2026-04-28 architecture session then established that the SwiftData layer should dissolve into a single JSON envelope: 77.4 introduces `@Model TrainingRecord` with discipline-owned Codable payloads and removes per-discipline `@Model` types entirely; 77.5 replaces the central `V*Migration.swift` chain with a per-discipline `csvHistory` declaration plus a runner that derives operations by diffing adjacent history entries; 77.6 removes `enabledGapPositions` from the central `UserSettings` port and pushes its storage end-to-end into the ContinuousRhythmMatching feature directory. 77.4's review surfaced three deferred follow-ups now tracked as their own stories: 77.7 collapses the four near-identical merge-import loops into a shared helper; 77.8 adopts an `associatedtype Payload` on `TrainingDiscipline` to remove the existential casts inside discipline implementations; 77.9 adds a streaming/batched payload-iteration API on `TrainingDataStore`. 77.10 documents the landed picture in `architecture.md` (v0.9 amendment) and `arc42.md` (Section 8.7 rewrite + ADR-10).
 
-**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 → 77.6 → 77.7. 77.2 builds on 77.1's contribution protocol. 77.4 (envelope storage) precedes 77.5 (CSV migration plugin) because the migration runner round-trips through the payload structs introduced in 77.4. 77.6 (gap positions) is independent of 77.4/77.5 and may run in parallel with them after 77.3. 77.7 documents the landed state and runs last.
+**Work order:** 77.1 → 77.2 → 77.3 → 77.4 → 77.5 → 77.6 → (77.7, 77.8, 77.9 in any order or in parallel) → 77.10. 77.2 builds on 77.1's contribution protocol. 77.4 (envelope storage) precedes 77.5 (CSV migration plugin) because the migration runner round-trips through the payload structs introduced in 77.4. 77.6 (gap positions) is independent of 77.4/77.5 and may run in parallel with them after 77.3. 77.7 / 77.8 / 77.9 are deferred 77.4 review findings and may run in parallel with each other (with light coordination if 77.7 and 77.8 land together). 77.10 documents the landed state and runs last.
 
 ### Story 77.1: Plugin-style discipline UI contributions and per-discipline compile-time activation
 
@@ -7792,7 +7792,61 @@ so that the central settings port no longer implicitly enumerates discipline-spe
 6. **Given** `Peach/Core/Ports/UserSettings.swift` and `Peach/Settings/SettingsKeys.swift` **When** inspected **Then** every entry corresponds to a value used by ≥2 disciplines or by app-wide infrastructure. Surviving entries (e.g., `varyLoudness` for both pitch sessions, `tempoBPM` for both rhythm sessions, `noteRange` / `tuningSystem` / `intervals` / `noteGap` / `noteDuration` for the pitch family, `referencePitch` / `soundSource` / `velocity` for app-wide audio configuration, `autoStartTraining` for app-wide UX) are documented in Completion Notes with one-line notes on which disciplines or subsystems each serves.
 7. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations are green; `bin/build.sh && bin/build.sh -p mac` produces zero new warnings.
 
-### Story 77.7: Update architecture documentation for plugin-style disciplines
+### Story 77.7: Collapse merge-import boilerplate across disciplines
+
+As **a developer adding a new training discipline**,
+I want the encode-and-insert-if-new merge loop in `mergeImportRecords(from:existingIn:into:)` reduced to a discipline-supplied key constructor plus a shared helper,
+so that the four existing disciplines stop carrying near-identical loop bodies and a fifth discipline gets duplicate-aware merging "for free" without copying loop boilerplate.
+
+This story was deferred from 77.4's review so the envelope-storage refactor stayed focused. If 77.8 (typed `Payload` associated type) lands first, this helper becomes a default protocol method and the existential cast disappears; either order works.
+
+**Acceptance Criteria:**
+
+1. **Given** the merge logic is consolidated **When** inspected **Then** a single helper performs the encode-and-insert-if-new loop, taking the typed parsed entries, the pre-built `existingKeys` set, a `(Date, Payload) -> Key` constructor, and the `TransactionScope` to insert into; it returns `(imported: Int, skipped: Int)`. Helper location (extension on `TransactionScope`, free function, or static on `JSONEnvelope`) is dev's choice based on which existing imports match the call sites with least friction.
+2. **Given** each of the four conforming discipline implementations **When** inspected **Then** `mergeImportRecords` contains no inline loop body — only key-set building, typed parsed-records provision, and helper invocation; ≤ 8 lines per body is a reasonable target.
+3. **Given** the helper consumes already-typed `[(Date, Payload)]` **When** inspected **Then** the per-loop `as? <FeaturePayload>` cast is gone, or — if `parsedRecords` still returns existentials — confined to one place per discipline rather than appearing inside the loop body.
+4. **Given** existing tests **When** the merge importer runs **Then** behaviour is identical: same imported / skipped counts on every fixture, same envelope insertions, same duplicate-key detection; no test changes required for the four existing disciplines beyond fixture updates that go hand-in-hand with helper-shape changes.
+5. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations pass; `bin/build.sh && bin/build.sh -p mac` produces zero new warnings.
+
+(See `docs/implementation-artifacts/77-7-collapse-merge-import-boilerplate.md` for the worked design notes.)
+
+### Story 77.8: Typed `Payload` associated type on `TrainingDiscipline`
+
+As **a developer maintaining the discipline protocol surface**,
+I want `TrainingDiscipline` to expose its concrete `Payload` type via an `associatedtype Payload: TrainingDisciplinePayload`,
+so that `parsedRecords(from:)` and other payload-shaped APIs return concrete `[(Date, Payload)]` instead of `[(Date, any TrainingDisciplinePayload)]`, and the four discipline implementations stop carrying `as? PitchDiscriminationPayload` / `as? PitchMatchingPayload` / etc. dance to recover the type the caller already knows.
+
+This story was deferred from 77.4's review because adopting an associated type ripples through the registry's existential storage and is a discrete design question rather than a mechanical cleanup. The registry continues to store `[any TrainingDiscipline]` — the associated type only sharpens each discipline's *internal* surface.
+
+**Acceptance Criteria:**
+
+1. **Given** `Peach/Core/Training/Discipline/TrainingDiscipline.swift` **When** inspected after this story **Then** the protocol declares `associatedtype Payload: TrainingDisciplinePayload` and exposes it on the relevant payload-shaped APIs (`parsedRecords(from:)`, plus any other method the design surfaces); the four conforming implementations declare their `Payload` (typically inferred from the return type).
+2. **Given** the four discipline files under `Peach/Training/<Feature>/Discipline/` **When** inspected **Then** there is no `as? <FeaturePayload>` cast inside `parsedRecords`, `mergeImportRecords`, or any other payload-shaped method; the compiler enforces the type. Remaining `as?` calls only exist for legitimate downcasts.
+3. **Given** `TrainingDisciplineRegistry` stores `[any TrainingDiscipline]` **When** the registry iterates all disciplines for cross-cutting operations (CSV column collection, parser dispatch, `feedAllRecords`, etc.) **Then** it still works — either via type-erased helpers that take the existential and call a uniform method on it, or via protocol extensions that internally hold the existential. The chosen pattern is documented in Completion Notes.
+4. **Given** App-layer call sites (registry, composition root, settings/profile coordinators, observer bootstrap) **When** inspected **Then** none of them name a discipline's concrete `Payload` type just to satisfy the protocol — the existential continues to suffice at the registry boundary, and no caller is forced into a generic context just to call a registry method.
+5. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations pass; `bin/build.sh && bin/build.sh -p mac` produces zero new warnings.
+
+(See `docs/implementation-artifacts/77-8-typed-discipline-payload-associated-type.md` for the worked design notes.)
+
+### Story 77.9: Streaming payload iteration on `TrainingDataStore`
+
+As **a developer maintaining hot read paths over the envelope store**,
+I want a streaming/batched payload-iteration API on `TrainingDataStore` (e.g., `forEachPayload(_:body:)`) alongside the existing array-returning `fetchPayloads(_:)`,
+so that callers iterating large payload sets — profile rebuild, duplicate-key building, CSV export — never have to materialise the full decoded array in memory at once, and the recurring "fetchAll pagination/streaming" concern is finally addressed at the right layer.
+
+This story was deferred from 77.4's review and takes up the recurring `feedback_fetchall_streaming` request now that the envelope-by-envelope decode shape introduced in 77.4 makes streaming cheap: each envelope is independent, decoding is local, and iteration order is already sorted-by-timestamp.
+
+**Acceptance Criteria:**
+
+1. **Given** `Peach/Core/Data/TrainingDataStore.swift` **When** inspected after this story **Then** the store exposes a streaming/batched payload-iteration method (suggested `forEachPayload<P: TrainingDisciplinePayload>(_ type: P.Type, body: (Date, P) throws -> Void) throws`) that decodes envelopes one at a time without holding the full array; the implementation fetches envelopes (sorted), decodes one envelope at a time, hands the timestamp + payload to `body`, and lets the previous payload be deallocated before the next decode.
+2. **Given** the three primary scan-and-aggregate callers (profile rebuild, duplicate-key builders, CSV export) **When** inspected after this story **Then** at least one of them is migrated to the streaming API as a worked example. Remaining call sites may stay on `fetchPayloads` if the array shape suits them; the migrated caller is documented in Completion Notes.
+3. **Given** existing callers of `fetchPayloads(_:)` **When** inspected **Then** either `fetchPayloads(_:)` is kept as a thin convenience that internally calls the streaming API and accumulates into an array, or it is preserved verbatim alongside the streaming API. No behavioural change at unmigrated call sites.
+4. **Given** the new streaming method **When** tested **Then** tests cover at minimum: iteration order matches `fetchPayloads` ordering on the same data (timestamp-ascending); `body` receives every payload exactly once; a `body` that throws aborts iteration and propagates the error without partial state leakage; empty store yields zero `body` invocations.
+5. **Given** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh -p mac --research` **When** run **Then** all four configurations pass; `bin/build.sh && bin/build.sh -p mac` produces zero new warnings.
+
+(See `docs/implementation-artifacts/77-9-payload-streaming-iteration.md` for the worked design notes.)
+
+### Story 77.10: Update architecture documentation for plugin-style disciplines
 
 As **a future contributor (human or agent) reading the architecture docs to understand how training disciplines plug into Peach**,
 I want `docs/planning-artifacts/architecture.md` and `docs/arc42.md` to reflect the post-77.x plugin model — discipline-owned UI, JSON-envelope persistence with discipline-owned Codable payloads, history+derivation CSV migration, feature-local storage, the SwiftUI-aware `TrainingDisciplineUI` refinement, the per-discipline compile-time activation switch, and the `Peach/Training/<Feature>/` colocation rule — written for the audience each document serves,
@@ -7800,7 +7854,7 @@ so that nobody bases new work on the obsolete v0.5 picture and the "add a new di
 
 The two documents have different audiences: `architecture.md` is the agent-facing, append-only sequence of versioned amendments carrying file-by-file inventories and exact protocol surfaces; `arc42.md` is the human-facing single-narrative document carrying intent and ADRs. This story applies the appropriate update style to each.
 
-This story runs after 77.2 / 77.3 / 77.4 / 77.5 / 77.6 reach `done` so the documentation describes the landed state.
+This story runs after 77.2 / 77.3 / 77.4 / 77.5 / 77.6 / 77.7 / 77.8 / 77.9 reach `done` so the documentation describes the landed state.
 
 **Acceptance Criteria:**
 

@@ -3,7 +3,12 @@ import Foundation
 import os
 
 /// Discipline-agnostic persistence layer for training records.
-/// Responsibilities: CREATE, READ, DELETE operations only — no business logic.
+///
+/// SwiftData sees a single `@Model` type — ``TrainingRecord`` — and stores
+/// every discipline's data inside its `payloadData` blob. This store provides
+/// envelope-typed CRUD plus a small ``fetchPayloads(_:)`` helper that filters
+/// envelopes by ``TrainingDisciplinePayload/disciplineIdentifier`` and decodes
+/// them into payload structs.
 final class TrainingDataStore {
     private static let logger = Logger(subsystem: "com.peach.app", category: "TrainingDataStore")
     private let modelContext: ModelContext
@@ -23,8 +28,8 @@ final class TrainingDataStore {
             self.modelContext = modelContext
         }
 
-        func insert(_ record: some PersistentModel) {
-            modelContext.insert(record)
+        func insert(_ envelope: TrainingRecord) {
+            modelContext.insert(envelope)
         }
     }
 
@@ -42,84 +47,61 @@ final class TrainingDataStore {
         }
     }
 
-    // MARK: - Generic CRUD
+    // MARK: - Envelope CRUD
 
-    func save(_ record: some PersistentModel) throws {
+    func save(_ envelope: TrainingRecord) throws {
         do {
             try modelContext.transaction {
-                modelContext.insert(record)
+                modelContext.insert(envelope)
             }
         } catch {
-            throw DataStoreError.saveFailed("Failed to save \(type(of: record)): \(error.localizedDescription)")
+            throw DataStoreError.saveFailed("Failed to save TrainingRecord: \(error.localizedDescription)")
         }
     }
 
-    func fetchAll<T: PersistentModel>(_ type: T.Type) throws -> [T] {
-        let descriptor = FetchDescriptor<T>()
+    /// Fetches all envelopes whose `disciplineIdentifier` matches the given identifier.
+    /// Sort order matches insertion order; callers needing chronological order sort by ``TrainingRecord/timestamp``.
+    func fetchEnvelopes(forDisciplineIdentifier identifier: String) throws -> [TrainingRecord] {
+        let descriptor = FetchDescriptor<TrainingRecord>(
+            predicate: #Predicate { $0.disciplineIdentifier == identifier }
+        )
         do {
             return try modelContext.fetch(descriptor)
         } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch \(T.self): \(error.localizedDescription)")
+            throw DataStoreError.fetchFailed("Failed to fetch envelopes for \(identifier): \(error.localizedDescription)")
         }
     }
 
-    func deleteAll<T: PersistentModel>(_ type: T.Type) throws {
-        do {
-            try modelContext.transaction {
-                try modelContext.delete(model: type)
-            }
-        } catch {
-            throw DataStoreError.deleteFailed("Failed to delete all \(T.self): \(error.localizedDescription)")
-        }
+    /// Fetches all payloads for a discipline, sorted by timestamp.
+    func fetchPayloads<P: TrainingDisciplinePayload>(_ type: P.Type) throws -> [(timestamp: Date, payload: P)] {
+        let envelopes = try fetchEnvelopes(forDisciplineIdentifier: P.disciplineIdentifier)
+        return try envelopes
+            .sorted { $0.timestamp < $1.timestamp }
+            .map { ($0.timestamp, try JSONEnvelope.decode(P.self, from: $0)) }
     }
 
-    func delete(_ record: some PersistentModel) throws {
-        do {
-            try modelContext.transaction {
-                modelContext.delete(record)
-            }
-        } catch {
-            throw DataStoreError.deleteFailed("Failed to delete record: \(error.localizedDescription)")
-        }
-    }
-
-    /// Deletes all records of all registered discipline record types.
+    /// Deletes every envelope in the store.
     func deleteAll() throws {
         do {
             try modelContext.transaction {
-                for recordType in TrainingDisciplineRegistry.shared.recordTypes {
-                    try modelContext.delete(model: recordType)
-                }
+                try modelContext.delete(model: TrainingRecord.self)
             }
         } catch {
             throw DataStoreError.deleteFailed("Failed to delete all records: \(error.localizedDescription)")
         }
     }
 
-    /// Atomically replaces all records: deletes existing data and inserts new records in a single transaction.
-    func replaceAllRecords(_ records: [any PersistentModel]) throws {
+    /// Atomically replaces all envelopes: deletes existing data and inserts new envelopes in a single transaction.
+    func replaceAllRecords(_ envelopes: [TrainingRecord]) throws {
         do {
             try modelContext.transaction {
-                for recordType in TrainingDisciplineRegistry.shared.recordTypes {
-                    try modelContext.delete(model: recordType)
-                }
-                for record in records {
-                    modelContext.insert(record)
+                try modelContext.delete(model: TrainingRecord.self)
+                for envelope in envelopes {
+                    modelContext.insert(envelope)
                 }
             }
         } catch {
             throw DataStoreError.saveFailed("Failed to replace all records: \(error.localizedDescription)")
-        }
-    }
-
-    // MARK: - Sorted Fetch
-
-    func fetchAllSorted<T: PersistentModel & Timestamped>(_ type: T.Type) throws -> [T] {
-        let descriptor = FetchDescriptor<T>()
-        do {
-            return try modelContext.fetch(descriptor).sorted { $0.timestamp < $1.timestamp }
-        } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch \(T.self): \(error.localizedDescription)")
         }
     }
 }

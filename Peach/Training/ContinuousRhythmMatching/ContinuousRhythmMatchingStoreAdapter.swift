@@ -11,17 +11,18 @@ struct ContinuousRhythmMatchingStoreAdapter: ContinuousRhythmMatchingObserver {
 
     func continuousRhythmMatchingCompleted(_ result: CompletedContinuousRhythmMatchingTrial) {
         let positionMeans = Self.computePositionMeanOffsets(from: result.gapResults)
-        let record = ContinuousRhythmMatchingRecord(
+        let payload = ContinuousRhythmMatchingPayload(
             tempoBPM: result.tempo.value,
             meanOffsetMs: result.meanOffsetMs ?? 0,
             meanOffsetMsPosition0: positionMeans.0,
             meanOffsetMsPosition1: positionMeans.1,
             meanOffsetMsPosition2: positionMeans.2,
-            meanOffsetMsPosition3: positionMeans.3,
-            timestamp: result.timestamp
+            meanOffsetMsPosition3: positionMeans.3
         )
+
         do {
-            try store.save(record)
+            let envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Continuous rhythm matching save error: \(error.localizedDescription)")
         } catch {

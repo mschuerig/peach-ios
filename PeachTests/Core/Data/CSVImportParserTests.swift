@@ -42,20 +42,28 @@ struct CSVImportParserTests {
         "rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,,,,,"
     }
 
-    private func pitchDiscriminations(from result: CSVImportParser.ImportResult) -> [PitchDiscriminationRecord] {
-        (result.records["pitchDiscrimination"] ?? []).compactMap { $0 as? PitchDiscriminationRecord }
+    private func pitchDiscriminations(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: PitchDiscriminationPayload)] {
+        (result.payloads["pitchDiscrimination"] ?? []).compactMap { entry in
+            (entry.payload as? PitchDiscriminationPayload).map { (entry.timestamp, $0) }
+        }
     }
 
-    private func pitchMatchings(from result: CSVImportParser.ImportResult) -> [PitchMatchingRecord] {
-        (result.records["pitchMatching"] ?? []).compactMap { $0 as? PitchMatchingRecord }
+    private func pitchMatchings(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: PitchMatchingPayload)] {
+        (result.payloads["pitchMatching"] ?? []).compactMap { entry in
+            (entry.payload as? PitchMatchingPayload).map { (entry.timestamp, $0) }
+        }
     }
 
-    private func rhythmOffsetDetections(from result: CSVImportParser.ImportResult) -> [TimingOffsetDetectionRecord] {
-        (result.records["rhythmOffsetDetection"] ?? []).compactMap { $0 as? TimingOffsetDetectionRecord }
+    private func rhythmOffsetDetections(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: TimingOffsetDetectionPayload)] {
+        (result.payloads["rhythmOffsetDetection"] ?? []).compactMap { entry in
+            (entry.payload as? TimingOffsetDetectionPayload).map { (entry.timestamp, $0) }
+        }
     }
 
-    private func continuousRhythmMatchings(from result: CSVImportParser.ImportResult) -> [ContinuousRhythmMatchingRecord] {
-        (result.records["continuousRhythmMatching"] ?? []).compactMap { $0 as? ContinuousRhythmMatchingRecord }
+    private func continuousRhythmMatchings(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: ContinuousRhythmMatchingPayload)] {
+        (result.payloads["continuousRhythmMatching"] ?? []).compactMap { entry in
+            (entry.payload as? ContinuousRhythmMatchingPayload).map { (entry.timestamp, $0) }
+        }
     }
 
     // MARK: - CSVImportError
@@ -103,20 +111,20 @@ struct CSVImportParserTests {
 
     // MARK: - ImportResult
 
-    @Test("result holds both comparison and pitch matching records")
+    @Test("result holds both comparison and pitch matching payloads")
     func resultHoldsBothRecordTypes() async {
-        let comparison = PitchDiscriminationRecord(
+        let comparison = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate()
+            interval: 4, tuningSystem: "equalTemperament"
         )
-        let pitchMatching = PitchMatchingRecord(
+        let pitchMatching = PitchMatchingPayload(
             referenceNote: 60, targetNote: 67, initialCentOffset: 25.0, userCentError: 3.2,
-            interval: 7, tuningSystem: "equalTemperament", timestamp: fixedDate()
+            interval: 7, tuningSystem: "equalTemperament"
         )
         let result = CSVImportParser.ImportResult(
-            records: [
-                "pitchDiscrimination": [comparison],
-                "pitchMatching": [pitchMatching],
+            payloads: [
+                "pitchDiscrimination": [(fixedDate(), comparison)],
+                "pitchMatching": [(fixedDate(), pitchMatching)],
             ],
             errors: []
         )
@@ -126,15 +134,15 @@ struct CSVImportParserTests {
         #expect(result.errors.isEmpty)
     }
 
-    @Test("result holds errors alongside valid records")
+    @Test("result holds errors alongside valid payloads")
     func resultHoldsErrorsAlongsideRecords() async {
-        let comparison = PitchDiscriminationRecord(
+        let comparison = PitchDiscriminationPayload(
             referenceNote: 60, targetNote: 64, centOffset: 15.5, isCorrect: true,
-            interval: 4, tuningSystem: "equalTemperament", timestamp: fixedDate()
+            interval: 4, tuningSystem: "equalTemperament"
         )
         let error = CSVImportError.invalidRowData(row: 3, column: "referenceNote", value: "abc", reason: "not an integer")
         let result = CSVImportParser.ImportResult(
-            records: ["pitchDiscrimination": [comparison]],
+            payloads: ["pitchDiscrimination": [(fixedDate(), comparison)]],
             errors: [error]
         )
 
@@ -298,7 +306,7 @@ struct CSVImportParserTests {
         #expect(discs.count == 13)
         #expect(result.errors.isEmpty)
         for (index, rawValue) in expectedRawValues.enumerated() {
-            #expect(discs[index].interval == rawValue)
+            #expect(discs[index].payload.interval == rawValue)
         }
     }
 
@@ -331,12 +339,12 @@ struct CSVImportParserTests {
         #expect(result.errors.isEmpty)
 
         let record = discs[0]
-        #expect(record.referenceNote == 60)
-        #expect(record.targetNote == 64)
-        #expect(record.centOffset == 15.5)
-        #expect(record.isCorrect == true)
-        #expect(record.interval == 4)
-        #expect(record.tuningSystem == "equalTemperament")
+        #expect(record.payload.referenceNote == 60)
+        #expect(record.payload.targetNote == 64)
+        #expect(record.payload.centOffset == 15.5)
+        #expect(record.payload.isCorrect == true)
+        #expect(record.payload.interval == 4)
+        #expect(record.payload.tuningSystem == "equalTemperament")
         #expect(record.timestamp == fixedDate())
     }
 
@@ -349,12 +357,12 @@ struct CSVImportParserTests {
         #expect(result.errors.isEmpty)
 
         let record = matchings[0]
-        #expect(record.referenceNote == 60)
-        #expect(record.targetNote == 67)
-        #expect(record.initialCentOffset == 25.0)
-        #expect(record.userCentError == 3.2)
-        #expect(record.interval == 7)
-        #expect(record.tuningSystem == "equalTemperament")
+        #expect(record.payload.referenceNote == 60)
+        #expect(record.payload.targetNote == 67)
+        #expect(record.payload.initialCentOffset == 25.0)
+        #expect(record.payload.userCentError == 3.2)
+        #expect(record.payload.interval == 7)
+        #expect(record.payload.tuningSystem == "equalTemperament")
         #expect(record.timestamp == fixedDate())
     }
 
@@ -513,7 +521,7 @@ struct CSVImportParserTests {
         let result = CSVImportParser.parse(csv)
         let discs = pitchDiscriminations(from: result)
         #expect(discs.count == 1)
-        #expect(discs[0].centOffset == -8.3)
+        #expect(discs[0].payload.centOffset == -8.3)
     }
 
     @Test("justIntonation tuning system is valid")
@@ -523,7 +531,7 @@ struct CSVImportParserTests {
         let result = CSVImportParser.parse(csv)
         let discs = pitchDiscriminations(from: result)
         #expect(discs.count == 1)
-        #expect(discs[0].tuningSystem == "justIntonation")
+        #expect(discs[0].payload.tuningSystem == "justIntonation")
     }
 
     // MARK: - Version Migration
@@ -549,12 +557,12 @@ struct CSVImportParserTests {
         let discs = pitchDiscriminations(from: result)
         #expect(result.errors.isEmpty)
         #expect(discs.count == 1)
-        #expect(discs[0].referenceNote == 60)
-        #expect(discs[0].targetNote == 64)
-        #expect(discs[0].centOffset == 15.5)
-        #expect(discs[0].isCorrect == true)
-        #expect(discs[0].interval == 4)
-        #expect(discs[0].tuningSystem == "equalTemperament")
+        #expect(discs[0].payload.referenceNote == 60)
+        #expect(discs[0].payload.targetNote == 64)
+        #expect(discs[0].payload.centOffset == 15.5)
+        #expect(discs[0].payload.isCorrect == true)
+        #expect(discs[0].payload.interval == 4)
+        #expect(discs[0].payload.tuningSystem == "equalTemperament")
     }
 
     @Test("v2 pitch matching CSV imports successfully after migration")
@@ -564,8 +572,8 @@ struct CSVImportParserTests {
         let matchings = pitchMatchings(from: result)
         #expect(result.errors.isEmpty)
         #expect(matchings.count == 1)
-        #expect(matchings[0].initialCentOffset == 25.0)
-        #expect(matchings[0].userCentError == 3.2)
+        #expect(matchings[0].payload.initialCentOffset == 25.0)
+        #expect(matchings[0].payload.userCentError == 3.2)
     }
 
 #if PEACH_RESEARCH
@@ -576,8 +584,8 @@ struct CSVImportParserTests {
         let rhythms = rhythmOffsetDetections(from: result)
         #expect(result.errors.isEmpty)
         #expect(rhythms.count == 1)
-        #expect(rhythms[0].tempoBPM == 120)
-        #expect(rhythms[0].offsetMs == 5.3)
+        #expect(rhythms[0].payload.tempoBPM == 120)
+        #expect(rhythms[0].payload.offsetMs == 5.3)
     }
 
     @Test("v2 rhythmMatching CSV migrates to continuousRhythmMatching with meanOffsetMs")
@@ -588,8 +596,8 @@ struct CSVImportParserTests {
         let continuous = continuousRhythmMatchings(from: result)
         #expect(result.errors.isEmpty)
         #expect(continuous.count == 1)
-        #expect(continuous[0].tempoBPM == 120)
-        #expect(continuous[0].meanOffsetMs == 5.3)
+        #expect(continuous[0].payload.tempoBPM == 120)
+        #expect(continuous[0].payload.meanOffsetMs == 5.3)
     }
 #endif
 
@@ -604,12 +612,12 @@ struct CSVImportParserTests {
 
         let discs = pitchDiscriminations(from: result)
         #expect(discs.count == 1)
-        #expect(discs[0].referenceNote == 60)
-        #expect(discs[0].centOffset == 15.5)
+        #expect(discs[0].payload.referenceNote == 60)
+        #expect(discs[0].payload.centOffset == 15.5)
 
         let matchings = pitchMatchings(from: result)
         #expect(matchings.count == 1)
-        #expect(matchings[0].initialCentOffset == 25.0)
+        #expect(matchings[0].payload.initialCentOffset == 25.0)
     }
 
     @Test("v1 pitchComparison training type is migrated to pitchDiscrimination")
@@ -683,9 +691,9 @@ struct CSVImportParserTests {
         let rhythms = rhythmOffsetDetections(from: result)
         #expect(rhythms.count == 1)
         #expect(result.errors.isEmpty)
-        #expect(rhythms[0].tempoBPM == 120)
-        #expect(rhythms[0].offsetMs == 5.3)
-        #expect(rhythms[0].isCorrect == true)
+        #expect(rhythms[0].payload.tempoBPM == 120)
+        #expect(rhythms[0].payload.offsetMs == 5.3)
+        #expect(rhythms[0].payload.isCorrect == true)
     }
 
     @Test("parses mixed pitch and rhythm types")
@@ -727,32 +735,32 @@ struct CSVImportParserTests {
 
         let discs = pitchDiscriminations(from: result)
         #expect(discs.count == 1)
-        #expect(discs[0].referenceNote == 60)
-        #expect(discs[0].targetNote == 64)
-        #expect(discs[0].centOffset == 15.5)
-        #expect(discs[0].isCorrect == true)
+        #expect(discs[0].payload.referenceNote == 60)
+        #expect(discs[0].payload.targetNote == 64)
+        #expect(discs[0].payload.centOffset == 15.5)
+        #expect(discs[0].payload.isCorrect == true)
 
         let matchings = pitchMatchings(from: result)
         #expect(matchings.count == 1)
-        #expect(matchings[0].referenceNote == 69)
-        #expect(matchings[0].targetNote == 72)
-        #expect(matchings[0].initialCentOffset == 25.0)
-        #expect(matchings[0].userCentError == 3.2)
+        #expect(matchings[0].payload.referenceNote == 69)
+        #expect(matchings[0].payload.targetNote == 72)
+        #expect(matchings[0].payload.initialCentOffset == 25.0)
+        #expect(matchings[0].payload.userCentError == 3.2)
 
         let rhythms = rhythmOffsetDetections(from: result)
         #expect(rhythms.count == 1)
-        #expect(rhythms[0].tempoBPM == 120)
-        #expect(rhythms[0].offsetMs == 5.3)
-        #expect(rhythms[0].isCorrect == true)
+        #expect(rhythms[0].payload.tempoBPM == 120)
+        #expect(rhythms[0].payload.offsetMs == 5.3)
+        #expect(rhythms[0].payload.isCorrect == true)
 
         let continuous = continuousRhythmMatchings(from: result)
         #expect(continuous.count == 1)
-        #expect(continuous[0].tempoBPM == 100)
-        #expect(continuous[0].meanOffsetMs == -2.5)
-        #expect(continuous[0].meanOffsetMsPosition0 == -1.0)
-        #expect(continuous[0].meanOffsetMsPosition1 == nil)
-        #expect(continuous[0].meanOffsetMsPosition2 == nil)
-        #expect(continuous[0].meanOffsetMsPosition3 == 3.5)
+        #expect(continuous[0].payload.tempoBPM == 100)
+        #expect(continuous[0].payload.meanOffsetMs == -2.5)
+        #expect(continuous[0].payload.meanOffsetMsPosition0 == -1.0)
+        #expect(continuous[0].payload.meanOffsetMsPosition1 == nil)
+        #expect(continuous[0].payload.meanOffsetMsPosition2 == nil)
+        #expect(continuous[0].payload.meanOffsetMsPosition3 == 3.5)
     }
 
     @Test("continuous rhythm matching round-trip preserves all fields")
@@ -766,12 +774,12 @@ struct CSVImportParserTests {
         #expect(continuous.count == 1)
 
         let imported = continuous[0]
-        #expect(imported.tempoBPM == 140)
-        #expect(imported.meanOffsetMs == 1.23)
-        #expect(imported.meanOffsetMsPosition0 == -2.0)
-        #expect(imported.meanOffsetMsPosition1 == 4.5)
-        #expect(imported.meanOffsetMsPosition2 == nil)
-        #expect(imported.meanOffsetMsPosition3 == 0.0)
+        #expect(imported.payload.tempoBPM == 140)
+        #expect(imported.payload.meanOffsetMs == 1.23)
+        #expect(imported.payload.meanOffsetMsPosition0 == -2.0)
+        #expect(imported.payload.meanOffsetMsPosition1 == 4.5)
+        #expect(imported.payload.meanOffsetMsPosition2 == nil)
+        #expect(imported.payload.meanOffsetMsPosition3 == 0.0)
         #expect(imported.timestamp == fixedDate())
     }
 #endif

@@ -1,5 +1,4 @@
 import Foundation
-import SwiftData
 
 struct UnisonPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
     let id = TrainingDisciplineID.unisonPitchDiscrimination
@@ -19,18 +18,16 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
 
     var statisticsKeys: [StatisticsKey] { [.pitch(id)] }
 
-    let recordType: any PersistentModel.Type = PitchDiscriminationRecord.self
-
     var helpSections: [HelpSection] { PitchDiscriminationHelp.trainingScreen }
 
     let navigationDestination: NavigationDestination = .pitchDiscrimination(isIntervalMode: false)
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {
-        for record in try store.fetchAllSorted(PitchDiscriminationRecord.self) where record.interval == 0 {
+        for entry in try store.fetchPayloads(PitchDiscriminationPayload.self) where entry.payload.interval == 0 {
             builder.addPoint(
-                MetricPoint(timestamp: record.timestamp, value: abs(record.centOffset)),
+                MetricPoint(timestamp: entry.timestamp, value: abs(entry.payload.centOffset)),
                 for: .pitch(id),
-                isCorrect: record.isCorrect
+                isCorrect: entry.payload.isCorrect
             )
         }
     }
@@ -44,37 +41,40 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         "interval", "tuningSystem", "centOffset", "isCorrect",
     ]
 
-    func csvKeyValuePairs(for record: any PersistentModel) -> [(String, String)] {
-        guard let r = record as? PitchDiscriminationRecord else {
-            assertionFailure("Expected PitchDiscriminationRecord, got \(type(of: record))")
+    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
+        guard let p = payload as? PitchDiscriminationPayload else {
+            assertionFailure("Expected PitchDiscriminationPayload, got \(type(of: payload))")
             return []
         }
         return [
-            ("referenceNote", "\(r.referenceNote)"),
-            ("referenceNoteName", CSVParserHelpers.formatNoteName(r.referenceNote)),
-            ("targetNote", "\(r.targetNote)"),
-            ("targetNoteName", CSVParserHelpers.formatNoteName(r.targetNote)),
-            ("interval", CSVParserHelpers.formatInterval(r.interval)),
-            ("tuningSystem", r.tuningSystem),
-            ("centOffset", CSVParserHelpers.formatDouble(r.centOffset)),
-            ("isCorrect", r.isCorrect ? "true" : "false"),
+            ("referenceNote", "\(p.referenceNote)"),
+            ("referenceNoteName", CSVParserHelpers.formatNoteName(p.referenceNote)),
+            ("targetNote", "\(p.targetNote)"),
+            ("targetNoteName", CSVParserHelpers.formatNoteName(p.targetNote)),
+            ("interval", CSVParserHelpers.formatInterval(p.interval)),
+            ("tuningSystem", p.tuningSystem),
+            ("centOffset", CSVParserHelpers.formatDouble(p.centOffset)),
+            ("isCorrect", p.isCorrect ? "true" : "false"),
         ]
     }
 
-    func parseCSVRow(fields: [String], columnIndex: [String: Int], rowNumber: Int) -> Result<any PersistentModel, CSVImportError> {
+    func parseCSVRow(
+        fields: [String],
+        columnIndex: [String: Int],
+        rowNumber: Int
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
         PitchDiscriminationCSVParser.parse(fields: fields, columnIndex: columnIndex, rowNumber: rowNumber)
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, record: any PersistentModel)] {
-        try store.fetchAllSorted(PitchDiscriminationRecord.self)
-            .filter { $0.interval == 0 }
-            .map { ($0.timestamp, $0 as any PersistentModel) }
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+        try store.fetchPayloads(PitchDiscriminationPayload.self)
+            .filter { $0.payload.interval == 0 }
+            .map { ($0.timestamp, $0.payload) }
     }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [any PersistentModel] {
-        (parseResult.records["pitchDiscrimination"] ?? [])
-            .compactMap { $0 as? PitchDiscriminationRecord }
-            .filter { $0.interval == 0 }
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+        (parseResult.payloads[csvTrainingType] ?? [])
+            .filter { ($0.payload as? PitchDiscriminationPayload)?.interval == 0 }
     }
 
     func mergeImportRecords(
@@ -84,13 +84,14 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildPitchDuplicateKeys(from: store)
         var imported = 0, skipped = 0
-        for record in parsedRecords(from: parseResult) {
-            guard let r = record as? PitchDiscriminationRecord else { continue }
-            let key = PitchDuplicateKey(record: r)
+        for entry in parsedRecords(from: parseResult) {
+            guard let p = entry.payload as? PitchDiscriminationPayload else { continue }
+            let key = PitchDuplicateKey(timestamp: entry.timestamp, payload: p)
             if existingKeys.contains(key) {
                 skipped += 1
             } else {
-                scope.insert(r)
+                let envelope = try JSONEnvelope.encode(p, timestamp: entry.timestamp)
+                scope.insert(envelope)
                 existingKeys.insert(key)
                 imported += 1
             }
