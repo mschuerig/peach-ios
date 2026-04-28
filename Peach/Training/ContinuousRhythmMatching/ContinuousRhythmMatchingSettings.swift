@@ -12,7 +12,7 @@ struct ContinuousRhythmMatchingSettings: Sendable {
 
     static func from(
         _ userSettings: UserSettings,
-        _ crmUserSettings: ContinuousRhythmMatchingUserSettings
+        crmUserSettings: ContinuousRhythmMatchingUserSettings
     ) -> ContinuousRhythmMatchingSettings {
         ContinuousRhythmMatchingSettings(
             tempo: userSettings.tempoBPM,

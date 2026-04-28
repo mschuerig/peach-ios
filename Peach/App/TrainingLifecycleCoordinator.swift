@@ -165,7 +165,7 @@ final class TrainingLifecycleCoordinator {
         case .timingOffsetDetection:
             timingOffsetDetectionSession.start(settings: .from(userSettings))
         case .continuousRhythmMatching:
-            continuousRhythmMatchingSession.start(settings: .from(userSettings, crmUserSettings))
+            continuousRhythmMatchingSession.start(settings: .from(userSettings, crmUserSettings: crmUserSettings))
         case .settings, .profile:
             break
         }

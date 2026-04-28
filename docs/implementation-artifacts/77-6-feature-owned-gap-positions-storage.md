@@ -1,6 +1,6 @@
 # Story 77.6: Feature-owned storage for enabledGapPositions
 
-Status: review
+Status: done
 
 ## Story
 
@@ -210,3 +210,4 @@ A grep for `enabledGapPositions` or `defaultEnabledGapPositions` under `Peach/Co
 - 2026-04-27: Drafted as Story 77.4. Status → ready-for-dev.
 - 2026-04-28: Renumbered to 77.6 to reflect post-architecture-session work order (envelope storage and CSV migration plugin take 77.4 and 77.5). Story content is unchanged; this work is independent of the envelope/CSV redesign.
 - 2026-04-28: Implemented. `enabledGapPositions` storage moved end-to-end into `Peach/Training/ContinuousRhythmMatching/`. New feature-local port `ContinuousRhythmMatchingUserSettings` introduced (in the feature directory, not Core). Status → review.
+- 2026-04-28: Review complete. Acceptance Auditor found zero AC violations. Two patches applied: (1) `ContinuousRhythmMatchingSettings.from(_:_:)` adopted project convention (`from(_ userSettings:, crmUserSettings:)`) to match sibling factories `PitchDiscriminationSettings.from(_:intervals:)` etc.; (2) renamed two test display strings + functions (`fromComposesSharedAndFeatureSettings`, `fromUsesFeaturePortDefaultGapPositions`) to accurately describe shared-vs-feature-port composition. All four configurations remained green (1455 / 1449 / 1799 / 1793 passed). One architectural concern deferred as story 77.12: the central `TrainingLifecycleCoordinator` accumulates per-discipline session and per-discipline settings dependencies, which runs counter to Epic 77's plugin-style direction. Other 13 review findings rejected as noise (verified against existing project conventions: `var defaults` pattern in `AppUserSettings`, non-Sendable `UserSettings` protocol, stub placement in `App/PreviewDefaults.swift`). Status → done.
