@@ -26,7 +26,14 @@ This is primarily an audit + targeted relocation story. Based on the existing pr
 
 **Given** the audit's findings
 **When** any feature-specific declaration is found outside `Peach/Training/<Feature>/`
-**Then** it is moved into the appropriate feature directory. After this story, a grep in `Peach/Core/Data/` for any specific discipline name (`unisonPitch`, `intervalPitch`, `rhythm`, `timingOffset`, `continuousRhythm`) returns zero hits.
+**Then** it is moved into the appropriate feature directory. After this story, a grep in `Peach/Core/Data/` for any specific discipline name (`unisonPitch`, `intervalPitch`, `rhythm`, `timingOffset`, `continuousRhythm`) returns hits only inside the **enumerated exceptions** below; all other matches must be relocated.
+
+**Enumerated exceptions (intentional, do not relocate in this story):**
+
+1. `Peach/Core/Data/PeachSchema.swift` — `SchemaV1.models` lists every concrete `@Model` record type by name. This is the deliberate aggregation point that SwiftData reads via `Schema(versionedSchema: SchemaV1.self)` before any registry bootstrap runs (see Decisions / Dev Notes for the rationale and the alternatives that were rejected).
+2. `Peach/Core/Data/V1ToV2Migration.swift` and `V2ToV3Migration.swift` — frozen historical CSV wire-format strings (`pitchComparison`, `rhythmMatching`, `continuousRhythmMatching`, `tempoBPM`, etc.). These migrations are immutable by definition (they describe data that already exists in the wild). Per-feature relocation requires a per-feature migration-contribution mechanism and is tracked separately in story 77.6.
+
+After this story, no `Peach/Core/Data/` file outside that enumerated list may reference a discipline-specific name.
 
 ### AC 3: Core/Data depends on the registry, not on disciplines
 
@@ -57,7 +64,7 @@ This is primarily an audit + targeted relocation story. Based on the existing pr
   - [x] 2.2 Update imports.
 
 - [x] Task 3: Verify (AC: 3, 4, 5)
-  - [x] 3.1 Grep `Peach/Core/Data/` for each specific discipline name. Expected: zero hits.
+  - [x] 3.1 Grep `Peach/Core/Data/` for each specific discipline name. Expected: hits only inside AC2's enumerated exceptions (`PeachSchema.swift` `SchemaV1.models`; `V1ToV2Migration.swift` and `V2ToV3Migration.swift` wire-format strings). Confirmed.
   - [x] 3.2 Run all four test configurations.
   - [x] 3.3 Build all four configurations; confirm zero new warnings.
 
@@ -67,8 +74,20 @@ This is primarily an audit + targeted relocation story. Based on the existing pr
 
 **Already feature-local (no move needed):**
 
-- `csvColumns`, `csvTrainingType`, `parseCSVRow`, `recordType`, `feedRecords` — all six disciplines already declare these in their `Peach/Training/<Feature>/Discipline/<Feature>Discipline.swift` files via `TrainingDiscipline` conformance. The registry aggregation (`csvParsers`, `csvDisciplineColumns`, `recordTypes`) is the sole consumer in Core/Data services.
-- `Peach/Core/Data/TrainingDataExporter.swift`, `TrainingDataImporter.swift`, `TrainingDataStore.swift`, `CSVImportParser.swift`, `CSVExportSchema.swift` — already consume registry views only; no concrete-discipline references found.
+All six disciplines declare `csvColumns`, `csvTrainingType`, `parseCSVRow`, `recordType`, and `feedRecords` via `TrainingDiscipline` conformance in their feature directory. Per-discipline conformance file paths:
+
+| Discipline | Conformance file |
+| --- | --- |
+| Unison Pitch Discrimination | `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift` |
+| Interval Pitch Discrimination | `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift` |
+| Unison Pitch Matching | `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift` |
+| Interval Pitch Matching | `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift` |
+| Timing Offset Detection | `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` |
+| Continuous Rhythm Matching | `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` |
+
+The registry aggregation (`csvParsers`, `csvDisciplineColumns`, `recordTypes`) is the sole consumer in Core/Data services.
+
+`Peach/Core/Data/TrainingDataExporter.swift`, `TrainingDataImporter.swift`, `TrainingDataStore.swift`, `CSVImportParser.swift`, `CSVExportSchema.swift` — already consume registry views only; no concrete-discipline references found.
 
 **Relocated by this story:**
 
@@ -78,13 +97,13 @@ This is primarily an audit + targeted relocation story. Based on the existing pr
 - `ContinuousRhythmMatchingRecord` — moved to `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingRecord.swift`.
 - `PitchDiscriminationCSVParser`, `PitchMatchingCSVParser` — moved from `Peach/Core/Data/` to the respective feature `Discipline/` directories.
 
-**Deferred — needs architecture session:**
+**Deferred — tracked in story 77.6:**
 
-- `Peach/Core/Data/V1ToV2Migration.swift`, `Peach/Core/Data/V2ToV3Migration.swift` — contain frozen historical wire-format strings (`pitchComparison`, `rhythmMatching`, `continuousRhythmMatching`, `tempoBPM`, etc.) per discipline. Per-feature relocation requires composing per-feature migration contributions, which is a mechanism refactor outside this story's "Not a CSV format change" scope. Flagged here so the architecture session can decide on a per-feature contribution model for format migrations.
+- `Peach/Core/Data/V1ToV2Migration.swift`, `Peach/Core/Data/V2ToV3Migration.swift` — contain frozen historical wire-format strings (`pitchComparison`, `rhythmMatching`, `continuousRhythmMatching`, `tempoBPM`, etc.) per discipline. Per-feature relocation requires composing per-feature migration contributions, which is a mechanism refactor outside this story's "Not a CSV format change" scope. Tracked as story 77.6 (per-feature CSV migration contributions).
 
 ### Decisions
 
-- `SchemaV1.models` kept as an explicit array, not registry-driven. Reason: the registry's contents vary by Research configuration, but the SwiftData schema must include all four record types regardless. Additionally, `TrainingDataTransferService.preview()` constructs `Schema(versionedSchema: SchemaV1.self)` without bootstrapping the registry; switching to a registry source would crash in previews.
+- `SchemaV1.models` kept as an explicit array, not registry-driven. Rationale promoted into Dev Notes ("Why `SchemaV1.models` stays as an explicit literal …").
 - `@Model` classes nested via `extension SchemaV1 { @Model final class … }` in feature files. Verified the SwiftData macro works correctly across both iOS and macOS builds.
 - Top-level typealias in each record file (`typealias PitchDiscriminationRecord = SchemaV1.PitchDiscriminationRecord`) kept call sites unchanged.
 
@@ -111,6 +130,12 @@ This is primarily an audit + targeted relocation story. Based on the existing pr
 - `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationCSVParser.swift` (moved, no content change)
 - `Peach/Training/PitchMatching/Discipline/PitchMatchingCSVParser.swift` (moved, no content change)
 
+### Deleted
+- `Peach/Core/Data/PitchDiscriminationRecord.swift` (5-line typealias stub; content folded into `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationRecord.swift`)
+- `Peach/Core/Data/PitchMatchingRecord.swift` (5-line typealias stub; content folded into the moved feature file)
+- `Peach/Core/Data/TimingOffsetDetectionRecord.swift` (7-line typealias stub; content folded into the moved feature file)
+- `Peach/Core/Data/ContinuousRhythmMatchingRecord.swift` (5-line typealias stub; content folded into the moved feature file)
+
 ### Story
 - `docs/implementation-artifacts/77-3-discipline-owned-data-declarations.md`
 - `docs/implementation-artifacts/sprint-status.yaml`
@@ -131,6 +156,16 @@ Based on the existing `TrainingDiscipline` protocol surface, all per-discipline 
 - Not a schema migration.
 - Not a refactor of `TrainingDataStore` or the import/export services beyond removing any feature-specific references they shouldn't have.
 
+### Why `SchemaV1.models` stays as an explicit literal in `PeachSchema.swift` (AC2 exception 1)
+
+The `models` array is read by SwiftData inside `Schema(versionedSchema: SchemaV1.self).init` before any registry consumer runs. `TrainingDataTransferService.preview()` constructs that `Schema` without bootstrapping `TrainingDisciplineRegistry`, and the registry traps with `preconditionFailure` if accessed before bootstrap. A registry-driven `models` would therefore crash previews. The Research configuration adds two disciplines to the registry but the SwiftData schema must include all four record types in every configuration — these requirements diverge, so reusing the registry as the schema source is incorrect even apart from the bootstrap-order problem.
+
+The trade-off accepted here: adding a new `@Model` record requires editing both the feature record file and `SchemaV1.models`. Story 77.6 (debug-time guard) tracks adding a runtime check that the registry-aggregated record set matches `SchemaV1.models` after bootstrap, to catch the forget-to-update case.
+
+### Why `V1ToV2Migration.swift` / `V2ToV3Migration.swift` stay in `Peach/Core/Data/` (AC2 exception 2)
+
+These files contain frozen historical CSV wire-format strings (`pitchComparison`, `rhythmMatching`, `continuousRhythmMatching`, etc.). They describe data that already exists in user exports — the strings are immutable by definition. Per-feature relocation requires composing per-feature migration contributions, which is a mechanism refactor outside this story's "Not a CSV format change" scope. Story 77.6 tracks the per-feature contribution model.
+
 ### References
 
 - Story 77.2 — same colocation principle applied to UI.
@@ -140,3 +175,4 @@ Based on the existing `TrainingDiscipline` protocol surface, all per-discipline 
 
 - 2026-04-27: Drafted. Status → ready-for-dev.
 - 2026-04-28: Implemented. Audit confirmed CSV column / parser / record-type / feedRecords declarations were already feature-local via `TrainingDiscipline` conformance. Relocated four `@Model` record classes from `Peach/Core/Data/PeachSchema.swift` into per-discipline feature directories using `extension SchemaV1 { @Model final class … }`. Relocated two CSV row parsers. Deferred `V1ToV2Migration.swift` / `V2ToV3Migration.swift` per-feature splitting to an architecture session — relocation requires a per-feature migration-contribution mechanism outside this story's scope. All four configurations green. Status → review.
+- 2026-04-28: Code review fixes. Amended AC2 to enumerate intentional exceptions (`SchemaV1.models`; the two frozen `V*Migration.swift` files) instead of the unconditional "zero hits" wording, since the original wording contradicted the deferred-decisions block. Promoted the `SchemaV1.models` rationale into Dev Notes. Created tracked follow-up story 77.6 for per-feature CSV migration contributions. Expanded AC1 audit inventory into a per-discipline conformance-file table. Added Deleted subsection to File List enumerating the four typealias-stub files removed from `Peach/Core/Data/`. Removed copy-pasted top-level alias docstring from the four record files (kept the `TimingOffsetDetectionRecord` rename comment which carries unique information).

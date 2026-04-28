@@ -647,3 +647,4 @@ development_status:
   77-3-discipline-owned-data-declarations: review
   77-4-feature-owned-gap-positions-storage: ready-for-dev
   77-5-update-architecture-documentation-for-plugin-style-disciplines: ready-for-dev
+  77-6-per-feature-csv-migration-contributions: ready-for-dev
