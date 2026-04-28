@@ -1,6 +1,6 @@
 # Story 77.3: Discipline-owned data declarations
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -46,20 +46,74 @@ This is primarily an audit + targeted relocation story. Based on the existing pr
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Audit (AC: 1)
-  - [ ] 1.1 Read `Peach/Core/Data/` files (`CSVExportSchema.swift`, `CSVImportParser.swift`, `TrainingDataExporter.swift`, `TrainingDataImporter.swift`, `TrainingDataStore.swift`) and list every feature-specific reference.
-  - [ ] 1.2 For each of the six disciplines, locate where its `csvColumns`, `csvTrainingType`, `parseCSVRow`, `recordType`, `feedRecords` are declared. Confirm they live in `Peach/Training/<Feature>/`.
-  - [ ] 1.3 Locate any feature-specific record subtypes (e.g., subclasses of a base `Record` or per-discipline schema helpers).
-  - [ ] 1.4 Record the inventory in Completion Notes with file paths.
+- [x] Task 1: Audit (AC: 1)
+  - [x] 1.1 Read `Peach/Core/Data/` files (`CSVExportSchema.swift`, `CSVImportParser.swift`, `TrainingDataExporter.swift`, `TrainingDataImporter.swift`, `TrainingDataStore.swift`) and list every feature-specific reference.
+  - [x] 1.2 For each of the six disciplines, locate where its `csvColumns`, `csvTrainingType`, `parseCSVRow`, `recordType`, `feedRecords` are declared. Confirm they live in `Peach/Training/<Feature>/`.
+  - [x] 1.3 Locate any feature-specific record subtypes (e.g., subclasses of a base `Record` or per-discipline schema helpers).
+  - [x] 1.4 Record the inventory in Completion Notes with file paths.
 
-- [ ] Task 2: Relocate (AC: 2)
-  - [ ] 2.1 For each finding outside the feature directory, move the declaration into the appropriate feature directory.
-  - [ ] 2.2 Update imports.
+- [x] Task 2: Relocate (AC: 2)
+  - [x] 2.1 For each finding outside the feature directory, move the declaration into the appropriate feature directory.
+  - [x] 2.2 Update imports.
 
-- [ ] Task 3: Verify (AC: 3, 4, 5)
-  - [ ] 3.1 Grep `Peach/Core/Data/` for each specific discipline name. Expected: zero hits.
-  - [ ] 3.2 Run all four test configurations.
-  - [ ] 3.3 Build all four configurations; confirm zero new warnings.
+- [x] Task 3: Verify (AC: 3, 4, 5)
+  - [x] 3.1 Grep `Peach/Core/Data/` for each specific discipline name. Expected: zero hits.
+  - [x] 3.2 Run all four test configurations.
+  - [x] 3.3 Build all four configurations; confirm zero new warnings.
+
+## Completion Notes
+
+### Audit inventory
+
+**Already feature-local (no move needed):**
+
+- `csvColumns`, `csvTrainingType`, `parseCSVRow`, `recordType`, `feedRecords` — all six disciplines already declare these in their `Peach/Training/<Feature>/Discipline/<Feature>Discipline.swift` files via `TrainingDiscipline` conformance. The registry aggregation (`csvParsers`, `csvDisciplineColumns`, `recordTypes`) is the sole consumer in Core/Data services.
+- `Peach/Core/Data/TrainingDataExporter.swift`, `TrainingDataImporter.swift`, `TrainingDataStore.swift`, `CSVImportParser.swift`, `CSVExportSchema.swift` — already consume registry views only; no concrete-discipline references found.
+
+**Relocated by this story:**
+
+- `PitchDiscriminationRecord` (`@Model` class) — moved from nested in `Peach/Core/Data/PeachSchema.swift` to `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationRecord.swift` via `extension SchemaV1 { @Model final class … }`.
+- `PitchMatchingRecord` — moved to `Peach/Training/PitchMatching/Discipline/PitchMatchingRecord.swift`.
+- `RhythmOffsetDetectionRecord` (typealiased to `TimingOffsetDetectionRecord`) — moved to `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionRecord.swift`. SwiftData entity name preserved as `RhythmOffsetDetectionRecord` to avoid a schema migration for the cosmetic rename.
+- `ContinuousRhythmMatchingRecord` — moved to `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingRecord.swift`.
+- `PitchDiscriminationCSVParser`, `PitchMatchingCSVParser` — moved from `Peach/Core/Data/` to the respective feature `Discipline/` directories.
+
+**Deferred — needs architecture session:**
+
+- `Peach/Core/Data/V1ToV2Migration.swift`, `Peach/Core/Data/V2ToV3Migration.swift` — contain frozen historical wire-format strings (`pitchComparison`, `rhythmMatching`, `continuousRhythmMatching`, `tempoBPM`, etc.) per discipline. Per-feature relocation requires composing per-feature migration contributions, which is a mechanism refactor outside this story's "Not a CSV format change" scope. Flagged here so the architecture session can decide on a per-feature contribution model for format migrations.
+
+### Decisions
+
+- `SchemaV1.models` kept as an explicit array, not registry-driven. Reason: the registry's contents vary by Research configuration, but the SwiftData schema must include all four record types regardless. Additionally, `TrainingDataTransferService.preview()` constructs `Schema(versionedSchema: SchemaV1.self)` without bootstrapping the registry; switching to a registry source would crash in previews.
+- `@Model` classes nested via `extension SchemaV1 { @Model final class … }` in feature files. Verified the SwiftData macro works correctly across both iOS and macOS builds.
+- Top-level typealias in each record file (`typealias PitchDiscriminationRecord = SchemaV1.PitchDiscriminationRecord`) kept call sites unchanged.
+
+### Verification
+
+- `bin/test.sh` (iOS Debug): 1453 passed
+- `bin/test.sh -p mac` (macOS Debug): 1447 passed
+- `bin/test.sh --research` (iOS Research): 1812 passed
+- `bin/test.sh -p mac --research` (macOS Research): 1806 passed
+- `bin/build.sh` and `bin/build.sh -p mac`: zero new warnings
+- Grep `Peach/Core/Data/` for `unisonPitch|intervalPitch|rhythm|timingOffset|continuousRhythm`: only matches are in the deferred V*Migration files (frozen historical wire-format strings)
+- `simplify-code` review on staged diff: clean, behavior-preserving relocation; no simplifications needed
+
+## File List
+
+### Modified
+- `Peach/Core/Data/PeachSchema.swift` — removed nested `@Model` class bodies; kept `SchemaV1` enum, explicit `models` list, and migration plan; updated docstring with V2-authoring guidance reflecting the per-feature extension pattern.
+
+### Moved into feature directories
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationRecord.swift` (new — `@Model` extension on `SchemaV1`)
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingRecord.swift` (new — `@Model` extension on `SchemaV1`)
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionRecord.swift` (new — `@Model` extension on `SchemaV1`)
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingRecord.swift` (new — `@Model` extension on `SchemaV1`)
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationCSVParser.swift` (moved, no content change)
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingCSVParser.swift` (moved, no content change)
+
+### Story
+- `docs/implementation-artifacts/77-3-discipline-owned-data-declarations.md`
+- `docs/implementation-artifacts/sprint-status.yaml`
 
 ## Dev Notes
 
@@ -85,3 +139,4 @@ Based on the existing `TrainingDiscipline` protocol surface, all per-discipline 
 ## Change Log
 
 - 2026-04-27: Drafted. Status → ready-for-dev.
+- 2026-04-28: Implemented. Audit confirmed CSV column / parser / record-type / feedRecords declarations were already feature-local via `TrainingDiscipline` conformance. Relocated four `@Model` record classes from `Peach/Core/Data/PeachSchema.swift` into per-discipline feature directories using `extension SchemaV1 { @Model final class … }`. Relocated two CSV row parsers. Deferred `V1ToV2Migration.swift` / `V2ToV3Migration.swift` per-feature splitting to an architecture session — relocation requires a per-feature migration-contribution mechanism outside this story's scope. All four configurations green. Status → review.
