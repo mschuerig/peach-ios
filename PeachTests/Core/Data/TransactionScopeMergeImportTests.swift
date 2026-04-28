@@ -21,11 +21,14 @@ struct TransactionScopeMergeImportTests {
         Date(timeIntervalSinceReferenceDate: 794_394_000 + minutesOffset * 60)
     }
 
-    private func sampleDiscriminationPayload(targetNote: Int = 64) -> PitchDiscriminationPayload {
+    private func sampleDiscriminationPayload(
+        targetNote: Int = 64,
+        centOffset: Double = 25.0
+    ) -> PitchDiscriminationPayload {
         PitchDiscriminationPayload(
             referenceNote: 60,
             targetNote: targetNote,
-            centOffset: 25.0,
+            centOffset: centOffset,
             isCorrect: true,
             interval: 0,
             tuningSystem: "equalTemperament"
@@ -105,15 +108,38 @@ struct TransactionScopeMergeImportTests {
         #expect(storedCount == 2)
     }
 
-    @Test("dedupes within the same batch")
-    func dedupesInBatchDuplicates() async throws {
+    @Test("returns (0, 0) and leaves existingKeys untouched for an empty batch")
+    func emptyBatchReturnsZerosAndNoOps() async throws {
+        let store = try makeStore()
+        let entries: [(timestamp: Date, payload: PitchDiscriminationPayload)] = []
+        var existingKeys: Set<PitchDuplicateKey> = [
+            keyFor(timestamp: fixedDate(minutesOffset: 0), payload: sampleDiscriminationPayload(targetNote: 64))
+        ]
+        let snapshot = existingKeys
+
+        var result: (imported: Int, skipped: Int) = (0, 0)
+        try store.withinTransaction { scope in
+            result = try scope.mergeImportPayloads(entries, existingKeys: &existingKeys, keyFor: keyFor)
+        }
+
+        #expect(result.imported == 0)
+        #expect(result.skipped == 0)
+        #expect(existingKeys == snapshot)
+
+        let storedCount = try store.fetchPayloads(PitchDiscriminationPayload.self).count
+        #expect(storedCount == 0)
+    }
+
+    @Test("dedupes within the same batch and keeps the first occurrence")
+    func dedupesInBatchDuplicatesKeepsFirst() async throws {
         let store = try makeStore()
         let timestamp = fixedDate(minutesOffset: 0)
-        let payload = sampleDiscriminationPayload(targetNote: 64)
+        // PitchDuplicateKey hashes timestamp+notes+trainingType (not centOffset),
+        // so distinct centOffsets collide as duplicates and let us verify which entry persisted.
         let entries: [(timestamp: Date, payload: PitchDiscriminationPayload)] = [
-            (timestamp, payload),
-            (timestamp, payload),
-            (timestamp, payload),
+            (timestamp, sampleDiscriminationPayload(centOffset: 11.0)),
+            (timestamp, sampleDiscriminationPayload(centOffset: 22.0)),
+            (timestamp, sampleDiscriminationPayload(centOffset: 33.0)),
         ]
         var existingKeys = Set<PitchDuplicateKey>()
 
@@ -126,15 +152,16 @@ struct TransactionScopeMergeImportTests {
         #expect(result.skipped == 2)
         #expect(existingKeys.count == 1)
 
-        let storedCount = try store.fetchPayloads(PitchDiscriminationPayload.self).count
-        #expect(storedCount == 1)
+        let stored = try store.fetchPayloads(PitchDiscriminationPayload.self)
+        #expect(stored.count == 1)
+        #expect(stored.first?.payload.centOffset == 11.0)
     }
 
     @Test("propagates encoder errors and rolls back the transaction")
     func propagatesEncoderErrors() async throws {
         let store = try makeStore()
         let entries: [(timestamp: Date, payload: ThrowingMergePayload)] = [
-            (fixedDate(minutesOffset: 0), ThrowingMergePayload()),
+            (fixedDate(minutesOffset: 0), ThrowingMergePayload(throwOnEncode: true)),
         ]
         var existingKeys = Set<ThrowingMergeKey>()
 
@@ -142,33 +169,74 @@ struct TransactionScopeMergeImportTests {
             try store.withinTransaction { scope in
                 _ = try scope.mergeImportPayloads(
                     entries,
-                    existingKeys: &existingKeys,
-                    keyFor: { _, _ in ThrowingMergeKey() }
-                )
+                    existingKeys: &existingKeys
+                ) { _, _ in ThrowingMergeKey(id: 0) }
             }
         }
         #expect(existingKeys.isEmpty)
+    }
+
+    @Test("partial success before a throw rolls back inserts but leaves existingKeys mutated")
+    func partialSuccessThenThrowDocumentsAsymmetry() async throws {
+        let store = try makeStore()
+        let entries: [(timestamp: Date, payload: ThrowingMergePayload)] = [
+            (fixedDate(minutesOffset: 0), ThrowingMergePayload(id: 0, throwOnEncode: false)),
+            (fixedDate(minutesOffset: 1), ThrowingMergePayload(id: 1, throwOnEncode: true)),
+            (fixedDate(minutesOffset: 2), ThrowingMergePayload(id: 2, throwOnEncode: false)),
+        ]
+        var existingKeys = Set<ThrowingMergeKey>()
+
+        #expect(throws: ThrowingMergePayload.EncodeFailure.self) {
+            try store.withinTransaction { scope in
+                _ = try scope.mergeImportPayloads(
+                    entries,
+                    existingKeys: &existingKeys
+                ) { _, payload in ThrowingMergeKey(id: payload.id) }
+            }
+        }
+
+        // Documents the helper's contract: existingKeys is inout, so the key for the
+        // successfully-inserted entry 0 persists in the caller's set even though the
+        // enclosing transaction rolled back the persisted envelope. Iteration 2 was
+        // never reached because the loop bailed on iteration 1.
+        #expect(existingKeys == [ThrowingMergeKey(id: 0)])
+
+        let storedCount = try store.fetchPayloads(ThrowingMergePayload.self).count
+        #expect(storedCount == 0)
     }
 }
 
 // MARK: - Test Doubles
 
-/// Payload that always throws when encoded; used to exercise the helper's error path.
+/// Payload that throws on encode when `throwOnEncode` is true; used to exercise the
+/// helper's error and partial-success paths.
 private struct ThrowingMergePayload: TrainingDisciplinePayload, Equatable {
     static let disciplineIdentifier = "throwingMerge"
     static let currentPayloadVersion = 1
 
     struct EncodeFailure: Error {}
 
-    func encode(to encoder: Encoder) throws {
-        throw EncodeFailure()
+    let id: Int
+    let throwOnEncode: Bool
+
+    init(id: Int = 0, throwOnEncode: Bool) {
+        self.id = id
+        self.throwOnEncode = throwOnEncode
     }
 
-    init() {}
+    func encode(to encoder: Encoder) throws {
+        if throwOnEncode { throw EncodeFailure() }
+        var container = encoder.singleValueContainer()
+        try container.encode(id)
+    }
 
     init(from decoder: Decoder) throws {
-        // Unused; the helper only encodes.
+        let container = try decoder.singleValueContainer()
+        self.id = try container.decode(Int.self)
+        self.throwOnEncode = false
     }
 }
 
-private struct ThrowingMergeKey: Hashable {}
+private struct ThrowingMergeKey: Hashable {
+    let id: Int
+}

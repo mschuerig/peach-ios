@@ -161,10 +161,8 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         let typed = parsedRecords(from: parseResult).compactMap { entry in
             (entry.payload as? ContinuousRhythmMatchingPayload).map { (entry.timestamp, $0) }
         }
-        return try scope.mergeImportPayloads(
-            typed,
-            existingKeys: &existingKeys,
-            keyFor: { RhythmDuplicateKey(timestamp: $0, tempoBPM: $1.tempoBPM, trainingType: csvTrainingType) }
-        )
+        return try scope.mergeImportPayloads(typed, existingKeys: &existingKeys) {
+            RhythmDuplicateKey(timestamp: $0, tempoBPM: $1.tempoBPM, trainingType: csvTrainingType)
+        }
     }
 }

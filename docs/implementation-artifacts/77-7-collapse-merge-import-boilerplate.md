@@ -1,6 +1,6 @@
 # Story 77.7: Collapse merge-import boilerplate across disciplines
 
-Status: review
+Status: done
 
 ## Story
 
@@ -137,6 +137,8 @@ If 77.8 (associated `Payload` type) lands first, this helper becomes a default p
 
 - 2026-04-28: Drafted as a deferred 77.4 review finding. Status → ready-for-dev.
 - 2026-04-28: Implemented helper `TrainingDataStore.TransactionScope.mergeImportPayloads(_:existingKeys:keyFor:)` and migrated all six conforming disciplines (the story narrative said "four"; six discipline files actually carried the loop body — pitch and matching × unison/interval, plus the two rhythm disciplines). Status → review.
+- 2026-04-28: Code-review fixes — extended helper doc to specify the throw-path contract and `keyFor` injectivity expectation; converted the six discipline call sites to trailing-closure form so each body is 8 lines; strengthened the in-batch-dedup test to assert first-occurrence-wins; added empty-batch and partial-success-then-throw tests.
+- 2026-04-29: Resolved deferred review findings. (1) Type-mismatched payloads silently dropped at each per-discipline `compactMap` is captured by 77.8 Task 3.2 — no separate tracking. (2) Generic `K: Hashable` unrelated to `P` is captured by new 77.8 subtask 4.3 (consider associated `DuplicateKey`). (3) Throw-time loss of `imported`/`skipped` progress: **won't-do** — pre-existing design with no current caller needing partial progress; revisit only when a real merge-import retry use case appears. (4) No test for cross-call `existingKeys` reuse in one transaction: **won't-do** — speculative; no discipline calls the helper more than once per transaction. Status → done.
 
 ## Dev Agent Record
 
@@ -149,10 +151,10 @@ If 77.8 (associated `Payload` type) lands first, this helper becomes a default p
 
 ### Completion Notes
 
-- Helper consolidates the encode-and-insert-if-new loop that was duplicated across six disciplines. Each discipline's `mergeImportRecords` body is now ≤ 8 lines (build set, typed conversion, helper call).
+- Helper consolidates the encode-and-insert-if-new loop that was duplicated across six disciplines. Each discipline's `mergeImportRecords` body is now 8 lines (build set, typed conversion, helper call as trailing-closure form).
 - All four test configurations green: iOS Debug 1460 passed, macOS Debug 1454, iOS Debug (Research) 1804, macOS Debug (Research) 1798.
 - Both builds clean (only the pre-existing `appintentsmetadataprocessor` warning, unchanged by this story).
-- Added 5 unit tests in `PeachTests/Core/Data/TransactionScopeMergeImportTests.swift`: empty existing-keys, all-duplicate, mixed input, in-batch dedup, throwing-encoder.
+- Unit tests in `PeachTests/Core/Data/TransactionScopeMergeImportTests.swift` cover: empty existing-keys, all-duplicate, mixed input, empty batch, in-batch dedup (asserts first-occurrence-wins), throwing-encoder, and partial-success-then-throw (documents the inout/transaction asymmetry).
 
 ### File List
 

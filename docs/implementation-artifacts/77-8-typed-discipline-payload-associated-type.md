@@ -87,6 +87,7 @@ whichever shape comes out cleanest. Document the chosen pattern in Completion No
 - [ ] Task 4: Coordinate with 77.7 if it lands first (AC: 2)
   - [ ] 4.1 If 77.7 introduced a merge helper that takes `[(Date, any TrainingDisciplinePayload)]`, retighten its signature to take `[(Date, P)]`.
   - [ ] 4.2 If 77.7 has not landed yet, this story unblocks 77.7's existential-cast removal.
+  - [ ] 4.3 Consider adding `associatedtype DuplicateKey: Hashable` so 77.7's `mergeImportPayloads` ties its `K` to `P` at the type level instead of accepting any `K: Hashable`. Defer if it conflicts with the registry's existential boundary.
 
 - [ ] Task 5: Build/test (AC: 5)
   - [ ] 5.1 All four test configurations green.
@@ -119,3 +120,4 @@ Heterogeneous storage (`[any TrainingDiscipline]`) is what makes cross-cutting i
 ## Change Log
 
 - 2026-04-28: Drafted as a deferred 77.4 review finding. Status → ready-for-dev.
+- 2026-04-29: Added subtask 4.3 to consider an associated `DuplicateKey` constraint on `TrainingDiscipline` (deferred from 77.7 review).

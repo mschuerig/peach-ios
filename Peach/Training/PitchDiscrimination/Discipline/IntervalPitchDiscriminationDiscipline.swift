@@ -88,10 +88,8 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         let typed = parsedRecords(from: parseResult).compactMap { entry in
             (entry.payload as? PitchDiscriminationPayload).map { (entry.timestamp, $0) }
         }
-        return try scope.mergeImportPayloads(
-            typed,
-            existingKeys: &existingKeys,
-            keyFor: { PitchDuplicateKey(timestamp: $0, payload: $1, trainingType: csvTrainingType) }
-        )
+        return try scope.mergeImportPayloads(typed, existingKeys: &existingKeys) {
+            PitchDuplicateKey(timestamp: $0, payload: $1, trainingType: csvTrainingType)
+        }
     }
 }
