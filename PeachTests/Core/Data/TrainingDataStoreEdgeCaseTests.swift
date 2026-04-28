@@ -143,6 +143,78 @@ struct TrainingDataStoreEdgeCaseTests {
         #expect(try store.fetchPayloads(PitchMatchingPayload.self).count == 3)
     }
 
+    // MARK: - Cross-Discipline Fetch Isolation
+
+    @Test("FetchPayloads returns only the requested discipline's rows when other disciplines are present")
+    func fetchPayloadsIsolatesByDiscipline() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        try store.save(envelope(for: PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")))
+        try store.save(envelope(for: PitchDiscriminationPayload(referenceNote: 62, targetNote: 62, centOffset: 12.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")))
+        try store.save(envelope(for: PitchMatchingPayload(referenceNote: 69, targetNote: 69, initialCentOffset: 30.0, userCentError: 5.0, interval: 0, tuningSystem: "equalTemperament")))
+
+        let comparisons = try store.fetchPayloads(PitchDiscriminationPayload.self)
+        let matchings = try store.fetchPayloads(PitchMatchingPayload.self)
+
+        #expect(comparisons.count == 2)
+        #expect(matchings.count == 1)
+        #expect(matchings[0].payload.referenceNote == 69)
+    }
+
+    // MARK: - Decode Failure Isolation
+
+    @Test("FetchPayloads skips a corrupt envelope without failing the whole fetch")
+    func fetchPayloadsSkipsCorruptEnvelope() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let valid = PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        try store.save(envelope(for: valid))
+
+        let corrupt = TrainingRecord(
+            disciplineIdentifier: PitchDiscriminationPayload.disciplineIdentifier,
+            timestamp: Date(),
+            payloadVersion: PitchDiscriminationPayload.currentPayloadVersion,
+            payloadData: Data("not valid json".utf8)
+        )
+        try store.save(corrupt)
+
+        let fetched = try store.fetchPayloads(PitchDiscriminationPayload.self)
+        #expect(fetched.count == 1)
+        #expect(fetched[0].payload == valid)
+    }
+
+    // MARK: - Envelope Metadata Mismatch
+
+    @Test("Decoding into the wrong payload type throws disciplineMismatch")
+    func decodeRejectsDisciplineMismatch() async throws {
+        let payload = PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        let env = try JSONEnvelope.encode(payload, timestamp: Date())
+
+        #expect(throws: JSONEnvelopeError.self) {
+            try JSONEnvelope.decode(PitchMatchingPayload.self, from: env)
+        }
+    }
+
+    @Test("Decoding from a payload with an unsupported version throws unsupportedPayloadVersion")
+    func decodeRejectsUnsupportedVersion() async throws {
+        let payload = PitchDiscriminationPayload(referenceNote: 60, targetNote: 60, centOffset: 10.0, isCorrect: true, interval: 0, tuningSystem: "equalTemperament")
+        let env = try JSONEnvelope.encode(payload, timestamp: Date())
+        let bumped = TrainingRecord(
+            disciplineIdentifier: env.disciplineIdentifier,
+            timestamp: env.timestamp,
+            payloadVersion: env.payloadVersion + 99,
+            payloadData: env.payloadData
+        )
+
+        #expect(throws: JSONEnvelopeError.self) {
+            try JSONEnvelope.decode(PitchDiscriminationPayload.self, from: bumped)
+        }
+    }
+
     @Test("DataStoreError cases have descriptive messages")
     func dataStoreErrorMessages() async {
         let saveError = Peach.DataStoreError.saveFailed("Test save error")

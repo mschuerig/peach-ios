@@ -81,11 +81,11 @@ struct IntervalPitchMatchingDiscipline: TrainingDisciplineUI, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildPitchDuplicateKeys(from: store)
+        var existingKeys = try buildPitchDuplicateKeys(matchingsIn: store, trainingType: csvTrainingType)
         var imported = 0, skipped = 0
         for entry in parsedRecords(from: parseResult) {
             guard let p = entry.payload as? PitchMatchingPayload else { continue }
-            let key = PitchDuplicateKey(timestamp: entry.timestamp, payload: p)
+            let key = PitchDuplicateKey(timestamp: entry.timestamp, payload: p, trainingType: csvTrainingType)
             if existingKeys.contains(key) {
                 skipped += 1
             } else {

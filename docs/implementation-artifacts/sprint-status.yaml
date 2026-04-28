@@ -645,7 +645,7 @@ development_status:
   77-1-plugin-style-discipline-ui-contributions: done
   77-2-discipline-owned-ui-contributions: done
   77-3-discipline-owned-data-declarations: done
-  77-4-json-envelope-storage-redesign: review
+  77-4-json-envelope-storage-redesign: done
   77-5-csv-migration-plugin-contract: ready-for-dev
   77-6-feature-owned-gap-positions-storage: ready-for-dev
   77-7-collapse-merge-import-boilerplate: ready-for-dev # Deferred from 77.4 review

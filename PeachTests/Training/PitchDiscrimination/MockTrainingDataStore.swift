@@ -50,7 +50,7 @@ final class MockTrainingDataStore: TrainingRecordPersisting, PitchDiscrimination
             savedPitchMatchingRecords.append(payload)
             onSavePitchMatchingCalled?()
         default:
-            break
+            fatalError("MockTrainingDataStore: unhandled discipline \(envelope.disciplineIdentifier)")
         }
     }
 

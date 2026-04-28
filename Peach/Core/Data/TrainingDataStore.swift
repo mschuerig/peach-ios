@@ -60,7 +60,7 @@ final class TrainingDataStore {
     }
 
     /// Fetches all envelopes whose `disciplineIdentifier` matches the given identifier.
-    /// Sort order matches insertion order; callers needing chronological order sort by ``TrainingRecord/timestamp``.
+    /// Order is unspecified; callers that need chronological order must sort by ``TrainingRecord/timestamp``.
     func fetchEnvelopes(forDisciplineIdentifier identifier: String) throws -> [TrainingRecord] {
         let descriptor = FetchDescriptor<TrainingRecord>(
             predicate: #Predicate { $0.disciplineIdentifier == identifier }
@@ -73,11 +73,24 @@ final class TrainingDataStore {
     }
 
     /// Fetches all payloads for a discipline, sorted by timestamp.
-    func fetchPayloads<P: TrainingDisciplinePayload>(_ type: P.Type) throws -> [(timestamp: Date, payload: P)] {
+    ///
+    /// A single corrupt envelope is logged and skipped rather than failing the whole fetch — this
+    /// keeps one bad row from blanking out an entire discipline's history.
+    func fetchPayloads<P: TrainingDisciplinePayload>(_ type: P.Type) throws -> [TimestampedPayload<P>] {
         let envelopes = try fetchEnvelopes(forDisciplineIdentifier: P.disciplineIdentifier)
-        return try envelopes
+        return envelopes
             .sorted { $0.timestamp < $1.timestamp }
-            .map { ($0.timestamp, try JSONEnvelope.decode(P.self, from: $0)) }
+            .compactMap { envelope in
+                do {
+                    let payload = try JSONEnvelope.decode(P.self, from: envelope)
+                    return TimestampedPayload(timestamp: envelope.timestamp, payload: payload)
+                } catch {
+                    Self.logger.error(
+                        "Skipping undecodable \(P.disciplineIdentifier, privacy: .public) envelope at \(envelope.timestamp, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
+                    return nil
+                }
+            }
     }
 
     /// Deletes every envelope in the store.

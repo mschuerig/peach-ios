@@ -17,7 +17,12 @@ struct TimingOffsetDetectionStoreAdapter: TimingOffsetDetectionObserver {
         )
 
         do {
-            let envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            let envelope: TrainingRecord
+            do {
+                envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            } catch {
+                throw DataStoreError.saveFailed("Failed to encode timing offset detection payload: \(error.localizedDescription)")
+            }
             try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Timing offset detection save error: \(error.localizedDescription)")

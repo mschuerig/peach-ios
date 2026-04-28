@@ -22,7 +22,12 @@ struct PitchDiscriminationStoreAdapter: PitchDiscriminationObserver {
         )
 
         do {
-            let envelope = try JSONEnvelope.encode(payload, timestamp: completed.timestamp)
+            let envelope: TrainingRecord
+            do {
+                envelope = try JSONEnvelope.encode(payload, timestamp: completed.timestamp)
+            } catch {
+                throw DataStoreError.saveFailed("Failed to encode pitch discrimination payload: \(error.localizedDescription)")
+            }
             try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Pitch discrimination save error: \(error.localizedDescription)")

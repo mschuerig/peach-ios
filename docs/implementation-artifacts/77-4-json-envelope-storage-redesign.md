@@ -1,6 +1,6 @@
 # Story 77.4: JSON envelope storage redesign
 
-Status: review
+Status: done
 
 ## Story
 
@@ -82,12 +82,13 @@ The `RhythmOffsetDetectionRecord` legacy SwiftData entity name disappears entire
 
 **Given** each of the four `<Feature>StoreAdapter.swift` files (e.g., `PitchDiscriminationStoreAdapter.swift`)
 **When** inspected
-**Then** the adapter is the only place that knows how to:
+**Then** the adapter is the only place that knows the discipline-specific mapping
+between domain trial objects and ``<Feature>Payload`` structs. It:
 
-- encode a fresh payload + `Date` into a `TrainingRecord` envelope and call `TrainingDataStore.save(_:)`,
-- fetch envelopes filtered to its discipline (`disciplineIdentifier == Self.Payload.disciplineIdentifier`) and decode them into payload structs.
+- builds a payload from the completed trial and asks the shared `JSONEnvelope` helper to encode it into a `TrainingRecord`, then calls `TrainingDataStore.save(_:)`,
+- forwards reads through the discipline-typed `TrainingDataStore.fetchPayloads(_:)` helper, which centralizes the envelope-filter + decode step.
 
-A small shared helper (e.g., `extension TrainingDataStore { func fetchPayloads<P: TrainingDisciplinePayload>(_:) throws -> [(timestamp: Date, payload: P)] }`) is acceptable and encouraged; the discipline-specific knowledge stays in the adapter.
+The envelope ↔ payload conversion lives in `JSONEnvelope` (encoder configuration) and `TrainingDataStore.fetchPayloads(_:)` (filter + decode). The adapter contributes the discipline-specific payload construction; it is not the only place that *encodes or decodes* envelopes, but it is the only place that maps a discipline's trial type to its payload struct.
 
 ### AC 6: `TrainingDataStore` is discipline-agnostic
 

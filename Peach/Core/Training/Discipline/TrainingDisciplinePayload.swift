@@ -12,3 +12,15 @@ protocol TrainingDisciplinePayload: Codable, Sendable {
     static var disciplineIdentifier: String { get }
     static var currentPayloadVersion: Int { get }
 }
+
+/// A decoded payload paired with the envelope's stored timestamp.
+///
+/// Used as the return shape of payload-typed fetches so call sites can use
+/// `.timestamp` and `.payload` accessors rather than tuple destructuring,
+/// and so two `TimestampedPayload` values can be compared with `==` in tests.
+struct TimestampedPayload<P: TrainingDisciplinePayload>: Sendable {
+    let timestamp: Date
+    let payload: P
+}
+
+extension TimestampedPayload: Equatable where P: Equatable {}

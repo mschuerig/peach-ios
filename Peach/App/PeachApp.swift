@@ -221,14 +221,45 @@ struct PeachApp: App {
 
     // MARK: - Data Store Setup
 
+    /// Builds the model container, recovering from a schema-incompatible on-disk store by
+    /// wiping it and recreating from scratch.
+    ///
+    /// The single supported migration path between incompatible schema versions is CSV
+    /// export/import; pre-77.4 stores at SwiftData schema version (1, 0, 0) cannot be
+    /// migrated automatically because the entity set itself changed. If the on-disk store
+    /// is incompatible, this method deletes the store files and recreates an empty
+    /// container so the app can launch into an empty state rather than crashing.
     private static func setupDataStore() throws -> (ModelContainer, TrainingDataStore) {
         let schema = Schema(versionedSchema: SchemaV1.self)
-        let container = try ModelContainer(
-            for: schema,
-            migrationPlan: PeachSchemaMigrationPlan.self
+        do {
+            let container = try ModelContainer(
+                for: schema,
+                migrationPlan: PeachSchemaMigrationPlan.self
+            )
+            return (container, TrainingDataStore(modelContext: container.mainContext))
+        } catch {
+            logger.error("ModelContainer init failed: \(error.localizedDescription, privacy: .public). Wiping incompatible store and retrying.")
+            try wipeDefaultStoreFiles()
+            let container = try ModelContainer(
+                for: schema,
+                migrationPlan: PeachSchemaMigrationPlan.self
+            )
+            return (container, TrainingDataStore(modelContext: container.mainContext))
+        }
+    }
+
+    private static func wipeDefaultStoreFiles() throws {
+        let appSupport = try FileManager.default.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: false
         )
-        let dataStore = TrainingDataStore(modelContext: container.mainContext)
-        return (container, dataStore)
+        let candidates = ["default.store", "default.store-shm", "default.store-wal"]
+        for name in candidates {
+            let url = appSupport.appendingPathComponent(name)
+            try? FileManager.default.removeItem(at: url)
+        }
     }
 
     // MARK: - Audio Setup

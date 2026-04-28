@@ -31,7 +31,7 @@ struct DuplicateKeyTests {
             referenceNote: 60, targetNote: 62, centOffset: 15.0,
             isCorrect: true, interval: 0, tuningSystem: "equalTemperament"
         )
-        let key = PitchDuplicateKey(timestamp: date, payload: payload)
+        let key = PitchDuplicateKey(timestamp: date, payload: payload, trainingType: "pitchDiscrimination")
 
         #expect(key.referenceNote == 60)
         #expect(key.targetNote == 62)
@@ -45,7 +45,7 @@ struct DuplicateKeyTests {
             referenceNote: 60, targetNote: 67, initialCentOffset: 30.0,
             userCentError: 5.0, interval: 7, tuningSystem: "equalTemperament"
         )
-        let key = PitchDuplicateKey(timestamp: date, payload: payload)
+        let key = PitchDuplicateKey(timestamp: date, payload: payload, trainingType: "pitchMatching")
 
         #expect(key.referenceNote == 60)
         #expect(key.targetNote == 67)

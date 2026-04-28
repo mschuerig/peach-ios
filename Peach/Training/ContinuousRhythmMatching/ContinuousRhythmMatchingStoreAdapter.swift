@@ -21,7 +21,12 @@ struct ContinuousRhythmMatchingStoreAdapter: ContinuousRhythmMatchingObserver {
         )
 
         do {
-            let envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            let envelope: TrainingRecord
+            do {
+                envelope = try JSONEnvelope.encode(payload, timestamp: result.timestamp)
+            } catch {
+                throw DataStoreError.saveFailed("Failed to encode continuous rhythm matching payload: \(error.localizedDescription)")
+            }
             try store.save(envelope)
         } catch let error as DataStoreError {
             Self.logger.warning("Continuous rhythm matching save error: \(error.localizedDescription)")

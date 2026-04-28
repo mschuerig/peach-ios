@@ -158,6 +158,24 @@ struct TrainingDataStoreTests {
         #expect(fetched[0].payload == payload)
     }
 
+    @Test("FetchPayloads PitchMatchingPayload returns multiple payloads in timestamp order")
+    func fetchPitchMatchingPayloadsInOrder() async throws {
+        let container = try makeTestContainer()
+        let context = ModelContext(container)
+        let store = TrainingDataStore(modelContext: context)
+
+        let now = Date()
+        try store.save(try envelope(for: PitchMatchingPayload(referenceNote: 60, targetNote: 60, initialCentOffset: 10.0, userCentError: 1.0, interval: 0, tuningSystem: "equalTemperament"), timestamp: now.addingTimeInterval(-60)))
+        try store.save(try envelope(for: PitchMatchingPayload(referenceNote: 62, targetNote: 62, initialCentOffset: 20.0, userCentError: 2.0, interval: 0, tuningSystem: "equalTemperament"), timestamp: now.addingTimeInterval(-30)))
+        try store.save(try envelope(for: PitchMatchingPayload(referenceNote: 64, targetNote: 64, initialCentOffset: 30.0, userCentError: 3.0, interval: 0, tuningSystem: "equalTemperament"), timestamp: now))
+
+        let fetched = try store.fetchPayloads(PitchMatchingPayload.self)
+        #expect(fetched.count == 3)
+        #expect(fetched[0].payload.referenceNote == 60)
+        #expect(fetched[1].payload.referenceNote == 62)
+        #expect(fetched[2].payload.referenceNote == 64)
+    }
+
     @Test("FetchPayloads PitchMatchingPayload returns empty array when no envelopes exist")
     func fetchPitchMatchingFromEmptyStore() async throws {
         let container = try makeTestContainer()

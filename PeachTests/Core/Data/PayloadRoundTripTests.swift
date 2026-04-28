@@ -71,7 +71,6 @@ struct PayloadRoundTripTests {
         #expect(keys == ["referenceNote", "targetNote", "initialCentOffset", "userCentError", "interval", "tuningSystem"])
     }
 
-#if PEACH_RESEARCH
     @Test("TimingOffsetDetectionPayload round-trips through TrainingRecord")
     func timingOffsetDetectionRoundTrip() async throws {
         let timestamp = Date()
@@ -116,8 +115,9 @@ struct PayloadRoundTripTests {
         #expect(decoded == payload)
     }
 
-    /// Encoded with every optional populated to lock the full key set; nil-valued positions are
-    /// omitted by the default encoder, which is the documented wire-format behaviour.
+    /// Encoded with every optional populated to lock the full key set. The synthesized `Codable`
+    /// implementation writes `null` (not omitted keys) for nil optionals, so all six keys appear
+    /// regardless of which positions have values.
     @Test("ContinuousRhythmMatchingPayload encodes the expected JSON keys")
     func continuousRhythmMatchingJSONKeys() async throws {
         let payload = ContinuousRhythmMatchingPayload(
@@ -135,7 +135,6 @@ struct PayloadRoundTripTests {
             "meanOffsetMsPosition2", "meanOffsetMsPosition3"
         ])
     }
-#endif
 
     private func jsonKeys<P: TrainingDisciplinePayload>(of payload: P) throws -> Set<String> {
         let envelope = try JSONEnvelope.encode(payload, timestamp: Date())

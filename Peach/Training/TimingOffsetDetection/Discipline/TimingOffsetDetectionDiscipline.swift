@@ -1,7 +1,10 @@
 import Foundation
 import SwiftUI
+import os
 
 struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
+    private static let logger = Logger(subsystem: "com.peach.app", category: "TimingOffsetDetectionDiscipline")
+
     let id = TrainingDisciplineID.timingOffsetDetection
 
     let category: TrainingCategory = .rhythm
@@ -66,7 +69,10 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         for entry in try store.fetchPayloads(TimingOffsetDetectionPayload.self) {
             let p = entry.payload
             let offset = TimingOffset(.milliseconds(p.offsetMs))
-            guard let range = TempoRange.range(for: TempoBPM(p.tempoBPM)) else { continue }
+            guard let range = TempoRange.range(for: TempoBPM(p.tempoBPM)) else {
+                Self.logger.warning("Skipping record with out-of-range tempoBPM=\(p.tempoBPM) at \(entry.timestamp)")
+                continue
+            }
             builder.addPoint(
                 MetricPoint(timestamp: entry.timestamp, value: abs(p.offsetMs)),
                 for: .rhythm(id, range, offset.direction),
@@ -147,7 +153,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildRhythmDuplicateKeys(from: store)
+        var existingKeys = try buildRhythmDuplicateKeys(timingOffsetDetectionsIn: store, trainingType: csvTrainingType)
         var imported = 0, skipped = 0
         for entry in parsedRecords(from: parseResult) {
             guard let p = entry.payload as? TimingOffsetDetectionPayload else { continue }

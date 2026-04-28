@@ -14,6 +14,8 @@ import SwiftData
 /// payload struct versions when its own schema evolves.
 @Model
 final class TrainingRecord {
+    #Index<TrainingRecord>([\.disciplineIdentifier, \.timestamp])
+
     var disciplineIdentifier: String
     var timestamp: Date
     var payloadVersion: Int
