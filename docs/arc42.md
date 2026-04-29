@@ -608,19 +608,36 @@ The contents below are illustrative only — `Example` is not a real or planned 
 ```
 Peach/Training/Example/
     Discipline/
-        ExampleDiscipline.swift               conforms to TrainingDisciplineUI; declares identifier, category, statistics keys; the type the registry holds
-        ExamplePayload.swift                  Codable, Sendable struct conforming to TrainingDisciplinePayload; per-record schema; JSON-encoded into TrainingRecord.payloadData by ExampleStoreAdapter
-        ExampleCSVHistory.swift               CSVHistory snapshots for this discipline; consumed by CSVMigrationChain (per-version derivation) and by the registry for column aggregation
-    ExampleSession.swift                      state machine driving the training cycle; collaborates with NotePlayer/RhythmPlayer and the algorithm strategy; fires trials to ExampleObserver conformers
-    ExampleScreen.swift                       SwiftUI screen for the training loop; renders session state and routes user input back into the session
-    ExampleObserver.swift                     trial-result observer protocol typed in ExampleTrial; the session keeps an array of conformers and calls didCompleteTrial(_:) after each trial
-    ExampleTrial.swift                        value type for one completed trial; carried to observers and reduced into ExamplePayload
-    ExampleProfileAdapter.swift               bridges ExampleObserver to ProfileUpdating, mapping each ExampleTrial to (StatisticsKey, Date, Double) for PerceptualProfile
-    ExampleStoreAdapter.swift                 bridges ExampleObserver to TrainingDataStore, encoding the payload via JSONEnvelope and persisting a TrainingRecord
-    ExampleLifecycleContribution.swift        extension on ExampleSession providing contribute(to:userSettings:); TrainingLifecycleCoordinator delivers app-lifecycle events through it
-    Help/ExampleHelp.swift                    discipline-scoped help bodies surfaced through TrainingDisciplineUI.settingsHelp and profileHelp
-    Profile/ExampleProfileCardView.swift      SwiftUI view returned by TrainingDisciplineUI.profileCard; renders this discipline's progress on ProfileScreen
+        ExampleDiscipline.swift
+        ExamplePayload.swift
+        ExampleCSVHistory.swift
+    Help/
+        ExampleHelp.swift
+    Profile/
+        ExampleProfileCardView.swift
+    ExampleSession.swift
+    ExampleScreen.swift
+    ExampleObserver.swift
+    ExampleTrial.swift
+    ExampleProfileAdapter.swift
+    ExampleStoreAdapter.swift
+    ExampleLifecycleContribution.swift
 ```
+
+Each file's responsibility and collaborations:
+
+- **`ExampleDiscipline.swift`** — Conforms to `TrainingDisciplineUI`; declares identifier, category, statistics keys; the type the registry holds.
+- **`ExamplePayload.swift`** — `Codable, Sendable` struct conforming to `TrainingDisciplinePayload`; per-record schema; JSON-encoded into `TrainingRecord.payloadData` by `ExampleStoreAdapter`.
+- **`ExampleCSVHistory.swift`** — `CSVHistory` snapshots for this discipline; consumed by `CSVMigrationChain` for per-version derivation and by the registry for column aggregation.
+- **`ExampleHelp.swift`** — Discipline-scoped help bodies surfaced through `TrainingDisciplineUI.settingsHelp` and `profileHelp`.
+- **`ExampleProfileCardView.swift`** — SwiftUI view returned by `TrainingDisciplineUI.profileCard`; renders this discipline's progress on `ProfileScreen`.
+- **`ExampleSession.swift`** — State machine driving the training cycle; collaborates with `NotePlayer`/`RhythmPlayer` and the algorithm strategy; fires trials to `ExampleObserver` conformers.
+- **`ExampleScreen.swift`** — SwiftUI screen for the training loop; renders session state and routes user input back into the session.
+- **`ExampleObserver.swift`** — Trial-result observer protocol typed in `ExampleTrial`; the session keeps an array of conformers and calls `didCompleteTrial(_:)` after each trial.
+- **`ExampleTrial.swift`** — Value type for one completed trial; carried to observers and reduced into `ExamplePayload`.
+- **`ExampleProfileAdapter.swift`** — Bridges `ExampleObserver` to `ProfileUpdating`, mapping each `ExampleTrial` to `(StatisticsKey, Date, Double)` for `PerceptualProfile`.
+- **`ExampleStoreAdapter.swift`** — Bridges `ExampleObserver` to `TrainingDataStore`, encoding the payload via `JSONEnvelope` and persisting a `TrainingRecord`.
+- **`ExampleLifecycleContribution.swift`** — Extension on `ExampleSession` providing `contribute(to:userSettings:)`; `TrainingLifecycleCoordinator` delivers app-lifecycle events through it.
 
 Outside this directory, the contributor edits exactly three places: one factory line in `App/Training/DisciplineBootstrap.allDisciplines`, one entry in `allCSVHistories`, and one `NavigationDestination` case — plus the localization strings.
 
