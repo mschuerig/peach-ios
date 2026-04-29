@@ -595,23 +595,95 @@ The composition root wires:
 
 ### 8.7 Training Discipline Registry
 
-Disciplines extend the app along a two-protocol seam. `TrainingDiscipline` (in `Core/Training/Discipline/`) is the Foundation-only data protocol — it carries identifier, category, statistics keys, profile feeding, CSV column ownership, and the payload-typed parsing/export primitives. `TrainingDisciplineUI: TrainingDiscipline` (in `App/Training/`) refines that protocol in the App layer with four defaulted SwiftUI-aware requirements: `profileCard`, `settingsSections`, `settingsHelp`, `profileHelp`. The split exists because the Core/Data services (`TrainingDataExporter`, `CSVImportParser`, `TrainingDataStore`) consume the registry and must stay SwiftUI-free.
+**Disciplines are plugins.** The unit of extension is `Peach/Training/<Feature>/` — a self-contained directory contributing the discipline's session, screen, persistence payload, CSV history, observer protocol, adapters, lifecycle contribution, and help bodies. Central screens iterate `TrainingDisciplineRegistry.shared.allUI`; they never name disciplines individually. New disciplines are additive — existing files are not modified.
 
-The feature directory is the unit of extension. Every file belonging to one discipline — its discipline conformance, its `Codable` payload struct, its CSV history, its session, its screen, its observer, its adapters, its settings, its help bodies — lives under `Peach/Training/<Feature>/`. Aggregating screens (`SettingsScreen`, `ProfileScreen`, `HelpContent`) iterate `TrainingDisciplineRegistry.shared.allUI` and invoke the `TrainingDisciplineUI` properties directly; there is no central kind enum, no central category switch, no central dispatcher. Persistence collapses to a single SwiftData `@Model` envelope (`TrainingRecord`) shared by every discipline, with each discipline's `Codable` payload encoded into `payloadData`.
+The mechanism is a two-protocol seam. `TrainingDiscipline` (in `Core/Training/Discipline/`) is the Foundation-only data protocol — it carries identifier, category, statistics keys, profile feeding, CSV column ownership, and the payload-typed parsing/export primitives. `TrainingDisciplineUI: TrainingDiscipline` (in `App/Training/`) refines that protocol in the App layer with four defaulted SwiftUI-aware requirements: `profileCard`, `settingsSections`, `settingsHelp`, `profileHelp`. The split exists because the Core/Data services (`TrainingDataExporter`, `CSVImportParser`, `TrainingDataStore`) consume the registry and must stay SwiftUI-free.
 
-**Adding a new discipline** requires:
+Persistence collapses to a single SwiftData `@Model` envelope (`TrainingRecord`) shared by every discipline; each discipline's `Codable` payload is encoded into `payloadData`. Aggregating screens (`SettingsScreen`, `ProfileScreen`, `HelpContent`) invoke the four `TrainingDisciplineUI` properties directly — no central kind enum, no central category switch, no central dispatcher.
 
-1. Create `Peach/Training/<Feature>/` containing the discipline conformance, the payload struct, the CSV history, the session, the screen, observers, adapters, and any feature-local settings or help bodies.
-2. Add one factory line to `App/Training/DisciplineBootstrap.swift` (and one entry to `allCSVHistories`).
-3. Add a `NavigationDestination` case and the localization strings.
+#### Worked example: a hypothetical `Example` discipline
+
+The contents below are illustrative only — `Example` is not a real or planned discipline. The shape is what matters: every file belongs to one feature directory, and the contributor adds nothing outside it except a bootstrap line, a `NavigationDestination` case, and the localization strings.
+
+```
+Peach/Training/Example/
+    Discipline/
+        ExampleDiscipline.swift               conforms to TrainingDisciplineUI; declares identifier, category, statistics keys; the type the registry holds
+        ExamplePayload.swift                  Codable, Sendable struct conforming to TrainingDisciplinePayload; per-record schema; JSON-encoded into TrainingRecord.payloadData by ExampleStoreAdapter
+        ExampleCSVHistory.swift               CSVHistory snapshots for this discipline; consumed by CSVMigrationChain (per-version derivation) and by the registry for column aggregation
+    ExampleSession.swift                      state machine driving the training cycle; collaborates with NotePlayer/RhythmPlayer and the algorithm strategy; fires trials to ExampleObserver conformers
+    ExampleScreen.swift                       SwiftUI screen for the training loop; renders session state and routes user input back into the session
+    ExampleObserver.swift                     trial-result observer protocol typed in ExampleTrial; the session keeps an array of conformers and calls didCompleteTrial(_:) after each trial
+    ExampleTrial.swift                        value type for one completed trial; carried to observers and reduced into ExamplePayload
+    ExampleProfileAdapter.swift               bridges ExampleObserver to ProfileUpdating, mapping each ExampleTrial to (StatisticsKey, Date, Double) for PerceptualProfile
+    ExampleStoreAdapter.swift                 bridges ExampleObserver to TrainingDataStore, encoding the payload via JSONEnvelope and persisting a TrainingRecord
+    ExampleLifecycleContribution.swift        extension on ExampleSession providing contribute(to:userSettings:); TrainingLifecycleCoordinator delivers app-lifecycle events through it
+    Help/ExampleHelp.swift                    discipline-scoped help bodies surfaced through TrainingDisciplineUI.settingsHelp and profileHelp
+    Profile/ExampleProfileCardView.swift      SwiftUI view returned by TrainingDisciplineUI.profileCard; renders this discipline's progress on ProfileScreen
+```
+
+Outside this directory, the contributor edits exactly three places: one factory line in `App/Training/DisciplineBootstrap.allDisciplines`, one entry in `allCSVHistories`, and one `NavigationDestination` case — plus the localization strings.
 
 No central enum case. No edit to a central screen. No edit to `Core/Ports/UserSettings.swift`. No SwiftData schema edit. No central CSV migration file. The surface area collapsed from "edit five central files" to "create one directory."
+
+The plugin contract — which protocols a feature directory must satisfy, and where adapters bridge to shared infrastructure:
+
+```mermaid
+classDiagram
+    direction LR
+
+    class TrainingDiscipline {
+        <<protocol, Core>>
+    }
+    class TrainingDisciplineUI {
+        <<protocol, App>>
+    }
+    class TrainingDisciplinePayload {
+        <<protocol, Core>>
+    }
+    class ProfileUpdating {
+        <<protocol, Core>>
+    }
+    class TrainingDataStore {
+        <<Core>>
+    }
+
+    class ExampleDiscipline {
+        <<feature>>
+    }
+    class ExamplePayload {
+        <<feature>>
+    }
+    class ExampleObserver {
+        <<protocol, feature>>
+    }
+    class ExampleSession {
+        <<feature>>
+    }
+    class ExampleProfileAdapter {
+        <<feature>>
+    }
+    class ExampleStoreAdapter {
+        <<feature>>
+    }
+
+    TrainingDiscipline <|-- TrainingDisciplineUI
+    TrainingDisciplineUI <|.. ExampleDiscipline
+    TrainingDisciplinePayload <|.. ExamplePayload
+
+    ExampleObserver <|.. ExampleProfileAdapter
+    ExampleObserver <|.. ExampleStoreAdapter
+
+    ExampleProfileAdapter ..> ProfileUpdating : drives
+    ExampleStoreAdapter ..> TrainingDataStore : writes to
+    ExampleSession ..> ExampleObserver : fires didCompleteTrial
+```
+
+Three things to notice. **First**, the two-protocol seam (`TrainingDiscipline` ← `TrainingDisciplineUI`) crosses the Core/App boundary; the discipline's single conformance to `TrainingDisciplineUI` satisfies both surfaces. **Second**, each adapter implements *two* protocols — the discipline's own `ExampleObserver` (so it receives trials from the session) *and* a shared-infrastructure protocol (so it drives the profile or the store). That double conformance is the adapter pattern made structural. **Third**, the payload contract (`TrainingDisciplinePayload`) is separate from the discipline contract; it travels through the JSON envelope independently.
 
 Activation is per-discipline and compile-time only. `App/Training/DisciplineBootstrap.swift` is the single source of truth: it lists the active discipline factories, with the four pitch disciplines unconditional and the two timing disciplines (`TimingOffsetDetectionDiscipline`, `ContinuousRhythmMatchingDiscipline`) wrapped in `#if PEACH_RESEARCH`. The `Debug (Research)` and `Release (Research)` build configurations define that flag; the App Store cut is built without it, so the timing types are physically absent from its binary. Toggling a discipline is always a rebuild — there is no runtime UI, no `UserDefaults` flag, no debug menu. ADR-10 records the explicit rejection of runtime activation and the rationale for moving from category-grained gating to per-discipline gating.
 
 The timing disciplines require sub-20 ms input latency to be musically useful. iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter. Only wired USB MIDI is reliable enough — so the timing disciplines reach a small group of TestFlight participants via the `Research` configurations only, not the App Store.
-
-The architectural commitment is feature-directory colocation: every file belonging to one discipline lives in `Peach/Training/<Feature>/`.
 
 ### 8.8 Platform Abstraction (Ports/Adapters)
 
