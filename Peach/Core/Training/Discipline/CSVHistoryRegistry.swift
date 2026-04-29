@@ -14,13 +14,26 @@ import Synchronization
 /// histories at startup.
 final class CSVHistoryRegistry: Sendable {
 
-    private static let _shared = Mutex<CSVHistoryRegistry?>(nil)
+    private static let _bootstrapped = Mutex<CSVHistoryRegistry?>(nil)
 
-    /// The bootstrapped registry instance.
+    /// Task-local override for ``shared``.
     ///
-    /// Accessing this before ``bootstrap(histories:)`` has been called traps.
+    /// When non-nil for the current task, ``shared`` returns this instead of
+    /// the bootstrapped instance. Tests use this to install a non-canonical
+    /// catalog for the duration of one test, leaving sibling tests in
+    /// concurrent tasks unaffected. Production code never sets this.
+    @TaskLocal
+    static var override: CSVHistoryRegistry? = nil
+
+    /// The registry visible to call sites.
+    ///
+    /// Returns the task-local ``override`` if one is active for the current
+    /// task; otherwise returns the bootstrapped instance. Accessing this
+    /// before ``bootstrap(histories:)`` has been called and outside any
+    /// override scope traps.
     static var shared: CSVHistoryRegistry {
-        _shared.withLock { registry in
+        if let override { return override }
+        return _bootstrapped.withLock { registry in
             guard let registry else {
                 preconditionFailure("CSVHistoryRegistry.shared accessed before bootstrap(histories:)")
             }
@@ -31,17 +44,25 @@ final class CSVHistoryRegistry: Sendable {
     /// Must be called exactly once at app startup before any access to
     /// ``shared``.
     static func bootstrap(histories: [CSVHistory]) {
-        _shared.withLock { registry in
+        _bootstrapped.withLock { registry in
             precondition(registry == nil, "CSVHistoryRegistry.bootstrap(histories:) called more than once")
             registry = CSVHistoryRegistry(histories: histories)
         }
     }
 
     #if DEBUG
-    /// Atomically replaces the shared registry. DEBUG-only; for use by
-    /// SwiftUI preview helpers and tests that need a known catalog.
-    static func _replaceSharedForTesting(histories: [CSVHistory]) {
-        _shared.withLock { registry in
+    /// Atomically replaces the bootstrapped registry slot. **Preview support
+    /// only.** SwiftUI may render previews repeatedly in the same process,
+    /// and a preview render does not enter an explicit `Task` whose locals
+    /// can host a `withValue` scope, so previews need to re-write the
+    /// process-wide slot to ensure ``shared`` returns a populated registry.
+    ///
+    /// Tests must NOT call this — mutating the bootstrapped slot races with
+    /// tests in concurrently-executing tasks. Tests scope a per-task
+    /// override via `$override.withValue { ... }`.
+    /// See story 77.10 (`docs/implementation-artifacts/77-10-test-isolation-for-shared-registries.md`).
+    static func _replaceSharedForPreviewSupport(histories: [CSVHistory]) {
+        _bootstrapped.withLock { registry in
             registry = CSVHistoryRegistry(histories: histories)
         }
     }

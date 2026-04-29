@@ -11,7 +11,7 @@ struct SettingsScreenAggregationTests {
 
     @Test("with no per-discipline help, common sections render and end with Data")
     func emptyContributionsYieldCommonSectionsPlusData() {
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+        TrainingDisciplineRegistry.withOverride(
             disciplines: [
                 SyntheticUIDiscipline(id: TrainingDisciplineID("p"), category: .pitch),
             ]
@@ -25,7 +25,7 @@ struct SettingsScreenAggregationTests {
 
     @Test("per-discipline settings help renders between the common sections and the Data section")
     func contributedSectionsRenderBetweenCommonAndData() {
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+        TrainingDisciplineRegistry.withOverride(
             disciplines: [
                 SyntheticUIDiscipline(
                     id: TrainingDisciplineID("rhythm"),
@@ -48,7 +48,7 @@ struct SettingsScreenAggregationTests {
 
     @Test("ordering of per-discipline help follows registration order")
     func contributedOrderFollowsRegistrationOrder() {
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+        TrainingDisciplineRegistry.withOverride(
             disciplines: [
                 SyntheticUIDiscipline(
                     id: TrainingDisciplineID("first"),
@@ -69,7 +69,7 @@ struct SettingsScreenAggregationTests {
 
     @Test("profile help aggregates common sections plus per-discipline profileHelp")
     func profileHelpAggregatesCommonAndDiscipline() {
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+        TrainingDisciplineRegistry.withOverride(
             disciplines: [
                 SyntheticUIDiscipline(
                     id: TrainingDisciplineID("rhythm"),

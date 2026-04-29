@@ -6,10 +6,6 @@ import Foundation
 @Suite("Training Data Import Action")
 struct TrainingDataImportActionTests {
 
-    init() {
-        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
-    }
-
     // MARK: - Helpers
 
     private func makeStore() throws -> TrainingDataStore {

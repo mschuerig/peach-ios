@@ -8,15 +8,27 @@ import Synchronization
 /// at app startup.
 final class TrainingDisciplineRegistry: Sendable {
 
-    private static let _shared = Mutex<TrainingDisciplineRegistry?>(nil)
+    private static let _bootstrapped = Mutex<TrainingDisciplineRegistry?>(nil)
 
-    /// The bootstrapped registry instance.
+    /// Task-local override for ``shared``.
     ///
-    /// Accessing this before ``bootstrap(disciplines:)`` has been called traps.
-    /// The App layer must call `bootstrap` as the first step of `PeachApp.init()`,
-    /// before any view code or session construction reads `.shared`.
+    /// When non-nil for the current task, ``shared`` returns this instead of
+    /// the bootstrapped instance. Tests use ``RegistryTestSupport``'s
+    /// `withOverride(disciplines:body:)` helper to install a non-canonical
+    /// registry for the duration of one test, leaving sibling tests in
+    /// concurrent tasks unaffected. Production code never sets this.
+    @TaskLocal
+    static var override: TrainingDisciplineRegistry? = nil
+
+    /// The registry visible to call sites.
+    ///
+    /// Returns the task-local ``override`` if one is active for the current
+    /// task; otherwise returns the bootstrapped instance. Accessing this
+    /// before ``bootstrap(disciplines:)`` has been called and outside any
+    /// override scope traps.
     static var shared: TrainingDisciplineRegistry {
-        _shared.withLock { registry in
+        if let override { return override }
+        return _bootstrapped.withLock { registry in
             guard let registry else {
                 preconditionFailure("TrainingDisciplineRegistry.shared accessed before bootstrap(disciplines:)")
             }
@@ -26,19 +38,25 @@ final class TrainingDisciplineRegistry: Sendable {
 
     /// Must be called exactly once at app startup before any access to ``shared``.
     static func bootstrap(disciplines: [any TrainingDiscipline]) {
-        _shared.withLock { registry in
+        _bootstrapped.withLock { registry in
             precondition(registry == nil, "TrainingDisciplineRegistry.bootstrap(disciplines:) called more than once")
             registry = TrainingDisciplineRegistry(disciplines: disciplines)
         }
     }
 
     #if DEBUG
-    /// Atomically replaces the shared registry. DEBUG-only; for use by SwiftUI
-    /// preview helpers (which may render repeatedly in the same process) and
-    /// tests that need a known registry. Production code MUST use
-    /// ``bootstrap(disciplines:)`` exactly once at app launch.
-    static func _replaceSharedForTesting(disciplines: [any TrainingDiscipline]) {
-        _shared.withLock { registry in
+    /// Atomically replaces the bootstrapped registry slot. **Preview support
+    /// only.** SwiftUI may render previews repeatedly in the same process,
+    /// and a preview render does not enter an explicit `Task` whose locals
+    /// can host a `withValue` scope, so previews need to re-write the
+    /// process-wide slot to ensure ``shared`` returns a populated registry.
+    ///
+    /// Tests must NOT call this — mutating the bootstrapped slot races with
+    /// tests in concurrently-executing tasks. Tests scope a per-task
+    /// override via ``RegistryTestSupport``'s `withOverride(disciplines:body:)`.
+    /// See story 77.10 (`docs/implementation-artifacts/77-10-test-isolation-for-shared-registries.md`).
+    static func _replaceSharedForPreviewSupport(disciplines: [any TrainingDiscipline]) {
+        _bootstrapped.withLock { registry in
             registry = TrainingDisciplineRegistry(disciplines: disciplines)
         }
     }

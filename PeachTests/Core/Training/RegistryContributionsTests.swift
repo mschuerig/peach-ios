@@ -151,7 +151,7 @@ struct RegistryContributionsTests {
 
     @Test("a pitch-only synthetic subset surfaces no help through the shared registry")
     func sharedRegistryReplacedWithPitchOnlySubsetEmitsNoHelp() {
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+        TrainingDisciplineRegistry.withOverride(
             disciplines: [
                 SyntheticUIDiscipline(id: TrainingDisciplineID("p"), category: .pitch),
             ]
@@ -165,7 +165,7 @@ struct RegistryContributionsTests {
 
     @Test("a rhythm-only synthetic subset surfaces only its declared help through the shared registry")
     func sharedRegistryReplacedWithRhythmOnlySubsetEmitsOnlyDeclaredHelp() {
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(
+        TrainingDisciplineRegistry.withOverride(
             disciplines: [
                 SyntheticUIDiscipline(
                     id: TrainingDisciplineID("r"),

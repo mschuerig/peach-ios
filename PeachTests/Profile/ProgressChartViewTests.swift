@@ -5,10 +5,6 @@ import Foundation
 @Suite("ProgressChartView Tests")
 struct ProgressChartViewTests {
 
-    init() {
-        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
-    }
-
     // MARK: - Y-Domain Computation
 
     @Test("computes Y domain from zero to max with stddev")

@@ -4,10 +4,6 @@ import Testing
 @Suite("HelpContentView Tests")
 struct HelpContentViewTests {
 
-    init() {
-        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
-    }
-
     @Test("HelpSection can be instantiated with title and body")
     func helpSectionCanBeInstantiated() async {
         let section = HelpSection(title: "Test Title", body: "Test body text")
@@ -120,7 +116,7 @@ struct HelpContentViewTests {
     @Test("settingsHelpSections drops contributed sections when no discipline contributes")
     func settingsHelpFollowsEmptyContribution() {
         let pitchOnly: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(disciplines: pitchOnly) {
+        TrainingDisciplineRegistry.withOverride(disciplines: pitchOnly) {
             let titles = HelpContent.settingsHelpSections().map(\.title)
             #expect(!titles.contains(String(localized: "Rhythm")))
             #expect(!titles.contains(String(localized: "Gap Positions")))
@@ -130,7 +126,7 @@ struct HelpContentViewTests {
     @Test("profileHelpSections drops spectrogram help when no discipline contributes")
     func profileHelpFollowsEmptyContribution() {
         let pitchOnly: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(disciplines: pitchOnly) {
+        TrainingDisciplineRegistry.withOverride(disciplines: pitchOnly) {
             let titles = HelpContent.profileHelpSections().map(\.title)
             let spectrogramTitle = String(localized: "Rhythm Spectrogram",
                                           comment: "Spectrogram overview help title")

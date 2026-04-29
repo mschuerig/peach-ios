@@ -2,18 +2,40 @@ import Foundation
 @testable import Peach
 
 extension TrainingDisciplineRegistry {
-    /// Scoped variant of ``_replaceSharedForTesting(disciplines:)``: installs
-    /// the given disciplines for the duration of `body`, then restores
-    /// `DisciplineBootstrap.allDisciplines` — the canonical list TEST_HOST
-    /// bootstraps for every test. Use this when a test needs a non-canonical
-    /// registry; the restoration keeps parallel tests from observing the
-    /// test's intermediate state.
-    static func _withSharedReplacedForTesting<R>(
+    /// Runs `body` with the given disciplines installed as the task-local
+    /// ``TrainingDisciplineRegistry/override`` on ``shared``. Outside this
+    /// scope (and in concurrently-executing tasks), ``shared`` returns the
+    /// bootstrapped registry unchanged.
+    ///
+    /// This is race-free: a sibling test in another task observes its own
+    /// task-local (typically nil, falling through to the bootstrapped
+    /// instance), never this body's installed override. Story 77.10
+    /// migrated tests off the previous `_replaceSharedForTesting` mechanism,
+    /// which mutated the process-wide slot and was visible across tasks.
+    static func withOverride<R>(
         disciplines: [any TrainingDiscipline],
         body: () throws -> R
     ) rethrows -> R {
-        defer { _replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines) }
-        _replaceSharedForTesting(disciplines: disciplines)
-        return try body()
+        try TrainingDisciplineRegistry.$override.withValue(
+            TrainingDisciplineRegistry(disciplines: disciplines),
+            operation: body
+        )
+    }
+}
+
+extension CSVHistoryRegistry {
+    /// Runs `body` with the given histories installed as the task-local
+    /// ``CSVHistoryRegistry/override`` on ``shared``. Outside this scope
+    /// (and in concurrently-executing tasks), ``shared`` returns the
+    /// bootstrapped registry unchanged. Symmetric counterpart of
+    /// ``TrainingDisciplineRegistry/withOverride(disciplines:body:)``.
+    static func withOverride<R>(
+        histories: [CSVHistory],
+        body: () throws -> R
+    ) rethrows -> R {
+        try CSVHistoryRegistry.$override.withValue(
+            CSVHistoryRegistry(histories: histories),
+            operation: body
+        )
     }
 }

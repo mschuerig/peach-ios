@@ -135,10 +135,10 @@ struct TrainingDisciplineRegistryTests {
 
     // MARK: - shared-registry test primitive
 
-    @Test("_withSharedReplacedForTesting installs the given disciplines for the body's duration")
-    func withSharedReplacedInstallsAndScopes() {
+    @Test("withOverride scopes the given disciplines to the body via task-local")
+    func withOverrideScopesViaTaskLocal() {
         let custom: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
-        TrainingDisciplineRegistry._withSharedReplacedForTesting(disciplines: custom) {
+        TrainingDisciplineRegistry.withOverride(disciplines: custom) {
             let registered = Set(TrainingDisciplineRegistry.shared.all.map(\.id))
             #expect(registered == Set(custom.map(\.id)))
         }

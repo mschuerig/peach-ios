@@ -6,10 +6,6 @@ import SwiftUI
 @Suite("Settings Tests")
 struct SettingsTests {
 
-    init() {
-        TrainingDisciplineRegistry._replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)
-    }
-
     // MARK: - Task 1: @AppStorage Keys and Defaults
 
     @Test("Algorithm defaults match PitchDiscriminationSettings defaults")
