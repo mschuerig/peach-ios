@@ -1,5 +1,3 @@
-import Foundation
-
 extension ContinuousRhythmMatchingSession {
     /// CRM owns `crmUserSettings` as a feature-local port and consumes it
     /// directly here, rather than threading it through the lifecycle

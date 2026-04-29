@@ -1,5 +1,3 @@
-import Foundation
-
 extension TimingOffsetDetectionSession {
     func contribute(
         to builder: TrainingLifecycleRegistry.Builder,

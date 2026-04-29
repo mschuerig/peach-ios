@@ -1,6 +1,6 @@
 # Story 77.12: TrainingLifecycleCoordinator plugin-style fit
 
-Status: review
+Status: done
 
 ## Story
 
@@ -222,3 +222,4 @@ Configuration:
 
 - 2026-04-28: Drafted as a deferred 77.6 review finding. Architectural concern about the central lifecycle coordinator accumulating per-discipline dependencies. Sprint-ordered before 77.11 so that the architecture documentation absorbs this story's final shape. Status → ready-for-dev.
 - 2026-04-29: Implemented. Introduced `TrainingLifecycleRegistry` and four per-discipline `*LifecycleContribution.swift` files; coordinator now contains zero per-discipline references and zero `UserSettings` reads (replaced by `initialAutoStartSetting: Bool`). All four configurations green. Status → review.
+- 2026-04-30: Code review applied three patches: removed cargo-cult `import Foundation` from the four contribution files; replaced `Task.sleep(50ms)` with bounded-poll `waitUntilNotIdle` helper in the new parameterized test; strengthened the same test to verify expected-session identity and sibling-session idleness via a new `LifecycleFixture` helper. All four configurations remain green. Status → done.

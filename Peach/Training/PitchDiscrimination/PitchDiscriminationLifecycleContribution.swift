@@ -1,5 +1,3 @@
-import Foundation
-
 extension PitchDiscriminationSession {
     func contribute(
         to builder: TrainingLifecycleRegistry.Builder,

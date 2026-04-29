@@ -428,7 +428,7 @@ struct TrainingLifecycleCoordinatorTests {
 
     // MARK: - Registry-Keyed Dispatch (per-destination coverage)
 
-    @Test("registry dispatches start to every shipping training destination", arguments: [
+    @Test("registry dispatches start to every shipping training destination, leaving siblings idle", arguments: [
         NavigationDestination.pitchDiscrimination(isIntervalMode: false),
         NavigationDestination.pitchDiscrimination(isIntervalMode: true),
         NavigationDestination.pitchMatching(isIntervalMode: false),
@@ -437,23 +437,48 @@ struct TrainingLifecycleCoordinatorTests {
         NavigationDestination.continuousRhythmMatching,
     ])
     func registryDispatchesEveryTrainingDestination(destination: NavigationDestination) async throws {
-        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
-        coordinator.trainingScreenAppeared(destination: destination)
+        let fixture = makeFixture(policy: MacOSBackgroundPolicy())
+        let expected: any TrainingSession = switch destination {
+        case .pitchDiscrimination: fixture.pdSession
+        case .pitchMatching: fixture.pmSession
+        case .timingOffsetDetection: fixture.todSession
+        case .continuousRhythmMatching: fixture.crmSession
+        case .settings, .profile: fatalError("non-training destination not in test arguments")
+        }
 
-        coordinator.startCurrentSession()
+        fixture.coordinator.trainingScreenAppeared(destination: destination)
+        fixture.coordinator.startCurrentSession()
 
-        // Pitch sessions kick off async work; allow the training task to begin.
-        try await Task.sleep(for: .milliseconds(50))
-        #expect(coordinator.isTrainingActive)
+        try await waitUntilNotIdle(expected)
+
+        for session in fixture.allSessions {
+            if session === expected {
+                #expect(!session.isIdle, "expected session for \(destination) to start")
+            } else {
+                #expect(session.isIdle, "sibling session became active for \(destination)")
+            }
+        }
     }
 
     // MARK: - Helpers
 
-    private func makeCoordinator(
+    private struct LifecycleFixture {
+        let coordinator: TrainingLifecycleCoordinator
+        let pdSession: PitchDiscriminationSession
+        let pmSession: PitchMatchingSession
+        let todSession: TimingOffsetDetectionSession
+        let crmSession: ContinuousRhythmMatchingSession
+
+        var allSessions: [any TrainingSession] {
+            [pdSession, pmSession, todSession, crmSession]
+        }
+    }
+
+    private func makeFixture(
         policy: BackgroundPolicy,
         userSettings: MockUserSettings = MockUserSettings(),
         crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings()
-    ) -> TrainingLifecycleCoordinator {
+    ) -> LifecycleFixture {
         let notePlayer = MockNotePlayer()
         notePlayer.instantPlayback = true
         let profile = PerceptualProfile()
@@ -486,11 +511,37 @@ struct TrainingLifecycleCoordinatorTests {
             todSession.contribute(to: builder, userSettings: userSettings)
             crmSession.contribute(to: builder, userSettings: userSettings, crmUserSettings: crmUserSettings)
         }
-        return TrainingLifecycleCoordinator(
+        let coordinator = TrainingLifecycleCoordinator(
             registry: registry,
             backgroundPolicy: policy,
             initialAutoStartSetting: userSettings.autoStartTraining
         )
+        return LifecycleFixture(
+            coordinator: coordinator,
+            pdSession: pdSession,
+            pmSession: pmSession,
+            todSession: todSession,
+            crmSession: crmSession
+        )
+    }
+
+    private func makeCoordinator(
+        policy: BackgroundPolicy,
+        userSettings: MockUserSettings = MockUserSettings(),
+        crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings()
+    ) -> TrainingLifecycleCoordinator {
+        makeFixture(policy: policy, userSettings: userSettings, crmUserSettings: crmUserSettings).coordinator
+    }
+
+    private func waitUntilNotIdle(_ session: any TrainingSession, timeout: Duration = .seconds(1)) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while session.isIdle {
+            if ContinuousClock.now >= deadline {
+                Issue.record("session did not become active within \(timeout)")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
     }
 }
 
