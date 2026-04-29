@@ -1,6 +1,6 @@
 # Story 77.11: Update architecture documentation for plugin-style disciplines
 
-Status: review
+Status: done
 
 ## Story
 
@@ -261,3 +261,4 @@ Modified:
 - 2026-04-28: Renumbered from 77.7 to 77.10 to make room for three new stories (77.7 merge-import helper, 77.8 typed payload associated type, 77.9 payload streaming) deferred from the 77.4 review. The "runs after" gate now includes 77.7 / 77.8 / 77.9.
 - 2026-04-28: Renumbered to 77.11 to make room for 77.10 (test isolation for shared registries) deferred from the 77.5 review. The "runs after" gate now includes 77.10.
 - 2026-04-30: Documentation update implemented. v0.9 amendment landed in `architecture.md`; arc42 Section 8.7 + ADR-10 + cross-cutting touch-ups landed in `arc42.md`. Status → review.
+- 2026-04-30: Code review patches applied — ADR-10 Status line gained `(epic 77.1, refined by 77.2 / 77.3 / 77.4 / 77.5 / 77.6)` qualifier (P1); v0.9 "Adding a New Discipline" recipe corrected to place `<Feature>Discipline.swift` under `Discipline/` to match the actual layout and the inventory snapshot (P2); spurious "discipline-ID literal audits" plural removed from the colocation subsection's audit-guardrails note (P3); lifecycle-contribution recipe annotated to explain the optional feature-local-port third parameter (e.g., CRM's `crmUserSettings:`) (P4). iOS 1479 / macOS 1473 tests green. Status → done.

@@ -3139,7 +3139,7 @@ Every concrete discipline conforms to `TrainingDisciplineUI`. The App-layer exte
 
 The four central kinds enums introduced and then removed by 77.1/77.2 (`KnownDisciplineKind`, `KnownSettingsContribution`, `KnownProfileContribution`, `KnownUIContribution`) are gone; `Peach/Settings/SettingsContributions.swift`, `Peach/Profile/ProfileContributions.swift`, and `Peach/Core/Training/Discipline/UIContributions.swift` no longer exist.
 
-**Audit guardrails.** `CategoryLiteralAuditTests` and the discipline-ID literal audits assert that no central screen references a discipline by category literal or ID literal. Adding such a reference fails the audit, redirecting the developer back to a registry iteration.
+**Audit guardrails.** `CategoryLiteralAuditTests` asserts that no central screen references a discipline by category literal. Adding such a reference fails the audit, redirecting the developer back to a registry iteration.
 
 [Source: docs/implementation-artifacts/77-2-discipline-owned-ui-contributions.md, docs/implementation-artifacts/77-3-discipline-owned-data-declarations.md]
 
@@ -3265,12 +3265,12 @@ The byte-identical UserDefaults key string (`"enabledGapPositions"`) and encodin
 After all 77.x stories:
 
 1. Create `Peach/Training/<Feature>/` containing:
-   - `<Feature>Discipline.swift` — conformance to `TrainingDisciplineUI` (data + UI surface; `TrainingDiscipline` is satisfied transitively).
+   - `Discipline/<Feature>Discipline.swift` — conformance to `TrainingDisciplineUI` (data + UI surface; `TrainingDiscipline` is satisfied transitively).
    - `Discipline/<Feature>Payload.swift` — `Codable, Sendable` struct conforming to `TrainingDisciplinePayload`.
    - `Discipline/<Feature>CSVHistory.swift` — `CSVHistory` declaration.
    - `<Feature>Session.swift`, `<Feature>Screen.swift`, `<Feature>Observer.swift`, `<Feature>Trial.swift`.
    - `<Feature>ProfileAdapter.swift`, `<Feature>StoreAdapter.swift`.
-   - `<Feature>LifecycleContribution.swift` — `extension <Feature>Session { func contribute(to:userSettings:) }`.
+   - `<Feature>LifecycleContribution.swift` — `extension <Feature>Session { func contribute(to:userSettings:) }`. Disciplines with feature-private settings add their feature-local port as a third parameter (e.g., CRM's `contribute(to:userSettings:crmUserSettings:)`) and consume it directly rather than routing it through `TrainingLifecycleCoordinator`.
    - `Help/<Feature>Help.swift` — discipline-scoped help bodies.
    - `Settings/` and `Profile/` subdirectories for feature-specific section views and profile cards.
    - For disciplines with feature-private settings only: `Settings/<Feature>SettingsKeys.swift`, `Settings/<Feature>UserSettings.swift`.

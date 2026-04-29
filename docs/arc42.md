@@ -821,7 +821,7 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 
 **Decision:** Per-discipline activation lives in a single file, `App/Training/DisciplineBootstrap.swift`, as a list of factory expressions (`UnisonPitchDiscriminationDiscipline()`, `IntervalPitchDiscriminationDiscipline()`, …). The four pitch disciplines are unconditionally listed; the two timing disciplines are wrapped in `#if PEACH_RESEARCH` so their types are physically absent from the App Store binary. To disable a discipline locally during development, the developer comments out its factory line. Story 77.1 introduced the bootstrap file; subsequent stories (77.2 / 77.3 / 77.4 / 77.5 / 77.6) refined the surrounding plugin-style architecture so that the bootstrap list is the only place activation is expressed.
 
-**Status:** Implemented.
+**Status:** Implemented (epic 77.1, refined by 77.2 / 77.3 / 77.4 / 77.5 / 77.6).
 
 **Consequences:**
 - (+) Activation is additive: adding a discipline is a one-line edit to `DisciplineBootstrap.swift`
