@@ -140,14 +140,22 @@ extension ContinuousRhythmMatchingSession {
 
 extension TrainingLifecycleCoordinator {
     static let stub: TrainingLifecycleCoordinator = {
-        TrainingLifecycleCoordinator(
-            pitchDiscriminationSession: .stub,
-            pitchMatchingSession: .stub,
-            timingOffsetDetectionSession: .stub,
-            continuousRhythmMatchingSession: .stub,
-            userSettings: StubUserSettings(),
-            crmUserSettings: StubContinuousRhythmMatchingUserSettings(),
-            backgroundPolicy: IOSBackgroundPolicy()
+        let userSettings = StubUserSettings()
+        let crmUserSettings = StubContinuousRhythmMatchingUserSettings()
+        let registry = TrainingLifecycleRegistry { builder in
+            PitchDiscriminationSession.stub.contribute(to: builder, userSettings: userSettings)
+            PitchMatchingSession.stub.contribute(to: builder, userSettings: userSettings)
+            TimingOffsetDetectionSession.stub.contribute(to: builder, userSettings: userSettings)
+            ContinuousRhythmMatchingSession.stub.contribute(
+                to: builder,
+                userSettings: userSettings,
+                crmUserSettings: crmUserSettings
+            )
+        }
+        return TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: IOSBackgroundPolicy(),
+            initialAutoStartSetting: userSettings.autoStartTraining
         )
     }()
 }

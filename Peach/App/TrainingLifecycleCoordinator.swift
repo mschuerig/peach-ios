@@ -24,12 +24,7 @@ struct NavigationRequest: Equatable {
 
 @Observable
 final class TrainingLifecycleCoordinator {
-    private let pitchDiscriminationSession: PitchDiscriminationSession
-    private let pitchMatchingSession: PitchMatchingSession
-    private let timingOffsetDetectionSession: TimingOffsetDetectionSession
-    private let continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
-    private let userSettings: any UserSettings
-    private let crmUserSettings: any ContinuousRhythmMatchingUserSettings
+    private let registry: TrainingLifecycleRegistry
     private let backgroundPolicy: BackgroundPolicy
     var activeSession: (any TrainingSession)?
 
@@ -42,39 +37,20 @@ final class TrainingLifecycleCoordinator {
     private static let logger = Logger(subsystem: "com.peach.app", category: "Lifecycle")
 
     init(
-        pitchDiscriminationSession: PitchDiscriminationSession,
-        pitchMatchingSession: PitchMatchingSession,
-        timingOffsetDetectionSession: TimingOffsetDetectionSession,
-        continuousRhythmMatchingSession: ContinuousRhythmMatchingSession,
-        userSettings: any UserSettings,
-        crmUserSettings: any ContinuousRhythmMatchingUserSettings,
-        backgroundPolicy: BackgroundPolicy
+        registry: TrainingLifecycleRegistry,
+        backgroundPolicy: BackgroundPolicy,
+        initialAutoStartSetting: Bool
     ) {
-        self.pitchDiscriminationSession = pitchDiscriminationSession
-        self.pitchMatchingSession = pitchMatchingSession
-        self.timingOffsetDetectionSession = timingOffsetDetectionSession
-        self.continuousRhythmMatchingSession = continuousRhythmMatchingSession
-        self.userSettings = userSettings
-        self.crmUserSettings = crmUserSettings
+        self.registry = registry
         self.backgroundPolicy = backgroundPolicy
-        self.autoStartSetting = userSettings.autoStartTraining
+        self.autoStartSetting = initialAutoStartSetting
     }
 
     // MARK: - Computed Properties
 
-    private func session(for destination: NavigationDestination) -> (any TrainingSession)? {
-        switch destination {
-        case .pitchDiscrimination: pitchDiscriminationSession
-        case .pitchMatching: pitchMatchingSession
-        case .timingOffsetDetection: timingOffsetDetectionSession
-        case .continuousRhythmMatching: continuousRhythmMatchingSession
-        case .settings, .profile: nil
-        }
-    }
-
     private var currentSession: (any TrainingSession)? {
         guard let destination = currentTrainingDestination else { return nil }
-        return session(for: destination)
+        return registry.contribution(for: destination)?.session
     }
 
     var isTrainingActive: Bool {
@@ -155,20 +131,7 @@ final class TrainingLifecycleCoordinator {
 
     func startCurrentSession() {
         guard let destination = currentTrainingDestination else { return }
-        switch destination {
-        case .pitchDiscrimination(let isIntervalMode):
-            let intervals: Set<DirectedInterval> = isIntervalMode ? userSettings.intervals : [.prime]
-            pitchDiscriminationSession.start(settings: .from(userSettings, intervals: intervals))
-        case .pitchMatching(let isIntervalMode):
-            let intervals: Set<DirectedInterval> = isIntervalMode ? userSettings.intervals : [.prime]
-            pitchMatchingSession.start(settings: .from(userSettings, intervals: intervals))
-        case .timingOffsetDetection:
-            timingOffsetDetectionSession.start(settings: .from(userSettings))
-        case .continuousRhythmMatching:
-            continuousRhythmMatchingSession.start(settings: .from(userSettings, crmUserSettings: crmUserSettings))
-        case .settings, .profile:
-            break
-        }
+        registry.contribution(for: destination)?.start()
     }
 
     func stopCurrentSession() {

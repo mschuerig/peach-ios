@@ -522,14 +522,20 @@ struct PeachApp: App {
         userSettings: any UserSettings,
         crmUserSettings: any ContinuousRhythmMatchingUserSettings
     ) -> (lifecycle: TrainingLifecycleCoordinator, settings: SettingsCoordinator) {
+        let lifecycleRegistry = TrainingLifecycleRegistry { builder in
+            pitchDiscriminationSession.contribute(to: builder, userSettings: userSettings)
+            pitchMatchingSession.contribute(to: builder, userSettings: userSettings)
+            timingOffsetDetectionSession.contribute(to: builder, userSettings: userSettings)
+            continuousRhythmMatchingSession.contribute(
+                to: builder,
+                userSettings: userSettings,
+                crmUserSettings: crmUserSettings
+            )
+        }
         let lifecycle = TrainingLifecycleCoordinator(
-            pitchDiscriminationSession: pitchDiscriminationSession,
-            pitchMatchingSession: pitchMatchingSession,
-            timingOffsetDetectionSession: timingOffsetDetectionSession,
-            continuousRhythmMatchingSession: continuousRhythmMatchingSession,
-            userSettings: userSettings,
-            crmUserSettings: crmUserSettings,
-            backgroundPolicy: makeBackgroundPolicy()
+            registry: lifecycleRegistry,
+            backgroundPolicy: makeBackgroundPolicy(),
+            initialAutoStartSetting: userSettings.autoStartTraining
         )
         let settings = SettingsCoordinator(
             dataStore: dataStore,

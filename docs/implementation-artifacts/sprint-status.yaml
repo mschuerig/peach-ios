@@ -652,5 +652,5 @@ development_status:
   77-8-typed-discipline-payload-associated-type: done # Deferred from 77.4 review
   77-9-payload-streaming-iteration: done # Deferred from 77.4 review
   77-10-test-isolation-for-shared-registries: done # Deferred from 77.5 review
-  77-12-traininglifecyclecoordinator-plugin-style-fit: ready-for-dev # Deferred from 77.6 review; must precede 77.11
+  77-12-traininglifecyclecoordinator-plugin-style-fit: review # Deferred from 77.6 review; must precede 77.11
   77-11-update-architecture-documentation-for-plugin-style-disciplines: ready-for-dev

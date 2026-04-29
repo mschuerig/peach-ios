@@ -308,8 +308,8 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(coordinator.isTrainingActive)
     }
 
-    @Test("startCurrentSession dispatches to rhythm offset detection")
-    func startCurrentSessionDispatchesRhythm() async throws {
+    @Test("startCurrentSession dispatches to timing offset detection")
+    func startCurrentSessionDispatchesTimingOffsetDetection() async throws {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
         coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
 
@@ -426,6 +426,27 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(coordinator.resolvedNavigation?.destination == .profile)
     }
 
+    // MARK: - Registry-Keyed Dispatch (per-destination coverage)
+
+    @Test("registry dispatches start to every shipping training destination", arguments: [
+        NavigationDestination.pitchDiscrimination(isIntervalMode: false),
+        NavigationDestination.pitchDiscrimination(isIntervalMode: true),
+        NavigationDestination.pitchMatching(isIntervalMode: false),
+        NavigationDestination.pitchMatching(isIntervalMode: true),
+        NavigationDestination.timingOffsetDetection,
+        NavigationDestination.continuousRhythmMatching,
+    ])
+    func registryDispatchesEveryTrainingDestination(destination: NavigationDestination) async throws {
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        coordinator.trainingScreenAppeared(destination: destination)
+
+        coordinator.startCurrentSession()
+
+        // Pitch sessions kick off async work; allow the training task to begin.
+        try await Task.sleep(for: .milliseconds(50))
+        #expect(coordinator.isTrainingActive)
+    }
+
     // MARK: - Helpers
 
     private func makeCoordinator(
@@ -436,33 +457,39 @@ struct TrainingLifecycleCoordinatorTests {
         let notePlayer = MockNotePlayer()
         notePlayer.instantPlayback = true
         let profile = PerceptualProfile()
+        let pdSession = PitchDiscriminationSession(
+            notePlayer: notePlayer,
+            strategy: MockNextPitchDiscriminationStrategy(),
+            profile: profile,
+            observers: [],
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        )
+        let pmSession = PitchMatchingSession(
+            notePlayer: notePlayer,
+            profile: profile,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        )
+        let todSession = TimingOffsetDetectionSession(
+            rhythmPlayer: MockRhythmPlayer(),
+            strategy: MockNextTimingOffsetDetectionStrategy(),
+            profile: profile,
+            sampleRate: .standard48000,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        )
+        let crmSession = ContinuousRhythmMatchingSession(
+            stepSequencer: MockStepSequencer(),
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        )
+        let registry = TrainingLifecycleRegistry { builder in
+            pdSession.contribute(to: builder, userSettings: userSettings)
+            pmSession.contribute(to: builder, userSettings: userSettings)
+            todSession.contribute(to: builder, userSettings: userSettings)
+            crmSession.contribute(to: builder, userSettings: userSettings, crmUserSettings: crmUserSettings)
+        }
         return TrainingLifecycleCoordinator(
-            pitchDiscriminationSession: PitchDiscriminationSession(
-                notePlayer: notePlayer,
-                strategy: MockNextPitchDiscriminationStrategy(),
-                profile: profile,
-                observers: [],
-                audioInterruptionObserver: NoOpAudioInterruptionObserver()
-            ),
-            pitchMatchingSession: PitchMatchingSession(
-                notePlayer: notePlayer,
-                profile: profile,
-                audioInterruptionObserver: NoOpAudioInterruptionObserver()
-            ),
-            timingOffsetDetectionSession: TimingOffsetDetectionSession(
-                rhythmPlayer: MockRhythmPlayer(),
-                strategy: MockNextTimingOffsetDetectionStrategy(),
-                profile: profile,
-                sampleRate: .standard48000,
-                audioInterruptionObserver: NoOpAudioInterruptionObserver()
-            ),
-            continuousRhythmMatchingSession: ContinuousRhythmMatchingSession(
-                stepSequencer: MockStepSequencer(),
-                audioInterruptionObserver: NoOpAudioInterruptionObserver()
-            ),
-            userSettings: userSettings,
-            crmUserSettings: crmUserSettings,
-            backgroundPolicy: policy
+            registry: registry,
+            backgroundPolicy: policy,
+            initialAutoStartSetting: userSettings.autoStartTraining
         )
     }
 }
