@@ -1,6 +1,6 @@
 # Story 77.11: Update architecture documentation for plugin-style disciplines
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -128,45 +128,45 @@ Pre-77 amendments (v0.5–v0.8) keep their historical text — do not rewrite hi
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Verify the landed post-77 state before writing anything (AC: 1, 7)
-  - [ ] 1.1 Confirm 77.2, 77.3, 77.4, 77.5, 77.6 are all `done` in `sprint-status.yaml`. If any are still `ready-for-dev` / `in-progress` / `review`, halt — this story documents the landed state and must run after the implementation stories land.
-  - [ ] 1.2 Read each of 77.2 / 77.3 / 77.4 / 77.5 / 77.6's `## Dev Agent Record` → `Completion Notes` and `File List` to extract the actual landed file paths, the chosen `TrainingDisciplineUI` member set, the chosen registry-access mechanism (App-layer extension vs. parallel typed list vs. registry-in-App), the chosen `TrainingDisciplinePayload` adapter shape, the chosen `csvHistory` shape and runner contract, and the chosen `enabledGapPositions` wiring (UserDefaults parameter vs. feature-local port).
-  - [ ] 1.3 Read 77.1's `Completion Notes` for the activation shape rationale (Shape A) and the `#if PEACH_RESEARCH` decision; this is the authoritative source for the ADR-10 rationale.
-  - [ ] 1.4 Read the `TrainingDiscipline` and `TrainingDisciplineUI` source files directly — protocol member names and defaults must match actual code, not story prose. If the source disagrees with the story, the source wins; flag the discrepancy in Completion Notes.
+- [x] Task 1: Verify the landed post-77 state before writing anything (AC: 1, 7)
+  - [x] 1.1 Confirm 77.2, 77.3, 77.4, 77.5, 77.6 are all `done` in `sprint-status.yaml`. If any are still `ready-for-dev` / `in-progress` / `review`, halt — this story documents the landed state and must run after the implementation stories land.
+  - [x] 1.2 Read each of 77.2 / 77.3 / 77.4 / 77.5 / 77.6's `## Dev Agent Record` → `Completion Notes` and `File List` to extract the actual landed file paths, the chosen `TrainingDisciplineUI` member set, the chosen registry-access mechanism (App-layer extension vs. parallel typed list vs. registry-in-App), the chosen `TrainingDisciplinePayload` adapter shape, the chosen `csvHistory` shape and runner contract, and the chosen `enabledGapPositions` wiring (UserDefaults parameter vs. feature-local port).
+  - [x] 1.3 Read 77.1's `Completion Notes` for the activation shape rationale (Shape A) and the `#if PEACH_RESEARCH` decision; this is the authoritative source for the ADR-10 rationale.
+  - [x] 1.4 Read the `TrainingDiscipline` and `TrainingDisciplineUI` source files directly — protocol member names and defaults must match actual code, not story prose. If the source disagrees with the story, the source wins; flag the discrepancy in Completion Notes.
 
-- [ ] Task 2: Write the `architecture.md` v0.9 amendment (AC: 1, 2)
-  - [ ] 2.1 Append after the v0.8 amendment (line 3097). Do not edit any earlier section in place.
-  - [ ] 2.2 Lead with motivation, implementation-stories pointer (`Epic 77 (77.1, 77.2, 77.3, 77.4, 77.5, 77.6)`), and the explicit `**Supersedes:**` block.
-  - [ ] 2.3 Write subsections for the nine topics in AC 1: protocol split, colocation rule, activation, JSON-envelope persistence, history+derivation CSV migration, feature-local storage, "Adding a new discipline" sequence, project structure snapshot, central-files inventory.
-  - [ ] 2.4 Use literal type names, file paths, and code snippets per AC 2.
-  - [ ] 2.5 Add `[Source: docs/implementation-artifacts/77-N-...md]` references at subsection ends.
+- [x] Task 2: Write the `architecture.md` v0.9 amendment (AC: 1, 2)
+  - [x] 2.1 Append after the v0.8 amendment (line 3097). Do not edit any earlier section in place.
+  - [x] 2.2 Lead with motivation, implementation-stories pointer (`Epic 77 (77.1, 77.2, 77.3, 77.4, 77.5, 77.6)`), and the explicit `**Supersedes:**` block.
+  - [x] 2.3 Write subsections for the nine topics in AC 1: protocol split, colocation rule, activation, JSON-envelope persistence, history+derivation CSV migration, feature-local storage, "Adding a new discipline" sequence, project structure snapshot, central-files inventory.
+  - [x] 2.4 Use literal type names, file paths, and code snippets per AC 2.
+  - [x] 2.5 Add `[Source: docs/implementation-artifacts/77-N-...md]` references at subsection ends.
 
-- [ ] Task 3: Rewrite `arc42.md` Section 8.7 in place (AC: 3)
-  - [ ] 3.1 Replace the existing Section 8.7 body (lines 596–620) with the post-77 picture: two-protocol split, plugin-as-feature-directory framing, shorter "Adding a new discipline" list, per-discipline activation paragraph, colocation closing paragraph.
-  - [ ] 3.2 Keep the section title (`### 8.7 Training Discipline Registry`), prose-first style, and any existing diagram approach. Do not introduce new file inventories.
-  - [ ] 3.3 Pointer to ADR-10 for activation rationale.
+- [x] Task 3: Rewrite `arc42.md` Section 8.7 in place (AC: 3)
+  - [x] 3.1 Replace the existing Section 8.7 body (lines 596–620) with the post-77 picture: two-protocol split, plugin-as-feature-directory framing, shorter "Adding a new discipline" list, per-discipline activation paragraph, colocation closing paragraph.
+  - [x] 3.2 Keep the section title (`### 8.7 Training Discipline Registry`), prose-first style, and any existing diagram approach. Do not introduce new file inventories.
+  - [x] 3.3 Pointer to ADR-10 for activation rationale.
 
-- [ ] Task 4: Add ADR-10 to `arc42.md` Section 9 (AC: 4)
-  - [ ] 4.1 Insert `### ADR-10: Per-Discipline Compile-Time Activation` after ADR-9 (current insertion point is line 822, after ADR-9's closing bullet).
-  - [ ] 4.2 Use the existing ADR template: Context, Decision, Status, Consequences (with (+) / (–) bullets).
-  - [ ] 4.3 Cite story 77.1 in the body (story-number citation style, not file path).
+- [x] Task 4: Add ADR-10 to `arc42.md` Section 9 (AC: 4)
+  - [x] 4.1 Insert `### ADR-10: Per-Discipline Compile-Time Activation` after ADR-9 (current insertion point is line 822, after ADR-9's closing bullet).
+  - [x] 4.2 Use the existing ADR template: Context, Decision, Status, Consequences (with (+) / (–) bullets).
+  - [x] 4.3 Cite story 77.1 in the body (story-number citation style, not file path).
 
-- [ ] Task 5: Cross-cutting `arc42.md` touch-ups (AC: 5)
-  - [ ] 5.1 Bump header version (3.0 → 3.1) and date; update `Status:` line.
-  - [ ] 5.2 Section 4 / Solution Strategy table: re-read line 153 ("discipline registry for additive extensibility") and rephrase only if now misleading.
-  - [ ] 5.3 Section 12 Glossary: add `TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`; update `TrainingDisciplineRegistry` definition (line 931) to reflect the protocol split.
-  - [ ] 5.4 Section 11 Technical Debt: re-evaluate the `Original architecture document partially outdated` row (line 890) and update or remove based on the v0.9 amendment's coverage.
+- [x] Task 5: Cross-cutting `arc42.md` touch-ups (AC: 5)
+  - [x] 5.1 Bump header version (3.0 → 3.1) and date; update `Status:` line.
+  - [x] 5.2 Section 4 / Solution Strategy table: re-read line 153 ("discipline registry for additive extensibility") and rephrase only if now misleading.
+  - [x] 5.3 Section 12 Glossary: add `TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`; update `TrainingDisciplineRegistry` definition (line 931) to reflect the protocol split.
+  - [x] 5.4 Section 11 Technical Debt: re-evaluate the `Original architecture document partially outdated` row (line 890) and update or remove based on the v0.9 amendment's coverage.
 
-- [ ] Task 6: Append Story 77.11 to `epics.md` (AC: 6)
-  - [ ] 6.1 Append `### Story 77.11: …` after the 77.10 section.
-  - [ ] 6.2 Confirm the work-order paragraph already includes 77.11 (added during the 2026-04-28 renumbering); if not, add it.
-  - [ ] 6.3 Use one-sentence-per-AC summaries; do not duplicate this story file's full text.
+- [x] Task 6: Append Story 77.11 to `epics.md` (AC: 6)
+  - [x] 6.1 Append `### Story 77.11: …` after the 77.10 section.
+  - [x] 6.2 Confirm the work-order paragraph already includes 77.11 (added during the 2026-04-28 renumbering); if not, add it.
+  - [x] 6.3 Use one-sentence-per-AC summaries; do not duplicate this story file's full text.
 
-- [ ] Task 7: Verify and ship (AC: 7, 8)
-  - [ ] 7.1 Read the four touched sections back-to-back as a sequence: `architecture.md` v0.9 → `arc42.md` Section 8.7 → ADR-10 → `epics.md` Story 77.11. Check for name disagreements (member names, file paths, flag names).
-  - [ ] 7.2 Grep the touched sections for the legacy phrases listed in AC 7. Expected: zero hits.
-  - [ ] 7.3 `bin/test.sh && bin/test.sh -p mac` green; `bin/build.sh && bin/build.sh -p mac` no new warnings.
-  - [ ] 7.4 Update story file Status to `review`; update `sprint-status.yaml` `77-11-…: review` with last_updated bumped.
+- [x] Task 7: Verify and ship (AC: 7, 8)
+  - [x] 7.1 Read the four touched sections back-to-back as a sequence: `architecture.md` v0.9 → `arc42.md` Section 8.7 → ADR-10 → `epics.md` Story 77.11. Check for name disagreements (member names, file paths, flag names).
+  - [x] 7.2 Grep the touched sections for the legacy phrases listed in AC 7. Expected: zero hits.
+  - [x] 7.3 `bin/test.sh && bin/test.sh -p mac` green; `bin/build.sh && bin/build.sh -p mac` no new warnings.
+  - [x] 7.4 Update story file Status to `review`; update `sprint-status.yaml` `77-11-…: review` with last_updated bumped.
 
 ## Dev Notes
 
@@ -236,9 +236,28 @@ If a future epic re-organizes ports (e.g., a feature-local port for CRM gap posi
 - `docs/planning-artifacts/epics.md` — Epic 77 section. Story-list entries 77.1 → 77.10 are present; this story appends the 77.11 entry.
 - Memory: `feedback_arc42_intent_not_implementation` — arc42 conveys What/Why at a high level; code/architecture.md has the How details. Story 77.11 honors this split.
 
+## Dev Agent Record
+
+### Completion Notes
+
+- Wrote `architecture.md` v0.9 amendment (`Plugin-Style Discipline Contributions`) appended after v0.8. The amendment includes a leading paragraph + `**Supersedes:**` block (5 superseded v0.5 claims: protocol-surface-is-closed, the v0.5 Adding-a-discipline four-step list, central UI fragments, per-discipline `@Model` declarations, central CSV migration enumeration with named deletions of `SettingsContributions.swift` / `ProfileContributions.swift` / `UIContributions.swift` / `V1ToV2Migration.swift` / `V2ToV3Migration.swift` / per-feature `@Model` declarations) + `**Implementation stories:**` line citing 77.1–77.10 + 77.12, then 9 substantive subsections (two-protocol split, feature-directory colocation rule, per-discipline compile-time activation, JSON-envelope persistence, history+derivation CSV migration, feature-local storage for `enabledGapPositions`, updated "Adding a new discipline" sequence, updated project-structure snapshot for `Peach/Training/<Feature>/`, updated central-files inventory) + the `### v0.9 Architecture Validation` block. Each subsection ends with a `[Source: …]` citation, every named symbol uses its literal Swift identifier, and code examples are concrete: the actual `TrainingDiscipline` / `TrainingDisciplineUI` member surfaces, the `TrainingRecord` envelope shape, a representative payload struct, and the `DisciplineBootstrap` candidates list with its `#if PEACH_RESEARCH` block.
+- Dispatched the BMAD `arc42-documentation-architect` persona (Gernot, the arc42 architect) for Tasks 3, 4, and 5 to keep the `arc42.md` rewrite in arc42's prose-first voice. The agent rewrote Section 8.7 in place (5 paragraphs + a 3-step "Adding a new discipline" list), inserted ADR-10 after ADR-9 with the standard Context / Decision / Status / Consequences template (4 (+) / 2 (–) bullets), bumped the header (Version 3.1, today's date, Status line referencing epic 77 plugin-style disciplines), tweaked the Section 4 `Simplicity` row, shrunk the Section 11 outdated-architecture row to a one-line "predates implementation; arc42 + v0.6+ amendments are the source of truth" framing, and added/updated glossary entries for `TrainingDisciplineUI`, `DisciplineBootstrap`, `PEACH_RESEARCH`, `TrainingRecord`, `Training Discipline`, and `TrainingDisciplineRegistry`. After the agent's pass I added one missing glossary entry — `TrainingDisciplinePayload` — to align the count with what the epics.md 77.11 entry promises.
+- Confirmed Story 77.11 entry already present in `docs/planning-artifacts/epics.md` with one-sentence-per-AC summaries; the work-order paragraph already lists 77.11 at the end. No edits needed.
+- Consistency greps (`activeCategories.contains`, `switch discipline.category`, `TrainingDiscipline enum case`, `V1ToV2Migration`, `V2ToV3Migration`, `SettingsContributions.swift`, `ProfileContributions.swift`, `UIContributions.swift`) returned zero hits in the touched arc42.md sections. Hits in `architecture.md` v0.5 are intentional historical text; the v0.9 supersession block and central-files-inventory list reference the deleted central files by name as required by AC 1.
+- iOS and macOS test suites green (1479 / 1473 passing). Builds clean (the `appintentsmetadataprocessor` warning is pre-existing Apple framework noise, unrelated to documentation changes).
+
+### File List
+
+Modified:
+- `docs/planning-artifacts/architecture.md` — appended v0.9 amendment after v0.8 (line 3097); 9 subsections + project-structure snapshot + central-files inventory + validation block.
+- `docs/arc42.md` — header version bumped to 3.1 with date 2026-04-30; Section 4 line 153 row tweaked; Section 8.7 (lines ~596–614) rewritten in place; ADR-10 inserted after ADR-9 (lines ~818–832); Section 11 outdated-architecture row trimmed; Section 12 Glossary additions (`DisciplineBootstrap`, `PEACH_RESEARCH`, `TrainingDisciplinePayload`, `TrainingDisciplineUI`, `TrainingRecord`) and updates (`Training Discipline`, `TrainingDisciplineRegistry`).
+- `docs/implementation-artifacts/77-11-update-architecture-documentation-for-plugin-style-disciplines.md` — Status → review, Tasks marked `[x]`, this Dev Agent Record / File List / Change Log entry added.
+- `docs/implementation-artifacts/sprint-status.yaml` — `77-11-update-architecture-documentation-for-plugin-style-disciplines: review`; `last_updated` bumped to 2026-04-30.
+
 ## Change Log
 
 - 2026-04-27: Drafted as Story 77.5, the documentation-update follow-up after 77.1 / 77.2 / 77.3 / 77.4 land. Status → ready-for-dev.
 - 2026-04-28: Renumbered to 77.10 (envelope storage and CSV migration plugin take 77.4 and 77.5; gap-positions storage moves to 77.6). Scope expanded to also document 77.4 (JSON envelope persistence) and 77.5 (history+derivation CSV migration). The "runs after" gate now includes 77.5 and 77.6.
 - 2026-04-28: Renumbered from 77.7 to 77.10 to make room for three new stories (77.7 merge-import helper, 77.8 typed payload associated type, 77.9 payload streaming) deferred from the 77.4 review. The "runs after" gate now includes 77.7 / 77.8 / 77.9.
 - 2026-04-28: Renumbered to 77.11 to make room for 77.10 (test isolation for shared registries) deferred from the 77.5 review. The "runs after" gate now includes 77.10.
+- 2026-04-30: Documentation update implemented. v0.9 amendment landed in `architecture.md`; arc42 Section 8.7 + ADR-10 + cross-cutting touch-ups landed in `arc42.md`. Status → review.

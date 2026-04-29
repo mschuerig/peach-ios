@@ -1,8 +1,8 @@
 # Peach — arc42 Architecture Documentation
 
-**Version:** 3.0
-**Date:** 2026-04-25
-**Status:** Current with codebase as of v0.5 (three-platform release)
+**Version:** 3.1
+**Date:** 2026-04-30
+**Status:** Current with codebase as of epic 77 (plugin-style disciplines)
 
 ---
 
@@ -150,7 +150,7 @@ graph TB
 | **Training feel** | State machine sessions with guarded transitions; 400ms feedback phase; observer pattern for fire-and-forget result delivery; grid-aligned rhythm pattern sequencing | Sections 5.2, 6 |
 | **Data integrity** | SwiftData atomic writes; single data store accessor; only completed exercises are persisted | Section 8.3 |
 | **Testability** | Protocol-first design; composition root wires all dependencies; mocks with deterministic timing | Section 8.4 |
-| **Simplicity** | Feature-based directory structure; zero dependencies; domain types replacing raw primitives; thin views with zero business logic; discipline registry for additive extensibility | Sections 5.1, 8.2, 8.7 |
+| **Simplicity** | Feature-based directory structure; zero dependencies; domain types replacing raw primitives; thin views with zero business logic; plugin-style disciplines (each feature-directory-colocated, registered at compile time) | Sections 5.1, 8.2, 8.7 |
 | **Portability** | Platform-agnostic Core with port protocols; platform differences isolated in `App/Platform/`; single universal binary for all three Apple platforms | Sections 8.8, ADR-9 |
 
 **Key technology decisions:**
@@ -595,29 +595,23 @@ The composition root wires:
 
 ### 8.7 Training Discipline Registry
 
-The `TrainingDiscipline` protocol + `TrainingDisciplineRegistry` is the extensibility pattern for disciplines. Each discipline self-describes via a single struct conformance:
+Disciplines extend the app along a two-protocol seam. `TrainingDiscipline` (in `Core/Training/Discipline/`) is the Foundation-only data protocol — it carries identifier, category, statistics keys, profile feeding, CSV column ownership, and the payload-typed parsing/export primitives. `TrainingDisciplineUI: TrainingDiscipline` (in `App/Training/`) refines that protocol in the App layer with four defaulted SwiftUI-aware requirements: `profileCard`, `settingsSections`, `settingsHelp`, `profileHelp`. The split exists because the Core/Data services (`TrainingDataExporter`, `CSVImportParser`, `TrainingDataStore`) consume the registry and must stay SwiftUI-free.
 
-- **Identity:** `TrainingDisciplineID` (slug-wrapping struct in `Core/Training/`; named factories live in `App/Training/DisciplineIDs.swift`)
-- **Display:** `TrainingDisciplineConfig` (localized name, unit label, optimal baseline, statistics parameters)
-- **Category:** `TrainingCategory` (`pitch`, `intervals`, `rhythm`) for grouped display. Categories with no registered disciplines vanish from UI surfaces automatically.
-- **Statistics:** `statisticsKeys` — the set of `StatisticsKey` values this discipline contributes to the profile. Pitch disciplines return one key; rhythm disciplines return `tempoRange × direction` permutations.
-- **Persistence:** `recordType` (the SwiftData `@Model` type), `feedRecords(from:into:)` (populates profile at startup)
-- **CSV:** `csvTrainingType`, `csvColumns`, `csvKeyValuePairs(for:)`, `parseCSVRow(...)`, `fetchExportRecords(from:)`, `parsedRecords(from:)`, `mergeImportRecords(from:into:)`
-
-`TrainingDisciplineRegistry` lives in `Core/Training/Discipline/` and defines the registry mechanism only — Core does not know which disciplines exist. Concrete registration lives in `App/Training/DisciplineBootstrap.swift`, which `PeachApp.init()` passes into `TrainingDisciplineRegistry.bootstrap(disciplines:)` before any view code accesses `.shared`.
-
-The set of registered disciplines is build-configuration-dependent. Configurations without the `PEACH_RESEARCH` Swift compilation flag (`Debug`, `Release`) register the pitch disciplines only (pitch unison/interval, pitch-matching unison/interval). Configurations with the flag (`Debug (Research)`, `Release (Research)`) additionally register `TimingOffsetDetectionDiscipline` and `ContinuousRhythmMatchingDiscipline`. The flag is referenced only in `App/Training/DisciplineBootstrap.swift`; everywhere else, the registered set is the source of truth.
-
-The timing disciplines require sub-20 ms input latency to be musically useful. iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter. Only wired USB MIDI is reliable enough — so the timing disciplines are released only to a small group of TestFlight participants via the `Research` configuration, not to the App Store.
+The feature directory is the unit of extension. Every file belonging to one discipline — its discipline conformance, its `Codable` payload struct, its CSV history, its session, its screen, its observer, its adapters, its settings, its help bodies — lives under `Peach/Training/<Feature>/`. Aggregating screens (`SettingsScreen`, `ProfileScreen`, `HelpContent`) iterate `TrainingDisciplineRegistry.shared.allUI` and invoke the `TrainingDisciplineUI` properties directly; there is no central kind enum, no central category switch, no central dispatcher. Persistence collapses to a single SwiftData `@Model` envelope (`TrainingRecord`) shared by every discipline, with each discipline's `Codable` payload encoded into `payloadData`.
 
 **Adding a new discipline** requires:
-1. Declare its `TrainingDisciplineID` named factory in `App/Training/DisciplineIDs.swift`
-2. Create the discipline struct conformance in its feature directory
-3. Add it to `App/Training/DisciplineBootstrap.swift`
-4. Create the SwiftData `@Model` record type
-5. Create the session, screen, observer protocol, and adapters
 
-No changes to existing disciplines, the profile, the data store, or the CSV infrastructure.
+1. Create `Peach/Training/<Feature>/` containing the discipline conformance, the payload struct, the CSV history, the session, the screen, observers, adapters, and any feature-local settings or help bodies.
+2. Add one factory line to `App/Training/DisciplineBootstrap.swift` (and one entry to `allCSVHistories`).
+3. Add a `NavigationDestination` case and the localization strings.
+
+No central enum case. No edit to a central screen. No edit to `Core/Ports/UserSettings.swift`. No SwiftData schema edit. No central CSV migration file. The surface area collapsed from "edit five central files" to "create one directory."
+
+Activation is per-discipline and compile-time only. `App/Training/DisciplineBootstrap.swift` is the single source of truth: it lists the active discipline factories, with the four pitch disciplines unconditional and the two timing disciplines (`TimingOffsetDetectionDiscipline`, `ContinuousRhythmMatchingDiscipline`) wrapped in `#if PEACH_RESEARCH`. The `Debug (Research)` and `Release (Research)` build configurations define that flag; the App Store cut is built without it, so the timing types are physically absent from its binary. Toggling a discipline is always a rebuild — there is no runtime UI, no `UserDefaults` flag, no debug menu. ADR-10 records the explicit rejection of runtime activation and the rationale for moving from category-grained gating to per-discipline gating.
+
+The timing disciplines require sub-20 ms input latency to be musically useful. iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter. Only wired USB MIDI is reliable enough — so the timing disciplines reach a small group of TestFlight participants via the `Research` configurations only, not the App Store.
+
+The architectural commitment is feature-directory colocation: every file belonging to one discipline lives in `Peach/Training/<Feature>/`.
 
 ### 8.8 Platform Abstraction (Ports/Adapters)
 
@@ -821,6 +815,22 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 - (-) Four port protocols and their implementations add indirection for what are currently simple platform differences
 - (-) Some ports have trivial macOS implementations (e.g., haptic feedback is a no-op)
 
+### ADR-10: Per-Discipline Compile-Time Activation
+
+**Context:** Before epic 77, the `PEACH_RESEARCH` Swift compilation flag introduced in story 76.4 gated whole training categories — the rhythm category was either present or absent as a unit. Per-discipline experimentation required hunting through gates inside central screens. Once the architecture allowed one rhythm discipline to be excluded while another remained registered, category-grained gating became misleading: the category was no longer the meaningful unit of activation.
+
+**Decision:** Per-discipline activation lives in a single file, `App/Training/DisciplineBootstrap.swift`, as a list of factory expressions (`UnisonPitchDiscriminationDiscipline()`, `IntervalPitchDiscriminationDiscipline()`, …). The four pitch disciplines are unconditionally listed; the two timing disciplines are wrapped in `#if PEACH_RESEARCH` so their types are physically absent from the App Store binary. To disable a discipline locally during development, the developer comments out its factory line. Story 77.1 introduced the bootstrap file; subsequent stories (77.2 / 77.3 / 77.4 / 77.5 / 77.6) refined the surrounding plugin-style architecture so that the bootstrap list is the only place activation is expressed.
+
+**Status:** Implemented.
+
+**Consequences:**
+- (+) Activation is additive: adding a discipline is a one-line edit to `DisciplineBootstrap.swift`
+- (+) Honest binary: the App Store cut contains no dormant timing code
+- (+) Preserves the existing `Debug` / `Debug (Research)` / `Release` / `Release (Research)` build-configuration matrix from ADR-7 / story 76.4
+- (+) Per-discipline granularity replaces the misleading per-category gate
+- (-) Toggling a discipline requires a rebuild — no live experimentation
+- (-) Local one-off discipline disabling is per-developer state that must not be committed
+
 ---
 
 ## 10. Quality Requirements
@@ -887,7 +897,7 @@ Quality
 
 | Item | Severity | Notes |
 |------|---------|-------|
-| **Original architecture document partially outdated** | Low | `docs/planning-artifacts/architecture.md` predates implementation and uses some names/types that have since evolved. This arc42 document is the current source of truth. |
+| **Original architecture document partially outdated** | Low | `docs/planning-artifacts/architecture.md` predates implementation; arc42 plus the v0.5 / v0.9 amendments at the end of that document are the current source of truth. |
 | **No CI/CD pipeline** | Low | Pre-commit gate is local `bin/test.sh` on both iOS and macOS. Acceptable for solo developer; would need automation before team collaboration. |
 
 ---
@@ -903,11 +913,13 @@ Quality
 | **Continuous Rhythm Matching** | A repeating rhythmic pattern plays with one gap per cycle; user taps to fill the gap. Timing accuracy is measured. |
 | **CycleDefinition** | A single four-step cycle in continuous rhythm matching, specifying which step position is the gap. |
 | **DetunedMIDINote** | A MIDI note with a cent offset — a precise pitch identity in the logical world. |
+| **DisciplineBootstrap** | Single file (`App/Training/DisciplineBootstrap.swift`) listing the active discipline factories. Pitch disciplines always; timing disciplines inside `#if PEACH_RESEARCH`. |
 | **EWMA** | Exponentially Weighted Moving Average. Used for smoothing progress trends over time. |
 | **Interval** | Musical distance from prime (unison, 0 semitones) through octave (12 semitones). |
 | **Kazez Algorithm** | Psychoacoustic staircase that adjusts difficulty via `p * (1 ± k * sqrt(p))`. Coefficients: narrowing 0.05, widening 0.09. Used for both pitch comparison and rhythm offset detection. |
 | **MIDI Note** | Standardized pitch number (0-127). 60 = middle C, 69 = A4. |
 | **PeachCommands** | SwiftUI `Commands` type providing macOS menu bar entries and keyboard shortcuts for training interactions. |
+| **PEACH_RESEARCH** | Swift compilation flag defined by the `(Research)` build configurations. Gates the timing disciplines so they are physically absent from App Store binaries. |
 | **Perceptual Profile** | In-memory model of the user's pitch and rhythm perception, rebuilt from training records on startup. Keyed by `StatisticsKey`. |
 | **Pitch Bend** | MIDI mechanism for fine-tuning pitch. Peach uses a ±200 cent range with 14-bit resolution (~0.024 cents per step). |
 | **Pitch Comparison** | Two notes in sequence, user judges higher or lower. |
@@ -927,8 +939,11 @@ Quality
 | **Target Note** | The note the user judges against or tunes toward. May differ from reference by an interval and a cent offset. |
 | **TempoBPM** | Musical tempo in beats per minute. Derives sixteenth note and quarter note durations. |
 | **TempoRange** | A band of tempos (slow: 40-79, medium: 80-119, fast: 120-200 BPM) used to group rhythm statistics. |
-| **Training Discipline** | A self-describing unit of training functionality. Four to six disciplines exist depending on build configuration: unison/interval pitch comparison and pitch matching always, plus rhythm offset detection and continuous rhythm matching in the `Debug` and `Research` configurations. |
-| **TrainingDisciplineRegistry** | Singleton (in `Core/Training/Discipline/`) that holds the disciplines registered by `App/Training/DisciplineBootstrap.swift` at startup and provides aggregate operations (profile feeding, CSV column aggregation, parser dispatch). |
+| **Training Discipline** | A self-describing unit of training functionality. Six disciplines exist: unison/interval pitch comparison and unison/interval pitch matching (always), plus rhythm offset detection and continuous rhythm matching (in the `(Research)` configurations only). |
+| **TrainingDisciplinePayload** | Protocol (`Codable, Sendable`) for a discipline's record payload struct. Declares `disciplineIdentifier` and `currentPayloadVersion`. The payload is JSON-encoded into `TrainingRecord.payloadData`. |
+| **TrainingDisciplineRegistry** | Singleton (in `Core/Training/Discipline/`) that holds the disciplines registered by `App/Training/DisciplineBootstrap.swift` at startup. The App-layer extension `allUI` exposes the registry through `TrainingDisciplineUI` for view-producing iteration. Provides aggregate operations (profile feeding, CSV column aggregation, parser dispatch). |
+| **TrainingDisciplineUI** | App-layer refinement of `TrainingDiscipline` adding view-producing requirements (profile card, settings sections, help bodies) so Core/Data can stay SwiftUI-free. Lives in `App/Training/`. |
+| **TrainingRecord** | Single SwiftData `@Model` envelope (`disciplineIdentifier`, `timestamp`, `payloadVersion`, `payloadData`) shared by every discipline. Replaces per-discipline `@Model` types. |
 | **Tuning System** | Defines how intervals map to cent offsets (and thus frequencies). Currently: 12-TET and just intonation. |
 | **Two-World Architecture** | Separation of logical types (MIDI notes, intervals, cents, tempos) from physical types (frequencies, sample offsets). Bridged by TuningSystem (pitch) and SampleRate × Duration (rhythm). |
 | **Welford's Algorithm** | Incremental method for computing running mean and variance without storing all historical data. |

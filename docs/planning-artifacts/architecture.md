@@ -3095,3 +3095,294 @@ Top-level typealiases (e.g., `typealias PitchDiscriminationRecord = SchemaV1.Pit
 ### Why This Matters Now
 
 The app has four training domains, each storing records. Adding new record properties (e.g., input method, difficulty level) or new training domains is inevitable. Retrofitting versioning after users have unversioned stores is fragile. Setting up the versioning infrastructure before the first schema change ensures every future migration has a clean baseline.
+
+## v0.9 Architecture Amendment — Plugin-Style Discipline Contributions
+
+*Amended: 2026-04-30*
+
+The v0.5 amendment introduced ports-and-adapters for the data layer and a protocol-based discipline registry, but it left several centralized seams in place: UI fragments still lived in central screens behind a `category` switch, each discipline persisted via its own SwiftData `@Model`, CSV migrations were enumerated in central `V1ToV2Migration.swift` / `V2ToV3Migration.swift` files, the four central kinds enums (`KnownDisciplineKind` and the three `Settings/Profile/UI` contribution enums) were the only typed surface that listed every discipline, and `enabledGapPositions` lived in the cross-cutting `Core/Ports/UserSettings.swift` even though only one discipline consumed it. Epic 77 finishes the job: every per-discipline file lives in `Peach/Training/<Feature>/`, the App-layer adds a SwiftUI-aware refinement (`TrainingDisciplineUI`) so the central screens iterate the registry instead of switching, persistence collapses to a single `TrainingRecord` envelope plus per-discipline `Codable` payloads, CSV migration becomes per-discipline history + a derivation runner, and per-discipline activation moves into a single bootstrap file with one `#if PEACH_RESEARCH` block.
+
+**Supersedes:**
+- v0.5 "Discipline Registry" section (line 2797): the claim that the protocol surface is closed under `TrainingDiscipline` no longer holds. The protocol splits along the Core/App seam: `TrainingDiscipline` (in `Peach/Core/Training/Discipline/`) carries data-layer requirements only and imports Foundation; `TrainingDisciplineUI: TrainingDiscipline` (in `Peach/App/Training/TrainingDisciplineUI.swift`) adds the view-producing requirements and may import SwiftUI.
+- v0.5 "Expected Result / Adding a discipline requires…" enumeration (line 2877): the four-step list (feature directory + registration line + `NavigationDestination` case + localization) is replaced by a shorter feature-directory-plus-bootstrap sequence (see "Adding a new discipline requires" below). UI surfaces now self-register via `TrainingDisciplineUI` defaults instead of being added to central screens.
+- v0.5 "Updated Project Structure" snapshot (line 2897): the per-discipline directory inventories shown there omit the post-77 files (Codable payload struct, CSV history, settings sections, profile card view, help bodies, lifecycle contribution, and — for ContinuousRhythmMatching only — feature-local UserDefaults keys and a feature-local `UserSettings` port). The snapshot below replaces them.
+- v0.5 statement that each discipline persists via its own SwiftData `@Model` ("Record type (`PersistentModel` metatype)…", line 2806; central dispatchers eliminated, line 2848): replaced by the JSON envelope model in 77.4. `extension SchemaV1 { @Model … }` declarations are gone from every feature directory; top-level record-type typealiases (`PitchDiscriminationRecord`, etc.) are deleted; `SchemaV1.models` is `[TrainingRecord.self]` and never grows.
+- v0.5 statement that CSV migrations are enumerated centrally ("Discipline-Owned CSV Format" / "Deleted files", line 2854): replaced by 77.5's history+derivation model. Each discipline declares a `CSVHistory` of snapshots; the runner derives v→v+1 operations by diffing adjacent entries. `V1ToV2Migration.swift` and `V2ToV3Migration.swift` are deleted.
+- v0.5 inventory implication that `enabledGapPositions` is a cross-cutting setting (the v0.5 amendment does not name it explicitly, but it lived in `Peach/Core/Ports/UserSettings.swift` until 77.6): the key, encoding helper, and feature-local `UserSettings` port now live in `Peach/Training/ContinuousRhythmMatching/Settings/`. The protocol `ContinuousRhythmMatchingUserSettings` is the feature-local port; the byte-identical UserDefaults key string preserves backward compatibility with pre-77.6 user data.
+
+**Implementation stories:** Epic 77 (77.1, 77.2, 77.3, 77.4, 77.5, 77.6, 77.7, 77.8, 77.9, 77.10, 77.12) in `docs/implementation-artifacts/`.
+
+### Two-Protocol Split Along the Core/App Seam
+
+`TrainingDiscipline` (in `Peach/Core/Training/Discipline/TrainingDiscipline.swift`) carries the data-layer requirements: identifier, category, statistics keys, profile feeding, CSV column ownership (`csvTrainingType`, `csvColumns`, `csvHistory`), and the four `Payload`-typed primitives (`csvKeyValuePairs(for:)`, `parseCSVRow(fields:columnIndex:rowNumber:)`, `fetchExportRecords(from:)`, `parsedRecords(from:)`) plus `mergeImportRecords(from:existingIn:into:)`. The protocol declares `associatedtype Payload: TrainingDisciplinePayload` so the compiler knows each conformer's concrete payload type; cross-cutting registry callers go through type-erasing extensions (`csvRows(from:)`, `parsedRecordEnvelopes(from:)`, `parseCSVRowErased(fields:columnIndex:rowNumber:)`) that remain callable on `any TrainingDiscipline`. Core stays Foundation-only — no `import SwiftUI`, no `import SwiftData`.
+
+`TrainingDisciplineUI: TrainingDiscipline` (in `Peach/App/Training/TrainingDisciplineUI.swift`) refines the data protocol with four view-producing requirements, all defaulted:
+
+```swift
+protocol TrainingDisciplineUI: TrainingDiscipline {
+    var profileCard: AnyView { get }                       // default: ProgressChartView(mode: id)
+    var settingsSections: [DisciplineSettingsSection] { get } // default: []
+    var settingsHelp: [HelpSection] { get }                // default: []
+    var profileHelp: [HelpSection] { get }                 // default: []
+}
+```
+
+Every concrete discipline conforms to `TrainingDisciplineUI`. The App-layer extension `TrainingDisciplineRegistry.allUI: [any TrainingDisciplineUI]` is the App-shaped view of the registry (`compactMap` cast on `all`). Central screens (`SettingsScreen`, `ProfileScreen`, `HelpContent`) iterate `allUI` and invoke the four properties directly — no central kind enum, no central dispatcher, no `switch discipline.category` in the screen.
+
+**Why the split.** The Core/Data services (`TrainingDataExporter`, `CSVImportParser`, `TrainingDataStore`) consume the registry but must not pull SwiftUI into the data layer. Disciplines need both `import SwiftUI` (for view producers) and the data-protocol surface; placing the SwiftUI-shaped requirements on a Core protocol would force every `Peach/Core/` consumer of `TrainingDiscipline` to indirectly link SwiftUI. The split keeps the Core protocol Foundation-only while letting App-layer aggregators see the full view-producing surface.
+
+[Source: docs/implementation-artifacts/77-2-discipline-owned-ui-contributions.md]
+
+### Feature-Directory Colocation Rule
+
+**Every file belonging to one discipline lives under `Peach/Training/<Feature>/`.** The directory contains the discipline conformance, the Codable payload struct, the CSV history, the session, the screen, the observer protocol, the trial type, the profile/store adapters, the settings, the lifecycle contribution, the feedback indicator, and — for ContinuousRhythmMatching only — feature-local `UserDefaults` keys, the encoding helper, the feature-local `UserSettings` port, and shared per-category section IDs. View types specific to a discipline (e.g. `RhythmProfileCardView`, `PitchSlider`) live there too.
+
+The four central kinds enums introduced and then removed by 77.1/77.2 (`KnownDisciplineKind`, `KnownSettingsContribution`, `KnownProfileContribution`, `KnownUIContribution`) are gone; `Peach/Settings/SettingsContributions.swift`, `Peach/Profile/ProfileContributions.swift`, and `Peach/Core/Training/Discipline/UIContributions.swift` no longer exist.
+
+**Audit guardrails.** `CategoryLiteralAuditTests` and the discipline-ID literal audits assert that no central screen references a discipline by category literal or ID literal. Adding such a reference fails the audit, redirecting the developer back to a registry iteration.
+
+[Source: docs/implementation-artifacts/77-2-discipline-owned-ui-contributions.md, docs/implementation-artifacts/77-3-discipline-owned-data-declarations.md]
+
+### Per-Discipline Compile-Time Activation
+
+Activation is **per-discipline**, **compile-time only**, and lives in one file: `Peach/App/Training/DisciplineBootstrap.swift`. There is no runtime toggle, no `UserDefaults` flag, and no debug menu — toggling a discipline always requires a rebuild.
+
+```swift
+enum DisciplineBootstrap {
+    static let allDisciplines: [any TrainingDiscipline] = {
+        var disciplines: [any TrainingDiscipline] = [
+            UnisonPitchDiscriminationDiscipline(),
+            IntervalPitchDiscriminationDiscipline(),
+            UnisonPitchMatchingDiscipline(),
+            IntervalPitchMatchingDiscipline(),
+        ]
+        #if PEACH_RESEARCH
+        disciplines.append(TimingOffsetDetectionDiscipline())
+        disciplines.append(ContinuousRhythmMatchingDiscipline())
+        #endif
+        return disciplines
+    }()
+
+    static let allCSVHistories: [CSVHistory] = [ /* … */ ]
+}
+```
+
+**The `PEACH_RESEARCH` envelope.** The two `(Research)` build configurations (`Debug (Research)` and `Release (Research)`) define the `PEACH_RESEARCH` Swift compilation flag. The pitch disciplines are active in every configuration; the timing rows are wrapped in `#if PEACH_RESEARCH` so their types are not even referenced — and therefore not linked — in the App Store cut. To disable a discipline locally, comment out its line; the per-developer commit is not committed.
+
+**`allCSVHistories` is build-flag-independent.** A v2 CSV containing `rhythmMatching` rows must still migrate to v3 shape on a non-research build (the migrated rows fail dispatch downstream if no parser is registered, but the migration must run). `CSVHistoryRegistry` therefore lives in `Peach/Core/Training/Discipline/CSVHistoryRegistry.swift` separately from `TrainingDisciplineRegistry` and is bootstrapped from `DisciplineBootstrap.allCSVHistories` (which lists every known history regardless of build configuration).
+
+**Non-goals.** No runtime UI for activation. No `UserDefaults` flag. No debug menu. Per-discipline activation is a developer-time construct — the App Store binary's discipline set is fixed at compile.
+
+[Source: docs/implementation-artifacts/77-1-plugin-style-discipline-ui-contributions.md, docs/implementation-artifacts/77-10-test-isolation-for-shared-registries.md]
+
+### JSON-Envelope Persistence (77.4)
+
+A single `@Model TrainingRecord` envelope persists every discipline's records:
+
+```swift
+@Model
+final class TrainingRecord {
+    #Index<TrainingRecord>([\.disciplineIdentifier, \.timestamp])
+    var disciplineIdentifier: String
+    var timestamp: Date
+    var payloadVersion: Int
+    var payloadData: Data
+}
+```
+
+Each discipline owns a `Codable, Sendable` payload struct conforming to `TrainingDisciplinePayload`:
+
+```swift
+protocol TrainingDisciplinePayload: Codable, Sendable {
+    static var disciplineIdentifier: String { get }
+    static var currentPayloadVersion: Int { get }
+}
+
+nonisolated struct PitchDiscriminationPayload: TrainingDisciplinePayload, Equatable {
+    static let disciplineIdentifier = "pitchDiscrimination"
+    static let currentPayloadVersion = 1
+    var referenceNote: Int
+    var targetNote: Int
+    var centOffset: Double
+    var isCorrect: Bool
+    var interval: Int
+    var tuningSystem: String
+}
+```
+
+`SchemaV1.models = [TrainingRecord.self]` — a single line that does not grow as disciplines are added. `SchemaV1.versionIdentifier = (2, 0, 0)` reflects 77.4's break from the per-`@Model` v1 schema. There is no automatic migration from v1: the bootstrap path in `PeachApp.setupDataStore` wipes the store on incompatibility (pre-release data is not preserved). CSV export/import is the supported migration path.
+
+**`extension SchemaV1 { @Model … }` declarations are gone from every feature directory.** Top-level typealiases (`typealias PitchDiscriminationRecord = SchemaV1.PitchDiscriminationRecord`) are deleted. The accepted exception in v0.5 ("SwiftData in the TrainingDiscipline Chain", line 2830) is no longer load-bearing for per-discipline `@Model` types — only `Peach/Core/Data/` and the migration plan import SwiftData; feature directories are SwiftData-free.
+
+**Encode/decode boundary.** `Peach/Core/Data/JSONEnvelope.swift` provides `encode(_:timestamp:)` and `decode(_:as:)` helpers using deterministic `.sortedKeys` JSON encoding. The store-side adapter (per discipline) filters by `disciplineIdentifier`, decodes the envelope into `Payload`, and switches on `payloadVersion` to migrate older payload versions on read when the discipline's own schema evolves.
+
+[Source: docs/implementation-artifacts/77-4-json-envelope-storage-redesign.md, docs/implementation-artifacts/77-7-collapse-merge-import-boilerplate.md, docs/implementation-artifacts/77-8-typed-discipline-payload-associated-type.md, docs/implementation-artifacts/77-9-payload-streaming-iteration.md]
+
+### History+Derivation CSV Migration (77.5)
+
+Each discipline declares a `csvHistory: CSVHistory` of `CSVHistoryEntry` snapshots — one per CSV format version where the discipline's identity changed:
+
+```swift
+struct CSVHistoryEntry {
+    let version: Int
+    let trainingType: String                                  // wire-format identifier at this version
+    let columns: [String]                                     // discipline-specific columns at this version
+    let previousTrainingType: String?                         // for "introduced and inherits from retired identifier"
+    let valueTransformsFromPrevious: [CSVValueTransform]      // applied during the (previous → this) step
+}
+```
+
+Snapshots, not deltas. The migration runner (`CSVMigrationChain.migrate(from:to:rows:)` in `Peach/Core/Data/CSVFormatMigration.swift`) derives the operations needed for each (v → v+1) step by inspecting every history's entry at `v+1` and assembling: trainingType renames (when an entry's `trainingType` differs from the history's previous entry, or when a new entry declares `previousTrainingType`), and value transforms (any `CSVValueTransform` listed in the v+1 entry — currently `.renameColumnWithFallback(from:to:)`). Column-level adds and drops are not materialized into row dictionaries; `CSVImportParser` reconstructs the row dictionary against the union of registry-declared columns plus any keys present in the migrated rows, so missing column keys default to empty strings.
+
+**Absent-at-version contract.** A discipline that did not yet exist at a version simply has no entry below it; rows under that version's identifier survive the step unchanged and fail dispatch only if no discipline registers for them.
+
+**Retired-at-version contract.** When a discipline introduces itself at v+1 with `previousTrainingType` set, rows under the retired identifier are rewritten to the new identifier. The retired identifier has no live history beyond the rewrite.
+
+`Peach/Core/Data/V1ToV2Migration.swift` and `Peach/Core/Data/V2ToV3Migration.swift` are deleted.
+
+[Source: docs/implementation-artifacts/77-5-csv-migration-plugin-contract.md]
+
+### Feature-Local Storage for `enabledGapPositions` (77.6)
+
+`enabledGapPositions` no longer lives in `Peach/Core/Ports/UserSettings.swift`, `Peach/Settings/SettingsKeys.swift`, or `Peach/Settings/AppUserSettings.swift`. Its UserDefaults key string and `GapPositionEncoding` helper now live under `Peach/Training/ContinuousRhythmMatching/Settings/`:
+
+```
+Peach/Training/ContinuousRhythmMatching/Settings/
+    ContinuousRhythmMatchingSettingsKeys.swift     # UserDefaults key + default
+    ContinuousRhythmMatchingUserSettings.swift     # feature-local port + AppContinuousRhythmMatchingUserSettings impl
+    GapPositionEncoding.swift                      # encode/decode helper
+    RhythmGapPositionsSettingsSection.swift        # settings section view
+```
+
+The byte-identical UserDefaults key string (`"enabledGapPositions"`) and encoding format preserve backwards-compatibility with pre-77.6 user data.
+
+**Wiring mechanism.** A feature-local port — `protocol ContinuousRhythmMatchingUserSettings { var enabledGapPositions: Set<StepPosition> { get } }` — is the access surface. CRM's `LifecycleContribution` extension consumes the port directly and threads it through to `ContinuousRhythmMatchingSettings.from(_:crmUserSettings:)` rather than routing it through the central `TrainingLifecycleCoordinator`. This mirrors the v0.5 ports-and-adapters pattern at the feature scope: a discipline that needs feature-private settings declares its own narrow port and wires it through its own lifecycle extension.
+
+[Source: docs/implementation-artifacts/77-6-feature-owned-gap-positions-storage.md, docs/implementation-artifacts/77-12-traininglifecyclecoordinator-plugin-style-fit.md]
+
+### Adding a New Discipline Requires
+
+After all 77.x stories:
+
+1. Create `Peach/Training/<Feature>/` containing:
+   - `<Feature>Discipline.swift` — conformance to `TrainingDisciplineUI` (data + UI surface; `TrainingDiscipline` is satisfied transitively).
+   - `Discipline/<Feature>Payload.swift` — `Codable, Sendable` struct conforming to `TrainingDisciplinePayload`.
+   - `Discipline/<Feature>CSVHistory.swift` — `CSVHistory` declaration.
+   - `<Feature>Session.swift`, `<Feature>Screen.swift`, `<Feature>Observer.swift`, `<Feature>Trial.swift`.
+   - `<Feature>ProfileAdapter.swift`, `<Feature>StoreAdapter.swift`.
+   - `<Feature>LifecycleContribution.swift` — `extension <Feature>Session { func contribute(to:userSettings:) }`.
+   - `Help/<Feature>Help.swift` — discipline-scoped help bodies.
+   - `Settings/` and `Profile/` subdirectories for feature-specific section views and profile cards.
+   - For disciplines with feature-private settings only: `Settings/<Feature>SettingsKeys.swift`, `Settings/<Feature>UserSettings.swift`.
+2. Add one factory line to `DisciplineBootstrap.allDisciplines` (inside the `#if PEACH_RESEARCH` block if the discipline is research-only) and one line to `DisciplineBootstrap.allCSVHistories`.
+3. Add a `NavigationDestination` case.
+4. Add localization strings.
+
+**No longer needed:**
+
+- No central enum case (`KnownDisciplineKind`, the three contribution kinds) — those enums are deleted.
+- No edit to a central screen (`SettingsScreen`, `ProfileScreen`, `HelpContent`) — they iterate `TrainingDisciplineRegistry.shared.allUI` and invoke the four `TrainingDisciplineUI` properties directly.
+- No edit to `Peach/Core/Ports/UserSettings.swift` — feature-private settings stay in the feature directory behind a feature-local port.
+- No edit to a central `UserSettings` adapter (`AppUserSettings`) — same reason.
+- No SwiftData schema edit — `SchemaV1.models = [TrainingRecord.self]` is invariant.
+- No central CSV migration file — `CSVMigrationChain` derives operations from the per-discipline `CSVHistory` declarations; there is no `V*ToV*Migration.swift` to add a case to.
+
+[Source: docs/implementation-artifacts/77-1-plugin-style-discipline-ui-contributions.md, docs/implementation-artifacts/77-2-discipline-owned-ui-contributions.md]
+
+### Updated Project Structure (v0.9 — `Peach/Training/<Feature>/` representative inventory)
+
+```
+Peach/Training/ContinuousRhythmMatching/
+    ContinuousRhythmMatchingSession.swift                    # Discipline-specific session
+    ContinuousRhythmMatchingScreen.swift                     # Training screen
+    ContinuousRhythmMatchingObserver.swift                   # Trial-result observer protocol
+    CompletedContinuousRhythmMatchingTrial.swift             # Completed trial value type
+    ContinuousRhythmMatchingSettings.swift                   # Session settings + .from(_:crmUserSettings:)
+    ContinuousRhythmMatchingProfileAdapter.swift             # Observer → ProfileUpdating
+    ContinuousRhythmMatchingStoreAdapter.swift               # Observer → TrainingRecordPersisting (via envelope)
+    ContinuousRhythmMatchingLifecycleContribution.swift      # extension … { contribute(to:userSettings:crmUserSettings:) }
+    ContinuousRhythmMatchingDotView.swift                    # Discipline-specific view
+    RhythmTimingFeedbackIndicator.swift                      # Discipline-specific feedback view
+
+    Discipline/
+        ContinuousRhythmMatchingDiscipline.swift             # TrainingDisciplineUI conformance
+        ContinuousRhythmMatchingPayload.swift                # TrainingDisciplinePayload conformance
+        ContinuousRhythmMatchingCSVHistory.swift             # CSVHistory declaration
+
+    Help/
+        ContinuousRhythmMatchingHelp.swift                   # Discipline-scoped help bodies
+
+    Profile/
+        RhythmProfileCardView.swift                          # Profile card view (used by profileCard property)
+
+    Settings/
+        ContinuousRhythmMatchingSettingsKeys.swift           # Feature-local UserDefaults key + default
+        ContinuousRhythmMatchingUserSettings.swift           # Feature-local port + App impl
+        GapPositionEncoding.swift                            # Feature-local encoding helper
+        RhythmGapPositionsSettingsSection.swift              # Settings section view
+        RhythmTempoSettingsSection.swift                     # Settings section view (shared with TimingOffsetDetection by id)
+        SharedRhythmSectionID.swift                          # Stable section IDs for per-category dedup
+```
+
+The four pitch disciplines and `TimingOffsetDetection` follow the same shape, omitting the `Settings/` subdirectory (none of them declare feature-private settings) and folding their feedback views into the top-level files.
+
+### Updated Central-Files Inventory (v0.9)
+
+```
+Peach/Core/Training/Discipline/
+    TrainingDiscipline.swift                  # Core protocol with associated Payload type
+    TrainingDisciplinePayload.swift           # Payload protocol + TimestampedPayload + typedEntries helper
+    TrainingDisciplineRegistry.swift          # Mutex-backed bootstrapped slot, #if DEBUG TaskLocal override
+    CSVHistory.swift                          # CSVHistory + CSVHistoryEntry + CSVValueTransform
+    CSVHistoryRegistry.swift                  # Build-flag-independent registry (parallel to TrainingDisciplineRegistry)
+
+Peach/App/Training/
+    DisciplineBootstrap.swift                 # Single source of truth for activation; #if PEACH_RESEARCH
+    DisciplineIDs.swift                       # TrainingDisciplineID factories + canonicalIDs
+    DisciplineSettingsSection.swift           # Identifiable wrapper + aggregated(from:) deduper
+    TrainingDisciplineUI.swift                # App-layer SwiftUI refinement + allUI extension
+    TrainingLifecycleRegistry.swift           # NavigationDestination → Contribution map (Builder-based)
+
+Peach/Core/Data/
+    TrainingRecord.swift                      # Single @Model envelope (replaces per-discipline @Models)
+    PeachSchema.swift                         # SchemaV1.models = [TrainingRecord.self]; PeachSchemaMigrationPlan
+    JSONEnvelope.swift                        # encode/decode helpers (sorted keys)
+    CSVFormatMigration.swift                  # CSVMigrationChain.migrate (history-derived; no V*ToV* files)
+    CSVImportParser.swift                     # Registry-driven parser; reconstructs columns from union
+    TrainingDataStore.swift                   # Generic CRUD over TrainingRecord
+    TrainingDataExporter.swift                # Iterates registry; uses csvRows(from:) helper
+    TrainingDataImporter.swift                # Iterates registry; uses parsedRecordEnvelopes helper
+    TransactionScope+MergeImport.swift        # Generic merge-import boilerplate
+
+Peach/Settings/
+    AppUserSettings.swift                     # No enabledGapPositions, no per-discipline keys
+    SettingsKeys.swift                        # No enabledGapPositions
+    SettingsScreen.swift                      # Iterates allUI for settingsSections; no category switch
+
+Peach/Profile/
+    ProfileScreen.swift                       # Iterates allUI for profileCard; no category switch
+
+Peach/App/
+    HelpContent.swift                         # Iterates allUI for settingsHelp / profileHelp; no category switch
+
+Peach/Core/Ports/
+    UserSettings.swift                        # Cross-cutting settings only — no enabledGapPositions
+```
+
+**Deleted central files (relative to v0.5):**
+
+- `Peach/Settings/SettingsContributions.swift` (v0.5: central settings-contribution enum)
+- `Peach/Profile/ProfileContributions.swift` (v0.5: central profile-contribution enum)
+- `Peach/Core/Training/Discipline/UIContributions.swift` (v0.5: central UI-contribution enum)
+- All per-discipline `extension SchemaV1 { @Model … }` files (v0.5: per-discipline `@Model` types)
+- `Peach/Core/Data/V1ToV2Migration.swift`, `Peach/Core/Data/V2ToV3Migration.swift` (v0.5: central migration enumeration)
+
+### v0.9 Architecture Validation
+
+**Decision Compatibility:** No new frameworks. The protocol split, the JSON envelope, and the history+derivation CSV migration use only Swift's existing protocol and generics system, plus `Codable` and SwiftData primitives already in use. The `PEACH_RESEARCH` flag is the same flag introduced in 76.4; v0.9 only changes what the flag gates (per-discipline factory rows in `DisciplineBootstrap`, not category switches in screens).
+
+**Pattern Consistency:** The two-protocol split mirrors the existing Core/App seam (Foundation in Core, SwiftUI in App). The per-discipline payload and the per-discipline `CSVHistory` are both instances of the chain-of-responsibility / open-closed principle the v0.5 amendment introduced — adding a discipline is additive and central files do not change. The feature-local `ContinuousRhythmMatchingUserSettings` port reuses the v0.5 ports-and-adapters pattern at feature scope.
+
+**Backward Compatibility:** SwiftData v1 → v2 has no automatic migration; the bootstrap wipes incompatible stores. Pre-release stores are sacrificed; CSV export/import is the supported migration path. The CSV format itself remains backward-compatible: `CSVMigrationChain` migrates v1 / v2 rows up to v3 on read. The `enabledGapPositions` UserDefaults key string is byte-identical to pre-77.6, so existing user settings persist across the relocation.
+
+**Risk Assessment:** The associated-type `Payload` requires every cross-cutting registry caller to go through one of the existential helpers; a future caller that needs `Payload`-typed access at the registry boundary cannot get it without conforming the call site to a typed protocol or threading a generic. The current callers (export, import, merge-import) all fit through the existing helpers. The `DisciplineBootstrap` candidate list is the single source of truth for activation; a future feature-flag system that wants per-user toggling will need to introduce a different mechanism (envelope-internal filtering) or accept the rebuild cost. ADR-10 documents the explicit rejection of runtime activation.
