@@ -1,6 +1,6 @@
 # Story 77.10: Test isolation for shared registries
 
-Status: review
+Status: done
 
 ## Story
 
@@ -145,7 +145,8 @@ This story is independent of 77.6 → 77.9 (which extend the discipline contract
 ## Change Log
 
 - 2026-04-28: Drafted as a deferred 77.5 review finding (D1), tracking the project-wide `_replaceSharedForTesting` parallel-test race issue first surfaced in 77.1 review (D5). Status → ready-for-dev.
-- 2026-04-29: Implemented Shape 2 (task-local override). Both registries gained `@TaskLocal static var override`; `.shared` consults it before the bootstrapped slot. `_replaceSharedForTesting` renamed to `_replaceSharedForPreviewSupport` (preview-only escape hatch). `RegistryTestSupport._withSharedReplacedForTesting` replaced by `withOverride(disciplines:body:)` / `withOverride(histories:body:)`. 11 test files migrated; 7 redundant per-suite `init()` re-bootstraps deleted (no longer needed — task-locals leave sibling tasks unaffected). All four configurations green; pre-change race did not reproduce in 3 stress runs (negative finding documented). Status → review.
+- 2026-04-29: Implemented Shape 2 (task-local override). Both registries gained `@TaskLocal static var override`; `.shared` consults it before the bootstrapped slot. `_replaceSharedForTesting` renamed to `_replaceSharedForPreviewSupport` (preview-only escape hatch). `RegistryTestSupport._withSharedReplacedForTesting` replaced by `withOverride(disciplines:body:)` / `withOverride(histories:body:)`. 10 test files migrated; 7 redundant per-suite `init()` re-bootstraps deleted (no longer needed — task-locals leave sibling tasks unaffected). All four configurations green; pre-change race did not reproduce in 3 stress runs (negative finding documented). Status → review.
+- 2026-04-29: Code-review pass. Addressed findings: (P3) gated `@TaskLocal var override` and the override-consulting branch in `.shared` behind `#if DEBUG` — release builds no longer carry the override mechanism. (P2/P5/D1) `withOverride` doc comments now warn about the structured-concurrency scope (Task.detached / unstructured Task / post-scope reads do NOT see the override); both registry variants carry symmetric rationale; added async overloads `withOverride(_:body:) async rethrows`. (P4) reconciled migrated-test-file count from 11 → 10. (P1) full-suite ×10 stress sweep on iOS Debug: 10/10 green at 1479.
 
 ## Dev Agent Record
 
@@ -153,8 +154,10 @@ This story is independent of 77.6 → 77.9 (which extend the discipline contract
 
 - **Shape:** Shape 2 (task-local override). See Dev Notes for chosen-vs-rejected rationale.
 - **Pre-change race reproduction:** Three sequential pre-fix `bin/test.sh -f` runs all passed at 1479 — the race did not reproduce on this machine within reasonable effort. Per Task 1.1's stated fallback, this is a documented negative finding; the architectural concern (a process-wide slot mutated by tests running in parallel tasks) stands on its own merits. Race-shaped failures are by definition timing-dependent; absence on three runs is not evidence of safety.
-- **Post-change verification:** All four configurations green — iOS Debug 1479, macOS Debug 1473, iOS Research 1823, macOS Research 1817. Five sequential single iOS Debug runs all green at 1479 each (post-fix stable). Build (`bin/build.sh && bin/build.sh -p mac`) produced zero new warnings.
+- **Post-change verification:** All four configurations green — iOS Debug 1479, macOS Debug 1473, iOS Research 1823, macOS Research 1817. **AC 5 stress check:** 10 sequential full-suite iOS Debug runs all green at 1479 each (the cadence AC 5 prescribes — "running the full suite ten times back-to-back"). Build (`bin/build.sh && bin/build.sh -p mac`) produced zero new warnings.
 - **`Sendable` preserved:** Both registries remain plain `Sendable` (no `@unchecked`, no `nonisolated(unsafe)`). The `@TaskLocal` static is itself `Sendable` because `TrainingDisciplineRegistry` / `CSVHistoryRegistry` already conform.
+- **Release-build safety:** the `@TaskLocal var override` declaration and the `if let override` branch inside `.shared` are both wrapped in `#if DEBUG`. Release builds carry no override mechanism at all — `.shared` always returns the bootstrapped instance — preserving the pre-change invariant that production code cannot swap registry contents at runtime.
+- **Boy-Scout fix surfaced during P3 verification:** `Peach/Info/InfoScreen.swift` and `Peach/Start/StartScreen.swift` had `#Preview` blocks calling `PreviewSupport.bootstrapRegistryIfNeeded()` without a wrapping `#if DEBUG` — pre-existing breakage that left the Release scheme failing on both iOS and macOS independently of this story. Wrapped both blocks in `#if DEBUG` to match the established pattern in `ProfileScreen`, `SettingsScreen`, `ContentView+iOS`, and `ContentView+macOS`. All four Release configs now build clean.
 - **`_replaceSharedForTesting` is gone from tests entirely.** It was renamed to `_replaceSharedForPreviewSupport` and is now reachable from exactly one production file (`Peach/App/PreviewSupport.swift`). The doc comment names story 77.10 and points test authors at `withOverride`.
 - **7 per-suite `init()` re-bootstraps deleted.** Suites such as `ProgressChartViewTests`, `ProgressTimelineTests`, `TrainingDataImportActionTests`, `SettingsTests`, `CSVExportSchemaTests`, `TrainingDisciplineConfigTests`, and `HelpContentViewTests` previously called `_replaceSharedForTesting(disciplines: DisciplineBootstrap.allDisciplines)` in `init()` defensively against parallel pollution. With task-locals, sibling tests cannot pollute `.shared`, so these defensive re-bootstraps are obsolete — TEST_HOST already installs the canonical list at app launch. Deleting them is a real reduction in test-suite mutation, not just a syntactic migration.
 - **No follow-up scope expansion.** Other singletons in the project (audio engine, settings) were inspected only insofar as the task-local pattern was being introduced; none of them use `_replaceSharedForTesting`, so per the story's "What this story is NOT" section they are out of scope.
@@ -182,6 +185,10 @@ This story is independent of 77.6 → 77.9 (which extend the discipline contract
 - `PeachTests/Settings/SettingsScreenAggregationTests.swift`
 - `PeachTests/Core/Training/RegistryContributionsTests.swift`
 - `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift` (also renamed the helper-self-test)
+
+**Boy-Scout (pre-existing release-build fix surfaced during P3 verification):**
+- `Peach/Info/InfoScreen.swift`
+- `Peach/Start/StartScreen.swift`
 
 **Documentation:**
 - `docs/implementation-artifacts/77-10-test-isolation-for-shared-registries.md`

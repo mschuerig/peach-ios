@@ -16,23 +16,31 @@ final class CSVHistoryRegistry: Sendable {
 
     private static let _bootstrapped = Mutex<CSVHistoryRegistry?>(nil)
 
-    /// Task-local override for ``shared``.
+    #if DEBUG
+    /// Task-local override for ``shared``. DEBUG-only — release builds have
+    /// no override mechanism, so ``shared`` always returns the bootstrapped
+    /// instance.
     ///
     /// When non-nil for the current task, ``shared`` returns this instead of
-    /// the bootstrapped instance. Tests use this to install a non-canonical
+    /// the bootstrapped instance. Tests use ``RegistryTestSupport``'s
+    /// `withOverride(histories:body:)` helper to install a non-canonical
     /// catalog for the duration of one test, leaving sibling tests in
-    /// concurrent tasks unaffected. Production code never sets this.
+    /// concurrent tasks unaffected.
     @TaskLocal
     static var override: CSVHistoryRegistry? = nil
+    #endif
 
     /// The registry visible to call sites.
     ///
-    /// Returns the task-local ``override`` if one is active for the current
-    /// task; otherwise returns the bootstrapped instance. Accessing this
-    /// before ``bootstrap(histories:)`` has been called and outside any
-    /// override scope traps.
+    /// In DEBUG builds, returns the task-local ``override`` if one is active
+    /// for the current task; otherwise returns the bootstrapped instance.
+    /// In release builds, always returns the bootstrapped instance.
+    /// Accessing this before ``bootstrap(histories:)`` has been called and
+    /// outside any override scope traps.
     static var shared: CSVHistoryRegistry {
+        #if DEBUG
         if let override { return override }
+        #endif
         return _bootstrapped.withLock { registry in
             guard let registry else {
                 preconditionFailure("CSVHistoryRegistry.shared accessed before bootstrap(histories:)")
