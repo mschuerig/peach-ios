@@ -43,20 +43,16 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
 
     var csvHistory: CSVHistory { PitchDiscriminationCSVHistory.history }
 
-    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
-        guard let p = payload as? PitchDiscriminationPayload else {
-            assertionFailure("Expected PitchDiscriminationPayload, got \(type(of: payload))")
-            return []
-        }
-        return [
-            ("referenceNote", "\(p.referenceNote)"),
-            ("referenceNoteName", CSVParserHelpers.formatNoteName(p.referenceNote)),
-            ("targetNote", "\(p.targetNote)"),
-            ("targetNoteName", CSVParserHelpers.formatNoteName(p.targetNote)),
-            ("interval", CSVParserHelpers.formatInterval(p.interval)),
-            ("tuningSystem", p.tuningSystem),
-            ("centOffset", CSVParserHelpers.formatDouble(p.centOffset)),
-            ("isCorrect", p.isCorrect ? "true" : "false"),
+    func csvKeyValuePairs(for payload: PitchDiscriminationPayload) -> [(String, String)] {
+        [
+            ("referenceNote", "\(payload.referenceNote)"),
+            ("referenceNoteName", CSVParserHelpers.formatNoteName(payload.referenceNote)),
+            ("targetNote", "\(payload.targetNote)"),
+            ("targetNoteName", CSVParserHelpers.formatNoteName(payload.targetNote)),
+            ("interval", CSVParserHelpers.formatInterval(payload.interval)),
+            ("tuningSystem", payload.tuningSystem),
+            ("centOffset", CSVParserHelpers.formatDouble(payload.centOffset)),
+            ("isCorrect", payload.isCorrect ? "true" : "false"),
         ]
     }
 
@@ -64,19 +60,23 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: PitchDiscriminationPayload), CSVImportError> {
         PitchDiscriminationCSVParser.parse(fields: fields, columnIndex: columnIndex, rowNumber: rowNumber)
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: PitchDiscriminationPayload)] {
         try store.fetchPayloads(PitchDiscriminationPayload.self)
             .filter { $0.payload.interval != 0 }
             .map { ($0.timestamp, $0.payload) }
     }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
-        (parseResult.payloads[csvTrainingType] ?? [])
-            .filter { ($0.payload as? PitchDiscriminationPayload)?.interval != 0 }
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: PitchDiscriminationPayload)] {
+        TrainingDisciplinePayloads.typedEntries(
+            from: parseResult,
+            forTrainingType: csvTrainingType,
+            ofType: PitchDiscriminationPayload.self
+        )
+        .filter { $0.payload.interval != 0 }
     }
 
     func mergeImportRecords(
@@ -85,10 +85,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildPitchDuplicateKeys(discriminationsIn: store, trainingType: csvTrainingType)
-        let typed = parsedRecords(from: parseResult).compactMap { entry in
-            (entry.payload as? PitchDiscriminationPayload).map { (entry.timestamp, $0) }
-        }
-        return try scope.mergeImportPayloads(typed, existingKeys: &existingKeys) {
+        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existingKeys: &existingKeys) {
             PitchDuplicateKey(timestamp: $0, payload: $1, trainingType: csvTrainingType)
         }
     }

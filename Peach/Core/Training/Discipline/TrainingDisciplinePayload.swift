@@ -24,3 +24,22 @@ struct TimestampedPayload<P: TrainingDisciplinePayload>: Sendable {
 }
 
 extension TimestampedPayload: Equatable where P: Equatable {}
+
+/// Shared helpers operating on the heterogeneous payload map that
+/// ``CSVImportParser/ImportResult`` exposes.
+enum TrainingDisciplinePayloads {
+    /// Typed extraction at the existential→concrete boundary: returns
+    /// `(timestamp, payload)` entries for the given training type, casting
+    /// each payload to `P` and skipping ones that don't match. Disciplines
+    /// pass their own `csvTrainingType` and `Payload` type; the parser
+    /// produced these with the same `P`, so the cast is total in practice.
+    static func typedEntries<P: TrainingDisciplinePayload>(
+        from parseResult: CSVImportParser.ImportResult,
+        forTrainingType trainingType: String,
+        ofType _: P.Type
+    ) -> [(timestamp: Date, payload: P)] {
+        (parseResult.payloads[trainingType] ?? []).compactMap { entry in
+            (entry.payload as? P).map { (entry.timestamp, $0) }
+        }
+    }
+}

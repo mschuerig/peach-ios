@@ -11,7 +11,27 @@ import Foundation
 /// ``TrainingDisciplineUI``; Core stays Foundation-only so Core/Data services
 /// (`TrainingDataExporter`, `CSVImportParser`, `TrainingDataStore`) can consume
 /// the registry without pulling SwiftUI into the data layer.
+///
+/// ## Existential boundary and the typed `Payload`
+///
+/// The registry stores `[any TrainingDiscipline]`; cross-cutting iteration
+/// (export, import, profile rebuild) needs a heterogeneous list. Inside each
+/// conforming type, however, the discipline knows its concrete payload type,
+/// and forcing it back through `any TrainingDisciplinePayload` would require
+/// `as?` casts that cannot fail in practice.
+///
+/// `Payload` makes the per-discipline payload type concrete: methods that
+/// return or accept payloads use `Payload`, the four conformers stop
+/// downcasting, and the cross-cutting registry-level callers go through
+/// type-erasing protocol extensions (``csvRows(from:)``,
+/// ``parsedRecordEnvelopes(from:)``, ``parseCSVRowErased(fields:columnIndex:rowNumber:)``)
+/// whose visible signatures expose only `any TrainingDisciplinePayload` or
+/// concrete value types — so they remain callable on the existential.
 protocol TrainingDiscipline: Sendable {
+    /// The concrete payload type this discipline owns. Conformers typically
+    /// let this be inferred from the return types of payload-shaped methods.
+    associatedtype Payload: TrainingDisciplinePayload
+
     /// Stable identifier for this discipline.
     var id: TrainingDisciplineID { get }
 
@@ -53,20 +73,20 @@ protocol TrainingDiscipline: Sendable {
 
     /// Produces key-value pairs from a payload for CSV export.
     /// Keys are column names from ``csvColumns``.
-    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)]
+    func csvKeyValuePairs(for payload: Payload) -> [(String, String)]
 
     /// Parses a CSV row into a `(timestamp, payload)` pair using named column lookup.
     func parseCSVRow(
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError>
+    ) -> Result<(timestamp: Date, payload: Payload), CSVImportError>
 
     /// Fetches this discipline's payloads for export, sorted by timestamp.
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)]
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: Payload)]
 
     /// Returns this discipline's parsed payloads from a CSV import result.
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)]
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: Payload)]
 
     /// Merges imported payloads, skipping duplicates that already exist in the store.
     /// Reads existing payloads from `store` for duplicate detection; encodes new
@@ -76,4 +96,49 @@ protocol TrainingDiscipline: Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int)
+}
+
+// MARK: - Existential-callable helpers
+//
+// Cross-cutting registry callers iterate `[any TrainingDiscipline]`, where the
+// associated `Payload` is hidden. The methods below are the boundary that
+// erases per-discipline payload types into shapes the registry can consume:
+// each combines one or more `Payload`-typed primitive operations and exposes
+// only existential or concrete return types, so it remains callable on the
+// existential.
+
+extension TrainingDiscipline {
+    /// Type-erased view of ``parseCSVRow(fields:columnIndex:rowNumber:)`` for
+    /// the registry-driven CSV parser, which dispatches by `trainingType`
+    /// and stores results in a heterogeneous map keyed by that string.
+    func parseCSVRowErased(
+        fields: [String],
+        columnIndex: [String: Int],
+        rowNumber: Int
+    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
+        parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: rowNumber)
+            .map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
+    }
+
+    /// Yields one CSV (timestamp, key-value-pairs) tuple per exportable record.
+    /// Combines ``fetchExportRecords(from:)`` and ``csvKeyValuePairs(for:)``
+    /// so the exporter doesn't traffic in associated-type-shaped pairs.
+    func csvRows(from store: TrainingDataStore) throws -> [(timestamp: Date, pairs: [(String, String)])] {
+        try fetchExportRecords(from: store).map { ($0.timestamp, csvKeyValuePairs(for: $0.payload)) }
+    }
+
+    /// Encodes parsed CSV payloads into envelopes for the replace-mode importer.
+    /// Encodes one record at a time so the parsed array can shrink as the
+    /// envelope array grows, keeping per-discipline peak memory bounded.
+    func parsedRecordEnvelopes(
+        from parseResult: CSVImportParser.ImportResult
+    ) throws -> [TrainingRecord] {
+        let parsed = parsedRecords(from: parseResult)
+        var envelopes: [TrainingRecord] = []
+        envelopes.reserveCapacity(parsed.count)
+        for entry in parsed {
+            envelopes.append(try JSONEnvelope.encode(entry.payload, timestamp: entry.timestamp))
+        }
+        return envelopes
+    }
 }

@@ -51,12 +51,9 @@ enum TrainingDataImporter {
         var perDiscipline: [TrainingDisciplineID: (imported: Int, skipped: Int)] = [:]
 
         for discipline in TrainingDisciplineRegistry.shared.all {
-            let parsed = discipline.parsedRecords(from: parseResult)
-            for entry in parsed {
-                let envelope = try JSONEnvelope.encode(entry.payload, timestamp: entry.timestamp)
-                allEnvelopes.append(envelope)
-            }
-            perDiscipline[discipline.id] = (imported: parsed.count, skipped: 0)
+            let envelopes = try discipline.parsedRecordEnvelopes(from: parseResult)
+            allEnvelopes.append(contentsOf: envelopes)
+            perDiscipline[discipline.id] = (imported: envelopes.count, skipped: 0)
         }
 
         try store.replaceAllRecords(allEnvelopes)

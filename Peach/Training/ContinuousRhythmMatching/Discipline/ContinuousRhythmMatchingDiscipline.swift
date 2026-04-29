@@ -74,18 +74,14 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
 
     var csvHistory: CSVHistory { ContinuousRhythmMatchingCSVHistory.history }
 
-    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
-        guard let p = payload as? ContinuousRhythmMatchingPayload else {
-            assertionFailure("Expected ContinuousRhythmMatchingPayload, got \(type(of: payload))")
-            return []
-        }
-        return [
-            ("tempoBPM", "\(p.tempoBPM)"),
-            ("meanOffsetMs", CSVParserHelpers.formatDouble(p.meanOffsetMs)),
-            ("meanOffsetMsPosition0", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition0)),
-            ("meanOffsetMsPosition1", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition1)),
-            ("meanOffsetMsPosition2", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition2)),
-            ("meanOffsetMsPosition3", CSVParserHelpers.formatOptionalDouble(p.meanOffsetMsPosition3)),
+    func csvKeyValuePairs(for payload: ContinuousRhythmMatchingPayload) -> [(String, String)] {
+        [
+            ("tempoBPM", "\(payload.tempoBPM)"),
+            ("meanOffsetMs", CSVParserHelpers.formatDouble(payload.meanOffsetMs)),
+            ("meanOffsetMsPosition0", CSVParserHelpers.formatOptionalDouble(payload.meanOffsetMsPosition0)),
+            ("meanOffsetMsPosition1", CSVParserHelpers.formatOptionalDouble(payload.meanOffsetMsPosition1)),
+            ("meanOffsetMsPosition2", CSVParserHelpers.formatOptionalDouble(payload.meanOffsetMsPosition2)),
+            ("meanOffsetMsPosition3", CSVParserHelpers.formatOptionalDouble(payload.meanOffsetMsPosition3)),
         ]
     }
 
@@ -93,7 +89,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: ContinuousRhythmMatchingPayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let tempoBPMIdx = columnIndex["tempoBPM"],
               let meanOffsetMsIdx = columnIndex["meanOffsetMs"] else {
@@ -143,13 +139,17 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         return .success((timestamp: timestamp, payload: payload))
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: ContinuousRhythmMatchingPayload)] {
         try store.fetchPayloads(ContinuousRhythmMatchingPayload.self)
             .map { ($0.timestamp, $0.payload) }
     }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
-        parseResult.payloads[csvTrainingType] ?? []
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: ContinuousRhythmMatchingPayload)] {
+        TrainingDisciplinePayloads.typedEntries(
+            from: parseResult,
+            forTrainingType: csvTrainingType,
+            ofType: ContinuousRhythmMatchingPayload.self
+        )
     }
 
     func mergeImportRecords(
@@ -158,10 +158,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildRhythmDuplicateKeys(continuousRhythmMatchingsIn: store, trainingType: csvTrainingType)
-        let typed = parsedRecords(from: parseResult).compactMap { entry in
-            (entry.payload as? ContinuousRhythmMatchingPayload).map { (entry.timestamp, $0) }
-        }
-        return try scope.mergeImportPayloads(typed, existingKeys: &existingKeys) {
+        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existingKeys: &existingKeys) {
             RhythmDuplicateKey(timestamp: $0, tempoBPM: $1.tempoBPM, trainingType: csvTrainingType)
         }
     }

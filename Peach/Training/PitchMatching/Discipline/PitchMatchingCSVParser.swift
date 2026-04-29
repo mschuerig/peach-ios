@@ -8,7 +8,7 @@ enum PitchMatchingCSVParser {
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: PitchMatchingPayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let refNoteIdx = columnIndex["referenceNote"],
               let targetNoteIdx = columnIndex["targetNote"],

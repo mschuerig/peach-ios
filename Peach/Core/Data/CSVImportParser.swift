@@ -151,7 +151,7 @@ enum CSVImportParser {
                 continue
             }
 
-            switch discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: rowNumber) {
+            switch discipline.parseCSVRowErased(fields: fields, columnIndex: columnIndex, rowNumber: rowNumber) {
             case .success(let parsed):
                 payloads[trainingType, default: []].append(parsed)
             case .failure(let error):

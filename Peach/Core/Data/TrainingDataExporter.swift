@@ -9,8 +9,7 @@ enum TrainingDataExporter {
         var merged: [(timestamp: Date, row: String)] = []
 
         for discipline in TrainingDisciplineRegistry.shared.all {
-            for (timestamp, record) in try discipline.fetchExportRecords(from: store) {
-                let pairs = discipline.csvKeyValuePairs(for: record)
+            for (timestamp, pairs) in try discipline.csvRows(from: store) {
                 var fields = Array(repeating: "", count: columns.count)
                 fields[columnIndex["trainingType"]!] = discipline.csvTrainingType
                 fields[columnIndex["timestamp"]!] = CSVParserHelpers.formatTimestamp(timestamp)

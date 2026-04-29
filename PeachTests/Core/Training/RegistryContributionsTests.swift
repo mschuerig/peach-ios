@@ -47,16 +47,16 @@ struct SyntheticUIDiscipline: TrainingDisciplineUI, Sendable {
     }
 
     func feedRecords(from store: TrainingDataStore, into builder: PerceptualProfile.Builder) throws {}
-    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] { [] }
+    func csvKeyValuePairs(for payload: SyntheticPayload) -> [(String, String)] { [] }
     func parseCSVRow(
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: SyntheticPayload), CSVImportError> {
         .failure(.invalidRowData(row: rowNumber, column: "synthetic", value: "", reason: "synthetic"))
     }
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] { [] }
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] { [] }
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: SyntheticPayload)] { [] }
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: SyntheticPayload)] { [] }
     func mergeImportRecords(
         from parseResult: CSVImportParser.ImportResult,
         existingIn store: TrainingDataStore,

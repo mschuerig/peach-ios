@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-29 # Story 77.7 review fixes; marked done.
+# last_updated: 2026-04-29 # Story 77.8 ready for review.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -649,7 +649,7 @@ development_status:
   77-5-csv-migration-plugin-contract: done
   77-6-feature-owned-gap-positions-storage: done
   77-7-collapse-merge-import-boilerplate: done # Deferred from 77.4 review
-  77-8-typed-discipline-payload-associated-type: ready-for-dev # Deferred from 77.4 review
+  77-8-typed-discipline-payload-associated-type: review # Deferred from 77.4 review
   77-9-payload-streaming-iteration: ready-for-dev # Deferred from 77.4 review
   77-10-test-isolation-for-shared-registries: ready-for-dev # Deferred from 77.5 review
   77-12-traininglifecyclecoordinator-plugin-style-fit: ready-for-dev # Deferred from 77.6 review; must precede 77.11

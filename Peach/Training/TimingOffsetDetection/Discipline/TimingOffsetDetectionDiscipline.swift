@@ -89,15 +89,11 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
 
     var csvHistory: CSVHistory { TimingOffsetDetectionCSVHistory.history }
 
-    func csvKeyValuePairs(for payload: any TrainingDisciplinePayload) -> [(String, String)] {
-        guard let p = payload as? TimingOffsetDetectionPayload else {
-            assertionFailure("Expected TimingOffsetDetectionPayload, got \(type(of: payload))")
-            return []
-        }
-        return [
-            ("isCorrect", p.isCorrect ? "true" : "false"),
-            ("tempoBPM", "\(p.tempoBPM)"),
-            ("offsetMs", CSVParserHelpers.formatDouble(p.offsetMs)),
+    func csvKeyValuePairs(for payload: TimingOffsetDetectionPayload) -> [(String, String)] {
+        [
+            ("isCorrect", payload.isCorrect ? "true" : "false"),
+            ("tempoBPM", "\(payload.tempoBPM)"),
+            ("offsetMs", CSVParserHelpers.formatDouble(payload.offsetMs)),
         ]
     }
 
@@ -105,7 +101,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         fields: [String],
         columnIndex: [String: Int],
         rowNumber: Int
-    ) -> Result<(timestamp: Date, payload: any TrainingDisciplinePayload), CSVImportError> {
+    ) -> Result<(timestamp: Date, payload: TimingOffsetDetectionPayload), CSVImportError> {
         guard let timestampIdx = columnIndex["timestamp"],
               let isCorrectIdx = columnIndex["isCorrect"],
               let tempoBPMIdx = columnIndex["tempoBPM"],
@@ -141,13 +137,17 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         return .success((timestamp: timestamp, payload: payload))
     }
 
-    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
+    func fetchExportRecords(from store: TrainingDataStore) throws -> [(timestamp: Date, payload: TimingOffsetDetectionPayload)] {
         try store.fetchPayloads(TimingOffsetDetectionPayload.self)
             .map { ($0.timestamp, $0.payload) }
     }
 
-    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: any TrainingDisciplinePayload)] {
-        parseResult.payloads[csvTrainingType] ?? []
+    func parsedRecords(from parseResult: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: TimingOffsetDetectionPayload)] {
+        TrainingDisciplinePayloads.typedEntries(
+            from: parseResult,
+            forTrainingType: csvTrainingType,
+            ofType: TimingOffsetDetectionPayload.self
+        )
     }
 
     func mergeImportRecords(
@@ -156,10 +156,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
         var existingKeys = try buildRhythmDuplicateKeys(timingOffsetDetectionsIn: store, trainingType: csvTrainingType)
-        let typed = parsedRecords(from: parseResult).compactMap { entry in
-            (entry.payload as? TimingOffsetDetectionPayload).map { (entry.timestamp, $0) }
-        }
-        return try scope.mergeImportPayloads(typed, existingKeys: &existingKeys) {
+        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existingKeys: &existingKeys) {
             RhythmDuplicateKey(timestamp: $0, tempoBPM: $1.tempoBPM, trainingType: csvTrainingType)
         }
     }

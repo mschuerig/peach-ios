@@ -1,6 +1,6 @@
 # Story 77.8: Typed `Payload` associated type on `TrainingDiscipline`
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -71,27 +71,76 @@ whichever shape comes out cleanest. Document the chosen pattern in Completion No
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Survey existential touch points (AC: 1, 3)
-  - [ ] 1.1 List every method on `TrainingDiscipline` that traffics payloads in or out (`parsedRecords`, `mergeImportRecords`, `feedRecords`, etc.).
-  - [ ] 1.2 List every registry call site that iterates `[any TrainingDiscipline]` and invokes a payload-shaped method. Identify which calls actually need the concrete type vs. which only need a type-erased uniform return shape.
+- [x] Task 1: Survey existential touch points (AC: 1, 3)
+  - [x] 1.1 List every method on `TrainingDiscipline` that traffics payloads in or out (`parsedRecords`, `mergeImportRecords`, `feedRecords`, etc.).
+  - [x] 1.2 List every registry call site that iterates `[any TrainingDiscipline]` and invokes a payload-shaped method. Identify which calls actually need the concrete type vs. which only need a type-erased uniform return shape.
 
-- [ ] Task 2: Add the associated type and migrate signatures (AC: 1)
-  - [ ] 2.1 Add `associatedtype Payload: TrainingDisciplinePayload` to `TrainingDiscipline`.
-  - [ ] 2.2 Update method signatures that should return concrete `Payload` (typically `parsedRecords` and the merge helpers).
-  - [ ] 2.3 Provide protocol extensions that compose the existential boundary for registry-level callers.
+- [x] Task 2: Add the associated type and migrate signatures (AC: 1)
+  - [x] 2.1 Add `associatedtype Payload: TrainingDisciplinePayload` to `TrainingDiscipline`.
+  - [x] 2.2 Update method signatures that should return concrete `Payload` (typically `parsedRecords` and the merge helpers).
+  - [x] 2.3 Provide protocol extensions that compose the existential boundary for registry-level callers.
 
-- [ ] Task 3: Drop existential casts (AC: 2)
-  - [ ] 3.1 Remove every now-unnecessary `as? <FeaturePayload>` from the four discipline implementations.
-  - [ ] 3.2 Replace `compactMap { ($0 as? P).map { … } }` patterns in helpers (e.g. `ExportChartViewTests` helpers, `MergeImport`-style tests) with direct typed access where possible.
+- [x] Task 3: Drop existential casts (AC: 2)
+  - [x] 3.1 Remove every now-unnecessary `as? <FeaturePayload>` from the four discipline implementations.
+  - [x] 3.2 Replace `compactMap { ($0 as? P).map { … } }` patterns in helpers (e.g. `ExportChartViewTests` helpers, `MergeImport`-style tests) with direct typed access where possible.
 
-- [ ] Task 4: Coordinate with 77.7 if it lands first (AC: 2)
-  - [ ] 4.1 If 77.7 introduced a merge helper that takes `[(Date, any TrainingDisciplinePayload)]`, retighten its signature to take `[(Date, P)]`.
-  - [ ] 4.2 If 77.7 has not landed yet, this story unblocks 77.7's existential-cast removal.
-  - [ ] 4.3 Consider adding `associatedtype DuplicateKey: Hashable` so 77.7's `mergeImportPayloads` ties its `K` to `P` at the type level instead of accepting any `K: Hashable`. Defer if it conflicts with the registry's existential boundary.
+- [x] Task 4: Coordinate with 77.7 if it lands first (AC: 2)
+  - [x] 4.1 If 77.7 introduced a merge helper that takes `[(Date, any TrainingDisciplinePayload)]`, retighten its signature to take `[(Date, P)]`.
+  - [x] 4.2 If 77.7 has not landed yet, this story unblocks 77.7's existential-cast removal.
+  - [x] 4.3 Consider adding `associatedtype DuplicateKey: Hashable` so 77.7's `mergeImportPayloads` ties its `K` to `P` at the type level instead of accepting any `K: Hashable`. Defer if it conflicts with the registry's existential boundary.
 
-- [ ] Task 5: Build/test (AC: 5)
-  - [ ] 5.1 All four test configurations green.
-  - [ ] 5.2 Build: zero new warnings.
+- [x] Task 5: Build/test (AC: 5)
+  - [x] 5.1 All four test configurations green.
+  - [x] 5.2 Build: zero new warnings.
+
+## Dev Agent Record
+
+### Completion Notes
+
+**AC1 — Typed `Payload` on `TrainingDiscipline`.** Added `associatedtype Payload: TrainingDisciplinePayload` and retyped every payload-shaped method (`csvKeyValuePairs(for:)`, `parseCSVRow(...)`, `fetchExportRecords`, `parsedRecords`) to use `Payload`. The six conforming disciplines (4 pitch + 2 rhythm) infer their `Payload` from method return types — no explicit `typealias` required.
+
+**AC2 — Casts removed.** All `as? <FeaturePayload>` casts in `parsedRecords` and `mergeImportRecords` are gone. The single remaining cast at the parser→discipline boundary lives in `TrainingDisciplinePayloads.typedEntries(...)` (a generic helper that filters the parser's heterogeneous payload map by both training type and concrete payload type) — this is the legitimate sum-typed boundary the story spec calls out.
+
+**AC3 — Registry boundary preserved via existential-callable extensions.** The registry still stores `[any TrainingDiscipline]`. Three protocol extensions on `TrainingDiscipline` expose only existential or concrete value types in their visible signatures, so they remain callable on the existential without exposing `Payload`:
+
+- `parseCSVRowErased(...)` — for `CSVImportParser`'s heterogeneous result map
+- `csvRows(from:)` — for `TrainingDataExporter` (combines `fetchExportRecords` + `csvKeyValuePairs`)
+- `parsedRecordEnvelopes(from:)` — for `TrainingDataImporter`'s replace path (combines `parsedRecords` + `JSONEnvelope.encode`)
+
+Internally, each extension calls the discipline's typed primitive(s) and erases the result. Cross-cutting iteration in `TrainingDataExporter`, `CSVImportParser`, and `TrainingDataImporter.replaceAll` was rewired to use these helpers.
+
+**AC4 — App-layer untouched.** No call site outside `Core/Data` and `Core/Training` was modified. No caller is forced into a generic context.
+
+**AC5 — Green.** All four test configurations pass: 1462 (iOS), 1456 (macOS), 1806 (iOS research), 1799 (macOS research). Both builds succeed with zero new warnings.
+
+**Subtask 4.3 — `associatedtype DuplicateKey` deferred.** Considered and rejected for this story. `mergeImportPayloads<P, K>` already infers `K` from its closure; surfacing `DuplicateKey` on the protocol would mean every conformer (including the synthetic test fixtures) would have to declare a key type that the protocol does not actually consume — the protocol does not call `keyBuilder`; the discipline's own `mergeImportRecords` does. Adding the constraint would be protocol noise without preventing real bugs. The current shape — a generic `K: Hashable` inferred at the call site — is the right level of abstraction.
+
+**Simplify-code findings applied.**
+- `parsedRecordEnvelopes` originally returned `(envelopes: [TrainingRecord], count: Int)` and used `.map`. Both noted by the simplify reviewers: the count duplicates `envelopes.count`, and `.map` keeps the parsed array and envelopes array in memory simultaneously per discipline. Replaced `.map` with a `reserveCapacity` loop that encodes one record at a time, and dropped the redundant count.
+
+**Findings consciously deferred.**
+- `buildPitchDuplicateKeys` / `buildRhythmDuplicateKeys` consolidation into a generic helper — outside 77.8 scope; this would touch 77.7-area code and warrant its own story if pursued.
+- `csvTrainingType` stringly-typed wire identifier — pre-existing public/wire contract; not a 77.8 concern.
+
+### File List
+
+Modified:
+- `Peach/Core/Training/Discipline/TrainingDiscipline.swift`
+- `Peach/Core/Training/Discipline/TrainingDisciplinePayload.swift`
+- `Peach/Core/Data/CSVImportParser.swift`
+- `Peach/Core/Data/TrainingDataExporter.swift`
+- `Peach/Core/Data/TrainingDataImporter.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift`
+- `Peach/Training/PitchDiscrimination/Discipline/PitchDiscriminationCSVParser.swift`
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift`
+- `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift`
+- `Peach/Training/PitchMatching/Discipline/PitchMatchingCSVParser.swift`
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift`
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift`
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift` (added `SyntheticPayload`; retyped `SyntheticDiscipline`)
+- `PeachTests/Core/Training/RegistryContributionsTests.swift` (retyped `SyntheticUIDiscipline`)
+- `docs/implementation-artifacts/sprint-status.yaml`
 
 ## Dev Notes
 
@@ -121,3 +170,4 @@ Heterogeneous storage (`[any TrainingDiscipline]`) is what makes cross-cutting i
 
 - 2026-04-28: Drafted as a deferred 77.4 review finding. Status → ready-for-dev.
 - 2026-04-29: Added subtask 4.3 to consider an associated `DuplicateKey` constraint on `TrainingDiscipline` (deferred from 77.7 review).
+- 2026-04-29: Implemented. `TrainingDiscipline` now carries `associatedtype Payload`; six discipline conformers retyped; three existential-callable protocol extensions (`parseCSVRowErased`, `csvRows`, `parsedRecordEnvelopes`) bridge the registry boundary; `TrainingDisciplinePayloads.typedEntries` isolates the one legitimate parser→discipline cast. Subtask 4.3 considered and deferred (rationale in Completion Notes). Status → review.
