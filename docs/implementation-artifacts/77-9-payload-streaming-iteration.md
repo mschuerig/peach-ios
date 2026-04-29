@@ -92,6 +92,9 @@ The implementation fetches envelopes (sorted), decodes one envelope at a time, h
   - [ ] 5.1 All four test configurations green.
   - [ ] 5.2 Build: zero new warnings.
 
+- [ ] Task 6 (opportunistic): `RhythmDuplicateKey` naming on the timing-category caller
+  - [ ] 6.1 If you migrate `buildRhythmDuplicateKeys(timingOffsetDetectionsIn:trainingType:)` (one of the two rhythm-key builders) to `forEachPayload`, take the opportunity to either rename `RhythmDuplicateKey` to a name that fits both rhythm-category disciplines without ambiguity (e.g. `TempoDuplicateKey`), or split it into two structurally-identical types whose names match each consuming discipline. Decide which is cleaner once the streaming migration shape is in front of you. Skip if you migrate a different caller.
+
 ## Dev Notes
 
 ### Why the request keeps coming back
@@ -122,3 +125,4 @@ A `Sequence` or `AsyncSequence`-shaped API would be cleaner stylistically but in
 ## Change Log
 
 - 2026-04-28: Drafted as a deferred 77.4 review finding, taking up the recurring `fetchAll` streaming request now that the envelope shape makes it cheap. Status → ready-for-dev.
+- 2026-04-29: Added Task 6 (opportunistic) — `RhythmDuplicateKey` naming on the timing-category caller, deferred from 77.8 review (D3). Boy-Scout rename to consider only if the migration touches `buildRhythmDuplicateKeys(timingOffsetDetectionsIn:...)`.

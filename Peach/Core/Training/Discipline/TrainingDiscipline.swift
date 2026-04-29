@@ -27,6 +27,12 @@ import Foundation
 /// ``parsedRecordEnvelopes(from:)``, ``parseCSVRowErased(fields:columnIndex:rowNumber:)``)
 /// whose visible signatures expose only `any TrainingDisciplinePayload` or
 /// concrete value types — so they remain callable on the existential.
+///
+/// The four `Payload`-typed primitives (``csvKeyValuePairs(for:)``,
+/// ``parseCSVRow(fields:columnIndex:rowNumber:)``,
+/// ``fetchExportRecords(from:)``, ``parsedRecords(from:)``) cannot be
+/// invoked on `any TrainingDiscipline` directly; registry-level callers
+/// must go through the existential-callable helpers above.
 protocol TrainingDiscipline: Sendable {
     /// The concrete payload type this discipline owns. Conformers typically
     /// let this be inferred from the return types of payload-shaped methods.
@@ -120,7 +126,7 @@ extension TrainingDiscipline {
             .map { ($0.timestamp, $0.payload as any TrainingDisciplinePayload) }
     }
 
-    /// Yields one CSV (timestamp, key-value-pairs) tuple per exportable record.
+    /// Returns one CSV (timestamp, key-value-pairs) tuple per exportable record.
     /// Combines ``fetchExportRecords(from:)`` and ``csvKeyValuePairs(for:)``
     /// so the exporter doesn't traffic in associated-type-shaped pairs.
     func csvRows(from store: TrainingDataStore) throws -> [(timestamp: Date, pairs: [(String, String)])] {
@@ -128,8 +134,8 @@ extension TrainingDiscipline {
     }
 
     /// Encodes parsed CSV payloads into envelopes for the replace-mode importer.
-    /// Encodes one record at a time so the parsed array can shrink as the
-    /// envelope array grows, keeping per-discipline peak memory bounded.
+    /// Pre-sizes the envelope array via `reserveCapacity` so the loop avoids
+    /// the second peak that an extra `.map` would allocate.
     func parsedRecordEnvelopes(
         from parseResult: CSVImportParser.ImportResult
     ) throws -> [TrainingRecord] {

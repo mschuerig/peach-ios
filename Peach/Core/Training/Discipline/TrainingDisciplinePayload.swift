@@ -30,16 +30,27 @@ extension TimestampedPayload: Equatable where P: Equatable {}
 enum TrainingDisciplinePayloads {
     /// Typed extraction at the existential→concrete boundary: returns
     /// `(timestamp, payload)` entries for the given training type, casting
-    /// each payload to `P` and skipping ones that don't match. Disciplines
-    /// pass their own `csvTrainingType` and `Payload` type; the parser
-    /// produced these with the same `P`, so the cast is total in practice.
+    /// each payload to `P`.
+    ///
+    /// Caller-side invariant: `trainingType` must be the discipline's
+    /// `csvTrainingType` and `P` must be that discipline's `Payload` —
+    /// the parser keys entries by `trainingType` and produces them with
+    /// the matching `P`. A cast mismatch indicates a programmer error
+    /// (a stale or mispaired call site) and triggers `assertionFailure`
+    /// in debug; in release builds the offending entry is skipped.
     static func typedEntries<P: TrainingDisciplinePayload>(
         from parseResult: CSVImportParser.ImportResult,
         forTrainingType trainingType: String,
         ofType _: P.Type
     ) -> [(timestamp: Date, payload: P)] {
         (parseResult.payloads[trainingType] ?? []).compactMap { entry in
-            (entry.payload as? P).map { (entry.timestamp, $0) }
+            guard let payload = entry.payload as? P else {
+                assertionFailure(
+                    "typedEntries: trainingType '\(trainingType)' carries a payload not of type \(P.self)"
+                )
+                return nil
+            }
+            return (entry.timestamp, payload)
         }
     }
 }

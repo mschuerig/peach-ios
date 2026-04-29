@@ -5,14 +5,20 @@ enum TrainingDataExporter {
     static func export(from store: TrainingDataStore) throws -> String {
         let columns = CSVExportSchema.allColumns
         let columnIndex = CSVExportSchema.columnIndex
+        guard let trainingTypeIndex = columnIndex["trainingType"],
+              let timestampIndex = columnIndex["timestamp"] else {
+            preconditionFailure(
+                "CSVExportSchema.allColumns is missing required common columns 'trainingType' and 'timestamp'"
+            )
+        }
 
         var merged: [(timestamp: Date, row: String)] = []
 
         for discipline in TrainingDisciplineRegistry.shared.all {
             for (timestamp, pairs) in try discipline.csvRows(from: store) {
                 var fields = Array(repeating: "", count: columns.count)
-                fields[columnIndex["trainingType"]!] = discipline.csvTrainingType
-                fields[columnIndex["timestamp"]!] = CSVParserHelpers.formatTimestamp(timestamp)
+                fields[trainingTypeIndex] = discipline.csvTrainingType
+                fields[timestampIndex] = CSVParserHelpers.formatTimestamp(timestamp)
                 for (key, value) in pairs {
                     guard let idx = columnIndex[key] else {
                         assertionFailure("Unknown CSV column key '\(key)' from \(discipline.csvTrainingType)")

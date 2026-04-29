@@ -43,27 +43,23 @@ struct CSVImportParserTests {
     }
 
     private func pitchDiscriminations(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: PitchDiscriminationPayload)] {
-        (result.payloads["pitchDiscrimination"] ?? []).compactMap { entry in
-            (entry.payload as? PitchDiscriminationPayload).map { (entry.timestamp, $0) }
-        }
+        TrainingDisciplinePayloads.typedEntries(
+            from: result, forTrainingType: "pitchDiscrimination", ofType: PitchDiscriminationPayload.self)
     }
 
     private func pitchMatchings(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: PitchMatchingPayload)] {
-        (result.payloads["pitchMatching"] ?? []).compactMap { entry in
-            (entry.payload as? PitchMatchingPayload).map { (entry.timestamp, $0) }
-        }
+        TrainingDisciplinePayloads.typedEntries(
+            from: result, forTrainingType: "pitchMatching", ofType: PitchMatchingPayload.self)
     }
 
     private func rhythmOffsetDetections(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: TimingOffsetDetectionPayload)] {
-        (result.payloads["rhythmOffsetDetection"] ?? []).compactMap { entry in
-            (entry.payload as? TimingOffsetDetectionPayload).map { (entry.timestamp, $0) }
-        }
+        TrainingDisciplinePayloads.typedEntries(
+            from: result, forTrainingType: "rhythmOffsetDetection", ofType: TimingOffsetDetectionPayload.self)
     }
 
     private func continuousRhythmMatchings(from result: CSVImportParser.ImportResult) -> [(timestamp: Date, payload: ContinuousRhythmMatchingPayload)] {
-        (result.payloads["continuousRhythmMatching"] ?? []).compactMap { entry in
-            (entry.payload as? ContinuousRhythmMatchingPayload).map { (entry.timestamp, $0) }
-        }
+        TrainingDisciplinePayloads.typedEntries(
+            from: result, forTrainingType: "continuousRhythmMatching", ofType: ContinuousRhythmMatchingPayload.self)
     }
 
     // MARK: - CSVImportError

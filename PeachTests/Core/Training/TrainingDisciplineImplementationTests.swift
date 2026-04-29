@@ -238,25 +238,6 @@ struct TrainingDisciplineImplementationTests {
 
     // MARK: - Task 1.3: parseCSVRow round-trip
 
-    private func buildCSVFields(
-        trainingType: String,
-        timestamp: Date,
-        pairs: [(String, String)]
-    ) throws -> (fields: [String], columnIndex: [String: Int]) {
-        let allColumns = CSVExportSchema.allColumns
-        let columnIndex = CSVExportSchema.columnIndex
-
-        var fields = Array(repeating: "", count: allColumns.count)
-        let typeIdx = try #require(columnIndex["trainingType"])
-        let tsIdx = try #require(columnIndex["timestamp"])
-        fields[typeIdx] = trainingType
-        fields[tsIdx] = CSVParserHelpers.formatTimestamp(timestamp)
-        for (key, value) in pairs {
-            if let idx = columnIndex[key] { fields[idx] = value }
-        }
-        return (fields, columnIndex)
-    }
-
     @Test("UnisonPitchDiscrimination round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func unisonPitchDiscriminationRoundTrip() async throws {
         let discipline = UnisonPitchDiscriminationDiscipline()
@@ -267,14 +248,13 @@ struct TrainingDisciplineImplementationTests {
             pairs: discipline.csvKeyValuePairs(for: original.payload))
 
         let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
-        let payload = try #require(parsed.payload as? PitchDiscriminationPayload)
 
-        #expect(payload.referenceNote == original.payload.referenceNote)
-        #expect(payload.targetNote == original.payload.targetNote)
-        #expect(payload.centOffset == original.payload.centOffset)
-        #expect(payload.isCorrect == original.payload.isCorrect)
-        #expect(payload.interval == original.payload.interval)
-        #expect(payload.tuningSystem == original.payload.tuningSystem)
+        #expect(parsed.payload.referenceNote == original.payload.referenceNote)
+        #expect(parsed.payload.targetNote == original.payload.targetNote)
+        #expect(parsed.payload.centOffset == original.payload.centOffset)
+        #expect(parsed.payload.isCorrect == original.payload.isCorrect)
+        #expect(parsed.payload.interval == original.payload.interval)
+        #expect(parsed.payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
@@ -288,14 +268,13 @@ struct TrainingDisciplineImplementationTests {
             pairs: discipline.csvKeyValuePairs(for: original.payload))
 
         let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
-        let payload = try #require(parsed.payload as? PitchDiscriminationPayload)
 
-        #expect(payload.referenceNote == original.payload.referenceNote)
-        #expect(payload.targetNote == original.payload.targetNote)
-        #expect(payload.centOffset == original.payload.centOffset)
-        #expect(payload.isCorrect == original.payload.isCorrect)
-        #expect(payload.interval == original.payload.interval)
-        #expect(payload.tuningSystem == original.payload.tuningSystem)
+        #expect(parsed.payload.referenceNote == original.payload.referenceNote)
+        #expect(parsed.payload.targetNote == original.payload.targetNote)
+        #expect(parsed.payload.centOffset == original.payload.centOffset)
+        #expect(parsed.payload.isCorrect == original.payload.isCorrect)
+        #expect(parsed.payload.interval == original.payload.interval)
+        #expect(parsed.payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
@@ -309,14 +288,13 @@ struct TrainingDisciplineImplementationTests {
             pairs: discipline.csvKeyValuePairs(for: original.payload))
 
         let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
-        let payload = try #require(parsed.payload as? PitchMatchingPayload)
 
-        #expect(payload.referenceNote == original.payload.referenceNote)
-        #expect(payload.targetNote == original.payload.targetNote)
-        #expect(payload.initialCentOffset == original.payload.initialCentOffset)
-        #expect(payload.userCentError == original.payload.userCentError)
-        #expect(payload.interval == original.payload.interval)
-        #expect(payload.tuningSystem == original.payload.tuningSystem)
+        #expect(parsed.payload.referenceNote == original.payload.referenceNote)
+        #expect(parsed.payload.targetNote == original.payload.targetNote)
+        #expect(parsed.payload.initialCentOffset == original.payload.initialCentOffset)
+        #expect(parsed.payload.userCentError == original.payload.userCentError)
+        #expect(parsed.payload.interval == original.payload.interval)
+        #expect(parsed.payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
@@ -330,14 +308,13 @@ struct TrainingDisciplineImplementationTests {
             pairs: discipline.csvKeyValuePairs(for: original.payload))
 
         let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
-        let payload = try #require(parsed.payload as? PitchMatchingPayload)
 
-        #expect(payload.referenceNote == original.payload.referenceNote)
-        #expect(payload.targetNote == original.payload.targetNote)
-        #expect(payload.initialCentOffset == original.payload.initialCentOffset)
-        #expect(payload.userCentError == original.payload.userCentError)
-        #expect(payload.interval == original.payload.interval)
-        #expect(payload.tuningSystem == original.payload.tuningSystem)
+        #expect(parsed.payload.referenceNote == original.payload.referenceNote)
+        #expect(parsed.payload.targetNote == original.payload.targetNote)
+        #expect(parsed.payload.initialCentOffset == original.payload.initialCentOffset)
+        #expect(parsed.payload.userCentError == original.payload.userCentError)
+        #expect(parsed.payload.interval == original.payload.interval)
+        #expect(parsed.payload.tuningSystem == original.payload.tuningSystem)
         #expect(parsed.timestamp == original.timestamp)
     }
 
@@ -352,11 +329,10 @@ struct TrainingDisciplineImplementationTests {
             pairs: discipline.csvKeyValuePairs(for: original.payload))
 
         let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
-        let payload = try #require(parsed.payload as? TimingOffsetDetectionPayload)
 
-        #expect(payload.tempoBPM == original.payload.tempoBPM)
-        #expect(payload.offsetMs == original.payload.offsetMs)
-        #expect(payload.isCorrect == original.payload.isCorrect)
+        #expect(parsed.payload.tempoBPM == original.payload.tempoBPM)
+        #expect(parsed.payload.offsetMs == original.payload.offsetMs)
+        #expect(parsed.payload.isCorrect == original.payload.isCorrect)
         #expect(parsed.timestamp == original.timestamp)
     }
 
@@ -370,14 +346,13 @@ struct TrainingDisciplineImplementationTests {
             pairs: discipline.csvKeyValuePairs(for: original.payload))
 
         let parsed = try discipline.parseCSVRow(fields: fields, columnIndex: columnIndex, rowNumber: 1).get()
-        let payload = try #require(parsed.payload as? ContinuousRhythmMatchingPayload)
 
-        #expect(payload.tempoBPM == original.payload.tempoBPM)
-        #expect(payload.meanOffsetMs == original.payload.meanOffsetMs)
-        #expect(payload.meanOffsetMsPosition0 == original.payload.meanOffsetMsPosition0)
-        #expect(payload.meanOffsetMsPosition1 == original.payload.meanOffsetMsPosition1)
-        #expect(payload.meanOffsetMsPosition2 == original.payload.meanOffsetMsPosition2)
-        #expect(payload.meanOffsetMsPosition3 == original.payload.meanOffsetMsPosition3)
+        #expect(parsed.payload.tempoBPM == original.payload.tempoBPM)
+        #expect(parsed.payload.meanOffsetMs == original.payload.meanOffsetMs)
+        #expect(parsed.payload.meanOffsetMsPosition0 == original.payload.meanOffsetMsPosition0)
+        #expect(parsed.payload.meanOffsetMsPosition1 == original.payload.meanOffsetMsPosition1)
+        #expect(parsed.payload.meanOffsetMsPosition2 == original.payload.meanOffsetMsPosition2)
+        #expect(parsed.payload.meanOffsetMsPosition3 == original.payload.meanOffsetMsPosition3)
         #expect(parsed.timestamp == original.timestamp)
     }
 #endif

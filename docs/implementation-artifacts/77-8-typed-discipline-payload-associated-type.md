@@ -1,6 +1,6 @@
 # Story 77.8: Typed `Payload` associated type on `TrainingDiscipline`
 
-Status: review
+Status: done
 
 ## Story
 
@@ -111,7 +111,7 @@ Internally, each extension calls the discipline's typed primitive(s) and erases 
 
 **AC4 — App-layer untouched.** No call site outside `Core/Data` and `Core/Training` was modified. No caller is forced into a generic context.
 
-**AC5 — Green.** All four test configurations pass: 1462 (iOS), 1456 (macOS), 1806 (iOS research), 1799 (macOS research). Both builds succeed with zero new warnings.
+**AC5 — Green.** All four test configurations pass: 1471 (iOS), 1465 (macOS), 1815 (iOS research), 1809 (macOS research) after review fixes. Both builds succeed with zero new warnings.
 
 **Subtask 4.3 — `associatedtype DuplicateKey` deferred.** Considered and rejected for this story. `mergeImportPayloads<P, K>` already infers `K` from its closure; surfacing `DuplicateKey` on the protocol would mean every conformer (including the synthetic test fixtures) would have to declare a key type that the protocol does not actually consume — the protocol does not call `keyBuilder`; the discipline's own `mergeImportRecords` does. Adding the constraint would be protocol noise without preventing real bugs. The current shape — a generic `K: Hashable` inferred at the call site — is the right level of abstraction.
 
@@ -138,9 +138,17 @@ Modified:
 - `Peach/Training/PitchMatching/Discipline/PitchMatchingCSVParser.swift`
 - `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift`
 - `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift`
-- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift` (added `SyntheticPayload`; retyped `SyntheticDiscipline`)
+- `PeachTests/Core/Training/RegistryActiveCategoriesTests.swift` (uses shared `SyntheticPayload`/`SyntheticDiscipline`)
 - `PeachTests/Core/Training/RegistryContributionsTests.swift` (retyped `SyntheticUIDiscipline`)
+- `PeachTests/Core/Training/TrainingDisciplineImplementationTests.swift` (no-op casts removed; uses shared `buildCSVFields`)
+- `PeachTests/Core/Data/CSVImportParserTests.swift` (helpers migrated to `TrainingDisciplinePayloads.typedEntries`)
 - `docs/implementation-artifacts/sprint-status.yaml`
+- `docs/implementation-artifacts/77-9-payload-streaming-iteration.md` (Task 6 added: opportunistic `RhythmDuplicateKey` rename)
+
+Added:
+- `PeachTests/Helpers/SyntheticDiscipline.swift` (shared synthetic fixture extracted from `RegistryActiveCategoriesTests`)
+- `PeachTests/Helpers/CSVTestHelpers.swift` (shared `buildCSVFields` extracted from `TrainingDisciplineImplementationTests`)
+- `PeachTests/Core/Training/TrainingDisciplineExistentialHelpersTests.swift` (focused tests for the four existential-callable helpers)
 
 ## Dev Notes
 
@@ -171,3 +179,4 @@ Heterogeneous storage (`[any TrainingDiscipline]`) is what makes cross-cutting i
 - 2026-04-28: Drafted as a deferred 77.4 review finding. Status → ready-for-dev.
 - 2026-04-29: Added subtask 4.3 to consider an associated `DuplicateKey` constraint on `TrainingDiscipline` (deferred from 77.7 review).
 - 2026-04-29: Implemented. `TrainingDiscipline` now carries `associatedtype Payload`; six discipline conformers retyped; three existential-callable protocol extensions (`parseCSVRowErased`, `csvRows`, `parsedRecordEnvelopes`) bridge the registry boundary; `TrainingDisciplinePayloads.typedEntries` isolates the one legitimate parser→discipline cast. Subtask 4.3 considered and deferred (rationale in Completion Notes). Status → review.
+- 2026-04-29: Code review fixes applied. P1 — added focused tests for the four existential-callable helpers (`PeachTests/Core/Training/TrainingDisciplineExistentialHelpersTests.swift`). P2 — extracted `SyntheticPayload`/`SyntheticDiscipline` to shared `PeachTests/Helpers/SyntheticDiscipline.swift` (Task 3.2 follow-through). P3 — removed six no-op `as? FeaturePayload` casts in `TrainingDisciplineImplementationTests`. P4 — tightened `typedEntries` doc and added `assertionFailure` on cast mismatch (caller-side invariant). P5 — corrected `parsedRecordEnvelopes` doc (was claiming `reserveCapacity` shrinks). P6 — documented that `csvKeyValuePairs`/`parseCSVRow`/`fetchExportRecords`/`parsedRecords` are existential-uncallable. P7 — fixed "Yields" → "Returns" wording on `csvRows`. P8 — extracted `buildCSVFields` test helper to shared `PeachTests/Helpers/CSVTestHelpers.swift`. D1 — replaced two force-unwraps in `TrainingDataExporter` with a guarded lookup using `preconditionFailure` (schema invariant). D3 — `RhythmDuplicateKey` rename tracked as opportunistic Task 6 in story 77.9. Status → done.
