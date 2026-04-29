@@ -6,9 +6,11 @@ import os
 ///
 /// SwiftData sees a single `@Model` type — ``TrainingRecord`` — and stores
 /// every discipline's data inside its `payloadData` blob. This store provides
-/// envelope-typed CRUD plus a small ``fetchPayloads(_:)`` helper that filters
-/// envelopes by ``TrainingDisciplinePayload/disciplineIdentifier`` and decodes
-/// them into payload structs.
+/// envelope-typed CRUD plus payload-typed iteration helpers
+/// (``forEachPayload(_:body:)`` for streaming, ``fetchPayloads(_:)`` for the
+/// array-shaped convenience) that filter envelopes by
+/// ``TrainingDisciplinePayload/disciplineIdentifier`` and decode them into
+/// payload structs.
 final class TrainingDataStore {
     private static let logger = Logger(subsystem: "com.peach.app", category: "TrainingDataStore")
     private let modelContext: ModelContext
@@ -72,25 +74,51 @@ final class TrainingDataStore {
         }
     }
 
+    /// Iterates this discipline's payloads in timestamp-ascending order, decoding
+    /// one envelope at a time and handing the result to `body`. The previously
+    /// decoded payload is released before the next decode, so callers that
+    /// scan-and-aggregate (profile rebuild, duplicate-key building, CSV export)
+    /// never hold the full decoded array in memory.
+    ///
+    /// SwiftData's ``ModelContext/fetch(_:)`` is array-shaped today and returns
+    /// `[TrainingRecord]`; the envelope array itself is therefore materialised.
+    /// What this API streams is the *decoded payload* — the typically larger,
+    /// per-discipline value type produced by ``JSONEnvelope/decode(_:from:)``.
+    ///
+    /// A single corrupt envelope is logged and skipped rather than failing the
+    /// whole iteration — this keeps one bad row from blanking out an entire
+    /// discipline's history. If `body` throws, iteration aborts and the error
+    /// propagates unchanged.
+    func forEachPayload<P: TrainingDisciplinePayload>(
+        _ type: P.Type,
+        body: (Date, P) throws -> Void
+    ) throws {
+        let envelopes = try fetchEnvelopes(forDisciplineIdentifier: P.disciplineIdentifier)
+        for envelope in envelopes.sorted(by: { $0.timestamp < $1.timestamp }) {
+            let payload: P
+            do {
+                payload = try JSONEnvelope.decode(P.self, from: envelope)
+            } catch {
+                Self.logger.error(
+                    "Skipping undecodable \(P.disciplineIdentifier, privacy: .public) envelope at \(envelope.timestamp, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                )
+                continue
+            }
+            try body(envelope.timestamp, payload)
+        }
+    }
+
     /// Fetches all payloads for a discipline, sorted by timestamp.
     ///
-    /// A single corrupt envelope is logged and skipped rather than failing the whole fetch — this
-    /// keeps one bad row from blanking out an entire discipline's history.
+    /// Thin convenience over ``forEachPayload(_:body:)`` for callers that want
+    /// the full array. Streaming callers should prefer the iteration API to
+    /// avoid materialising every decoded payload at once.
     func fetchPayloads<P: TrainingDisciplinePayload>(_ type: P.Type) throws -> [TimestampedPayload<P>] {
-        let envelopes = try fetchEnvelopes(forDisciplineIdentifier: P.disciplineIdentifier)
-        return envelopes
-            .sorted { $0.timestamp < $1.timestamp }
-            .compactMap { envelope in
-                do {
-                    let payload = try JSONEnvelope.decode(P.self, from: envelope)
-                    return TimestampedPayload(timestamp: envelope.timestamp, payload: payload)
-                } catch {
-                    Self.logger.error(
-                        "Skipping undecodable \(P.disciplineIdentifier, privacy: .public) envelope at \(envelope.timestamp, privacy: .public): \(error.localizedDescription, privacy: .public)"
-                    )
-                    return nil
-                }
-            }
+        var payloads: [TimestampedPayload<P>] = []
+        try forEachPayload(type) { timestamp, payload in
+            payloads.append(TimestampedPayload(timestamp: timestamp, payload: payload))
+        }
+        return payloads
     }
 
     /// Deletes every envelope in the store.

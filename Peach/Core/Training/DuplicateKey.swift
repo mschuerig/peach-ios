@@ -33,8 +33,12 @@ struct PitchDuplicateKey: Hashable, Sendable {
     }
 }
 
-/// Duplicate detection key for rhythm-based training records.
-struct RhythmDuplicateKey: Hashable, Sendable {
+/// Duplicate detection key for tempo-based training records.
+///
+/// The two rhythm-category disciplines (timing offset detection, continuous
+/// rhythm matching) both deduplicate on `(timestamp, tempoBPM, trainingType)`.
+/// The name describes the key's content rather than its discipline category.
+struct TempoDuplicateKey: Hashable, Sendable {
     let timestampMillis: Int64
     let tempoBPM: Int
     let trainingType: String
@@ -56,8 +60,8 @@ func buildPitchDuplicateKeys(
     trainingType: String
 ) throws -> Set<PitchDuplicateKey> {
     var keys = Set<PitchDuplicateKey>()
-    for entry in try store.fetchPayloads(PitchDiscriminationPayload.self) {
-        keys.insert(PitchDuplicateKey(timestamp: entry.timestamp, payload: entry.payload, trainingType: trainingType))
+    try store.forEachPayload(PitchDiscriminationPayload.self) { timestamp, payload in
+        keys.insert(PitchDuplicateKey(timestamp: timestamp, payload: payload, trainingType: trainingType))
     }
     return keys
 }
@@ -68,8 +72,8 @@ func buildPitchDuplicateKeys(
     trainingType: String
 ) throws -> Set<PitchDuplicateKey> {
     var keys = Set<PitchDuplicateKey>()
-    for entry in try store.fetchPayloads(PitchMatchingPayload.self) {
-        keys.insert(PitchDuplicateKey(timestamp: entry.timestamp, payload: entry.payload, trainingType: trainingType))
+    try store.forEachPayload(PitchMatchingPayload.self) { timestamp, payload in
+        keys.insert(PitchDuplicateKey(timestamp: timestamp, payload: payload, trainingType: trainingType))
     }
     return keys
 }
@@ -79,15 +83,15 @@ func buildPitchDuplicateKeys(
 /// Only fetches the rows belonging to that discipline. The CSV `trainingType` is the
 /// wire-format identifier shared with peach-web's exporter (`rhythmOffsetDetection`
 /// is the legacy CSV name and must not be renamed here regardless of internal renames).
-func buildRhythmDuplicateKeys(
+func buildTempoDuplicateKeys(
     timingOffsetDetectionsIn store: TrainingDataStore,
     trainingType: String
-) throws -> Set<RhythmDuplicateKey> {
-    var keys = Set<RhythmDuplicateKey>()
-    for entry in try store.fetchPayloads(TimingOffsetDetectionPayload.self) {
-        keys.insert(RhythmDuplicateKey(
-            timestamp: entry.timestamp,
-            tempoBPM: entry.payload.tempoBPM,
+) throws -> Set<TempoDuplicateKey> {
+    var keys = Set<TempoDuplicateKey>()
+    try store.forEachPayload(TimingOffsetDetectionPayload.self) { timestamp, payload in
+        keys.insert(TempoDuplicateKey(
+            timestamp: timestamp,
+            tempoBPM: payload.tempoBPM,
             trainingType: trainingType
         ))
     }
@@ -95,15 +99,15 @@ func buildRhythmDuplicateKeys(
 }
 
 /// Builds the duplicate-key set used by a continuous-rhythm-matching merge importer.
-func buildRhythmDuplicateKeys(
+func buildTempoDuplicateKeys(
     continuousRhythmMatchingsIn store: TrainingDataStore,
     trainingType: String
-) throws -> Set<RhythmDuplicateKey> {
-    var keys = Set<RhythmDuplicateKey>()
-    for entry in try store.fetchPayloads(ContinuousRhythmMatchingPayload.self) {
-        keys.insert(RhythmDuplicateKey(
-            timestamp: entry.timestamp,
-            tempoBPM: entry.payload.tempoBPM,
+) throws -> Set<TempoDuplicateKey> {
+    var keys = Set<TempoDuplicateKey>()
+    try store.forEachPayload(ContinuousRhythmMatchingPayload.self) { timestamp, payload in
+        keys.insert(TempoDuplicateKey(
+            timestamp: timestamp,
+            tempoBPM: payload.tempoBPM,
             trainingType: trainingType
         ))
     }

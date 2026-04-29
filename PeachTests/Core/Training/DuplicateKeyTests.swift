@@ -52,23 +52,23 @@ struct DuplicateKeyTests {
         #expect(key.trainingType == "pitchMatching")
     }
 
-    // MARK: - RhythmDuplicateKey
+    // MARK: - TempoDuplicateKey
 
 #if PEACH_RESEARCH
-    @Test("rhythm duplicate keys with same fields are equal")
-    func rhythmDuplicateKeysEquality() async {
+    @Test("tempo duplicate keys with same fields are equal")
+    func tempoDuplicateKeysEquality() async {
         let date = Date(timeIntervalSinceReferenceDate: 1000)
-        let key1 = RhythmDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "rhythmOffsetDetection")
-        let key2 = RhythmDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "rhythmOffsetDetection")
+        let key1 = TempoDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "rhythmOffsetDetection")
+        let key2 = TempoDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "rhythmOffsetDetection")
 
         #expect(key1 == key2)
     }
 
-    @Test("rhythm duplicate keys with different training types are not equal")
-    func rhythmDuplicateKeysDifferentType() async {
+    @Test("tempo duplicate keys with different training types are not equal")
+    func tempoDuplicateKeysDifferentType() async {
         let date = Date(timeIntervalSinceReferenceDate: 1000)
-        let key1 = RhythmDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "rhythmOffsetDetection")
-        let key2 = RhythmDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "continuousRhythmMatching")
+        let key1 = TempoDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "rhythmOffsetDetection")
+        let key2 = TempoDuplicateKey(timestamp: date, tempoBPM: 120, trainingType: "continuousRhythmMatching")
 
         #expect(key1 != key2)
     }
