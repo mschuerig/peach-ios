@@ -52,7 +52,7 @@ After story 55.2 (protocol-based discipline registry), disciplines that share a 
 
 **Related Code:**
 - `Peach/Core/Training/TrainingDisciplineRegistry.swift` — `feedAllRecords()`
-- `Peach/Core/Data/DuplicateKey.swift` — `buildPitchDuplicateKeys()`, `buildRhythmDuplicateKeys()`
+- `Peach/Core/Training/DuplicateKey.swift` — `buildPitchDuplicateKeys()`, `buildTempoDuplicateKeys()`
 - All 6 discipline conformances (`feedRecords`, `fetchAndFormatRecords`, `mergeImportRecords`)
 
 ---

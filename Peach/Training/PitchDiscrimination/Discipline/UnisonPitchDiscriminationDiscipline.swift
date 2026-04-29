@@ -84,8 +84,8 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildPitchDuplicateKeys(discriminationsIn: store, trainingType: csvTrainingType)
-        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existingKeys: &existingKeys) {
+        var existing = try buildPitchDuplicateKeys(discriminationsIn: store, trainingType: csvTrainingType)
+        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existing: &existing) {
             PitchDuplicateKey(timestamp: $0, payload: $1, trainingType: csvTrainingType)
         }
     }

@@ -7,13 +7,20 @@ import os
 /// SwiftData sees a single `@Model` type — ``TrainingRecord`` — and stores
 /// every discipline's data inside its `payloadData` blob. This store provides
 /// envelope-typed CRUD plus payload-typed iteration helpers
-/// (``forEachPayload(_:body:)`` for streaming, ``fetchPayloads(_:)`` for the
-/// array-shaped convenience) that filter envelopes by
+/// (``forEachPayload(_:onSkip:body:)`` for streaming, ``fetchPayloads(_:)``
+/// for the array-shaped convenience) that filter envelopes by
 /// ``TrainingDisciplinePayload/disciplineIdentifier`` and decode them into
 /// payload structs.
 final class TrainingDataStore {
     private static let logger = Logger(subsystem: "com.peach.app", category: "TrainingDataStore")
     private let modelContext: ModelContext
+
+    /// Batch size handed to ``ModelContext/enumerate(_:batchSize:allowEscapingMutations:block:)``
+    /// during streaming iteration. SwiftData fetches one batch of envelopes,
+    /// hands them to the iteration body one at a time, then releases the batch
+    /// before fetching the next — so peak memory scales with this constant
+    /// rather than with the discipline's full row count.
+    private static let streamingBatchSize = 1_000
 
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
@@ -61,58 +68,65 @@ final class TrainingDataStore {
         }
     }
 
-    /// Fetches all envelopes whose `disciplineIdentifier` matches the given identifier.
-    /// Order is unspecified; callers that need chronological order must sort by ``TrainingRecord/timestamp``.
-    func fetchEnvelopes(forDisciplineIdentifier identifier: String) throws -> [TrainingRecord] {
-        let descriptor = FetchDescriptor<TrainingRecord>(
-            predicate: #Predicate { $0.disciplineIdentifier == identifier }
-        )
-        do {
-            return try modelContext.fetch(descriptor)
-        } catch {
-            throw DataStoreError.fetchFailed("Failed to fetch envelopes for \(identifier): \(error.localizedDescription)")
-        }
-    }
-
     /// Iterates this discipline's payloads in timestamp-ascending order, decoding
-    /// one envelope at a time and handing the result to `body`. The previously
-    /// decoded payload is released before the next decode, so callers that
-    /// scan-and-aggregate (profile rebuild, duplicate-key building, CSV export)
-    /// never hold the full decoded array in memory.
+    /// one envelope at a time and handing the result to `body`. Envelopes are
+    /// streamed from SwiftData via ``ModelContext/enumerate(_:batchSize:allowEscapingMutations:block:)``,
+    /// so neither the envelope array nor the decoded payload sequence is held
+    /// in memory in bulk — peak memory scales with ``streamingBatchSize``, not
+    /// with the discipline's row count. Sort order is provided by the
+    /// ``FetchDescriptor``'s `sortBy` (DB-side, deterministic for equal
+    /// timestamps).
     ///
-    /// SwiftData's ``ModelContext/fetch(_:)`` is array-shaped today and returns
-    /// `[TrainingRecord]`; the envelope array itself is therefore materialised.
-    /// What this API streams is the *decoded payload* — the typically larger,
-    /// per-discipline value type produced by ``JSONEnvelope/decode(_:from:)``.
+    /// **Error contract.** Any failure from this method — SwiftData fetch
+    /// errors, `body`-thrown errors, `onSkip`-thrown errors — is wrapped in
+    /// ``DataStoreError/fetchFailed(_:)`` with the underlying error's
+    /// `localizedDescription`. Iteration aborts on the first thrown error;
+    /// later envelopes are not visited. The original error type is not
+    /// preserved across the boundary; callers that need to distinguish causes
+    /// should inspect the wrapped message, not the type.
     ///
-    /// A single corrupt envelope is logged and skipped rather than failing the
-    /// whole iteration — this keeps one bad row from blanking out an entire
-    /// discipline's history. If `body` throws, iteration aborts and the error
-    /// propagates unchanged.
+    /// - Parameters:
+    ///   - type: The payload type whose envelopes to iterate.
+    ///   - onSkip: Optional handler invoked when an envelope's payload fails
+    ///     to decode. Receives the envelope's timestamp. Decode failure is
+    ///     logged either way; this hook lets callers (notably duplicate-key
+    ///     builders) react conservatively to corrupt existing data.
+    ///   - body: Closure invoked once per successfully-decoded envelope, in
+    ///     timestamp-ascending order.
     func forEachPayload<P: TrainingDisciplinePayload>(
         _ type: P.Type,
+        onSkip: ((Date) throws -> Void)? = nil,
         body: (Date, P) throws -> Void
     ) throws {
-        let envelopes = try fetchEnvelopes(forDisciplineIdentifier: P.disciplineIdentifier)
-        for envelope in envelopes.sorted(by: { $0.timestamp < $1.timestamp }) {
-            let payload: P
-            do {
-                payload = try JSONEnvelope.decode(P.self, from: envelope)
-            } catch {
-                Self.logger.error(
-                    "Skipping undecodable \(P.disciplineIdentifier, privacy: .public) envelope at \(envelope.timestamp, privacy: .public): \(error.localizedDescription, privacy: .public)"
-                )
-                continue
+        let identifier = P.disciplineIdentifier
+        let descriptor = FetchDescriptor<TrainingRecord>(
+            predicate: #Predicate { $0.disciplineIdentifier == identifier },
+            sortBy: [SortDescriptor(\.timestamp, order: .forward)]
+        )
+        do {
+            try modelContext.enumerate(descriptor, batchSize: Self.streamingBatchSize) { envelope in
+                let payload: P
+                do {
+                    payload = try JSONEnvelope.decode(P.self, from: envelope)
+                } catch {
+                    Self.logger.error(
+                        "Skipping undecodable \(identifier, privacy: .public) envelope at \(envelope.timestamp, privacy: .public): \(error.localizedDescription, privacy: .public)"
+                    )
+                    try onSkip?(envelope.timestamp)
+                    return
+                }
+                try body(envelope.timestamp, payload)
             }
-            try body(envelope.timestamp, payload)
+        } catch {
+            throw DataStoreError.fetchFailed("Failed to enumerate envelopes for \(identifier): \(error.localizedDescription)")
         }
     }
 
     /// Fetches all payloads for a discipline, sorted by timestamp.
     ///
-    /// Thin convenience over ``forEachPayload(_:body:)`` for callers that want
-    /// the full array. Streaming callers should prefer the iteration API to
-    /// avoid materialising every decoded payload at once.
+    /// Thin convenience over ``forEachPayload(_:onSkip:body:)`` for callers
+    /// that want the full array. Streaming callers should prefer the
+    /// iteration API to avoid materialising every decoded payload at once.
     func fetchPayloads<P: TrainingDisciplinePayload>(_ type: P.Type) throws -> [TimestampedPayload<P>] {
         var payloads: [TimestampedPayload<P>] = []
         try forEachPayload(type) { timestamp, payload in

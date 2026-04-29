@@ -1,6 +1,6 @@
 # Story 77.9: Streaming payload iteration on `TrainingDataStore`
 
-Status: review
+Status: done
 
 ## Story
 
@@ -141,15 +141,42 @@ A `Sequence` or `AsyncSequence`-shaped API would be cleaner stylistically but in
 - **No new warnings (AC5):** `bin/build.sh` and `bin/build.sh -p mac` both report only the pre-existing AppIntentsMetadataProcessor warning ("No AppIntents.framework dependency found"), unrelated to this change.
 - **All four test configurations green (AC5):** iOS 1476/1476, macOS 1470/1470, iOS Research 1820/1820, macOS Research 1814/1814.
 
+### Review Findings Resolved (2026-04-29)
+
+Three findings from the 77.9 code review (P1, P2) plus the three deferred (D1, D2, D3) were addressed in the same change rather than punted to a later story, on user direction ("This whole story is pointless without handling D3"):
+
+- **P1 — drop tautological cross-check in streaming tests.** The `iterationOrderMatchesFetchPayloads` test asserted both `visited == [60, 62, 64]` and `visited == fetchPayloads(...)` — but `fetchPayloads` is now implemented in terms of `forEachPayload`, so the second assertion is necessarily true whenever the first is. Removed the second assertion; the literal-list check stands.
+- **P2 — rename stale reference in `future-work.md`.** Updated the "Per-RecordType Fetch Sharing" entry's reference from `buildRhythmDuplicateKeys()` to `buildTempoDuplicateKeys()` (the rename landed in 77.9 itself but the doc lagged).
+- **D1 — DB-side stable sort.** Replaced the `sorted(by:)` post-fetch with a `FetchDescriptor.sortBy: [SortDescriptor(\.timestamp, order: .forward)]`. The DB now provides a stable, deterministic order for equal timestamps (no longer relying on input order or fetch-time order).
+- **D2 — corrupt-existing-side dedup escape hatch.** `forEachPayload` gained an optional `onSkip: ((Date) throws -> Void)? = nil` parameter. The duplicate-key builders use it to record the timestamps of undecodable existing envelopes into a new `DuplicateKeyIndex<K>` value type that pairs `strictKeys: Set<K>` with `skippedTimestamps: Set<Date>`. `mergeImportPayloads(_:existing:keyFor:)` now consults the index's combined `contains(_:atTimestamp:)` check, so a re-import of a row whose existing envelope is corrupt is treated as a possible duplicate (errs on the side of *not* generating user-visible duplicates over corrupt rows, rather than silently letting them through).
+- **D3 — true streaming via `ModelContext.enumerate`.** Replaced the `fetchEnvelopes(...)` + `for envelope in envelopes` approach with `modelContext.enumerate(_:batchSize:block:)` (iOS 17+; well within the iOS 26 minimum). SwiftData now fetches a `streamingBatchSize = 1_000` batch, hands envelopes to the iteration body one at a time, and releases the batch before fetching the next. Peak memory now scales with the batch size, not with the discipline's full row count — the original "fetchAll → array → iterate" shape that the recurring memory item flagged is now genuinely gone, not paper-thinly hidden behind a closure.
+
+### Follow-up Simplification (2026-04-29)
+
+After the initial review fixes landed, the resulting `forEachPayload` had four nested do-catches and a private `IterationAborted` marker error. The marker pattern existed defensively in case `ModelContext.enumerate` rewrapped closure-thrown errors into a SwiftData error type. A probe test (briefly added to `TrainingDataStoreStreamingTests`, removed after the result was captured here) confirmed that **`ModelContext.enumerate` rethrows closure-thrown errors verbatim** — no wrapping. The marker pattern was defending against a non-problem.
+
+We took the opportunity to also tighten the error contract:
+
+- **Single-funnel error wrapping.** All failures from `forEachPayload` — SwiftData fetch errors, `body`-thrown errors, `onSkip`-thrown errors — are now wrapped in `DataStoreError.fetchFailed(...)` with the underlying error's `localizedDescription` preserved in the wrapped message. Callers that need to diagnose a specific cause inspect the wrapped message string, not the error type.
+- **Removed `IterationAborted` marker.** The `clientError` capture variable, the `throw IterationAborted()` rethrow lines (×2), and the `catch is IterationAborted` recovery are all gone. The function dropped from four nested do-catches to two: one outer wrap that turns any error into `DataStoreError.fetchFailed`, one inner wrap that distinguishes decode failures (logged + onSkip-callback + continue) from body throws (propagated to the outer wrap).
+- **Tests updated.** `throwingBodyAbortsIteration` and the renamed `throwingOnSkipWrapsInDataStoreError` now expect `DataStoreError.fetchFailed` with the underlying error's `errorDescription` preserved in the wrapped message. A small file-scope `fetchFailedMessage(_:)` helper replaces inline pattern-binding (the Swift Testing macro context tripped on `if case let DataStoreError.fetchFailed(message) = error` inline).
+
 ### File List
 
-- `Peach/Core/Data/TrainingDataStore.swift` — added `forEachPayload(_:body:)`, rewrote `fetchPayloads(_:)` on top of it, updated header doc.
-- `Peach/Core/Training/DuplicateKey.swift` — renamed `RhythmDuplicateKey` → `TempoDuplicateKey`, renamed `buildRhythmDuplicateKeys(...)` overloads → `buildTempoDuplicateKeys(...)`, migrated all four builders to `forEachPayload`.
-- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — updated to call renamed `buildTempoDuplicateKeys` and use `TempoDuplicateKey`.
-- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — same rename adoption.
-- `PeachTests/Core/Data/TrainingDataStoreStreamingTests.swift` — new file; AC4 contract tests for `forEachPayload`.
+- `Peach/Core/Data/TrainingDataStore.swift` — added `forEachPayload(_:onSkip:body:)` on top of `ModelContext.enumerate(_:batchSize:block:)` with DB-side `sortBy`; rewrote `fetchPayloads(_:)` on top of it; removed `fetchEnvelopes(forDisciplineIdentifier:)` (no remaining callers).
+- `Peach/Core/Training/DuplicateKey.swift` — renamed `RhythmDuplicateKey` → `TempoDuplicateKey`, renamed `buildRhythmDuplicateKeys(...)` overloads → `buildTempoDuplicateKeys(...)`, added `DuplicateKeyIndex<Key>` value type, migrated all four builders to `forEachPayload` with `onSkip` recording skipped existing timestamps.
+- `Peach/Core/Data/TransactionScope+MergeImport.swift` — `mergeImportPayloads(_:existing:keyFor:)` now takes `inout DuplicateKeyIndex<K>` (renamed parameter from `existingKeys` to `existing`) and consults `contains(_:atTimestamp:)` so corrupt-existing rows still block re-imports of the same row.
+- `Peach/Training/PitchMatching/Discipline/UnisonPitchMatchingDiscipline.swift` — call-site update to new `existing:` parameter.
+- `Peach/Training/PitchMatching/Discipline/IntervalPitchMatchingDiscipline.swift` — call-site update.
+- `Peach/Training/PitchDiscrimination/Discipline/UnisonPitchDiscriminationDiscipline.swift` — call-site update.
+- `Peach/Training/PitchDiscrimination/Discipline/IntervalPitchDiscriminationDiscipline.swift` — call-site update.
+- `Peach/Training/TimingOffsetDetection/Discipline/TimingOffsetDetectionDiscipline.swift` — call-site update + renamed `buildTempoDuplicateKeys` adoption.
+- `Peach/Training/ContinuousRhythmMatching/Discipline/ContinuousRhythmMatchingDiscipline.swift` — call-site update + renamed `buildTempoDuplicateKeys` adoption.
+- `PeachTests/Core/Data/TrainingDataStoreStreamingTests.swift` — new file; AC4 contract tests for `forEachPayload` plus undecodable-envelope skip path, `onSkip` callback, and throwing-`onSkip` propagation tests.
+- `PeachTests/Core/Data/TransactionScopeMergeImportTests.swift` — migrated to `DuplicateKeyIndex<K>`; new test pinning the skipped-timestamp dedup path.
 - `PeachTests/Core/Training/DuplicateKeyTests.swift` — updated rhythm test cases to use `TempoDuplicateKey`.
-- `docs/implementation-artifacts/77-9-payload-streaming-iteration.md` — story file (status, tasks, Dev Agent Record).
+- `docs/implementation-artifacts/future-work.md` — P2 fix: updated `Peach/Core/Data/DuplicateKey.swift` path → `Peach/Core/Training/DuplicateKey.swift` and `buildRhythmDuplicateKeys()` → `buildTempoDuplicateKeys()`.
+- `docs/implementation-artifacts/77-9-payload-streaming-iteration.md` — story file (status, tasks, Dev Agent Record, this Review Findings Resolved section).
 - `docs/implementation-artifacts/sprint-status.yaml` — story status transitions.
 
 ## Change Log
@@ -157,3 +184,5 @@ A `Sequence` or `AsyncSequence`-shaped API would be cleaner stylistically but in
 - 2026-04-28: Drafted as a deferred 77.4 review finding, taking up the recurring `fetchAll` streaming request now that the envelope shape makes it cheap. Status → ready-for-dev.
 - 2026-04-29: Added Task 6 (opportunistic) — `RhythmDuplicateKey` naming on the timing-category caller, deferred from 77.8 review (D3). Boy-Scout rename to consider only if the migration touches `buildRhythmDuplicateKeys(timingOffsetDetectionsIn:...)`.
 - 2026-04-29: Implemented. `TrainingDataStore.forEachPayload(_:body:)` lands; `fetchPayloads(_:)` thinned on top. Four duplicate-key builders migrated. Opportunistic rename `RhythmDuplicateKey` → `TempoDuplicateKey` taken. All four test configurations green; no new warnings. Status → review.
+- 2026-04-29: Code-review findings resolved. P1 (drop tautological cross-check), P2 (stale builder name in future-work.md), D1 (DB-side stable sort via `FetchDescriptor.sortBy`), D2 (corrupt-existing-side dedup via `DuplicateKeyIndex<K>` + `onSkip` callback), and D3 (true streaming via `ModelContext.enumerate(_:batchSize:block:)`) all fixed in the same change. Status → done.
+- 2026-04-29: Follow-up simplification — probe confirmed `ModelContext.enumerate` rethrows closure errors verbatim, so the `IterationAborted` marker pattern was unnecessary. Dropped the verbatim-error contract; all `forEachPayload` failures now wrap in `DataStoreError.fetchFailed` with the underlying error's description preserved. `forEachPayload` collapsed from 4 nested do-catches to 2. All four configs still green.

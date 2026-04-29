@@ -155,8 +155,8 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         existingIn store: TrainingDataStore,
         into scope: TrainingDataStore.TransactionScope
     ) throws -> (imported: Int, skipped: Int) {
-        var existingKeys = try buildTempoDuplicateKeys(timingOffsetDetectionsIn: store, trainingType: csvTrainingType)
-        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existingKeys: &existingKeys) {
+        var existing = try buildTempoDuplicateKeys(timingOffsetDetectionsIn: store, trainingType: csvTrainingType)
+        return try scope.mergeImportPayloads(parsedRecords(from: parseResult), existing: &existing) {
             TempoDuplicateKey(timestamp: $0, tempoBPM: $1.tempoBPM, trainingType: csvTrainingType)
         }
     }
