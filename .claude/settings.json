@@ -2,28 +2,6 @@
   "env": {
     "ENABLE_LSP_TOOL": "1"
   },
-  "sandbox": {
-    "enabled": true,
-    "autoAllowBashIfSandboxed": true,
-    "filesystem": {
-      "allowWrite": [
-        "~/Library/Developer/Xcode/DerivedData",
-        "//tmp"
-      ],
-      "denyRead": [
-        "~/.ssh",
-        "~/.aws",
-        "~/.gnupg"
-      ]
-    },
-    "network": {
-      "allowedDomains": [
-        "github.com",
-        "*.apple.com",
-        "*.swift.org"
-      ]
-    }
-  },
   "permissions": {
     "allow": [
       "WebSearch",
@@ -41,5 +19,31 @@
       "WebFetch(domain:openradar.appspot.com)",
       "WebFetch(domain:www.polyphone.io)"
     ]
+  },
+  "enabledPlugins": {
+    "swift-lsp@claude-plugins-official": true,
+    "archlint@archlint": true
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.apple.com",
+        "*.swift.org"
+      ]
+    },
+    "filesystem": {
+      "allowWrite": [
+        "~/Library/Developer/Xcode/DerivedData",
+        "//tmp"
+      ],
+      "denyRead": [
+        "~/.ssh",
+        "~/.aws",
+        "~/.gnupg"
+      ]
+    }
   }
 }
