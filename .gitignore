@@ -18,5 +18,45 @@ buildServer.json
 # Claude Code runtime artifacts
 .claude/scheduled_tasks.lock
 
+# Claude Code local settings (per-user permissions, not shared)
+.claude/settings.local.json
+
+# Claude Code skills installed by BMad — regenerated on reinstall.
+# (Non-BMad skills under .claude/skills/ are tracked symlinks into
+# .agents/skills/ and stay tracked.)
+.claude/skills/bmad-*
+
+# BMad user-personal config files
+**/*.user.toml
+
+# BMad framework — installed by the BMad installer, not source.
+# Track only the lockfile manifest, install-time module configs, and
+# user-authored customizations; ignore the bulk that gets rewritten on
+# every reinstall.
+/_bmad/scripts/
+/_bmad/bmb/
+/_bmad/cis/
+/_bmad/core/
+/_bmad/tea/
+
+# Inside _bmad/bmm/, keep only config.yaml; ignore module skill bundles
+# and the assembled help catalog.
+/_bmad/bmm/*/
+/_bmad/bmm/module-help.csv
+
+# Inside _bmad/_config/, keep only manifest.yaml (the lockfile). Assembled
+# CSVs, agent customize stubs, IDE configs, and the custom-module install
+# cache are all regenerated on install.
+/_bmad/_config/agent-manifest.csv
+/_bmad/_config/bmad-help.csv
+/_bmad/_config/files-manifest.csv
+/_bmad/_config/skill-manifest.csv
+/_bmad/_config/task-manifest.csv
+/_bmad/_config/tool-manifest.csv
+/_bmad/_config/workflow-manifest.csv
+/_bmad/_config/agents/
+/_bmad/_config/ides/
+/_bmad/_config/custom/
+
 # macOS
 .DS_Store
