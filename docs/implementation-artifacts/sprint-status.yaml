@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-04-30 # Story 77.11 done — architecture documentation updated for plugin-style disciplines (architecture.md v0.9 amendment + arc42 Section 8.7 / ADR-10 / cross-cutting touch-ups); code review patches applied.
+# last_updated: 2026-05-04 # Stories 71.1 + 71.2 done — App Store description, keywords, and Review Notes finalised after code review (launch-scope correction to 4 disciplines, German copy fixes, Mac menus section, recomputed character counts).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -565,8 +565,8 @@ development_status:
   # Epic 71: Face of Peach — App Store Metadata & Screenshots
   # Work order: all stories independent
   epic-71: in-progress
-  71-1-write-app-store-description-and-keywords: review
-  71-2-write-app-store-review-notes: review
+  71-1-write-app-store-description-and-keywords: done
+  71-2-write-app-store-review-notes: done
   71-3-capture-iphone-and-ipad-screenshots: ready-for-dev
   71-4-capture-macos-screenshots: ready-for-dev
   71-5-rename-mode-to-discipline-in-user-facing-copy: done # Cleanup follow-up surfaced by 71.2 review-notes drafting; user-facing copy + active docs only

@@ -15,9 +15,9 @@ Length: 26
 
 ### Keywords (limit: 100)
 
-`pitch,intonation,interval,tuning,midi,perception,solfege,singer,choir,violin,cello`
+`pitch,intonation,interval,tuning,midi,perception,singer,choir,violin,cello`
 
-Length: 82
+Length: 74
 
 ### Description (limit: 4,000)
 
@@ -39,7 +39,7 @@ Settings:
 
 • Equal Temperament (12-TET) and Just Intonation tuning systems.
 • MIDI input from a connected keyboard or controller (Bluetooth, USB, or Network MIDI).
-• Multiple sound sources via a SoundFont engine: piano, strings, sine wave, and others.
+• Multiple selectable sounds: piano, strings, sine wave, and others.
 • CSV export and import of your training data.
 
 Peach runs on the device. There is no account, no sign-up, no analytics, and no tracking. Training data stays on the device unless you export it manually.
@@ -49,7 +49,7 @@ The same app runs on iPhone, iPad, and Mac. Data does not sync between devices a
 There are no scores, levels, or streaks.
 ```
 
-Length: 1,718
+Length: 1,369
 
 ---
 
@@ -63,9 +63,9 @@ Length: 24
 
 ### Keywords (limit: 100)
 
-`tonhöhe,intervall,intonation,stimmung,midi,solfeggio,chor,gesang,geige,cello,bratsche`
+`tonhöhe,intervall,intonation,stimmung,midi,chor,gesang,geige,cello,bratsche`
 
-Length: 85
+Length: 75
 
 ### Description (limit: 4,000)
 
@@ -87,17 +87,17 @@ Einstellungen:
 
 • Stimmsysteme: gleichstufige Stimmung (12-TET) und reine Stimmung.
 • MIDI-Eingabe von einem angeschlossenen Keyboard oder Controller (Bluetooth, USB oder Netzwerk-MIDI).
-• Mehrere Klangquellen über eine SoundFont-Engine: Klavier, Streicher, Sine Wave und weitere.
+• Mehrere auswählbare Klänge: Klavier, Streicher, Sinuston und weitere.
 • CSV-Export und -Import deiner Übungsdaten.
 
 Peach läuft vollständig auf dem Gerät. Kein Konto, keine Registrierung, keine Analytik, kein Tracking. Übungsdaten verlassen das Gerät nur, wenn du sie manuell exportierst.
 
 Dieselbe App läuft auf iPhone, iPad und Mac. Die Daten werden nicht automatisch zwischen Geräten synchronisiert; übertrage sie bei Bedarf per CSV-Export und -Import.
 
-Es gibt keine Punkte, keine Level und keine Streaks.
+Es gibt keine Punkte und keine Level.
 ```
 
-Length: 1,962
+Length: 1,537
 
 ---
 
@@ -108,7 +108,7 @@ Plain-text notes for App Store reviewers. Targets the "Notes" field on the App R
 ```
 What Peach is
 
-Peach is an ear-training app for musicians. "Ear training" is the practice of recognising small differences between musical notes (pitch) and small differences in timing. The app generates short exercises, records the user's responses, and adjusts the difficulty as accuracy improves.
+Peach is an ear-training app for musicians, specifically for pitch perception. The app generates short exercises, records the user's responses, and adjusts the difficulty as accuracy improves.
 
 How to use it
 
@@ -138,9 +138,20 @@ Privacy and data
 Platforms
 
 The same app runs on iPhone, iPad, and Mac. Data does not sync between devices automatically; CSV export and import is the supported transfer path.
+
+Mac menus
+
+The macOS build is a single-window app and adds menu-bar commands that mirror on-screen actions:
+
+- Training — start/stop the active session (⌘T), toggle auto-start, and select a discipline by name.
+- Profile — open the Profile screen (⇧⌘P).
+- File — Import and Export Training Data (CSV).
+- Peach › Settings... (⌘,) and the standard Help menu (per-discipline help).
+
+All on-screen interactions described above work on Mac with mouse or trackpad.
 ```
 
-Length: 2,705 characters / 446 words
+Length: 2,713 characters / 441 words
 
 ---
 
@@ -150,6 +161,4 @@ Length: 2,705 characters / 446 words
 - Apple expects keywords as a single comma-separated string. Apple does count spaces in the 100-char keyword field, so omitting spaces between terms maximises the term budget.
 - Apple already indexes the app name (`Peach`) and subtitle words for search; those terms are intentionally excluded from the keyword list.
 - The German keyword list intentionally uses colloquial instrument names (`geige`, `bratsche`) rather than the formal forms (`violine`, `viola`); App Store search queries in German skew colloquial.
-- `Solfeggio` (DE) and `solfege` (EN) are spelled per the most-searched form on the App Store.
-- The DE description retains `Sine Wave` (English) for the sound-source example because the SoundFont preset name is baked in English and is shown verbatim in the in-app picker.
 - App Review Notes are submitted in English only — App Store Connect provides a single notes field per submission, not per locale.

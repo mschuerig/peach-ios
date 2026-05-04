@@ -1,6 +1,6 @@
 # Story 71.1: Write App Store Description and Keywords
 
-Status: review
+Status: done
 
 ## Story
 
@@ -81,18 +81,18 @@ None — content authoring story; no test runs.
 
 ### Completion Notes List
 
-- **AC #1 reconciled with codebase**: AC #1 listed seven items including a standalone "rhythm matching" alongside "rhythm offset detection" and "continuous rhythm matching". The codebase has six training disciplines (`TrainingDisciplineID`); `V2ToV3Migration.swift` renamed `rhythmMatching` → `continuousRhythmMatching` in v3 of the data format, so the spec text is stale. Confirmed with user before drafting that "There are only 6 training disciplines (mind the wording!)". Description names the six in-app disciplines using their UI display names: **Compare Pitch**, **Match Pitch**, **Compare Intervals**, **Match Intervals**, **Compare Timing**, **Fill the Gap**.
+- **AC #1 reconciled with codebase and launch scope**: AC #1 listed seven items including a standalone "rhythm matching" alongside "rhythm offset detection" and "continuous rhythm matching". The codebase has six training disciplines (`TrainingDisciplineID`); `V2ToV3Migration.swift` renamed `rhythmMatching` → `continuousRhythmMatching` in v3 of the data format, so the spec text is stale. The initial App Store release ships only the four pitch/interval disciplines — the two rhythm disciplines (**Compare Timing**, **Fill the Gap**) exist in code but are disabled for launch and will be added to store copy when re-enabled. Description names the four shipping disciplines using their UI display names: **Compare Pitch**, **Match Pitch**, **Compare Intervals**, **Match Intervals**.
 - **Wording**: per user direction, copy uses "training disciplines" (matching `TrainingDisciplineID`) rather than "modes" (in-app help text uses "modes" inconsistently — separate cleanup, not in scope here).
 - **Tuning systems**: confirmed two systems exist in `TuningSystem.swift` — Equal Temperament (12-TET) and Just Intonation. Both named in copy.
 - **MIDI input**: confirmed via `Core/Ports/MIDIInput.swift`, `Core/Audio/MIDIKitAdapter.swift`. Mentioned in Built for Real Musicians section.
 - **CSV export/import**: confirmed via `Settings/CSVDocument.swift`, `Settings/ImportDialogModifier.swift`. Mentioned in Built for Real Musicians section.
 - **Character counts** (verified by counting characters in the raw text within the code fences):
   - EN subtitle: 26 / 30
-  - EN keywords: 89 / 100
-  - EN description: 1,718 / 4,000
+  - EN keywords: 74 / 100
+  - EN description: 1,369 / 4,000
   - DE subtitle: 24 / 30
-  - DE keywords: 94 / 100
-  - DE description: 1,962 / 4,000
+  - DE keywords: 75 / 100
+  - DE description: 1,537 / 4,000
 - **German tone**: informal "du"/imperative throughout; uses "Gehörbildung" (standard German term for ear training) in subtitle and copy.
 - **Keyword strategy**: comma-separated, no spaces between terms (maximises term budget). Excludes words present in the app name ("Peach") and subtitle ("Ear", "Training", "Musicians" / "Gehörbildung", "Musiker") since Apple already indexes those for search.
 
@@ -107,3 +107,4 @@ None — content authoring story; no test runs.
 - 2026-03-29: Story created
 - 2026-04-25: Drafted English and German App Store metadata (description, subtitle, keywords); reconciled stale 7-mode AC text with the actual six in-app training disciplines after confirming with user. Status → review.
 - 2026-04-25: Code-review revision — rewrote both descriptions in a sober, factual register per user direction (no marketing tone, no motivational framing, no gatekeeping). Fixed two factual errors flagged by review: sparkline location (Start screen, not Profile) and cross-device sync implication (no automatic sync; CSV export/import only). Replaced "universal binary" with neutral phrasing. Removed the gendered "Sängerinnen, Sänger und Instrumentalisten" target-audience section along with the rest of the marketing chrome. Description lengths dropped from 2,515 → 1,718 (EN) and 2,825 → 1,962 (DE). Status remains `review` for user to comb over before release.
+- 2026-05-04: Final review pass — applied launch-scope correction (initial release ships only the four pitch/interval disciplines; rhythm disciplines deferred), removed `solfege`/`solfeggio` from keywords (unrelated discipline), fixed German bullet grammar (`Mehrere auswählbare Klänge`) and translated `Sine Wave` → `Sinuston`, fixed German loanword plural (`keine Level`), normalised EN to `Multiple selectable sounds`, removed stale `Sine Wave`/SoundFont rationale notes. Recomputed character counts: EN keywords 74 / desc 1,369; DE keywords 75 / desc 1,537. Status → done.

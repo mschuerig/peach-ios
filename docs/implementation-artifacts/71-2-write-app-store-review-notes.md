@@ -1,6 +1,6 @@
 # Story 71.2: Write App Store Review Notes
 
-Status: review
+Status: done
 
 ## Story
 
@@ -98,3 +98,4 @@ Recommend tracking as a follow-up cleanup story (e.g., "Replace remaining 'mode'
 - 2026-03-29: Story created
 - 2026-04-25: Corrected AC and Tasks/Subtasks: "seven training modes" → "six training disciplines"; clarified rhythm interaction split (Compare Timing buttons vs Fill the Gap tap); CSV export lives on Settings screen, not Profile
 - 2026-04-25: Drafted 446-word App Review Notes (2,705 characters) and appended to `docs/planning-artifacts/appstore-metadata.md`. Status → review
+- 2026-05-04: Final review pass — reframed opening sentence to scope Peach to pitch perception (the previous timing-based gloss was factually incorrect for the initial release, which excludes rhythm disciplines), fixed sentence-fragment grammar, and added a "Mac menus" section covering the four `CommandMenu`/`CommandGroup` blocks (Training/Profile/File/Help) with their keyboard shortcuts. Recomputed length: 2,713 characters / 441 words (under the 500-word AC #3 limit). Status → done.
