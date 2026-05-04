@@ -1,63 +1,48 @@
 installation:
-  version: 6.2.0
+  version: 6.6.0
   installDate: 2026-02-11T13:34:49.643Z
-  lastUpdated: 2026-03-17T17:10:57.519Z
+  lastUpdated: 2026-05-04T23:30:18.888Z
 modules:
   - name: core
-    version: 6.2.0
+    version: 6.6.0
     installDate: 2026-02-11T13:34:48.595Z
-    lastUpdated: 2026-03-17T17:10:56.535Z
+    lastUpdated: 2026-05-04T23:30:18.684Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
-    version: 6.2.0
+    version: 6.6.0
     installDate: 2026-02-11T13:34:44.762Z
-    lastUpdated: 2026-03-17T17:10:56.535Z
+    lastUpdated: 2026-05-04T23:30:18.685Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmb
-    version: 1.0.2
+    version: v1.7.0
     installDate: 2026-02-11T13:34:45.934Z
-    lastUpdated: 2026-03-17T17:10:56.853Z
+    lastUpdated: 2026-05-04T23:30:18.709Z
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
+    channel: pinned
+    sha: 86033fc9aeae2ca6d52c7cdb675c1f4bf17fc1c1
   - name: cis
-    version: 0.1.8
+    version: v0.2.0
     installDate: 2026-02-11T13:34:47.340Z
-    lastUpdated: 2026-03-17T17:10:57.184Z
+    lastUpdated: 2026-05-04T23:30:18.731Z
     source: external
     npmPackage: bmad-creative-intelligence-suite
     repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
+    channel: pinned
+    sha: 14a63b893c07173b7a6cfe0fb6a9a72ba51d3cf1
   - name: tea
-    version: 1.7.0
+    version: v1.15.1
     installDate: 2026-02-11T13:34:48.558Z
-    lastUpdated: 2026-03-17T17:10:57.517Z
+    lastUpdated: 2026-05-04T23:30:18.753Z
     source: external
     npmPackage: bmad-method-test-architecture-enterprise
     repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
-  - name: standalone
-    version: null
-    installDate: 2026-03-02T19:23:27.687Z
-    lastUpdated: 2026-03-17T17:10:57.518Z
-    source: unknown
-    npmPackage: null
-    repoUrl: null
-  - name: arc42-documentation-architect
-    version: null
-    installDate: 2026-03-16T23:12:55.404Z
-    lastUpdated: 2026-03-17T17:10:57.518Z
-    source: custom
-    npmPackage: null
-    repoUrl: null
-  - name: music-domain-expert
-    version: null
-    installDate: 2026-03-16T23:12:55.414Z
-    lastUpdated: 2026-03-17T17:10:57.519Z
-    source: custom
-    npmPackage: null
-    repoUrl: null
+    channel: pinned
+    sha: 7c94bdc6e3d2c8c3cad09eb0a32a42fade0e9079
 ides:
   - claude-code
