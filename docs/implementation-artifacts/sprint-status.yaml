@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-04 # Stories 71.1 + 71.2 done — App Store description, keywords, and Review Notes finalised after code review (launch-scope correction to 4 disciplines, German copy fixes, Mac menus section, recomputed character counts).
+# last_updated: 2026-05-04 # Story 71.3 done — iPhone (1320×2868) and iPad (2064×2752) screenshots captured at App Store-required dimensions; 7 screens per device covering start, four training disciplines, profile, and settings.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -567,7 +567,7 @@ development_status:
   epic-71: in-progress
   71-1-write-app-store-description-and-keywords: done
   71-2-write-app-store-review-notes: done
-  71-3-capture-iphone-and-ipad-screenshots: ready-for-dev
+  71-3-capture-iphone-and-ipad-screenshots: done
   71-4-capture-macos-screenshots: ready-for-dev
   71-5-rename-mode-to-discipline-in-user-facing-copy: done # Cleanup follow-up surfaced by 71.2 review-notes drafting; user-facing copy + active docs only
   epic-71-retrospective: optional

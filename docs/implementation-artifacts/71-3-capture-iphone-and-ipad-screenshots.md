@@ -1,6 +1,6 @@
 # Story 71.3: Capture iPhone and iPad Screenshots
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -17,32 +17,33 @@ so that I can understand the app's interface and functionality before downloadin
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Prepare realistic training data (AC: #3)
-  - [ ] Run several training sessions across multiple modes to populate the profile with data
-  - [ ] Ensure the perceptual profile visualization has enough data points to look meaningful
-  - [ ] Verify data appears on both iPhone and iPad simulators (or use shared SwiftData store)
-- [ ] Task 2: Capture iPhone 16 Pro Max screenshots (AC: #1)
-  - [ ] Launch app on iPhone 16 Pro Max Simulator (6.9" display)
-  - [ ] Capture Start Screen showing all training modes
-  - [ ] Capture a training session in progress (e.g., pitch comparison with a trial visible)
-  - [ ] Capture Profile Screen with populated perceptual profile visualization
-  - [ ] Verify each screenshot is 1320x2868 px (Cmd+S in Simulator saves at correct resolution)
-  - [ ] Consider capturing 1-2 additional screens: Settings, interval training, or rhythm training
-- [ ] Task 3: Capture iPad Pro 13" screenshots (AC: #2)
-  - [ ] Launch app on iPad Pro 13" Simulator
-  - [ ] Capture Start Screen
-  - [ ] Capture a training session in progress
-  - [ ] Capture Profile Screen with populated data
-  - [ ] Verify each screenshot is 2064x2752 px
-- [ ] Task 4: Review and compare (AC: #4)
-  - [ ] Compare iPhone and iPad screenshots side by side
-  - [ ] Verify layouts adapt appropriately (no stretched or cramped UI)
-  - [ ] Verify text is readable at both sizes
-  - [ ] Check that screenshots collectively tell a clear story of the app's functionality
-- [ ] Task 5: Organize files (AC: #1, #2)
-  - [ ] Store screenshots in `marketing/screenshots/iphone/`
-  - [ ] Store screenshots in `marketing/screenshots/ipad/`
-  - [ ] Use descriptive filenames: `01-start-screen.png`, `02-training-session.png`, `03-profile.png`
+- [x] Task 1: Prepare realistic training data (AC: #3)
+  - [x] Run several training sessions across multiple disciplines to populate the profile with data
+  - [x] Ensure the perceptual profile visualization has enough data points to look meaningful
+  - [x] Verify data appears on both iPhone and iPad simulators (or use shared SwiftData store)
+- [x] Task 2: Capture iPhone screenshots (AC: #1)
+  - [x] Launch app on iPhone 17 Pro Max Simulator (6.9" display)
+  - [x] Capture Start Screen showing all training disciplines
+  - [x] Capture training sessions in progress (Compare Pitch, Match Pitch, Compare Intervals, Match Intervals)
+  - [x] Capture Profile Screen with populated perceptual profile visualization
+  - [x] Capture Settings screen
+  - [x] Verify each screenshot is 1320x2868 px
+- [x] Task 3: Capture iPad screenshots (AC: #2)
+  - [x] Launch app on iPad Pro 13-inch (M4) Simulator
+  - [x] Capture Start Screen
+  - [x] Capture training sessions in progress (Compare Pitch, Match Pitch, Compare Intervals, Match Intervals)
+  - [x] Capture Profile Screen with populated data
+  - [x] Capture Settings screen
+  - [x] Verify each screenshot is 2064x2752 px
+- [x] Task 4: Review and compare (AC: #4)
+  - [x] Compare iPhone and iPad screenshots side by side
+  - [x] Verify layouts adapt appropriately (no stretched or cramped UI)
+  - [x] Verify text is readable at both sizes
+  - [x] Check that screenshots collectively tell a clear story of the app's functionality
+- [x] Task 5: Organize files (AC: #1, #2)
+  - [x] Store screenshots in `marketing/screenshots/iphone/`
+  - [x] Store screenshots in `marketing/screenshots/ipad/`
+  - [x] Use descriptive filenames: `01-start-screen.png`, `02-compare-pitch.png`, etc.
 
 ## Dev Notes
 
@@ -88,10 +89,39 @@ so that I can understand the app's interface and functionality before downloadin
 ## Dev Agent Record
 
 ### Agent Model Used
+
+Manual capture by user (Michael) on 2026-05-04, with verification assistance from Claude (claude-opus-4-7).
+
 ### Debug Log References
+
+None.
+
 ### Completion Notes List
+
+- Captured 7 screenshots per device (start screen, four training disciplines — Compare Pitch, Match Pitch, Compare Intervals, Match Intervals — profile screen, settings screen).
+- Initial capture used wrong devices (iPhone 17 Pro at 1206×2622, iPad Air 13" at 2048×2732); re-captured on iPhone 17 Pro Max (1320×2868) and iPad Pro 13-inch M4 (2064×2752) to match App Store Connect's required dimensions for the largest iPhone and iPad display classes.
+- Profile screenshots show months of varied training data across all four shipping disciplines — confidence bands, trend lines, and numerical scores all populated (no empty states). AC #3 verified.
+- iPad layout shows four chart cards visible, iPhone shows three; layout adapts cleanly without stretched UI. AC #4 verified.
+- Locale note: simulator was set to English language with German region, so iPad status bar shows `100 %` (German number formatting). App text is fully English. Acceptable for initial release; can be tightened to en_US region later if desired.
+
 ### File List
+
+- marketing/screenshots/iphone/01-start-screen.png (added)
+- marketing/screenshots/iphone/02-compare-pitch.png (added)
+- marketing/screenshots/iphone/03-match-pitch.png (added)
+- marketing/screenshots/iphone/04-compare-interval.png (added)
+- marketing/screenshots/iphone/05-match-interval.png (added)
+- marketing/screenshots/iphone/06-profile-screen.png (added)
+- marketing/screenshots/iphone/07-settings-screen.png (added)
+- marketing/screenshots/ipad/01-start-screen.png (added)
+- marketing/screenshots/ipad/02-compare-pitch.png (added)
+- marketing/screenshots/ipad/03-match-pitch.png (added)
+- marketing/screenshots/ipad/04-compare-interval.png (added)
+- marketing/screenshots/ipad/05-match-interval.png (added)
+- marketing/screenshots/ipad/06-profile-screen.png (added)
+- marketing/screenshots/ipad/07-settings-screen.png (added)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-05-04: Screenshots captured at App Store-required dimensions (iPhone 1320×2868, iPad 2064×2752); 7 screens per device covering start, four training disciplines, profile, and settings. Status → done.
