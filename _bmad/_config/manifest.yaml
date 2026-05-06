@@ -1,26 +1,26 @@
 installation:
   version: 6.6.0
   installDate: 2026-02-11T13:34:49.643Z
-  lastUpdated: 2026-05-04T23:30:18.888Z
+  lastUpdated: 2026-05-05T10:26:32.528Z
 modules:
   - name: core
     version: 6.6.0
     installDate: 2026-02-11T13:34:48.595Z
-    lastUpdated: 2026-05-04T23:30:18.684Z
+    lastUpdated: 2026-05-05T10:26:32.368Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
     version: 6.6.0
     installDate: 2026-02-11T13:34:44.762Z
-    lastUpdated: 2026-05-04T23:30:18.685Z
+    lastUpdated: 2026-05-05T10:26:32.368Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmb
     version: v1.7.0
     installDate: 2026-02-11T13:34:45.934Z
-    lastUpdated: 2026-05-04T23:30:18.709Z
+    lastUpdated: 2026-05-05T10:26:32.391Z
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
@@ -29,7 +29,7 @@ modules:
   - name: cis
     version: v0.2.0
     installDate: 2026-02-11T13:34:47.340Z
-    lastUpdated: 2026-05-04T23:30:18.731Z
+    lastUpdated: 2026-05-05T10:26:32.414Z
     source: external
     npmPackage: bmad-creative-intelligence-suite
     repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
@@ -38,11 +38,27 @@ modules:
   - name: tea
     version: v1.15.1
     installDate: 2026-02-11T13:34:48.558Z
-    lastUpdated: 2026-05-04T23:30:18.753Z
+    lastUpdated: 2026-05-05T10:26:32.437Z
     source: external
     npmPackage: bmad-method-test-architecture-enterprise
     repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
     channel: pinned
     sha: 7c94bdc6e3d2c8c3cad09eb0a32a42fade0e9079
+  - name: arc42-documentation-architect
+    version: 1.0.0
+    installDate: 2026-05-05T10:26:32.226Z
+    lastUpdated: 2026-05-05T10:26:32.481Z
+    source: custom
+    npmPackage: null
+    repoUrl: null
+    localPath: /Users/michael/Projekte/BMAD/arc42-documentation-architect
+  - name: music-domain-expert
+    version: 1.0.0
+    installDate: 2026-05-05T10:26:32.253Z
+    lastUpdated: 2026-05-05T10:26:32.528Z
+    source: custom
+    npmPackage: null
+    repoUrl: null
+    localPath: /Users/michael/Projekte/BMAD/music-domain-expert
 ides:
   - claude-code

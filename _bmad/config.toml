@@ -11,9 +11,9 @@
 # ─────────────────────────────────────────────────────────────────
 
 [core]
+project_name = "peach"
 document_output_language = "English"
 output_folder = "{project-root}/docs"
-project_name = "peach"
 
 [modules.bmm]
 planning_artifacts = "{project-root}/docs/planning-artifacts"

@@ -22,9 +22,13 @@ buildServer.json
 .claude/settings.local.json
 
 # Claude Code skills installed by BMad — regenerated on reinstall.
+# Covers both canonical BMad skills (bmad-*) and custom agents
+# installed via --custom-content (agent-*); source for the latter
+# lives in ~/Projekte/BMAD/bmad-agent-<name>/.
 # (Non-BMad skills under .claude/skills/ are tracked symlinks into
 # .agents/skills/ and stay tracked.)
 .claude/skills/bmad-*
+.claude/skills/agent-*
 
 # BMad user-personal config files
 **/*.user.toml
@@ -43,6 +47,12 @@ buildServer.json
 # and the assembled help catalog.
 /_bmad/bmm/*/
 /_bmad/bmm/module-help.csv
+
+# Custom BMad modules — personal productivity tooling, not project
+# dependencies. Source lives in ~/Projekte/BMAD/bmad-agent-<name>/;
+# the in-project copy is regenerated on reinstall.
+/_bmad/arc42-documentation-architect/
+/_bmad/music-domain-expert/
 
 # Inside _bmad/_config/, keep only manifest.yaml (the lockfile). Assembled
 # CSVs, agent customize stubs, IDE configs, and the custom-module install
