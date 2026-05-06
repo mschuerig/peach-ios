@@ -30,6 +30,9 @@ struct PitchDiscriminationScreen: View {
             answerButtonsGroup
         }
         .padding()
+        .navigationTitle(isIntervalMode
+            ? String(localized: "Compare Intervals")
+            : String(localized: "Compare Pitch"))
         .onKeyPress(.upArrow, phases: .down) { _ in
             pitchDiscriminationSession.handleAnswer(isHigher: true) ? .handled : .ignored
         }

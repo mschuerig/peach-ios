@@ -14,6 +14,7 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
     func body(content: Content) -> some View {
         content
             .inlineNavigationBarTitle()
+            .platformPrincipalToolbarItem { title }
             .toolbar { toolbarContent }
             .platformHelp(
                 isPresented: $showHelpSheet,
@@ -44,9 +45,6 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        ToolbarItem(placement: .principal) {
-            title
-        }
         ToolbarItem(placement: .automatic) {
             HStack(spacing: 20) {
                 Button {

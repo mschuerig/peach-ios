@@ -40,6 +40,9 @@ struct PitchMatchingScreen: View {
             )
             .padding()
         }
+        .navigationTitle(isIntervalMode
+            ? String(localized: "Match Intervals")
+            : String(localized: "Match Pitch"))
         .onKeyPress(.upArrow, phases: [.down, .repeat]) { _ in
             pitchMatchingSession.adjustPitchByStep(up: true) ? .handled : .ignored
         }

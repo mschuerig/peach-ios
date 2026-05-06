@@ -21,6 +21,7 @@ struct TimingOffsetDetectionScreen: View {
             answerButtonsGroup
         }
         .padding()
+        .navigationTitle(String(localized: "Compare Timing"))
         .onKeyPress(.leftArrow, phases: .down) { _ in
             session.handleAnswer(direction: .early) ? .handled : .ignored
         }

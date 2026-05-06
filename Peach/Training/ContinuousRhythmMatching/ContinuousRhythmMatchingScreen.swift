@@ -24,6 +24,7 @@ struct ContinuousRhythmMatchingScreen: View {
             tapButton
         }
         .padding()
+        .navigationTitle(String(localized: "Fill the Gap"))
         .onKeyPress(.space, phases: .down) { _ in
             guard session.isRunning else { return .ignored }
             session.handleTap()

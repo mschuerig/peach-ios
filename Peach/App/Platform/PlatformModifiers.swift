@@ -45,6 +45,20 @@ extension View {
         #error("Unsupported platform")
         #endif
     }
+
+    func platformPrincipalToolbarItem<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        #if os(iOS)
+        self.toolbar {
+            ToolbarItem(placement: .principal) {
+                content()
+            }
+        }
+        #elseif os(macOS)
+        self
+        #else
+        #error("Unsupported platform")
+        #endif
+    }
 }
 
 struct PlatformSettingsButton: View {
