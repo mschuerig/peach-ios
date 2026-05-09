@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-09 # Story 71.4 done — 7 macOS screenshots captured at 2880×1800 (Start, 4 disciplines, Profile, Settings).
+# last_updated: 2026-05-09 # Closed 18 epics whose stories are all done: 54, 55, 56, 58, 59, 61, 62, 63, 64, 65, 66, 67, 68, 70, 71, 75, 76, 77.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -409,7 +409,7 @@ development_status:
   53-1-rhythm-training-localization: done
 
   # Epic 54: Fill the Gap — Continuous Rhythm Matching
-  epic-54: in-progress
+  epic-54: done
   54-1-step-sequencer-protocol-and-audio-engine: done
   54-2-continuous-rhythm-matching-session: done
   54-3-gap-position-settings: done
@@ -423,14 +423,14 @@ development_status:
 
   # Epic 55: Clean Seams — Discipline Decoupling
   # Work order: 55.1 before 55.2 (port protocols are a prerequisite for registry)
-  epic-55: in-progress
+  epic-55: done
   55-1-extract-observer-adapters-with-port-protocols: done
   55-2-protocol-based-discipline-registry: done
   55-3-discipline-owned-csv-format: done
 
   # Epic 56: Tighter Grid — Rhythm Offset Discrimination UX Refinements
   # Work order: 56.1 before 56.2 (grid must exist before note position changes); 56.3 and 56.4 independent
-  epic-56: in-progress
+  epic-56: done
   56-1-quarter-note-timing-grid-alignment: done
   56-2-move-tested-note-from-4th-to-3rd-position: done
   56-3-accented-and-enlarged-first-note: done
@@ -444,12 +444,12 @@ development_status:
   57-3-localization-for-rhythm-timing-feedback: done
 
   # Epic 58: Clean Slate — Pre-Existing Findings Cleanup
-  epic-58: in-progress
+  epic-58: done
   58-1-consolidate-sparkline-bucketing-to-multi-granularity-pipeline: done
   58-2-extract-sessionlifecycle-helper: done
 
   # Epic 59: Consistent Controls — Settings UI Unification
-  epic-59: in-progress
+  epic-59: done
   59-1-unify-gap-position-selector-to-grid-buttons: done
 
   # Epic 60: Hear It Now — Audio Latency Fix for Continuous Rhythm Matching
@@ -461,14 +461,14 @@ development_status:
 
   # Epic 61: Sharp Edges — Architectural Clarity Improvements
   # Work order: no dependency between stories; can be implemented in parallel
-  epic-61: in-progress
+  epic-61: done
   61-1-consolidate-infrastructure-port-protocols: done
   61-2-rename-state-enum-to-reference-target-and-glossary-cleanup: done
   epic-61-retrospective: optional
 
   # Epic 62: Plug In and Play — MIDI Controller Input
   # Work order: 62.1 → 62.2 → 62.3 → 62.4 (each builds on previous)
-  epic-62: in-progress
+  epic-62: done
   62-1-add-midikit-dependency-and-define-midi-input-event-types: done
   62-2-midiinput-port-protocol-mock-and-composition-root-wiring: done
   62-3-midikit-adapter-implementation: done
@@ -477,13 +477,13 @@ development_status:
   epic-62-retrospective: optional
 
   # Epic 63: Update Planning Documents for MIDI Support
-  epic-63: in-progress
+  epic-63: done
   63-1-update-planning-documents-for-midi-support: done
 
   # Epic 64: Solid Foundations — Adversarial Review Fixes
   # Work order: 64.1 → 64.2 (concurrency crashes), then 64.3 → 64.4 (data/stats),
   #             then 64.5 → 64.6 → 64.7 (performance), then 64.8 → 64.9 → 64.10 (architecture/tests)
-  epic-64: in-progress
+  epic-64: done
   64-1-fix-pitchmatchingsession-continuation-double-resume: done
   64-2-fix-soundfontplaybackhandle-stop-race: done
   64-3-make-merge-import-transactional: done
@@ -499,7 +499,7 @@ development_status:
 
   # Epic 65: Architectural Hardening — Lock-Free Audio, Actor Isolation, Format Migration
   # Work order: 65.1 (audio), 65.2 (concurrency), 65.3 (data) — independent, can be parallel
-  epic-65: in-progress
+  epic-65: done
   65-1-lock-free-midi-event-scheduling: done
   65-2-resolve-session-actor-isolation: done
   65-3-csv-format-version-migration: done
@@ -508,7 +508,7 @@ development_status:
   # Epic 66: Desktop Citizen — macOS Support via SwiftUI Multiplatform
   # Work order: 66.1 first (compilation foundation), then 66.2–66.4 (platform conditionals, parallel),
   #             then 66.5–66.7 (Mac-native polish, parallel), then 66.8 (integration test & polish)
-  epic-66: in-progress
+  epic-66: done
   66-1-add-macos-destination-and-fix-compilation: done
   66-2-platform-conditional-audio-session: done
   66-3-platform-conditional-lifecycle-notifications: done
@@ -522,14 +522,14 @@ development_status:
   # Epic 67: Platform Ports — Eliminate #if os Conditional Compilation
   # Push platform differences behind Core/Ports/ protocols, centralize view modifiers,
   # harden bare #else branches. Work order: 67.1 first (protocols), then 67.2 (view cleanup).
-  epic-67: in-progress
+  epic-67: done
   67-1-push-platform-behavior-behind-protocol-ports: done
   67-2-centralize-view-modifiers-and-harden-else-branches: done
   epic-67-retrospective: optional
 
   # Epic 68: Quality of Life — Spectrogram, Accessibility, Schema, Audio & macOS Polish
   # Six independent stories; can be worked in any order.
-  epic-68: in-progress
+  epic-68: done
   68-1-spectrogram-refinement: done
   68-2-low-latency-tap-sound: done
   68-3-swiftdata-versioned-schema: done
@@ -555,7 +555,7 @@ development_status:
   # Epic 70: Native Everywhere — Platform Polish & Real-Device Testing
   # Work order: 70.1 and 70.2 parallel (audits), 70.3 after 70.1/70.2 (fixes),
   #             70.4 independent (docs)
-  epic-70: in-progress
+  epic-70: done
   70-1-platform-polish-audit-ios-ipados: done
   70-2-platform-polish-audit-macos: done
   70-3-fix-platform-issues-found-in-audit: done
@@ -564,7 +564,7 @@ development_status:
 
   # Epic 71: Face of Peach — App Store Metadata & Screenshots
   # Work order: all stories independent
-  epic-71: in-progress
+  epic-71: done
   71-1-write-app-store-description-and-keywords: done
   71-2-write-app-store-review-notes: done
   71-3-capture-iphone-and-ipad-screenshots: done
@@ -608,7 +608,7 @@ development_status:
   # Work order: Phase 1 (75.1, 75.12, 75.11), Phase 2 (75.9, 75.2, 75.6),
   #             Phase 3 (75.3, 75.7, 75.8, 75.5), Phase 4 (75.4),
   #             Phase 5 (75.13), Phase 6 (75.10)
-  epic-75: in-progress
+  epic-75: done
   75-1-domain-vocabulary-constants-clamping-isolation: done
   75-12-training-directory-grouping: done
   75-11-rhythm-to-timing-naming-alignment: done
@@ -629,7 +629,7 @@ development_status:
   # the implementation in code; expose all six via a Research build configuration
   # distributed to a small TestFlight research group.
   # Work order: 76.1 → 76.2 → 76.3 → 76.4 (strict dependency)
-  epic-76: in-progress
+  epic-76: done
   76-1-relocate-trainingdisciplineid-to-app: done
   76-2-discipline-category-and-bootstrap-relocation: done
   76-3-data-driven-discipline-iteration-by-category: done
@@ -641,7 +641,7 @@ development_status:
   # Source: 76.4 review deferred items (I1, P10, P14) plus user direction toward a
   # plugin-style contribution model. There is NO planned runtime central-activation UI.
   # Activation is compile-time, single-file, per-discipline — a developer-ergonomics feature.
-  epic-77: in-progress
+  epic-77: done
   77-1-plugin-style-discipline-ui-contributions: done
   77-2-discipline-owned-ui-contributions: done
   77-3-discipline-owned-data-declarations: done
