@@ -169,14 +169,14 @@ private struct RhythmProfileCardExportView: View {
 
     private func headlineRow(ewma: Double?, stddev: Double, trend: Trend?) -> some View {
         HStack(alignment: .firstTextBaseline) {
-            Image("ExportIcon")
-                .resizable()
-                .frame(width: 24, height: 24)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
-                .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] }
+            HStack {
+                Image("ExportIcon")
+                    .resizable()
+                    .frame(width: 24, height: 24)
 
-            Text(config.displayName)
-                .font(.headline)
+                Text(config.displayName)
+                    .font(.headline)
+            }
 
             Spacer()
 
