@@ -1,0 +1,67 @@
+{
+  "fill" : "automatic",
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "image-name" : "Image 4.svg",
+          "name" : "stem",
+          "position" : {
+            "scale" : 3.4,
+            "translation-in-points" : [
+              -7.5703125,
+              -352.8359375
+            ]
+          }
+        },
+        {
+          "image-name" : "Image 3.svg",
+          "name" : "leaf",
+          "position" : {
+            "scale" : 3.4,
+            "translation-in-points" : [
+              183.7421875,
+              -347.4609375
+            ]
+          }
+        },
+        {
+          "image-name" : "Image 2.svg",
+          "name" : "inner ear",
+          "position" : {
+            "scale" : 3.4,
+            "translation-in-points" : [
+              -41.3515625,
+              33.2109375
+            ]
+          }
+        },
+        {
+          "image-name" : "Image.svg",
+          "name" : "outer ear",
+          "position" : {
+            "scale" : 3.4,
+            "translation-in-points" : [
+              -35.734375,
+              92.1328125
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "circles" : [
+      "watchOS"
+    ],
+    "squares" : "shared"
+  }
+}
