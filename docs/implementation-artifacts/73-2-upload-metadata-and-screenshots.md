@@ -1,6 +1,6 @@
 # Story 73.2: Upload Metadata and Screenshots
 
-Status: review
+Status: done
 
 ## Story
 
@@ -107,7 +107,7 @@ None — manual App Store Connect work, no code or test execution.
 
 - **AC #1 — Metadata (EN + DE)**: English description (1,369 chars), subtitle (`Ear Training for Musicians`, 26 chars), and keywords (`pitch,intonation,interval,tuning,midi,perception,singer,choir,violin,cello`, 74 chars) copied from `docs/planning-artifacts/appstore-metadata.md` into the App Store Connect version page. German locale added via the language selector with the corresponding German strings (description 1,537 chars; subtitle `Gehörbildung für Musiker:innen`, 30 chars at the limit; keywords 75 chars). Promotional Text left empty (can be edited later without a new build).
 - **AC #2 — Screenshots**: All 7 iPhone 6.9" screenshots (1320×2868) and 7 iPad 13" screenshots (2064×2752) from `marketing/screenshots/` uploaded. Order matches the filenames: start → four training disciplines (Compare Pitch, Match Pitch, Compare Intervals, Match Intervals) → profile → settings.
-- **AC #3 — Support URL**: Set to `https://github.com/mschuerig/peach` (project repo; the issues page is reachable from there).
+- **AC #3 — Support URL**: Set to `https://github.com/mschuerig/peach-ios` (project repo; the issues page is reachable from there).
 - **AC #4 — Privacy Policy URL**: Set to `https://mschuerig.github.io/peach-ios/privacy-policy` — the GitHub Pages site deployed in Story 69.6, verified live before submission.
 - **AC #5 — App Review Information**: Notes from `appstore-metadata.md` pasted, with the iOS-irrelevant sections (`Platforms` cross-platform paragraph, `Mac menus`) intentionally omitted — those sections belong in the Mac App Store submission (Story 74.1). Contact info filled in (Michael Schürig + email + phone). Sign-in not required.
 
@@ -125,3 +125,4 @@ None — manual App Store Connect work, no code or test execution.
 
 - 2026-03-29: Story created
 - 2026-05-26: All metadata, screenshots, URLs, and App Review Information entered in App Store Connect. iOS-specific subset of review notes uploaded (Mac sections deferred to Story 74.1). Status → review.
+- 2026-05-26: Code review pass. Corrected Support URL in completion notes (`mschuerig/peach` → canonical `mschuerig/peach-ios`); the live App Store Connect Support URL was already canonical. Status → done.
