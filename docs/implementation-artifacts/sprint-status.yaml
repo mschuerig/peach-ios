@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Story 72-1 in-progress: TestFlight upload walk-through.
+# last_updated: 2026-05-26 # Story 72-1 review: build 1 of 1.0.0 on TestFlight.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -576,7 +576,7 @@ development_status:
   # Depends on: Epic 69 (compliance fixes in binary)
   # Work order: 72.1 → 72.2 → 72.3
   epic-72: in-progress
-  72-1-archive-and-upload-first-build-to-testflight: in-progress # claude --resume 08cc8b1e-f430-4813-894d-84e74d4028f7
+  72-1-archive-and-upload-first-build-to-testflight: review
   72-2-configure-testflight-and-distribute-beta: ready-for-dev
   72-3-collect-feedback-and-fix-critical-issues: ready-for-dev
   epic-72-retrospective: optional
