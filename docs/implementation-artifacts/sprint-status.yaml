@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Epic 69 closed (69-3 wont-do, 69-4 done).
+# last_updated: 2026-05-26 # Added Epic 78 (fastlane automation) and Epic 79 (screenshot automation outline).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -654,3 +654,25 @@ development_status:
   77-10-test-isolation-for-shared-registries: done # Deferred from 77.5 review
   77-12-traininglifecyclecoordinator-plugin-style-fit: done # Deferred from 77.6 review; must precede 77.11
   77-11-update-architecture-documentation-for-plugin-style-disciplines: done
+
+  # Epic 78: Push Button Release — fastlane Automation
+  # Depends on: Epic 73 (live iOS listing for `deliver init`), Epic 74 (Developer ID
+  # cert and tap repo established by manual baseline). Local-only execution; no GitHub
+  # Actions. Code signing stays on Xcode automatic signing (fastlane Match out of scope).
+  # Work order: 78.1 → (78.2, 78.3, 78.5 parallel) → 78.4 → 78.6 → 78.7
+  epic-78: backlog
+  78-1-fastlane-bootstrap-and-asc-api-key: backlog
+  78-2-pull-app-store-metadata-via-deliver: backlog
+  78-3-testflight-upload-lane-via-pilot: backlog
+  78-4-app-store-release-lanes-ios-and-macos: backlog
+  78-5-developer-id-notarization-and-github-release-lane: backlog
+  78-6-homebrew-cask-update-lane: backlog
+  78-7-update-architecture-documentation-for-fastlane-pipeline: backlog
+  epic-78-retrospective: optional
+
+  # Epic 79: Picture Perfect — Automated Screenshots (Outline)
+  # Outline only — story acceptance criteria not yet elaborated. Picked up after
+  # Epic 78 is in routine use and the UI has stabilized enough to justify the
+  # snapshot-test investment.
+  epic-79: backlog
+  epic-79-retrospective: optional

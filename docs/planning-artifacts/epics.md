@@ -7884,3 +7884,179 @@ This story runs after 77.2 / 77.3 / 77.4 / 77.5 / 77.6 / 77.7 / 77.8 / 77.9 / 77
 5. **Given** the rewrite of Section 8.7 + ADR-10 establishes the post-77 picture **When** other `arc42.md` sections are checked **Then** the document header version and date are bumped; Section 12 Glossary gains entries for `TrainingDisciplineUI`, `TrainingRecord`, `TrainingDisciplinePayload`, `DisciplineBootstrap`, and `PEACH_RESEARCH` (with `TrainingDisciplineRegistry`'s definition adjusted for the protocol split); Section 4's Solution-Strategy table row and Section 11's "Original architecture document partially outdated" row are touched only if their existing wording is now misleading.
 6. **Given** the documentation updates land together **When** the touched sections are read in sequence **Then** file paths, type names, and protocol members agree across `architecture.md` v0.9, `arc42.md` Section 8.7 + ADR-10, and `epics.md`; pre-77 amendments (v0.5–v0.8) keep their historical text; touched sections contain no legacy claims (e.g., no "Add a `TrainingDiscipline` enum case", no `if activeCategories.contains(.rhythm)` example, no "each discipline's `@Model` is registered in `SchemaV1.models`", no central `V*Migration.swift` references).
 7. **Given** the changes are documentation-only **When** `bin/test.sh && bin/test.sh -p mac` runs **Then** it is green and `bin/build.sh && bin/build.sh -p mac` produces no new warnings; if any code change appears necessary, the story is mis-scoped and the discrepancy is flagged rather than silently fixed.
+
+---
+
+## Epic 78: Push Button Release — fastlane Automation
+
+**Theme:** Every subsequent release of Peach — iOS App Store, Mac App Store, TestFlight beta, and notarized Developer ID build distributed through GitHub Releases and Homebrew — runs from a single fastlane invocation on the developer Mac. App Store Connect paperwork (description, keywords, subtitle, support URL, privacy URL, "What's New" per locale) lives in the repository as text files; releases happen by editing those files, bumping the version, and running a lane.
+
+**Motivation:** v1.0 shipped through Epics 73 (iOS submission) and 74 (macOS distribution) by hand. The five-hour ASC paperwork pass for the iOS listing alone made the cost of further manual releases obvious: every patch release would repeat the same web-UI clicking, every locale would re-introduce copy-paste risk, every Developer ID build would mean re-running `xcrun notarytool` and `gh release create` from memory, and the Homebrew cask would drift further out of sync the longer it stayed manual. fastlane consolidates all of this into versioned, diff-reviewable text files plus reproducible lanes; the App Store Connect API does the talking to Apple. Local-only execution (no GitHub Actions for releases) keeps Developer ID certificates and the ASC API key on Michael's machine and avoids the secret-management overhead of CI-driven release pipelines.
+
+**Approach:** 78.1 installs fastlane via Bundler (for version pinning), creates an App Store Connect API key, and stands up an empty `fastlane/` directory with an `Appfile` and `Fastfile`. 78.2 runs `fastlane deliver init` against the live (post-Epic-73) iOS listing to pull all metadata into `fastlane/metadata/en-US/` and `fastlane/metadata/de-DE/` as text files, commits them, and wires `/app-store-changelog` output to `release_notes.txt`. 78.3 adds a `beta` lane that bumps the build number, archives iOS, and uploads to TestFlight via `pilot`. 78.4 adds `release_ios` and `release_mac` lanes that run `precheck`, archive, upload metadata + binary, and submit for review. 78.5 adds a `notarize_mac` lane that builds the Developer ID archive, runs `xcrun notarytool`, staples, packages as `.dmg`, and creates a GitHub Release with the `.dmg` attached. 78.6 adds an `update_homebrew_cask` lane that edits the cask formula in the tap repo with the new version, URL, and SHA256, then commits and pushes. 78.7 documents the landed pipeline in `architecture.md` and `arc42.md`. Code signing stays on Xcode's automatic signing throughout this epic; fastlane Match is deliberately out of scope (single-developer, single-Mac).
+
+**Work order:** 78.1 → (78.2, 78.3, 78.5 in parallel after 78.1) → 78.4 → 78.6 → 78.7. 78.2 requires Epic 73 to have an approved or in-review iOS listing for `deliver init` to pull from. 78.5 (notarization lane) requires Epic 74's Story 74.2 to have established the Developer ID certificate and a working manual notarization baseline. 78.6 (Homebrew cask lane) requires Epic 74's Story 74.4 to have created the tap repository with an initial cask formula. 78.4 consolidates the metadata-upload + binary-upload + submit flow and benefits from 78.2 and 78.3 being already in place. 78.7 runs last so the documentation describes the landed pipeline.
+
+### Story 78.1: fastlane bootstrap and App Store Connect API key
+
+As a **developer setting up release automation**,
+I want fastlane installed via Bundler, an App Store Connect API key configured, and the `fastlane/` directory in place with an `Appfile` and skeleton `Fastfile`,
+so that subsequent stories have a working foundation to add lanes to and the toolchain version is pinned in the repository.
+
+**Acceptance Criteria:**
+
+1. **Given** the repository root **When** inspected **Then** it contains a `Gemfile` pinning `fastlane` to a specific minor version (e.g., `gem "fastlane", "~> 2.225"`) and a committed `Gemfile.lock`. `bundle exec fastlane --version` runs successfully.
+
+2. **Given** App Store Connect **When** the API key is created **Then** a key with "App Manager" role exists under Users and Access → Integrations → App Store Connect API; the `.p8` private key file, `key_id`, and `issuer_id` are stored locally at a documented path (e.g., `~/.appstoreconnect/peach_api_key.json`) and **not** committed.
+
+3. **Given** the `fastlane/` directory **When** inspected **Then** it contains an `Appfile` with `app_identifier`, `apple_id`, `team_id`, and `itc_team_id` populated for Peach; an empty `Fastfile` with the `default_platform :ios` declaration; and a `.env.default` (or equivalent) referencing the ASC API key path via environment variable.
+
+4. **Given** `.gitignore` **When** inspected **Then** it excludes the ASC API key file and any fastlane-generated session files (`fastlane/report.xml`, `fastlane/Preview.html`, `fastlane/screenshots/.*.png` lock artifacts).
+
+5. **Given** `docs/architecture.md` or a new `docs/release.md` **When** the local setup steps are followed **Then** a fresh checkout on a clean Mac reaches `bundle exec fastlane --version` running successfully in under 15 minutes, with the ASC API key creation being the only manual ASC web-UI step.
+
+6. **Given** `bin/test.sh && bin/test.sh -p mac` **When** run **Then** the suite is green; the fastlane bootstrap is build-system-only and does not affect compiled code.
+
+### Story 78.2: Pull App Store metadata into the repository via `deliver`
+
+As a **developer maintaining App Store listings as code**,
+I want `fastlane/metadata/` populated from the live App Store Connect listing for both English and German, with `release_notes.txt` wired to the `/app-store-changelog` skill output,
+so that future metadata edits happen as diff-reviewable text-file changes and `deliver` pushes them on release.
+
+**Acceptance Criteria:**
+
+1. **Given** Epic 73's iOS listing is approved or in review **When** `bundle exec fastlane deliver init` runs **Then** `fastlane/metadata/en-US/` and `fastlane/metadata/de-DE/` are populated with one text file per ASC field (`description.txt`, `subtitle.txt`, `keywords.txt`, `marketing_url.txt`, `support_url.txt`, `privacy_url.txt`, `promotional_text.txt`, `release_notes.txt`, `name.txt`) plus `fastlane/metadata/copyright.txt`, `primary_category.txt`, `secondary_category.txt`, and the age-rating JSON.
+
+2. **Given** Epic 73's uploaded screenshots **When** moved into `fastlane/screenshots/en-US/` and `fastlane/screenshots/de-DE/` **Then** `deliver` recognises them on a dry run (`bundle exec fastlane deliver --skip_binary_upload --skip_metadata false --force`).
+
+3. **Given** the `/app-store-changelog` skill **When** it generates release notes **Then** its output target is documented as `fastlane/metadata/en-US/release_notes.txt` and `fastlane/metadata/de-DE/release_notes.txt`; the skill is invoked manually before each release and the German translation pipeline (existing `bin/add-localization.swift` or equivalent manual step) is documented.
+
+4. **Given** the populated `fastlane/metadata/` directory **When** committed **Then** the diff shows the live ASC text round-tripping cleanly; trailing whitespace, encoding (UTF-8), and line endings (LF) match what `deliver` emits.
+
+5. **Given** a dry-run upload (`bundle exec fastlane deliver --verify_only` or equivalent) **When** executed **Then** it reports zero metadata changes against ASC, confirming the local files are a faithful copy of the live state.
+
+6. **Given** `bin/test.sh && bin/test.sh -p mac` **When** run **Then** the suite is green; this story is metadata-and-tooling-only and does not touch compiled code.
+
+### Story 78.3: TestFlight upload lane via `pilot`
+
+As a **developer pushing a beta build to TestFlight**,
+I want a `beta` fastlane lane that bumps the build number, archives iOS, and uploads to TestFlight in one command,
+so that beta releases stop requiring manual Xcode archive + Organizer + ASC web-UI steps.
+
+**Acceptance Criteria:**
+
+1. **Given** `fastlane/Fastfile` **When** inspected **Then** it declares a `lane :beta` that runs `increment_build_number` (or `set_info_plist_value` with a derived build number — choice documented), `build_app` with the App Store export method against the iOS scheme, and `upload_to_testflight` with `skip_waiting_for_build_processing: false` and `changelog:` populated from `fastlane/metadata/en-US/release_notes.txt`.
+
+2. **Given** `bundle exec fastlane beta` **When** run end-to-end against a clean working tree **Then** a build appears in TestFlight (status: Processing → Ready to Test) within Apple's normal processing window; the build number in the `.xcodeproj` is bumped and committed (or staged for commit) as part of the run.
+
+3. **Given** internal testers are configured in ASC **When** the lane completes **Then** the build is automatically available to the internal tester group; external tester distribution remains a manual ASC step for now (documented as a deferred enhancement).
+
+4. **Given** the lane fails mid-run (network drop, signing issue, expired API key) **When** re-invoked **Then** it is idempotent: re-running does not produce a duplicate build with the same build number, and the developer can resume from the failure point without manual cleanup of partial state.
+
+5. **Given** `bin/test.sh && bin/test.sh -p mac` **When** run **Then** the suite is green; the `beta` lane changes Fastfile configuration only and does not affect compiled code.
+
+### Story 78.4: App Store release lanes (iOS and macOS)
+
+As a **developer releasing a new version to the App Store**,
+I want `release_ios` and `release_mac` fastlane lanes that run `precheck`, upload the current `fastlane/metadata/` and `fastlane/screenshots/` contents, archive and upload the binary, and submit for review,
+so that an entire App Store release — for either platform — happens by editing release notes, bumping the marketing version, and running one command.
+
+**Acceptance Criteria:**
+
+1. **Given** `fastlane/Fastfile` **When** inspected **Then** it declares a `lane :release_ios` and a `lane :release_mac` that share a common `precheck` step (verifying URLs, copyright, and guideline triggers in `fastlane/metadata/`), an `upload_to_app_store` step (metadata + screenshots + binary), and a `submit_for_review` step with `automatic_release: false` and `submission_information:` populated for the export compliance answer (no encryption beyond exempt categories per Epic 69's compliance work).
+
+2. **Given** `release_ios` **When** run end-to-end **Then** the iOS binary is archived against the App Store export method, uploaded to ASC, the current `fastlane/metadata/` and `fastlane/screenshots/` contents are pushed, and the version is submitted for review. The ASC web UI reflects "Waiting for Review" within 5 minutes of lane completion.
+
+3. **Given** `release_mac` **When** run end-to-end **Then** the macOS binary is archived against the Mac App Store export method, uploaded to ASC, the macOS-specific metadata and screenshots are pushed, and the version is submitted for review independently of the iOS submission.
+
+4. **Given** `precheck` flags an issue (e.g., placeholder URL, capitalized "iPhone" not following Apple's casing, future-dated copyright) **When** the lane runs **Then** it halts before upload and the developer fixes the issue in `fastlane/metadata/` before re-running; precheck rules are configured per Peach's actual usage (English + German, music/education category).
+
+5. **Given** the marketing version (`CFBundleShortVersionString`) is bumped to a new value before the lane runs **When** the lane executes **Then** ASC creates a new version row matching that string; if the version already exists in ASC, the lane fails fast with a clear error rather than silently overwriting.
+
+6. **Given** `bin/test.sh && bin/test.sh -p mac` **When** run **Then** the suite is green; the lanes are Fastfile configuration only and do not affect compiled code.
+
+### Story 78.5: Developer ID notarization and GitHub Release lane
+
+As a **developer publishing a notarized direct-download build**,
+I want a `notarize_mac` fastlane lane that builds the Developer ID archive, notarizes via `xcrun notarytool`, staples the ticket, packages as `.dmg`, and creates a GitHub Release with the `.dmg` attached and the tag pushed,
+so that direct-download releases (the GitHub Releases distribution channel from Epic 74) stop requiring manual `xcrun notarytool submit` and `gh release create` invocations.
+
+**Acceptance Criteria:**
+
+1. **Given** `fastlane/Fastfile` **When** inspected **Then** it declares a `lane :notarize_mac` that runs `build_app` with the Developer ID export method, calls `xcrun notarytool submit --wait` (via `sh` action or fastlane's `notarize` plugin), runs `xcrun stapler staple` on the resulting `.app`, packages as a `.dmg` (using `create-dmg`, `hdiutil`, or equivalent — choice documented), and computes the `.dmg`'s SHA256 for later use by Story 78.6.
+
+2. **Given** the notarized `.dmg` exists at a known output path **When** the lane continues **Then** it tags the current commit (`v{marketing_version}`), pushes the tag, and creates a GitHub Release via `gh release create` (or fastlane's `set_github_release`) with the `.dmg` attached and the release notes body populated from `fastlane/metadata/en-US/release_notes.txt`.
+
+3. **Given** a user **When** they download the `.dmg` from the GitHub Release and open the contained `Peach.app` on a Mac that has never seen Peach before **Then** Gatekeeper allows the app without security warnings (`spctl --assess --type execute` returns "accepted source=Notarized Developer ID").
+
+4. **Given** the lane fails partway (notarization rejected, network drop, tag already exists) **When** re-invoked **Then** it surfaces the failure with actionable error output and does not leave behind a half-stapled `.app` or a partial GitHub Release. Re-running after the cause is fixed completes cleanly.
+
+5. **Given** the lane produces a SHA256 for the `.dmg` **When** the run completes **Then** the SHA256 is exposed via a fastlane lane variable or a written-to-disk artifact (e.g., `fastlane/last_release.json`) that Story 78.6's lane consumes.
+
+6. **Given** `bin/test.sh && bin/test.sh -p mac` **When** run **Then** the suite is green; the lane is Fastfile configuration plus shell tooling and does not affect compiled code.
+
+### Story 78.6: Homebrew cask update lane
+
+As a **developer keeping the Homebrew cask in sync with GitHub Releases**,
+I want an `update_homebrew_cask` fastlane lane that updates the cask formula in the tap repository with the new version, download URL, and SHA256 from Story 78.5's GitHub Release, then commits and pushes,
+so that Homebrew users get the new version on the next `brew update && brew upgrade --cask` without manual edits to the tap repo.
+
+**Acceptance Criteria:**
+
+1. **Given** `fastlane/Fastfile` **When** inspected **Then** it declares a `lane :update_homebrew_cask` that reads the new version, download URL, and SHA256 from the artifact produced by Story 78.5 (e.g., `fastlane/last_release.json`); clones or pulls the tap repository at a configurable local path; edits the cask `.rb` file to update `version`, `url`, and `sha256`; and commits with a message like `Update peach to {version}` and pushes to `origin/main` (or the tap's default branch).
+
+2. **Given** the lane completes **When** a Mac user runs `brew update && brew upgrade --cask peach` **Then** the new version is installed, replacing the prior version cleanly.
+
+3. **Given** an end-to-end release flow **When** the developer runs (effectively) `bundle exec fastlane notarize_mac && bundle exec fastlane update_homebrew_cask` — or a wrapping lane that chains both — **Then** the full Developer ID → GitHub Release → Homebrew cask pipeline completes with no manual editing of the cask formula.
+
+4. **Given** the lane fails partway (push rejected due to upstream changes, sed/regex edit unable to find the expected `version "x.y.z"` pattern, network drop) **When** the failure surfaces **Then** the local tap repo working tree is in a recoverable state (no half-staged edits committed), and the developer can fix the cause and re-run idempotently.
+
+5. **Given** the tap repository path **When** configured **Then** it is referenced via an environment variable (e.g., `PEACH_HOMEBREW_TAP_PATH`) or a `.env` entry that defaults to a sensible location (e.g., `~/Code/homebrew-tap`); the path is not hardcoded into the Fastfile.
+
+6. **Given** `bin/test.sh && bin/test.sh -p mac` **When** run **Then** the suite is green; the lane is Fastfile configuration plus git operations on an external repository and does not affect compiled code.
+
+### Story 78.7: Update architecture documentation for the fastlane pipeline
+
+As a **future contributor (human or agent) reading the architecture docs to understand how Peach ships**,
+I want `docs/planning-artifacts/architecture.md` and `docs/arc42.md` to describe the post-78 release pipeline — fastlane lanes, ASC API key storage, metadata-as-code under `fastlane/metadata/`, the Developer ID + GitHub Release + Homebrew cask chain, the local-only execution model, and the deliberate exclusion of fastlane Match — written for the audience each document serves,
+so that nobody has to reverse-engineer the pipeline from the Fastfile and the "how to ship the next version" instructions are accurate end-to-end.
+
+**Acceptance Criteria:**
+
+1. **Given** `architecture.md` **When** updated **Then** a new `## v0.X Architecture Amendment — Release Automation` section is appended in the existing amendment template (motivation paragraph, `**Supersedes:**` block citing the Epic 74 manual sections it replaces for v1.1+, `**Implementation stories:**` pointer to Epic 78), with subsections covering: ASC API key storage and bootstrap (78.1), metadata-as-code layout (78.2), the four lanes and what each one calls (78.3–78.6), the local-only execution decision and why fastlane Match is excluded, and the post-78 "How to release v1.1" sequence as numbered steps.
+
+2. **Given** the agent audience **When** the amendment is read **Then** every claim names files, lane names, fastlane actions, and external tools by their literal identifiers (e.g., `bundle exec fastlane release_ios`, `upload_to_app_store`, `xcrun notarytool`, `Gemfile.lock`, `fastlane/metadata/en-US/release_notes.txt`); subsection references close with `[Source: docs/implementation-artifacts/78-N-...md]` pointers.
+
+3. **Given** `arc42.md` **When** updated **Then** a new release-pipeline section (placement: end of Section 7 "Deployment View" or a new Section 7.X) describes the pipeline in arc42's prose-first style — release as a developer workflow, the four lanes at a high level, and the rationale for local-only execution — without file inventories or full lane bodies; an ADR (next in sequence after Epic 77's ADR-10) records the local-only-vs-CI decision and the Match-exclusion decision.
+
+4. **Given** `docs/release.md` (or wherever the local setup steps from Story 78.1 live) **When** read end-to-end **Then** it contains the full "How to release v1.1" runbook: bump version in Xcode, generate release notes via `/app-store-changelog`, translate to German, edit `fastlane/metadata/`, run `bundle exec fastlane release_ios`, run `bundle exec fastlane release_mac`, run `bundle exec fastlane notarize_mac && bundle exec fastlane update_homebrew_cask`. Each step's command and expected outcome is stated.
+
+5. **Given** the documentation updates land together **When** the touched sections are read in sequence **Then** lane names, file paths, and tool versions agree across `architecture.md`, `arc42.md`, `docs/release.md`, and `epics.md`; pre-78 manual instructions from Epic 73 / 74 are not deleted but are marked as the one-time-v1.0 path with a forward pointer to Epic 78's automated pipeline.
+
+6. **Given** the changes are documentation-only **When** `bin/test.sh && bin/test.sh -p mac` runs **Then** it is green and `bin/build.sh && bin/build.sh -p mac` produces no new warnings; if any code change appears necessary, the story is mis-scoped and the discrepancy is flagged rather than silently fixed.
+
+---
+
+## Epic 79: Picture Perfect — Automated Screenshots (Outline)
+
+**Status:** Outline only — not yet ready for development. Story acceptance criteria will be elaborated when this epic is picked up; the outline below records the intended scope so the future planning pass has a starting point.
+
+**Theme:** App Store screenshots are generated by UI tests that drive the running app into known states, captured in every supported locale (English, German) and on every required device class (iPhone 6.9", iPad 13", Mac), and uploaded as part of the App Store release lanes from Epic 78. Replacing or refreshing screenshots becomes a one-command operation; UI redesigns no longer leave the App Store listing showing stale visuals.
+
+**Motivation:** Epic 78 deliberately deferred screenshot automation. The fastlane release lanes upload whatever PNGs live under `fastlane/screenshots/` — currently the hand-captured Epic 71 set. As Peach evolves (new disciplines surfaced in the Research builds, Liquid Glass UI refinements, settings layout changes), those screenshots will drift from the live UI. Regenerating them by hand across 2 locales × 3 device classes × ~5 hero screens means re-doing roughly 30 captures per release — exactly the sort of repeated manual work fastlane exists to eliminate.
+
+**Approach (provisional, subject to elaboration):**
+
+- 79.1: Add `SnapshotHelper.swift` to the UI test target and wire the `snapshot` action into the Fastfile. Establish a "hero screenshot" UI test target that boots into the desired screen, freezes adaptive state (e.g., a deterministic fake `PerceptualProfile` and stable progress history), and triggers `snapshot()`.
+- 79.2: Author one snapshot test per hero screen identified in Epic 71: Start Screen, a training screen (PitchDiscrimination is the natural choice), Profile Screen with populated data, Settings Screen. Each test drives the app to its target state and captures the screen.
+- 79.3: Configure multi-locale + multi-device capture: `Snapfile` lists `en-US` + `de-DE` × the App Store-required iPhone, iPad, and Mac device targets. A full run produces the complete screenshot set under `fastlane/screenshots/`.
+- 79.4: Decide whether to apply marketing frames + caption text via `fastlane frameit` (heavier visual investment) or keep raw device captures (lighter, more honest); document the decision and implement the chosen path.
+- 79.5: Wire the snapshot generation into the Epic 78 release lanes — either as an explicit `bundle exec fastlane snapshot` pre-step before `release_ios` / `release_mac`, or as an opt-in lane developers run when the UI has visibly changed since the last release.
+- 79.6: Update architecture / release documentation (the runbook from Story 78.7) to include the screenshot regeneration step and the failure mode if a UI test breaks because the underlying screen changed.
+
+**Open questions for the future planning pass:**
+
+- Where does the deterministic `PerceptualProfile` fixture live? In the UI test target (test-only) or as a debug-build seedable state hook?
+- Does the Research build configuration get its own screenshot set, or are App Store screenshots Debug/Release-only?
+- Frameit yes/no (per 79.4) — answer affects the visual treatment of the listing significantly.
+- Do we want a `compare_screenshots` lane that diffs new captures against committed ones and flags surprising changes for review?
