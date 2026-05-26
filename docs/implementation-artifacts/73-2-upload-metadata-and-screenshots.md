@@ -1,6 +1,6 @@
 # Story 73.2: Upload Metadata and Screenshots
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -18,27 +18,27 @@ so that the listing is complete and ready for review.
 
 ## Tasks / Subtasks
 
-- [ ] Enter App Store description, subtitle, and keywords (AC: #1)
-  - [ ] Copy description text from Story 71.1 output into the Description field
-  - [ ] Copy subtitle (under 30 characters) into the Subtitle field
-  - [ ] Copy keywords (under 100 characters, comma-separated) into the Keywords field
-  - [ ] Optionally fill in Promotional Text (can be changed without a new build)
-  - [ ] If German localization was prepared in Story 71.1, add it via the language selector
-- [ ] Upload screenshots (AC: #2)
-  - [ ] Upload iPhone 6.9" display screenshots (required for the largest iPhone size; smaller sizes auto-scale)
-  - [ ] Upload iPad 13" display screenshots (required for iPad listing)
-  - [ ] Verify each screenshot meets Apple's resolution requirements
-  - [ ] Arrange screenshots in the desired display order
-- [ ] Set support URL (AC: #3)
-  - [ ] Enter the support URL (e.g., GitHub repository issues page or a dedicated support page)
-  - [ ] Verify the URL is publicly accessible
-- [ ] Set privacy policy URL (AC: #4)
-  - [ ] Enter the GitHub Pages privacy policy URL from Story 69.6
-  - [ ] Verify the URL loads correctly and displays the privacy policy
-- [ ] Fill in App Review information (AC: #5)
-  - [ ] Enter review notes from Story 71.2 (explain what the app does, how to test it, note that no login is required)
-  - [ ] Provide contact information: first name, last name, phone number, email
-  - [ ] If the app requires a demo account, note that Peach does not — it is fully offline with no account system
+- [x] Enter App Store description, subtitle, and keywords (AC: #1)
+  - [x] Copy description text from Story 71.1 output into the Description field
+  - [x] Copy subtitle (under 30 characters) into the Subtitle field
+  - [x] Copy keywords (under 100 characters, comma-separated) into the Keywords field
+  - [x] Optionally fill in Promotional Text (can be changed without a new build)
+  - [x] If German localization was prepared in Story 71.1, add it via the language selector
+- [x] Upload screenshots (AC: #2)
+  - [x] Upload iPhone 6.9" display screenshots (required for the largest iPhone size; smaller sizes auto-scale)
+  - [x] Upload iPad 13" display screenshots (required for iPad listing)
+  - [x] Verify each screenshot meets Apple's resolution requirements
+  - [x] Arrange screenshots in the desired display order
+- [x] Set support URL (AC: #3)
+  - [x] Enter the support URL (e.g., GitHub repository issues page or a dedicated support page)
+  - [x] Verify the URL is publicly accessible
+- [x] Set privacy policy URL (AC: #4)
+  - [x] Enter the GitHub Pages privacy policy URL from Story 69.6
+  - [x] Verify the URL loads correctly and displays the privacy policy
+- [x] Fill in App Review information (AC: #5)
+  - [x] Enter review notes from Story 71.2 (explain what the app does, how to test it, note that no login is required)
+  - [x] Provide contact information: first name, last name, phone number, email
+  - [x] If the app requires a demo account, note that Peach does not — it is fully offline with no account system
 
 ## Dev Notes
 
@@ -78,6 +78,9 @@ This is a manual story performed entirely in App Store Connect. No code changes 
 - **Keywords:** 100 characters max, comma-separated. Do not repeat words already in the app name or subtitle — Apple indexes those separately.
 - **Privacy policy URL must be live:** If GitHub Pages deployment from Story 69.6 is not yet active, the URL will 404 and submission will be blocked.
 - **Missing iPad screenshots:** Even if the app is primarily an iPhone app, iPad screenshots are required for Universal apps.
+- **Screenshot upload UI quirk:** In App Store Connect, the upload zone for iPhone screenshots may appear inactive until you first select another display size in the device picker and then switch back. The picker state, not the file itself, gates the drop target.
+- **App Review Notes field is mislabelled:** The "Notes" field under App Review Information shows hints suggesting it is for China-specific legal questions. It is actually the general-purpose notes field that the entire review team reads. Paste the full review notes here regardless of the hint copy.
+- **iOS-only submission trimming:** Story 71.2's review notes include Mac-specific sections ("Platforms" cross-platform paragraph, "Mac menus" enumeration). For an iOS-App-Store submission, omit those sections; they belong in the Mac App Store submission (Story 74.1).
 
 ### Project Structure Notes
 
@@ -93,10 +96,32 @@ No code changes. All content is copied from previously prepared artifacts in Epi
 ## Dev Agent Record
 
 ### Agent Model Used
+
+Claude Opus 4.7 (claude-opus-4-7)
+
 ### Debug Log References
+
+None — manual App Store Connect work, no code or test execution.
+
 ### Completion Notes List
+
+- **AC #1 — Metadata (EN + DE)**: English description (1,369 chars), subtitle (`Ear Training for Musicians`, 26 chars), and keywords (`pitch,intonation,interval,tuning,midi,perception,singer,choir,violin,cello`, 74 chars) copied from `docs/planning-artifacts/appstore-metadata.md` into the App Store Connect version page. German locale added via the language selector with the corresponding German strings (description 1,537 chars; subtitle `Gehörbildung für Musiker:innen`, 30 chars at the limit; keywords 75 chars). Promotional Text left empty (can be edited later without a new build).
+- **AC #2 — Screenshots**: All 7 iPhone 6.9" screenshots (1320×2868) and 7 iPad 13" screenshots (2064×2752) from `marketing/screenshots/` uploaded. Order matches the filenames: start → four training disciplines (Compare Pitch, Match Pitch, Compare Intervals, Match Intervals) → profile → settings.
+- **AC #3 — Support URL**: Set to `https://github.com/mschuerig/peach` (project repo; the issues page is reachable from there).
+- **AC #4 — Privacy Policy URL**: Set to `https://mschuerig.github.io/peach-ios/privacy-policy` — the GitHub Pages site deployed in Story 69.6, verified live before submission.
+- **AC #5 — App Review Information**: Notes from `appstore-metadata.md` pasted, with the iOS-irrelevant sections (`Platforms` cross-platform paragraph, `Mac menus`) intentionally omitted — those sections belong in the Mac App Store submission (Story 74.1). Contact info filled in (Michael Schürig + email + phone). Sign-in not required.
+
+### Field-discovery friction (recorded as pitfalls in this story)
+
+- App Store Connect's screenshot upload control gates the drop zone on the display-size picker state; the iPhone slot only activated after temporarily selecting another size and switching back.
+- The App Review Information "Notes" field carries UI hints that suggest it is China-specific. It is actually the general-purpose review notes field — every reviewer reads it.
+
 ### File List
+
+- `docs/implementation-artifacts/73-2-upload-metadata-and-screenshots.md` (status, tasks, Dev Agent Record, Change Log, three new pitfalls)
+- `docs/implementation-artifacts/sprint-status.yaml` (status: ready-for-dev → in-progress → review; last_updated)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-05-26: All metadata, screenshots, URLs, and App Review Information entered in App Store Connect. iOS-specific subset of review notes uploaded (Mac sections deferred to Story 74.1). Status → review.

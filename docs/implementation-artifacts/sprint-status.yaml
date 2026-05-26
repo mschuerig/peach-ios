@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Story 73-1 done after code review. AC #5 (Universal Purchase) deferred to 74.1 with explicit subtask added.
+# last_updated: 2026-05-26 # Story 73-2 metadata/screenshots/URLs uploaded to App Store Connect; status → review.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -586,7 +586,7 @@ development_status:
   # Work order: 73.1 → 73.2 → 73.3 → 73.4
   epic-73: in-progress
   73-1-complete-app-store-connect-app-record: done
-  73-2-upload-metadata-and-screenshots: ready-for-dev
+  73-2-upload-metadata-and-screenshots: review
   73-3-set-privacy-nutrition-labels: ready-for-dev
   73-4-submit-for-app-store-review: ready-for-dev
   epic-73-retrospective: optional
