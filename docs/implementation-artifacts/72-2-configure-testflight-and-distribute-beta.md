@@ -1,6 +1,6 @@
 # Story 72.2: Configure TestFlight and Distribute Beta
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -17,24 +17,24 @@ so that real users can install and exercise Peach before public release.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Fill in beta test information (AC: #1)
-  - [ ] Navigate to App Store Connect > Apps > Peach > TestFlight
-  - [ ] Enter "What to Test" description (e.g., core training flow, navigation, accessibility)
-  - [ ] Enter feedback email address
-  - [ ] Optionally add a privacy policy URL and marketing URL
-  - [ ] Set beta app description if prompted
-- [ ] Task 2: Configure internal testing group (AC: #2)
-  - [ ] Create an internal testing group (e.g., "Peach Internal Testers")
-  - [ ] Add the processed build to the group
-  - [ ] Add at least one internal tester (must be an App Store Connect user with the Tester role or higher)
-  - [ ] Verify the tester receives an email invitation
-- [ ] Task 3: Verify tester can install and launch (AC: #3)
-  - [ ] Tester opens the TestFlight invitation email or link
-  - [ ] Tester installs the TestFlight app (if not already installed)
-  - [ ] Tester accepts the beta invitation in TestFlight
-  - [ ] Tester installs Peach from TestFlight
-  - [ ] Tester launches Peach and confirms it opens to the start screen
-- [ ] Task 4: Configure external testing (optional) (AC: #4)
+- [x] Task 1: Fill in beta test information (AC: #1)
+  - [x] Navigate to App Store Connect > Apps > Peach Ear Trainer > TestFlight
+  - [x] Enter "What to Test" description on the build (per-build field under "Test Details")
+  - [x] Enter feedback email address (`michael@schuerig.de`) on the app-level "Test Information" page
+  - [x] Optionally add a privacy policy URL and marketing URL (user's discretion at save time)
+  - [x] Set beta app description if prompted (License Agreement left blank → Apple Standard EULA applies)
+- [x] Task 2: Configure internal testing group (AC: #2)
+  - [x] Create an internal testing group "Peach Internal"
+  - [x] Add the processed build (1.0.0 build 1) to the group
+  - [x] Add at least one internal tester (Michael, as account holder, has implicit Tester access)
+  - [x] Verify the tester receives an email invitation (received at `michael@schuerig.de` from `noreply@email.apple.com`)
+- [x] Task 3: Verify tester can install and launch (AC: #3)
+  - [x] Tester opens the TestFlight invitation email or link
+  - [x] Tester installs the TestFlight app (if not already installed)
+  - [x] Tester accepts the beta invitation in TestFlight
+  - [x] Tester installs Peach from TestFlight on iPhone
+  - [x] Tester launches Peach and confirms it opens to the start screen (no crash; look and behavior as expected)
+- [ ] Task 4: Configure external testing (optional) (AC: #4) — **Deferred** per user decision; this story scoped to internal testing only. AC #4 is labelled optional in the story spec and is not blocking. May be addressed in a follow-up story before App Store submission if a wider beta is desired.
   - [ ] Create an external testing group (e.g., "Peach Public Beta")
   - [ ] Add the build to the external group
   - [ ] Submit the build for Beta App Review
@@ -77,10 +77,34 @@ so that real users can install and exercise Peach before public release.
 ## Dev Agent Record
 
 ### Agent Model Used
+
+claude-opus-4-7
+
 ### Debug Log References
+
+None — story is configuration-only (App Store Connect web UI + TestFlight on a device); no code or tests touched.
+
 ### Completion Notes List
+
+- 2026-05-26: Story is non-engineering — all work is in App Store Connect's web UI and on a tester's device. Dev's role this session was to draft the "What to Test" copy, guide the user through each App Store Connect / TestFlight step, and record completion.
+- 2026-05-26: **Test Information page** (app-level, applies to every build): feedback email set to `michael@schuerig.de`; License Agreement left blank, so Apple's Standard EULA applies (correct choice — a free pitch-training app with no accounts and no data leaving the device does not need a custom EULA; "MIT License" as a string would have been invalid, since that field expects the literal EULA text, and MIT is a source-code license not an end-user agreement). Privacy Policy URL / Marketing URL / Beta App Description handled at user's discretion at save time.
+- 2026-05-26: **"What to Test"** text drafted in English and pasted on the build (per-build field under "Test Details", not app-level). Covers: four pitch disciplines, audio behavior, training flow, Settings live-update, Profile chart updates, interruptions (call/lock/app-switch), accessibility (VoiceOver / Dynamic Type / Voice Control), localization (en/de), CSV export-import. Notes limitations: iPhone+iPad only (no macOS in this TestFlight), two timing-based disciplines hidden per Epic 76 build gate. Direct contact line: `michael@schuerig.de`. Important: this field does not carry forward to future builds and must be re-entered for each upload.
+- 2026-05-26: **Internal testing group "Peach Internal"** created. Recommended enabling "automatic distribution" so future builds auto-attach. Tester added: Michael (account holder). Build 1.0.0 (1) distributed.
+- 2026-05-26: **Invitation email** received at `michael@schuerig.de` from `noreply@email.apple.com`. Peach installed via TestFlight on iPhone. App launches without crash; opens to the start screen with the four pitch disciplines visible; look and behavior as expected versus dev builds (icon, "Peach" home-screen name via CFBundleDisplayName per 72.1, no missing assets).
+- 2026-05-26: AC #1, #2, #3 satisfied. AC #4 (external testing / public link) deferred per user decision — explicitly labelled optional in the story spec; revisit before App Store submission if a wider beta is desired.
+
 ### File List
+
+No source files modified. Story is App Store Connect / TestFlight configuration only.
+
+External / non-file artifacts:
+
+- App Store Connect → TestFlight → **Test Information** (app-level) configured: feedback email `michael@schuerig.de`; License Agreement → Apple Standard EULA (field left blank).
+- App Store Connect → TestFlight → **Build 1.0.0 (1)** "Test Details" → **What to Test** populated (English).
+- App Store Connect → TestFlight → **Internal Testing → "Peach Internal"** group created; build 1.0.0 (1) distributed; tester Michael (account holder) added; invitation delivered; install + launch verified on iPhone.
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-05-26: Test Information configured in App Store Connect (feedback email, default Apple EULA); "What to Test" English copy added to build 1.0.0 (1); internal group "Peach Internal" created and tester added.
+- 2026-05-26: Invitation email received; Peach installed via TestFlight on iPhone; launches to start screen as expected. AC #1, #2, #3 satisfied; AC #4 deferred per user decision (external testing out of scope for this story). Status → review.
