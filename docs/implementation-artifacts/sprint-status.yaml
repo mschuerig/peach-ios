@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Story 72-2 done: TestFlight internal beta live; "What to Test" copy archived; external testing deferred.
+# last_updated: 2026-05-26 # Story 72-3 → review: solo-tester reality documented; no critical issues found; build 1.0.0 (1) designated release candidate for Epic 73.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -578,7 +578,7 @@ development_status:
   epic-72: in-progress
   72-1-archive-and-upload-first-build-to-testflight: done
   72-2-configure-testflight-and-distribute-beta: done
-  72-3-collect-feedback-and-fix-critical-issues: ready-for-dev
+  72-3-collect-feedback-and-fix-critical-issues: review
   epic-72-retrospective: optional
 
   # Epic 73: Into the Wild — iOS App Store Submission
