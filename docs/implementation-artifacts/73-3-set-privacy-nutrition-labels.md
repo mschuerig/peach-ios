@@ -1,6 +1,6 @@
 # Story 73.3: Set Privacy Nutrition Labels
 
-Status: review
+Status: done
 
 ## Story
 
@@ -39,7 +39,7 @@ This is a manual story performed entirely in App Store Connect. No code changes 
 2. In the left sidebar under "General", click "App Privacy".
 3. Click "Get Started" or "Edit" on the privacy questionnaire.
 4. Apple will ask: "Do you or your third-party partners collect data from this app?" Select **No**.
-5. Apple may ask about third-party SDKs. Peach uses no third-party SDKs that collect data (AudioKit is audio-only, local processing).
+5. Apple may ask about third-party SDKs. Peach uses no third-party SDKs that collect data (MIDIKit is MIDI input only, local processing).
 6. Save the declaration.
 7. The App Privacy section should now show as complete with a "No Data Collected" summary.
 
@@ -96,3 +96,4 @@ None — manual App Store Connect work, no code or test execution.
 
 - 2026-03-29: Story created
 - 2026-05-26: Privacy nutrition labels published in App Store Connect ("No Data Collected"). Pre-existing draft answered "No, we do not collect data from this app"; explicit Publish action was required to move the declaration out of draft. Status → review.
+- 2026-05-26: Code review verified consistency across privacy manifest, privacy policy (EN + DE), and code (no network/analytics SDKs). Fixed stale `AudioKit` reference in Dev Notes step 5 (the app uses MIDIKit, not AudioKit). Status → done.
