@@ -1,16 +1,32 @@
 {
-  "fill" : "automatic",
+  "fill" : {
+    "linear-gradient" : [
+      "srgb:0.87683,0.59008,0.87843,1.00000",
+      "srgb:0.18267,0.21772,0.38325,1.00000"
+    ],
+    "orientation" : {
+      "start" : {
+        "x" : 0.5,
+        "y" : 0
+      },
+      "stop" : {
+        "x" : 0.5,
+        "y" : 0.7
+      }
+    }
+  },
   "groups" : [
     {
       "layers" : [
         {
+          "blend-mode" : "normal",
           "image-name" : "Image 4.svg",
           "name" : "stem",
           "position" : {
             "scale" : 3.4,
             "translation-in-points" : [
-              -7.5703125,
-              -352.8359375
+              -50.0703125,
+              -373.9921875
             ]
           }
         },
@@ -20,8 +36,8 @@
           "position" : {
             "scale" : 3.4,
             "translation-in-points" : [
-              183.7421875,
-              -347.4609375
+              144.15625,
+              -366.4921875
             ]
           }
         },
@@ -31,8 +47,8 @@
           "position" : {
             "scale" : 3.4,
             "translation-in-points" : [
-              -41.3515625,
-              33.2109375
+              -16.46875,
+              25.5234375
             ]
           }
         },
@@ -42,8 +58,8 @@
           "position" : {
             "scale" : 3.4,
             "translation-in-points" : [
-              -35.734375,
-              92.1328125
+              -10.8515625,
+              84.4453125
             ]
           }
         }
