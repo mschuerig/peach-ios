@@ -7,6 +7,14 @@ Character counts are shown for each field next to the App Store limit.
 
 ## English (en-US)
 
+### Name (limit: 30)
+
+`Peach Ear Trainer`
+
+Length: 17
+
+App Store Connect name; bare "Peach" was taken. Home-screen display name remains "Peach" via `CFBundleDisplayName`.
+
 ### Subtitle (limit: 30)
 
 `Ear Training for Musicians`
@@ -55,11 +63,19 @@ Length: 1,369
 
 ## German (de-DE)
 
+### Name (limit: 30)
+
+`Peach Gehörtrainer`
+
+Length: 18
+
 ### Subtitle (limit: 30)
 
-`Gehörbildung für Musiker`
+`Gehörbildung für Musiker:innen`
 
-Length: 24
+Length: 30
+
+Uses the colon form for gender-inclusive phrasing; 30-char limit precludes the longer "Musiker und Musikerinnen" workaround.
 
 ### Keywords (limit: 100)
 
@@ -159,6 +175,6 @@ Length: 2,713 characters / 441 words
 
 - Character counts are measured against the raw text inside the code fences using Python `len()` on the stripped string. App Store Connect counts grapheme clusters, which match for ASCII and standard German diacritics. Re-check after any edits.
 - Apple expects keywords as a single comma-separated string. Apple does count spaces in the 100-char keyword field, so omitting spaces between terms maximises the term budget.
-- Apple already indexes the app name (`Peach`) and subtitle words for search; those terms are intentionally excluded from the keyword list.
+- Apple already indexes the app name (`Peach Ear Trainer` / `Peach Gehörtrainer`) and subtitle words for search; those terms are intentionally excluded from the keyword list.
 - The German keyword list intentionally uses colloquial instrument names (`geige`, `bratsche`) rather than the formal forms (`violine`, `viola`); App Store search queries in German skew colloquial.
 - App Review Notes are submitted in English only — App Store Connect provides a single notes field per submission, not per locale.
