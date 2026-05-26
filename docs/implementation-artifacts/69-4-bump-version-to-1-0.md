@@ -1,6 +1,6 @@
 # Story 69.4: Bump Version to 1.0
 
-Status: review
+Status: done
 
 ## Story
 

@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Story 73-3 done after code review (Dev Notes AudioKit reference corrected to MIDIKit).
+# last_updated: 2026-05-26 # Epic 69 closed (69-3 wont-do, 69-4 done).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -542,11 +542,11 @@ development_status:
   # All code-level and infrastructure changes for Apple submission compliance.
   # Work order: 69.1–69.5 independent (code), 69.6 independent (infrastructure),
   #             69.7 after 69.6 (needs privacy policy URL)
-  epic-69: in-progress
+  epic-69: done
   69-1-create-privacy-manifest: done
   69-2-add-export-compliance-declaration: done
-  69-3-fix-app-icon-alpha-channel: ready-for-dev
-  69-4-bump-version-to-1-0: review
+  69-3-fix-app-icon-alpha-channel: wont-do # Obsolete: icon migrated to Icon Composer .icon package; no PNG exists at the targeted path
+  69-4-bump-version-to-1-0: done
   69-5-fix-force-unwraps-flagged-in-compliance-report: done
   69-6-write-and-host-privacy-policy-on-github-pages: done
   69-7-add-privacy-policy-and-support-contact-in-app: done

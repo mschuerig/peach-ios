@@ -1,6 +1,6 @@
 # Story 69.3: Fix App Icon Alpha Channel
 
-Status: ready-for-dev
+Status: wont-do
 
 ## Story
 
@@ -52,3 +52,4 @@ Only `Peach/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png` is modifie
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-05-26: Closed as wont-do. Obsolete since the icon was migrated to the iOS 26 Icon Composer `.icon` package at `Peach/Resources/AppIcon.icon/` — no PNG exists at the path this story targets (`Peach/Resources/Assets.xcassets/AppIcon.appiconset/AppIcon.png`). The Icon Composer pipeline handles alpha/opacity correctly for App Store delivery. Confirmed by Apple's processing of the Epic 72 TestFlight build (no icon-related upload rejection) and acceptance of the 73.4 App Store submission.
