@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Story 73-2 done after code review (Support URL in completion notes corrected to canonical mschuerig/peach-ios).
+# last_updated: 2026-05-26 # Story 73-3 complete: privacy nutrition labels published in App Store Connect.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -587,7 +587,7 @@ development_status:
   epic-73: in-progress
   73-1-complete-app-store-connect-app-record: done
   73-2-upload-metadata-and-screenshots: done
-  73-3-set-privacy-nutrition-labels: ready-for-dev
+  73-3-set-privacy-nutrition-labels: review
   73-4-submit-for-app-store-review: ready-for-dev
   epic-73-retrospective: optional
 
