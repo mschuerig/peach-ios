@@ -1,6 +1,6 @@
 # Story 72.3: Collect Feedback and Fix Critical Issues
 
-Status: review
+Status: done
 
 ## Story
 
