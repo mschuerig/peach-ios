@@ -1,6 +1,6 @@
 # Story 72.1: Archive and Upload First Build to TestFlight
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -21,11 +21,11 @@ so that the binary is processed by Apple and ready for beta distribution.
   - [ ] Create new app record: bundle ID `de.schuerig.peach`, app name "Peach", primary language English (U.S.)
   - [ ] Choose an available SKU (e.g., `peach-ios-1`)
   - [ ] Verify Team ID G3PDM6G8F8 is selected
-- [ ] Task 2: Verify Xcode project signing and build settings (AC: #1)
-  - [ ] Confirm bundle identifier is `de.schuerig.peach`
-  - [ ] Confirm "Automatically manage signing" is enabled with Team G3PDM6G8F8
-  - [ ] Confirm all Epic 69 compliance fixes are present in the binary (privacy manifest, export compliance, etc.)
-  - [ ] Set marketing version and build number (e.g., 1.0.0 build 1)
+- [x] Task 2: Verify Xcode project signing and build settings (AC: #1)
+  - [x] Confirm bundle identifier is `de.schuerig.peach`
+  - [x] Confirm "Automatically manage signing" is enabled with Team G3PDM6G8F8
+  - [x] Confirm all Epic 69 compliance fixes are present in the binary (privacy manifest, export compliance, etc.)
+  - [x] Set marketing version and build number (e.g., 1.0.0 build 1)
 - [ ] Task 3: Create the archive (AC: #1)
   - [ ] Select "Any iOS Device (arm64)" as the destination
   - [ ] Product > Archive
@@ -76,10 +76,25 @@ so that the binary is processed by Apple and ready for beta distribution.
 ## Dev Agent Record
 
 ### Agent Model Used
+
+claude-opus-4-7
+
 ### Debug Log References
 ### Completion Notes List
+
+- 2026-05-26: Task 2 verified via static inspection of `Peach.xcodeproj/project.pbxproj`:
+  - `PRODUCT_BUNDLE_IDENTIFIER = de.schuerig.peach` (app target)
+  - `CODE_SIGN_STYLE = Automatic`, `DEVELOPMENT_TEAM = G3PDM6G8F8`
+  - Epic 69 compliance present: `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO`, `Peach/Resources/PrivacyInfo.xcprivacy` declares UserDefaults (CA92.1) + SystemBootTime (35F9.1) API reasons, no tracking
+- 2026-05-26: Bumped `MARKETING_VERSION` from `1.0` to `1.0.0` across all 8 build configurations (Debug/Release × app target/Tests/macOS variants); `CURRENT_PROJECT_VERSION` (build number) remains `1`
+- 2026-05-26: App Store Connect name "Peach" was already taken. Decided on App Store name **"Peach Ear Trainer"** (set via App Store Connect web UI when creating the app record). Added `INFOPLIST_KEY_CFBundleDisplayName = Peach` to all 4 app-target build configurations so the home-screen label under the icon stays "Peach"
+
 ### File List
+
+- `Peach.xcodeproj/project.pbxproj` — `MARKETING_VERSION` bumped to `1.0.0`; `INFOPLIST_KEY_CFBundleDisplayName = Peach` added to all 4 app-target configs
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-05-26: Task 2 complete; MARKETING_VERSION bumped to 1.0.0
+- 2026-05-26: App Store Connect name "Peach" taken; switched to "Peach Ear Trainer" for the App Store, kept "Peach" as home-screen display name via CFBundleDisplayName
