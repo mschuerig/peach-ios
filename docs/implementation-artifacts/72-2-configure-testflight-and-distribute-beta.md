@@ -1,6 +1,6 @@
 # Story 72.2: Configure TestFlight and Distribute Beta
 
-Status: review
+Status: done
 
 ## Story
 
@@ -103,8 +103,37 @@ External / non-file artifacts:
 - App Store Connect → TestFlight → **Build 1.0.0 (1)** "Test Details" → **What to Test** populated (English).
 - App Store Connect → TestFlight → **Internal Testing → "Peach Internal"** group created; build 1.0.0 (1) distributed; tester Michael (account holder) added; invitation delivered; install + launch verified on iPhone.
 
+### "What to Test" Canonical Text (English)
+
+Archived here because the App Store Connect field is per-build and must be re-entered for each upload (1.0.0 build 1 → build 2 → …). Reuse and adapt as the scope of subsequent builds changes (e.g., when macOS joins TestFlight, when timing disciplines are enabled, when the data scope changes).
+
+```
+Peach is an ear training app for pitch perception. This is the first TestFlight build (1.0.0).
+
+Please run a full session in each of the four disciplines on the start screen, and pay attention to:
+
+- Audio: clean playback? Any clicks, dropouts, or stuck notes? Try switching instruments under Settings.
+- Training flow: session start/progress/stop, feedback indicator behavior.
+- Settings: change reference pitch, note range, intervals, tuning system. Confirm the next session reflects the change.
+- Profile: after a session, check that the progress chart and statistics update.
+- Interruptions: take a call, lock the screen, or switch apps mid-session. Audio should stop cleanly; returning should land on the start screen.
+- Accessibility: VoiceOver, larger Dynamic Type, Voice Control.
+- Localization: switch the device language between English and German.
+- Data: export training data as CSV from Settings; optionally re-import.
+
+Known limitations:
+- iPhone and iPad only — macOS distribution is not in this TestFlight.
+- Two timing-based disciplines exist in code but are intentionally disabled for this release.
+
+How to report:
+- TestFlight → Send Beta Feedback for screenshots and notes.
+- Crash reports submitted automatically if you opt in.
+- Direct contact: michael@schuerig.de.
+```
+
 ## Change Log
 
 - 2026-03-29: Story created
 - 2026-05-26: Test Information configured in App Store Connect (feedback email, default Apple EULA); "What to Test" English copy added to build 1.0.0 (1); internal group "Peach Internal" created and tester added.
 - 2026-05-26: Invitation email received; Peach installed via TestFlight on iPhone; launches to start screen as expected. AC #1, #2, #3 satisfied; AC #4 deferred per user decision (external testing out of scope for this story). Status → review.
+- 2026-05-26: Code review (doc/process) complete — no blockers, AC coverage solid, deferred AC #4 legitimate (optional in spec). Archived "What to Test" canonical English text under Dev Agent Record so it can be reused on subsequent builds (per-build field does not carry forward in App Store Connect). Status → done.
