@@ -1,6 +1,6 @@
 # Story 72.1: Archive and Upload First Build to TestFlight
 
-Status: review
+Status: done
 
 ## Story
 
@@ -44,6 +44,10 @@ so that the binary is processed by Apple and ready for beta distribution.
   - [x] Verify no "Missing Compliance" warning (Epic 69's `ITSAppUsesNonExemptEncryption=NO` handled it)
   - [x] If "Missing Compliance" appears, set export compliance information manually (not needed)
 
+### Review Findings
+
+- [x] [Review][Patch] Completion note misdescribes the config matrix [docs/implementation-artifacts/72-1-archive-and-upload-first-build-to-testflight.md, Completion Notes List, 2nd bullet 2026-05-26] — the parenthetical "Debug/Release × app target/Tests/macOS variants" doesn't match the project structure: there are no macOS-specific configs (universal SwiftUI binary, one target). Actual matrix is 4 configs (Debug, Debug Research, Release, Release Research) × 2 targets (app, Tests) = 8. Fixed by replacing the parenthetical with "(Debug/Debug Research/Release/Release Research × app target + Tests target)".
+
 ## Dev Notes
 
 ### Prerequisites
@@ -86,7 +90,7 @@ claude-opus-4-7
   - `PRODUCT_BUNDLE_IDENTIFIER = de.schuerig.peach` (app target)
   - `CODE_SIGN_STYLE = Automatic`, `DEVELOPMENT_TEAM = G3PDM6G8F8`
   - Epic 69 compliance present: `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO`, `Peach/Resources/PrivacyInfo.xcprivacy` declares UserDefaults (CA92.1) + SystemBootTime (35F9.1) API reasons, no tracking
-- 2026-05-26: Bumped `MARKETING_VERSION` from `1.0` to `1.0.0` across all 8 build configurations (Debug/Release × app target/Tests/macOS variants); `CURRENT_PROJECT_VERSION` (build number) remains `1`
+- 2026-05-26: Bumped `MARKETING_VERSION` from `1.0` to `1.0.0` across all 8 build configurations (Debug/Debug Research/Release/Release Research × app target + Tests target); `CURRENT_PROJECT_VERSION` (build number) remains `1`
 - 2026-05-26: App Store Connect name "Peach" was already taken. Decided on App Store name **"Peach Ear Trainer"** (set via App Store Connect web UI when creating the app record). Added `INFOPLIST_KEY_CFBundleDisplayName = Peach` to all 4 app-target build configurations so the home-screen label under the icon stays "Peach"
 - 2026-05-26: App Store Connect record created (iOS platform only; macOS deferred to a later epic). SKU `peach-ios-1`. Bundle ID dropdown surfaced `de.schuerig.peach` correctly (App ID was already registered via automatic signing)
 - 2026-05-26: First archive attempt under `Peach (Debug)` scheme; Validate App rejected with "Upload Symbols Failed — archive did not include a dSYM for Peach.app". Root cause: the project uses one scheme per configuration (`Peach (Debug)`, `Peach (Debug, Research)`, `Peach (Release)`, `Peach (Release, Research)`) and Archive uses the configuration wired into the selected scheme. Debug config has `DEBUG_INFORMATION_FORMAT = dwarf` (no dSYM); Release has `dwarf-with-dsym`. Resolution: re-archive under `Peach (Release)`. No project edits required — the scheme choice was the only issue
@@ -109,3 +113,4 @@ External / non-file artifacts:
 - 2026-05-26: Task 2 complete; MARKETING_VERSION bumped to 1.0.0
 - 2026-05-26: App Store Connect name "Peach" taken; switched to "Peach Ear Trainer" for the App Store, kept "Peach" as home-screen display name via CFBundleDisplayName
 - 2026-05-26: All ACs satisfied; build 1 of 1.0.0 live on TestFlight (internal); story → review
+- 2026-05-26: Code review complete; 1 low-priority patch applied (config-matrix wording in completion note); story → done
