@@ -36,6 +36,7 @@ so that I can discover and install it through Apple's trusted distribution chann
   - [ ] Verify Xcode shows "Upload Successful"
   - [ ] Wait for Apple processing confirmation email
   - [ ] Confirm the build appears under the macOS platform in the existing Peach app record
+  - [ ] Verify Universal Purchase: App Store Connect shows iPhone, iPad, and Mac under a single Peach app record (one listing, not separate per-platform records). If separate, add the macOS platform to the existing iOS record at Distribute time (deferred from story 73.1, AC #5).
 - [ ] Task 4: Upload macOS screenshots and verify metadata (AC: #3)
   - [ ] Navigate to App Store Connect > Apps > Peach > macOS App Store page
   - [ ] Upload macOS screenshots prepared in Story 71.4

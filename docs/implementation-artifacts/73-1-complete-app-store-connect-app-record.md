@@ -1,6 +1,6 @@
 # Story 73.1: Complete App Store Connect App Record
 
-Status: review
+Status: done
 
 ## Story
 

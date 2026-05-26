@@ -69,6 +69,8 @@ Length: 1,369
 
 Length: 18
 
+App Store Connect name (parallel to EN); home-screen display name remains "Peach".
+
 ### Subtitle (limit: 30)
 
 `Gehörbildung für Musiker:innen`
