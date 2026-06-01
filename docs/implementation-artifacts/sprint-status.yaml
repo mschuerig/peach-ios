@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-05-26 # Added Epic 78 (fastlane automation) and Epic 79 (screenshot automation outline).
+# last_updated: 2026-06-01 # Peach 1.0.0 approved and live on the App Store. Story 73-4 done; epic-73 done.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -584,11 +584,11 @@ development_status:
   # Epic 73: Into the Wild — iOS App Store Submission
   # Depends on: Epics 69, 70, 71, 72
   # Work order: 73.1 → 73.2 → 73.3 → 73.4
-  epic-73: in-progress
+  epic-73: done
   73-1-complete-app-store-connect-app-record: done
   73-2-upload-metadata-and-screenshots: done
   73-3-set-privacy-nutrition-labels: done
-  73-4-submit-for-app-store-review: ready-for-dev
+  73-4-submit-for-app-store-review: done # 2026-06-01: Peach 1.0.0 approved and live: apps.apple.com/de/app/peach-gehörtrainer/id6773384465
   epic-73-retrospective: optional
 
   # Epic 74: Desktop Delivery — macOS Distribution

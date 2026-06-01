@@ -1,6 +1,6 @@
 # Story 73.4: Submit for App Store Review
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -16,25 +16,25 @@ so that it can be approved and published on the App Store.
 
 ## Tasks / Subtasks
 
-- [ ] Pre-submission checklist (AC: #1)
-  - [ ] Verify app record is complete (Story 73.1): name, category, age rating, pricing, copyright
-  - [ ] Verify metadata and screenshots are uploaded (Story 73.2): description, subtitle, keywords, screenshots, support URL, privacy policy URL, review notes
-  - [ ] Verify privacy nutrition labels are set (Story 73.3): "No Data Collected"
-  - [ ] Verify a valid build is selected for the version (from Epic 72 TestFlight or a newer upload)
-  - [ ] Confirm all sections in the version page show green checkmarks
-  - [ ] Verify the "Submit for Review" button is enabled
-- [ ] Configure release options (AC: #2)
-  - [ ] Choose release method: "Automatically release this version" or "Manually release this version"
-  - [ ] If manual release is preferred, select that option (allows controlling exactly when the app goes live after approval)
-- [ ] Submit for review (AC: #2)
-  - [ ] Click "Submit for Review"
-  - [ ] Confirm any final declarations (e.g., content rights, advertising identifier usage — select "No" for IDFA)
-  - [ ] Verify the app status changes to "Waiting for Review"
-- [ ] Monitor review progress (AC: #3)
-  - [ ] Check App Store Connect periodically for status changes
-  - [ ] If status changes to "In Review", no action needed — wait for outcome
-  - [ ] If approved: confirm the app is live on the App Store (or release manually if that option was chosen)
-  - [ ] If rejected: document the rejection reason, address the cited issues, upload a new build if needed, and resubmit
+- [x] Pre-submission checklist (AC: #1)
+  - [x] Verify app record is complete (Story 73.1): name, category, age rating, pricing, copyright
+  - [x] Verify metadata and screenshots are uploaded (Story 73.2): description, subtitle, keywords, screenshots, support URL, privacy policy URL, review notes
+  - [x] Verify privacy nutrition labels are set (Story 73.3): "No Data Collected"
+  - [x] Verify a valid build is selected for the version (from Epic 72 TestFlight or a newer upload)
+  - [x] Confirm all sections in the version page show green checkmarks
+  - [x] Verify the "Submit for Review" button is enabled
+- [x] Configure release options (AC: #2)
+  - [x] Choose release method: "Automatically release this version" or "Manually release this version"
+  - [x] If manual release is preferred, select that option (allows controlling exactly when the app goes live after approval)
+- [x] Submit for review (AC: #2)
+  - [x] Click "Submit for Review"
+  - [x] Confirm any final declarations (e.g., content rights, advertising identifier usage — select "No" for IDFA)
+  - [x] Verify the app status changes to "Waiting for Review"
+- [x] Monitor review progress (AC: #3)
+  - [x] Check App Store Connect periodically for status changes
+  - [x] If status changes to "In Review", no action needed — wait for outcome
+  - [x] If approved: confirm the app is live on the App Store (or release manually if that option was chosen)
+  - [x] ~~If rejected~~ — not exercised; Apple approved on first submission
 
 ## Dev Notes
 
@@ -100,10 +100,28 @@ No code changes unless a rejection requires a fix. In that case, the fix would g
 ## Dev Agent Record
 
 ### Agent Model Used
+
+claude-opus-4-7
+
 ### Debug Log References
+
 ### Completion Notes List
+
+- **Submission complete.** Peach 1.0.0 (build 1) submitted to Apple for App Store review on 2026-05-26. App Store Connect status: "Waiting for Review" ("Warten auf Prüfung" in localized UI).
+- **Release method:** Automatic — app will go live on the App Store immediately upon Apple's approval.
+- **Pre-submission verification:** All sections on the version page showed green checkmarks (App Information, Pricing and Availability, App Privacy nutrition labels from 73.3, Version Information with description/keywords/screenshots from 73.2, processed build from Epic 72, App Review Information with reviewer notes from 71.2). "Submit for Review" button was enabled (AC #1).
+- **Final declarations confirmed at submission:** Content Rights — Yes (rights to all content); Advertising Identifier (IDFA) — No. Export Compliance pre-declared via `ITSAppUsesNonExemptEncryption = NO` (Story 69.2), no additional prompt.
+- **No code changes.** Manual story executed entirely in App Store Connect web UI.
+- **AC #3 — approved on first submission.** Apple approved Peach 1.0.0 without rejection. The app is live on the App Store: https://apps.apple.com/de/app/peach-geh%C3%B6rtrainer/id6773384465 (App ID 6773384465, localized title "Peach Gehörtrainer" on the German storefront). Conditional "If rejected" subtask was not exercised.
+- **Epic 73 leftover housekeeping** completed in commit `518e17c0` (closed epic 69: 69-3 wont-do, 69-4 done, epic-69 done).
+
 ### File List
+
+- `docs/implementation-artifacts/73-4-submit-for-app-store-review.md` (status, task checkboxes, completion notes, change log)
+- `docs/implementation-artifacts/sprint-status.yaml` (story status: ready-for-dev → in-progress → review; last_updated)
 
 ## Change Log
 
 - 2026-03-29: Story created
+- 2026-05-26: Submitted Peach 1.0.0 (build 1) to Apple App Store review with automatic release method. App Store Connect status: "Waiting for Review".
+- 2026-06-01: Apple approved on first submission. Peach 1.0.0 is live on the App Store at https://apps.apple.com/de/app/peach-geh%C3%B6rtrainer/id6773384465 (App ID 6773384465). All ACs satisfied. Story closed as done.
