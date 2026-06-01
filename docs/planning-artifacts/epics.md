@@ -8080,9 +8080,17 @@ so that nobody has to reverse-engineer the pipeline from the Fastfile and the "h
 - Loop-boundary treatment for patterns with internal rests (the current 4-sixteenth pattern has no internal rests, so gapless looping is safe; the concern only resurfaces with patterns that do).
 - Instrumenting decision-time distributions by repetition count (informational only, would not change scoring).
 
-**Approach:** 80.1 widens the state machine and `TimingOffsetDetectionSession` to keep the pattern looping gaplessly during a new `playingPatternLoop` state, ending when the user submits an answer or the configured cap is hit. 80.2 introduces the `maxRepetitions` setting end-to-end (settings type, port, @AppStorage key, defaults). 80.3 adds the discipline-contributed Settings UI row per Epic 77's plugin model and the English + German localised strings. 80.4 updates the training-screen visual treatment (cycling `litDotCount`) and the help text. 80.5 updates architecture/arc42 documentation if the state machine change warrants a touch-up.
+**Approach:** 80.0 introduces a `Beat`/`Subdivision` abstraction in the sequencer layer (replacing the four-equal-step `CycleDefinition`) and migrates ContinuousRhythmMatching to it behaviour-preservingly. This unblocks 80.1, which migrates `TimingOffsetDetectionSession` off `RhythmPlayer` and onto `SoundFontStepSequencer`, gaining gapless looped playback and sample-accurate UI tracking; the session adds a `playingPatternLoop` state that ends when the user submits an answer or the configured cap is hit. 80.2 introduces the `maxRepetitions` setting end-to-end. 80.3 adds the discipline-contributed Settings UI row per Epic 77's plugin model and the English + German localised strings. 80.4 updates the training-screen visual treatment (cycling `litDotCount`) and the help text. 80.5 updates architecture/arc42 documentation if the state machine change warrants a touch-up.
 
-**Work order:** 80.1 → 80.2 → 80.3 → 80.4 → 80.5 (strict dependency on 80.1 and 80.2; 80.3 and 80.4 can run in parallel after 80.2; 80.5 last).
+**Work order:** 80.0 → 80.1 → 80.2 → 80.3 → 80.4 → 80.5 (strict dependency on 80.0, 80.1, 80.2; 80.3 and 80.4 can run in parallel after 80.2; 80.5 last).
+
+### Story 80.0: Beat/Subdivision abstraction for step sequencer
+
+As **a developer adding a new rhythm-based discipline**,
+I want the step sequencer to schedule arbitrary nested-subdivision rhythmic figures rather than fixed four-step cycles,
+so that disciplines like Timing Offset Detection (per-subdivision sample offsets) and future tuplet-based disciplines can share the sequencer's gapless looped playback and sample-accurate UI tracking.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: `Beat`/`Subdivision` value types replace `CycleDefinition`/`StepPosition` at the sequencer port and in `SoundFontStepSequencer`; the recursive `.nested(Beat)` case expresses tuplets; ContinuousRhythmMatching migrates its sequencer-facing plumbing while keeping its UI, settings, and statistics behaviourally identical; `BeatTests` exercise the recursive event-emission path including the nested case. Inserted after a music-domain consultation during 80.1 planning; the proper abstraction is cheaper to introduce now than later, and no live users mean no migration concerns.)
 
 ### Story 80.1: Gapless looped pattern playback in TimingOffsetDetectionSession
 

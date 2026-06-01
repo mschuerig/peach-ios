@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-01 # Epic 73 retrospective completed.
+# last_updated: 2026-06-01 # Story 80.0 in-progress (Beat/Subdivision refactor).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -682,8 +682,13 @@ development_status:
   # Source: docs/brainstorming/brainstorming-session-2026-06-01-2050.md
   # Performance Principle codified in docs/project-context.md is the motivating
   # design principle. Inserted before resuming Epic 74 work.
-  # Work order: 80.1 → 80.2 → (80.3, 80.4 parallel) → 80.5
-  epic-80: backlog
+  # Work order: 80.0 → 80.1 → 80.2 → (80.3, 80.4 parallel) → 80.5
+  # 80.0 was inserted after the player-choice evaluation in the 80.1 planning
+  # session concluded that SoundFontStepSequencer is the right vehicle for the
+  # looped playback, but its cycle abstraction is gap-position-only and needs
+  # generalising before TimingOffsetDetection can adopt it.
+  epic-80: in-progress
+  80-0-beat-subdivision-for-step-sequencer: in-progress
   80-1-gapless-looped-pattern-playback: backlog
   80-2-max-repetitions-setting: backlog
   80-3-settings-ui-contribution-and-localization: backlog
