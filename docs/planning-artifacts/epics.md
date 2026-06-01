@@ -8060,3 +8060,66 @@ so that nobody has to reverse-engineer the pipeline from the Fastfile and the "h
 - Does the Research build configuration get its own screenshot set, or are App Store screenshots Debug/Release-only?
 - Frameit yes/no (per 79.4) — answer affects the visual treatment of the listing significantly.
 - Do we want a `compare_screenshots` lane that diffs new captures against committed ones and flags surprising changes for review?
+
+---
+
+## Epic 80: Let the Pulse Settle — Timing Offset Detection Continuous Loop
+
+**Theme:** Replace the one-shot pattern playback in the Timing Offset Detection discipline with a gapless continuous loop that runs until the user submits a direction answer, with a user-configurable maximum-repetition cap. This is the first concrete application of the Performance Principle (now codified in `docs/project-context.md`): the discipline must give listeners enough exposure to form a stable pulse percept before being asked to judge displacement.
+
+**Motivation:** The current implementation plays the 4-sixteenth pattern once (≈600–800 ms at 80–100 BPM), so the tested note at the 3rd-sixteenth position arrives ≈300 ms in. Beat-induction research (London, Patel) puts the pulse-stabilisation window at 2–3 intervals. Listeners are therefore asked to judge displacement against a pulse percept they have not yet formed. The task currently measures working-memory encoding more than offset perception. The brainstorming session of 2026-06-01 (with the Music Domain Expert) confirmed the diagnosis and the shape of the fix; the resulting Performance Principle was added to `project-context.md` as a project-wide design rule.
+
+**Source:** `docs/brainstorming/brainstorming-session-2026-06-01-2050.md`
+
+**Scope:** Behaviour change only inside the existing Timing Offset Detection discipline. The current 4-sixteenth pattern, the adaptive strategy, the perceptual-profile schema and storage, the SwiftData envelope, the CSV contract, and the grid-alignment between trials are all unchanged. Discipline remains build-gated behind `PEACH_RESEARCH` per Epic 76.
+
+**Explicitly out of scope (deferred to story time, possibly a future epic):**
+
+- Additional patterns (non-continuous-subdivision variants and syncopated figures are the interesting space; continuous-subdivision variants are near-equivalent and uninteresting per Adam's analysis).
+- Pattern selection model (user-picks-mix / adaptive / both).
+- Loop-boundary treatment for patterns with internal rests (the current 4-sixteenth pattern has no internal rests, so gapless looping is safe; the concern only resurfaces with patterns that do).
+- Instrumenting decision-time distributions by repetition count (informational only, would not change scoring).
+
+**Approach:** 80.1 widens the state machine and `TimingOffsetDetectionSession` to keep the pattern looping gaplessly during a new `playingPatternLoop` state, ending when the user submits an answer or the configured cap is hit. 80.2 introduces the `maxRepetitions` setting end-to-end (settings type, port, @AppStorage key, defaults). 80.3 adds the discipline-contributed Settings UI row per Epic 77's plugin model and the English + German localised strings. 80.4 updates the training-screen visual treatment (cycling `litDotCount`) and the help text. 80.5 updates architecture/arc42 documentation if the state machine change warrants a touch-up.
+
+**Work order:** 80.1 → 80.2 → 80.3 → 80.4 → 80.5 (strict dependency on 80.1 and 80.2; 80.3 and 80.4 can run in parallel after 80.2; 80.5 last).
+
+### Story 80.1: Gapless looped pattern playback in TimingOffsetDetectionSession
+
+As **a learner training timing offset detection**,
+I want the pattern to keep looping gaplessly until I submit a direction answer,
+so that I have enough exposure to form a stable pulse before I am asked to judge the tested note's displacement.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: state machine gains a looped-playback state that re-enters pattern playback at the loop boundary without audible gap; transition to `awaitingAnswer` is triggered by user action, not by pattern completion; existing grid-aligned next-trial behaviour is preserved.)
+
+### Story 80.2: Max-repetitions setting end-to-end
+
+As **a learner who wants control over the repetition count**,
+I want a "max repetitions" setting for Timing Offset Detection (1 → practically ∞, default high),
+so that I can constrain or release the loop length to match how I want to practise.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: new field on `TimingOffsetDetectionSettings`, new `SettingsKeys` entry, new `UserSettings` / `AppUserSettings` accessor, factory defaults align with the high-default principle. No UI in this story.)
+
+### Story 80.3: Settings UI contribution + localisation
+
+As **a learner adjusting timing-detection settings**,
+I want the max-repetitions control visible in the Settings screen with informal-`du` German strings,
+so that I can change the cap without leaving the app.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: new discipline-contributed Settings row per Epic 77's plugin model, English + German strings via `Localizable.xcstrings`, picker or stepper shape decided at story time, "∞" / "until you decide" label for the high cap.)
+
+### Story 80.4: Training-screen visual treatment for looped playback
+
+As **a learner watching the dots during looped playback**,
+I want the visual indicator to make clear that the pattern is repeating until I answer,
+so that the visual matches the audio loop and I am not confused into thinking the system is stuck.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: `litDotCount` cycles continuously while in looped-playback state; help text in `TimingOffsetDetectionHelp.swift` updated to describe the loop-until-decision model; smoke tests cover the visual cycle.)
+
+### Story 80.5: Documentation touch-up (conditional)
+
+As **a developer reading the architecture documentation**,
+I want the post-80 state machine described accurately,
+so that the documented behaviour and the implemented behaviour agree.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: only if 80.1 introduces a state machine shape worth documenting beyond the source code comment. Otherwise this story is marked `wont-do` at the retrospective.)

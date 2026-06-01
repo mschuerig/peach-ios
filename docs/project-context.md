@@ -237,6 +237,9 @@ Never run only specific test files — always the complete suite. Both platforms
 **The Boy Scout Rule (mandatory):**
 - **Leave the code cleaner than you found it** — if you encounter a failing test, a code smell, a type violation, or any other issue while working on a task, you must either fix it immediately or create a tracked issue (story/spec). "Pre-existing condition" is never an acceptable reason to ignore a problem. Dismissing issues as pre-existing is explicitly forbidden — every problem has an owner, and if you're looking at it, that owner is you
 
+**The Performance Principle (discipline design):**
+- **Disciplines optimize for users to perform their best — never artificial difficulty.** Across all training disciplines, design decisions must favor conditions under which users demonstrate their genuine ability. Do not constrain listening time, repetition counts, or sensory exposure for the sake of test-purity, score comparability, or to make a discipline "feel harder." If a user setting helps them perform better, that is the ability we want to measure and grow. The artificial constraint is the failure mode, not the relaxed one. This principle overrides intuitions imported from psychophysical-test design (single-presentation paradigms, fixed exposure windows, etc.)
+
 **Pre-Existing Findings Catalog (`docs/pre-existing-findings.md`):**
 - The catalog is the single source of truth for all known pre-existing issues. Every finding has a disposition (CLOSED, WONT-FIX, or OPEN) and a unique ID.
 - **During implementation:** if you encounter an issue that is not caused by your current change, check the catalog. If it has an entry, cite the ID and move on. If it has no entry, it is a **new finding** — either fix it inline (Boy Scout Rule) or add it to the catalog with a disposition.

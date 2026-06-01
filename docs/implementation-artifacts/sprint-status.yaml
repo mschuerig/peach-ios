@@ -593,6 +593,7 @@ development_status:
 
   # Epic 74: Desktop Delivery — macOS Distribution
   # Depends on: Epic 69 (compliance code)
+  # Paused 2026-06-01: resume after Epic 80 (Timing Offset Detection loop) closes.
   # Work order: 74.1 independent, 74.2 independent, 74.3 after 74.2,
   #             74.4 after 74.3, 74.5 independent
   epic-74: in-progress
@@ -676,3 +677,16 @@ development_status:
   # snapshot-test investment.
   epic-79: backlog
   epic-79-retrospective: optional
+
+  # Epic 80: Let the Pulse Settle — Timing Offset Detection Continuous Loop
+  # Source: docs/brainstorming/brainstorming-session-2026-06-01-2050.md
+  # Performance Principle codified in docs/project-context.md is the motivating
+  # design principle. Inserted before resuming Epic 74 work.
+  # Work order: 80.1 → 80.2 → (80.3, 80.4 parallel) → 80.5
+  epic-80: backlog
+  80-1-gapless-looped-pattern-playback: backlog
+  80-2-max-repetitions-setting: backlog
+  80-3-settings-ui-contribution-and-localization: backlog
+  80-4-training-screen-visual-treatment: backlog
+  80-5-architecture-documentation-touch-up: backlog
+  epic-80-retrospective: optional
