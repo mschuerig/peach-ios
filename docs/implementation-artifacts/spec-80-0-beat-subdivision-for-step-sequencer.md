@@ -2,7 +2,7 @@
 title: 'Story 80.0: Beat/Subdivision abstraction for step sequencer'
 type: 'refactor'
 created: '2026-06-01'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '62ea94c9'
 context:
   - '{project-root}/docs/implementation-artifacts/epic-80-context.md'
@@ -107,11 +107,22 @@ Files that need only the mechanical Renames cascade (no behavioural change): `Pe
   - `noteOffDelaySamples` clamp moved out of `SoundFontBeatSequencer` and into `Beat.events(...)`, where `subdivisionDuration` is known per-recursion. The sequencer's `samplesPerStep / 4` clamp was leaking the CRM "4 subdivisions" assumption back into the port; the new clamp uses each beat's own subdivision count, so future tuplets (3, 5, 6, …) get the correct headroom automatically. CRM byte-for-byte behaviour preserved.
   - New `extension SampleRate { func samples(for duration: Duration) -> Int64 }` in `Peach/Core/Music/SampleRate.swift` replaces four open-coded `Int64(rate × duration.timeInterval)` sites (`Beat.events`, `SoundFontBeatSequencer.playImmediateNote`, `SoundFontBeatSequencer.buildBatch`, `TimingOffsetDetectionSession.swift`). Truncating semantics match every pre-existing call site exactly.
   - `MockBeatProvider.crmBeats(gapPositions:)` and the `init(gapPositions: [BeatPosition])` convenience init dropped — they leaked CRM-local `BeatPosition` into shared mock infrastructure used by Core/Audio tests. `SoundFontBeatSequencerTests` now builds generic 4-subdivision beats via a local `beat(restAt: Int)` helper; CRM tests build via the canonical `ContinuousRhythmMatchingSession.beat(withGapAt:)`.
-  - `ContinuousRhythmMatchingSession.selectNextGapPosition` inlined into `nextBeat()`; the `enabled.count == 1` special case dropped (`randomElement()` handles it); the duplicate `precondition(!enabled.isEmpty)` dropped (`ContinuousRhythmMatchingSettings.init` already enforces it); `gapPositions.append` moved inside the state guard so stale entries don't accumulate after stop.
+  - `ContinuousRhythmMatchingSession.selectNextGapPosition` inlined into `nextBeat()`; the `enabled.count == 1` special case dropped (`randomElement()` handles it); the duplicate `precondition(!enabled.isEmpty)` dropped (`ContinuousRhythmMatchingSettings.init` already enforces it). The append-only-when-running invariant matches the pre-80.0 behaviour (the old `nextCycle()` also short-circuited before appending); the split-helper version in the initial implementation had regressed this and the refinement restores it.
   - Observation churn at the 120 Hz tracking rate gated on actual change: `SoundFontBeatSequencer.currentBeat` and `ContinuousRhythmMatchingSession.currentBeatPosition` / `currentGapPosition` now only re-publish when their derived index changes.
   - `Beat.events` pre-reserves `subdivisions.count * 2` capacity to match the pre-80.0 allocation profile.
   - Restating-the-code comments deleted across the touched files.
   - Finding I (rename `currentGapPosition` → `gapPositionInCurrentBeat`) was deferred to `docs/implementation-artifacts/deferred-work.md` — pure rename, out of scope for this story.
+- **2026-06-02** — Step-04 review patches (Blind hunter + Edge case hunter + Acceptance auditor):
+  - Acceptance #1 / Boy Scout: `TimingOffsetDetectionSession.buildPattern` now uses `SampleRate.samples(for:)` for the `samplesPerSixteenth` computation (the sibling site was already migrated).
+  - Acceptance #2: stale "step sequencer refill" comment in `SoundFontEngineTests.swift:339` updated to "beat sequencer refill".
+  - Acceptance #3: `ContinuousRhythmMatchingSession.nextBeat()` replaces `randomElement()!` with a fused `guard let` against the captured settings — falls back to `.fourth` if the (precondition-guaranteed-non-empty) set is somehow empty, removing the force-unwrap per project rule.
+  - Acceptance #4: spec change log wording about `gapPositions.append` corrected — the move restores pre-80.0 behaviour rather than tightening it.
+  - Blind #5: `Beat` and `Subdivision` gain `Equatable` (auto-synthesizable) — useful for future testability without imposing identity semantics.
+  - Blind #11: `Beat.init(subdivisions:)` was the auto-synthesized memberwise init; removed as boilerplate.
+  - Blind #2: `Beat.events` doc clarified — the per-recursion clamp prevents within-beat subdivision overlap; inter-beat overlap is the scheduler's concern.
+  - Blind #8: `beatsPerBatch` doc now states the implicit "≤8 events per beat" budget so future denser disciplines know to lower the constant.
+  - Deferred (D1–D6) appended to `docs/implementation-artifacts/deferred-work.md`: concurrency audit, CRM refill state-reset, `SequencerEngine` contract tests, signed-offset bounds, deep-nesting safety, uniform-tempo `refillThreshold` assumption.
+  - Rejected with reasoning (not deferred): integer-division drift (bounded < 1 sample per subdivision; realigns at every beat boundary), NaN/inf defenses (no production path produces NaN Duration), persisted-data migration (raw values 0–3 identical), CRM-vs-sequencer subdivision math drift (both use same `/4` formula), `BeatProvider` "leaked into TOD" claim (TOD uses `RhythmPattern`, not `BeatPosition`), and several premature defenses against future-only scenarios.
 
 ## Design Notes
 
@@ -125,3 +136,71 @@ Files that need only the mechanical Renames cascade (no behavioural change): `Pe
 
 - `bin/test.sh && bin/test.sh -p mac` — full iOS and macOS suites pass before commit.
 - Manual: start a ContinuousRhythmMatching session in Debug — audio, dots, gap behaviour, statistics indistinguishable from before. Confirm TimingOffsetDetection (Research) is unaffected.
+
+## Suggested Review Order
+
+**The new abstraction**
+
+- Single source of truth for `Beat`/`Subdivision`/`BeatProvider` + the pure event compiler. Read first.
+  [`SequencerTypes.swift:5`](../../Peach/Core/Audio/SequencerTypes.swift#L5)
+
+- The port — small enough to be the contract reviewers should hold up against everything else.
+  [`BeatSequencer.swift:1`](../../Peach/Core/Ports/BeatSequencer.swift#L1)
+
+**The sequencer**
+
+- Walks beats, schedules batches, derives `currentBeat`. The Observation-gating in the run loop is the post-review subtlety.
+  [`SoundFontBeatSequencer.swift:84`](../../Peach/Core/Audio/SoundFontBeatSequencer.swift#L84)
+
+- `Beat → events` delegation. Verify the per-recursion `effectiveNoteOff` clamp is the only thing the sequencer relies on for inter-subdivision safety.
+  [`SoundFontBeatSequencer.swift:171`](../../Peach/Core/Audio/SoundFontBeatSequencer.swift#L171)
+
+- New `Duration → samples` helper that replaces four open-coded conversions.
+  [`SampleRate.swift:40`](../../Peach/Core/Music/SampleRate.swift#L40)
+
+**The CRM migration (byte-for-byte equivalence is the headline claim)**
+
+- `BeatProvider` conformance and the discipline-local `BeatPosition`-shaped beat builder. This is where "flat 4-subdivision with rest at gap, accent on first" now lives canonically.
+  [`ContinuousRhythmMatchingSession.swift:220`](../../Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift#L220)
+
+- The CRM-local `BeatPosition` enum — the spec says this is discipline-local; verify the boundary holds.
+  [`BeatPosition.swift:1`](../../Peach/Training/ContinuousRhythmMatching/BeatPosition.swift#L1)
+
+- `handleTap` and `evaluatePlaybackPosition` now compute the 16th-note subdivision locally as `samplesPerBeat / 4`. Verify the math matches the sequencer's emission grid.
+  [`ContinuousRhythmMatchingSession.swift:178`](../../Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift#L178)
+
+- Observation gating on the 120 Hz tracking tick.
+  [`ContinuousRhythmMatchingSession.swift:247`](../../Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift#L247)
+
+**App wiring**
+
+- Type/name updates only; verify no behavioural change.
+  [`PeachApp.swift:34`](../../Peach/App/PeachApp.swift#L34)
+
+- Environment key, stub, and preview wiring.
+  [`EnvironmentKeys.swift:10`](../../Peach/App/EnvironmentKeys.swift#L10)
+
+- `PreviewDefaults.StubBeatSequencer` mirrors the port surface.
+  [`PreviewDefaults.swift:72`](../../Peach/App/PreviewDefaults.swift#L72)
+
+**Tests (verify what's covered and what's deferred)**
+
+- `Beat.events` direct unit tests — flat, rest, signed offsets, nested, note-off clamp. The recursive `.nested(Beat)` path is exercised even though no production discipline uses it yet (spec requirement).
+  [`BeatTests.swift:1`](../../PeachTests/Core/Audio/BeatTests.swift#L1)
+
+- Sequencer tests — generic `beat(restAt:)` helper avoids leaking CRM's `BeatPosition` into Core/Audio tests.
+  [`SoundFontBeatSequencerTests.swift:22`](../../PeachTests/Core/Audio/SoundFontBeatSequencerTests.swift#L22)
+
+- CRM session tests, including the `nextBeat after stop` regression-pin.
+  [`ContinuousRhythmMatchingSessionTests.swift:212`](../../PeachTests/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingSessionTests.swift#L212)
+
+- Mocks — `MockBeatProvider` no longer takes `BeatPosition` (review-driven; was leaking CRM-local types into shared mock infra).
+  [`MockBeatProvider.swift:1`](../../PeachTests/Mocks/MockBeatProvider.swift#L1)
+
+**Spec change log + deferred work**
+
+- Full audit trail of every deviation from the original spec listing, including the post-review patches.
+  [`spec-80-0-beat-subdivision-for-step-sequencer.md:104`](./spec-80-0-beat-subdivision-for-step-sequencer.md#L104)
+
+- Six review-surfaced items appended for later focused attention (concurrency audit, refill state-reset, contract tests, signed-offset bounds, deep-nesting safety, tempo-change assumption).
+  [`deferred-work.md:19`](./deferred-work.md#L19)

@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-01 # Story 80.0 in-progress (Beat/Subdivision refactor).
+# last_updated: 2026-06-02 # Story 80.0 done (Beat/Subdivision refactor for step sequencer).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -688,7 +688,7 @@ development_status:
   # looped playback, but its cycle abstraction is gap-position-only and needs
   # generalising before TimingOffsetDetection can adopt it.
   epic-80: in-progress
-  80-0-beat-subdivision-for-step-sequencer: in-progress
+  80-0-beat-subdivision-for-step-sequencer: done
   80-1-gapless-looped-pattern-playback: backlog
   80-2-max-repetitions-setting: backlog
   80-3-settings-ui-contribution-and-localization: backlog

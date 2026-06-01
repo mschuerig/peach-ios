@@ -30,7 +30,10 @@ final class SoundFontBeatSequencer: BeatSequencer {
     private nonisolated static let noteOffDuration: Duration = .milliseconds(50)
 
     /// Number of beats to schedule in each batch. At 60 BPM each beat is 1 second,
-    /// so 500 beats ≈ 8+ minutes of audio — well within the engine's 4096-event buffer.
+    /// so 500 beats ≈ 8+ minutes of audio. The engine's 4096-event buffer accommodates
+    /// up to ~8 events per beat at this batch size, which fits every shipping
+    /// discipline (CRM = 6 events/beat, TOD = 8 events/beat). Disciplines emitting
+    /// denser beats must lower this constant.
     private nonisolated static let beatsPerBatch = 500
 
     /// Polling interval for sample-position-driven UI tracking (~120 Hz).

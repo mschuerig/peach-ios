@@ -6,15 +6,11 @@ import Foundation
 ///
 /// Subdivisions are spaced uniformly across the beat's duration; unequal rhythms
 /// (dotted, swing, etc.) are expressed by nesting beats and inserting rests.
-struct Beat: Sendable {
+struct Beat: Sendable, Equatable {
     let subdivisions: [Subdivision]
-
-    init(subdivisions: [Subdivision]) {
-        self.subdivisions = subdivisions
-    }
 }
 
-enum Subdivision: Sendable {
+enum Subdivision: Sendable, Equatable {
     case rest
     case note(velocity: MIDIVelocity, offset: Duration)
     case nested(Beat)
@@ -51,8 +47,10 @@ extension Beat {
     /// off any actor.
     ///
     /// `noteOffDelaySamples` is a *request*: it is clamped per-recursion to
-    /// `subdivisionDuration - 1` so consecutive subdivisions never overlap,
-    /// regardless of the caller's chosen default or the beat's nesting depth.
+    /// `subdivisionDuration - 1` so adjacent subdivisions within the same beat
+    /// cannot overlap. Inter-beat overlap (the last subdivision's note-off
+    /// spilling into the next beat's first subdivision) is the scheduler's
+    /// concern, not this function's.
     func events(
         beatOffset: Int64,
         beatDuration: Int64,

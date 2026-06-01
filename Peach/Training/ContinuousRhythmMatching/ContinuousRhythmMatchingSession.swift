@@ -220,10 +220,11 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     // MARK: - BeatProvider Protocol
 
     func nextBeat() -> Beat {
-        guard state == .running, let settings else {
+        guard state == .running,
+              let settings,
+              let gapPosition = settings.enabledGapPositions.randomElement() else {
             return Self.beat(withGapAt: .fourth)
         }
-        let gapPosition = settings.enabledGapPositions.randomElement()!
         gapPositions.append(gapPosition)
         return Self.beat(withGapAt: gapPosition)
     }

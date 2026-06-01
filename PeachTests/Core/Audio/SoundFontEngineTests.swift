@@ -336,7 +336,7 @@ struct SoundFontEngineTests {
         }
         engine.scheduleEvents(firstBatch)
 
-        // Immediately replace with a new schedule (simulates step sequencer refill)
+        // Immediately replace with a new schedule (simulates beat sequencer refill)
         let secondBatch = (0..<20).map { i in
             ScheduledMIDIEvent(
                 sampleOffset: Int64(i * 256),

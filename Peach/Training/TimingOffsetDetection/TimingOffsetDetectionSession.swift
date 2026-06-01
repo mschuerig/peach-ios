@@ -386,7 +386,7 @@ final class TimingOffsetDetectionSession: TrainingSession {
 
     private func buildPattern(for trial: TimingOffsetDetectionTrial, settings: TimingOffsetDetectionSettings) -> RhythmPattern {
         let sixteenthDuration = settings.tempo.sixteenthNoteDuration
-        let samplesPerSixteenth = Int64(sampleRate.rawValue * sixteenthDuration.timeInterval)
+        let samplesPerSixteenth = sampleRate.samples(for: sixteenthDuration)
 
         let clickNote = MIDINote(76)
         let offsetSamples = sampleRate.samples(for: trial.offset.duration)
