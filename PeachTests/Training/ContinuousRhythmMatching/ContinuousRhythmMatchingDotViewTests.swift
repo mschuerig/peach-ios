@@ -23,15 +23,15 @@ struct ContinuousRhythmMatchingDotViewTests {
     @Test("non-active non-gap dot has low opacity")
     func nonActiveNonGapDotOpacity() async {
         let opacity = ContinuousRhythmMatchingDotView.dotOpacity(
-            stepIndex: 2, activeStep: .first, gapPosition: .fourth
+            index: 2, activeBeatPosition: .first, gapPosition: .fourth
         )
         #expect(opacity == 0.2)
     }
 
-    @Test("active step dot has full opacity")
-    func activeStepFullOpacity() async {
+    @Test("active position dot has full opacity")
+    func activePositionFullOpacity() async {
         let opacity = ContinuousRhythmMatchingDotView.dotOpacity(
-            stepIndex: 0, activeStep: .first, gapPosition: .fourth
+            index: 0, activeBeatPosition: .first, gapPosition: .fourth
         )
         #expect(opacity == 1.0)
     }
@@ -39,7 +39,7 @@ struct ContinuousRhythmMatchingDotViewTests {
     @Test("gap dot that is also active has full opacity")
     func gapActiveFullOpacity() async {
         let opacity = ContinuousRhythmMatchingDotView.dotOpacity(
-            stepIndex: 1, activeStep: .second, gapPosition: .second
+            index: 1, activeBeatPosition: .second, gapPosition: .second
         )
         #expect(opacity == 1.0)
     }
@@ -47,32 +47,32 @@ struct ContinuousRhythmMatchingDotViewTests {
     @Test("non-active gap dot has low opacity")
     func nonActiveGapDotOpacity() async {
         let opacity = ContinuousRhythmMatchingDotView.dotOpacity(
-            stepIndex: 3, activeStep: .first, gapPosition: .fourth
+            index: 3, activeBeatPosition: .first, gapPosition: .fourth
         )
         #expect(opacity == 0.2)
     }
 
     @Test("gap dot is rendered as outline")
     func gapDotIsOutline() async {
-        let isGap = ContinuousRhythmMatchingDotView.isGapDot(stepIndex: 1, gapPosition: .second)
+        let isGap = ContinuousRhythmMatchingDotView.isGapDot(index: 1, gapPosition: .second)
         #expect(isGap == true)
     }
 
     @Test("non-gap dot is not outline")
     func nonGapDotIsNotOutline() async {
-        let isGap = ContinuousRhythmMatchingDotView.isGapDot(stepIndex: 0, gapPosition: .second)
+        let isGap = ContinuousRhythmMatchingDotView.isGapDot(index: 0, gapPosition: .second)
         #expect(isGap == false)
     }
 
     @Test("beat-1 dot uses larger diameter")
     func beatOneDotDiameter() async {
-        let diameter = ContinuousRhythmMatchingDotView.diameter(forStepIndex: 0)
+        let diameter = ContinuousRhythmMatchingDotView.diameter(forIndex: 0)
         #expect(diameter == ContinuousRhythmMatchingDotView.beatOneDotDiameter)
     }
 
     @Test("non-beat-1 dot uses standard diameter")
     func nonBeatOneDotDiameter() async {
-        let diameter = ContinuousRhythmMatchingDotView.diameter(forStepIndex: 2)
+        let diameter = ContinuousRhythmMatchingDotView.diameter(forIndex: 2)
         #expect(diameter == ContinuousRhythmMatchingDotView.dotDiameter)
     }
 

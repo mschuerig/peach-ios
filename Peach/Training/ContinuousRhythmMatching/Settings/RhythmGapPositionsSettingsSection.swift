@@ -7,7 +7,7 @@ struct RhythmGapPositionsSettingsSection: View {
     @AppStorage(ContinuousRhythmMatchingSettingsKeys.enabledGapPositions)
     private var enabledGapPositionsEncoded: String = GapPositionEncoding.encode(ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions)
 
-    @State private var enabledGapPositions: Set<StepPosition> = []
+    @State private var enabledGapPositions: Set<BeatPosition> = []
 
     var body: some View {
         Section {

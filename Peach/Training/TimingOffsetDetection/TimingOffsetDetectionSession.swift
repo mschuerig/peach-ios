@@ -389,12 +389,12 @@ final class TimingOffsetDetectionSession: TrainingSession {
         let samplesPerSixteenth = Int64(sampleRate.rawValue * sixteenthDuration.timeInterval)
 
         let clickNote = MIDINote(76)
-        let offsetSamples = Int64(sampleRate.rawValue * trial.offset.duration.timeInterval)
+        let offsetSamples = sampleRate.samples(for: trial.offset.duration)
 
         let events = (0..<Self.patternNoteCount).map { i in
             let base = Int64(i) * samplesPerSixteenth
             let offset = (i == Self.testedNoteIndex) ? offsetSamples : 0
-            let velocity = (i == 0) ? StepVelocity.accent : StepVelocity.normal
+            let velocity = (i == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
             return RhythmPattern.Event(
                 sampleOffset: base + offset,
                 midiNote: clickNote,

@@ -7,7 +7,7 @@ extension EnvironmentValues {
     @Entry var activeSession: (any TrainingSession)? = nil
     @Entry var perceptualProfile = PerceptualProfile()
     @Entry var rhythmPlayer: (any RhythmPlayer)? = nil
-    @Entry var stepSequencer: (any StepSequencer)? = nil
+    @Entry var beatSequencer: (any BeatSequencer)? = nil
     @Entry var midiInput: (any MIDIInput)? = nil
     @Entry var audioSampleRate: SampleRate?
 }

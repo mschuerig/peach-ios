@@ -502,7 +502,7 @@ struct TrainingLifecycleCoordinatorTests {
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
         let crmSession = ContinuousRhythmMatchingSession(
-            stepSequencer: MockStepSequencer(),
+            beatSequencer: MockBeatSequencer(),
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
         let registry = TrainingLifecycleRegistry { builder in

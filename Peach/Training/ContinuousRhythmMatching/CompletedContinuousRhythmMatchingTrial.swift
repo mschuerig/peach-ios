@@ -1,7 +1,7 @@
 import Foundation
 
 struct GapResult: Sendable {
-    let position: StepPosition
+    let position: BeatPosition
     let offset: TimingOffset
 }
 

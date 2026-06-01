@@ -31,7 +31,7 @@ struct PeachApp: App {
     @State private var transferService: TrainingDataTransferService
     @State private var notePlayer: any NotePlayer
     @State private var rhythmPlayer: any RhythmPlayer
-    @State private var stepSequencer: SoundFontStepSequencer
+    @State private var beatSequencer: SoundFontBeatSequencer
     @State private var midiAdapter: MIDIKitAdapter?
     @State private var activeSession: (any TrainingSession)?
     @State private var trainingLifecycle: TrainingLifecycleCoordinator
@@ -62,7 +62,7 @@ struct PeachApp: App {
             let audio = try Self.setupPlayers(engine: engine, library: library, userSettings: userSettings)
             _notePlayer = State(wrappedValue: audio.notePlayer)
             _rhythmPlayer = State(wrappedValue: audio.rhythmPlayer)
-            _stepSequencer = State(wrappedValue: audio.stepSequencer)
+            _beatSequencer = State(wrappedValue: audio.beatSequencer)
 
             let (profile, progressTimeline) = try Self.setupProfile(dataStore: dataStore)
             _profile = State(wrappedValue: profile)
@@ -74,7 +74,7 @@ struct PeachApp: App {
             let sessions = Self.createAllSessions(
                 notePlayer: audio.notePlayer,
                 rhythmPlayer: audio.rhythmPlayer,
-                stepSequencer: audio.stepSequencer,
+                beatSequencer: audio.beatSequencer,
                 sampleRate: engine.sampleRate,
                 profile: profile,
                 dataStore: dataStore
@@ -121,7 +121,7 @@ struct PeachApp: App {
                 .environment(\.settingsCoordinator, settingsCoordinator)
                 .environment(\.trainingLifecycle, trainingLifecycle)
                 .environment(\.rhythmPlayer, rhythmPlayer)
-                .environment(\.stepSequencer, stepSequencer)
+                .environment(\.beatSequencer, beatSequencer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.midiInput, midiAdapter)
                 .modelContainer(modelContainer)
@@ -291,7 +291,7 @@ struct PeachApp: App {
         engine: SoundFontEngine,
         library: SoundFontLibrary,
         userSettings: any UserSettings
-    ) throws -> (notePlayer: any NotePlayer, rhythmPlayer: any RhythmPlayer, stepSequencer: SoundFontStepSequencer) {
+    ) throws -> (notePlayer: any NotePlayer, rhythmPlayer: any RhythmPlayer, beatSequencer: SoundFontBeatSequencer) {
         let preset = library.resolve(userSettings.soundSource)
         let notePlayer: any NotePlayer = SoundFontPlayer(
             engine: engine,
@@ -311,13 +311,13 @@ struct PeachApp: App {
             fadeOutDuration: .zero
         )
 
-        let stepSequencer = SoundFontStepSequencer(
+        let beatSequencer = SoundFontBeatSequencer(
             engine: engine,
             preset: percussionPreset,
             channel: percussionChannel
         )
 
-        return (notePlayer, rhythmPlayer, stepSequencer)
+        return (notePlayer, rhythmPlayer, beatSequencer)
     }
 
     // MARK: - Fade-Out Duration
@@ -374,7 +374,7 @@ struct PeachApp: App {
     private static func createAllSessions(
         notePlayer: any NotePlayer,
         rhythmPlayer: any RhythmPlayer,
-        stepSequencer: SoundFontStepSequencer,
+        beatSequencer: SoundFontBeatSequencer,
         sampleRate: SampleRate,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
@@ -412,7 +412,7 @@ struct PeachApp: App {
         )
 
         let crmSession = createContinuousRhythmMatchingSession(
-            stepSequencer: stepSequencer,
+            beatSequencer: beatSequencer,
             profile: profile,
             dataStore: dataStore,
             midiInput: midiAdapter
@@ -463,7 +463,7 @@ struct PeachApp: App {
     }
 
     private static func createContinuousRhythmMatchingSession(
-        stepSequencer: StepSequencer,
+        beatSequencer: BeatSequencer,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore,
         midiInput: (any MIDIInput)?
@@ -472,7 +472,7 @@ struct PeachApp: App {
         let storeAdapter = ContinuousRhythmMatchingStoreAdapter(store: dataStore)
         let observers: [ContinuousRhythmMatchingObserver] = [storeAdapter, profileAdapter]
         return ContinuousRhythmMatchingSession(
-            stepSequencer: stepSequencer,
+            beatSequencer: beatSequencer,
             observers: observers,
             midiInput: midiInput,
             audioInterruptionObserver: makeAudioInterruptionObserver(),

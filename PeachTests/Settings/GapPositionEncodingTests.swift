@@ -7,28 +7,28 @@ struct GapPositionEncodingTests {
 
     @Test("encodes all four positions as sorted comma-separated string")
     func encodesAllPositions() async {
-        let positions: Set<StepPosition> = [.first, .second, .third, .fourth]
+        let positions: Set<BeatPosition> = [.first, .second, .third, .fourth]
         let encoded = GapPositionEncoding.encode(positions)
         #expect(encoded == "0,1,2,3")
     }
 
     @Test("encodes subset of positions")
     func encodesSubset() async {
-        let positions: Set<StepPosition> = [.first, .third]
+        let positions: Set<BeatPosition> = [.first, .third]
         let encoded = GapPositionEncoding.encode(positions)
         #expect(encoded == "0,2")
     }
 
     @Test("encodes single position")
     func encodesSingle() async {
-        let positions: Set<StepPosition> = [.fourth]
+        let positions: Set<BeatPosition> = [.fourth]
         let encoded = GapPositionEncoding.encode(positions)
         #expect(encoded == "3")
     }
 
     @Test("encodes empty set as empty string")
     func encodesEmpty() async {
-        let positions: Set<StepPosition> = []
+        let positions: Set<BeatPosition> = []
         let encoded = GapPositionEncoding.encode(positions)
         #expect(encoded == "")
     }
@@ -36,7 +36,7 @@ struct GapPositionEncodingTests {
     @Test("decodes comma-separated string to positions")
     func decodesString() async {
         let decoded = GapPositionEncoding.decode("0,1,2,3")
-        #expect(decoded == Set(StepPosition.allCases))
+        #expect(decoded == Set(BeatPosition.allCases))
     }
 
     @Test("decodes subset string")
@@ -66,13 +66,13 @@ struct GapPositionEncodingTests {
     @Test("decodeWithDefault returns all positions for empty string")
     func decodeWithDefaultEmpty() async {
         let result = GapPositionEncoding.decodeWithDefault("")
-        #expect(result == Set(StepPosition.allCases))
+        #expect(result == Set(BeatPosition.allCases))
     }
 
     @Test("decodeWithDefault returns all positions for invalid string")
     func decodeWithDefaultInvalid() async {
         let result = GapPositionEncoding.decodeWithDefault("abc,xyz")
-        #expect(result == Set(StepPosition.allCases))
+        #expect(result == Set(BeatPosition.allCases))
     }
 
     @Test("decodeWithDefault returns decoded positions for valid string")
@@ -82,12 +82,12 @@ struct GapPositionEncodingTests {
     }
 
     @Test("round-trip preserves all positions", arguments: [
-        Set<StepPosition>([.first]),
-        Set<StepPosition>([.second, .fourth]),
-        Set<StepPosition>([.first, .second, .third]),
-        Set(StepPosition.allCases),
+        Set<BeatPosition>([.first]),
+        Set<BeatPosition>([.second, .fourth]),
+        Set<BeatPosition>([.first, .second, .third]),
+        Set(BeatPosition.allCases),
     ])
-    func roundTrip(positions: Set<StepPosition>) async {
+    func roundTrip(positions: Set<BeatPosition>) async {
         let encoded = GapPositionEncoding.encode(positions)
         let decoded = GapPositionEncoding.decode(encoded)
         #expect(decoded == positions)

@@ -34,3 +34,12 @@ extension SampleRate: ExpressibleByIntegerLiteral {
         self.init(Double(value))
     }
 }
+
+// MARK: - Duration → samples
+
+extension SampleRate {
+    /// Converts a `Duration` to a whole number of samples by truncation.
+    func samples(for duration: Duration) -> Int64 {
+        Int64(rawValue * duration.timeInterval)
+    }
+}

@@ -133,9 +133,9 @@ struct TimingOffsetDetectionSessionTests {
         }
 
         // First event uses accent velocity, others use normal
-        #expect(events[0].velocity == StepVelocity.accent)
+        #expect(events[0].velocity == RhythmVelocity.accent)
         for i in 1..<events.count {
-            #expect(events[i].velocity == StepVelocity.normal)
+            #expect(events[i].velocity == RhythmVelocity.normal)
         }
     }
 

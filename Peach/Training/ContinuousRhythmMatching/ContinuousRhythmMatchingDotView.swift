@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct ContinuousRhythmMatchingDotView: View {
-    let activeStep: StepPosition?
-    let gapPosition: StepPosition?
+    let activeBeatPosition: BeatPosition?
+    let gapPosition: BeatPosition?
 
     var body: some View {
         HStack(spacing: Self.dotSpacing) {
@@ -15,9 +15,9 @@ struct ContinuousRhythmMatchingDotView: View {
 
     @ViewBuilder
     private func dotView(for index: Int) -> some View {
-        let diameter = Self.diameter(forStepIndex: index)
-        let isGap = Self.isGapDot(stepIndex: index, gapPosition: gapPosition)
-        let opacity = Self.dotOpacity(stepIndex: index, activeStep: activeStep, gapPosition: gapPosition)
+        let diameter = Self.diameter(forIndex: index)
+        let isGap = Self.isGapDot(index: index, gapPosition: gapPosition)
+        let opacity = Self.dotOpacity(index: index, activeBeatPosition: activeBeatPosition, gapPosition: gapPosition)
 
         if isGap {
             Circle()
@@ -41,18 +41,18 @@ struct ContinuousRhythmMatchingDotView: View {
 
     // MARK: - Static Logic (extracted for testability)
 
-    static func diameter(forStepIndex index: Int) -> CGFloat {
+    static func diameter(forIndex index: Int) -> CGFloat {
         index == 0 ? beatOneDotDiameter : dotDiameter
     }
 
-    static func isGapDot(stepIndex: Int, gapPosition: StepPosition?) -> Bool {
+    static func isGapDot(index: Int, gapPosition: BeatPosition?) -> Bool {
         guard let gapPosition else { return false }
-        return stepIndex == gapPosition.rawValue
+        return index == gapPosition.rawValue
     }
 
-    static func dotOpacity(stepIndex: Int, activeStep: StepPosition?, gapPosition: StepPosition?) -> Double {
-        guard let activeStep else { return 0.2 }
-        if stepIndex == activeStep.rawValue {
+    static func dotOpacity(index: Int, activeBeatPosition: BeatPosition?, gapPosition: BeatPosition?) -> Double {
+        guard let activeBeatPosition else { return 0.2 }
+        if index == activeBeatPosition.rawValue {
             return 1.0
         }
         return 0.2
@@ -62,9 +62,9 @@ struct ContinuousRhythmMatchingDotView: View {
 
 // MARK: - Previews
 
-#Preview("Gap at position 2, step 1 active") {
+#Preview("Gap at position 2, position 1 active") {
     ContinuousRhythmMatchingDotView(
-        activeStep: .first,
+        activeBeatPosition: .first,
         gapPosition: .second
     )
     .padding()
@@ -72,15 +72,15 @@ struct ContinuousRhythmMatchingDotView: View {
 
 #Preview("Gap dot active") {
     ContinuousRhythmMatchingDotView(
-        activeStep: .second,
+        activeBeatPosition: .second,
         gapPosition: .second
     )
     .padding()
 }
 
-#Preview("No active step") {
+#Preview("No active position") {
     ContinuousRhythmMatchingDotView(
-        activeStep: nil,
+        activeBeatPosition: nil,
         gapPosition: .fourth
     )
     .padding()

@@ -38,7 +38,7 @@ final class StubUserSettings: UserSettings {
 }
 
 final class StubContinuousRhythmMatchingUserSettings: ContinuousRhythmMatchingUserSettings {
-    let enabledGapPositions: Set<StepPosition> = ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions
+    let enabledGapPositions: Set<BeatPosition> = ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions
 }
 
 final class StubPitchDiscriminationDataStore: PitchDiscriminationObserver {
@@ -69,13 +69,12 @@ private final class StubRhythmPlaybackHandle: RhythmPlaybackHandle {
     func stop() async throws {}
 }
 
-final class StubStepSequencer: StepSequencer {
-    var currentStep: StepPosition?
-    var currentCycle: CycleDefinition?
+final class StubBeatSequencer: BeatSequencer {
+    var currentBeat: Beat?
     var timing: SequencerTiming {
-        SequencerTiming(samplePosition: 0, samplesPerStep: 0, samplesPerCycle: 0, sampleRate: .standard44100)
+        SequencerTiming(samplePosition: 0, samplesPerBeat: 0, sampleRate: .standard44100)
     }
-    func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws {}
+    func start(tempo: TempoBPM, beatProvider: any BeatProvider) async throws {}
     func stop() async throws {}
     func playImmediateNote(velocity: MIDIVelocity) throws {}
     func samplePosition(forHostTime hostTime: UInt64) -> Int64 { 0 }
@@ -130,7 +129,7 @@ extension TimingOffsetDetectionSession {
 extension ContinuousRhythmMatchingSession {
     static let stub: ContinuousRhythmMatchingSession = {
         ContinuousRhythmMatchingSession(
-            stepSequencer: StubStepSequencer(),
+            beatSequencer: StubBeatSequencer(),
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
     }()

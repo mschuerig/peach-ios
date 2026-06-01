@@ -10,13 +10,13 @@ struct ContinuousRhythmMatchingSessionTests {
 
     private struct Fixture {
         let session: ContinuousRhythmMatchingSession
-        let sequencer: MockStepSequencer
+        let sequencer: MockBeatSequencer
         let observer: MockContinuousRhythmMatchingObserver
         let notificationCenter: NotificationCenter
 
         func defaultSettings(
             tempo: TempoBPM = TempoBPM(120),
-            enabledGapPositions: Set<StepPosition> = [.fourth]
+            enabledGapPositions: Set<BeatPosition> = [.fourth]
         ) -> ContinuousRhythmMatchingSettings {
             ContinuousRhythmMatchingSettings(
                 tempo: tempo,
@@ -24,22 +24,20 @@ struct ContinuousRhythmMatchingSessionTests {
             )
         }
 
-        /// samplesPerStep at 120 BPM / 44100 Hz = Int64(44100.0 * 0.125) = 5512
-        var samplesPerStep: Int64 { sequencer.samplesPerStep }
-        /// samplesPerCycle = samplesPerStep * 4 = 22050
-        var samplesPerCycle: Int64 { sequencer.samplesPerCycle }
+        var samplesPerBeat: Int64 { sequencer.samplesPerBeat }
+        var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / 4 }
     }
 
     private struct MIDIFixture {
         let session: ContinuousRhythmMatchingSession
-        let sequencer: MockStepSequencer
+        let sequencer: MockBeatSequencer
         let observer: MockContinuousRhythmMatchingObserver
         let midiInput: MockMIDIInput
         let notificationCenter: NotificationCenter
 
         func defaultSettings(
             tempo: TempoBPM = TempoBPM(120),
-            enabledGapPositions: Set<StepPosition> = [.fourth]
+            enabledGapPositions: Set<BeatPosition> = [.fourth]
         ) -> ContinuousRhythmMatchingSettings {
             ContinuousRhythmMatchingSettings(
                 tempo: tempo,
@@ -47,22 +45,20 @@ struct ContinuousRhythmMatchingSessionTests {
             )
         }
 
-        var samplesPerStep: Int64 { sequencer.samplesPerStep }
-        var samplesPerCycle: Int64 { sequencer.samplesPerCycle }
+        var samplesPerBeat: Int64 { sequencer.samplesPerBeat }
+        var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / 4 }
     }
 
     private func makeSession(audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver()) -> Fixture {
-        let sequencer = MockStepSequencer()
-        // Set timing constants matching 120 BPM at 44100 Hz
-        sequencer.samplesPerStep = 5512
-        sequencer.samplesPerCycle = 22050
+        let sequencer = MockBeatSequencer()
+        sequencer.samplesPerBeat = 22050  // 120 BPM @ 44100 Hz
         sequencer.sampleRate = .standard44100
 
         let observer = MockContinuousRhythmMatchingObserver()
         let notificationCenter = NotificationCenter()
 
         let session = ContinuousRhythmMatchingSession(
-            stepSequencer: sequencer,
+            beatSequencer: sequencer,
             observers: [observer],
             notificationCenter: notificationCenter,
             audioInterruptionObserver: audioInterruptionObserver
@@ -77,9 +73,8 @@ struct ContinuousRhythmMatchingSessionTests {
     }
 
     private func makeSessionWithMIDI() -> MIDIFixture {
-        let sequencer = MockStepSequencer()
-        sequencer.samplesPerStep = 5512
-        sequencer.samplesPerCycle = 22050
+        let sequencer = MockBeatSequencer()
+        sequencer.samplesPerBeat = 22050
         sequencer.sampleRate = .standard44100
 
         let observer = MockContinuousRhythmMatchingObserver()
@@ -87,7 +82,7 @@ struct ContinuousRhythmMatchingSessionTests {
         let notificationCenter = NotificationCenter()
 
         let session = ContinuousRhythmMatchingSession(
-            stepSequencer: sequencer,
+            beatSequencer: sequencer,
             observers: [observer],
             midiInput: midiInput,
             notificationCenter: notificationCenter,
@@ -110,7 +105,7 @@ struct ContinuousRhythmMatchingSessionTests {
         let f = makeSession()
         #expect(f.session.isIdle)
         #expect(!f.session.isRunning)
-        #expect(f.session.currentStep == nil)
+        #expect(f.session.currentBeatPosition == nil)
         #expect(f.session.currentGapPosition == nil)
         #expect(f.session.cyclesInCurrentTrial == 0)
         #expect(f.session.lastTrialResult == nil)
@@ -118,8 +113,8 @@ struct ContinuousRhythmMatchingSessionTests {
 
     // MARK: - Start
 
-    @Test("start begins step sequencer")
-    func startBeginsStepSequencer() async {
+    @Test("start begins beat sequencer")
+    func startBeginsBeatSequencer() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings())
 
@@ -158,7 +153,7 @@ struct ContinuousRhythmMatchingSessionTests {
 
         #expect(f.session.isIdle)
         #expect(!f.session.isRunning)
-        #expect(f.session.currentStep == nil)
+        #expect(f.session.currentBeatPosition == nil)
         #expect(f.session.currentGapPosition == nil)
         #expect(f.session.cyclesInCurrentTrial == 0)
     }
@@ -178,9 +173,10 @@ struct ContinuousRhythmMatchingSessionTests {
 
         // Populate gap positions and record a few hits
         for i in 0..<5 {
-            _ = f.session.nextCycle()
-            // Gap at .fourth = step index 3 within cycle i
-            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            _ = f.session.nextBeat()
+            // Gap at .fourth = position index 3 within beat i
+            let gapSamplePosition = Int64(i) * f.samplesPerBeat
+                + Int64(3) * f.samplesPerSubdivision
             f.sequencer.currentSamplePosition = gapSamplePosition + 220 // ~5ms late at 44100 Hz
             f.session.handleTap()
         }
@@ -191,45 +187,52 @@ struct ContinuousRhythmMatchingSessionTests {
         #expect(f.session.lastTrialResult == nil)
     }
 
-    // MARK: - Gap Selection (nextCycle)
+    // MARK: - Gap Selection (nextBeat)
 
-    @Test("nextCycle selects from enabled positions")
-    func nextCycleSelectsFromEnabledPositions() async {
+    @Test("nextBeat selects gap from enabled positions")
+    func nextBeatSelectsFromEnabledPositions() async {
         let f = makeSession()
-        let enabledPositions: Set<StepPosition> = [.second, .third]
+        let enabledPositions: Set<BeatPosition> = [.second, .third]
         f.session.start(settings: f.defaultSettings(enabledGapPositions: enabledPositions))
         await f.sequencer.waitForStart()
 
         for _ in 0..<20 {
-            let cycle = f.session.nextCycle()
-            #expect(enabledPositions.contains(cycle.gapPosition))
+            let beat = f.session.nextBeat()
+            let gapIndex = beat.subdivisions.firstIndex { if case .rest = $0 { return true } else { return false } }
+            let position = try? #require(gapIndex.flatMap { BeatPosition(rawValue: $0) })
+            #expect(enabledPositions.contains(position!))
         }
 
         f.session.stop()
     }
 
-    @Test("nextCycle with single enabled position always returns it")
-    func nextCycleWithSinglePositionAlwaysReturnsIt() async {
+    @Test("nextBeat with single enabled position always returns it")
+    func nextBeatWithSinglePositionAlwaysReturnsIt() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.second]))
         await f.sequencer.waitForStart()
 
         for _ in 0..<10 {
-            let cycle = f.session.nextCycle()
-            #expect(cycle.gapPosition == .second)
+            let beat = f.session.nextBeat()
+            // gap at .second means subdivisions[1] is .rest
+            if case .rest = beat.subdivisions[1] {
+                // OK
+            } else {
+                Issue.record("expected subdivision[1] to be .rest")
+            }
         }
 
         f.session.stop()
     }
 
-    @Test("nextCycle is side-effect-free — does not record gap results")
-    func nextCycleIsSideEffectFree() async {
+    @Test("nextBeat is side-effect-free — does not record gap results")
+    func nextBeatIsSideEffectFree() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings())
         await f.sequencer.waitForStart()
 
         for _ in 0..<20 {
-            _ = f.session.nextCycle()
+            _ = f.session.nextBeat()
         }
 
         #expect(f.session.cyclesInCurrentTrial == 0)
@@ -238,8 +241,8 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    @Test("nextCycle after stop does not mutate session state")
-    func nextCycleAfterStopDoesNotMutateState() async {
+    @Test("nextBeat after stop does not mutate session state")
+    func nextBeatAfterStopDoesNotMutateState() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
@@ -247,13 +250,16 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
         #expect(f.session.currentGapPosition == nil)
 
-        // Simulate the step sequencer's provider calling nextCycle after stop.
-        let fallback = f.session.nextCycle()
-        #expect(fallback.gapPosition == .fourth)
+        // Simulate the beat sequencer's provider calling nextBeat after stop.
+        let fallback = f.session.nextBeat()
+        // Fallback returns a beat with gap at .fourth (subdivisions[3] is .rest)
+        if case .rest = fallback.subdivisions[3] {
+            // OK
+        } else {
+            Issue.record("expected fallback subdivision[3] to be .rest")
+        }
 
-        // currentGapPosition must stay nil — the fallback cycle must not be tracked.
-        // evaluatePlaybackPosition uses gapPositions to set currentGapPosition,
-        // so if nextCycle appended, evaluatePlaybackPosition would observe the stale entry.
+        // currentGapPosition must stay nil — the fallback beat must not be tracked.
         f.sequencer.currentSamplePosition = 0
         f.session.evaluatePlaybackPosition()
         #expect(f.session.currentGapPosition == nil)
@@ -267,10 +273,10 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle() // cycle 0: gap at .fourth
+        _ = f.session.nextBeat() // beat 0: gap at .fourth
 
-        // Gap at .fourth in cycle 0: sample position = (0*4 + 3) * samplesPerStep = 3 * 5512 = 16536
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        // Gap at .fourth in beat 0: sample position = 3 * samplesPerSubdivision
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 441 // ~10ms late at 44100 Hz
 
         f.session.handleTap()
@@ -286,11 +292,11 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle() // cycle 0: gap at .fourth
+        _ = f.session.nextBeat()
 
-        // Tap one full step away from the gap — within cycle 0 but outside the half-step window
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
-        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerStep
+        // Tap one full subdivision away — within beat 0 but outside the half-subdivision window
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
+        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerSubdivision
 
         f.session.handleTap()
 
@@ -299,19 +305,19 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    @Test("double tap in same cycle is ignored")
-    func doubleTapInSameCycleIsIgnored() async {
+    @Test("double tap in same beat is ignored")
+    func doubleTapInSameBeatIsIgnored() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle() // cycle 0: gap at .fourth
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
 
         f.session.handleTap()
-        f.session.handleTap() // second tap
+        f.session.handleTap()
 
         #expect(f.session.cyclesInCurrentTrial == 1)
 
@@ -320,65 +326,61 @@ struct ContinuousRhythmMatchingSessionTests {
 
     // MARK: - Miss Detection via Tracking
 
-    @Test("missed gap is recorded when cycle advances without tap")
-    func missedGapRecordedWhenCycleAdvances() async {
+    @Test("missed gap is recorded when beat advances without tap")
+    func missedGapRecordedWhenBeatAdvances() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle() // cycle 0
-        _ = f.session.nextCycle() // cycle 1
+        _ = f.session.nextBeat() // beat 0
+        _ = f.session.nextBeat() // beat 1
 
-        // Advance sample position past cycle 0 into mid-cycle 1
-        f.sequencer.currentSamplePosition = f.samplesPerCycle + f.samplesPerCycle / 2
+        f.sequencer.currentSamplePosition = f.samplesPerBeat + f.samplesPerBeat / 2
 
         f.session.evaluatePlaybackPosition()
 
-        #expect(f.session.cyclesInCurrentTrial == 1) // cycle 0 missed
+        #expect(f.session.cyclesInCurrentTrial == 1) // beat 0 missed
 
         f.session.stop()
     }
 
-    @Test("hit cycle is not double-counted as miss by tracking")
-    func hitCycleNotDoubleCounted() async {
+    @Test("hit beat is not double-counted as miss by tracking")
+    func hitBeatNotDoubleCounted() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle() // cycle 0: gap at .fourth
-        _ = f.session.nextCycle() // cycle 1
+        _ = f.session.nextBeat()
+        _ = f.session.nextBeat()
 
-        // Tap during cycle 0's gap window
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
         f.session.handleTap()
 
-        #expect(f.session.cyclesInCurrentTrial == 1) // hit recorded
+        #expect(f.session.cyclesInCurrentTrial == 1)
 
-        // Now advance time past cycle 0
-        f.sequencer.currentSamplePosition = f.samplesPerCycle + f.samplesPerCycle / 2
+        f.sequencer.currentSamplePosition = f.samplesPerBeat + f.samplesPerBeat / 2
         f.session.evaluatePlaybackPosition()
 
-        // Should still be 1 — cycle 0 was hit, not double-counted
         #expect(f.session.cyclesInCurrentTrial == 1)
 
         f.session.stop()
     }
 
-    @Test("tracking updates currentStep and currentGapPosition")
+    @Test("tracking updates currentBeatPosition and currentGapPosition")
     func trackingUpdatesObservableState() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.third]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle() // cycle 0: gap at .third
+        _ = f.session.nextBeat() // beat 0: gap at .third
 
-        // Advance to step 2 (third sixteenth) within cycle 0
-        f.sequencer.currentSamplePosition = f.samplesPerStep * 2 + f.samplesPerStep / 2
+        // Advance to position .third within beat 0
+        f.sequencer.currentSamplePosition = f.samplesPerSubdivision * 2 + f.samplesPerSubdivision / 2
 
         f.session.evaluatePlaybackPosition()
 
-        #expect(f.session.currentStep == .third)
+        #expect(f.session.currentBeatPosition == .third)
         #expect(f.session.currentGapPosition == .third)
 
         f.session.stop()
@@ -386,16 +388,15 @@ struct ContinuousRhythmMatchingSessionTests {
 
     // MARK: - Trial Completion
 
-    @Test("trial completes after 16 cycles with hits and notifies observers")
-    func trialCompletesAfter16Cycles() async {
+    @Test("trial completes after 16 beats with hits and notifies observers")
+    func trialCompletesAfter16Beats() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Populate 16 cycles and hit all of them
         for i in 0..<16 {
-            _ = f.session.nextCycle()
-            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            _ = f.session.nextBeat()
+            let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
             f.sequencer.currentSamplePosition = gapSamplePosition + 220
             f.session.handleTap()
         }
@@ -415,8 +416,8 @@ struct ContinuousRhythmMatchingSessionTests {
         await f.sequencer.waitForStart()
 
         for i in 0..<16 {
-            _ = f.session.nextCycle()
-            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            _ = f.session.nextBeat()
+            let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
             f.sequencer.currentSamplePosition = gapSamplePosition + 220
             f.session.handleTap()
         }
@@ -426,24 +427,23 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    @Test("trial with missed cycles contains only hits")
-    func trialWithMissedCyclesContainsOnlyHits() async {
+    @Test("trial with missed beats contains only hits")
+    func trialWithMissedBeatsContainsOnlyHits() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Populate 16 cycles, hit only the first 12
         for i in 0..<16 {
-            _ = f.session.nextCycle()
+            _ = f.session.nextBeat()
             if i < 12 {
-                let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+                let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
                 f.sequencer.currentSamplePosition = gapSamplePosition + 220
                 f.session.handleTap()
             }
         }
 
-        // Advance sample position past all 16 cycles so evaluatePlaybackPosition counts the misses
-        f.sequencer.currentSamplePosition = Int64(17) * f.samplesPerCycle
+        // Advance past all 16 beats so evaluatePlaybackPosition counts the misses
+        f.sequencer.currentSamplePosition = Int64(17) * f.samplesPerBeat
         f.session.evaluatePlaybackPosition()
 
         let trial = f.observer.lastResult
@@ -459,13 +459,11 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Populate 16 cycles but don't hit any
         for _ in 0..<16 {
-            _ = f.session.nextCycle()
+            _ = f.session.nextBeat()
         }
 
-        // Advance sample position to mid-cycle 16
-        f.sequencer.currentSamplePosition = f.samplesPerCycle * 16 + f.samplesPerCycle / 2
+        f.sequencer.currentSamplePosition = f.samplesPerBeat * 16 + f.samplesPerBeat / 2
         f.session.evaluatePlaybackPosition()
 
         #expect(f.observer.completedCallCount == 0)
@@ -481,10 +479,9 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Two complete trials, hitting every gap
         for i in 0..<32 {
-            _ = f.session.nextCycle()
-            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            _ = f.session.nextBeat()
+            let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
             f.sequencer.currentSamplePosition = gapSamplePosition + 220
             f.session.handleTap()
         }
@@ -504,47 +501,45 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Record some hits but not enough for a trial
         for i in 0..<5 {
-            _ = f.session.nextCycle()
-            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            _ = f.session.nextBeat()
+            let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
             f.sequencer.currentSamplePosition = gapSamplePosition + 220
             f.session.handleTap()
         }
 
         mock.simulateInterruption()
 
-        // Give the callback a moment to propagate
         try? await Task.sleep(for: .milliseconds(50))
 
         #expect(f.session.isIdle)
         #expect(f.observer.completedCallCount == 0)
     }
 
-    // MARK: - StepProvider Conformance
+    // MARK: - BeatProvider Conformance
 
-    @Test("session provides itself as step provider to sequencer")
-    func sessionProvidesItselfAsStepProvider() async {
+    @Test("session provides itself as beat provider to sequencer")
+    func sessionProvidesItselfAsBeatProvider() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings())
         await f.sequencer.waitForStart()
 
-        #expect(f.sequencer.lastStepProvider is ContinuousRhythmMatchingSession)
+        #expect(f.sequencer.lastBeatProvider is ContinuousRhythmMatchingSession)
 
         f.session.stop()
     }
 
     // MARK: - Auditory Tap Feedback
 
-    @Test("tap within window plays immediate note on step sequencer")
+    @Test("tap within window plays immediate note on beat sequencer")
     func tapWithinWindowPlaysImmediateNote() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
         f.session.handleTap()
 
@@ -561,28 +556,27 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.first]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
-        let gapSamplePositionFirst = Int64(0) * f.samplesPerStep
+        _ = f.session.nextBeat()
+        let gapSamplePositionFirst = Int64(0) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePositionFirst + 220
         f.session.handleTap()
 
-        #expect(f.sequencer.lastPlayImmediateNoteVelocity == StepVelocity.accent)
+        #expect(f.sequencer.lastPlayImmediateNoteVelocity == RhythmVelocity.accent)
 
         f.session.stop()
         f.sequencer.reset()
-        f.sequencer.samplesPerStep = 5512
-        f.sequencer.samplesPerCycle = 22050
+        f.sequencer.samplesPerBeat = 22050
 
         // Test normal velocity for gap at .fourth
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
-        let gapSamplePositionFourth = Int64(3) * f.samplesPerStep
+        _ = f.session.nextBeat()
+        let gapSamplePositionFourth = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePositionFourth + 220
         f.session.handleTap()
 
-        #expect(f.sequencer.lastPlayImmediateNoteVelocity == StepVelocity.normal)
+        #expect(f.sequencer.lastPlayImmediateNoteVelocity == RhythmVelocity.normal)
 
         f.session.stop()
     }
@@ -593,11 +587,10 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        // Tap one full step away from the gap — within cycle 0 but outside the half-step window
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
-        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
+        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerSubdivision
         f.session.handleTap()
 
         #expect(f.sequencer.playImmediateNoteCallCount == 0)
@@ -613,10 +606,9 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        // Tap 441 samples after the gap = 441/44100 = 10ms late
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 441
         f.session.handleTap()
 
@@ -632,10 +624,9 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        // Tap 441 samples before the gap = -441/44100 = -10ms early
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition - 441
         f.session.handleTap()
 
@@ -651,8 +642,8 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        _ = f.session.nextBeat()
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
         f.session.handleTap()
 
@@ -669,13 +660,12 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
         f.session.handleTap()
 
-        // Session should still be running and the hit should still be recorded
         #expect(f.session.isRunning)
         #expect(f.session.cyclesInCurrentTrial == 1)
 
@@ -690,10 +680,10 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
-        let tapSamplePosition = gapSamplePosition + 441 // ~10ms late
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
+        let tapSamplePosition = gapSamplePosition + 441
 
         f.sequencer.samplePositionForHostTimeOverride = tapSamplePosition
         f.sequencer.currentSamplePosition = tapSamplePosition
@@ -714,9 +704,9 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
 
@@ -724,7 +714,7 @@ struct ContinuousRhythmMatchingSessionTests {
 
         try await waitForCondition { f.sequencer.playImmediateNoteCallCount == 1 }
 
-        #expect(f.sequencer.lastPlayImmediateNoteVelocity == StepVelocity.normal)
+        #expect(f.sequencer.lastPlayImmediateNoteVelocity == RhythmVelocity.normal)
 
         f.session.stop()
     }
@@ -735,9 +725,9 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
 
@@ -756,11 +746,10 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        // Position one full step away from gap — outside the half-step window
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
-        let farPosition = gapSamplePosition + f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
+        let farPosition = gapSamplePosition + f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = farPosition
         f.sequencer.currentSamplePosition = farPosition
 
@@ -775,23 +764,21 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    @Test("MIDI noteOn in already-hit cycle is ignored (double-tap prevention)")
+    @Test("MIDI noteOn in already-hit beat is ignored (double-tap prevention)")
     func midiNoteOnDoubleTapPrevention() async throws {
         let f = makeSessionWithMIDI()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
 
-        // First tap via screen
         f.session.handleTap()
         #expect(f.session.cyclesInCurrentTrial == 1)
 
-        // Second tap via MIDI — should be ignored
         f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
 
         try await Task.sleep(for: .milliseconds(100))
@@ -807,9 +794,9 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
 
@@ -826,13 +813,13 @@ struct ContinuousRhythmMatchingSessionTests {
 
     @Test("session with nil midiInput works identically to before")
     func sessionWithNilMidiInputWorksIdentically() async {
-        let f = makeSession() // no MIDI input
+        let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
         f.session.handleTap()
 
@@ -848,13 +835,11 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
+        _ = f.session.nextBeat()
 
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
-        // Override returns a position within the window
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
-        // But currentSamplePosition is far away — outside the window
-        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerStep
+        f.sequencer.currentSamplePosition = gapSamplePosition + f.samplesPerSubdivision
 
         f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
 
@@ -871,9 +856,8 @@ struct ContinuousRhythmMatchingSessionTests {
 
         f.session.stop()
 
-        // Send MIDI event after stop — should be ignored
-        _ = f.session.nextCycle()
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        _ = f.session.nextBeat()
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.samplePositionForHostTimeOverride = gapSamplePosition + 220
         f.sequencer.currentSamplePosition = gapSamplePosition + 220
 
@@ -888,7 +872,6 @@ struct ContinuousRhythmMatchingSessionTests {
     @Test("MIDI noteOn while session is not running is ignored")
     func midiNoteOnWhileNotRunningIsIgnored() async throws {
         let f = makeSessionWithMIDI()
-        // Do not start the session
 
         f.midiInput.send(.noteOn(note: MIDINote(60), velocity: MIDIVelocity(100), timestamp: 12345))
 
@@ -904,22 +887,17 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        // Use screen taps (synchronous handleTap with overridden sample position) for
-        // deterministic behavior. Individual MIDI tap tests verify the MIDI → handleTap path;
-        // this test verifies correct trial aggregation across 16 cycles.
         for i in 0..<16 {
-            _ = f.session.nextCycle()
-            let gapSamplePosition = Int64(i * 4 + 3) * f.samplesPerStep
+            _ = f.session.nextBeat()
+            let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
             let tapPosition = gapSamplePosition + 220
 
             f.sequencer.samplePositionForHostTimeOverride = tapPosition
             f.sequencer.currentSamplePosition = tapPosition
 
             if i % 2 == 0 {
-                // Even cycles: screen tap (no override)
                 f.session.handleTap()
             } else {
-                // Odd cycles: screen tap with explicit sample position (simulates MIDI path)
                 f.session.handleTap(atSamplePosition: tapPosition)
             }
         }
@@ -939,15 +917,11 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
         await f.sequencer.waitForStart()
 
-        _ = f.session.nextCycle()
-        let gapSamplePosition = Int64(3) * f.samplesPerStep
+        _ = f.session.nextBeat()
+        let gapSamplePosition = Int64(3) * f.samplesPerSubdivision
         f.sequencer.currentSamplePosition = gapSamplePosition
         f.session.handleTap(atSamplePosition: gapSamplePosition)
 
-        // Synchronous reads prove shared MainActor isolation between
-        // the test (MainActor) and the session's internal state.
-        // If the session were on a different actor, the compiler
-        // would require `await` for these reads.
         MainActor.assertIsolated()
         #expect(f.session.isRunning)
         #expect(f.session.showFeedback)

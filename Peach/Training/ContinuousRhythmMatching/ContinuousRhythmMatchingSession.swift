@@ -8,7 +8,7 @@ enum ContinuousRhythmMatchingSessionState {
 }
 
 @Observable
-final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
+final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
 
     // MARK: - State Machine Types
 
@@ -26,7 +26,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         case startSequencer(ContinuousRhythmMatchingSettings)
         case startTrackingLoop
         case startMIDIListening
-        case playTapSound(StepPosition)
+        case playTapSound(BeatPosition)
         case recordGapResult(GapResult)
         case showHitFeedback(TimingOffset)
         case advanceCycleCount
@@ -78,7 +78,9 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     static let cyclesPerTrial = 16
 
-    /// Polling interval for real-time cycle tracking (~120 Hz, matching the step sequencer).
+    private static let subdivisionsPerBeat: Int64 = 4
+
+    /// Polling interval for real-time cycle tracking (~120 Hz, matching the beat sequencer).
     private static let trackingPollingInterval: Duration = .milliseconds(8)
 
     /// Brief feedback flash duration for gap hits (shorter than discrete mode's 400ms).
@@ -91,8 +93,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     // MARK: - Observable State
 
     private(set) var state: ContinuousRhythmMatchingSessionState = .idle
-    private(set) var currentStep: StepPosition?
-    private(set) var currentGapPosition: StepPosition?
+    private(set) var currentBeatPosition: BeatPosition?
+    private(set) var currentGapPosition: BeatPosition?
     private(set) var cyclesInCurrentTrial = 0
     private(set) var lastTrialResult: CompletedContinuousRhythmMatchingTrial?
     private(set) var lastHitOffsetMs: Double?
@@ -102,7 +104,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
 
     // MARK: - Dependencies
 
-    private let stepSequencer: any StepSequencer
+    private let beatSequencer: any BeatSequencer
     private let midiInput: (any MIDIInput)?
     private let observers: [ContinuousRhythmMatchingObserver]
     private var lifecycle: SessionLifecycle?
@@ -117,13 +119,18 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private var trackingTask: Task<Void, Never>?
     private var midiListeningTask: Task<Void, Never>?
 
-    /// Gap positions indexed by cycle number, populated by nextCycle() during batch scheduling.
-    private var gapPositions: [StepPosition] = []
+    /// Indexed by cycle number.
+    private var gapPositions: [BeatPosition] = []
+
+    /// Last index published to `currentBeatPosition` / `currentGapPosition`,
+    /// gating Observation churn at the 120 Hz tracking rate.
+    private var lastPublishedSubdivisionIndex: Int = -1
+    private var lastPublishedCycleIndex: Int = -1
 
     // MARK: - Initialization
 
     init(
-        stepSequencer: any StepSequencer,
+        beatSequencer: any BeatSequencer,
         observers: [ContinuousRhythmMatchingObserver] = [],
         midiInput: (any MIDIInput)? = nil,
         notificationCenter: NotificationCenter = .default,
@@ -131,7 +138,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         backgroundNotificationName: Notification.Name? = nil,
         foregroundNotificationName: Notification.Name? = nil
     ) {
-        self.stepSequencer = stepSequencer
+        self.beatSequencer = beatSequencer
         self.midiInput = midiInput
         self.observers = observers
         self.lifecycle = SessionLifecycle(
@@ -165,6 +172,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         self.hitCycleIndices = []
         self.cyclesInCurrentTrial = 0
         self.lastEvaluatedCycleIndex = -1
+        self.lastPublishedSubdivisionIndex = -1
+        self.lastPublishedCycleIndex = -1
         self.lastTrialResult = nil
 
         logger.info("Starting continuous rhythm matching at \(settings.tempo.value) BPM")
@@ -172,7 +181,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     }
 
     func handleTap(atSamplePosition overrideSamplePosition: Int64? = nil) {
-        let timing = stepSequencer.timing
+        let timing = beatSequencer.timing
         let samplePosition = overrideSamplePosition ?? timing.samplePosition
 
         guard state == .running else {
@@ -181,16 +190,19 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         }
 
         guard samplePosition >= 0,
-              timing.samplesPerStep > 0,
-              timing.samplesPerCycle > 0 else { return }
+              timing.samplesPerBeat > 0 else { return }
 
-        let playingCycleIndex = Int(samplePosition / timing.samplesPerCycle)
+        let samplesPerSubdivision = timing.samplesPerBeat / Self.subdivisionsPerBeat
+        guard samplesPerSubdivision > 0 else { return }
+
+        let playingCycleIndex = Int(samplePosition / timing.samplesPerBeat)
         guard playingCycleIndex < gapPositions.count else { return }
         guard !hitCycleIndices.contains(playingCycleIndex) else { return }
 
         let gapPosition = gapPositions[playingCycleIndex]
-        let gapSampleOffset = Int64(playingCycleIndex * 4 + gapPosition.rawValue) * timing.samplesPerStep
-        let windowHalfSamples = timing.samplesPerStep / 2
+        let gapSampleOffset = Int64(playingCycleIndex) * timing.samplesPerBeat
+            + Int64(gapPosition.rawValue) * samplesPerSubdivision
+        let windowHalfSamples = samplesPerSubdivision / 2
 
         let offsetSamples = samplePosition - gapSampleOffset
 
@@ -205,42 +217,51 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         }
     }
 
-    // MARK: - StepProvider Protocol
+    // MARK: - BeatProvider Protocol
 
-    func nextCycle() -> CycleDefinition {
+    func nextBeat() -> Beat {
         guard state == .running, let settings else {
-            return CycleDefinition(gapPosition: .fourth)
+            return Self.beat(withGapAt: .fourth)
         }
+        let gapPosition = settings.enabledGapPositions.randomElement()!
+        gapPositions.append(gapPosition)
+        return Self.beat(withGapAt: gapPosition)
+    }
 
-        let enabledPositions = settings.enabledGapPositions
-        precondition(!enabledPositions.isEmpty, "enabledGapPositions must not be empty")
-        let selectedPosition: StepPosition
-        if enabledPositions.count == 1 {
-            selectedPosition = enabledPositions[enabledPositions.startIndex]
-        } else {
-            selectedPosition = enabledPositions.randomElement()!
+    /// Builds a flat 4-subdivision beat with one rest at `gap` and accent on beat one.
+    /// Canonical source of CRM's beat shape — referenced by tests and the lifecycle mock.
+    static func beat(withGapAt gap: BeatPosition) -> Beat {
+        let subdivisions: [Subdivision] = BeatPosition.allCases.map { position in
+            if position == gap { return .rest }
+            let velocity = position == .first ? RhythmVelocity.accent : RhythmVelocity.normal
+            return .note(velocity: velocity, offset: .zero)
         }
-
-        gapPositions.append(selectedPosition)
-        return CycleDefinition(gapPosition: selectedPosition)
+        return Beat(subdivisions: subdivisions)
     }
 
     /// Evaluates completed cycles and advances the cycle counter.
     /// Visible for testing.
     func evaluatePlaybackPosition() {
-        let timing = stepSequencer.timing
+        let timing = beatSequencer.timing
         guard state == .running,
               timing.samplePosition >= 0,
-              timing.samplesPerStep > 0,
-              timing.samplesPerCycle > 0 else { return }
+              timing.samplesPerBeat > 0 else { return }
 
-        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerCycle)
+        let samplesPerSubdivision = timing.samplesPerBeat / Self.subdivisionsPerBeat
+        guard samplesPerSubdivision > 0 else { return }
 
-        let globalStepIndex = Int(timing.samplePosition / timing.samplesPerStep)
-        currentStep = StepPosition(rawValue: globalStepIndex % 4)
+        let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerBeat)
+        let globalSubdivisionIndex = Int(timing.samplePosition / samplesPerSubdivision)
 
-        if playingCycleIndex < gapPositions.count {
+        if globalSubdivisionIndex != lastPublishedSubdivisionIndex {
+            currentBeatPosition = BeatPosition(rawValue: globalSubdivisionIndex % Int(Self.subdivisionsPerBeat))
+            lastPublishedSubdivisionIndex = globalSubdivisionIndex
+        }
+
+        if playingCycleIndex != lastPublishedCycleIndex,
+           playingCycleIndex < gapPositions.count {
             currentGapPosition = gapPositions[playingCycleIndex]
+            lastPublishedCycleIndex = playingCycleIndex
         }
 
         while lastEvaluatedCycleIndex < playingCycleIndex - 1 {
@@ -283,9 +304,9 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
             startMIDIListening()
 
         case .playTapSound(let position):
-            let velocity = position == .first ? StepVelocity.accent : StepVelocity.normal
+            let velocity = position == .first ? RhythmVelocity.accent : RhythmVelocity.normal
             do {
-                try stepSequencer.playImmediateNote(velocity: velocity)
+                try beatSequencer.playImmediateNote(velocity: velocity)
             } catch {
                 logger.warning("Failed to play tap note: \(error.localizedDescription)")
             }
@@ -315,12 +336,12 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
     private func startSequencer(settings: ContinuousRhythmMatchingSettings) {
         startTask = Task {
             do {
-                try await stepSequencer.start(tempo: settings.tempo, stepProvider: self)
+                try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
                 send(.sequencerReady)
             } catch is CancellationError {
                 logger.info("Session task cancelled")
             } catch {
-                logger.error("Failed to start step sequencer: \(error.localizedDescription)")
+                logger.error("Failed to start beat sequencer: \(error.localizedDescription)")
                 send(.audioError)
             }
         }
@@ -342,7 +363,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
                 guard !Task.isCancelled, state == .running else { break }
                 switch event {
                 case .noteOn(_, _, let timestamp):
-                    let samplePos = stepSequencer.samplePosition(forHostTime: timestamp)
+                    let samplePos = beatSequencer.samplePosition(forHostTime: timestamp)
                     handleTap(atSamplePosition: samplePos)
                 case .noteOff, .pitchBend:
                     break
@@ -398,10 +419,10 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         lifecycle?.cancelFeedbackTask()
 
         Task {
-            try? await stepSequencer.stop()
+            try? await beatSequencer.stop()
         }
 
-        currentStep = nil
+        currentBeatPosition = nil
         currentGapPosition = nil
         cyclesInCurrentTrial = 0
         showFeedback = false
@@ -411,5 +432,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, StepProvider {
         hitCycleIndices = []
         settings = nil
         lastEvaluatedCycleIndex = -1
+        lastPublishedSubdivisionIndex = -1
+        lastPublishedCycleIndex = -1
     }
 }

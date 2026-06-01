@@ -13,3 +13,7 @@
 ## From: Fix spectrogram sharing (2026-03-30)
 
 - **Rhythm spectrogram export temp file cleanup**: `RhythmProfileCardView.renderShareImage()` writes PNGs to the temp directory on each re-render but doesn't track/delete previous renders, unlike `ChartImageRenderer.render()` which uses `lastRenderedURLs` for cleanup. Consider unifying both export paths through `ChartImageRenderer`.
+
+## From: Story 80.0 Beat/Subdivision refactor review (2026-06-02)
+
+- **Rename `currentGapPosition` → `gapPositionInCurrentBeat`** on `ContinuousRhythmMatchingSession`: with the new `currentBeatPosition` also being `BeatPosition?`, both observable properties are typed identically and only their names disambiguate "where the playback head is" vs. "where the gap is in the current beat". Surface area is one property + its tests + `ContinuousRhythmMatchingScreen`/`DotView` call sites. Low-risk pure rename; deferred only because the spec scope was already wide.

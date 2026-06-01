@@ -1,24 +1,21 @@
 import Foundation
 @testable import Peach
 
-final class MockStepSequencer: StepSequencer {
+final class MockBeatSequencer: BeatSequencer {
     // MARK: - Observable State
 
-    var currentStep: StepPosition?
-    var currentCycle: CycleDefinition?
+    var currentBeat: Beat?
 
     // MARK: - Timing State
 
     var currentSamplePosition: Int64 = 0
-    var samplesPerStep: Int64 = 0
-    var samplesPerCycle: Int64 = 0
+    var samplesPerBeat: Int64 = 0
     var sampleRate: SampleRate = .standard44100
 
     var timing: SequencerTiming {
         SequencerTiming(
             samplePosition: currentSamplePosition,
-            samplesPerStep: samplesPerStep,
-            samplesPerCycle: samplesPerCycle,
+            samplesPerBeat: samplesPerBeat,
             sampleRate: sampleRate
         )
     }
@@ -39,7 +36,7 @@ final class MockStepSequencer: StepSequencer {
     var lastPlayImmediateNoteVelocity: MIDIVelocity?
     var playImmediateNoteVelocities: [MIDIVelocity] = []
     var lastTempo: TempoBPM?
-    var lastStepProvider: (any StepProvider)?
+    var lastBeatProvider: (any BeatProvider)?
     var shouldThrowError = false
     var shouldThrowOnPlayImmediateNote = false
     var errorToThrow: AudioError = .engineStartFailed("Mock error")
@@ -69,12 +66,12 @@ final class MockStepSequencer: StepSequencer {
         }
     }
 
-    // MARK: - StepSequencer Protocol
+    // MARK: - BeatSequencer Protocol
 
-    func start(tempo: TempoBPM, stepProvider: any StepProvider) async throws {
+    func start(tempo: TempoBPM, beatProvider: any BeatProvider) async throws {
         startCallCount += 1
         lastTempo = tempo
-        lastStepProvider = stepProvider
+        lastBeatProvider = beatProvider
 
         onStartCalled?()
 
@@ -103,8 +100,7 @@ final class MockStepSequencer: StepSequencer {
 
     func stop() async throws {
         stopCallCount += 1
-        currentStep = nil
-        currentCycle = nil
+        currentBeat = nil
 
         onStopCalled?()
 
@@ -128,14 +124,12 @@ final class MockStepSequencer: StepSequencer {
         lastPlayImmediateNoteVelocity = nil
         playImmediateNoteVelocities = []
         lastTempo = nil
-        lastStepProvider = nil
+        lastBeatProvider = nil
         shouldThrowError = false
         shouldThrowOnPlayImmediateNote = false
-        currentStep = nil
-        currentCycle = nil
+        currentBeat = nil
         currentSamplePosition = 0
-        samplesPerStep = 0
-        samplesPerCycle = 0
+        samplesPerBeat = 0
         sampleRate = .standard44100
         samplePositionForHostTimeOverride = nil
         onStartCalled = nil

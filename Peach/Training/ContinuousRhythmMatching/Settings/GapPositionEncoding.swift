@@ -1,7 +1,7 @@
 import Foundation
 
 enum GapPositionEncoding {
-    static func encode(_ positions: Set<StepPosition>) -> String {
+    static func encode(_ positions: Set<BeatPosition>) -> String {
         positions
             .map(\.rawValue)
             .sorted()
@@ -9,15 +9,15 @@ enum GapPositionEncoding {
             .joined(separator: ",")
     }
 
-    static func decode(_ string: String) -> Set<StepPosition> {
+    static func decode(_ string: String) -> Set<BeatPosition> {
         let positions = string
             .split(separator: ",")
             .compactMap { Int($0) }
-            .compactMap(StepPosition.init(rawValue:))
+            .compactMap(BeatPosition.init(rawValue:))
         return Set(positions)
     }
 
-    static func decodeWithDefault(_ string: String) -> Set<StepPosition> {
+    static func decodeWithDefault(_ string: String) -> Set<BeatPosition> {
         let decoded = decode(string)
         return decoded.isEmpty ? ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions : decoded
     }

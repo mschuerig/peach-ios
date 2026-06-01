@@ -2,9 +2,9 @@ import Foundation
 
 struct ContinuousRhythmMatchingSettings: Sendable {
     var tempo: TempoBPM
-    var enabledGapPositions: Set<StepPosition>
+    var enabledGapPositions: Set<BeatPosition>
 
-    init(tempo: TempoBPM = TempoBPM(80), enabledGapPositions: Set<StepPosition> = [.fourth]) {
+    init(tempo: TempoBPM = TempoBPM(80), enabledGapPositions: Set<BeatPosition> = [.fourth]) {
         precondition(!enabledGapPositions.isEmpty, "At least one gap position must be enabled")
         self.tempo = tempo
         self.enabledGapPositions = enabledGapPositions

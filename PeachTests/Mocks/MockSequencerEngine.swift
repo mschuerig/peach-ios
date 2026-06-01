@@ -1,6 +1,6 @@
 @testable import Peach
 
-final class MockStepSequencerEngine: StepSequencerEngine {
+final class MockSequencerEngine: SequencerEngine {
     var sampleRate: SampleRate = .standard44100
     var currentSamplePosition: Int64 = 0
 

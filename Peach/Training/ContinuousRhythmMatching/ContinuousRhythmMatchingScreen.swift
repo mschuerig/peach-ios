@@ -17,7 +17,7 @@ struct ContinuousRhythmMatchingScreen: View {
         VStack(spacing: 8) {
             statsHeader
             ContinuousRhythmMatchingDotView(
-                activeStep: session.currentStep,
+                activeBeatPosition: session.currentBeatPosition,
                 gapPosition: session.currentGapPosition
             )
             .padding(.vertical, 8)

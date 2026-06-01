@@ -41,7 +41,7 @@ struct ContinuousRhythmMatchingSettingsTests {
         let userSettings = MockUserSettings()
         let crmUserSettings = MockContinuousRhythmMatchingUserSettings()
         let settings = ContinuousRhythmMatchingSettings.from(userSettings, crmUserSettings: crmUserSettings)
-        #expect(settings.enabledGapPositions == Set(StepPosition.allCases))
+        #expect(settings.enabledGapPositions == Set(BeatPosition.allCases))
     }
 
     @Test("accepts any non-empty set of gap positions")
