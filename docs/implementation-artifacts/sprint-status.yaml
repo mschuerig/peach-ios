@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-01 # Peach 1.0.0 approved and live on the App Store. Story 73-4 done; epic-73 done.
+# last_updated: 2026-06-01 # Epic 73 retrospective completed.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -589,7 +589,7 @@ development_status:
   73-2-upload-metadata-and-screenshots: done
   73-3-set-privacy-nutrition-labels: done
   73-4-submit-for-app-store-review: done # 2026-06-01: Peach 1.0.0 approved and live: apps.apple.com/de/app/peach-gehörtrainer/id6773384465
-  epic-73-retrospective: optional
+  epic-73-retrospective: done
 
   # Epic 74: Desktop Delivery — macOS Distribution
   # Depends on: Epic 69 (compliance code)
