@@ -20,4 +20,15 @@ enum TimingOffsetDetectionHelp {
             body: String(localized: "The percentage shows how far off-beat the last click was — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
         ),
     ]
+
+    /// Help for the maximum-repetitions settings section. Joined onto the
+    /// inherited tempo help by ``TimingOffsetDetectionDiscipline/settingsHelp``
+    /// so the Help sheet documents the TOD-specific setting alongside the
+    /// shared rhythm tempo setting.
+    static let maxRepetitionsSettingsHelp: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Maximum Repetitions"),
+            body: String(localized: "**Maximum Repetitions** caps how many times the pattern repeats per trial before the audio stops. You can still answer after the audio stops. At **∞**, the pattern keeps repeating until you submit a direction. Pick **1** if you want to restore the single-pattern challenge.")
+        ),
+    ]
 }

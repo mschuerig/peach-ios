@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-02 # Story 80.2 done (max-repetitions setting end-to-end).
+# last_updated: 2026-06-02 # Story 80.3 review (Settings UI contribution + localization).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -691,7 +691,7 @@ development_status:
   80-0-beat-subdivision-for-step-sequencer: done
   80-1-gapless-looped-pattern-playback: done
   80-2-max-repetitions-setting: done
-  80-3-settings-ui-contribution-and-localization: backlog
+  80-3-settings-ui-contribution-and-localization: done
   80-4-training-screen-visual-treatment: backlog
   80-5-architecture-documentation-touch-up: backlog
   epic-80-retrospective: optional

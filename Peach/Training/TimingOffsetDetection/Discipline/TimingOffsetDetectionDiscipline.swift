@@ -41,23 +41,26 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     /// ``ContinuousRhythmMatching`` feature directory by the 77.2 spec.
     var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
 
-    /// Declares the rhythm tempo section so this discipline remains
-    /// self-contained: tempo configuration is meaningful for timing-offset
-    /// training even when ``ContinuousRhythmMatchingDiscipline`` is not
-    /// registered. The aggregating screen dedupes by ``DisciplineSettingsSection/id``,
-    /// so when both rhythm disciplines are active the section renders once.
+    /// Declares the rhythm tempo section (shared with
+    /// ``ContinuousRhythmMatchingDiscipline``) followed by the
+    /// TOD-specific maximum-repetitions section. The aggregator dedupes by
+    /// ``DisciplineSettingsSection/id``: the tempo section renders once when
+    /// both rhythm disciplines are active, while `"tod.maxRepetitions"` is
+    /// TOD-only and never collides.
     var settingsSections: [DisciplineSettingsSection] {
         [
             DisciplineSettingsSection(id: SharedRhythmSectionID.tempo) { RhythmTempoSettingsSection() },
+            DisciplineSettingsSection(id: "tod.maxRepetitions") { TimingOffsetDetectionMaxRepetitionsSettingsSection() },
         ]
     }
 
-    /// Mirrors the rhythm tempo help so disabling
-    /// ``ContinuousRhythmMatchingDiscipline`` does not silently strip help
-    /// for a setting timing-offset training still consumes. Help aggregation
-    /// dedupes by content, so this declaration is a no-op when both rhythm
-    /// disciplines are active.
-    var settingsHelp: [HelpSection] { ContinuousRhythmMatchingHelp.tempoSettingsHelp }
+    /// Inherits the rhythm tempo help (shared with
+    /// ``ContinuousRhythmMatchingDiscipline``) and appends the help for the
+    /// TOD-specific maximum-repetitions setting so each contributed section
+    /// has accompanying documentation in the Settings help sheet.
+    var settingsHelp: [HelpSection] {
+        ContinuousRhythmMatchingHelp.tempoSettingsHelp + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp
+    }
 
     /// Mirrors the rhythm spectrogram profile help for the same reason as
     /// ``settingsHelp``: the card this discipline renders is the rhythm
