@@ -41,6 +41,10 @@ final class StubContinuousRhythmMatchingUserSettings: ContinuousRhythmMatchingUs
     let enabledGapPositions: Set<BeatPosition> = ContinuousRhythmMatchingSettingsKeys.defaultEnabledGapPositions
 }
 
+final class StubTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSettings {
+    let maxRepetitions: Int = TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions
+}
+
 final class StubPitchDiscriminationDataStore: PitchDiscriminationObserver {
     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {}
 }
@@ -129,10 +133,15 @@ extension TrainingLifecycleCoordinator {
     static let stub: TrainingLifecycleCoordinator = {
         let userSettings = StubUserSettings()
         let crmUserSettings = StubContinuousRhythmMatchingUserSettings()
+        let todUserSettings = StubTimingOffsetDetectionUserSettings()
         let registry = TrainingLifecycleRegistry { builder in
             PitchDiscriminationSession.stub.contribute(to: builder, userSettings: userSettings)
             PitchMatchingSession.stub.contribute(to: builder, userSettings: userSettings)
-            TimingOffsetDetectionSession.stub.contribute(to: builder, userSettings: userSettings)
+            TimingOffsetDetectionSession.stub.contribute(
+                to: builder,
+                userSettings: userSettings,
+                todUserSettings: todUserSettings
+            )
             ContinuousRhythmMatchingSession.stub.contribute(
                 to: builder,
                 userSettings: userSettings,

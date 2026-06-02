@@ -6,35 +6,49 @@ import Foundation
 @Suite("TimingOffsetDetectionSettings Tests")
 struct TimingOffsetDetectionSettingsTests {
 
-    @Test("default values use 80 BPM, 400ms feedback, 20% max offset, 1% min offset")
+    @Test("default values use 80 BPM, 400ms feedback, 20% max offset, 1% min offset, and the feature-default maxRepetitions")
     func defaultValues() {
         let settings = TimingOffsetDetectionSettings()
         #expect(settings.tempo == TempoBPM(80))
         #expect(settings.feedbackDuration == .milliseconds(400))
         #expect(settings.maxOffsetPercentage == 20.0)
         #expect(settings.minOffsetPercentage == 1.0)
+        #expect(settings.maxRepetitions == TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions)
     }
 
-    @Test("from(userSettings) maps tempoBPM correctly")
+    @Test("from(userSettings, todUserSettings:) maps tempoBPM correctly")
     func fromUserSettings() {
         let mockSettings = MockUserSettings()
         mockSettings.tempoBPM = TempoBPM(120)
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
 
-        let settings = TimingOffsetDetectionSettings.from(mockSettings)
+        let settings = TimingOffsetDetectionSettings.from(mockSettings, todUserSettings: todUserSettings)
 
         #expect(settings.tempo == TempoBPM(120))
     }
 
-    @Test("from(userSettings) keeps other parameters at defaults")
+    @Test("from(userSettings, todUserSettings:) keeps other parameters at defaults")
     func fromUserSettingsKeepsDefaults() {
         let mockSettings = MockUserSettings()
         mockSettings.tempoBPM = TempoBPM(100)
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
 
-        let settings = TimingOffsetDetectionSettings.from(mockSettings)
+        let settings = TimingOffsetDetectionSettings.from(mockSettings, todUserSettings: todUserSettings)
 
         #expect(settings.feedbackDuration == .milliseconds(400))
         #expect(settings.maxOffsetPercentage == 20.0)
         #expect(settings.minOffsetPercentage == 1.0)
+    }
+
+    @Test("from(userSettings, todUserSettings:) reads maxRepetitions from the feature-local port")
+    func fromUserSettingsReadsMaxRepetitions() {
+        let mockSettings = MockUserSettings()
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
+        todUserSettings.maxRepetitions = 5
+
+        let settings = TimingOffsetDetectionSettings.from(mockSettings, todUserSettings: todUserSettings)
+
+        #expect(settings.maxRepetitions == 5)
     }
 }
 #endif

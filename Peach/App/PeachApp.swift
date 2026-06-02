@@ -38,6 +38,7 @@ struct PeachApp: App {
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
     private let crmUserSettings = AppContinuousRhythmMatchingUserSettings()
+    private let todUserSettings = AppTimingOffsetDetectionUserSettings()
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "AppStartup")
 
@@ -91,7 +92,8 @@ struct PeachApp: App {
                 transferService: transferService,
                 notePlayer: audio.notePlayer,
                 userSettings: userSettings,
-                crmUserSettings: crmUserSettings
+                crmUserSettings: crmUserSettings,
+                todUserSettings: todUserSettings
             )
             _trainingLifecycle = State(wrappedValue: coordinators.lifecycle)
             _settingsCoordinator = State(wrappedValue: coordinators.settings)
@@ -212,7 +214,8 @@ struct PeachApp: App {
             transferService: transferService,
             notePlayer: notePlayer,
             userSettings: userSettings,
-            crmUserSettings: crmUserSettings
+            crmUserSettings: crmUserSettings,
+            todUserSettings: todUserSettings
         )
         trainingLifecycle = coordinators.lifecycle
         settingsCoordinator = coordinators.settings
@@ -504,12 +507,17 @@ struct PeachApp: App {
         transferService: TrainingDataTransferService,
         notePlayer: any NotePlayer,
         userSettings: any UserSettings,
-        crmUserSettings: any ContinuousRhythmMatchingUserSettings
+        crmUserSettings: any ContinuousRhythmMatchingUserSettings,
+        todUserSettings: any TimingOffsetDetectionUserSettings
     ) -> (lifecycle: TrainingLifecycleCoordinator, settings: SettingsCoordinator) {
         let lifecycleRegistry = TrainingLifecycleRegistry { builder in
             pitchDiscriminationSession.contribute(to: builder, userSettings: userSettings)
             pitchMatchingSession.contribute(to: builder, userSettings: userSettings)
-            timingOffsetDetectionSession.contribute(to: builder, userSettings: userSettings)
+            timingOffsetDetectionSession.contribute(
+                to: builder,
+                userSettings: userSettings,
+                todUserSettings: todUserSettings
+            )
             continuousRhythmMatchingSession.contribute(
                 to: builder,
                 userSettings: userSettings,

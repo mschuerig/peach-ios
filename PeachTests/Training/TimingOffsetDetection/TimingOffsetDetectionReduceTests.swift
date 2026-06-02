@@ -115,6 +115,31 @@ struct TimingOffsetDetectionReduceTests {
         #expect(effects.isEmpty)
     }
 
+    // MARK: - Repetition Cap
+
+    @Test("playingPatternLoop + repetitionCapReached → playingPatternLoop, stopSequencerAtCap (no state change)")
+    func repetitionCapFromLoop() async {
+        let (state, effects) = reduce(.playingPatternLoop, .repetitionCapReached)
+        // State must not change: the user still owes a direction answer; the cap is a
+        // sequencer-stop mechanism within `playingPatternLoop`, not a state exit.
+        #expect(state == .playingPatternLoop)
+        #expect(effects.count == 1)
+        guard case .stopSequencerAtCap = effects.first else {
+            Issue.record("Expected .stopSequencerAtCap")
+            return
+        }
+    }
+
+    @Test("repetitionCapReached outside playingPatternLoop is a no-op")
+    func repetitionCapOutsideLoopIsNoOp() async {
+        // I/O matrix row: spurious cap event in non-loop state (showingFeedback / waitingForGrid / idle)
+        for startState: State in [.idle, .showingFeedback, .waitingForGrid] {
+            let (state, effects) = reduce(startState, .repetitionCapReached)
+            #expect(state == startState, "State must not change for spurious cap in \(startState)")
+            #expect(effects.isEmpty, "No effects for spurious cap in \(startState)")
+        }
+    }
+
     // MARK: - Invalid Transitions
 
     @Test("invalid transitions produce no state change and no effects")

@@ -477,7 +477,8 @@ struct TrainingLifecycleCoordinatorTests {
     private func makeFixture(
         policy: BackgroundPolicy,
         userSettings: MockUserSettings = MockUserSettings(),
-        crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings()
+        crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings(),
+        todUserSettings: MockTimingOffsetDetectionUserSettings = MockTimingOffsetDetectionUserSettings()
     ) -> LifecycleFixture {
         let notePlayer = MockNotePlayer()
         notePlayer.instantPlayback = true
@@ -507,7 +508,7 @@ struct TrainingLifecycleCoordinatorTests {
         let registry = TrainingLifecycleRegistry { builder in
             pdSession.contribute(to: builder, userSettings: userSettings)
             pmSession.contribute(to: builder, userSettings: userSettings)
-            todSession.contribute(to: builder, userSettings: userSettings)
+            todSession.contribute(to: builder, userSettings: userSettings, todUserSettings: todUserSettings)
             crmSession.contribute(to: builder, userSettings: userSettings, crmUserSettings: crmUserSettings)
         }
         let coordinator = TrainingLifecycleCoordinator(
@@ -527,9 +528,15 @@ struct TrainingLifecycleCoordinatorTests {
     private func makeCoordinator(
         policy: BackgroundPolicy,
         userSettings: MockUserSettings = MockUserSettings(),
-        crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings()
+        crmUserSettings: MockContinuousRhythmMatchingUserSettings = MockContinuousRhythmMatchingUserSettings(),
+        todUserSettings: MockTimingOffsetDetectionUserSettings = MockTimingOffsetDetectionUserSettings()
     ) -> TrainingLifecycleCoordinator {
-        makeFixture(policy: policy, userSettings: userSettings, crmUserSettings: crmUserSettings).coordinator
+        makeFixture(
+            policy: policy,
+            userSettings: userSettings,
+            crmUserSettings: crmUserSettings,
+            todUserSettings: todUserSettings
+        ).coordinator
     }
 
     private func waitUntilNotIdle(_ session: any TrainingSession, timeout: Duration = .seconds(1)) async throws {

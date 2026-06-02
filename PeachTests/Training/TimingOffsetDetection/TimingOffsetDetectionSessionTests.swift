@@ -18,13 +18,34 @@ private struct TimingOffsetDetectionSessionFixture {
     let strategy: MockNextTimingOffsetDetectionStrategy
     let observer: MockTimingOffsetDetectionObserver
     let profile: PerceptualProfile
+    let maxRepetitions: Int?
 
     var samplesPerBeat: Int64 { sequencer.samplesPerBeat }
     var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / Int64(TimingOffsetDetectionSession.subdivisionsPerBeat) }
+
+    /// Sample position at the boundary tick of the given full cycle index
+    /// (e.g. cycle 1 = end of first cycle = `samplesPerBeat * 1`).
+    func samplePositionAtCycleBoundary(_ cycleIndex: Int) -> Int64 {
+        Int64(cycleIndex) * samplesPerBeat
+    }
+
+    /// Default test settings, optionally overriding `maxRepetitions`. Mirrors `defaultTimingSettings`
+    /// but lets each test choose a per-trial cap (defaults to the production default).
+    var settings: TimingOffsetDetectionSettings {
+        if let maxRepetitions {
+            return TimingOffsetDetectionSettings(
+                tempo: TempoBPM(80),
+                feedbackDuration: .milliseconds(50),
+                maxRepetitions: maxRepetitions
+            )
+        }
+        return defaultTimingSettings
+    }
 }
 
 private func makeSession(
     trialToReturn: TimingOffsetDetectionTrial? = nil,
+    maxRepetitions: Int? = nil,
     currentTime: @escaping () -> Double = { 0.0 }
 ) -> TimingOffsetDetectionSessionFixture {
     let sequencer = MockBeatSequencer()
@@ -54,7 +75,8 @@ private func makeSession(
         sequencer: sequencer,
         strategy: strategy,
         observer: observer,
-        profile: profile
+        profile: profile,
+        maxRepetitions: maxRepetitions
     )
 }
 
@@ -808,6 +830,165 @@ struct TimingOffsetDetectionSessionTests {
         await f.sequencer.waitForStart(minCount: 2)
 
         #expect(f.sequencer.startCallCount >= 2)
+        f.session.stop()
+    }
+
+    // MARK: - Max Repetitions Cap (I/O matrix: cap-reached scenarios)
+
+    @Test("cap reached stops sequencer once, leaves state in playingPatternLoop, resets litDotCount")
+    func repetitionCapStopsSequencerWithoutLeavingLoop() async throws {
+        let trial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial, maxRepetitions: 3)
+        f.session.start(settings: f.settings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        let stopsBefore = f.sequencer.stopCallCount
+
+        // Advance into the middle of cycle 2 (subdivision index 6 → litDotCount 3).
+        f.sequencer.currentSamplePosition = f.samplesPerBeat + 2 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 3)
+
+        // Trip the cap on the boundary tick of cycle 3 (3 completed cycles).
+        f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(3)
+        f.session.evaluatePlaybackPosition()
+
+        #expect(f.session.state == .playingPatternLoop, "Cap must not exit playingPatternLoop")
+        #expect(f.session.litDotCount == 0, "litDotCount must reset when sequencer stops at the cap")
+        #expect(f.observer.completedCallCount == 0, "Cap alone does not notify the observer")
+
+        // Sequencer stop was enqueued; await it to observe the side effect deterministically.
+        while f.sequencer.stopCallCount == stopsBefore {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+        #expect(f.sequencer.stopCallCount == stopsBefore + 1)
+
+        // Polling further past the cap is a no-op: the reducer ignores .repetitionCapReached
+        // when state is no longer .playingPatternLoop, and the cancelled trackingTask
+        // suppresses real firings. We assert the no-op shape via evaluatePlaybackPosition.
+        let stopsAfterCap = f.sequencer.stopCallCount
+        f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(5)
+        f.session.evaluatePlaybackPosition()
+        #expect(f.sequencer.stopCallCount == stopsAfterCap, "Cap firing must not enqueue additional stops on subsequent polls")
+
+        f.session.stop()
+    }
+
+    @Test("answer after cap-stop completes the trial through the normal answer path")
+    func answerAfterCapCompletesTrial() async throws {
+        let trial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial, maxRepetitions: 2)
+        f.session.start(settings: f.settings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Trip the cap.
+        f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(2)
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.observer.completedCallCount == 0)
+
+        // The user can still submit a direction.
+        f.session.handleAnswer(direction: .late)
+
+        #expect(f.session.state == .showingFeedback)
+        #expect(f.observer.completedCallCount == 1)
+        let result = try #require(f.observer.lastResult)
+        #expect(result.isCorrect == true)
+        #expect(result.offset == trial.offset)
+        #expect(result.tempo == trial.tempo)
+
+        f.session.stop()
+    }
+
+    @Test("answer before cap is unchanged — no cap firing, observer notified once via the answer path")
+    func answerBeforeCapUnchanged() async throws {
+        let trial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial, maxRepetitions: 5)
+        f.session.start(settings: f.settings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Advance partway through cycle 2 (well before the 5-cycle cap).
+        f.sequencer.currentSamplePosition = f.samplesPerBeat + f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.session.litDotCount == 2)
+
+        f.session.handleAnswer(direction: .late)
+
+        #expect(f.session.state == .showingFeedback)
+        #expect(f.observer.completedCallCount == 1)
+
+        f.session.stop()
+    }
+
+    @Test("maxRepetitions == 1 stops the sequencer after exactly one full cycle")
+    func capOfOneStopsAfterFirstCycle() async throws {
+        let trial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial, maxRepetitions: 1)
+        f.session.start(settings: f.settings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        let stopsBefore = f.sequencer.stopCallCount
+
+        // Still inside cycle 1 (subdivision 3 of 4): cap must not fire.
+        f.sequencer.currentSamplePosition = 3 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 4)
+        #expect(f.sequencer.stopCallCount == stopsBefore)
+
+        // Reach the boundary after 1 completed cycle: cap fires.
+        f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(1)
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.session.litDotCount == 0)
+        #expect(f.observer.completedCallCount == 0, "User must still submit a direction")
+
+        while f.sequencer.stopCallCount == stopsBefore {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        f.session.stop()
+    }
+
+    @Test("very high maxRepetitions cap never fires — behaviour matches the uncapped loop")
+    func veryHighCapNeverFires() async throws {
+        let trial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial, maxRepetitions: .max)
+        f.session.start(settings: f.settings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        let stopsBefore = f.sequencer.stopCallCount
+
+        // Advance through several cycles — far beyond any sensible practical cap.
+        for cycleIndex in 0..<10 {
+            f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(cycleIndex)
+            f.session.evaluatePlaybackPosition()
+        }
+
+        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.sequencer.stopCallCount == stopsBefore, "Cap must not fire under a practical-infinity setting")
+        #expect(f.observer.completedCallCount == 0)
+
         f.session.stop()
     }
 }

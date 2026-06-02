@@ -20,6 +20,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         case answerReceived(direction: TimingDirection)
         case feedbackTimerFired
         case gridAlignmentReached
+        case repetitionCapReached
         case stopRequested
         case audioError
     }
@@ -27,6 +28,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     enum Effect {
         case beginNextTrial
         case stopSequencer
+        case stopSequencerAtCap
         case evaluateAnswer(direction: TimingDirection)
         case scheduleFeedbackTimer
         case stopAll
@@ -53,6 +55,11 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         case (.waitingForGrid, .gridAlignmentReached):
             state = .playingPatternLoop
             return [.beginNextTrial]
+
+        case (.playingPatternLoop, .repetitionCapReached):
+            // Cap stops the sequencer (audio silences) but leaves the session in
+            // `playingPatternLoop` so the user still owes a direction answer.
+            return [.stopSequencerAtCap]
 
         case (.idle, .stopRequested):
             return []
@@ -126,6 +133,10 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     /// Last subdivision index published to `litDotCount`, gating Observation churn at the 120 Hz tracking rate.
     private var lastPublishedSubdivisionIndex: Int = -1
+
+    /// Latches when the repetition cap fires so subsequent polls in the same trial cannot
+    /// re-emit `.repetitionCapReached`. Cleared at the start of each trial and on teardown.
+    private var didFireRepetitionCap: Bool = false
 
     var currentOffsetPercentage: Double? {
         guard let trial = currentTrial else { return nil }
@@ -256,6 +267,9 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         case .stopSequencer:
             stopSequencerForAnswer()
 
+        case .stopSequencerAtCap:
+            stopSequencerAtCap()
+
         case .evaluateAnswer(let direction):
             evaluateAnswer(direction: direction)
 
@@ -271,6 +285,8 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     private func beginNextTrial() {
         guard let settings else { return }
+
+        didFireRepetitionCap = false
 
         if gridOrigin == nil {
             let origin = currentTime()
@@ -326,6 +342,20 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
         let globalSubdivisionIndex = Int(timing.samplePosition / samplesPerSubdivision)
 
+        // Cap-reached check runs *before* the `litDotCount` publish so the lit-dot
+        // indicator does not flash one extra tick past the cap boundary. The
+        // `didFireRepetitionCap` latch enforces fire-once-per-trial structurally; in
+        // production the cancelled trackingTask also stops polling, but the latch keeps
+        // the invariant local rather than reliant on caller behaviour.
+        let completedCycles = globalSubdivisionIndex / Self.subdivisionsPerBeat
+        if !didFireRepetitionCap,
+           let settings,
+           completedCycles >= settings.maxRepetitions {
+            didFireRepetitionCap = true
+            send(.repetitionCapReached)
+            return
+        }
+
         if globalSubdivisionIndex != lastPublishedSubdivisionIndex {
             litDotCount = (globalSubdivisionIndex % Self.subdivisionsPerBeat) + 1
             lastPublishedSubdivisionIndex = globalSubdivisionIndex
@@ -334,10 +364,24 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     /// Cancels tracking and stops the sequencer in response to a user answer.
     private func stopSequencerForAnswer() {
+        cancelTrackingAndReset()
+        enqueueSequencerStop { [weak self] in self?.send(.audioError) }
+    }
+
+    /// Cancels tracking and stops the sequencer when the per-trial repetition cap is hit.
+    /// State stays at `.playingPatternLoop` so the user can still submit a direction;
+    /// the trial completes via the normal `.answerReceived` path. Failure is teardown-style
+    /// (default no-op `onFailure`) to match `stopAll`: an `.audioError` escalation here
+    /// would tear down the session before the user can answer.
+    private func stopSequencerAtCap() {
+        cancelTrackingAndReset()
+        enqueueSequencerStop()
+    }
+
+    private func cancelTrackingAndReset() {
         trackingTask?.cancel()
         trackingTask = nil
         resetTracking()
-        enqueueSequencerStop { [weak self] in self?.send(.audioError) }
     }
 
     private func evaluateAnswer(direction: TimingDirection) {
@@ -418,6 +462,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         lastCompletedTrial = nil
         settings = nil
         gridOrigin = nil
+        didFireRepetitionCap = false
         showFeedback = false
         isLastAnswerCorrect = nil
         resetTracking()
