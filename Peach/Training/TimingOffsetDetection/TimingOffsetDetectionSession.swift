@@ -5,20 +5,18 @@ import os
 
 enum TimingOffsetDetectionSessionState {
     case idle
-    case playingPattern
-    case awaitingAnswer
+    case playingPatternLoop
     case showingFeedback
     case waitingForGrid
 }
 
 @Observable
-final class TimingOffsetDetectionSession: TrainingSession {
+final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     // MARK: - State Machine Types
 
     enum Event {
         case startRequested
-        case patternFinished
         case answerReceived(direction: TimingDirection)
         case feedbackTimerFired
         case gridAlignmentReached
@@ -28,6 +26,7 @@ final class TimingOffsetDetectionSession: TrainingSession {
 
     enum Effect {
         case beginNextTrial
+        case stopSequencer
         case evaluateAnswer(direction: TimingDirection)
         case scheduleFeedbackTimer
         case stopAll
@@ -37,26 +36,28 @@ final class TimingOffsetDetectionSession: TrainingSession {
     static func reduce(state: inout TimingOffsetDetectionSessionState, event: Event) -> [Effect] {
         switch (state, event) {
         case (.idle, .startRequested):
-            state = .playingPattern
+            state = .playingPatternLoop
             return [.beginNextTrial]
 
-        case (.playingPattern, .patternFinished):
-            state = .awaitingAnswer
-            return []
-
-        case (.awaitingAnswer, .answerReceived(let direction)):
+        case (.playingPatternLoop, .answerReceived(let direction)):
             state = .showingFeedback
-            return [.evaluateAnswer(direction: direction), .scheduleFeedbackTimer]
+            // Mechanism (.stopSequencer) is emitted ahead of policy (.evaluateAnswer)
+            // so audio silencing is ordered explicitly rather than buried inside the
+            // result-computation effect.
+            return [.stopSequencer, .evaluateAnswer(direction: direction), .scheduleFeedbackTimer]
 
         case (.showingFeedback, .feedbackTimerFired):
             state = .waitingForGrid
             return []
 
         case (.waitingForGrid, .gridAlignmentReached):
-            state = .playingPattern
+            state = .playingPatternLoop
             return [.beginNextTrial]
 
         case (.idle, .stopRequested):
+            return []
+
+        case (.idle, .audioError):
             return []
 
         case (_, .stopRequested):
@@ -71,6 +72,23 @@ final class TimingOffsetDetectionSession: TrainingSession {
             return []
         }
     }
+
+    // MARK: - Constants
+
+    /// Index of the note that receives the timing offset (0-based among 4 sixteenth notes).
+    /// The help text in TimingOffsetDetectionScreen refers to this position by ordinal name ("third").
+    static let testedNoteIndex = 2
+
+    /// 4 sixteenths per beat. Internal (not private) so tests can compute subdivision-aligned sample positions.
+    static let subdivisionsPerBeat: Int = 4
+
+    /// Sub-perceptual UI poll cadence (~125 Hz) that keeps `litDotCount` visually in lockstep with the audio.
+    private static let trackingPollingInterval: Duration = .milliseconds(8)
+
+    /// All-rest fallback returned by `nextBeat()` when no trial is active.
+    /// A sequencer refill scheduled before `stop()` may still call `nextBeat()` after teardown;
+    /// returning silence ensures no audible click pattern leaks past the session's lifetime.
+    private static let silentBeat = Beat(subdivisions: Array(repeating: .rest, count: subdivisionsPerBeat))
 
     // MARK: - Logger
 
@@ -87,11 +105,10 @@ final class TimingOffsetDetectionSession: TrainingSession {
 
     // MARK: - Dependencies
 
-    private let rhythmPlayer: RhythmPlayer
+    private let beatSequencer: any BeatSequencer
     private let strategy: NextTimingOffsetDetectionStrategy
     private let profile: TrainingProfile
     private let observers: [TimingOffsetDetectionObserver]
-    private let sampleRate: SampleRate
     private let currentTime: () -> Double
     private var lifecycle: SessionLifecycle?
 
@@ -100,8 +117,15 @@ final class TimingOffsetDetectionSession: TrainingSession {
     private var settings: TimingOffsetDetectionSettings?
     private var currentTrial: TimingOffsetDetectionTrial?
     private var lastCompletedTrial: CompletedTimingOffsetDetectionTrial?
-    private var currentHandle: RhythmPlaybackHandle?
     private var gridOrigin: Double?
+    private var startTask: Task<Void, Never>?
+    private var trackingTask: Task<Void, Never>?
+    /// Chained stop task — serializes back-to-back sequencer stops and waits out
+    /// any in-flight `startTask` so concurrent start/stop can't race on the sequencer.
+    private var stopTask: Task<Void, Never>?
+
+    /// Last subdivision index published to `litDotCount`, gating Observation churn at the 120 Hz tracking rate.
+    private var lastPublishedSubdivisionIndex: Int = -1
 
     var currentOffsetPercentage: Double? {
         guard let trial = currentTrial else { return nil }
@@ -120,22 +144,20 @@ final class TimingOffsetDetectionSession: TrainingSession {
     // MARK: - Initialization
 
     init(
-        rhythmPlayer: RhythmPlayer,
+        beatSequencer: any BeatSequencer,
         strategy: NextTimingOffsetDetectionStrategy,
         profile: TrainingProfile,
         observers: [TimingOffsetDetectionObserver] = [],
-        sampleRate: SampleRate,
         notificationCenter: NotificationCenter = .default,
         audioInterruptionObserver: AudioInterruptionObserving,
         backgroundNotificationName: Notification.Name? = nil,
         foregroundNotificationName: Notification.Name? = nil,
         currentTime: @escaping () -> Double = { CACurrentMediaTime() }
     ) {
-        self.rhythmPlayer = rhythmPlayer
+        self.beatSequencer = beatSequencer
         self.strategy = strategy
         self.profile = profile
         self.observers = observers
-        self.sampleRate = sampleRate
         self.currentTime = currentTime
         self.lifecycle = SessionLifecycle(
             logger: logger,
@@ -151,7 +173,7 @@ final class TimingOffsetDetectionSession: TrainingSession {
 
     var isIdle: Bool { state == .idle }
 
-    var canAcceptAnswer: Bool { state == .awaitingAnswer }
+    var canAcceptAnswer: Bool { state == .playingPatternLoop }
 
     /// Handles a letter-key shortcut by matching against localized Early/Late keys.
     /// Returns `true` if the key matched and the answer was accepted.
@@ -190,6 +212,22 @@ final class TimingOffsetDetectionSession: TrainingSession {
         send(.stopRequested)
     }
 
+    // MARK: - BeatProvider Protocol
+
+    func nextBeat() -> Beat {
+        guard let trial = currentTrial else { return Self.silentBeat }
+        return Self.buildBeat(for: trial)
+    }
+
+    static func buildBeat(for trial: TimingOffsetDetectionTrial) -> Beat {
+        let subdivisions: [Subdivision] = (0..<subdivisionsPerBeat).map { index in
+            let velocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
+            let offset: Duration = (index == testedNoteIndex) ? trial.offset.duration : .zero
+            return .note(velocity: velocity, offset: offset)
+        }
+        return Beat(subdivisions: subdivisions)
+    }
+
     // MARK: - State Machine Engine
 
     private func send(_ event: Event) {
@@ -215,6 +253,9 @@ final class TimingOffsetDetectionSession: TrainingSession {
         case .beginNextTrial:
             beginNextTrial()
 
+        case .stopSequencer:
+            stopSequencerForAnswer()
+
         case .evaluateAnswer(let direction):
             evaluateAnswer(direction: direction)
 
@@ -232,8 +273,9 @@ final class TimingOffsetDetectionSession: TrainingSession {
         guard let settings else { return }
 
         if gridOrigin == nil {
-            gridOrigin = currentTime()
-            logger.info("Grid origin established at \(self.gridOrigin!)")
+            let origin = currentTime()
+            gridOrigin = origin
+            logger.info("Grid origin established at \(origin)")
         }
 
         let trial = strategy.nextTimingOffsetDetectionTrial(
@@ -242,44 +284,60 @@ final class TimingOffsetDetectionSession: TrainingSession {
             lastResult: lastCompletedTrial
         )
         currentTrial = trial
+        resetTracking()
 
-        let pattern = buildPattern(for: trial, settings: settings)
-
-        lifecycle?.setTrainingTask(Task {
+        startTask = Task {
             do {
-                litDotCount = 0
-                let handle = try await rhythmPlayer.play(pattern)
-                currentHandle = handle
-
-                guard state != .idle && !Task.isCancelled else {
-                    logger.info("Training stopped during pattern playback, aborting")
+                try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
+                guard state == .playingPatternLoop, !Task.isCancelled else {
+                    logger.info("State changed while starting sequencer, aborting")
                     return
                 }
-
-                let sixteenthDuration = settings.tempo.sixteenthNoteDuration
-                for i in 0..<4 {
-                    guard state != .idle && !Task.isCancelled else { return }
-                    litDotCount = i + 1
-                    if i < 3 {
-                        try await Task.sleep(for: sixteenthDuration)
-                    }
-                }
-                try await Task.sleep(for: sixteenthDuration)
-
-                guard state != .idle && !Task.isCancelled else {
-                    logger.info("Training stopped after pattern completed, aborting")
-                    return
-                }
-
-                logger.info("Pattern finished, awaiting answer")
-                send(.patternFinished)
+                startTrackingLoop()
             } catch is CancellationError {
-                logger.info("Training task cancelled")
+                logger.info("Sequencer start task cancelled")
             } catch {
                 logger.error("Audio error, stopping training: \(error.localizedDescription)")
                 send(.audioError)
             }
-        })
+        }
+    }
+
+    private func startTrackingLoop() {
+        trackingTask?.cancel()
+        trackingTask = Task {
+            while !Task.isCancelled {
+                evaluatePlaybackPosition()
+                try? await Task.sleep(for: Self.trackingPollingInterval)
+            }
+        }
+    }
+
+    /// Polls `beatSequencer.timing.samplePosition` and updates `litDotCount` on subdivision changes.
+    /// Visible for testing.
+    func evaluatePlaybackPosition() {
+        let timing = beatSequencer.timing
+        guard state == .playingPatternLoop,
+              timing.samplePosition >= 0,
+              timing.samplesPerBeat > 0 else { return }
+
+        let samplesPerSubdivision = timing.samplesPerBeat / Int64(Self.subdivisionsPerBeat)
+        guard samplesPerSubdivision > 0 else { return }
+
+        let globalSubdivisionIndex = Int(timing.samplePosition / samplesPerSubdivision)
+
+        if globalSubdivisionIndex != lastPublishedSubdivisionIndex {
+            litDotCount = (globalSubdivisionIndex % Self.subdivisionsPerBeat) + 1
+            lastPublishedSubdivisionIndex = globalSubdivisionIndex
+        }
+    }
+
+    /// Cancels tracking and stops the sequencer in response to a user answer.
+    private func stopSequencerForAnswer() {
+        trackingTask?.cancel()
+        trackingTask = nil
+        resetTracking()
+        enqueueSequencerStop { [weak self] in self?.send(.audioError) }
     }
 
     private func evaluateAnswer(direction: TimingDirection) {
@@ -335,7 +393,6 @@ final class TimingOffsetDetectionSession: TrainingSession {
             let waitTime = gridPoint - now
 
             if waitTime > 0 {
-                litDotCount = 0
                 logger.info("Waiting \(waitTime)s for grid alignment")
                 try? await Task.sleep(for: .seconds(waitTime))
                 guard state == .waitingForGrid && !Task.isCancelled else { return }
@@ -349,26 +406,58 @@ final class TimingOffsetDetectionSession: TrainingSession {
     private func stopAll() {
         logger.info("Training stopped")
 
-        Task {
-            try? await currentHandle?.stop()
-            try? await rhythmPlayer.stopAll()
-        }
-
+        trackingTask?.cancel()
+        trackingTask = nil
         lifecycle?.cancelAllTasks()
+
+        // Teardown path uses the default no-op onFailure: an audio error here would re-enter
+        // stopAll via the reducer (.audioError → .stopAll), looping. Logging-only is sufficient.
+        enqueueSequencerStop()
 
         currentTrial = nil
         lastCompletedTrial = nil
-        currentHandle = nil
         settings = nil
         gridOrigin = nil
         showFeedback = false
         isLastAnswerCorrect = nil
-        litDotCount = 0
+        resetTracking()
         sessionBestOffsetPercentage = nil
         sessionBestOffsetMs = nil
     }
 
     // MARK: - Private Helpers
+
+    /// Serializes sequencer stops so an answer-driven stop followed by a teardown stop
+    /// cannot race on the sequencer's internal `runLoopTask`. Each enqueued stop:
+    /// awaits the previous stop, cancels-and-awaits any in-flight `startTask`, then calls
+    /// `beatSequencer.stop()`. Non-cancellation errors are logged and forwarded to `onFailure`,
+    /// which defaults to a no-op (suitable for teardown — errors logged and ignored) and is
+    /// overridden by answer-driven stops to send `.audioError` per the spec's audio-error contract.
+    private func enqueueSequencerStop(onFailure: @escaping () -> Void = {}) {
+        let inflightStart = startTask
+        startTask = nil
+        let previousStop = stopTask
+        stopTask = Task {
+            await previousStop?.value
+            if let inflightStart {
+                inflightStart.cancel()
+                await inflightStart.value
+            }
+            do {
+                try await self.beatSequencer.stop()
+            } catch is CancellationError {
+                return
+            } catch {
+                self.logger.error("Failed to stop beat sequencer: \(error.localizedDescription)")
+                onFailure()
+            }
+        }
+    }
+
+    private func resetTracking() {
+        litDotCount = 0
+        lastPublishedSubdivisionIndex = -1
+    }
 
     private func nextGridPoint(quarterNoteDuration: Double) -> Double {
         guard let gridOrigin else { return currentTime() }
@@ -376,36 +465,5 @@ final class TimingOffsetDetectionSession: TrainingSession {
         let elapsed = now - gridOrigin
         let n = ceil(elapsed / quarterNoteDuration)
         return gridOrigin + n * quarterNoteDuration
-    }
-
-    /// Index of the note that receives the timing offset (0-based among 4 sixteenth notes).
-    /// The help text in TimingOffsetDetectionScreen refers to this position by ordinal name ("third").
-    static let testedNoteIndex = 2
-
-    private static let patternNoteCount = 4
-
-    private func buildPattern(for trial: TimingOffsetDetectionTrial, settings: TimingOffsetDetectionSettings) -> RhythmPattern {
-        let sixteenthDuration = settings.tempo.sixteenthNoteDuration
-        let samplesPerSixteenth = sampleRate.samples(for: sixteenthDuration)
-
-        let clickNote = MIDINote(76)
-        let offsetSamples = sampleRate.samples(for: trial.offset.duration)
-
-        let events = (0..<Self.patternNoteCount).map { i in
-            let base = Int64(i) * samplesPerSixteenth
-            let offset = (i == Self.testedNoteIndex) ? offsetSamples : 0
-            let velocity = (i == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
-            return RhythmPattern.Event(
-                sampleOffset: base + offset,
-                midiNote: clickNote,
-                velocity: velocity
-            )
-        }
-
-        return RhythmPattern(
-            events: events,
-            sampleRate: sampleRate,
-            totalDuration: sixteenthDuration * 4
-        )
     }
 }

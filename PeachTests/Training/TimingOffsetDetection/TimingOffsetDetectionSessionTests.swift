@@ -14,40 +14,46 @@ private let defaultTimingSettings = TimingOffsetDetectionSettings(
 
 private struct TimingOffsetDetectionSessionFixture {
     let session: TimingOffsetDetectionSession
-    let mockPlayer: MockRhythmPlayer
-    let mockStrategy: MockNextTimingOffsetDetectionStrategy
-    let mockObserver: MockTimingOffsetDetectionObserver
+    let sequencer: MockBeatSequencer
+    let strategy: MockNextTimingOffsetDetectionStrategy
+    let observer: MockTimingOffsetDetectionObserver
     let profile: PerceptualProfile
+
+    var samplesPerBeat: Int64 { sequencer.samplesPerBeat }
+    var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / Int64(TimingOffsetDetectionSession.subdivisionsPerBeat) }
 }
 
 private func makeSession(
     trialToReturn: TimingOffsetDetectionTrial? = nil,
     currentTime: @escaping () -> Double = { 0.0 }
 ) -> TimingOffsetDetectionSessionFixture {
-    let mockPlayer = MockRhythmPlayer()
-    let mockStrategy = MockNextTimingOffsetDetectionStrategy()
-    let mockObserver = MockTimingOffsetDetectionObserver()
+    let sequencer = MockBeatSequencer()
+    // MockBeatSequencer exposes samplesPerBeat directly; it isn't derived from the TempoBPM passed via start(tempo:).
+    sequencer.samplesPerBeat = 22050
+    sequencer.sampleRate = .standard44100
+
+    let strategy = MockNextTimingOffsetDetectionStrategy()
+    let observer = MockTimingOffsetDetectionObserver()
     let profile = PerceptualProfile()
 
     if let trial = trialToReturn {
-        mockStrategy.trialToReturn = trial
+        strategy.trialToReturn = trial
     }
 
     let session = TimingOffsetDetectionSession(
-        rhythmPlayer: mockPlayer,
-        strategy: mockStrategy,
+        beatSequencer: sequencer,
+        strategy: strategy,
         profile: profile,
-        observers: [mockObserver],
-        sampleRate: .standard48000,
+        observers: [observer],
         audioInterruptionObserver: NoOpAudioInterruptionObserver(),
         currentTime: currentTime
     )
 
     return TimingOffsetDetectionSessionFixture(
         session: session,
-        mockPlayer: mockPlayer,
-        mockStrategy: mockStrategy,
-        mockObserver: mockObserver,
+        sequencer: sequencer,
+        strategy: strategy,
+        observer: observer,
         profile: profile
     )
 }
@@ -80,67 +86,103 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession()
         #expect(f.session.state == .idle)
         #expect(f.session.isIdle)
+        #expect(f.session.litDotCount == 0)
     }
 
-    @Test("start transitions to playingPattern and calls strategy and rhythm player")
-    func startTransitionsToPlayingPattern() async {
-        let f = makeSession()
+    // MARK: - Start / Loop Lifecycle
 
-        var capturedState: TimingOffsetDetectionSessionState?
-        f.mockPlayer.onPlayCalled = {
-            if capturedState == nil {
-                capturedState = f.session.state
-            }
-        }
-
-        f.session.start(settings: defaultTimingSettings)
-        await f.mockPlayer.waitForPlay()
-
-        #expect(capturedState == .playingPattern)
-        #expect(f.mockPlayer.playCallCount >= 1)
-        #expect(f.mockStrategy.nextTimingOffsetDetectionTrialCallCount >= 1)
-    }
-
-    @Test("pattern has 4 events with 3rd note offset and others on grid")
-    func patternHas4EventsWithCorrectOffsets() async throws {
+    @Test("start transitions to playingPatternLoop and starts the sequencer")
+    func startTransitionsToPlayingPatternLoop() async {
         let f = makeSession()
 
         f.session.start(settings: defaultTimingSettings)
-        await f.mockPlayer.waitForPlay()
+        await f.sequencer.waitForStart()
 
-        let pattern = try #require(f.mockPlayer.lastPattern)
-        #expect(pattern.events.count == 4)
+        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.sequencer.startCallCount == 1)
+        #expect(f.sequencer.lastTempo == TempoBPM(80))
+        #expect(f.strategy.nextTimingOffsetDetectionTrialCallCount == 1)
 
-        let events = pattern.events
-
-        let tempo = TempoBPM(80)
-        let sixteenthDuration = tempo.sixteenthNoteDuration
-        let samplesPerSixteenth = Int64(SampleRate.standard48000.rawValue * sixteenthDuration.timeInterval)
-
-        // Events 0, 1, 3 on grid; event 2 shifted
-        #expect(events[0].sampleOffset == 0)
-        #expect(events[1].sampleOffset == samplesPerSixteenth)
-        #expect(events[3].sampleOffset == 3 * samplesPerSixteenth)
-
-        // Event 2: base offset at 2×sixteenth + trial offset
-        let trialOffset = TimingOffset(.milliseconds(50))
-        let offsetSamples = Int64(SampleRate.standard48000.rawValue * trialOffset.duration.timeInterval)
-        #expect(events[2].sampleOffset == 2 * samplesPerSixteenth + offsetSamples)
-
-        // All events use click MIDI note
-        for event in events {
-            #expect(event.midiNote == MIDINote(76))
-        }
-
-        // First event uses accent velocity, others use normal
-        #expect(events[0].velocity == RhythmVelocity.accent)
-        for i in 1..<events.count {
-            #expect(events[i].velocity == RhythmVelocity.normal)
-        }
+        f.session.stop()
     }
 
-    @Test("pattern with early offset preserves event order")
-    func patternWithEarlyOffsetPreservesOrder() async throws {
+    @Test("session provides itself as beat provider to sequencer")
+    func sessionProvidesItselfAsBeatProvider() async {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+
+        #expect(f.sequencer.lastBeatProvider is TimingOffsetDetectionSession)
+
+        f.session.stop()
+    }
+
+    @Test("start ignored when already running")
+    func startIgnoredWhenAlreadyRunning() async {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+
+        f.session.start(settings: defaultTimingSettings)
+
+        #expect(f.strategy.nextTimingOffsetDetectionTrialCallCount == 1)
+        f.session.stop()
+    }
+
+    // MARK: - nextBeat Shape (I/O matrix: pattern shape)
+
+    @Test("nextBeat returns 4-subdivision beat with accent on first and offset on third")
+    func nextBeatShape() async throws {
+        let lateTrial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: lateTrial)
+
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+
+        let beat = f.session.nextBeat()
+
+        #expect(beat.subdivisions.count == 4)
+
+        // Subdivision 0: accent, no offset
+        guard case let .note(velocity0, offset0) = beat.subdivisions[0] else {
+            Issue.record("Expected subdivision 0 to be a note")
+            return
+        }
+        #expect(velocity0 == RhythmVelocity.accent)
+        #expect(offset0 == .zero)
+
+        // Subdivision 1: normal, no offset
+        guard case let .note(velocity1, offset1) = beat.subdivisions[1] else {
+            Issue.record("Expected subdivision 1 to be a note")
+            return
+        }
+        #expect(velocity1 == RhythmVelocity.normal)
+        #expect(offset1 == .zero)
+
+        // Subdivision 2 (tested note): normal, carries trial offset
+        guard case let .note(velocity2, offset2) = beat.subdivisions[2] else {
+            Issue.record("Expected subdivision 2 to be a note")
+            return
+        }
+        #expect(velocity2 == RhythmVelocity.normal)
+        #expect(offset2 == lateTrial.offset.duration)
+
+        // Subdivision 3: normal, no offset
+        guard case let .note(velocity3, offset3) = beat.subdivisions[3] else {
+            Issue.record("Expected subdivision 3 to be a note")
+            return
+        }
+        #expect(velocity3 == RhythmVelocity.normal)
+        #expect(offset3 == .zero)
+
+        f.session.stop()
+    }
+
+    @Test("nextBeat carries early (negative) offset on third subdivision")
+    func nextBeatWithEarlyOffset() async throws {
         let earlyTrial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
             offset: TimingOffset(.milliseconds(-50))
@@ -148,32 +190,61 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: earlyTrial)
 
         f.session.start(settings: defaultTimingSettings)
-        await f.mockPlayer.waitForPlay()
+        await f.sequencer.waitForStart()
 
-        let events = try #require(f.mockPlayer.lastPattern?.events)
+        let beat = f.session.nextBeat()
 
-        // Early offset shifts event 2 earlier but it stays after event 1
-        // (offsets are capped at 20% of a sixteenth — well under the full sixteenth gap)
-        for i in 1..<events.count {
-            #expect(events[i].sampleOffset >= events[i - 1].sampleOffset)
+        guard case let .note(_, offset2) = beat.subdivisions[2] else {
+            Issue.record("Expected subdivision 2 to be a note")
+            return
         }
+        #expect(offset2 == earlyTrial.offset.duration)
+        #expect(offset2 < .zero)
 
-        // Tested note is still at index 2
-        let tempo = TempoBPM(80)
-        let samplesPerSixteenth = Int64(SampleRate.standard48000.rawValue * tempo.sixteenthNoteDuration.timeInterval)
-        #expect(events[2].sampleOffset < 2 * samplesPerSixteenth, "early offset should shift event 2 before its grid position")
+        f.session.stop()
     }
 
-    @Test("pattern total duration unchanged at 4 sixteenth notes")
-    func patternTotalDurationUnchanged() async throws {
+    @Test("nextBeat after stop returns a silent (all-rest) beat so a refill cannot leak audible clicks")
+    func nextBeatAfterStopReturnsFallback() async {
         let f = makeSession()
-
         f.session.start(settings: defaultTimingSettings)
-        await f.mockPlayer.waitForPlay()
+        await f.sequencer.waitForStart()
 
-        let pattern = try #require(f.mockPlayer.lastPattern)
-        let expectedDuration = defaultTimingSettings.tempo.sixteenthNoteDuration * 4
-        #expect(pattern.totalDuration == expectedDuration)
+        f.session.stop()
+
+        let beat = f.session.nextBeat()
+        #expect(beat.subdivisions.count == 4)
+        for subdivision in beat.subdivisions {
+            guard case .rest = subdivision else {
+                Issue.record("Expected .rest in fallback beat, got \(subdivision)")
+                return
+            }
+        }
+        // litDotCount remains 0 — the sequencer-driven loop is gone.
+        f.sequencer.currentSamplePosition = 0
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 0)
+    }
+
+    @Test("nextBeat returns structurally identical beats across repeated calls within a trial (looping invariant)")
+    func nextBeatStableAcrossRepetitions() async throws {
+        let lateTrial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: lateTrial)
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Sequencer will request many beats over the life of one trial. Every request
+        // must return the same beat shape — gapless looping requires beat-by-beat stability.
+        let beats = (0..<5).map { _ in f.session.nextBeat() }
+        for beat in beats {
+            #expect(beat == beats[0], "All beats within a trial must be structurally identical")
+        }
+
+        f.session.stop()
     }
 
     @Test("testedNoteIndex is consistent with help text ordinal")
@@ -187,18 +258,146 @@ struct TimingOffsetDetectionSessionTests {
                 "Localization key must contain '\(expectedOrdinal)' to match testedNoteIndex=\(TimingOffsetDetectionSession.testedNoteIndex)")
     }
 
-    @Test("transitions to awaitingAnswer after pattern completes")
-    func transitionsToAwaitingAnswer() async throws {
+    // MARK: - litDotCount Tracking
+
+    @Test("litDotCount cycles 1→2→3→4→1 as samplePosition advances")
+    func litDotCountCyclesAcrossLoopIterations() async throws {
         let f = makeSession()
-
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
 
-        #expect(f.session.state == .awaitingAnswer)
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Inside first beat: subdivision 0 → litDotCount 1
+        f.sequencer.currentSamplePosition = 0
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 1)
+
+        // subdivision 1 → 2
+        f.sequencer.currentSamplePosition = f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 2)
+
+        // subdivision 2 → 3
+        f.sequencer.currentSamplePosition = 2 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 3)
+
+        // subdivision 3 → 4
+        f.sequencer.currentSamplePosition = 3 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 4)
+
+        // Second beat, subdivision 0 → 1 (loop boundary)
+        f.sequencer.currentSamplePosition = 4 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 1)
+
+        // Second beat, subdivision 2 → 3
+        f.sequencer.currentSamplePosition = 6 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 3)
+
+        f.session.stop()
     }
 
-    @Test("handleAnswer records correct result and notifies observers")
-    func handleAnswerRecordsCorrectResult() async throws {
+    @Test("trackingTask updates litDotCount as samplePosition advances and stops on session stop")
+    func trackingTaskUpdatesLitDotCount() async throws {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        f.sequencer.currentSamplePosition = 2 * f.samplesPerSubdivision
+        let deadline = ContinuousClock.now + .milliseconds(200)
+        while ContinuousClock.now < deadline && f.session.litDotCount != 3 {
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        #expect(f.session.litDotCount == 3)
+
+        f.session.stop()
+        #expect(f.session.litDotCount == 0)
+        f.sequencer.currentSamplePosition = 5 * f.samplesPerSubdivision
+        try await Task.sleep(for: .milliseconds(30))
+        #expect(f.session.litDotCount == 0, "Tracking loop must be cancelled after stop")
+    }
+
+    @Test("litDotCount only republishes on subdivision change (gating Observation churn)")
+    func litDotCountGatesObservationChurn() async throws {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Drive into subdivision 1
+        f.sequencer.currentSamplePosition = f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 2)
+
+        // Tick within the same subdivision — should not change litDotCount
+        f.sequencer.currentSamplePosition = f.samplesPerSubdivision + 1
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 2)
+
+        f.session.stop()
+    }
+
+    @Test("litDotCount is zero before sequencer is running")
+    func litDotCountZeroOutsidePlayingPatternLoop() async {
+        let f = makeSession()
+        #expect(f.session.litDotCount == 0)
+        // Even if we drive samplePosition while idle, evaluation is a no-op.
+        f.sequencer.currentSamplePosition = 5 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 0)
+    }
+
+    @Test("litDotCount resets to 0 on stop")
+    func litDotCountResetsOnStop() async throws {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        f.sequencer.currentSamplePosition = 2 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 3)
+
+        f.session.stop()
+        #expect(f.session.litDotCount == 0)
+    }
+
+    @Test("litDotCount is 0 in waitingForGrid and showingFeedback states")
+    func litDotCountZeroInNonLoopStates() async throws {
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Advance some subdivisions so litDotCount > 0
+        f.sequencer.currentSamplePosition = 2 * f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 3)
+
+        // Answer mid-loop: leaves playingPatternLoop and resets litDotCount.
+        mockTime = 10.3
+        f.session.handleAnswer(direction: .late)
+        #expect(f.session.state == .showingFeedback)
+        #expect(f.session.litDotCount == 0)
+
+        // Wait for the feedback timer to advance state to waitingForGrid.
+        try await waitForState(f.session, .waitingForGrid)
+        #expect(f.session.litDotCount == 0)
+
+        f.session.stop()
+    }
+
+    // MARK: - Answer Handling (I/O matrix: user answers mid-loop)
+
+    @Test("handleAnswer mid-loop transitions to showingFeedback and stops the sequencer")
+    func handleAnswerMidLoopStopsSequencer() async throws {
         let lateTrial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
             offset: TimingOffset(.milliseconds(50))
@@ -206,14 +405,22 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: lateTrial)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.handleAnswer(direction: .late)
 
-        #expect(f.mockObserver.completedCallCount == 1)
-        #expect(f.mockObserver.lastResult?.isCorrect == true)
-        #expect(f.mockObserver.lastResult?.offset == lateTrial.offset)
-        #expect(f.mockObserver.lastResult?.tempo == lateTrial.tempo)
+        #expect(f.session.state == .showingFeedback)
+        #expect(f.observer.completedCallCount == 1)
+        #expect(f.observer.lastResult?.isCorrect == true)
+        #expect(f.observer.lastResult?.offset == lateTrial.offset)
+        #expect(f.observer.lastResult?.tempo == lateTrial.tempo)
+
+        // The sequencer is stopped to silence audio.
+        await f.sequencer.waitForStop()
+        #expect(f.sequencer.stopCallCount >= 1)
+
+        f.session.stop()
     }
 
     @Test("handleAnswer records incorrect result when direction wrong")
@@ -225,39 +432,121 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: lateTrial)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.handleAnswer(direction: .early)
 
-        #expect(f.mockObserver.completedCallCount == 1)
-        #expect(f.mockObserver.lastResult?.isCorrect == false)
+        #expect(f.observer.completedCallCount == 1)
+        #expect(f.observer.lastResult?.isCorrect == false)
     }
 
-    @Test("feedback phase transitions and auto-advances to next trial")
-    func feedbackPhaseAutoAdvances() async throws {
-        let f = makeSession()
-
+    @Test("handleAnswer between repetitions (loop boundary) produces the same outcome as a mid-loop answer")
+    func handleAnswerAtLoopBoundary() async throws {
+        // Spec I/O matrix: "Same as [mid-loop]; no special handling needed at boundary."
+        let lateTrial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: lateTrial)
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // Sit at the loop boundary (samplePosition between repetitions).
+        f.sequencer.currentSamplePosition = f.samplesPerBeat
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 1)
 
         f.session.handleAnswer(direction: .late)
+
         #expect(f.session.state == .showingFeedback)
-        #expect(f.session.showFeedback == true)
-        #expect(f.session.isLastAnswerCorrect != nil)
+        #expect(f.observer.completedCallCount == 1)
+        // Outcome is byte-identical to a mid-loop answer for the same trial.
+        let result = try #require(f.observer.lastResult)
+        #expect(result.isCorrect == true)
+        #expect(result.offset == lateTrial.offset)
+        #expect(result.tempo == lateTrial.tempo)
 
-        // Wait for feedback to clear and next trial to start
-        await f.mockPlayer.waitForPlay(minCount: 2)
-
-        #expect(f.mockPlayer.playCallCount >= 2)
-        #expect(f.mockStrategy.nextTimingOffsetDetectionTrialCallCount >= 2)
+        f.session.stop()
     }
 
-    @Test("stop transitions to idle and cancels tasks")
-    func stopTransitionsToIdle() async {
+    @Test("handleAnswer ignored when not in playingPatternLoop")
+    func handleAnswerIgnoredWhenNotInLoop() async {
         let f = makeSession()
+        // While idle
+        f.session.handleAnswer(direction: .late)
+        #expect(f.observer.completedCallCount == 0)
+
+        // While showingFeedback (post-answer)
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        f.session.handleAnswer(direction: .late)
+        #expect(f.session.state == .showingFeedback)
+
+        // Second answer in showingFeedback is ignored.
+        f.session.handleAnswer(direction: .early)
+        #expect(f.observer.completedCallCount == 1)
+
+        f.session.stop()
+    }
+
+    // MARK: - Feedback / Grid Alignment (I/O matrix: feedback completes, grid aligns)
+
+    @Test("feedback completes, grid aligns, new trial begins")
+    func feedbackThenGridAlignmentStartsNextTrial() async throws {
+        let f = makeSession(currentTime: { 10.0 })
 
         f.session.start(settings: defaultTimingSettings)
-        await f.mockPlayer.waitForPlay()
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        f.session.handleAnswer(direction: .late)
+
+        // Wait for next start of sequencer.
+        await f.sequencer.waitForStart(minCount: 2)
+
+        #expect(f.sequencer.startCallCount >= 2)
+        #expect(f.strategy.nextTimingOffsetDetectionTrialCallCount >= 2)
+
+        // After restart, litDotCount resumes at 1 from subdivision 0 of the new trial.
+        f.sequencer.currentSamplePosition = 0
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.litDotCount == 1)
+
+        f.session.stop()
+    }
+
+    @Test("transitions through showingFeedback → waitingForGrid → playingPatternLoop")
+    func stateTransitionsAcrossFeedbackAndGrid() async throws {
+        var mockTime = 10.0
+        let f = makeSession(currentTime: { mockTime })
+
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        mockTime = 10.3
+        f.session.handleAnswer(direction: .late)
+        #expect(f.session.state == .showingFeedback)
+
+        try await waitForState(f.session, .waitingForGrid)
+        #expect(f.session.state == .waitingForGrid)
+
+        try await waitForState(f.session, .playingPatternLoop, timeout: .seconds(3))
+        #expect(f.session.state == .playingPatternLoop)
+
+        f.session.stop()
+    }
+
+    // MARK: - Stop (I/O matrix: stop during loop, stop before first trial)
+
+    @Test("stop during loop stops the sequencer and clears state to idle")
+    func stopDuringLoopClearsState() async throws {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.stop()
 
@@ -265,135 +554,85 @@ struct TimingOffsetDetectionSessionTests {
         #expect(f.session.isIdle)
         #expect(f.session.showFeedback == false)
         #expect(f.session.isLastAnswerCorrect == nil)
+        #expect(f.session.litDotCount == 0)
         #expect(f.session.currentOffsetPercentage == nil)
+        await f.sequencer.waitForStop()
+        #expect(f.sequencer.stopCallCount >= 1)
+    }
+
+    @Test("stop before first trial completes is safe")
+    func stopBeforeFirstTrialIsSafe() async {
+        let f = makeSession()
+        f.session.start(settings: defaultTimingSettings)
+        // Immediately stop without awaiting the sequencer start.
+        f.session.stop()
+
+        #expect(f.session.isIdle)
+        #expect(f.observer.completedCallCount == 0)
     }
 
     @Test("stop when already idle is a no-op")
     func stopWhenIdleIsNoOp() async {
         let f = makeSession()
         #expect(f.session.isIdle)
-
         f.session.stop()
-
         #expect(f.session.isIdle)
+        #expect(f.sequencer.stopCallCount == 0)
     }
 
-    @Test("audio error stops session gracefully")
-    func audioErrorStopsSession() async throws {
+    // MARK: - Sequencer Start Failure (I/O matrix: sequencer start fails)
+
+    @Test("sequencer start failure sends audio error and transitions to idle")
+    func sequencerStartFailureSendsAudioError() async throws {
         let f = makeSession()
-        f.mockPlayer.shouldThrowError = true
-        f.mockPlayer.errorToThrow = .engineStartFailed("Test error")
+        f.sequencer.shouldThrowError = true
+        f.sequencer.errorToThrow = .engineStartFailed("Test error")
 
         f.session.start(settings: defaultTimingSettings)
         try await waitForState(f.session, .idle)
 
         #expect(f.session.state == .idle)
+        #expect(f.observer.completedCallCount == 0)
     }
 
-    @Test("handleAnswer ignored when not in awaitingAnswer state")
-    func handleAnswerIgnoredWhenNotAwaiting() async {
-        let f = makeSession()
+    // MARK: - canAcceptAnswer
 
-        // When idle
+    @Test("canAcceptAnswer is true only during playingPatternLoop")
+    func canAcceptAnswerOnlyDuringLoop() async throws {
+        let f = makeSession()
+        #expect(f.session.canAcceptAnswer == false)
+
+        f.session.start(settings: defaultTimingSettings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+        #expect(f.session.canAcceptAnswer == true)
+
         f.session.handleAnswer(direction: .late)
-        #expect(f.mockObserver.completedCallCount == 0)
-
-        // When playing pattern
-        f.session.start(settings: defaultTimingSettings)
-        await f.mockPlayer.waitForPlay()
-
-        // State should be playingPattern at this point
-        if f.session.state == .playingPattern {
-            f.session.handleAnswer(direction: .late)
-            #expect(f.mockObserver.completedCallCount == 0)
-        }
+        #expect(f.session.canAcceptAnswer == false)
 
         f.session.stop()
+        #expect(f.session.canAcceptAnswer == false)
     }
 
-    @Test("start ignored when not idle")
-    func startIgnoredWhenNotIdle() async throws {
-        let f = makeSession()
-
-        f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
-
-        // Second start should be ignored
-        f.session.start(settings: defaultTimingSettings)
-
-        // Strategy should only have been called once (from first start)
-        #expect(f.mockStrategy.nextTimingOffsetDetectionTrialCallCount == 1)
-
-        f.session.stop()
-    }
+    // MARK: - currentOffsetPercentage
 
     @Test("currentOffsetPercentage reflects current trial")
     func currentOffsetPercentageReflectsTrial() async throws {
         let f = makeSession()
-
         #expect(f.session.currentOffsetPercentage == nil)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         let currentOffset = try #require(f.session.currentOffsetPercentage)
         #expect(currentOffset > 0)
 
         f.session.stop()
-
         #expect(f.session.currentOffsetPercentage == nil)
     }
 
-    // MARK: - litDotCount Tests
-
-    @Test("litDotCount starts at 0")
-    func litDotCountStartsAtZero() {
-        let f = makeSession()
-        #expect(f.session.litDotCount == 0)
-    }
-
-    @Test("litDotCount increments during pattern playback")
-    func litDotCountIncrementsDuringPlayback() async throws {
-        let f = makeSession()
-
-        f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
-
-        // After pattern completes, litDotCount should be 4
-        #expect(f.session.litDotCount == 4)
-    }
-
-    @Test("litDotCount resets on stop")
-    func litDotCountResetsOnStop() async throws {
-        let f = makeSession()
-
-        f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
-
-        f.session.stop()
-        #expect(f.session.litDotCount == 0)
-    }
-
-    @Test("litDotCount resets at start of new trial")
-    func litDotCountResetsAtNewTrial() async throws {
-        let f = makeSession()
-
-        f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
-
-        #expect(f.session.litDotCount == 4)
-
-        // Answer to trigger next trial
-        f.session.handleAnswer(direction: .late)
-        await f.mockPlayer.waitForPlay(minCount: 2)
-
-        // After second trial completes, litDotCount should be 4 again
-        // (it was reset to 0 before the new trial started, then incremented back to 4)
-        try await waitForState(f.session, .awaitingAnswer)
-        #expect(f.session.litDotCount == 4)
-    }
-
-    // MARK: - lastCompletedOffsetPercentage Tests
+    // MARK: - lastCompletedOffsetPercentage
 
     @Test("lastCompletedOffsetPercentage is nil initially")
     func lastCompletedOffsetPercentageNilInitially() {
@@ -410,7 +649,8 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: trial)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.handleAnswer(direction: .late)
 
@@ -421,9 +661,9 @@ struct TimingOffsetDetectionSessionTests {
     @Test("lastCompletedOffsetPercentage resets on stop")
     func lastCompletedOffsetPercentageResetsOnStop() async throws {
         let f = makeSession()
-
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.handleAnswer(direction: .late)
         #expect(f.session.lastCompletedOffsetPercentage != nil)
@@ -432,7 +672,7 @@ struct TimingOffsetDetectionSessionTests {
         #expect(f.session.lastCompletedOffsetPercentage == nil)
     }
 
-    // MARK: - sessionBestOffsetPercentage Tests
+    // MARK: - sessionBestOffsetPercentage
 
     @Test("sessionBestOffsetPercentage is nil initially")
     func sessionBestNilInitially() {
@@ -449,9 +689,10 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: trial)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
-        f.session.handleAnswer(direction: .late) // correct answer
+        f.session.handleAnswer(direction: .late) // correct
 
         let sessionBest = try #require(f.session.sessionBestOffsetPercentage)
         #expect(sessionBest > 0)
@@ -466,9 +707,10 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: trial)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
-        f.session.handleAnswer(direction: .early) // wrong answer
+        f.session.handleAnswer(direction: .early) // wrong
 
         #expect(f.session.sessionBestOffsetPercentage == nil)
     }
@@ -482,7 +724,8 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(trialToReturn: trial)
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.handleAnswer(direction: .late)
         #expect(f.session.sessionBestOffsetPercentage != nil)
@@ -491,7 +734,7 @@ struct TimingOffsetDetectionSessionTests {
         #expect(f.session.sessionBestOffsetPercentage == nil)
     }
 
-    // MARK: - Grid Alignment Tests
+    // MARK: - Grid Alignment
 
     @Test("first pattern establishes grid origin from currentTime")
     func firstPatternEstablishesGridOrigin() async throws {
@@ -499,52 +742,26 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(currentTime: { mockTime })
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
-        // First pattern should have used the current time as grid origin
-        // Verify by checking that the session played without waiting for grid
-        #expect(f.mockPlayer.playCallCount == 1)
-    }
-
-    @Test("subsequent pattern waits for grid alignment")
-    func subsequentPatternWaitsForGrid() async throws {
-        // At 80 BPM, quarter note = 0.75s
-        // Grid origin at t=10.0, so grid points are 10.0, 10.75, 11.5, 12.25, ...
-        var mockTime = 10.0
-        let f = makeSession(currentTime: { mockTime })
-
-        f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
-
-        // Simulate feedback ending at t=10.3 (between grid points 10.0 and 10.75)
-        mockTime = 10.3
-        f.session.handleAnswer(direction: .late)
-        #expect(f.session.state == .showingFeedback)
-
-        // After feedback, session should enter waitingForGrid
-        try await waitForState(f.session, .waitingForGrid)
-        #expect(f.session.state == .waitingForGrid)
-
-        // Eventually should advance to playingPattern for next trial
-        try await waitForState(f.session, .awaitingAnswer, timeout: .seconds(3))
-        #expect(f.mockPlayer.playCallCount >= 2)
+        #expect(f.sequencer.startCallCount == 1)
     }
 
     @Test("grid is never skipped even with short wait")
     func gridNeverSkipped() async throws {
-        // At 80 BPM, quarter note = 0.75s
-        // Grid origin at t=10.0, grid points at 10.0, 10.75, 11.5, ...
+        // At 80 BPM, quarter note = 0.75s; grid points at 10.0, 10.75, ...
         var mockTime = 10.0
         let f = makeSession(currentTime: { mockTime })
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         // Simulate feedback ending just before a grid point (t=10.74)
         mockTime = 10.74
         f.session.handleAnswer(direction: .late)
 
-        // Should still wait for grid point at 10.75
         try await waitForState(f.session, .waitingForGrid)
         #expect(f.session.state == .waitingForGrid)
 
@@ -553,52 +770,24 @@ struct TimingOffsetDetectionSessionTests {
 
     @Test("variable answer and feedback times produce grid-aligned patterns")
     func variableTimesProduceGridAlignedPatterns() async throws {
-        // At 80 BPM, quarter note = 0.75s
-        var mockTime = 10.0
-        let f = makeSession(currentTime: { mockTime })
-
-        let settings = TimingOffsetDetectionSettings(
-            tempo: TempoBPM(80),
-            feedbackDuration: .milliseconds(50)
-        )
-
-        f.session.start(settings: settings)
-        try await waitForState(f.session, .awaitingAnswer)
-
-        // First answer at variable time
-        mockTime = 10.5
-        f.session.handleAnswer(direction: .late)
-        try await waitForState(f.session, .awaitingAnswer, timeout: .seconds(3))
-
-        // Second answer at different time
-        mockTime = 11.8
-        f.session.handleAnswer(direction: .late)
-        try await waitForState(f.session, .awaitingAnswer, timeout: .seconds(3))
-
-        // Should have played 3 patterns total
-        #expect(f.mockPlayer.playCallCount >= 3)
-
-        f.session.stop()
-    }
-
-    @Test("waitingForGrid state keeps buttons disabled")
-    func waitingForGridKeepsButtonsDisabled() async throws {
         var mockTime = 10.0
         let f = makeSession(currentTime: { mockTime })
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
-        // Set time between grid points
-        mockTime = 10.3
+        mockTime = 10.5
         f.session.handleAnswer(direction: .late)
+        await f.sequencer.waitForStart(minCount: 2)
 
-        try await waitForState(f.session, .waitingForGrid)
+        try await waitForState(f.session, .playingPatternLoop, timeout: .seconds(3))
 
-        // Buttons should be disabled (only enabled in awaitingAnswer)
-        #expect(f.session.canAcceptAnswer == false)
-        // Dots should be dimmed (litDotCount reset to 0)
-        #expect(f.session.litDotCount == 0)
+        mockTime = 11.8
+        f.session.handleAnswer(direction: .late)
+        await f.sequencer.waitForStart(minCount: 3)
+
+        #expect(f.sequencer.startCallCount >= 3)
 
         f.session.stop()
     }
@@ -609,16 +798,16 @@ struct TimingOffsetDetectionSessionTests {
         let f = makeSession(currentTime: { mockTime })
 
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
 
         f.session.stop()
 
-        // Start again with different time — should establish new grid origin
         mockTime = 20.0
         f.session.start(settings: defaultTimingSettings)
-        try await waitForState(f.session, .awaitingAnswer)
+        await f.sequencer.waitForStart(minCount: 2)
 
-        #expect(f.mockPlayer.playCallCount >= 2)
+        #expect(f.sequencer.startCallCount >= 2)
         f.session.stop()
     }
 }

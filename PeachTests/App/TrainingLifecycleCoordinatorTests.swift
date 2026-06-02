@@ -495,10 +495,9 @@ struct TrainingLifecycleCoordinatorTests {
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
         let todSession = TimingOffsetDetectionSession(
-            rhythmPlayer: MockRhythmPlayer(),
+            beatSequencer: MockBeatSequencer(),
             strategy: MockNextTimingOffsetDetectionStrategy(),
             profile: profile,
-            sampleRate: .standard48000,
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
         let crmSession = ContinuousRhythmMatchingSession(

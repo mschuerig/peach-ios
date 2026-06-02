@@ -272,54 +272,10 @@ struct SoundFontPlayerTests {
         }
     }
 
-    // MARK: - RhythmPlayer Conformance
-
-    @Test("SoundFontPlayer conforms to RhythmPlayer protocol")
-    func conformsToRhythmPlayer() async throws {
-        let player = try makePlayer()
-        #expect(player is RhythmPlayer)
-    }
-
     @Test("stopAll affects only this player's channel")
     func stopAllChannelScoped() async throws {
         let player = try makePlayer()
         // stopAll should not crash even when nothing is playing
         try await player.stopAll()
-    }
-}
-
-// MARK: - RhythmPattern Tests
-
-@Suite("RhythmPattern Tests")
-struct RhythmPatternTests {
-
-    @Test("creates pattern with events")
-    func createsPatternWithEvents() async {
-        let events = [
-            RhythmPattern.Event(sampleOffset: 0, midiNote: MIDINote(36), velocity: MIDIVelocity(100)),
-            RhythmPattern.Event(sampleOffset: 22050, midiNote: MIDINote(38), velocity: MIDIVelocity(80)),
-        ]
-        let pattern = RhythmPattern(events: events, sampleRate: .standard44100, totalDuration: .seconds(1))
-        #expect(pattern.events.count == 2)
-        #expect(pattern.sampleRate == .standard44100)
-        #expect(pattern.totalDuration == .seconds(1))
-    }
-
-    @Test("event stores sampleOffset, midiNote, velocity")
-    func eventStoresProperties() async {
-        let event = RhythmPattern.Event(
-            sampleOffset: 44100,
-            midiNote: MIDINote(42),
-            velocity: MIDIVelocity(90)
-        )
-        #expect(event.sampleOffset == 44100)
-        #expect(event.midiNote == MIDINote(42))
-        #expect(event.velocity == MIDIVelocity(90))
-    }
-
-    @Test("empty pattern is valid")
-    func emptyPatternValid() async {
-        let pattern = RhythmPattern(events: [], sampleRate: .standard44100, totalDuration: .zero)
-        #expect(pattern.events.isEmpty)
     }
 }

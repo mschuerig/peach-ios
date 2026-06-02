@@ -58,17 +58,6 @@ final class StubPitchDiscriminationStrategy: NextPitchDiscriminationStrategy {
     }
 }
 
-final class StubRhythmPlayer: RhythmPlayer {
-    func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle {
-        StubRhythmPlaybackHandle()
-    }
-    func stopAll() async throws {}
-}
-
-private final class StubRhythmPlaybackHandle: RhythmPlaybackHandle {
-    func stop() async throws {}
-}
-
 final class StubBeatSequencer: BeatSequencer {
     var currentBeat: Beat?
     var timing: SequencerTiming {
@@ -117,10 +106,9 @@ extension PitchMatchingSession {
 extension TimingOffsetDetectionSession {
     static let stub: TimingOffsetDetectionSession = {
         TimingOffsetDetectionSession(
-            rhythmPlayer: StubRhythmPlayer(),
+            beatSequencer: StubBeatSequencer(),
             strategy: StubTimingOffsetDetectionStrategy(),
             profile: PerceptualProfile(),
-            sampleRate: .standard48000,
             audioInterruptionObserver: NoOpAudioInterruptionObserver()
         )
     }()

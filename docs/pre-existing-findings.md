@@ -33,6 +33,15 @@ On macOS, SwiftUI initializes the `@main App` struct twice before one instance i
 
 **Fix:** Move heavyweight initialization out of `PeachApp.init()` into a lazily-created shared container, or use `@State` with a factory that guards against double init. This is a known SwiftUI macOS behavior.
 
+### PF-004: Flaky `navigateUsesEventDrivenIdle` test on macOS
+
+**Found:** 2026-06-02 (Story 80.1 step-04 review)
+**Severity:** Low (intermittent CI noise, no production impact)
+
+`TrainingLifecycleCoordinatorTests.navigateUsesEventDrivenIdle()` fails intermittently on macOS Research builds. The test relies on a single `await Task.yield()` between `coordinator.navigate(to:)` and `mockSession.isIdle = true`. The navigationTask must reach `awaitIdle` and install its `withObservationTracking` observer before the test mutates `isIdle`; if the Task hasn't yet reached that point, the observation doesn't fire and `resolvedNavigation` stays `nil`. Single-yield is racy under macOS scheduling; the test passes on retry. Predates 80.0 (last touched in story 77.12, "TrainingLifecycleCoordinator plugin-style fit") — unrelated to 80.1's changes (which don't touch the coordinator or its tests beyond a one-line TOD constructor swap that compiles and runs identically on iOS Research).
+
+**Fix:** Replace the single `await Task.yield()` after `navigate(...)` with a bounded poll until `mockSession.stopCallCount > 0`, then another bounded poll after setting `isIdle = true` until `resolvedNavigation != nil`. Same pattern as the existing `waitUntilNotIdle` helper in this file.
+
 ### PF-003: Training Session Restart on In-Stack Navigation to Settings/Profile
 
 **Found:** 2026-04-07 (Story 75.3 code review)

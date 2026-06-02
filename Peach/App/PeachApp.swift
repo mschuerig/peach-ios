@@ -30,7 +30,6 @@ struct PeachApp: App {
     @State private var soundFontEngine: SoundFontEngine
     @State private var transferService: TrainingDataTransferService
     @State private var notePlayer: any NotePlayer
-    @State private var rhythmPlayer: any RhythmPlayer
     @State private var beatSequencer: SoundFontBeatSequencer
     @State private var midiAdapter: MIDIKitAdapter?
     @State private var activeSession: (any TrainingSession)?
@@ -61,7 +60,6 @@ struct PeachApp: App {
 
             let audio = try Self.setupPlayers(engine: engine, library: library, userSettings: userSettings)
             _notePlayer = State(wrappedValue: audio.notePlayer)
-            _rhythmPlayer = State(wrappedValue: audio.rhythmPlayer)
             _beatSequencer = State(wrappedValue: audio.beatSequencer)
 
             let (profile, progressTimeline) = try Self.setupProfile(dataStore: dataStore)
@@ -73,9 +71,7 @@ struct PeachApp: App {
 
             let sessions = Self.createAllSessions(
                 notePlayer: audio.notePlayer,
-                rhythmPlayer: audio.rhythmPlayer,
                 beatSequencer: audio.beatSequencer,
-                sampleRate: engine.sampleRate,
                 profile: profile,
                 dataStore: dataStore
             )
@@ -120,7 +116,6 @@ struct PeachApp: App {
                 .environment(\.userSettings, userSettings)
                 .environment(\.settingsCoordinator, settingsCoordinator)
                 .environment(\.trainingLifecycle, trainingLifecycle)
-                .environment(\.rhythmPlayer, rhythmPlayer)
                 .environment(\.beatSequencer, beatSequencer)
                 .environment(\.audioSampleRate, soundFontEngine.sampleRate)
                 .environment(\.midiInput, midiAdapter)
@@ -291,7 +286,7 @@ struct PeachApp: App {
         engine: SoundFontEngine,
         library: SoundFontLibrary,
         userSettings: any UserSettings
-    ) throws -> (notePlayer: any NotePlayer, rhythmPlayer: any RhythmPlayer, beatSequencer: SoundFontBeatSequencer) {
+    ) throws -> (notePlayer: any NotePlayer, beatSequencer: SoundFontBeatSequencer) {
         let preset = library.resolve(userSettings.soundSource)
         let notePlayer: any NotePlayer = SoundFontPlayer(
             engine: engine,
@@ -304,12 +299,6 @@ struct PeachApp: App {
         let percussionPreset = library.percussionPresets.first
             ?? SF2Preset(name: "", program: 0, bank: SF2Preset.percussionBank)
         let percussionChannel = MIDIChannel(1)
-        let rhythmPlayer: any RhythmPlayer = SoundFontPlayer(
-            engine: engine,
-            preset: percussionPreset,
-            channel: percussionChannel,
-            fadeOutDuration: .zero
-        )
 
         let beatSequencer = SoundFontBeatSequencer(
             engine: engine,
@@ -317,7 +306,7 @@ struct PeachApp: App {
             channel: percussionChannel
         )
 
-        return (notePlayer, rhythmPlayer, beatSequencer)
+        return (notePlayer, beatSequencer)
     }
 
     // MARK: - Fade-Out Duration
@@ -373,9 +362,7 @@ struct PeachApp: App {
 
     private static func createAllSessions(
         notePlayer: any NotePlayer,
-        rhythmPlayer: any RhythmPlayer,
         beatSequencer: SoundFontBeatSequencer,
-        sampleRate: SampleRate,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore
     ) -> (
@@ -404,10 +391,9 @@ struct PeachApp: App {
         )
 
         let todSession = createTimingOffsetDetectionSession(
-            rhythmPlayer: rhythmPlayer,
+            beatSequencer: beatSequencer,
             profile: profile,
             dataStore: dataStore,
-            sampleRate: sampleRate,
             hapticFeedback: hapticManager
         )
 
@@ -442,21 +428,19 @@ struct PeachApp: App {
     }
 
     private static func createTimingOffsetDetectionSession(
-        rhythmPlayer: RhythmPlayer,
+        beatSequencer: any BeatSequencer,
         profile: PerceptualProfile,
         dataStore: TrainingDataStore,
-        sampleRate: SampleRate,
         hapticFeedback: some TimingOffsetDetectionObserver
     ) -> TimingOffsetDetectionSession {
         let profileAdapter = TimingOffsetDetectionProfileAdapter(profile: profile)
         let storeAdapter = TimingOffsetDetectionStoreAdapter(store: dataStore)
         let observers: [TimingOffsetDetectionObserver] = [storeAdapter, profileAdapter, hapticFeedback]
         return TimingOffsetDetectionSession(
-            rhythmPlayer: rhythmPlayer,
+            beatSequencer: beatSequencer,
             strategy: AdaptiveTimingOffsetDetectionStrategy(),
             profile: profile,
             observers: observers,
-            sampleRate: sampleRate,
             audioInterruptionObserver: makeAudioInterruptionObserver(),
             backgroundNotificationName: backgroundNotificationName
         )

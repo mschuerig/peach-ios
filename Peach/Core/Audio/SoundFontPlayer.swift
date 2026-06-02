@@ -2,7 +2,7 @@ import AVFoundation
 import Foundation
 import os
 
-final class SoundFontPlayer: NotePlayer, RhythmPlayer {
+final class SoundFontPlayer: NotePlayer {
 
     // MARK: - Logger
 
@@ -15,11 +15,6 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
     // MARK: - Constants
 
     nonisolated static let validFrequencyRange = 20.0...20000.0
-
-    /// Delay between note-on and note-off for percussion hits.
-    /// Percussion samples have natural decay; this just ensures the MIDI note-off
-    /// doesn't cut the sample short while still releasing the voice promptly.
-    private nonisolated static let percussionNoteOffDuration: Duration = .milliseconds(50)
 
     /// Duration to mute `sampler.volume` before stopping a note, allowing the audio render
     /// thread to propagate silence and avoid click/pop artifacts. Set to `.zero` to skip the
@@ -57,58 +52,7 @@ final class SoundFontPlayer: NotePlayer, RhythmPlayer {
         return SoundFontPlaybackHandle(engine: soundFontEngine, channel: channel, midiNote: midiNote, fadeOutDuration: fadeOutDuration)
     }
 
-    // MARK: - RhythmPlayer Protocol
-
-    func play(_ pattern: RhythmPattern) async throws -> RhythmPlaybackHandle {
-        try soundFontEngine.ensureAudioSessionConfigured()
-        try soundFontEngine.ensureEngineRunning()
-        try await soundFontEngine.loadPreset(preset, channel: channel)
-
-        // Convert pattern events to scheduled MIDI events
-        let noteOffDelaySamples = Int64(pattern.sampleRate.rawValue * Self.percussionNoteOffDuration.timeInterval)
-
-        // Cap note-off delay to avoid overlap with the next note-on
-        let minSpacing: Int64
-        if pattern.events.count >= 2 {
-            minSpacing = zip(pattern.events, pattern.events.dropFirst())
-                .map { $1.sampleOffset - $0.sampleOffset }
-                .min() ?? Int64.max
-        } else {
-            minSpacing = Int64.max
-        }
-        let cappedNoteOffDelay = min(noteOffDelaySamples, max(minSpacing - 1, 0))
-
-        var scheduledEvents: [ScheduledMIDIEvent] = []
-        scheduledEvents.reserveCapacity(pattern.events.count * 2)
-
-        for event in pattern.events {
-            let midiNoteRaw = UInt8(clamping: event.midiNote.rawValue)
-
-            // Note-on
-            scheduledEvents.append(ScheduledMIDIEvent(
-                sampleOffset: event.sampleOffset,
-                midiStatus: SoundFontEngine.noteOnBase | channel.rawValue,
-                midiNote: midiNoteRaw,
-                velocity: event.velocity.rawValue
-            ))
-
-            // Note-off
-            scheduledEvents.append(ScheduledMIDIEvent(
-                sampleOffset: event.sampleOffset + cappedNoteOffDelay,
-                midiStatus: SoundFontEngine.noteOffBase | channel.rawValue,
-                midiNote: midiNoteRaw,
-                velocity: 0
-            ))
-        }
-
-        scheduledEvents.sort { $0.sampleOffset < $1.sampleOffset }
-
-        soundFontEngine.scheduleEvents(scheduledEvents)
-
-        return SoundFontRhythmPlaybackHandle(engine: soundFontEngine, channel: channel)
-    }
-
-    // MARK: - stopAll (shared by both NotePlayer and RhythmPlayer)
+    // MARK: - stopAll
 
     func stopAll() async throws {
         logger.debug("stopAll: clearing schedule and stopping notes on channel \(self.channel.rawValue)")

@@ -18,10 +18,10 @@ struct TimingOffsetDetectionReduceTests {
 
     // MARK: - Start
 
-    @Test("idle + startRequested → playingPattern, beginNextTrial")
+    @Test("idle + startRequested → playingPatternLoop, beginNextTrial")
     func startFromIdle() async {
         let (state, effects) = reduce(.idle, .startRequested)
-        #expect(state == .playingPattern)
+        #expect(state == .playingPatternLoop)
         #expect(effects.count == 1)
         guard case .beginNextTrial = effects.first else {
             Issue.record("Expected .beginNextTrial")
@@ -29,29 +29,24 @@ struct TimingOffsetDetectionReduceTests {
         }
     }
 
-    // MARK: - Pattern Playback
+    // MARK: - Answer (mid-loop)
 
-    @Test("playingPattern + patternFinished → awaitingAnswer, no effects")
-    func patternFinished() async {
-        let (state, effects) = reduce(.playingPattern, .patternFinished)
-        #expect(state == .awaitingAnswer)
-        #expect(effects.isEmpty)
-    }
-
-    // MARK: - Answer
-
-    @Test("awaitingAnswer + answerReceived → showingFeedback with evaluateAnswer, scheduleFeedbackTimer")
-    func answerReceived() async {
-        let (state, effects) = reduce(.awaitingAnswer, .answerReceived(direction: .early))
+    @Test("playingPatternLoop + answerReceived → showingFeedback with stopSequencer, evaluateAnswer, scheduleFeedbackTimer (mechanism before policy)")
+    func answerReceivedFromLoop() async {
+        let (state, effects) = reduce(.playingPatternLoop, .answerReceived(direction: .early))
         #expect(state == .showingFeedback)
-        #expect(effects.count == 2)
-        guard case .evaluateAnswer(let dir) = effects[0] else {
-            Issue.record("Expected .evaluateAnswer first")
+        #expect(effects.count == 3)
+        guard case .stopSequencer = effects[0] else {
+            Issue.record("Expected .stopSequencer first (audio mechanism ordered ahead of result policy)")
+            return
+        }
+        guard case .evaluateAnswer(let dir) = effects[1] else {
+            Issue.record("Expected .evaluateAnswer second")
             return
         }
         #expect(dir == .early)
-        guard case .scheduleFeedbackTimer = effects[1] else {
-            Issue.record("Expected .scheduleFeedbackTimer second")
+        guard case .scheduleFeedbackTimer = effects[2] else {
+            Issue.record("Expected .scheduleFeedbackTimer third")
             return
         }
     }
@@ -65,10 +60,10 @@ struct TimingOffsetDetectionReduceTests {
         #expect(effects.isEmpty)
     }
 
-    @Test("waitingForGrid + gridAlignmentReached → playingPattern, beginNextTrial")
+    @Test("waitingForGrid + gridAlignmentReached → playingPatternLoop, beginNextTrial")
     func gridAlignmentReached() async {
         let (state, effects) = reduce(.waitingForGrid, .gridAlignmentReached)
-        #expect(state == .playingPattern)
+        #expect(state == .playingPatternLoop)
         #expect(effects.count == 1)
         guard case .beginNextTrial = effects.first else {
             Issue.record("Expected .beginNextTrial")
@@ -80,7 +75,7 @@ struct TimingOffsetDetectionReduceTests {
 
     @Test("any non-idle state + stopRequested → idle, stopAll")
     func stopFromNonIdle() async {
-        for startState: State in [.playingPattern, .awaitingAnswer, .showingFeedback, .waitingForGrid] {
+        for startState: State in [.playingPatternLoop, .showingFeedback, .waitingForGrid] {
             let (state, effects) = reduce(startState, .stopRequested)
             #expect(state == .idle)
             #expect(effects.count == 1)
@@ -102,7 +97,7 @@ struct TimingOffsetDetectionReduceTests {
 
     @Test("any non-idle state + audioError → idle, stopAll")
     func audioErrorFromNonIdle() async {
-        for startState: State in [.playingPattern, .awaitingAnswer, .showingFeedback, .waitingForGrid] {
+        for startState: State in [.playingPatternLoop, .showingFeedback, .waitingForGrid] {
             let (state, effects) = reduce(startState, .audioError)
             #expect(state == .idle)
             #expect(effects.count == 1)
@@ -113,22 +108,25 @@ struct TimingOffsetDetectionReduceTests {
         }
     }
 
+    @Test("idle + audioError → no change, no effects (spurious errors from already-stopped sessions are absorbed silently)")
+    func audioErrorFromIdle() async {
+        let (state, effects) = reduce(.idle, .audioError)
+        #expect(state == .idle)
+        #expect(effects.isEmpty)
+    }
+
     // MARK: - Invalid Transitions
 
     @Test("invalid transitions produce no state change and no effects")
     func invalidTransitions() async {
         let invalidCases: [(State, Event)] = [
-            (.idle, .patternFinished),
             (.idle, .answerReceived(direction: .early)),
             (.idle, .feedbackTimerFired),
             (.idle, .gridAlignmentReached),
-            (.playingPattern, .answerReceived(direction: .early)),
-            (.playingPattern, .feedbackTimerFired),
-            (.awaitingAnswer, .patternFinished),
-            (.awaitingAnswer, .gridAlignmentReached),
+            (.playingPatternLoop, .feedbackTimerFired),
+            (.playingPatternLoop, .gridAlignmentReached),
             (.showingFeedback, .answerReceived(direction: .late)),
             (.showingFeedback, .gridAlignmentReached),
-            (.waitingForGrid, .patternFinished),
             (.waitingForGrid, .answerReceived(direction: .late)),
         ]
         for (startState, event) in invalidCases {
