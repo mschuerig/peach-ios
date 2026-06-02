@@ -147,13 +147,17 @@ struct SettingsScreen: View {
                 .buttonStyle(.bordered)
                 .accessibilityLabel(isPreviewPlaying ? String(localized: "Stop Preview") : String(localized: "Play Preview"))
             }
-            Stepper(
-                "Duration: \(noteDuration, specifier: "%.1f")s",
+            ContinuousValueSlider(
+                label: "Duration",
                 value: $noteDuration,
-                in: 0.3...3.0,
-                step: 0.1
+                range: 0.3...3.0,
+                step: 0.1,
+                displayFormat: { ContinuousValueSlider.displayDuration($0) },
+                accessibilityFormat: { ContinuousValueSlider.accessibilityDuration($0) }
             )
-            .accessibilityValue(Text("\(noteDuration, specifier: "%.1f") seconds"))
+            // Concert Pitch keeps Stepper — value has named landmarks
+            // (415 / 432 / 440 / 442 Hz); drag would be a regression per the
+            // Epic 81 control taxonomy. See ContinuousValueSlider doc comment.
             Stepper(
                 "Concert Pitch: \(Int(referencePitch)) Hz",
                 value: $referencePitch,
@@ -180,6 +184,9 @@ struct SettingsScreen: View {
 
     private var difficultySection: some View {
         Section(String(localized: "Difficulty")) {
+            // Vary Loudness stays as the abstract-dial Slider — no specific
+            // number matters, only the off↔max position. See
+            // ContinuousValueSlider doc comment for the full taxonomy.
             VStack(alignment: .leading) {
                 Text("Vary Loudness (All Disciplines)")
                 Slider(value: $varyLoudness, in: 0...1) {
@@ -190,13 +197,14 @@ struct SettingsScreen: View {
                     Text("Max")
                 }
             }
-            Stepper(
-                "Note Gap (Compare): \(noteGap, specifier: "%.1f")s",
+            ContinuousValueSlider(
+                label: "Note Gap (Compare)",
                 value: $noteGap,
-                in: 0.0...5.0,
-                step: 0.1
+                range: 0.0...5.0,
+                step: 0.1,
+                displayFormat: { ContinuousValueSlider.displayDuration($0) },
+                accessibilityFormat: { ContinuousValueSlider.accessibilityDuration($0) }
             )
-            .accessibilityValue(Text("\(noteGap, specifier: "%.1f") seconds"))
         }
     }
 

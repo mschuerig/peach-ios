@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-02 # Epic 81 added (Settings screen consistency: slider taxonomy + TOD slider + piano-keyboard note range).
+# last_updated: 2026-06-02 # Story 81.1 done (continuous-value slider migration).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -705,8 +705,8 @@ development_status:
   # Work order: 81.1 → 81.2 → 81.3 (strict; each later story builds on the
   # prior). Each story = own commit + own PR. Concert Pitch and Vary Loudness
   # explicitly out of scope.
-  epic-81: backlog
-  81-1-continuous-value-slider-taxonomy-and-stepper-migration: backlog
+  epic-81: in-progress
+  81-1-continuous-value-slider-taxonomy-and-stepper-migration: done
   81-2-tod-max-repetitions-discrete-stops-slider: backlog
   81-3-piano-keyboard-for-training-note-range: backlog
   epic-81-retrospective: optional
