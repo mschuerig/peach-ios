@@ -25,6 +25,8 @@ Core/Data/                              Core/Profile/
 
 ## Core/Data/ — Persistence
 
+> **Note (2026-06-02):** This subsection still describes the pre-77.4 per-discipline `@Model` architecture. Story 77.4 collapsed all training records onto a single `TrainingRecord` envelope with a JSON-encoded `payloadData` blob, so the per-discipline `Record` types described below no longer exist in source — each discipline now persists through a `*Payload` struct via its `*StoreAdapter`. A full refresh of this section is deferred to a separate story so this round's TOD scope stays tight; the rest of the subsection is preserved verbatim for internal consistency until that refresh lands.
+
 ### `PeachSchema.swift` (179 lines)
 
 SwiftData versioned schema. `SchemaV1` nests all 4 `@Model` record classes:
@@ -33,7 +35,7 @@ SwiftData versioned schema. `SchemaV1` nests all 4 `@Model` record classes:
 |------------|--------|--------|
 | `PitchDiscriminationRecord` | referenceNote, targetNote, centOffset, isCorrect, interval, tuningSystem, timestamp | Cent offset |
 | `PitchMatchingRecord` | referenceNote, targetNote, initialCentOffset, userCentError, interval, tuningSystem, timestamp | User cent error |
-| `RhythmOffsetDetectionRecord` | tempoBPM, offsetMs, isCorrect, timestamp | Offset ms |
+| `TimingOffsetDetectionRecord` | tempoBPM, offsetMs, isCorrect, timestamp | Offset ms |
 | `ContinuousRhythmMatchingRecord` | tempoBPM, meanOffsetMs, per-position offsets (×4), timestamp | Mean offset ms |
 
 `PeachSchemaMigrationPlan` is wired up but `stages` is empty — only one schema version exists. The doc comments include a thorough "How to add V2" guide.
@@ -124,7 +126,7 @@ Value type: `timestamp: Date` + `value: Double`. The universal unit of measureme
 
 ### `WelfordAccumulator.swift`
 
-Welford's online algorithm for single-pass running mean and variance. Also includes the `WelfordMeasurement` protocol bridging domain types (`Cents`, `RhythmOffset`) to `Double`.
+Welford's online algorithm for single-pass running mean and variance. Also includes the `WelfordMeasurement` protocol bridging domain types (`Cents`, `TimingOffset`) to `Double`.
 
 ### `TrainingDisciplineStatistics.swift` (in Core/Training/, but profile-adjacent)
 
@@ -140,7 +142,7 @@ Supports both incremental updates (`addPoint`) and full rebuilds from sorted arr
 
 Two-case enum:
 - `.pitch(TrainingDisciplineID)` — one key per pitch discipline (4 keys)
-- `.rhythm(TrainingDisciplineID, TempoRange, RhythmDirection)` — per-tempo-range × per-direction keys
+- `.rhythm(TrainingDisciplineID, TempoRange, TimingDirection)` — per-tempo-range × per-direction keys
 
 Each key carries its `statisticsConfig` (forwarded from the discipline config).
 

@@ -14,12 +14,12 @@ TrainingDisciplineRegistry          ← knows which disciplines exist
     │       ↓ implemented by
     │   UnisonPitchDiscrimination, IntervalPitchDiscrimination,
     │   UnisonPitchMatching, IntervalPitchMatching,
-    │   RhythmOffsetDetection, ContinuousRhythmMatching
+    │   TimingOffsetDetection, ContinuousRhythmMatching
     │
 TrainingSession                     ← protocol: stop(), isIdle (shared lifecycle contract)
     │       ↓ implemented by
     │   PitchDiscriminationSession, PitchMatchingSession,
-    │   RhythmOffsetDetectionSession, ContinuousRhythmMatchingSession
+    │   TimingOffsetDetectionSession, ContinuousRhythmMatchingSession
     │
 SessionLifecycle                    ← manages Task lifetimes + audio interruption monitoring
 ```
@@ -34,7 +34,7 @@ SessionLifecycle                    ← manages Task lifetimes + audio interrupt
 | `intervalPitchDiscrimination` | Compare Intervals | `PitchDiscriminationSession` | cents | 12 |
 | `unisonPitchMatching` | Match Pitch | `PitchMatchingSession` | cents | 5 |
 | `intervalPitchMatching` | Match Pitch (intervals) | `PitchMatchingSession` | cents | 5 |
-| `rhythmOffsetDetection` | Compare Timing | `RhythmOffsetDetectionSession` | ms | 15 |
+| `timingOffsetDetection` | Compare Timing | `TimingOffsetDetectionSession` | ms | 15 |
 | `continuousRhythmMatching` | Fill the Gap | `ContinuousRhythmMatchingSession` | ms | 20 |
 
 Note: 6 disciplines but only 4 session classes. Unison/interval variants share session logic and are distinguished at the discipline level by filtering on `record.interval == 0` vs `!= 0`.
@@ -112,38 +112,76 @@ Single method: `reset()`. Applied to types whose accumulated state can be cleare
 
 **Trial type:** `PitchMatchingTrial` — `referenceNote`, `targetNote` (both `MIDINote`), `initialCentOffset: Cents`. Simpler than PitchDiscrimination because the offset is a UI starting position, not a musical parameter.
 
-### 3. RhythmOffsetDetectionSession
+### 3. TimingOffsetDetectionSession
 
-**States:** `idle → playingPattern → awaitingAnswer → showingFeedback → waitingForGrid → (loop)`
+A pure-reducer state machine on top of a looping `BeatSequencer`. The session conforms to both `TrainingSession` and `BeatProvider` — the sequencer pulls the pattern back from the session by asking for the next `Beat` whenever it refills its scheduling batch.
+
+**States:** `idle → playingPatternLoop → awaitingAnswer → showingFeedback → waitingForGrid → (loop)`
+
+```swift
+enum TimingOffsetDetectionSessionState {
+    case idle
+    case playingPatternLoop  // sequencer running, 4-sixteenth pattern looping
+    case awaitingAnswer      // cap reached, sequencer stopped, user must still answer
+    case showingFeedback     // result recorded, feedback shown (~400 ms)
+    case waitingForGrid      // sleeping until the next quarter-note boundary
+}
+```
+
+**Events:** `.startRequested`, `.answerReceived(direction:)`, `.feedbackTimerFired`, `.gridAlignmentReached`, `.repetitionCapReached`. `.stopRequested` and `.audioError` are caught from any state and transition to `.idle` via the `.stopAll` effect.
+
+**Effects:** `.beginNextTrial`, `.stopSequencer`, `.stopSequencerAtCap`, `.evaluateAnswer(direction:)`, `.scheduleFeedbackTimer`, `.stopAll`. The reducer (`static func reduce(state: inout, event:) -> [Effect]`) only mutates state and returns effects; `interpret(_:)` runs the side effects (sequencer, observers, feedback timer) separately. Reducer behavior is therefore table-testable without any audio or timer infrastructure.
 
 **Flow:**
-1. `start(settings:)` — stores settings, launches training Task
-2. `playNextTrial()` — strategy generates trial (tempo + offset), builds a 4-note `RhythmPattern` with one offset note (3rd note by default), plays via `RhythmPlayer`, animates dot lights
-3. After pattern finishes, enters `awaitingAnswer`
-4. `handleAnswer(direction: .early/.late)` — checks against trial offset direction, records result
-5. Feedback, then **waits for grid alignment** — snaps to the next quarter-note boundary before starting the next trial (musically correct phrasing)
+1. `start(settings:)` — stores settings and sends `.startRequested`. The reducer transitions `idle → playingPatternLoop` and emits `.beginNextTrial`.
+2. `beginNextTrial()` — asks the strategy for a trial, establishes `gridOrigin` on the first call, then `await beatSequencer.start(tempo:beatProvider:)` with `self` as the `BeatProvider`. The sequencer drives a gapless metronome; the session's `nextBeat()` returns the 4-sixteenth pattern (accent on subdivision 0, signed offset on the tested third subdivision).
+3. A ~125 Hz tracking poll (`evaluatePlaybackPosition()`) reads `beatSequencer.timing.samplePosition`, advances `litDotCount`, and watches the per-trial repetition counter. Once `completedCycles >= settings.maxRepetitions`, the poll sends `.repetitionCapReached`; the reducer transitions `playingPatternLoop → awaitingAnswer` and emits `.stopSequencerAtCap`. The user must still answer — audio is silenced but the trial is open.
+4. `handleAnswer(direction:)` is accepted from both `.playingPatternLoop` and `.awaitingAnswer` (case-pattern union). The reducer transitions to `.showingFeedback` and emits `[.stopSequencer, .evaluateAnswer(direction:), .scheduleFeedbackTimer]` — mechanism (silence the audio) ordered ahead of policy (compute the result, notify observers). From `.awaitingAnswer` the sequencer is already stopped; the redundant `.stopSequencer` is harmless because `enqueueSequencerStop` serializes back-to-back stops.
+5. After `feedbackDuration` (~400 ms) the feedback task sends `.feedbackTimerFired` (→ `.waitingForGrid`), then sleeps until the next quarter-note grid point relative to `gridOrigin` and sends `.gridAlignmentReached` (→ `.playingPatternLoop`, new trial).
 
-**Unique features:**
-- Grid tracking: `gridOrigin` established on first play, all subsequent trials align to quarter-note boundaries
-- `CACurrentMediaTime()` injected for testability
-- 4-dot UI animation: `litDotCount` incremented on each sixteenth-note onset
-- `waitingForGrid` state: sits silently between feedback and next trial to maintain musical timing
+**Load-bearing properties:**
+- **Pure reducer.** `reduce(_:_:)` never touches audio, observers, or timers. Effects are an enum the interpreter consumes — adding a transition does not risk a hidden side effect.
+- **Cap-reached is a first-class state, not a flag.** The transition out of `.playingPatternLoop` is itself the idempotence latch: the state guard at the top of `evaluatePlaybackPosition` short-circuits any further polls in the same trial.
+- **Effect ordering matters.** `.stopSequencer` is emitted before `.evaluateAnswer`/`.scheduleFeedbackTimer` so the audio is silenced before the result computation, never the other way around.
+- **`enqueueSequencerStop` chains stops.** Each enqueued stop awaits the previous one and cancels any in-flight `startTask` before calling `beatSequencer.stop()`. Concurrent answer-driven stops and teardown stops cannot race on the sequencer's runloop task.
+- **Grid-aligned phrasing.** `gridOrigin` is captured on the first trial; subsequent trials always resume on the next quarter-note boundary, so the pulse stays in phase across feedback gaps.
+- **`BeatProvider` safety after teardown.** A sequencer refill scheduled before `stop()` may still call `nextBeat()` after `currentTrial` clears. `nextBeat()` returns an all-rest `silentBeat` in that case, so no audible click leaks past the session's lifetime.
 
-**Trial type:** `RhythmOffsetDetectionTrial` — just `tempo: TempoBPM` + `offset: RhythmOffset`.
+**Dependencies:**
+
+```swift
+init(
+    beatSequencer: any BeatSequencer,
+    strategy: NextTimingOffsetDetectionStrategy,
+    profile: TrainingProfile,
+    observers: [TimingOffsetDetectionObserver] = [],
+    notificationCenter: NotificationCenter = .default,
+    audioInterruptionObserver: AudioInterruptionObserving,
+    backgroundNotificationName: Notification.Name? = nil,
+    foregroundNotificationName: Notification.Name? = nil,
+    currentTime: @escaping () -> Double = { CACurrentMediaTime() }
+)
+```
+
+No `RhythmPlayer` — TOD is built on `BeatSequencer` + `BeatProvider`, the same metronome primitive that drives `ContinuousRhythmMatchingSession`. `currentTime` is injected for deterministic grid-alignment tests.
+
+**Trial type:** `TimingOffsetDetectionTrial { tempo: TempoBPM, offset: TimingOffset }`. The `offset` carries both direction (early/late) and magnitude. Completed trials are `CompletedTimingOffsetDetectionTrial`, adding `isCorrect` and `timestamp`.
+
+**File location:** `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift`
 
 ### 4. ContinuousRhythmMatchingSession
 
 **States:** `isRunning` boolean (no enum — continuous, not discrete trials)
 
 **Flow:**
-1. `start(settings:)` — starts the `StepSequencer` with `self` as `StepProvider`, starts MIDI listening, starts tracking loop
-2. `StepSequencer` calls `nextCycle()` repeatedly — session picks a random gap position from enabled positions, appends to `gapPositions` array
+1. `start(settings:)` — starts the `BeatSequencer` with `self` as `BeatProvider`, starts MIDI listening, starts tracking loop
+2. `BeatSequencer` calls `nextBeat()` repeatedly — session picks a random gap position from enabled positions, appends to `gapPositions` array, and returns a 4-subdivision `Beat` with `.rest` at the gap
 3. Tracking loop polls at ~120Hz, reads sample position from sequencer, derives `currentStep` and `currentGapPosition` for UI
 4. `handleTap()` — user taps (touch or MIDI note-on). Computes sample position, checks if within ±half-step of the gap. If hit: plays immediate click, records `GapResult`, shows feedback
 5. After `cyclesPerTrial` (16) cycles (hit or missed), completes a trial, notifies observers, resets counters — continues seamlessly
 
 **Unique features:**
-- Implements `StepProvider` protocol — the session itself feeds cycle definitions to the sequencer
+- Implements `BeatProvider` protocol — the session itself feeds beats to the sequencer
 - No discrete "playing pattern / awaiting answer" — it's a continuous real-time loop
 - MIDI note-on events are converted to sample positions via `samplePosition(forHostTime:)` for accurate timing
 - Trials are batched: every 16 cycles forms one trial, but the metronome never stops
@@ -156,7 +194,7 @@ Each session type has its own observer protocol:
 |----------|--------|
 | `PitchDiscriminationObserver` | `pitchDiscriminationCompleted(_:)` |
 | `PitchMatchingObserver` | `pitchMatchingCompleted(_:)` |
-| `RhythmOffsetDetectionObserver` | `rhythmOffsetDetectionCompleted(_:)` |
+| `TimingOffsetDetectionObserver` | `timingOffsetDetectionCompleted(_:)` |
 | `ContinuousRhythmMatchingObserver` | `continuousRhythmMatchingCompleted(_:)` |
 
 Each has a **StoreAdapter** that implements the observer, converts the completed trial into a `PersistentModel` record, and saves it. This cleanly decouples the session from persistence.
@@ -170,7 +208,7 @@ Two strategy protocols, two implementations:
 | Protocol | Implementation | Purpose |
 |----------|---------------|---------|
 | `NextPitchDiscriminationStrategy` | `KazezNoteStrategy` | Adapts cent difficulty based on profile (staircase-like) |
-| `NextRhythmOffsetDetectionStrategy` | `AdaptiveRhythmOffsetDetectionStrategy` | Adapts timing offset based on profile |
+| `NextTimingOffsetDetectionStrategy` | `AdaptiveTimingOffsetDetectionStrategy` | Adapts timing offset based on profile |
 
 Both are **stateless** — all inputs come via parameters, making them easy to test. No `PitchMatchingStrategy` or `ContinuousRhythmMatchingStrategy` exist — those generate trials inline in the session.
 
@@ -180,7 +218,7 @@ Each session has its own settings struct, constructed from `UserSettings` via a 
 
 - `PitchDiscriminationSettings` — noteRange, referencePitch, intervals, tuningSystem, noteDuration, varyLoudness, etc.
 - `PitchMatchingSettings` — similar + initialCentOffsetRange
-- `RhythmOffsetDetectionSettings` — tempo, offset ranges, feedbackDuration
+- `TimingOffsetDetectionSettings` — tempo, offset ranges, feedbackDuration, maxRepetitions (per-trial cap, sourced from `TimingOffsetDetectionUserSettings`)
 - `ContinuousRhythmMatchingSettings` — tempo, enabledGapPositions
 
 ## Files to read (suggested order)
@@ -195,14 +233,14 @@ Each session has its own settings struct, constructed from `UserSettings` via a 
 8. `PitchDiscrimination/PitchDiscriminationStoreAdapter.swift` — observer → persistence bridge
 9. `PitchDiscrimination/UnisonPitchDiscriminationDiscipline.swift` — discipline descriptor
 10. `PitchMatching/PitchMatchingSession.swift` — slider/MIDI interaction complexity
-11. `RhythmOffsetDetection/RhythmOffsetDetectionSession.swift` — grid alignment
-12. `ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — continuous mode, StepProvider
+11. `Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift` — pure-reducer state machine, gapless loop, grid alignment
+12. `ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift` — continuous mode, BeatProvider
 13. `Core/Algorithm/KazezNoteStrategy.swift` — adaptive pitch selection
-14. `Core/Algorithm/AdaptiveRhythmOffsetDetectionStrategy.swift` — adaptive rhythm selection
+14. `Core/Algorithm/AdaptiveTimingOffsetDetectionStrategy.swift` — adaptive timing-offset selection
 
 ## Observations and questions
 
 1. **`Core/Data/DuplicateKey.swift` belongs in the feature layer, not Core.** `PitchDuplicateKey` has convenience inits referencing concrete `PitchDiscriminationRecord`/`PitchMatchingRecord`, and the free `build*DuplicateKeys` functions call discipline-specific fetch methods. Core shouldn't know about concrete training disciplines. Move the entire file to a shared import/export area near the discipline types.
 2. **`AudioSessionInterruptionMonitor` background/foreground observers are identical.** Both register the same `onStopRequired()` handler — only the notification name differs. Replace with a single `[Notification.Name]` parameter and loop. The foreground stop may be entirely redundant.
-3. **Training feature directories should be grouped under a `Training/` parent.** Currently `PitchDiscrimination/`, `PitchMatching/`, `RhythmOffsetDetection/`, and `ContinuousRhythmMatching/` are top-level siblings of unrelated screens (`Info/`, `Profile/`, `Settings/`). Move all four under `Training/` to reflect the shared infrastructure and architectural grouping.
-4. **Session state machines interweave transitions with side effects.** All four sessions mix state transitions, audio control, result recording, feedback display, and next-trial scheduling in the same methods. `PitchDiscriminationSession.transitionToFeedback` is named as a feedback concern but also plays the next trial. `PitchMatchingSession.commitResult` stops audio, computes error, records, shows feedback, and schedules the next trial — five responsibilities in one method. **Action:** research explicit/idiomatic state machine patterns in Swift (e.g. state + event → (newState, [Effect]) separation) and evaluate whether refactoring to that pattern would clarify the session code.
+3. **Training feature directories should be grouped under a `Training/` parent.** *Resolved:* `PitchDiscrimination/`, `PitchMatching/`, `TimingOffsetDetection/`, and `ContinuousRhythmMatching/` now live under `Peach/Training/`, separated from unrelated screens (`Info/`, `Profile/`, `Settings/`).
+4. **Session state machines interweave transitions with side effects.** The pitch sessions still mix state transitions, audio control, result recording, feedback display, and next-trial scheduling in the same methods. `PitchDiscriminationSession.transitionToFeedback` is named as a feedback concern but also plays the next trial. `PitchMatchingSession.commitResult` stops audio, computes error, records, shows feedback, and schedules the next trial — five responsibilities in one method. **Partial resolution:** `TimingOffsetDetectionSession` adopted the explicit state-machine pattern (pure `reduce(state:event:) -> [Effect]` + separate `interpret(_:)`) in Epic 80. The same refactoring is still open for the pitch sessions and `ContinuousRhythmMatchingSession`.

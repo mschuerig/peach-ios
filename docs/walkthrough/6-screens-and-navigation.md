@@ -12,7 +12,7 @@ StartScreen (hub)
     │
     ├── PitchDiscriminationScreen ─── Higher / Lower buttons
     ├── PitchMatchingScreen ────────── PitchSlider + commit
-    ├── RhythmOffsetDetectionScreen ── Early / Late buttons + RhythmDotView
+    ├── TimingOffsetDetectionScreen ── Early / Late buttons + TimingDotView
     ├── ContinuousRhythmMatchingScreen ── Tap button + ContinuousRhythmMatchingDotView
     ├── ProfileScreen ──────────────── ProgressChartView (pitch) + RhythmProfileCardView (rhythm)
     ├── SettingsScreen ─────────────── Form with @AppStorage bindings
@@ -50,9 +50,9 @@ Help sections are static `[HelpSection]` arrays — localized strings defined in
 
 Wraps `PitchSlider` with callbacks for `onValueChange` (continuous drag) and `onCommit` (release). Three input sources: slider touch, keyboard arrows (fine pitch step), MIDI pitch bend. `externalValue` drives thumb position from MIDI/keyboard.
 
-### `RhythmOffsetDetectionScreen.swift` (248 lines)
+### `TimingOffsetDetectionScreen.swift`
 
-Early/Late buttons (always horizontal). `RhythmDotView` shows 4 dots lighting up as the pattern plays — the 3rd dot (tested note) is a double-circle visual. Grid alignment handled by the session.
+Early/Late buttons (always horizontal), reached via `NavigationDestination.timingOffsetDetection`. `TimingDotView` shows 4 dots lighting up as each loop of the 4-sixteenth pattern plays — the 3rd dot (tested subdivision) is a double-circle visual. The pattern keeps looping until the user answers or the repetition cap is hit; either way the session stops the sequencer cleanly and grid-aligns the next trial.
 
 ### `ContinuousRhythmMatchingScreen.swift` (233 lines)
 
@@ -66,7 +66,7 @@ Cycle progress counter ("4/16") shows position within the current trial.
 |-----------|---------|---------|
 | `PitchDiscriminationFeedbackIndicator` | Pitch compare | Checkmark/X (green/red) |
 | `PitchMatchingFeedbackIndicator` | Pitch match | Arrow + cent offset, 4-band color (dead center/close/moderate/far) |
-| `RhythmOffsetDetectionFeedbackView` | Rhythm compare | Checkmark/X + percentage |
+| `TimingOffsetDetectionFeedbackView` | Compare Timing | Checkmark/X + percentage |
 | `RhythmTimingFeedbackIndicator` | Rhythm match | Arrow (early/late) + ms offset, color from `SpectrogramThresholds` |
 
 All feedback indicators use the same pattern: visible content when data is non-nil, hidden placeholder (for layout stability) when nil.
@@ -74,7 +74,7 @@ All feedback indicators use the same pattern: visible content when data is non-n
 ## Stats Views
 
 - `TrainingStatsView` (in App/) — pitch stats: latest value + session best + trend arrow. Used by both pitch screens.
-- `RhythmStatsView` — rhythm stats: percentage + ms values. Includes trend symbol/color/label helpers.
+- `TimingStatsView` — timing-offset stats: percentage + ms values. Includes trend symbol/color/label helpers. Used by `TimingOffsetDetectionScreen`'s `statsHeader`.
 - Both are reused by their respective screens' `statsHeader`.
 
 ## Profile Adapters
@@ -82,7 +82,7 @@ All feedback indicators use the same pattern: visible content when data is non-n
 Each training discipline has a `*ProfileAdapter` (observer → profile bridge):
 - `PitchDiscriminationProfileAdapter` — routes correct answers to `.pitch(mode)` key, using cent offset magnitude
 - `PitchMatchingProfileAdapter` — routes all answers (no `isCorrect` gate) to `.pitch(mode)` key, using cent error magnitude
-- `RhythmOffsetDetectionProfileAdapter` — routes correct answers to `.rhythm(mode, range, direction)` key
+- `TimingOffsetDetectionProfileAdapter` — routes correct answers to `.rhythm(mode, range, direction)` key
 - `ContinuousRhythmMatchingProfileAdapter` — computes signed mean of gap offsets, routes to `.rhythm(mode, range, direction)` key
 
 ## Profile Screen (`ProfileScreen.swift`, 152 lines)
@@ -158,7 +158,7 @@ Static content: app description, training mode descriptions, getting started tex
 **Start/** (2): StartScreen, ProgressSparklineView
 **PitchDiscrimination/** (UI only, 3): Screen, FeedbackIndicator, ProfileAdapter
 **PitchMatching/** (UI only, 4): Screen, FeedbackIndicator, PitchSlider, ProfileAdapter
-**RhythmOffsetDetection/** (UI only, 4): Screen, FeedbackView, DotView, RhythmStatsView, ProfileAdapter
+**Training/TimingOffsetDetection/** (UI only, 5): Screen, FeedbackView, DotView, TimingStatsView, ProfileAdapter
 **ContinuousRhythmMatching/** (UI only, 4): Screen, DotView, TimingFeedbackIndicator, ProfileAdapter
 **Profile/** (7): ProfileScreen, ProgressChartView, RhythmProfileCardView, RhythmSpectrogramView, ExportChartView, ChartImageRenderer, ChartTips
 **Settings/** (8): SettingsScreen, AppUserSettings, SettingsKeys, IntervalSelectorView, IntervalSelection, ImportDialogModifier, GridToggleRow, GapPositionEncoding, CSVDocument

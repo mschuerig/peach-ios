@@ -146,7 +146,7 @@ graph TB
 | Quality Goal | Approach | Details in |
 |-------------|----------|-----------|
 | **Audio precision (pitch)** | SoundFont playback via MIDI noteOn + pitch bend; two-world architecture separating musical concepts from audio frequencies | Section 8.1 |
-| **Audio precision (rhythm)** | Sample-accurate event scheduling via render-thread dispatch in `SoundFontEngine`; pre-allocated buffer with `OSAllocatedUnfairLock` for lock-free timing | Sections 5.2, 8.1 |
+| **Audio precision (rhythm)** | Sample-accurate event scheduling via render-thread dispatch in `SoundFontEngine`; pre-allocated buffer with `Atomic<T>` counters for lock-free render-thread reads | Sections 5.2, 8.1 |
 | **Training feel** | State machine sessions with guarded transitions; 400ms feedback phase; observer pattern for fire-and-forget result delivery; grid-aligned rhythm pattern sequencing | Sections 5.2, 6 |
 | **Data integrity** | SwiftData atomic writes; single data store accessor; only completed exercises are persisted | Section 8.3 |
 | **Testability** | Protocol-first design; composition root wires all dependencies; mocks with deterministic timing | Section 8.4 |
@@ -218,16 +218,16 @@ graph TB
 | **Composition Root** | Creates all services, wires the dependency graph, injects everything via SwiftUI environment. The only place that knows the full object graph. Manages four sessions, two audio layers, and their respective adapters. |
 | **Pitch Comparison** | Training loop where two notes play in sequence and the user judges higher/lower. Owns the `PitchDiscriminationSession` state machine. Works in both unison and interval disciplines via parameterization. |
 | **Pitch Matching** | Training loop where a reference note plays and the user tunes a second note to match. Owns the `PitchMatchingSession` state machine, pitch slider interaction. Works in both unison and interval disciplines. |
-| **Rhythm Offset Detection** | Training loop where a four-note rhythmic pattern plays with one note offset from the beat. User judges whether the offset note is early or late. Owns the `TimingOffsetDetectionSession` state machine. Uses `RhythmPlayer` for sample-accurate pattern playback. |
-| **Continuous Rhythm Matching** | Continuous training loop where a repeating four-step pattern plays with one gap per cycle. User taps to fill the gap. Timing accuracy is measured. Owns the `ContinuousRhythmMatchingSession` and acts as `StepProvider` for the `StepSequencer`. |
+| **Timing Offset Detection** | Training loop where a four-sixteenth rhythmic pattern loops gaplessly with one note offset from the beat. User judges whether the offset note is early or late. Owns the `TimingOffsetDetectionSession` state machine. Acts as `BeatProvider` for a `BeatSequencer`. |
+| **Continuous Rhythm Matching** | Continuous training loop where a repeating four-subdivision pattern plays with one gap per beat. User taps to fill the gap. Timing accuracy is measured. Owns the `ContinuousRhythmMatchingSession` and acts as `BeatProvider` for a `BeatSequencer`. |
 | **Profile** | Visualizes the user's perceptual abilities: piano keyboard heatmap, progress chart across every registered discipline, spectrogram for rhythm, chart export. |
 | **Settings** | User configuration: note range, note duration, reference pitch, sound source, interval selection, tuning system, tempo, gap position, data import/export. |
-| **Audio** | Tone generation and percussion sequencing. Provides three protocol boundaries: `NotePlayer` (pitched playback), `RhythmPlayer` (pattern-based percussion), and `StepSequencer` (continuous cycle-based sequencing). `SoundFontEngine` is the shared multi-channel audio engine. Implements the two-world architecture (see Section 8.1). |
+| **Audio** | Tone generation and percussion sequencing. Provides two protocol boundaries: `NotePlayer` (pitched playback) and `BeatSequencer` (gapless looped `Beat` playback, shared by both rhythm disciplines). `SoundFontEngine` is the shared multi-channel audio engine. Implements the two-world architecture (see Section 8.1). |
 | **Algorithm** | Decides the next exercise based on the user's profile. `KazezNoteStrategy` implements the staircase for pitch comparison (see ADR-4). `AdaptiveTimingOffsetDetectionStrategy` adapts the same staircase for rhythm timing. Both strategies conform to their respective protocol (`NextPitchDiscriminationStrategy`, `NextTimingOffsetDetectionStrategy`). |
 | **Training** | Shared training infrastructure: `TrainingSession` protocol, `TrainingDiscipline` protocol, `TrainingDisciplineRegistry` (see Section 8.7), `TrainingDisciplineConfig`, `TrainingDisciplineID` (slug-wrapping struct with named factories per registered discipline), `StatisticsKey`, observer protocols, session-specific settings snapshots, `Resettable`, `ProfileUpdating`. |
 | **Data** | Sole accessor to SwiftData persistence. Stores every completed exercise across four record types. Handles CSV import/export with discipline-driven column ownership. |
-| **Profile Model** | In-memory perceptual profile rebuilt from training records on startup. Keyed by `StatisticsKey` — either `.pitch(TrainingDisciplineID)` or `.rhythm(TrainingDisciplineID, TempoRange, RhythmDirection)`. Uses Welford's algorithm for running statistics. Builder pattern for initialization. Progress timeline with EWMA smoothing and adaptive time bucketing. |
-| **Music** | Domain value types for the logical world: `MIDINote`, `Cents`, `Frequency`, `Interval`, `DetunedMIDINote`, `TuningSystem`, `NoteDuration`, `AmplitudeDB`, `MIDIVelocity`, `SoundSourceID`, `TempoBPM`, `TempoRange`, `RhythmOffset`, `RhythmDirection`, `SampleRate`, `PitchBendValue`, `StepPosition`. |
+| **Profile Model** | In-memory perceptual profile rebuilt from training records on startup. Keyed by `StatisticsKey` — either `.pitch(TrainingDisciplineID)` or `.rhythm(TrainingDisciplineID, TempoRange, TimingDirection)`. Uses Welford's algorithm for running statistics. Builder pattern for initialization. Progress timeline with EWMA smoothing and adaptive time bucketing. |
+| **Music** | Domain value types for the logical world: `MIDINote`, `Cents`, `Frequency`, `Interval`, `DetunedMIDINote`, `TuningSystem`, `NoteDuration`, `AmplitudeDB`, `MIDIVelocity`, `SoundSourceID`, `TempoBPM`, `TempoRange`, `TimingOffset`, `TimingDirection`, `RhythmVelocity`, `SampleRate`, `PitchBendValue`. |
 
 ### 5.2 Level 2 — Training Sessions
 
@@ -245,17 +245,19 @@ idle → playingReferenceNote → playingTargetNote → awaitingAnswer → showi
 idle → playingReference → awaitingSliderTouch → playingTunable → showingFeedback → (loop)
 ```
 
-**Rhythm Offset Detection:**
+**Timing Offset Detection:**
 
 ```
-idle → playingPattern → awaitingAnswer → showingFeedback → waitingForGrid → (loop)
+idle → playingPatternLoop → showingFeedback → waitingForGrid → playingPatternLoop
+                  │
+                  └─.repetitionCapReached─→ awaitingAnswer ─.answerReceived─→ showingFeedback
 ```
 
-The `waitingForGrid` state ensures the next pattern starts grid-aligned with the musical pulse, preventing timing drift between trials.
+The session runs the 4-sixteenth test pattern as a gapless loop on a `BeatSequencer`, with the session itself acting as `BeatProvider`. Each `.answerReceived` event is accepted from both `playingPatternLoop` and `awaitingAnswer` (a case-pattern union), so a user answer is always valid while a trial is open. `awaitingAnswer` is the cap-as-state introduced by the `maxRepetitions` setting: when the per-trial cycle count reaches the configured cap, the reducer transitions out of `playingPatternLoop` and stops the audio, but the trial stays open until the user submits. The `waitingForGrid` state ensures the next pattern loop resumes on the next quarter-note grid point, keeping the pulse phase-locked across feedback gaps.
 
 **Continuous Rhythm Matching:**
 
-Unlike the discrete state machines above, this session runs as a continuous loop. A `StepSequencer` plays an endless stream of four-step cycles (three notes + one gap). The session acts as `StepProvider`, deciding where the gap falls in each cycle. The user taps during gap windows; after 16 cycles, a trial completes and observers are notified. There is no state enum — the session uses an `isRunning` flag and real-time position tracking at ~120Hz.
+Unlike the discrete state machines above, this session runs as a continuous loop. A `BeatSequencer` plays an endless stream of four-subdivision beats (three notes + one gap). The session acts as `BeatProvider`, deciding where the gap falls in each cycle. The user taps during gap windows; after 16 cycles, a trial completes and observers are notified. There is no state enum — the session uses an `isRunning` flag and real-time position tracking at ~120Hz.
 
 All sessions share these architectural properties:
 
@@ -273,28 +275,24 @@ The audio subsystem has been refactored around a shared engine:
 graph TB
     subgraph "Protocol Boundaries"
         NP["NotePlayer"]
-        RP["RhythmPlayer"]
-        SS["StepSequencer"]
+        BS["BeatSequencer"]
     end
 
     subgraph "Implementation"
         SFE["SoundFontEngine<br/>(shared, multi-channel)"]
         SFP_Pitch["SoundFontPlayer<br/>(channel 0: pitched)"]
-        SFP_Perc["SoundFontPlayer<br/>(channel 1: percussion)"]
-        SFSS["SoundFontStepSequencer<br/>(channel 1: continuous)"]
+        SFBS["SoundFontBeatSequencer<br/>(channel 1: percussion + rhythm)"]
     end
 
     NP -.-> SFP_Pitch
-    RP -.-> SFP_Perc
-    SS -.-> SFSS
+    BS -.-> SFBS
     SFP_Pitch --> SFE
-    SFP_Perc --> SFE
-    SFSS --> SFE
+    SFBS --> SFE
 ```
 
-- **`SoundFontEngine`** owns the single `AVAudioEngine` and manages multiple MIDI channels via `AVAudioUnitSampler` nodes. It provides sample-accurate event scheduling through a render-thread callback with a pre-allocated event buffer and `OSAllocatedUnfairLock` for lock-free synchronization.
-- **`SoundFontPlayer`** conforms to both `NotePlayer` (for pitched playback with pitch bend) and `RhythmPlayer` (for pattern-based percussion). Two instances exist: one on channel 0 (pitched instruments) and one on channel 1 (percussion).
-- **`SoundFontStepSequencer`** drives continuous rhythm playback for Continuous Rhythm Matching. It pre-schedules batches of 500 cycles and tracks playback position via sample-position polling at ~120Hz.
+- **`SoundFontEngine`** owns the single `AVAudioEngine` and manages multiple MIDI channels via `AVAudioUnitSampler` nodes. It provides sample-accurate event scheduling through a render-thread callback with a pre-allocated event buffer; coordination between the main thread and the render thread uses `Atomic<T>` counters (generation, dispatched-event count, sample position) so render-thread reads stay lock-free.
+- **`SoundFontPlayer`** is the `NotePlayer` implementation — pitched playback with pitch bend. A single instance runs on channel 0.
+- **`SoundFontBeatSequencer`** is the `BeatSequencer` implementation — gapless looped playback of `Beat` cycles (arrays of `Subdivision` cases — note with velocity + signed offset, or rest). Used by both Timing Offset Detection (4-sixteenth test pattern with one offset note) and Continuous Rhythm Matching (4-subdivision pattern with one gap). Runs on channel 1, pre-schedules batches of 500 beats, and tracks playback position via sample-position polling at ~120Hz. The session supplies the next `Beat` through a `BeatProvider` conformance whenever the sequencer refills its scheduling batch.
 
 ---
 
@@ -355,44 +353,49 @@ graph LR
 
 Real-time frequency adjustment during step 2 is the key technical challenge — see Section 8.1 for how the audio layer handles this.
 
-### 6.3 Rhythm Offset Detection Exercise
+### 6.3 Timing Offset Detection Exercise
 
 ```mermaid
 graph LR
     subgraph "1. Select"
         A["Strategy picks<br/>direction (early/late)<br/>+ offset magnitude<br/>as % of sixteenth note"]
     end
-    subgraph "2. Schedule"
-        B["Session builds<br/>RhythmPattern with<br/>sample-accurate offsets"]
+    subgraph "2. Loop"
+        B["BeatSequencer loops<br/>the 4-sixteenth Beat<br/>gaplessly. Session is<br/>BeatProvider — each<br/>refill returns the same<br/>pattern with offset<br/>on subdivision 3."]
     end
-    subgraph "3. Play"
-        C["RhythmPlayer schedules<br/>4-note pattern on<br/>audio render thread.<br/>Dots animate at onset."]
+    subgraph "3. Track"
+        C["~125 Hz poll reads<br/>samplePosition,<br/>advances litDotCount,<br/>counts completed cycles."]
     end
     subgraph "4. Judge"
-        D["User answers<br/>early or late"]
+        D["User answers<br/>early or late<br/>(accepted while<br/>looping OR after cap)"]
     end
-    subgraph "5. Record"
-        E["Notify observers:<br/>persist, update profile,<br/>haptic if wrong"]
+    subgraph "5. Cap"
+        E["If cycles ≥<br/>maxRepetitions,<br/>reducer transitions<br/>to awaitingAnswer<br/>and stops audio.<br/>Trial stays open."]
     end
-    subgraph "6. Grid Wait"
-        F["Wait for next<br/>quarter-note grid point,<br/>then loop to step 1"]
+    subgraph "6. Record"
+        F["Notify observers:<br/>persist, update profile,<br/>haptic if wrong"]
+    end
+    subgraph "7. Grid Wait"
+        G["Wait for next<br/>quarter-note grid point,<br/>then loop to step 1"]
     end
 
-    A --> B --> C --> D --> E --> F
-    F -.->|next trial| A
+    A --> B --> C --> D --> F --> G
+    C -.->|cap reached| E
+    E --> D
+    G -.->|next trial| A
 ```
 
-The offset magnitude is expressed as a percentage of one sixteenth note at the current tempo, then converted to sample-accurate duration for scheduling. The grid-wait ensures trials stay musically aligned.
+The offset magnitude is expressed as a percentage of one sixteenth note at the current tempo, then carried as a signed `TimingOffset` on the third subdivision of every looped beat. Looping uses `SoundFontBeatSequencer`'s pre-scheduled batch of 500 beats, so the pattern repeats without seams. The `maxRepetitions` cap is enforced as a first-class state transition (`playingPatternLoop → awaitingAnswer`) rather than a flag — the state guard at the top of the tracking poll is the idempotence latch that prevents re-entry. The grid-wait keeps trials phase-locked to a quarter-note grid established on the first trial.
 
 ### 6.4 Continuous Rhythm Matching Loop
 
 ```mermaid
 graph LR
     subgraph "1. Configure"
-        A["Session starts<br/>StepSequencer at<br/>configured tempo"]
+        A["Session starts<br/>BeatSequencer at<br/>configured tempo"]
     end
     subgraph "2. Cycle"
-        B["StepSequencer plays<br/>3 notes + 1 gap<br/>per 4-step cycle.<br/>Session provides gap<br/>position via StepProvider."]
+        B["BeatSequencer plays<br/>3 notes + 1 gap<br/>per 4-subdivision beat.<br/>Session provides gap<br/>position via BeatProvider."]
     end
     subgraph "3. Tap"
         C["User taps during<br/>gap window (±½<br/>sixteenth note).<br/>Offset measured from<br/>ideal gap time."]
@@ -407,7 +410,7 @@ graph LR
     D -.->|next trial| B
 ```
 
-The step sequencer pre-schedules batches of 500 cycles for seamless audio. The session tracks playback position at ~120Hz, evaluating missed gaps and advancing the trial counter. Gap hits produce immediate audible feedback (the gap note plays) and a 200ms visual indicator.
+The beat sequencer pre-schedules batches of 500 beats for seamless audio. The session tracks playback position at ~120Hz, evaluating missed gaps and advancing the trial counter. Gap hits produce immediate audible feedback (the gap note plays) and a 200ms visual indicator.
 
 ---
 
@@ -461,7 +464,7 @@ The most fundamental design pattern in Peach: strict separation between the **lo
 | `DetunedMIDINote` (MIDI note + cent offset) — a precise pitch identity | |
 | `Cents` — microtonal offset, universal across tuning systems | |
 | `TempoBPM` — musical tempo | `SampleRate` — audio samples per second |
-| `RhythmOffset` — signed timing deviation from the beat | Sample offsets — integer positions in the audio buffer |
+| `TimingOffset` — signed timing deviation from a grid point | Sample offsets — integer positions in the audio buffer |
 
 `TuningSystem` is the **pitch bridge** between the two worlds. It is the *only* path from logical pitch to physical frequency.
 
@@ -474,9 +477,9 @@ Sessions, the algorithm, profiles, data stores, and observers work **exclusively
 Only the audio layer touches the physical world — and it does so through explicit conversions:
 1. **Pitch (logical → physical):** `TuningSystem.frequency(for:referencePitch:)` — used by sessions before calling the audio layer
 2. **Pitch (physical → MIDI hardware):** internal to the SoundFont player, invisible to the rest of the app
-3. **Rhythm (logical → physical):** `SampleRate × Duration` — used inside `TimingOffsetDetectionSession.buildPattern()` and `SoundFontStepSequencer`
+3. **Rhythm (logical → physical):** `SampleRate × Duration` — used inside `SoundFontBeatSequencer` when scheduling each `Beat` against the engine's sample clock
 
-The `NotePlayer` protocol sits at the pitch boundary: it accepts frequencies. The `RhythmPlayer` protocol sits at the rhythm boundary: it accepts `RhythmPattern` (pre-computed sample offsets). The `StepSequencer` protocol accepts `TempoBPM` and a `StepProvider`.
+The `NotePlayer` protocol sits at the pitch boundary: it accepts frequencies. The `BeatSequencer` protocol sits at the rhythm boundary: it accepts a `TempoBPM` and a `BeatProvider`, looping each `Beat` (an array of `Subdivision` cases — note with velocity + signed `Duration` offset, or rest) gaplessly until stopped.
 
 #### Forward Path: From Musical Intent to Sound (Pitch)
 
@@ -524,16 +527,16 @@ During pitch matching, the user adjusts a slider that changes the playing note's
 
 #### Sample-Accurate Rhythm Scheduling
 
-For rhythm training, timing precision is achieved at the audio engine level. `SoundFontEngine` uses a render-thread tap on the audio output node. MIDI events are pre-scheduled into a fixed-capacity buffer (`ScheduledMIDIEvent`) with sample-accurate offsets. The render callback dispatches events when the running sample position crosses their scheduled offset. This buffer is synchronized between the main thread and the render thread via `OSAllocatedUnfairLock`.
+For rhythm training, timing precision is achieved at the audio engine level. `SoundFontEngine` uses a render-thread tap on the audio output node. MIDI events are pre-scheduled into a fixed-capacity buffer (`ScheduledMIDIEvent`) with sample-accurate offsets. The render callback dispatches events when the running sample position crosses their scheduled offset. Coordination between the main thread (which writes events) and the render thread (which reads and dispatches them) uses `Atomic<T>` counters — a generation counter, a dispatched-event count, and the running sample position — so render-thread reads stay lock-free.
 
-The `SoundFontStepSequencer` builds on this by pre-scheduling batches of 500 four-step cycles (≈8+ minutes at 60 BPM), each cycle producing at most 6 MIDI events (3 note-on + 3 note-off). This batch approach avoids per-cycle scheduling overhead while staying well within the engine's 4096-event buffer capacity.
+The `SoundFontBeatSequencer` builds on this by pre-scheduling batches of 500 beats (≈8+ minutes at 60 BPM). Each beat produces up to ~8 MIDI events — 6 for Continuous Rhythm Matching (3 note-on + 3 note-off) or 8 for Timing Offset Detection (4 note-on + 4 note-off). This batch approach avoids per-beat scheduling overhead while staying well within the engine's 4096-event buffer capacity.
 
 #### Why This Architecture Matters
 
 The two-world separation has concrete consequences:
 
 - **Adding a tuning system** (e.g., just intonation) requires only adding its interval-to-cents table. No changes to sessions, the algorithm, profiles, data stores, or the audio layer.
-- **Replacing the audio engine** requires only new `NotePlayer`/`RhythmPlayer`/`StepSequencer` conformances. No changes to the logical world.
+- **Replacing the audio engine** requires only new `NotePlayer`/`BeatSequencer` conformances. No changes to the logical world.
 - **All training data is stored in logical types** (MIDI notes, cent offsets, tuning system label, tempo BPM, offset milliseconds). The data remains meaningful regardless of which audio engine plays it back.
 
 ### 8.2 Domain Types
@@ -542,7 +545,7 @@ Raw `Double`, `Int`, and `String` are forbidden where a domain type exists. A co
 
 **Pitch domain types:** `MIDINote`, `Cents`, `Frequency`, `Interval`, `DirectedInterval`, `Direction`, `DetunedMIDINote`, `TuningSystem`, `NoteDuration`, `AmplitudeDB`, `MIDIVelocity`, `SoundSourceID`, `PitchBendValue`.
 
-**Rhythm domain types:** `TempoBPM`, `TempoRange`, `RhythmOffset`, `RhythmDirection`, `SampleRate`, `StepPosition`.
+**Rhythm domain types:** `TempoBPM`, `TempoRange`, `TimingOffset`, `TimingDirection`, `RhythmVelocity`, `SampleRate`, `Beat`, `Subdivision`.
 
 **Shared types:** `Duration` (Swift standard library) for all timing values.
 
@@ -588,8 +591,7 @@ All service instantiation happens in one place: the app entry point. This is the
 
 The composition root wires:
 - Four training sessions (pitch comparison, pitch matching, rhythm offset detection, continuous rhythm matching)
-- Two `SoundFontPlayer` instances (pitched on channel 0, percussion on channel 1) sharing one `SoundFontEngine`
-- One `SoundFontStepSequencer` (also on channel 1, sharing the percussion preset)
+- One `SoundFontPlayer` instance (pitched on channel 0) and one `SoundFontBeatSequencer` (channel 1, percussion preset) sharing one `SoundFontEngine`
 - Adapter-based observer arrays for each session
 - Profile, progress timeline, data store, and transfer service
 
@@ -878,7 +880,7 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 
 **Context:** Rhythm training requires percussion playback alongside existing pitched playback. Running two `AVAudioEngine` instances is unreliable and resource-wasteful.
 
-**Decision:** Extract `SoundFontEngine` as a shared multi-channel audio engine. It manages a single `AVAudioEngine` with multiple `AVAudioUnitSampler` nodes (one per MIDI channel). `SoundFontPlayer` instances and `SoundFontStepSequencer` share the same engine, each operating on their assigned channel.
+**Decision:** Extract `SoundFontEngine` as a shared multi-channel audio engine. It manages a single `AVAudioEngine` with multiple `AVAudioUnitSampler` nodes (one per MIDI channel). `SoundFontPlayer` and `SoundFontBeatSequencer` share the same engine, each operating on their assigned channel.
 
 **Status:** Implemented.
 
@@ -978,7 +980,7 @@ Quality
 |------|---------|-----------|
 | **Startup time with large datasets** | Medium | Welford's algorithm is O(n), currently sub-millisecond for hundreds of records. Monitor as dataset grows; could add background loading or profile caching. |
 | **Sample-accurate scheduling complexity** | Medium | `SoundFontEngine` uses a render-thread callback with a pre-allocated buffer and `OSAllocatedUnfairLock` for lock-free event dispatch. This is the most complex low-level code in the app and is difficult to debug. Mitigation: comprehensive unit tests with deterministic mock engines. |
-| **Composition root complexity** | Medium | The `PeachApp.init()` method wires four sessions, two `SoundFontPlayer` instances, one `SoundFontStepSequencer`, and their respective adapter stacks. Could extract to a factory if it grows further. |
+| **Composition root complexity** | Medium | The `PeachApp.init()` method wires four sessions, one `SoundFontPlayer` instance, one `SoundFontBeatSequencer`, and their respective adapter stacks. Could extract to a factory if it grows further. |
 | **Single SoundFont quality** | Low | Bundled GM SoundFont covers common instruments and percussion. User-provided SF2 import is a future feature. |
 | **No adaptive algorithm for pitch matching** | Low | Random note selection is acceptable for current usage. Extract to a strategy when data shows meaningful patterns. |
 
@@ -999,13 +1001,15 @@ Quality
 | **Cent** | Unit of pitch difference. 100 cents = 1 semitone, 1200 cents = 1 octave. |
 | **Cold Start** | Initial state when no training data exists for a note or tempo range. The algorithm starts at maximum difficulty. |
 | **Composition Root** | The single location (app entry point) where all services are created and wired. |
+| **Beat** | One cycle of a looped rhythmic pattern, represented as an array of `Subdivision` cases (note with velocity + signed `Duration` offset, or rest). The unit `BeatSequencer` loops gaplessly. |
+| **BeatProvider** | Protocol the session conforms to; supplies the next `Beat` whenever `BeatSequencer` refills its scheduling batch. |
+| **BeatSequencer** | Protocol for gapless looped audio playback of `Beat` cycles. The session provides beats via `BeatProvider`; the sequencer handles batch scheduling and exposes a `SequencerTiming` view (sample position, samples per beat). Used by both Timing Offset Detection and Continuous Rhythm Matching. |
 | **Continuous Rhythm Matching** | A repeating rhythmic pattern plays with one gap per cycle; user taps to fill the gap. Timing accuracy is measured. |
-| **CycleDefinition** | A single four-step cycle in continuous rhythm matching, specifying which step position is the gap. |
 | **DetunedMIDINote** | A MIDI note with a cent offset — a precise pitch identity in the logical world. |
 | **DisciplineBootstrap** | Single file (`App/Training/DisciplineBootstrap.swift`) listing the active discipline factories. Pitch disciplines always; timing disciplines inside `#if PEACH_RESEARCH`. |
 | **EWMA** | Exponentially Weighted Moving Average. Used for smoothing progress trends over time. |
 | **Interval** | Musical distance from prime (unison, 0 semitones) through octave (12 semitones). |
-| **Kazez Algorithm** | Psychoacoustic staircase that adjusts difficulty via `p * (1 ± k * sqrt(p))`. Coefficients: narrowing 0.05, widening 0.09. Used for both pitch comparison and rhythm offset detection. |
+| **Kazez Algorithm** | Psychoacoustic staircase that adjusts difficulty via `p * (1 ± k * sqrt(p))`. Coefficients: narrowing 0.05, widening 0.09. Used for both pitch comparison and timing offset detection. |
 | **MIDI Note** | Standardized pitch number (0-127). 60 = middle C, 69 = A4. |
 | **PeachCommands** | SwiftUI `Commands` type providing macOS menu bar entries and keyboard shortcuts for training interactions. |
 | **PEACH_RESEARCH** | Swift compilation flag defined by the `(Research)` build configurations. Gates the timing disciplines so they are physically absent from App Store binaries. |
@@ -1016,19 +1020,18 @@ Quality
 | **Platform Implementation** | A concrete type in `App/Platform/` that conforms to a port protocol with platform-specific behavior (e.g., `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`). |
 | **Port** | A platform-agnostic protocol in `Core/Ports/` that abstracts a platform-specific capability (e.g., `HapticFeedback`, `AudioSessionConfiguring`). See Section 8.8. |
 | **Reference Note** | The anchor note in a training exercise. Always an exact MIDI note. |
-| **RhythmDirection** | Whether a timing offset is early (before the beat) or late (after the beat). |
-| **RhythmOffset** | A signed duration representing the timing deviation from the beat. Negative = early, positive = late. |
-| **Rhythm Offset Detection** | A four-note pattern plays with one note offset from the beat; user judges early or late. |
 | **SampleRate** | Audio samples per second (e.g., 44,100 Hz or 48,000 Hz). Used for sample-accurate scheduling. |
 | **SoundFont (SF2)** | File format containing sampled instrument sounds. Peach bundles one GM SoundFont for both pitched and percussion playback. |
 | **SoundFontEngine** | Shared multi-channel audio engine managing a single `AVAudioEngine` with multiple `AVAudioUnitSampler` nodes. Provides sample-accurate event scheduling via render-thread dispatch. |
-| **StatisticsKey** | Uniform key for profile lookups. Either `.pitch(TrainingDisciplineID)` or `.rhythm(TrainingDisciplineID, TempoRange, RhythmDirection)`. |
-| **StepPosition** | One of four positions in a rhythmic cycle (first through fourth). |
-| **StepSequencer** | Protocol for continuous cycle-based audio playback. The session provides cycle definitions via `StepProvider`; the sequencer handles scheduling and playback. |
+| **StatisticsKey** | Uniform key for profile lookups. Either `.pitch(TrainingDisciplineID)` or `.rhythm(TrainingDisciplineID, TempoRange, TimingDirection)`. |
+| **Subdivision** | One position inside a `Beat`. Either `.rest`, `.note(velocity:offset:)` (a struck note with a `MIDIVelocity` and a signed `Duration` offset from its grid point), or `.nested(Beat)` for irregular phrasing. |
+| **Timing Offset Detection** | A four-sixteenth pattern loops with one note offset from the beat; user judges early or late. Loops until the user answers or a `maxRepetitions` cap is reached. |
+| **TimingDirection** | Whether a timing offset is early (before the beat) or late (after the beat). |
+| **TimingOffset** | A signed duration representing the timing deviation from a grid point. Negative = early, positive = late. |
 | **Target Note** | The note the user judges against or tunes toward. May differ from reference by an interval and a cent offset. |
 | **TempoBPM** | Musical tempo in beats per minute. Derives sixteenth note and quarter note durations. |
 | **TempoRange** | A band of tempos (slow: 40-79, medium: 80-119, fast: 120-200 BPM) used to group rhythm statistics. |
-| **Training Discipline** | A self-describing unit of training functionality. Six disciplines exist: unison/interval pitch comparison and unison/interval pitch matching (always), plus rhythm offset detection and continuous rhythm matching (in the `(Research)` configurations only). |
+| **Training Discipline** | A self-describing unit of training functionality. Six disciplines exist: unison/interval pitch comparison and unison/interval pitch matching (always), plus timing offset detection and continuous rhythm matching (in the `(Research)` configurations only). |
 | **TrainingDisciplinePayload** | Protocol (`Codable, Sendable`) for a discipline's record payload struct. Declares `disciplineIdentifier` and `currentPayloadVersion`. The payload is JSON-encoded into `TrainingRecord.payloadData`. |
 | **TrainingDisciplineRegistry** | Singleton (in `Core/Training/Discipline/`) that holds the disciplines registered by `App/Training/DisciplineBootstrap.swift` at startup. The App-layer extension `allUI` exposes the registry through `TrainingDisciplineUI` for view-producing iteration. Provides aggregate operations (profile feeding, CSV column aggregation, parser dispatch). |
 | **TrainingDisciplineUI** | App-layer refinement of `TrainingDiscipline` adding view-producing requirements (profile card, settings sections, help bodies) so Core/Data can stay SwiftUI-free. Lives in `App/Training/`. |

@@ -1862,56 +1862,67 @@ protocol StepProvider {
 
 ### Rhythm Sessions
 
-#### RhythmOffsetDetectionSession
+#### TimingOffsetDetectionSession
 
-`@Observable final class` following established session patterns: error boundary, observer injection, environment injection, `RhythmPlaybackHandle`-based interruption cleanup.
+`@Observable final class` conforming to both `TrainingSession` and `BeatProvider`. Built on a pure `static func reduce(state:event:) -> [Effect]` that the session's `send(_:)` driver feeds into a separate `interpret(_:)` effect runner — state mutation and side effects are physically separated.
 
 **States:**
 
 ```swift
-enum RhythmOffsetDetectionSessionState {
+enum TimingOffsetDetectionSessionState {
     case idle
-    case playingPattern      // 4 sixteenth notes playing, 4th offset early or late
-    case awaitingAnswer      // pattern finished, waiting for "Early"/"Late" tap
-    case showingFeedback     // result recorded, feedback displayed (~400ms)
+    case playingPatternLoop  // sequencer running, 4-sixteenth pattern looping
+    case awaitingAnswer      // cap reached, sequencer stopped, user must still answer
+    case showingFeedback     // result recorded, feedback displayed (default 400 ms)
+    case waitingForGrid      // feedback ended, sleeping until the next quarter-note boundary
 }
 ```
+
+**Events:** `.startRequested`, `.answerReceived(direction:)`, `.feedbackTimerFired`, `.gridAlignmentReached`, `.repetitionCapReached`. `.stopRequested` and `.audioError` are caught from any state and transition to `.idle` via the `.stopAll` effect.
+
+**Effects (emitted by the reducer, interpreted by `interpret(_:)`):** `.beginNextTrial`, `.stopSequencer`, `.stopSequencerAtCap`, `.evaluateAnswer(direction:)`, `.scheduleFeedbackTimer`, `.stopAll`.
 
 **State transition flow:**
 
 ```
 idle
-  ↓ start()
-playingPattern (await rhythmPlayer.play(pattern))
-  ↓ pattern completes
-awaitingAnswer
-  ↓ user taps "Early" or "Late" → result recorded, observers notified
-showingFeedback (~400ms)
-  ↓ feedback timer expires
-playingPattern (next challenge, loop)
+  ↓ .startRequested
+playingPatternLoop ──── .answerReceived ─────┐
+   │                                          ↓
+   │  .repetitionCapReached → awaitingAnswer ─ .answerReceived ─→ showingFeedback
+   │                                                                   ↓ .feedbackTimerFired
+   │                                                                waitingForGrid
+   │                                                                   ↓ .gridAlignmentReached
+   └────────────────────── playingPatternLoop (next trial, grid-aligned) ←┘
 
-Any state → idle (via stop(), triggered by: navigate away, background, interruption)
+Any state → idle (via .stopRequested or .audioError → .stopAll)
 ```
+
+**Load-bearing properties:**
+- The reducer is pure — state mutation and effect production happen in `reduce`; side effects (sequencer start/stop, observer notification, feedback timer) are interpreted in `interpret(_:)` and never mutate state directly. This makes reducer behavior table-testable independently of audio/timer infrastructure.
+- Cap-reached is a first-class state, not a flag. `evaluatePlaybackPosition` polls the sequencer's `samplePosition`; once `completedCycles >= settings.maxRepetitions`, it fires `.repetitionCapReached`. The reducer transitions to `.awaitingAnswer`, and the state guard at the top of `evaluatePlaybackPosition` short-circuits subsequent polls — idempotence by structural state, not a latch flag. (Story 80.2.)
+- `.answerReceived` is accepted from both `.playingPatternLoop` and `.awaitingAnswer` via case-pattern union. The redundant `.stopSequencer` from the cap-stopped branch is harmless because `enqueueSequencerStop` chains stops so back-to-back stop requests serialize.
+- `.waitingForGrid` enforces the grid-aligned next-trial start: the feedback timer effect sleeps until the next quarter-note boundary (relative to `gridOrigin` established at first trial) before sending `.gridAlignmentReached`, preserving phase continuity across trials.
 
 **Dependencies:**
 
 ```swift
 init(
-    rhythmPlayer: RhythmPlayer,
-    strategy: NextRhythmOffsetStrategy,
-    profile: RhythmProfile,
-    observers: [RhythmOffsetDetectionObserver] = [],
-    settingsOverride: TrainingSettings? = nil,
-    notificationCenter: NotificationCenter = .default
+    beatSequencer: any BeatSequencer,
+    strategy: NextTimingOffsetDetectionStrategy,
+    profile: TrainingProfile,
+    observers: [TimingOffsetDetectionObserver] = [],
+    notificationCenter: NotificationCenter = .default,
+    audioInterruptionObserver: AudioInterruptionObserving,
+    backgroundNotificationName: Notification.Name? = nil,
+    foregroundNotificationName: Notification.Name? = nil,
+    currentTime: @escaping () -> Double = { CACurrentMediaTime() }
 )
 ```
 
-**Challenge generation:**
-1. Session calls `strategy.nextRhythmChallenge(profile:settings:lastResult:)` to get a `RhythmChallenge` (tempo + signed offset)
-2. Session builds a `RhythmPattern` from the challenge: 4 events at sixteenth-note intervals, with the 4th event shifted by the offset
-3. Session calls `rhythmPlayer.play(pattern)` and `await`s the handle
+The session is its own `BeatProvider` — the sequencer calls `nextBeat()` to refill its scheduling batch with the displaced 4-sixteenth pattern (accent on subdivision 0, signed offset on subdivision 2). A silent-beat fallback is returned if `nextBeat()` fires after the trial has cleared, so a refill scheduled before `stop()` cannot leak audible clicks past teardown.
 
-**File location:** `RhythmOffsetDetection/RhythmOffsetDetectionSession.swift`
+**File location:** `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift`
 
 #### RhythmMatchingSession
 
@@ -1997,38 +2008,38 @@ The session accepts a `currentTime: () -> Double` closure (defaulting to `CACurr
 
 **File location:** `ContinuousRhythmMatching/ContinuousRhythmMatchingSession.swift`
 
-### NextRhythmOffsetStrategy
+### NextTimingOffsetDetectionStrategy
 
 ```swift
-protocol NextRhythmOffsetStrategy {
-    func nextRhythmChallenge(
-        profile: RhythmProfile,
-        settings: TrainingSettings,
-        lastResult: CompletedRhythmOffsetDetectionTrial?
-    ) -> RhythmChallenge
+protocol NextTimingOffsetDetectionStrategy {
+    func nextTimingOffsetDetectionTrial(
+        profile: TrainingProfile,
+        settings: TimingOffsetDetectionSettings,
+        lastResult: CompletedTimingOffsetDetectionTrial?
+    ) -> TimingOffsetDetectionTrial
 }
 ```
 
-The strategy decides **both** direction (early/late) and magnitude based on the profile's asymmetric tracking and the last completed result. This mirrors `NextPitchDiscriminationStrategy` receiving `lastPitchDiscriminationTrial`.
+The strategy decides **both** direction (early/late) and magnitude based on the profile's asymmetric tracking and the last completed result. This mirrors `NextPitchDiscriminationStrategy` receiving its `lastResult` parameter.
 
-**RhythmChallenge:**
+**TimingOffsetDetectionTrial:**
 
 ```swift
-struct RhythmChallenge {
+struct TimingOffsetDetectionTrial: Sendable {
     let tempo: TempoBPM
-    let offset: RhythmOffset   // signed — encodes direction + magnitude
+    let offset: TimingOffset   // signed — encodes direction + magnitude
 }
 ```
 
 **File locations:**
-- `Core/Algorithm/NextRhythmOffsetStrategy.swift` — protocol
-- `Core/Algorithm/AdaptiveRhythmOffsetStrategy.swift` — initial implementation (name TBD during implementation)
+- `Peach/Core/Algorithm/NextTimingOffsetDetectionStrategy.swift` — protocol
+- `Peach/Core/Algorithm/AdaptiveTimingOffsetDetectionStrategy.swift` — production implementation
 
 ### Observer Protocols
 
 ```swift
-protocol RhythmOffsetDetectionObserver {
-    func rhythmOffsetDetectionCompleted(_ result: CompletedRhythmOffsetDetectionTrial)
+protocol TimingOffsetDetectionObserver {
+    func timingOffsetDetectionCompleted(_ result: CompletedTimingOffsetDetectionTrial)
 }
 
 protocol RhythmMatchingObserver {
@@ -2043,9 +2054,9 @@ protocol ContinuousRhythmMatchingObserver {
 **Value types:**
 
 ```swift
-struct CompletedRhythmOffsetDetectionTrial {
+struct CompletedTimingOffsetDetectionTrial {
     let tempo: TempoBPM
-    let offset: RhythmOffset        // the offset that was presented
+    let offset: TimingOffset        // the offset that was presented
     let isCorrect: Bool
     let timestamp: Date
 }
@@ -2072,19 +2083,17 @@ struct GapResult {
 ```
 
 **Conforming types:**
-- `TrainingDataStore` — persists `RhythmOffsetDetectionRecord` and `RhythmMatchingRecord`
+- **TOD:** `TimingOffsetDetectionStoreAdapter` — encodes `TimingOffsetDetectionPayload` into a `TrainingRecord` envelope and persists via `TrainingDataStore` (post-77.4 JSON-envelope persistence; no per-discipline `@Model` type). The other rhythm disciplines follow the same per-discipline adapter pattern with their own payloads.
 - `PerceptualProfile` — updates rhythm statistics via `RhythmProfile` protocol
 - `ProgressTimeline` — tracks rhythm disciplines for trend analysis
 - `HapticFeedbackManager` — haptic on incorrect rhythm comparison answers (FR71), same as pitch comparison
 
 **File locations:**
-- `Core/Training/RhythmOffsetDetectionObserver.swift`
-- `Core/Training/RhythmMatchingObserver.swift`
-- `Core/Training/ContinuousRhythmMatchingObserver.swift`
-- `Core/Training/CompletedRhythmOffsetDetectionTrial.swift`
-- `Core/Training/CompletedRhythmMatchingTrial.swift`
-- `Core/Training/CompletedContinuousRhythmMatchingTrial.swift`
-- `RhythmOffsetDetection/RhythmChallenge.swift`
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionObserver.swift`
+- `Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingObserver.swift`
+- `Peach/Training/TimingOffsetDetection/CompletedTimingOffsetDetectionTrial.swift`
+- `Peach/Training/ContinuousRhythmMatching/CompletedContinuousRhythmMatchingTrial.swift`
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionTrial.swift`
 
 ### RhythmProfile Protocol
 
@@ -3326,7 +3335,7 @@ Peach/Training/ContinuousRhythmMatching/
         SharedRhythmSectionID.swift                          # Stable section IDs for per-category dedup
 ```
 
-The four pitch disciplines and `TimingOffsetDetection` follow the same shape, omitting the `Settings/` subdirectory (none of them declare feature-private settings) and folding their feedback views into the top-level files.
+The four pitch disciplines follow the same shape, omitting the `Settings/` subdirectory (none of them declare feature-private settings) and folding their feedback views into the top-level files. `TimingOffsetDetection` follows the same shape too, but additionally carries a `Settings/` subdirectory for its `maxRepetitions` plumbing (`TimingOffsetDetectionSettingsKeys.swift`, `TimingOffsetDetectionUserSettings.swift`, and `TimingOffsetDetectionMaxRepetitionsSettingsSection.swift` — the same feature-local-port pattern CRM uses for `enabledGapPositions`).
 
 ### Updated Central-Files Inventory (v0.9)
 

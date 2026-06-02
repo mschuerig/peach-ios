@@ -13,9 +13,8 @@ The audio layer follows a **ports & adapters** (hexagonal) pattern. Protocols li
 |----------|---------|-------------|
 | `NotePlayer` | Play a single note | `play(frequency:velocity:amplitudeDB:) → PlaybackHandle`, `play(frequency:duration:velocity:amplitudeDB:)`, `stopAll()` |
 | `PlaybackHandle` | Control a currently-playing note | `stop()`, `adjustFrequency(_:)` |
-| `RhythmPlayer` | Play a sequence of rhythmic events | `play(_: RhythmPattern) → RhythmPlaybackHandle` |
-| `RhythmPlaybackHandle` | Stop a playing pattern | `stop()` |
-| `StepSequencer` | Drive a repeating metronome-like loop | `start(tempo:stepProvider:)`, `stop()`, `playImmediateNote(velocity:)` |
+| `BeatSequencer` | Drive a gapless looping `Beat`/`Subdivision` pattern. Used by both rhythm disciplines (Timing Offset Detection and Continuous Rhythm Matching). | `start(tempo:beatProvider:)`, `stop()`, `timing`, `playImmediateNote(velocity:)` |
+| `BeatProvider` | Supplies the next `Beat` whenever the sequencer refills its scheduling batch | `nextBeat() → Beat` |
 | `SoundSourceProvider` | Discover available instrument sounds | `availableSources` |
 | `AudioInterruptionObserving` | React to system audio interruptions | `setupObservers(notificationCenter:onStopRequired:)` |
 
@@ -29,7 +28,7 @@ Key design decisions:
 The implementation is a **three-layer stack:**
 
 ```
-SoundFontPlayer / SoundFontStepSequencer   ← high-level: conforms to NotePlayer / StepSequencer
+SoundFontPlayer / SoundFontBeatSequencer    ← high-level: conforms to NotePlayer / BeatSequencer
         │                    │
         ▼                    ▼
       SoundFontEngine                       ← mid-level: owns AVAudioEngine, manages channels
@@ -69,10 +68,9 @@ This is the most complex file in the project (~670 lines). It owns:
 
 #### `SoundFontPlayer` — melodic note playback
 
-Conforms to `NotePlayer` and `RhythmPlayer`. Relatively thin wrapper around `SoundFontEngine`:
+Conforms to `NotePlayer`. Relatively thin wrapper around `SoundFontEngine`:
 - `play(frequency:...)`: decomposes `Frequency` into nearest MIDI note + cent remainder (12-TET, A4=440), starts the note with a pitch bend to hit the exact frequency
 - Returns a `SoundFontPlaybackHandle` for ongoing control
-- `play(_: RhythmPattern)`: converts pattern events to `ScheduledMIDIEvent` array, schedules on the engine
 - `stopAll()`: clears schedule + stops notes with a fade-out delay
 
 **`decompose(frequency:)`** (line 150): The inverse bridge — goes from Hz back to MIDI note + cents. Always uses 12-TET regardless of the user's tuning system, because MIDI pitch bend is a 12-TET concept.
@@ -87,12 +85,17 @@ Returned from `play()`. Supports:
 
 The stop propagation delay (25ms) prevents click/pop artifacts by muting before sending note-off.
 
-#### `SoundFontStepSequencer` — metronome-style pattern playback
+#### `SoundFontBeatSequencer` — gapless looped beat playback
 
-`@Observable` class conforming to `StepSequencer`. Drives a repeating 4-step cycle (for rhythm training):
-- Builds batches of 500 cycles worth of MIDI events and schedules them on the engine
-- Runs a polling loop (~120 Hz) that reads `samplePosition` from the engine to derive UI state (`currentStep`, `currentCycle`)
-- Supports "immediate" notes (user taps) via the ring buffer path
+`@Observable` class conforming to `BeatSequencer`. Drives a gapless loop where each cycle is a `Beat` (an array of `Subdivision` cases — `.rest`, `.note(velocity:offset:)` with a signed `Duration` offset, or `.nested(Beat)`). Used by both rhythm disciplines:
+- **Timing Offset Detection** keeps a 4-sixteenth test pattern in phase across an arbitrary repetition count; the offset rides on the third subdivision.
+- **Continuous Rhythm Matching** loops a 4-subdivision beat with one gap, and the session decides where the gap falls.
+
+Mechanics:
+- Pulls each next beat from a `BeatProvider` (the session itself, in both disciplines) when refilling the schedule. Pre-schedules batches of 500 beats so the playback never sees the seam between batches.
+- Exposes a `timing` view (`samplePosition`, `samplesPerBeat`) so the session can derive per-subdivision UI state and detect cycle boundaries from sample position alone.
+- Runs a polling loop (~120 Hz) that publishes `currentBeat` for `@Observable` subscribers.
+- Supports "immediate" notes (user taps) via the engine's lock-free ring buffer path.
 
 #### `SoundFontLibrary` — instrument discovery
 
@@ -118,7 +121,7 @@ Listens for audio interruptions (phone calls, Siri), backgrounding, and foregrou
 - **`AudioError`** — typed error enum: `engineStartFailed`, `invalidFrequency`, `invalidDuration`, `invalidPreset`, `contextUnavailable`, `invalidInterval`
 - **`SF2Preset`** — value type conforming to `SoundSourceID`. Identity is `(bank, program)` — name is just display.
 - **`ScheduledMIDIEvent`** — raw MIDI bytes + sample offset for render-thread dispatch
-- **`SequencerTypes`** — `StepPosition`, `CycleDefinition`, `StepVelocity`, `StepProvider`, `SequencerTiming`
+- **`SequencerTypes`** — `Beat`, `Subdivision`, `BeatProvider`, `SequencerTiming`, `RhythmVelocity`
 
 ## Files to read (suggested order)
 
@@ -130,8 +133,9 @@ Listens for audio interruptions (phone calls, Siri), backgrounding, and foregrou
 6. `Core/Audio/SoundFontEngine.swift` — the big one; read top-to-bottom
 7. `Core/Audio/SF2PresetParser.swift` — binary parsing, surprisingly readable
 8. `Core/Audio/SoundFontLibrary.swift` — preset discovery
-9. `Core/Audio/SoundFontStepSequencer.swift` — metronome/rhythm sequencer
-10. `Core/Audio/AudioSessionInterruptionMonitor.swift` — lifecycle safety
+9. `Core/Audio/SequencerTypes.swift` — `Beat` / `Subdivision` / `BeatProvider` / `SequencerTiming` and `Beat.events(...)` compilation
+10. `Core/Ports/BeatSequencer.swift` + `Core/Audio/SoundFontBeatSequencer.swift` — beat sequencer shared by both rhythm disciplines
+11. `Core/Audio/AudioSessionInterruptionMonitor.swift` — lifecycle safety
 
 ## Observations and questions
 
@@ -139,4 +143,4 @@ Listens for audio interruptions (phone calls, Siri), backgrounding, and foregrou
 2. **`SoundFontEngine.ChannelID` duplicates `MIDIChannel`**: Nested struct in `SoundFontEngine` is identical to `MIDIChannel` in `Core/Music/` — same `UInt8`, same `0...15` range, same precondition. `ChannelID` predates `MIDIChannel` (added for MIDI input). Mechanical rename to unify.
 3. **`SoundFontEngine.init()` is 133 lines**: The render callback closure alone is ~95 lines nested inside init. Should be extracted to a static method (it already captures only `shared` and `Self` constants). `createChannel()` and `scheduleEvents()` also share a "write to inactive slot, copy MIDI blocks, bump generation" pattern that could be extracted into a shared helper.
 4. **`SoundFontPlayer.pitchBendValue(forCents:)` duplicates clamping**: Line 143 manually clamps to `0...16383` with `Swift.min/max`, but `PitchBendValue` already defines `validRange` and `precondition`s in its init. The magic numbers duplicate the type's knowledge. Fix: add a clamping initializer to `PitchBendValue` (matching the pattern of `AmplitudeDB`/`NoteDuration`).
-5. **`SoundFontStepSequencer.buildBatch/buildCycleEvents` should be instance methods**: Currently static with 5 parameters, but 3 are already on `self` or static constants. Store `noteOffDelaySamples` as a property alongside `samplesPerStep`, convert to instance methods. Tests should exercise through `start()`/`stop()` via the `StepSequencerEngine` mock rather than testing the batch-building in isolation — it's an implementation detail.
+5. **`SoundFontBeatSequencer.buildBatch` is testable in isolation**: Implementation detail rather than a port. Tests should exercise the public surface (`start()`/`stop()`/`timing`) via a `SequencerEngine` mock and let `buildBatch` stay private; testing the batch shape directly couples tests to the scheduling internals.

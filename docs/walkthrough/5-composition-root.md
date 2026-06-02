@@ -35,21 +35,22 @@ The monolithic composition root. `init()` runs ~180 lines constructing the entir
 3. **Audio engine** — `SoundFontEngine` with platform-specific `AudioSessionConfiguring`
 4. **Sound font library** — SF2 file discovery, preset resolution
 5. **Note player** — `SoundFontPlayer` on channel 0 (melodic)
-6. **Rhythm player** — `SoundFontPlayer` on channel 1 (percussion)
-7. **Step sequencer** — `SoundFontStepSequencer` for continuous rhythm matching
-8. **Profile** — `PerceptualProfile` loaded from store via discipline registry (timed)
-9. **Progress timeline** — `ProgressTimeline(profile:)`
-10. **Transfer service** — `TrainingDataTransferService` with `onDataChanged` callback that triggers full profile rebuild
-11. **4 sessions** — each via `create*Session()` factory methods
-12. **MIDI adapter** — `MIDIKitAdapter` for external MIDI input
-13. **Lifecycle coordinator** — `TrainingLifecycleCoordinator` with all sessions + background policy
-14. **Settings coordinator** — `SettingsCoordinator` with data store, profile, transfer service
+6. **Beat sequencer** — `SoundFontBeatSequencer` on channel 1 (percussion). Shared by `TimingOffsetDetectionSession` (gapless looped beat playback) and `ContinuousRhythmMatchingSession` (continuous metronome via the same channel).
+7. **Profile** — `PerceptualProfile` loaded from store via discipline registry (timed)
+8. **Progress timeline** — `ProgressTimeline(profile:)`
+9. **Transfer service** — `TrainingDataTransferService` with `onDataChanged` callback that triggers full profile rebuild
+10. **4 sessions** — each via `create*Session()` factory methods
+11. **MIDI adapter** — `MIDIKitAdapter` for external MIDI input
+12. **Lifecycle coordinator** — `TrainingLifecycleCoordinator` with all sessions + background policy
+13. **Settings coordinator** — `SettingsCoordinator` with data store, profile, transfer service
 
 Each `create*Session()` method handles platform-conditional observer wiring:
 - iOS: `HapticFeedbackManager` (real haptics) + `IOSAudioInterruptionObserver`
 - macOS: `NoOpHapticFeedbackManager` + `NoOpAudioInterruptionObserver`
 
-**Sound source change:** When the user switches instrument, `handleSoundSourceChanged()` recreates the `NotePlayer`, both pitch sessions, and both coordinators. Rhythm sessions are unaffected (they use the percussion channel).
+`createTimingOffsetDetectionSession()` builds the observer triple (`storeAdapter`, `profileAdapter`, `hapticFeedback`) and passes the shared `beatSequencer` plus an `AdaptiveTimingOffsetDetectionStrategy`. TOD owns its `maxRepetitions` knob via `AppTimingOffsetDetectionUserSettings` (a feature-private `UserDefaults` reader), which the lifecycle wiring (see `TimingOffsetDetectionLifecycleContribution`) consumes when the session starts — the value is not threaded through the shared `UserSettings`.
+
+**Sound source change:** When the user switches instrument, `handleSoundSourceChanged()` recreates the `NotePlayer`, both pitch sessions, and both coordinators. Sessions driven by the beat sequencer are unaffected (the percussion channel is preserved across instrument changes).
 
 **Active session tracking:** Four `onChange(of: *.isIdle)` handlers maintain a single `activeSession` reference. Starting any session stops the previously active one — mutual exclusion enforced at the app level.
 
@@ -57,7 +58,7 @@ Each `create*Session()` method handles platform-conditional observer wiring:
 
 ~15 custom environment keys split into two patterns:
 
-1. **`@Entry` macro** (new Swift syntax) — for simple types: `progressTimeline`, `activeSession`, `perceptualProfile`, `rhythmPlayer`, `stepSequencer`, `midiInput`, `audioSampleRate`
+1. **`@Entry` macro** (new Swift syntax) — for simple types: `progressTimeline`, `activeSession`, `perceptualProfile`, `beatSequencer`, `midiInput`, `audioSampleRate`
 2. **Manual `EnvironmentKey` structs** — for existential types (`any SoundSourceProvider`, `any UserSettings`) and concrete sessions. Each has a `.stub` default value for previews.
 
 All session keys use concrete types (`PitchDiscriminationSession`, not `any TrainingSession`). Views access sessions by type, not by protocol.
@@ -94,9 +95,9 @@ Facade for settings-related actions:
 ## `PreviewDefaults.swift` (193 lines)
 
 Stub implementations for SwiftUI previews:
-- `StubNotePlayer`, `StubRhythmPlayer`, `StubStepSequencer` — inert, non-crashing
-- `StubUserSettings` — hardcoded sensible defaults
-- `StubSoundSourceProvider`, `StubPitchDiscriminationStrategy`, `StubRhythmOffsetDetectionStrategy`
+- `StubNotePlayer`, `StubBeatSequencer` — inert, non-crashing
+- `StubUserSettings`, `StubContinuousRhythmMatchingUserSettings`, `StubTimingOffsetDetectionUserSettings` — hardcoded sensible defaults
+- `StubSoundSourceProvider`, `StubPitchDiscriminationStrategy`, `StubTimingOffsetDetectionStrategy`
 - `.stub` factories on all 4 sessions + both coordinators
 - `View.previewEnvironment()` — injects all stubs at once
 
@@ -161,7 +162,7 @@ The platform abstraction strategy is consistent: Core defines protocols (`AudioI
 
 3. **`TrainingLifecycleCoordinator` dispatches on `NavigationDestination` with switch.** `startCurrentSession()` and `stopCurrentSession()` have 6-case switch statements mapping destinations to sessions. Adding a training mode requires updating both methods, plus `isTrainingActive`. This is the same enum-switch coupling pattern — consider a `[NavigationDestination: any TrainingSession]` dictionary.
 
-4. **`HapticFeedbackManager` conforms to discipline-specific observer protocols.** It implements `PitchDiscriminationObserver` and `RhythmOffsetDetectionObserver` directly, but not `PitchMatchingObserver` or `ContinuousRhythmMatchingObserver`. This means only two of four training modes get haptic feedback on incorrect answers. If intentional (matching modes don't have "correct/incorrect"), this should be documented.
+4. **`HapticFeedbackManager` conforms to discipline-specific observer protocols.** It implements `PitchDiscriminationObserver` and `TimingOffsetDetectionObserver` directly, but not `PitchMatchingObserver` or `ContinuousRhythmMatchingObserver`. This means only two of four training disciplines get haptic feedback on incorrect answers. If intentional (matching disciplines don't have "correct/incorrect"), this should be documented.
 
 5. **Two environment key styles coexist.** `@Entry` macro (modern) vs manual `EnvironmentKey` structs. The manual keys exist because they need existential defaults (`any SoundSourceProvider`) or `.stub` factories. This is fine but worth noting — as Swift evolves, `@Entry` may support existentials and the manual keys could be migrated.
 6. **`audioSampleRate` environment key has a concrete default that masks missing injection.** `@Entry var audioSampleRate: SampleRate = .standard48000` silently falls back to 48kHz if the environment injection is ever missed. A sample rate mismatch would cause subtle timing bugs in rhythm calculations. The default should be removed — make it optional or use a `fatalError` sentinel so missing injection fails loudly instead of silently producing wrong results.
