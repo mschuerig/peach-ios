@@ -804,22 +804,29 @@ This radical simplicity is intentional. The only feedback the user ever receives
 
 ### Form Patterns
 
-**Settings Screen only.** Stock SwiftUI `Form` with standard controls:
+**Settings Screen only.** Stock SwiftUI `Form` plus a small set of custom rows for value kinds the stock controls don't fit. Each row is assigned a control by the **Settings Control Taxonomy** (canonical definition in `## Amendment: Settings Screen Control Taxonomy (Epic 81)` at the end of this document):
 
-| Setting | Control | SwiftUI Component |
+| Setting | Kind of value | Control |
 |---|---|---|
-| Natural vs. Mechanical | Continuous slider | `Slider` |
-| Note range (lower bound) | Value picker | `Picker` or `Stepper` |
-| Note range (upper bound) | Value picker | `Picker` or `Stepper` |
-| Note duration | Value selector | `Stepper` or `Slider` |
-| Reference pitch | Value input | `Stepper` (default 440Hz) |
-| Sound source | Selection list | `Picker` (MVP: sine wave only) |
+| Lowest / Highest Note (Training Range) | Bounded range inside a fixed domain | `NoteRangeSelector` custom — 88-key piano keyboard with two draggable bound markers |
+| Intervals | Small enumerated set | `IntervalSelectorView` custom — direction × interval grid |
+| Sound Source | Large enumerated set | `Picker` |
+| Note Duration | Continuous / perceptual | `ContinuousValueSlider` — label + live numeric value + slider + optional `−` / `+` |
+| Concert Pitch | Precise value where ±1 matters more than feel | `Stepper` (explicit opt-out from slider — see amendment) |
+| Tuning System | Large enumerated set | `Picker` |
+| Vary Loudness | Abstract dimensionless dial | `Slider` with min/max end labels, no numeric value |
+| Note Gap (Compare) | Continuous / perceptual | `ContinuousValueSlider` |
+| Rhythm Tempo | Continuous / perceptual | `ContinuousValueSlider` |
+| TOD Max Repetitions | Small enumerated set with unequal semantic spacing | `ContinuousValueSlider` — discrete stops at `[1, 2, 3, 5, 10, ∞]` |
+| Gap Positions (Continuous Rhythm Matching) | Small enumerated set | `GridToggleRow` custom |
 
 **Form behavior rules:**
+
 - All changes auto-save via `@AppStorage` — no save/cancel buttons
-- No form validation needed — all controls are bounded (sliders have min/max, steppers have ranges)
-- No confirmation for changes — settings take effect on the next comparison
-- Standard `Form` section grouping for related settings
+- No form validation needed — all controls are bounded (sliders have min/max, steppers have ranges, custom controls enforce domain invariants like `NoteRange.minimumSpan`)
+- No confirmation for changes — settings take effect on the next session start (sessions read settings as a value-type snapshot at `start(settings:)` time)
+- Standard `Form` section grouping for related settings; custom controls render inside `Section` bodies the same way stock controls do (precedent: `IntervalSelectorView`)
+- Discipline-contributed sections (per Epic 77's plugin model) follow the same taxonomy when picking controls for new settings
 
 ### Navigation Patterns
 
@@ -2318,3 +2325,97 @@ Identical to all existing disciplines. Any interruption during rhythm training f
 Rhythm training extends Peach's emotional contract into the temporal domain. The same principles apply: no scores, no judgment, no gamification. The data is neutral. The trend is the story. The user's relationship is with their own improving perception, not with the app's opinion of their performance.
 
 The physical embodiment of rhythm training — feeling the beat, tapping with the body — adds an emotional dimension that pitch training lacks. The UX must support this physicality by being invisible: large targets, instant response, no cognitive overhead. The user should feel the beat, not the interface.
+
+---
+
+## Amendment: Settings Screen Control Taxonomy (Epic 81)
+
+### Project Understanding
+
+The Settings screen had accumulated heterogeneous controls — `Stepper`, `Slider`, `Picker`, custom grids — chosen per-row in the moment each setting was added. The result felt arbitrary: the same kind of value (Note Duration, Note Gap, Tempo — all continuous, all *felt for*) was presented with the same control as a categorically different value (Concert Pitch — known by name and exact number). At the same time, the Lowest/Highest Note bounds were presented as two `Stepper` rows requiring 24+ button taps to move from C2 to C6, when the underlying value is an integer MIDI note in 21–108 — literally the 88 keys of a grand piano. This amendment codifies a control taxonomy so future settings have a clear home, and records the specific decisions made in the Epic 81 design pass.
+
+### Key Design Decisions
+
+1. **A taxonomy assigns one control to each *kind of value*, not each *individual setting*.** Choosing controls per-setting is what produces hodge-podge; the same kind of value gets the same control regardless of which screen or section it appears in.
+2. **The Concert Pitch Stepper is preserved deliberately.** This is the most counterintuitive call in the amendment — Concert Pitch *looks* like a slider candidate (numeric, bounded, fine-grained). The reason it stays a Stepper is below in **Per-Control Decisions and Rationale**.
+3. **The Vary Loudness Slider stays unchanged.** Existing, correct, and serves as the canonical example of the "abstract dimensionless dial" idiom (min/max end labels, no numeric value).
+4. **TOD Max Repetitions becomes a discrete-stops slider, not a tile grid.** Originally Sally recommended a grid (sibling of `IntervalSelectorView` / `GridToggleRow`). Michael overrode this in favour of slider consistency; the discrete-stops mode preserves the qualitative spacing the Picker encoded.
+5. **The Lowest/Highest Note Steppers become a single domain-shaped control — a piano keyboard.** The instrument the user thinks in *is* the affordance; no abstract substitute is justified when the domain already supplies the visual vocabulary.
+
+### Settings Control Taxonomy
+
+| Kind of value | Control idiom | Why this control fits this kind |
+|---|---|---|
+| **Continuous / perceptual** — user feels for the right setting, the exact number is incidental | `ContinuousValueSlider` (label + monospaced live numeric value + slider + optional `−` / `+` precision buttons) | Drag is the right gesture for "find a setting that feels right"; the live numeric value answers "what exactly did I land on?" without breaking the drag; `−` / `+` give precision-minded users a Stepper-equivalent fine adjustment without making it the primary affordance |
+| **Abstract dimensionless dial** — no specific number matters; the user thinks in *off-to-max* terms | `Slider` with min/max end labels, no numeric value | Showing a number invites the user to think there's a "right" value; min/max labels frame it as a continuous spectrum between two named poles |
+| **Bounded range inside a fixed domain** — value lives in a domain with its own visual vocabulary | Domain-shaped custom control (today: piano keyboard for MIDI notes) | Abstract sliders/steppers throw away the domain affordance; rendering the actual domain is more discoverable, faster to use, and self-documenting for users who already think in the domain |
+| **Small enumerated set with semantic differences** — 3–8 named choices, each meaningfully distinct | Custom row — single-select grid tiles (e.g., `IntervalSelectorView`), multi-select grid (`GridToggleRow`), or discrete-stops slider — all using the same visual chrome | A Picker hides the options behind a tap and loses the ability to render meaningful spatial relationships (interval directions, beat positions); the custom row keeps all options visible and tappable |
+| **Large enumerated set** — N+ choices, can't all be visible at once | `Picker` | When the set is too large to lay out, the platform-standard picker is the right escape hatch |
+| **Precise value where ±1 matters more than feel** — user knows the exact target, expects to land on it without overshoot | `Stepper` | Drag overshoots; slider snapping fights the user when the user already knows the exact value |
+| **Action / destructive operation** — not setting a value, performing a one-off operation | `Button` (with `.destructive` role where appropriate) | Outside the taxonomy — actions are not values |
+
+### Per-Control Decisions and Rationale
+
+The Epic 81 design pass touched the Settings screen in three places. Each decision below records *what bucket each control belongs to and why* — including the explicit opt-outs that look like they should be sliders but aren't.
+
+**Continuous / perceptual sliders (migration from Stepper):**
+
+- **Note Duration (0.3–3.0 s, step 0.1)** — a felt parameter; the user is listening for "how long should each tone be to give me time to compare?". A Stepper made the user click through 28 steps to find that. Slider with live value is correct.
+- **Note Gap (0.0–5.0 s, step 0.1)** — same shape: user is feeling for a comfortable silence between reference and target. Slider with live value.
+- **Rhythm Tempo (40–200 BPM, step 1)** — tempo is felt by musicians more than calculated. Most rhythm-training apps surface tempo as a slider for this reason. Slider with live value. (Tap-tempo as an additional input modality was considered and deferred to `future-work.md`.)
+
+**Continuous / perceptual sliders (unchanged):**
+
+- **Vary Loudness (0.0–1.0)** — the canonical abstract-dial case. Already a Slider with `"Off"`/`"Max"` end labels and no numeric value. No change.
+
+**Stepper kept deliberately:**
+
+- **Concert Pitch (380–500 Hz, step 1)** — *the most important opt-out in this amendment.* Concert Pitch looks like a slider candidate at a glance, but it isn't, because the value has *named landmarks*: 415 Hz (baroque), 432 Hz (alternative tuning), 440 Hz (modern standard), 442 Hz (German orchestral practice). The user choosing a non-default value almost certainly knows the exact target number — they don't drag a slider to discover that 440 feels right; they came in knowing they want 442 because the orchestra they rehearse with tunes there. A slider forces the user to land on a specific integer by drag, which is fiddly at 120 possible values; a Stepper lets them tap-to-confirm at exactly the right number. The Stepper is the correct control for "I know the value, get me there." This decision is the single piece of the taxonomy most likely to be re-litigated by future contributors; the rationale is recorded here so the conversation doesn't have to repeat.
+
+**Discrete-stops slider (migration from Picker):**
+
+- **TOD Max Repetitions (`[1, 2, 3, 5, 10, ∞]`)** — the original Picker correctly encoded that these values are *qualitatively distinct* (`1` = single-shot, `2`–`3` = a few tries, `5` = moderate patience, `10` = high patience, `∞` = loop until decision) rather than linearly spaced. A naive linear slider 1–N would waste resolution and mislead about value relationships. The discrete-stops slider keeps the visual chrome of the other sliders (consistency win) while snapping to the same qualitative stops as the Picker (no false precision). Equal spacing between stops on the track, tick marks at each stop, `∞` glyph at the rightmost position. The slider was chosen over a tile-grid (Sally's original recommendation, sibling of `IntervalSelectorView`) by Michael's explicit override — slider consistency was prioritised over visual sibling-relation with the other custom rows.
+
+**Domain-shaped custom control (replacement for Stepper):**
+
+- **Lowest / Highest Note (MIDI 21–108)** — the domain *is* a piano. The 88-key range isn't arbitrary; it's the legal training range Peach can use, which happens to be A0–C8 on a grand piano. Rendering it as a piano keyboard with two draggable bound markers gives the user an affordance they already understand from the instrument they play. Per-decision points:
+  - **Full 88 keys, always visible.** Showing a subset would feel arbitrary; the full keyboard reinforces "Peach trains across the piano's range" without explanation.
+  - **Selected range at full saturation; out-of-range keys dimmed to ~35 % opacity.** At a glance: *this is what your training will use.*
+  - **Octave landmarks (every C labelled below).** Canonical piano-roll convention; gives orientation without staring at the markers.
+  - **Two bound markers as chevron tabs above the keyboard, each with a `MIDINote.name` pill (e.g., `C2`, `C6`).** Drag a marker → snaps to nearest semitone. The 12-semitone minimum span (`NoteRange.minimumSpan`) is enforced by stopping the active marker at the limit; the other marker does not move (surprising-behaviour avoidance).
+  - **Tap a dimmed (out-of-range) key → the nearer bound jumps to that key.** Discoverability win for users who know exactly where they want to go; tap inside the selection is a no-op (ambiguous which bound to move).
+  - **Audio on drag-release, not during drag.** Playing each key as the marker crosses it during a drag smears sound across an octave; playing only on release gives a clean perceptual confirmation of the new bound without the noise of scrubbing. Uses the currently-selected sound source so the cue matches what the training will actually sound like.
+  - **iPhone portrait: horizontal scrolling keyboard with auto-scroll to centre the selection on first appearance.** 88 keys at ~3.5 pt per white key is undraggable; scrolling is the most familiar metaphor (every DAW does this), scales linearly to iPad/Mac (the full keyboard fits and scrolling becomes decorative), and works in landscape without redesign.
+  - **Accessibility is non-trivial and the design has to support it.** The control vends as two adjustable elements, each using `.accessibilityRepresentation { Slider(value: bound, in: legalRange, step: 1) }` so VoiceOver's swipe-up/down adjustable rotor and Switch Control's increment/decrement work without custom gesture handling. Each key carries an `.accessibilityLabel` of its note name so Voice Control's "Tap C3" works. On macOS, Tab moves focus between markers; ← / → nudge by one semitone; ⇧← / ⇧→ nudge by one octave; Home / End jump to legal min/max for that bound. At AX1+ Dynamic Type, marker pills would overlap; collapse to a single summary line (`"Lowest C2 · Highest C6"`) above the keyboard and let the user adjust via the slider rotor or a "Pick from list" custom action — the keyboard becomes view-only at AX sizes but the adjustment paths remain.
+  - **Reuse the historical `PianoKeyboardLayout` math** from commit `2e7cf102^` (deleted Mar 23 2026; last living revision before deletion). The white-key-index → x-position layout is correct and reusable; extend it with the inverse `midiNote(at x: CGFloat, totalWidth: CGFloat) -> MIDINote` hit-test needed for drag and tap-to-extend.
+
+### Design Challenges Identified
+
+- **Concert Pitch will look like a slider candidate to fresh eyes.** Mitigation: the Stepper retention is documented in the per-control rationale above and in a code comment on `SettingsScreen.soundSection` so reviewers don't re-open the question.
+- **TOD Max Repetitions slider could read as "linear 1–20 with a `∞` at the end".** Mitigation: the discrete-stops mode is mandatory (tick marks visible at each stop; snap-to-nearest-stop on drag-release); the spec explicitly forbids the linear-resolution mode.
+- **88-key keyboard on iPhone portrait is the hardest constraint.** Mitigation: horizontal scroll with auto-centre on first appearance; per-key labels for Voice Control mean keyboard-skipping users still have a fast path; AX Dynamic Type sizes collapse to a summary header + view-only keyboard with the modal picker as the adjustment path.
+- **Drag-release audio could fire too eagerly during a quick scrub.** Mitigation: cancellable on view disappear; the spec calls for a short envelope and a single play, not a continuous tone.
+
+### Explicitly Out of Scope (recorded so the conversation doesn't repeat)
+
+- Concert Pitch redesign — explicitly retained as Stepper per the rationale above.
+- Vary Loudness redesign — already correct; the canonical abstract-dial example.
+- Tap-tempo button next to Tempo slider — deferred to `docs/implementation-artifacts/future-work.md` § "Tap-Tempo Button for Rhythm Tempo Setting".
+- Sound Source and Tuning System picker redesigns — already correct for "large enumerated set".
+- Intervals selector and Gap Positions grid — already correct for "small enumerated set".
+- Data section (Export / Import / Reset) — actions, not value-setting; outside the taxonomy.
+- Underlying `@AppStorage` keys, default values, range constraints, `UserSettings` protocol surface, persistence, CSV contracts, training-session behaviour, and domain types — unchanged by this epic. UI controls only.
+
+### How to Apply the Taxonomy to New Settings
+
+When adding a new setting:
+
+1. Identify the **kind of value** from the taxonomy table — read the "Why this control fits this kind" column to confirm the fit.
+2. Use the assigned control idiom. Reuse the existing custom views (`ContinuousValueSlider`, `IntervalSelectorView`, `GridToggleRow`, `NoteRangeSelector`) rather than rebuilding the chrome.
+3. If the new setting genuinely doesn't fit any taxonomy row, that's a signal to extend the taxonomy — not to invent a one-off control. Document the new row in this amendment (or a successor amendment) before shipping.
+
+Common edge cases:
+
+- A setting that *looks* continuous but has named landmarks → Stepper bucket (the Concert Pitch precedent).
+- A setting that *looks* enumerated but has a sensible numeric meaning across the whole range → continuous slider bucket; only step into discrete-stops if the values are qualitatively distinct (the TOD Max Repetitions precedent).
+- A setting that lives in a domain with its own visual vocabulary (intervals, beat positions, MIDI notes, pitch contours, etc.) → consider a domain-shaped custom control before reaching for an abstract slider/picker.

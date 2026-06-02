@@ -107,6 +107,30 @@ The stddev band (AreaMark) in `ProgressChartView` draws continuously across time
 
 ## UX & Onboarding
 
+### Tap-Tempo Button for Rhythm Tempo Setting
+
+**Priority:** Low
+**Category:** Settings UX
+**Date Added:** 2026-06-02
+
+**Observation:**
+The Rhythm Tempo setting accepts a numeric BPM value (40–200). Musicians often know a tempo by feel before they can name it, and most rhythm-training apps offer a "tap-tempo" button next to the tempo control: the user taps a steady beat, the app averages the inter-tap intervals into a BPM value.
+
+**Impact:**
+- Quality-of-life improvement for musicians dialing in a target tempo from feel rather than a known number
+- Particularly useful when matching a piece they're rehearsing without a score in front of them
+
+**Why not now:**
+Considered alongside the Settings-screen consistency cleanup (slider taxonomy + piano-keyboard note range) but deferred as scope drift. The slider migration already addresses the primary "this feels fiddly to set" complaint; tap-tempo is an additional input modality rather than a fix.
+
+**Potential Approach:**
+- A small button next to the Tempo slider; tap repeatedly to set tempo
+- Average inter-tap interval over the last N taps (e.g., last 4), reset after a pause
+- Snap to the slider's integer step
+- Audio confirmation: a metronome tick at the resolved tempo for 1–2 beats after release
+
+---
+
 ### No First-Run Onboarding Experience
 
 **Priority:** High

@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-02 # Story 80.5 done (architecture + arc42 + walkthrough doc touch-up for TOD).
+# last_updated: 2026-06-02 # Epic 81 added (Settings screen consistency: slider taxonomy + TOD slider + piano-keyboard note range).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -694,4 +694,20 @@ development_status:
   80-3-settings-ui-contribution-and-localization: done
   80-4-training-screen-visual-treatment: done
   80-5-architecture-documentation-touch-up: done
+
+  # Epic 81: Tune the Controls — Settings Screen Consistency
+  # Source: UX design discussion with Sally, 2026-06-02 (conversation thread).
+  # Codifies a control taxonomy (continuous-slider / abstract-slider /
+  # domain-shape / small-enum / large-enum / precise-stepper) and migrates the
+  # three Settings areas that diverge from it: continuous-value Steppers
+  # (Duration, Gap, Tempo), the TOD Max Repetitions Picker, and the
+  # Lowest/Highest Note Steppers (→ piano keyboard).
+  # Work order: 81.1 → 81.2 → 81.3 (strict; each later story builds on the
+  # prior). Each story = own commit + own PR. Concert Pitch and Vary Loudness
+  # explicitly out of scope.
+  epic-81: backlog
+  81-1-continuous-value-slider-taxonomy-and-stepper-migration: backlog
+  81-2-tod-max-repetitions-discrete-stops-slider: backlog
+  81-3-piano-keyboard-for-training-note-range: backlog
+  epic-81-retrospective: optional
   epic-80-retrospective: optional

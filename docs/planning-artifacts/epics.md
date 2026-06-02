@@ -8131,3 +8131,64 @@ I want the post-80 state machine described accurately,
 so that the documented behaviour and the implemented behaviour agree.
 
 (Acceptance criteria to be elaborated at story-creation time. Sketch: only if 80.1 introduces a state machine shape worth documenting beyond the source code comment. Otherwise this story is marked `wont-do` at the retrospective.)
+
+---
+
+## Epic 81: Tune the Controls — Settings Screen Consistency
+
+**Theme:** The Settings screen has accumulated heterogeneous controls (Stepper, Slider, Picker, custom grid) chosen ad-hoc rather than by the kind of value being set. This epic introduces a small, defensible control taxonomy and applies it to the three areas that diverge most visibly from it: continuous numeric values currently using Stepper, the Timing Offset Detection max-repetitions Picker, and the Lowest/Highest Note Steppers (which deserve their own domain-shaped control — a piano keyboard).
+
+**Motivation:** Two forces meet here. (1) Visual coherence: the screen reads as a hodge-podge today because the same kind of value (Note Duration, Note Gap, Tempo — all continuous, all "felt for") is presented with the same control as a categorically different value (Concert Pitch — known-by-number). (2) Domain-fit: the Lowest/Highest Note bounds are integer MIDI values in 21–108, which is literally the 88 keys of a grand piano; presenting them as two `Stepper` rows that the user clicks 24+ times to reach a target hides the most natural affordance the domain offers. The taxonomy below names the categories and assigns one control idiom per category, so future settings additions have a clear home.
+
+**Source:** UX design discussion with Sally, 2026-06-02 (see this conversation thread; locked-design summary lives in the chat scroll and in the per-story specs).
+
+**Control taxonomy (codified by this epic):**
+
+| Kind of value | Control | Examples in current Settings |
+|---|---|---|
+| Continuous / perceptual ("feel for the right setting") | Slider with inline numeric value | Note Duration, Note Gap, Tempo |
+| Abstract dimensionless dial (no specific number matters) | Slider with min/max end labels, no numeric value | Vary Loudness (unchanged) |
+| Bounded range inside a fixed domain | Domain-shaped custom control | Lowest/Highest Note → piano keyboard |
+| Small enumerated set with semantic differences | Custom row (grid tiles or discrete-stops slider) | TOD Max Repetitions, Intervals, Gap Positions |
+| Large enumerated set | Picker | Sound Source, Tuning System |
+| Precise integer/decimal where ±1 matters more than feel | Stepper | Concert Pitch (unchanged) |
+
+**Scope:** Settings-screen UI controls only. No change to underlying `@AppStorage` keys, default values, range constraints, `UserSettings` protocol surface, persistence formats, CSV contracts, training-session behaviour, or domain types. The taxonomy table is documented in code (Settings README comment or a doc-comment on `SettingsScreen`) so future contributors can place new controls correctly without a fresh UX consultation.
+
+**Explicitly out of scope:**
+
+- Concert Pitch control redesign (explicit decision to keep as Stepper — the value-by-name nature makes slider drag a regression).
+- Vary Loudness control redesign (already in the correct bucket).
+- Tap-tempo button next to Tempo slider — deferred to `docs/implementation-artifacts/future-work.md` § "Tap-Tempo Button for Rhythm Tempo Setting".
+- Intervals selector (`IntervalSelectorView`) and Gap Positions grid (`RhythmGapPositionsSettingsSection`) — already conform to the "small enumerated set" idiom and need no work.
+- Sound Source and Tuning System pickers — already conform to "large enumerated set".
+- Data section (Export / Import / Reset) — actions, not value-setting; outside the taxonomy.
+- Help-content updates — the existing footers/explanations carry over with no copy changes required beyond the new control labels.
+
+**Approach:** Three sequential stories, smallest blast radius first. 81.1 establishes the continuous-slider chrome (label left, monospaced live value right, slider below, optional `−`/`+` precision buttons) and migrates Note Duration, Note Gap, and Tempo to it; this is the largest visual win for the smallest review surface and locks in the taxonomy that 81.2 and 81.3 then reference. 81.2 reuses the 81.1 chrome to convert TOD Max Repetitions from `Picker` to a discrete-stops slider snapping to `[1, 2, 3, 5, 10, ∞]` with tick marks at each stop and the `∞` glyph at the right end — preserving the unequal-spacing-by-meaning that the current Picker encodes. 81.3 introduces a custom `NoteRangeSelector` view (working name) that renders all 88 piano keys with two draggable bound markers, full accessibility-element coverage, and an on-drag-release audio preview using the currently-selected sound source; the layout math reuses `PianoKeyboardLayout` recovered from commit `2e7cf102^` (last living revision before its Mar 23 2026 deletion), extended with the inverse x → MIDI hit-test needed for drag and tap-to-extend.
+
+**Work order:** 81.1 → 81.2 → 81.3 (strict — each later story references the chrome or layout work from the prior one). Each story is its own commit and PR; no bundled refactor, because 81.3 is too large to share a review surface with the slider work.
+
+### Story 81.1: Continuous-value slider taxonomy and stepper migration
+
+As **a user adjusting a continuous training parameter (Note Duration, Note Gap, Tempo)**,
+I want a slider with the live numeric value visible while I drag,
+so that I can feel for the right setting and confirm the exact value without clicking a `+` button thirty times.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: new reusable `ContinuousValueSlider<Value>` view — label left, monospaced-digit live value right (`.monospacedDigit()`), `Slider(value:, in:, step:)` below, optional flanking `−` / `+` buttons that increment/decrement by `step`. Migrate Note Duration (0.3–3.0 s, step 0.1), Note Gap (0.0–5.0 s, step 0.1), and Rhythm Tempo (40–200 BPM, step 1) from `Stepper` to the new view. Vary Loudness stays as-is. Concert Pitch stays as `Stepper` — document the explicit decision in a code comment on `SettingsScreen.soundSection` or in the SettingsScreen header doc. Taxonomy table from this epic's body added as a doc comment on the new view or on `SettingsScreen` so future contributors can route correctly. Accessibility: `.accessibilityValue` reads the localised value with unit (e.g., "1.2 seconds"); `−` / `+` buttons each have an `.accessibilityLabel` and an `.accessibilityHint`. German strings updated/added via `bin/add-localization.swift`; use informal `du`/imperative per `[[feedback_german_informal]]`. Unit tests for the new view cover step-snapping, value-display formatting, and the `−` / `+` increment/decrement clamping at range bounds.)
+
+### Story 81.2: TOD Max Repetitions discrete-stops slider
+
+As **a user choosing how many repetitions a Timing Offset Detection trial should run**,
+I want a slider that snaps to the meaningful values `[1, 2, 3, 5, 10, ∞]` instead of a separate picker idiom,
+so that the choice feels visually consistent with the other continuous settings while still reflecting that the values are qualitatively distinct, not linearly spaced.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: convert `TimingOffsetDetectionMaxRepetitionsSettingsSection` from `Picker` to a discrete-stops slider that uses the chrome introduced in 81.1, with equal visual spacing between the six stops `[1, 2, 3, 5, 10, ∞]` (not linear 1–20), tick marks visible at each stop, and the `∞` glyph rendered at the rightmost stop. Snap-to-nearest-stop on drag-release. Value-display shows the current label (digit or `∞`). Existing `@AppStorage` key, default, and storage encoding unchanged — `∞` is still stored as the int `defaultMaxRepetitions` (currently 20), so neither persistence nor `TimingOffsetDetectionSettings.from` change. Existing English/German footer copy retained. Accessibility: control vends as a `Slider`-equivalent so VoiceOver swipe-up/down moves between stops; `.accessibilityValue` reads "infinity" / "unbegrenzt" at the cap and the integer otherwise. Tests cover stop-snapping, encode/decode at the `∞` boundary, and the existing aggregation tests in `DisciplineSettingsSectionAggregationTests` continue to pass.)
+
+### Story 81.3: Piano-keyboard control for training note range
+
+As **a musician setting the Lowest and Highest notes I want to be trained on**,
+I want a piano keyboard I can drag two bound markers on,
+so that I can pick a range in the instrument's own visual vocabulary instead of clicking a Stepper forty-eight times to move from C2 to C6.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: new `NoteRangeSelector` view (working name) replaces the two `Stepper` rows in `SettingsScreen.trainingRangeSection`; renders all 88 piano keys A0–C8 (MIDI 21–108), with black keys at correct width/height ratio inset between adjacent white keys; selected range (`noteRangeMin…noteRangeMax`) at full saturation, out-of-range keys at ~35 % opacity; every C labelled below in caption text. Two bound markers as chevron tabs above the keyboard with `MIDINote.name` pill labels (e.g., `C2`, `C6`); drag a marker → snaps to nearest semitone; the 12-semitone minimum span (`NoteRange.minimumSpan`) is enforced by stopping the active marker at the limit (the other marker does not move). Tap on a dimmed key → the nearer bound jumps to that key; tap inside the selection is a no-op. Audio preview: on drag-release (not during drag), briefly play the bound note via the currently-selected sound source — single play, short envelope, cancellable on view disappear. On iPhone portrait the keyboard scrolls horizontally with auto-scroll on first appearance to centre the current selection; on iPad and Mac the full 88 keys fit by default. Resurrect `PianoKeyboardLayout` from commit `2e7cf102^` (last living revision) into `Peach/Core/Music/PianoKeyboardLayout.swift`, port it to the current `MIDINote` / `NoteRange` API surface, and extend with the inverse hit-test `midiNote(at x: CGFloat, totalWidth: CGFloat) -> MIDINote`. Accessibility: vends as two adjustable elements, each using `.accessibilityRepresentation { Slider(value: bound, in: legalRange, step: 1) }` so VoiceOver swipe-up/down and Switch Control increment/decrement work for free; each key carries an `.accessibilityLabel` of its note name (`"C3"`, `"F sharp 4"`) so Voice Control's "Tap C3" works; on macOS, Tab moves focus between markers, ← / → nudge by one semitone, ⇧← / ⇧→ nudge by one octave, Home / End jump to legal min/max for that bound. Dynamic Type: pill labels scale freely; key heights remain touch-target-driven; at AX1 and larger the marker pills are replaced with a single summary line (`"Lowest C2 · Highest C6"`) and the keyboard becomes view-only with adjustment via the slider rotor or a "Pick from list" custom action. German strings via `bin/add-localization.swift`, informal `du`. Unit tests cover `PianoKeyboardLayout`'s forward + inverse mapping including black-key positioning and out-of-range hit-tests; UI tests cover drag-snap, tap-to-extend, the minimum-span enforcement, and the drag-release audio cue firing exactly once. The existing `noteRangeMin` / `noteRangeMax` `@AppStorage` keys, defaults, validation helpers (`lowerBoundRange`, `upperBoundRange`), and the `NoteRange` value type are unchanged.)
