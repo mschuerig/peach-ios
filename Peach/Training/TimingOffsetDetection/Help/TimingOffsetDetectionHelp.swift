@@ -5,11 +5,11 @@ enum TimingOffsetDetectionHelp {
     static let trainingScreen: [HelpSection] = [
         HelpSection(
             title: String(localized: "Goal"),
-            body: String(localized: "You'll hear four clicks — a short rhythmic pattern. The **third** click may arrive slightly **early** or **late**. Your job is to decide which one it was.")
+            body: String(localized: "You'll hear a repeating four-click pattern. The **third** click in each cycle may arrive slightly **early** or **late**. Your job is to decide which one it was.")
         ),
         HelpSection(
             title: String(localized: "Controls"),
-            body: String(localized: "Once the pattern finishes, the **Early** and **Late** buttons become active. Tap the one that matches what you heard.")
+            body: String(localized: "Tap **Early** or **Late** as soon as you decide — you don't need to wait for the pattern to stop. By default the pattern repeats until you answer; you can cap the repetitions in Settings.")
         ),
         HelpSection(
             title: String(localized: "Feedback"),

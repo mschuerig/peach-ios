@@ -273,7 +273,7 @@ struct TimingOffsetDetectionSessionTests {
     func testedNoteIndexConsistentWithHelpText() {
         // Verify the English source key (locale-independent) embeds the correct ordinal.
         // If testedNoteIndex changes, this test forces updating the localization key too.
-        let englishKey = "You'll hear four clicks — a short rhythmic pattern. The **third** click may arrive slightly **early** or **late**. Your job is to decide which one it was."
+        let englishKey = "You'll hear a repeating four-click pattern. The **third** click in each cycle may arrive slightly **early** or **late**. Your job is to decide which one it was."
         let ordinals = ["**first**", "**second**", "**third**", "**fourth**"]
         let expectedOrdinal = ordinals[TimingOffsetDetectionSession.testedNoteIndex]
         #expect(englishKey.contains(expectedOrdinal),
