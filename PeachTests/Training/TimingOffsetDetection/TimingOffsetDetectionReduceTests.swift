@@ -117,12 +117,14 @@ struct TimingOffsetDetectionReduceTests {
 
     // MARK: - Repetition Cap
 
-    @Test("playingPatternLoop + repetitionCapReached → playingPatternLoop, stopSequencerAtCap (no state change)")
+    @Test("playingPatternLoop + repetitionCapReached → awaitingAnswer, stopSequencerAtCap")
     func repetitionCapFromLoop() async {
         let (state, effects) = reduce(.playingPatternLoop, .repetitionCapReached)
-        // State must not change: the user still owes a direction answer; the cap is a
-        // sequencer-stop mechanism within `playingPatternLoop`, not a state exit.
-        #expect(state == .playingPatternLoop)
+        // State exits the audio-playing phase into a silent awaiting-answer phase; the
+        // transition itself is the idempotence latch (further polls see `state !=
+        // .playingPatternLoop` and the cap check at the top of `evaluatePlaybackPosition`
+        // returns early).
+        #expect(state == .awaitingAnswer)
         #expect(effects.count == 1)
         guard case .stopSequencerAtCap = effects.first else {
             Issue.record("Expected .stopSequencerAtCap")
@@ -130,10 +132,31 @@ struct TimingOffsetDetectionReduceTests {
         }
     }
 
+    @Test("awaitingAnswer + answerReceived → showingFeedback, full answer effect list")
+    func answerFromAwaitingAnswer() async {
+        let (state, effects) = reduce(.awaitingAnswer, .answerReceived(direction: .early))
+        #expect(state == .showingFeedback)
+        #expect(effects.count == 3)
+        guard case .stopSequencer = effects[0] else {
+            Issue.record("Expected first effect to be .stopSequencer")
+            return
+        }
+        guard case .evaluateAnswer(let direction) = effects[1], direction == .early else {
+            Issue.record("Expected second effect to be .evaluateAnswer(.early)")
+            return
+        }
+        guard case .scheduleFeedbackTimer = effects[2] else {
+            Issue.record("Expected third effect to be .scheduleFeedbackTimer")
+            return
+        }
+    }
+
     @Test("repetitionCapReached outside playingPatternLoop is a no-op")
     func repetitionCapOutsideLoopIsNoOp() async {
-        // I/O matrix row: spurious cap event in non-loop state (showingFeedback / waitingForGrid / idle)
-        for startState: State in [.idle, .showingFeedback, .waitingForGrid] {
+        // I/O matrix row: spurious cap event outside the audio-playing phase. After the cap
+        // transition the session is already in `.awaitingAnswer`, so another cap event there
+        // must also be a no-op.
+        for startState: State in [.idle, .awaitingAnswer, .showingFeedback, .waitingForGrid] {
             let (state, effects) = reduce(startState, .repetitionCapReached)
             #expect(state == startState, "State must not change for spurious cap in \(startState)")
             #expect(effects.isEmpty, "No effects for spurious cap in \(startState)")

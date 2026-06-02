@@ -23,8 +23,8 @@ context:
 **Always:**
 - Feature-local plumbing only. New files live under `Peach/Training/TimingOffsetDetection/Settings/`, mirroring CRM's `Peach/Training/ContinuousRhythmMatching/Settings/`. The central `Peach/Core/Ports/UserSettings.swift` and `Peach/Settings/AppUserSettings.swift` are not touched.
 - `TimingOffsetDetectionSettings.from(_:todUserSettings:)` is the single seam that reads `maxRepetitions` from the feature-local port. The session does not see the port directly.
-- `playingPatternLoop` exits only on `.answerReceived`, `.stopRequested`, or `.audioError` — the rep cap is a sequencer-stop mechanism within the state, not a state exit. (Preserves the 80.1 state-machine contract.)
-- Cap-reached detection lives in the polling tracking task: `completedCycles = globalSubdivisionIndex / subdivisionsPerBeat`; when `completedCycles >= maxRepetitions`, `send(.repetitionCapReached)` once and let the cancelled tracking task suppress further firings.
+- `playingPatternLoop` exits on `.answerReceived` (→ `.showingFeedback`), `.repetitionCapReached` (→ `.awaitingAnswer`), `.stopRequested`, or `.audioError`. A new `.awaitingAnswer` state represents "trial active, sequencer stopped at cap, user must answer". `.awaitingAnswer` exits on `.answerReceived` (→ `.showingFeedback`), `.stopRequested`, or `.audioError`.
+- Cap-reached detection lives in the polling tracking task: `completedCycles = globalSubdivisionIndex / subdivisionsPerBeat`; when `completedCycles >= maxRepetitions`, `send(.repetitionCapReached)`. The state transition itself is the idempotence latch — subsequent polls see `state != .playingPatternLoop` and the cap check at the top of `evaluatePlaybackPosition` returns early.
 - After the cap stops the sequencer, `currentTrial` and `settings` stay populated so `handleAnswer(direction:)` still completes the trial normally — feedback, grid alignment, and observer notification are unchanged.
 - `maxRepetitions` is validated `>= 1` at the `TimingOffsetDetectionSettings` boundary via `precondition`. Reads through the port clamp/fall back to the default on out-of-range UserDefaults values (defence in depth at the UserDefaults read site).
 - Discipline stays research-only. All new files compile and run inside the existing `#if PEACH_RESEARCH` envelope; non-research builds are unaffected.
@@ -45,12 +45,12 @@ context:
 
 | Scenario | Input / State | Expected Output / Behavior | Error Handling |
 |---|---|---|---|
-| Cap reached before answer | `playingPatternLoop`, `globalSubdivisionIndex == maxRepetitions * subdivisionsPerBeat` | `send(.repetitionCapReached)` once; sequencer stopped via `enqueueSequencerStop()`; `litDotCount` reset to 0; state stays `playingPatternLoop`; `currentTrial` retained | Sequencer-stop failure logged at `.error` (teardown-style no-op `onFailure`, matching `stopAll()`); no `.audioError` escalation |
-| Answer arrives after cap stop | Cap-stopped state, `handleAnswer(direction:)` | State → `showingFeedback`; `evaluateAnswer` runs; observer notified once; feedback timer scheduled; grid alignment proceeds as in 80.1 | N/A |
+| Cap reached before answer | `playingPatternLoop`, `globalSubdivisionIndex == maxRepetitions * subdivisionsPerBeat` | `send(.repetitionCapReached)`; state → `awaitingAnswer`; sequencer stopped via `enqueueSequencerStop()`; `litDotCount` reset to 0; `currentTrial` retained | Sequencer-stop failure logged at `.error` (teardown-style no-op `onFailure`, matching `stopAll()`); no `.audioError` escalation |
+| Answer arrives after cap stop | `awaitingAnswer`, `handleAnswer(direction:)` | State → `showingFeedback`; `evaluateAnswer` runs; observer notified once; feedback timer scheduled; grid alignment proceeds as in 80.1. Effect list is identical to the `.playingPatternLoop → .showingFeedback` arm — the redundant `.stopSequencer` is harmless because `enqueueSequencerStop` serializes back-to-back stops. | N/A |
 | Answer arrives before cap | `playingPatternLoop`, sequencer running, `handleAnswer(direction:)` | Unchanged from 80.1 — tracking cancelled, sequencer stopped via answer path, evaluate + feedback fire | N/A |
-| `maxRepetitions == 1` | Trial begins, first cycle plays | After subdivision 3 of cycle 1 plays, polling sees `completedCycles == 1`; cap fires; audio stops; user must still answer | N/A |
+| `maxRepetitions == 1` | Trial begins, first cycle plays | After subdivision 3 of cycle 1 plays, polling sees `completedCycles == 1`; cap fires; state → `awaitingAnswer`; audio stops; user must still answer | N/A |
 | Cap exceeds completed cycles forever | `maxRepetitions == .max` (or any high value the user never reaches) | Behaviour identical to 80.1 — loops until user answers; `.repetitionCapReached` never fires | N/A |
-| Spurious cap event in non-loop state | `.repetitionCapReached` arrives in `showingFeedback`/`waitingForGrid`/`idle` | Reducer default case: no state change, no effects | N/A |
+| Spurious cap event outside loop | `.repetitionCapReached` arrives in `awaitingAnswer`/`showingFeedback`/`waitingForGrid`/`idle` | Reducer default case: no state change, no effects | N/A |
 | UserDefaults missing or out of range | `defaults.object(forKey:) == nil` or stored value `< 1` | Port returns `defaultMaxRepetitions` | N/A |
 
 </frozen-after-approval>
@@ -61,7 +61,7 @@ context:
 - `Peach/Training/TimingOffsetDetection/Settings/TimingOffsetDetectionUserSettings.swift` — new. `protocol TimingOffsetDetectionUserSettings { var maxRepetitions: Int { get } }` + `final class AppTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSettings` reading `UserDefaults.standard` with the key + clamp-to-default fallback on missing/`< 1` values.
 - `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSettings.swift` — add `var maxRepetitions: Int` field; `init` default `= TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions`; `precondition(maxRepetitions >= 1, "maxRepetitions must be >= 1")`; replace `static func from(_:)` with `static func from(_ userSettings: UserSettings, todUserSettings: TimingOffsetDetectionUserSettings)`.
 - `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionLifecycleContribution.swift` — add `todUserSettings: any TimingOffsetDetectionUserSettings` parameter; pass through to `.from(_:todUserSettings:)`. Mirrors `ContinuousRhythmMatchingLifecycleContribution`.
-- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift` — add `case repetitionCapReached` to `Event`; add `case stopSequencerAtCap` to `Effect`; reducer `(.playingPatternLoop, .repetitionCapReached) → return [.stopSequencerAtCap]` (no state change); interpret `.stopSequencerAtCap` as a new `stopSequencerAtCap()` helper that cancels `trackingTask`, calls `resetTracking()`, and calls `enqueueSequencerStop()` with the default no-op `onFailure`; in `evaluatePlaybackPosition`, after computing `globalSubdivisionIndex`, check `let completedCycles = globalSubdivisionIndex / Self.subdivisionsPerBeat; if let settings, completedCycles >= settings.maxRepetitions { send(.repetitionCapReached); return }` *before* the `litDotCount` publish (so the cap fires on the boundary tick, not after).
+- `Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift` — add `case awaitingAnswer` to `TimingOffsetDetectionSessionState`; add `case repetitionCapReached` to `Event`; add `case stopSequencerAtCap` to `Effect`. Reducer: `(.playingPatternLoop, .repetitionCapReached) → state = .awaitingAnswer, [.stopSequencerAtCap]`; `(.awaitingAnswer, .answerReceived)` merges with the existing `(.playingPatternLoop, .answerReceived)` arm via case-pattern union (identical effect list). Interpret `.stopSequencerAtCap` as a new `stopSequencerAtCap()` helper that calls `cancelTrackingAndReset()` and `enqueueSequencerStop()` with the default no-op `onFailure`. `canAcceptAnswer` widens to `state == .playingPatternLoop || state == .awaitingAnswer`. In `evaluatePlaybackPosition`, after computing `globalSubdivisionIndex`, check `let completedCycles = globalSubdivisionIndex / Self.subdivisionsPerBeat; if let settings, completedCycles >= settings.maxRepetitions { send(.repetitionCapReached); return }` *before* the `litDotCount` publish. The state guard at the top of `evaluatePlaybackPosition` is the idempotence latch — once the reducer transitions to `.awaitingAnswer`, the guard short-circuits further polling.
 - `Peach/App/PeachApp.swift` — add `private let todUserSettings = AppTimingOffsetDetectionUserSettings()` near the existing `crmUserSettings` (line ~40); add `todUserSettings: any TimingOffsetDetectionUserSettings` parameter to `buildCoordinators`; thread `todUserSettings: todUserSettings` into both `buildCoordinators(...)` call sites (init ~85, `rebuildCoordinators` ~205); update the TOD `.contribute(...)` call inside `lifecycleRegistry` (~512) to pass it through. Wrap the new property and the new build-coordinator argument in `#if PEACH_RESEARCH` to match the discipline's research-only gating.
 - `PeachTests/Mocks/MockTimingOffsetDetectionUserSettings.swift` — new. `final class MockTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSettings { var maxRepetitions: Int = TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions }`. Mirrors `MockContinuousRhythmMatchingUserSettings`.
 - `PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift` — extend the factory to accept an optional `maxRepetitions:` override; cover every I/O matrix row (cap-fires-once, post-cap answer completes trial, pre-cap answer unchanged, `maxRepetitions == 1` plays exactly one cycle, high-cap never fires).
@@ -104,12 +104,19 @@ context:
   - **AC6 covered by a new test file.** `PeachTests/Training/TimingOffsetDetection/AppTimingOffsetDetectionUserSettingsTests.swift` exercises the UserDefaults round-trip with a temporary suite: missing key → default, stored `0` → default, stored `-3` → default, stored `7` → 7. The "Ask First" item that originally permitted skipping this test is now obsolete; the small test is cheap and the AC was otherwise unverified. Test file is `#if PEACH_RESEARCH`-gated to match the existing `TimingOffsetDetectionSettingsTests` envelope.
   - **One item deferred to `deferred-work.md` under "Story 80.2 Max-repetitions setting review (2026-06-02)":** stale `samplePosition` at new-trial start could fire the cap before any audio plays with `maxRepetitions == 1`. Property of the shared `BeatSequencer`'s post-`start()` reset latency, not introduced by 80.2; surfaces a new failure mode here. Coordinate with 80.0 D1 concurrency audit and 80.1 litDot-blip entry.
   - **Rejected with reasoning (not deferred):** off-by-one cap firing at cycle boundary (intentional — `maxRepetitions == N` means `N` full cycles play, cap fires at the buffer-fill boundary of cycle `N+1` which the chained `enqueueSequencerStop` silences within a polling tick); "cycle" vs. "beat" naming conflation (the 4-sixteenth pattern *is* one beat; one cycle = one beat is a load-bearing property of this discipline); `cap-stop discards failure callback` (intentional, spec I/O matrix row 1 explicitly specifies teardown-style no-op `onFailure`); `from(_:todUserSettings:)` only maps tempo + maxRepetitions (the other fields aren't user-configurable — feedbackDuration etc. keep their init defaults); `AppTimingOffsetDetectionUserSettings.defaults` is a mutable `var` (mirrors CRM's pre-existing shape; consistency over local cleanup); `MockTimingOffsetDetectionUserSettings.maxRepetitions` as `var` not matching the protocol's `{ get }` (mocks need to be writable for tests — universal pattern); `samplesPerBeat` not divisible by `subdivisionsPerBeat` accuracy drift (~70μs at production rates — sub-perceptual); Int overflow on 32-bit platforms (iOS is 64-bit only); double-stop on answer after cap (the chained `stopTask` was designed in 80.1 for exactly this back-to-back-stop pattern); `gridOrigin` not refreshed after early cap stop (existing 80.1 grid alignment behaviour, not changed by 80.2).
+- **2026-06-02** — Post-review refactor (`<frozen-after-approval>` renegotiated with user approval):
+  - **Cap reached now exits `.playingPatternLoop` into a new `.awaitingAnswer` state.** Michael challenged the earlier "reuse the state" decision: *"Why is this not explicitly modeled as a state?"* The original Design Notes argued reusing `.playingPatternLoop` kept the reducer narrow, but that reasoning was weak — only one new reducer arm (`.answerReceived` from `.awaitingAnswer`) is required because `.stopRequested`/`.audioError` are caught by the existing `(_, …)` catch-all. The implicit-state shape was a smell: `.playingPatternLoop` lied about itself after the cap fired (no audio), and idempotence was carried by a private `didFireRepetitionCap` flag rather than by the state machine itself.
+  - **Frozen-block edits made under renegotiation:** the `playingPatternLoop` exit rule under **Always** now includes `.repetitionCapReached → .awaitingAnswer`; the same line documents `.awaitingAnswer`'s exits. I/O matrix row 1 changes "state stays `playingPatternLoop`" → "state → `awaitingAnswer`"; row 2 input changes from "Cap-stopped state" to "`awaitingAnswer`" and notes the redundant `.stopSequencer` is harmless via 80.1's chained stop; row 4 notes state → `awaitingAnswer`; row 6 widens the spurious-event set to include `.awaitingAnswer`. The cap-detection rule's "let the cancelled tracking task suppress further firings" was replaced by "the state transition itself is the idempotence latch — subsequent polls see `state != .playingPatternLoop` and the cap check returns early."
+  - **`didFireRepetitionCap` field, guard, and resets deleted.** The `evaluatePlaybackPosition` cap-check is now `if let settings, completedCycles >= settings.maxRepetitions { send(.repetitionCapReached); return }`. Idempotence is enforced by the state guard at the top of `evaluatePlaybackPosition` (already there pre-refactor).
+  - **`canAcceptAnswer` widened** from `state == .playingPatternLoop` to `state == .playingPatternLoop || state == .awaitingAnswer`. View layer and BeatProvider now treat both states as answer-accepting.
+  - **Reducer's answer arm merges via case-pattern union** — `case (.playingPatternLoop, .answerReceived), (.awaitingAnswer, .answerReceived):` returns the same `[.stopSequencer, .evaluateAnswer, .scheduleFeedbackTimer]` effect list. The redundant `.stopSequencer` from `.awaitingAnswer` is harmless because `enqueueSequencerStop` was designed in 80.1 to serialize back-to-back stops.
+  - **Tests updated:** new reduce-tests entry pinning `(.awaitingAnswer, .answerReceived) → .showingFeedback` with the full effect list; the existing cap-from-loop reducer test now asserts the state transition to `.awaitingAnswer`; session tests' cap-reached assertions changed from `state == .playingPatternLoop` to `state == .awaitingAnswer`; the no-op-on-spurious-cap reducer test now also covers `.awaitingAnswer` as a starting state.
 
 ## Design Notes
 
 **Cap fires from polling, not `nextBeat()`.** The sequencer batches `nextBeat()` calls in refills (cf. 80.1's silent-beat fallback), so beat-count overruns the actually-played cycles. The polling task's `samplePosition`-derived `globalSubdivisionIndex` is the only authority for *played* subdivisions.
 
-**`playingPatternLoop` stays put.** A dedicated "cap reached, waiting for answer" state would duplicate every `playingPatternLoop` transition for `handleAnswer`/`stop`/`audioError`. Reusing the state and stopping the audio inside it keeps the reducer narrow; the visual delta (frozen vs. cycling dots) is 80.4.
+**Cap is modeled as a state transition, not a latch flag.** `.repetitionCapReached` exits `.playingPatternLoop` into `.awaitingAnswer`. This makes the post-cap condition (audio stopped, user must answer) a first-class state rather than an implicit combination of "state still says playingPatternLoop but a private latch flag is set". Three consequences worth noting: (1) idempotence is structural — `evaluatePlaybackPosition`'s top-of-function state guard naturally suppresses re-fires; (2) `canAcceptAnswer` widens to accept answers from both states, making the BeatProvider/View surface honest about when the user can act; (3) story 80.4's visual treatment can branch on `state == .awaitingAnswer` directly rather than deriving it from `state == .playingPatternLoop && litDotCount == 0`. The earlier "reuse the state" decision was reconsidered during step-04 review when Michael challenged the implicit-state shape.
 
 **Defence in depth on `< 1`.** The `TimingOffsetDetectionSettings.precondition` is a programmer-error contract for direct constructors/test fixtures. The UserDefaults read is an external-input boundary — a corrupted value (`0`, negatives, future-migration glitch) clamps to the default rather than crashing.
 
@@ -127,26 +134,26 @@ context:
 
 **Cap-fire mechanism — read this first**
 
-- New event + effect that turn the rep cap into a state-machine concern; reducer keeps state in `playingPatternLoop` so the user still owes a direction.
-  [`TimingOffsetDetectionSession.swift:23`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L23)
+- New state — `.awaitingAnswer` represents "trial active, sequencer stopped at cap, user must answer". First-class member of the state enum, not derived from a flag.
+  [`TimingOffsetDetectionSession.swift:9`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L9)
 
-- Reducer arm for `.repetitionCapReached` — no state change, single `.stopSequencerAtCap` effect.
-  [`TimingOffsetDetectionSession.swift:62`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L62)
+- New event + effect for the cap mechanism.
+  [`TimingOffsetDetectionSession.swift:24`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L24)
 
-- Polling-tick cap detection — `completedCycles >= settings.maxRepetitions` guarded by `didFireRepetitionCap` so the latch is structural, not just a side effect of trackingTask cancellation.
+- Reducer arm for `.repetitionCapReached` — transitions `.playingPatternLoop → .awaitingAnswer` and emits `.stopSequencerAtCap`. The state transition itself is the idempotence latch.
+  [`TimingOffsetDetectionSession.swift:67`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L67)
+
+- Answer arm merges `.playingPatternLoop` and `.awaitingAnswer` via case-pattern union — identical effect list from both states. The redundant `.stopSequencer` from `.awaitingAnswer` is harmless via 80.1's chained stop.
+  [`TimingOffsetDetectionSession.swift:45`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L45)
+
+- Polling-tick cap detection — bare, no flag guard. The state guard at the top of the function (line 336) suppresses further fires once the reducer transitions out of `.playingPatternLoop`.
   [`TimingOffsetDetectionSession.swift:351`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L351)
 
-- The latch field, sibling to `lastPublishedSubdivisionIndex` (same polling-loop ownership).
-  [`TimingOffsetDetectionSession.swift:139`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L139)
+- `canAcceptAnswer` widened to accept answers from both `.playingPatternLoop` and `.awaitingAnswer`.
+  [`TimingOffsetDetectionSession.swift:189`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L189)
 
 - Cap-stop helper — reuses the answer-stop's `cancelTrackingAndReset` preamble, diverges on the no-op `onFailure` (matches `stopAll` teardown semantics).
-  [`TimingOffsetDetectionSession.swift:376`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L376)
-
-- Latch reset on every trial begin — the only safe place; `cancelTrackingAndReset` cannot reset it (would defeat the latch within the same poll).
-  [`TimingOffsetDetectionSession.swift:289`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L289)
-
-- Latch reset on teardown for cleanliness.
-  [`TimingOffsetDetectionSession.swift:465`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L465)
+  [`TimingOffsetDetectionSession.swift:373`](../../Peach/Training/TimingOffsetDetection/TimingOffsetDetectionSession.swift#L373)
 
 **Feature-local UserDefaults port — Epic 77 plugin model adoption**
 
@@ -181,20 +188,23 @@ context:
 
 **Tests — I/O matrix coverage + reducer pinning + AC6**
 
-- Reducer table: `playingPatternLoop + .repetitionCapReached → playingPatternLoop, .stopSequencerAtCap`.
+- Reducer table: `playingPatternLoop + .repetitionCapReached → awaitingAnswer, .stopSequencerAtCap`.
   [`TimingOffsetDetectionReduceTests.swift:120`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionReduceTests.swift#L120)
 
-- Reducer table: spurious `.repetitionCapReached` outside the loop is a no-op (pins the default case).
-  [`TimingOffsetDetectionReduceTests.swift:133`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionReduceTests.swift#L133)
+- Reducer table: `.awaitingAnswer + .answerReceived → showingFeedback` with the full answer effect list.
+  [`TimingOffsetDetectionReduceTests.swift:135`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionReduceTests.swift#L135)
 
-- I/O matrix row 1 — cap fires once, state stays, observer not notified.
+- Reducer table: spurious `.repetitionCapReached` outside the loop is a no-op (pins the default case, now widened to include `.awaitingAnswer`).
+  [`TimingOffsetDetectionReduceTests.swift:154`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionReduceTests.swift#L154)
+
+- I/O matrix row 1 — cap fires once, state → `.awaitingAnswer`, observer not notified.
   [`TimingOffsetDetectionSessionTests.swift:838`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift#L838)
 
 - I/O matrix row 2 — answer after cap completes the trial through the normal path.
-  [`TimingOffsetDetectionSessionTests.swift:881`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift#L881)
+  [`TimingOffsetDetectionSessionTests.swift:883`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift#L883)
 
 - I/O matrix row 4 — `maxRepetitions == 1` stops the sequencer after exactly one full cycle (restored pre-80.1 semantics).
-  [`TimingOffsetDetectionSessionTests.swift:936`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift#L936)
+  [`TimingOffsetDetectionSessionTests.swift:938`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift#L938)
 
 - I/O matrix row 5 — very high cap never fires; behaviour matches the uncapped loop.
   [`TimingOffsetDetectionSessionTests.swift:969`](../../PeachTests/Training/TimingOffsetDetection/TimingOffsetDetectionSessionTests.swift#L969)
@@ -210,8 +220,8 @@ context:
 
 **Audit trail**
 
-- Spec Change Log — initial implementation deltas, plus the step-04 review patches (this iteration) covering AC5 amendment, `#if` centralisation, cap idempotence latch, AC6 test addition.
-  [`spec-80-2-max-repetitions-setting.md:101`](./spec-80-2-max-repetitions-setting.md#L101)
+- Spec Change Log — initial implementation deltas, step-04 review patches, and the post-review refactor that promoted the cap-reached condition to a first-class `.awaitingAnswer` state (frozen-block renegotiation).
+  [`spec-80-2-max-repetitions-setting.md:107`](./spec-80-2-max-repetitions-setting.md#L107)
 
 - Deferred-work entry — stale `samplePosition` at new-trial start can fire the cap before audio plays with `maxRepetitions == 1`. Coordinate with 80.0 D1 and 80.1 litDot-blip.
   [`deferred-work.md`](./deferred-work.md)

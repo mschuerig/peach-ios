@@ -6,6 +6,7 @@ import os
 enum TimingOffsetDetectionSessionState {
     case idle
     case playingPatternLoop
+    case awaitingAnswer
     case showingFeedback
     case waitingForGrid
 }
@@ -41,11 +42,14 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
             state = .playingPatternLoop
             return [.beginNextTrial]
 
-        case (.playingPatternLoop, .answerReceived(let direction)):
+        case (.playingPatternLoop, .answerReceived(let direction)),
+             (.awaitingAnswer, .answerReceived(let direction)):
             state = .showingFeedback
             // Mechanism (.stopSequencer) is emitted ahead of policy (.evaluateAnswer)
             // so audio silencing is ordered explicitly rather than buried inside the
-            // result-computation effect.
+            // result-computation effect. From `.awaitingAnswer` the sequencer is
+            // already stopped, but emitting `.stopSequencer` again is safe — the
+            // chained `enqueueSequencerStop` serializes back-to-back stops.
             return [.stopSequencer, .evaluateAnswer(direction: direction), .scheduleFeedbackTimer]
 
         case (.showingFeedback, .feedbackTimerFired):
@@ -57,8 +61,10 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
             return [.beginNextTrial]
 
         case (.playingPatternLoop, .repetitionCapReached):
-            // Cap stops the sequencer (audio silences) but leaves the session in
-            // `playingPatternLoop` so the user still owes a direction answer.
+            // Cap exits the audio-playing phase into a silent awaiting-answer phase.
+            // The state transition is the idempotence latch: subsequent polls in the
+            // same trial see `state != .playingPatternLoop` and the cap check is gated.
+            state = .awaitingAnswer
             return [.stopSequencerAtCap]
 
         case (.idle, .stopRequested):
@@ -134,10 +140,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     /// Last subdivision index published to `litDotCount`, gating Observation churn at the 120 Hz tracking rate.
     private var lastPublishedSubdivisionIndex: Int = -1
 
-    /// Latches when the repetition cap fires so subsequent polls in the same trial cannot
-    /// re-emit `.repetitionCapReached`. Cleared at the start of each trial and on teardown.
-    private var didFireRepetitionCap: Bool = false
-
     var currentOffsetPercentage: Double? {
         guard let trial = currentTrial else { return nil }
         return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
@@ -184,7 +186,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     var isIdle: Bool { state == .idle }
 
-    var canAcceptAnswer: Bool { state == .playingPatternLoop }
+    var canAcceptAnswer: Bool { state == .playingPatternLoop || state == .awaitingAnswer }
 
     /// Handles a letter-key shortcut by matching against localized Early/Late keys.
     /// Returns `true` if the key matched and the answer was accepted.
@@ -286,8 +288,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     private func beginNextTrial() {
         guard let settings else { return }
 
-        didFireRepetitionCap = false
-
         if gridOrigin == nil {
             let origin = currentTime()
             gridOrigin = origin
@@ -344,14 +344,11 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
         // Cap-reached check runs *before* the `litDotCount` publish so the lit-dot
         // indicator does not flash one extra tick past the cap boundary. The
-        // `didFireRepetitionCap` latch enforces fire-once-per-trial structurally; in
-        // production the cancelled trackingTask also stops polling, but the latch keeps
-        // the invariant local rather than reliant on caller behaviour.
+        // `.repetitionCapReached` event transitions the session out of
+        // `.playingPatternLoop`, so the top-of-function state guard suppresses
+        // any further polling-driven re-fires.
         let completedCycles = globalSubdivisionIndex / Self.subdivisionsPerBeat
-        if !didFireRepetitionCap,
-           let settings,
-           completedCycles >= settings.maxRepetitions {
-            didFireRepetitionCap = true
+        if let settings, completedCycles >= settings.maxRepetitions {
             send(.repetitionCapReached)
             return
         }
@@ -369,8 +366,8 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     }
 
     /// Cancels tracking and stops the sequencer when the per-trial repetition cap is hit.
-    /// State stays at `.playingPatternLoop` so the user can still submit a direction;
-    /// the trial completes via the normal `.answerReceived` path. Failure is teardown-style
+    /// Reducer has already transitioned the state to `.awaitingAnswer`; the trial completes
+    /// via the normal `.answerReceived` path from that state. Failure is teardown-style
     /// (default no-op `onFailure`) to match `stopAll`: an `.audioError` escalation here
     /// would tear down the session before the user can answer.
     private func stopSequencerAtCap() {
@@ -462,7 +459,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         lastCompletedTrial = nil
         settings = nil
         gridOrigin = nil
-        didFireRepetitionCap = false
         showFeedback = false
         isLastAnswerCorrect = nil
         resetTracking()

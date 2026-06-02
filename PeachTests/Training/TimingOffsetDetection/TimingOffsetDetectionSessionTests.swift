@@ -835,8 +835,8 @@ struct TimingOffsetDetectionSessionTests {
 
     // MARK: - Max Repetitions Cap (I/O matrix: cap-reached scenarios)
 
-    @Test("cap reached stops sequencer once, leaves state in playingPatternLoop, resets litDotCount")
-    func repetitionCapStopsSequencerWithoutLeavingLoop() async throws {
+    @Test("cap reached transitions to awaitingAnswer, stops sequencer once, resets litDotCount")
+    func repetitionCapTransitionsToAwaitingAnswer() async throws {
         let trial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
             offset: TimingOffset(.milliseconds(50))
@@ -857,7 +857,8 @@ struct TimingOffsetDetectionSessionTests {
         f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(3)
         f.session.evaluatePlaybackPosition()
 
-        #expect(f.session.state == .playingPatternLoop, "Cap must not exit playingPatternLoop")
+        #expect(f.session.state == .awaitingAnswer, "Cap exits the audio-playing phase into silent await")
+        #expect(f.session.canAcceptAnswer, "User can still submit a direction from awaitingAnswer")
         #expect(f.session.litDotCount == 0, "litDotCount must reset when sequencer stops at the cap")
         #expect(f.observer.completedCallCount == 0, "Cap alone does not notify the observer")
 
@@ -867,9 +868,10 @@ struct TimingOffsetDetectionSessionTests {
         }
         #expect(f.sequencer.stopCallCount == stopsBefore + 1)
 
-        // Polling further past the cap is a no-op: the reducer ignores .repetitionCapReached
-        // when state is no longer .playingPatternLoop, and the cancelled trackingTask
-        // suppresses real firings. We assert the no-op shape via evaluatePlaybackPosition.
+        // Polling further past the cap is a no-op: the state guard at the top of
+        // `evaluatePlaybackPosition` short-circuits in `.awaitingAnswer`, and the cancelled
+        // trackingTask suppresses real firings. The state-transition latch removes the
+        // need for a separate `didFire` flag.
         let stopsAfterCap = f.sequencer.stopCallCount
         f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(5)
         f.session.evaluatePlaybackPosition()
@@ -892,7 +894,7 @@ struct TimingOffsetDetectionSessionTests {
         // Trip the cap.
         f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(2)
         f.session.evaluatePlaybackPosition()
-        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.session.state == .awaitingAnswer)
         #expect(f.observer.completedCallCount == 0)
 
         // The user can still submit a direction.
@@ -955,7 +957,7 @@ struct TimingOffsetDetectionSessionTests {
         // Reach the boundary after 1 completed cycle: cap fires.
         f.sequencer.currentSamplePosition = f.samplePositionAtCycleBoundary(1)
         f.session.evaluatePlaybackPosition()
-        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.session.state == .awaitingAnswer)
         #expect(f.session.litDotCount == 0)
         #expect(f.observer.completedCallCount == 0, "User must still submit a direction")
 
