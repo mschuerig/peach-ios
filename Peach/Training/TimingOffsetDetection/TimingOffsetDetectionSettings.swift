@@ -7,6 +7,7 @@ struct TimingOffsetDetectionSettings: Sendable {
     var minOffsetPercentage: Double
     var maxRepetitions: Int
     var offsetNotePosition: OffsetNotePosition
+    var pattern: TimingOffsetDetectionPattern
 
     init(
         tempo: TempoBPM = TempoBPM(80),
@@ -14,7 +15,8 @@ struct TimingOffsetDetectionSettings: Sendable {
         maxOffsetPercentage: Double = 20.0,
         minOffsetPercentage: Double = 1.0,
         maxRepetitions: Int = TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions,
-        offsetNotePosition: OffsetNotePosition = .default
+        offsetNotePosition: OffsetNotePosition = .default,
+        pattern: TimingOffsetDetectionPattern = TimingOffsetDetectionPatternCatalog.defaultPattern
     ) {
         precondition(minOffsetPercentage <= maxOffsetPercentage, "minOffsetPercentage must be <= maxOffsetPercentage")
         precondition(maxRepetitions >= 1, "maxRepetitions must be >= 1")
@@ -24,6 +26,7 @@ struct TimingOffsetDetectionSettings: Sendable {
         self.minOffsetPercentage = minOffsetPercentage
         self.maxRepetitions = maxRepetitions
         self.offsetNotePosition = offsetNotePosition
+        self.pattern = pattern
     }
 
     static func from(
@@ -33,7 +36,8 @@ struct TimingOffsetDetectionSettings: Sendable {
         TimingOffsetDetectionSettings(
             tempo: userSettings.tempoBPM,
             maxRepetitions: todUserSettings.maxRepetitions,
-            offsetNotePosition: todUserSettings.offsetNotePosition
+            offsetNotePosition: todUserSettings.offsetNotePosition,
+            pattern: todUserSettings.selectedPattern
         )
     }
 }

@@ -21,7 +21,7 @@ private struct TimingOffsetDetectionSessionFixture {
     let maxRepetitions: Int?
 
     var samplesPerBeat: Int64 { sequencer.samplesPerBeat }
-    var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / Int64(TimingOffsetDetectionSession.subdivisionsPerBeat) }
+    var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / Int64(TimingOffsetDetectionPatternCatalog.defaultPattern.subdivisions.count) }
 
     /// Sample position at the boundary tick of the given full cycle index
     /// (e.g. cycle 1 = end of first cycle = `samplesPerBeat * 1`).
@@ -184,17 +184,17 @@ struct TimingOffsetDetectionSessionTests {
     }
 
     @Test(
-        "buildBeat places the offset on the chosen note position",
-        arguments: [1, 2, 3, 4]
+        "pattern_1111.beat places the offset on the chosen audible position",
+        arguments: [2, 3, 4]
     )
     func buildBeatPerPosition(positionValue: Int) async throws {
-        let lateTrial = TimingOffsetDetectionTrial(
-            tempo: TempoBPM(80),
-            offset: TimingOffset(.milliseconds(50))
-        )
+        let offsetAmount: Duration = .milliseconds(50)
         let position = OffsetNotePosition(positionValue)
 
-        let beat = TimingOffsetDetectionSession.buildBeat(for: lateTrial, offsetNotePosition: position)
+        let beat = TimingOffsetDetectionPattern.pattern1111.beat(
+            offsetNotePosition: position,
+            offsetAmount: offsetAmount
+        )
 
         #expect(beat.subdivisions.count == 4)
         for index in 0..<4 {
@@ -202,7 +202,7 @@ struct TimingOffsetDetectionSessionTests {
                 Issue.record("Expected subdivision \(index) to be a note")
                 return
             }
-            let expectedOffset: Duration = (index == position.zeroBasedIndex) ? lateTrial.offset.duration : .zero
+            let expectedOffset: Duration = (index == position.zeroBasedIndex) ? offsetAmount : .zero
             #expect(offset == expectedOffset, "position=\(position.rawValue), index=\(index)")
         }
     }

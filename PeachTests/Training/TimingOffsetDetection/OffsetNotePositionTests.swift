@@ -31,22 +31,6 @@ struct OffsetNotePositionTests {
         #expect(OffsetNotePosition.validRange == 1...4)
     }
 
-    @Test(
-        "init(clamping:) accepts valid values verbatim",
-        arguments: [1, 2, 3, 4]
-    )
-    func clampingPassesValidValues(raw: Int) {
-        #expect(OffsetNotePosition(clamping: raw) == OffsetNotePosition(raw))
-    }
-
-    @Test(
-        "init(clamping:) replaces out-of-range values with the default",
-        arguments: [0, -1, 5, 99, Int.min, Int.max]
-    )
-    func clampingReplacesInvalidValuesWithDefault(raw: Int) {
-        #expect(OffsetNotePosition(clamping: raw) == .default)
-    }
-
     @Test("equal positions compare equal")
     func equality() {
         #expect(OffsetNotePosition(2) == OffsetNotePosition(2))

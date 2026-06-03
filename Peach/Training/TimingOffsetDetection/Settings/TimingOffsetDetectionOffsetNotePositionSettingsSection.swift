@@ -6,13 +6,20 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     @AppStorage(TimingOffsetDetectionSettingsKeys.offsetNotePosition)
     private var offsetNotePosition: Int = OffsetNotePosition.default.rawValue
 
+    @AppStorage(TimingOffsetDetectionSettingsKeys.selectedPatternId)
+    private var selectedPatternId: String = TimingOffsetDetectionPatternCatalog.defaultPatternId
+
     @ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32
 
     private static let positions: [OffsetNotePosition] =
         OffsetNotePosition.validRange.map { OffsetNotePosition($0) }
 
+    private var activePattern: TimingOffsetDetectionPattern {
+        TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId)
+    }
+
     private var effectivePosition: OffsetNotePosition {
-        OffsetNotePosition(clamping: offsetNotePosition)
+        activePattern.clampedOffsetNotePosition(offsetNotePosition)
     }
 
     var body: some View {

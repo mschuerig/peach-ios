@@ -88,16 +88,19 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     // MARK: - Constants
 
-    /// 4 sixteenths per beat. Internal (not private) so tests can compute subdivision-aligned sample positions.
-    static let subdivisionsPerBeat: Int = 4
-
     /// Sub-perceptual UI poll cadence (~125 Hz) that keeps `litDotCount` visually in lockstep with the audio.
     private static let trackingPollingInterval: Duration = .milliseconds(8)
 
     /// All-rest fallback returned by `nextBeat()` when no trial is active.
     /// A sequencer refill scheduled before `stop()` may still call `nextBeat()` after teardown;
     /// returning silence ensures no audible click pattern leaks past the session's lifetime.
-    private static let silentBeat = Beat(subdivisions: Array(repeating: .rest, count: subdivisionsPerBeat))
+    /// Subdivision count tracks the catalog's default pattern.
+    private static let silentBeat = Beat(
+        subdivisions: Array(
+            repeating: .rest,
+            count: TimingOffsetDetectionPatternCatalog.defaultPattern.subdivisions.count
+        )
+    )
 
     // MARK: - Logger
 
@@ -225,17 +228,10 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     func nextBeat() -> Beat {
         guard let trial = currentTrial, let settings else { return Self.silentBeat }
-        return Self.buildBeat(for: trial, offsetNotePosition: settings.offsetNotePosition)
-    }
-
-    static func buildBeat(for trial: TimingOffsetDetectionTrial, offsetNotePosition: OffsetNotePosition) -> Beat {
-        let offsetIndex = offsetNotePosition.zeroBasedIndex
-        let subdivisions: [Subdivision] = (0..<subdivisionsPerBeat).map { index in
-            let velocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
-            let offset: Duration = (index == offsetIndex) ? trial.offset.duration : .zero
-            return .note(velocity: velocity, offset: offset)
-        }
-        return Beat(subdivisions: subdivisions)
+        return settings.pattern.beat(
+            offsetNotePosition: settings.offsetNotePosition,
+            offsetAmount: trial.offset.duration
+        )
     }
 
     // MARK: - State Machine Engine
@@ -331,10 +327,14 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     func evaluatePlaybackPosition() {
         let timing = beatSequencer.timing
         guard state == .playingPatternLoop,
+              let settings,
               timing.samplePosition >= 0,
               timing.samplesPerBeat > 0 else { return }
 
-        let samplesPerSubdivision = timing.samplesPerBeat / Int64(Self.subdivisionsPerBeat)
+        let subdivisionsPerBeat = settings.pattern.subdivisions.count
+        guard subdivisionsPerBeat > 0 else { return }
+
+        let samplesPerSubdivision = timing.samplesPerBeat / Int64(subdivisionsPerBeat)
         guard samplesPerSubdivision > 0 else { return }
 
         let globalSubdivisionIndex = Int(timing.samplePosition / samplesPerSubdivision)
@@ -344,14 +344,14 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         // `.repetitionCapReached` event transitions the session out of
         // `.playingPatternLoop`, so the top-of-function state guard suppresses
         // any further polling-driven re-fires.
-        let completedCycles = globalSubdivisionIndex / Self.subdivisionsPerBeat
-        if let settings, completedCycles >= settings.maxRepetitions {
+        let completedCycles = globalSubdivisionIndex / subdivisionsPerBeat
+        if completedCycles >= settings.maxRepetitions {
             send(.repetitionCapReached)
             return
         }
 
         if globalSubdivisionIndex != lastPublishedSubdivisionIndex {
-            litDotCount = (globalSubdivisionIndex % Self.subdivisionsPerBeat) + 1
+            litDotCount = (globalSubdivisionIndex % subdivisionsPerBeat) + 1
             lastPublishedSubdivisionIndex = globalSubdivisionIndex
         }
     }
