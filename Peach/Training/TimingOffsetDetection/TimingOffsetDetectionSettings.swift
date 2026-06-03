@@ -6,7 +6,7 @@ struct TimingOffsetDetectionSettings: Sendable {
     var maxOffsetPercentage: Double
     var minOffsetPercentage: Double
     var maxRepetitions: Int
-    var offsetNotePosition: Int
+    var offsetNotePosition: OffsetNotePosition
 
     init(
         tempo: TempoBPM = TempoBPM(80),
@@ -14,14 +14,10 @@ struct TimingOffsetDetectionSettings: Sendable {
         maxOffsetPercentage: Double = 20.0,
         minOffsetPercentage: Double = 1.0,
         maxRepetitions: Int = TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions,
-        offsetNotePosition: Int = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
+        offsetNotePosition: OffsetNotePosition = .default
     ) {
         precondition(minOffsetPercentage <= maxOffsetPercentage, "minOffsetPercentage must be <= maxOffsetPercentage")
         precondition(maxRepetitions >= 1, "maxRepetitions must be >= 1")
-        precondition(
-            TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange.contains(offsetNotePosition),
-            "offsetNotePosition must be in \(TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange)"
-        )
         self.tempo = tempo
         self.feedbackDuration = feedbackDuration
         self.maxOffsetPercentage = maxOffsetPercentage

@@ -228,12 +228,8 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         return Self.buildBeat(for: trial, offsetNotePosition: settings.offsetNotePosition)
     }
 
-    static func buildBeat(for trial: TimingOffsetDetectionTrial, offsetNotePosition: Int) -> Beat {
-        precondition(
-            TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange.contains(offsetNotePosition),
-            "offsetNotePosition must be in \(TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange)"
-        )
-        let offsetIndex = offsetNotePosition - 1
+    static func buildBeat(for trial: TimingOffsetDetectionTrial, offsetNotePosition: OffsetNotePosition) -> Beat {
+        let offsetIndex = offsetNotePosition.zeroBasedIndex
         let subdivisions: [Subdivision] = (0..<subdivisionsPerBeat).map { index in
             let velocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
             let offset: Duration = (index == offsetIndex) ? trial.offset.duration : .zero

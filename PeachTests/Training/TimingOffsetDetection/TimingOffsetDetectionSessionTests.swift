@@ -165,7 +165,7 @@ struct TimingOffsetDetectionSessionTests {
         await f.sequencer.waitForStart()
 
         let beat = f.session.nextBeat()
-        let defaultPosition = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
+        let defaultIndex = OffsetNotePosition.default.zeroBasedIndex
 
         #expect(beat.subdivisions.count == 4)
 
@@ -175,7 +175,7 @@ struct TimingOffsetDetectionSessionTests {
                 return
             }
             let expectedVelocity: MIDIVelocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
-            let expectedOffset: Duration = (index == defaultPosition - 1) ? lateTrial.offset.duration : .zero
+            let expectedOffset: Duration = (index == defaultIndex) ? lateTrial.offset.duration : .zero
             #expect(velocity == expectedVelocity)
             #expect(offset == expectedOffset)
         }
@@ -187,14 +187,14 @@ struct TimingOffsetDetectionSessionTests {
         "buildBeat places the offset on the chosen note position",
         arguments: [1, 2, 3, 4]
     )
-    func buildBeatPerPosition(offsetNotePosition: Int) async throws {
+    func buildBeatPerPosition(positionValue: Int) async throws {
         let lateTrial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
             offset: TimingOffset(.milliseconds(50))
         )
+        let position = OffsetNotePosition(positionValue)
 
-        let beat = TimingOffsetDetectionSession.buildBeat(for: lateTrial, offsetNotePosition: offsetNotePosition)
-        let offsetIndex = offsetNotePosition - 1
+        let beat = TimingOffsetDetectionSession.buildBeat(for: lateTrial, offsetNotePosition: position)
 
         #expect(beat.subdivisions.count == 4)
         for index in 0..<4 {
@@ -202,8 +202,8 @@ struct TimingOffsetDetectionSessionTests {
                 Issue.record("Expected subdivision \(index) to be a note")
                 return
             }
-            let expectedOffset: Duration = (index == offsetIndex) ? lateTrial.offset.duration : .zero
-            #expect(offset == expectedOffset, "position=\(offsetNotePosition), index=\(index)")
+            let expectedOffset: Duration = (index == position.zeroBasedIndex) ? lateTrial.offset.duration : .zero
+            #expect(offset == expectedOffset, "position=\(position.rawValue), index=\(index)")
         }
     }
 
@@ -219,7 +219,7 @@ struct TimingOffsetDetectionSessionTests {
         await f.sequencer.waitForStart()
 
         let beat = f.session.nextBeat()
-        let defaultIndex = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition - 1
+        let defaultIndex = OffsetNotePosition.default.zeroBasedIndex
 
         guard case let .note(_, offset) = beat.subdivisions[defaultIndex] else {
             Issue.record("Expected subdivision \(defaultIndex) to be a note")

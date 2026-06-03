@@ -43,7 +43,7 @@ final class StubContinuousRhythmMatchingUserSettings: ContinuousRhythmMatchingUs
 
 final class StubTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSettings {
     let maxRepetitions: Int = TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions
-    let offsetNotePosition: Int = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
+    let offsetNotePosition: OffsetNotePosition = .default
 }
 
 final class StubPitchDiscriminationDataStore: PitchDiscriminationObserver {

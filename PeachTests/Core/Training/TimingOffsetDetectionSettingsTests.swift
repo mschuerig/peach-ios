@@ -14,7 +14,7 @@ struct TimingOffsetDetectionSettingsTests {
         #expect(settings.maxOffsetPercentage == 20.0)
         #expect(settings.minOffsetPercentage == 1.0)
         #expect(settings.maxRepetitions == TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions)
-        #expect(settings.offsetNotePosition == TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition)
+        #expect(settings.offsetNotePosition == .default)
     }
 
     @Test("from(userSettings, todUserSettings:) maps tempoBPM correctly")
@@ -56,7 +56,8 @@ struct TimingOffsetDetectionSettingsTests {
         "from(userSettings, todUserSettings:) reads offsetNotePosition from the feature-local port",
         arguments: [1, 2, 3, 4]
     )
-    func fromUserSettingsReadsOffsetNotePosition(position: Int) {
+    func fromUserSettingsReadsOffsetNotePosition(positionValue: Int) {
+        let position = OffsetNotePosition(positionValue)
         let mockSettings = MockUserSettings()
         let todUserSettings = MockTimingOffsetDetectionUserSettings()
         todUserSettings.offsetNotePosition = position

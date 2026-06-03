@@ -2,18 +2,17 @@ import SwiftUI
 
 /// Mirrors ``RhythmGapPositionsSettingsSection``'s visual chrome but is
 /// single-select; `GridToggleRow` is multi-toggle and isn't reusable here.
-/// "Offset Note Position" is a placeholder term — see story 82.2 / 82.4 for the
-/// rename.
 struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     @AppStorage(TimingOffsetDetectionSettingsKeys.offsetNotePosition)
-    private var offsetNotePosition: Int = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
+    private var offsetNotePosition: Int = OffsetNotePosition.default.rawValue
 
     @ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32
 
-    private static let positions: [Int] = Array(TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange)
+    private static let positions: [OffsetNotePosition] =
+        OffsetNotePosition.validRange.map { OffsetNotePosition($0) }
 
-    private var effectivePosition: Int {
-        TimingOffsetDetectionSettingsKeys.clamped(offsetNotePosition)
+    private var effectivePosition: OffsetNotePosition {
+        OffsetNotePosition(clamping: offsetNotePosition)
     }
 
     var body: some View {
@@ -30,12 +29,12 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
         }
     }
 
-    private func cell(for position: Int) -> some View {
+    private func cell(for position: OffsetNotePosition) -> some View {
         let isActive = (position == effectivePosition)
         return Button {
-            offsetNotePosition = position
+            offsetNotePosition = position.rawValue
         } label: {
-            Text("\(position)")
+            Text("\(position.rawValue)")
                 .font(.caption2)
                 .frame(width: cellSize, height: cellSize)
                 .background(isActive ? Color.accentColor : Color.secondary.opacity(0.2))
@@ -44,7 +43,7 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
         }
         .buttonStyle(.plain)
         .platformHoverEffect()
-        .accessibilityLabel(String(localized: "Note \(position) of \(Self.positions.count)"))
+        .accessibilityLabel(String(localized: "Note \(position.rawValue) of \(Self.positions.count)"))
         .accessibilityAddTraits(isActive ? [.isSelected] : [])
     }
 }

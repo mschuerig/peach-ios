@@ -1,11 +1,11 @@
-# TOD Discipline — Future Direction & Near-Term Slot Selection
+# TOD Discipline — Future Direction & Offset Note Position
 
 **Status:** Design direction (informational, not a story spec)
 **Date:** 2026-06-03
-**Context:** UX discussion (Sally) on extending Timing Offset Detection beyond its current fixed third-of-four-16th-notes layout. Captured to inform the upcoming "which slot carries the offset" setting and to keep future expansion cheap.
+**Context:** UX discussion (Sally) on extending Timing Offset Detection beyond its current fixed third-of-four-16th-notes layout. Captured to inform the *Offset Note Position* setting and to keep future expansion cheap.
 **Implemented by:** Epic 82 — *Find the Off Note — TOD Pattern & Slot Flexibility* (`docs/planning-artifacts/epics.md`). Tuplets remain deferred to a follow-up epic per the call below.
 
-## Resolved: terminology
+## Terminology
 
 **Term:** *Offset Note* (noun). **Settings-label form:** *Offset Note Position* (1-based). **Code identifier:** `offsetNotePosition`. **German:** *Position der Offset-Note* with body copy *Wähle, welche der vier Sechzehntelnoten den Timing-Offset trägt.*
 
@@ -19,11 +19,7 @@
 
 **Vocabulary boundary:** "Slot" remains a code/engineering term only — engineering layers in 82.5–82.6 may speak of *pickable slots* and *rest slots* in the pattern data structure, but the user-facing noun for the chosen audible position is always *Note*. The user picks an *Offset Note Position*; the code addresses *slots* within the pattern.
 
-**Implementation note:** The English and German strings shipped via story 82.1 already match the settled term; no string edits are required. Code identifiers were introduced under the same term in 82.1 and need no rename. The terminology rename in story 82.4 therefore focuses on removing the "placeholder, see 82.2" caveats from code comments, test names, and this doc's *Near-term step* / *Future vision* sections.
-
 ## Future vision (not now)
-
-> **Note:** Placeholder-era language below (e.g. "**Offset slot**", "Slot selection depends on the pattern") predates the *Resolved: terminology* section above and is left in place verbatim — the cleanup to "Offset Note Position" is owned by story 82.4 and applied across this doc, code, and comments in one sweep.
 
 TOD will expand from a fixed pattern to a settings model with two independent axes:
 
@@ -32,22 +28,19 @@ TOD will expand from a fixed pattern to a settings model with two independent ax
   - Patterns with gaps (rests), e.g. `* - * *`, `* * - *`, `* - * -`, `* - - *`.
   - Syncopated patterns.
   - Tuplets (triplets and beyond).
-- **Offset slot** — which slot within the chosen pattern carries the timing offset. Constrained to playable slots (rests cannot carry an offset).
+- **Offset Note Position** — which audible note in the chosen pattern carries the timing offset. Constrained to playable positions (rest slots cannot carry an offset).
 
-Two separate widgets. Slot selection depends on the pattern; changing the pattern invalidates the slot.
+Two separate widgets. The pickable positions depend on the pattern; changing the pattern invalidates the current selection.
 
-## Near-term step — slot selection as a setting
+## Near-term step — Offset Note Position as a setting
 
-> **Note:** Story 82.1 shipped this step. The placeholder-era language in the bullets below (e.g. "which slot carries the offset", "Use the placeholder term consistently") predates the terminology resolution above and is left in place verbatim — the cleanup is owned by story 82.4 and applied across code, comments, and this section in one sweep, not piecemeal.
+Story 82.1 shipped this step. Guidance recorded here so future expansion stays cheap:
 
-The immediate next step is to make today's hard-coded third-of-four a user setting (one of four slots). Guidance to keep future expansion cheap:
-
-- **Frame the widget generically.** Not "third of four" — "which slot carries the offset." Today's pattern is fixed (straight 16ths) so the widget shows four slots; the same widget should scale to N without redesign.
+- **Frame the widget generically.** Not "third of four" — "which note carries the offset." Today's pattern is fixed (straight 16ths) so the widget shows four positions; the same widget should scale to N without redesign.
 - **Visual reference: the Continuous Rhythm Matching widget.** Provisional reuse, fine for now.
 - **Organize Settings as if pattern were a (currently fixed) setting in the same section.** Even non-interactive today — future expansion then fills existing space rather than rearranging.
-- **Design the slot-rendering primitive with rests in mind.** Even though no rests exist today, the slot widget's visual vocabulary should already accommodate a "non-playable slot" appearance so adding rests later becomes data, not redesign.
+- **Design the position-rendering primitive with rests in mind.** Even though no rests exist today, the visual vocabulary should already accommodate a "non-playable slot" appearance so adding rests later becomes data, not redesign.
 - **Equal-cell layout is fine for now; flag it for tuplets.** When tuplets land, the row of equal cells may need to become a proportional timeline. Do not over-engineer today.
-- **Use the placeholder term consistently.** Whatever generic label is chosen for the interim ("offset slot" recommended), use it across the setting label, the underlying setting key, and any German string — a single global rename when the proper term lands is far cheaper than scattered variants.
 
 ## Open questions to revisit before building the future expansion
 

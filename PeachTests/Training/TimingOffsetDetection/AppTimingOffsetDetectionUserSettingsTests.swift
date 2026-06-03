@@ -48,7 +48,7 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         let port = AppTimingOffsetDetectionUserSettings()
         port.defaults = Self.makeSuite()
 
-        #expect(port.offsetNotePosition == TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition)
+        #expect(port.offsetNotePosition == .default)
     }
 
     @Test(
@@ -60,7 +60,7 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         port.defaults = Self.makeSuite()
         port.defaults.set(stored, forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
 
-        #expect(port.offsetNotePosition == TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition)
+        #expect(port.offsetNotePosition == .default)
     }
 
     @Test(
@@ -72,7 +72,7 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         port.defaults = Self.makeSuite()
         port.defaults.set(stored, forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
 
-        #expect(port.offsetNotePosition == stored)
+        #expect(port.offsetNotePosition == OffsetNotePosition(stored))
     }
 }
 #endif

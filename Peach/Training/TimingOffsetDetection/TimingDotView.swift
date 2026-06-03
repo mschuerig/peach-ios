@@ -53,7 +53,7 @@ struct TimingDotView: View {
 
 // MARK: - Previews
 
-private let previewTestedNoteIndex = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition - 1
+private let previewTestedNoteIndex = OffsetNotePosition.default.zeroBasedIndex
 
 #Preview("No dots lit — double circle dimmed") {
     TimingDotView(litCount: 0, testedNoteIndex: previewTestedNoteIndex)
