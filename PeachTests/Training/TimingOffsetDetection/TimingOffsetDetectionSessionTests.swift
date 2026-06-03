@@ -153,7 +153,7 @@ struct TimingOffsetDetectionSessionTests {
 
     // MARK: - nextBeat Shape (I/O matrix: pattern shape)
 
-    @Test("nextBeat returns 4-subdivision beat with accent on first and offset on third")
+    @Test("nextBeat returns 4-subdivision beat with accent on first and offset on the default position")
     func nextBeatShape() async throws {
         let lateTrial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
@@ -165,45 +165,49 @@ struct TimingOffsetDetectionSessionTests {
         await f.sequencer.waitForStart()
 
         let beat = f.session.nextBeat()
+        let defaultPosition = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
 
         #expect(beat.subdivisions.count == 4)
 
-        // Subdivision 0: accent, no offset
-        guard case let .note(velocity0, offset0) = beat.subdivisions[0] else {
-            Issue.record("Expected subdivision 0 to be a note")
-            return
+        for index in 0..<4 {
+            guard case let .note(velocity, offset) = beat.subdivisions[index] else {
+                Issue.record("Expected subdivision \(index) to be a note")
+                return
+            }
+            let expectedVelocity: MIDIVelocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
+            let expectedOffset: Duration = (index == defaultPosition - 1) ? lateTrial.offset.duration : .zero
+            #expect(velocity == expectedVelocity)
+            #expect(offset == expectedOffset)
         }
-        #expect(velocity0 == RhythmVelocity.accent)
-        #expect(offset0 == .zero)
-
-        // Subdivision 1: normal, no offset
-        guard case let .note(velocity1, offset1) = beat.subdivisions[1] else {
-            Issue.record("Expected subdivision 1 to be a note")
-            return
-        }
-        #expect(velocity1 == RhythmVelocity.normal)
-        #expect(offset1 == .zero)
-
-        // Subdivision 2 (tested note): normal, carries trial offset
-        guard case let .note(velocity2, offset2) = beat.subdivisions[2] else {
-            Issue.record("Expected subdivision 2 to be a note")
-            return
-        }
-        #expect(velocity2 == RhythmVelocity.normal)
-        #expect(offset2 == lateTrial.offset.duration)
-
-        // Subdivision 3: normal, no offset
-        guard case let .note(velocity3, offset3) = beat.subdivisions[3] else {
-            Issue.record("Expected subdivision 3 to be a note")
-            return
-        }
-        #expect(velocity3 == RhythmVelocity.normal)
-        #expect(offset3 == .zero)
 
         f.session.stop()
     }
 
-    @Test("nextBeat carries early (negative) offset on third subdivision")
+    @Test(
+        "buildBeat places the offset on the chosen note position",
+        arguments: [1, 2, 3, 4]
+    )
+    func buildBeatPerPosition(offsetNotePosition: Int) async throws {
+        let lateTrial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+
+        let beat = TimingOffsetDetectionSession.buildBeat(for: lateTrial, offsetNotePosition: offsetNotePosition)
+        let offsetIndex = offsetNotePosition - 1
+
+        #expect(beat.subdivisions.count == 4)
+        for index in 0..<4 {
+            guard case let .note(_, offset) = beat.subdivisions[index] else {
+                Issue.record("Expected subdivision \(index) to be a note")
+                return
+            }
+            let expectedOffset: Duration = (index == offsetIndex) ? lateTrial.offset.duration : .zero
+            #expect(offset == expectedOffset, "position=\(offsetNotePosition), index=\(index)")
+        }
+    }
+
+    @Test("nextBeat carries early (negative) offset on the default position")
     func nextBeatWithEarlyOffset() async throws {
         let earlyTrial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
@@ -215,13 +219,14 @@ struct TimingOffsetDetectionSessionTests {
         await f.sequencer.waitForStart()
 
         let beat = f.session.nextBeat()
+        let defaultIndex = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition - 1
 
-        guard case let .note(_, offset2) = beat.subdivisions[2] else {
-            Issue.record("Expected subdivision 2 to be a note")
+        guard case let .note(_, offset) = beat.subdivisions[defaultIndex] else {
+            Issue.record("Expected subdivision \(defaultIndex) to be a note")
             return
         }
-        #expect(offset2 == earlyTrial.offset.duration)
-        #expect(offset2 < .zero)
+        #expect(offset == earlyTrial.offset.duration)
+        #expect(offset < .zero)
 
         f.session.stop()
     }
@@ -267,17 +272,6 @@ struct TimingOffsetDetectionSessionTests {
         }
 
         f.session.stop()
-    }
-
-    @Test("testedNoteIndex is consistent with help text ordinal")
-    func testedNoteIndexConsistentWithHelpText() {
-        // Verify the English source key (locale-independent) embeds the correct ordinal.
-        // If testedNoteIndex changes, this test forces updating the localization key too.
-        let englishKey = "You'll hear a repeating four-click pattern. The **third** click in each cycle may arrive slightly **early** or **late**. Your job is to decide which one it was."
-        let ordinals = ["**first**", "**second**", "**third**", "**fourth**"]
-        let expectedOrdinal = ordinals[TimingOffsetDetectionSession.testedNoteIndex]
-        #expect(englishKey.contains(expectedOrdinal),
-                "Localization key must contain '\(expectedOrdinal)' to match testedNoteIndex=\(TimingOffsetDetectionSession.testedNoteIndex)")
     }
 
     // MARK: - litDotCount Tracking

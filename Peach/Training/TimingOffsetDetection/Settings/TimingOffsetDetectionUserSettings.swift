@@ -2,6 +2,7 @@ import Foundation
 
 protocol TimingOffsetDetectionUserSettings {
     var maxRepetitions: Int { get }
+    var offsetNotePosition: Int { get }
 }
 
 final class AppTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSettings {
@@ -20,5 +21,14 @@ final class AppTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSetti
             return TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions
         }
         return stored
+    }
+
+    var offsetNotePosition: Int {
+        guard defaults.object(forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition) != nil else {
+            return TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
+        }
+        return TimingOffsetDetectionSettingsKeys.clamped(
+            defaults.integer(forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
+        )
     }
 }

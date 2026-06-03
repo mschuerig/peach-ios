@@ -42,24 +42,27 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
 
     /// Declares the rhythm tempo section (shared with
-    /// ``ContinuousRhythmMatchingDiscipline``) followed by the
-    /// TOD-specific maximum-repetitions section. The aggregator dedupes by
-    /// ``DisciplineSettingsSection/id``: the tempo section renders once when
-    /// both rhythm disciplines are active, while `"tod.maxRepetitions"` is
-    /// TOD-only and never collides.
+    /// ``ContinuousRhythmMatchingDiscipline``) followed by the TOD-specific
+    /// offset-note-position and maximum-repetitions sections. The aggregator
+    /// dedupes by ``DisciplineSettingsSection/id``: the tempo section renders
+    /// once when both rhythm disciplines are active; the TOD-specific ids
+    /// never collide.
     var settingsSections: [DisciplineSettingsSection] {
         [
             DisciplineSettingsSection(id: SharedRhythmSectionID.tempo) { RhythmTempoSettingsSection() },
+            DisciplineSettingsSection(id: "tod.offsetNotePosition") { TimingOffsetDetectionOffsetNotePositionSettingsSection() },
             DisciplineSettingsSection(id: "tod.maxRepetitions") { TimingOffsetDetectionMaxRepetitionsSettingsSection() },
         ]
     }
 
     /// Inherits the rhythm tempo help (shared with
-    /// ``ContinuousRhythmMatchingDiscipline``) and appends the help for the
-    /// TOD-specific maximum-repetitions setting so each contributed section
-    /// has accompanying documentation in the Settings help sheet.
+    /// ``ContinuousRhythmMatchingDiscipline``) and appends help for each
+    /// TOD-specific section so the Settings help sheet documents every
+    /// contributed control.
     var settingsHelp: [HelpSection] {
-        ContinuousRhythmMatchingHelp.tempoSettingsHelp + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp
+        ContinuousRhythmMatchingHelp.tempoSettingsHelp
+            + TimingOffsetDetectionHelp.offsetNotePositionSettingsHelp
+            + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp
     }
 
     /// Mirrors the rhythm spectrogram profile help for the same reason as

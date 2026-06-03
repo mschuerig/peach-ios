@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-03 # Epic 82 added (Find the Off Note — TOD pattern & slot flexibility).
+# last_updated: 2026-06-03 # Story 82.1 done (offset note position setting).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -727,8 +727,8 @@ development_status:
   # explicitly deferred to a follow-up epic — the catalog domain layer in
   # 82.5 is tuplet-capable by construction (it wraps `Beat`), so the deferral
   # is renderer-only and incurs no data-model rework.
-  epic-82: backlog
-  82-1-offset-slot-as-setting: backlog
+  epic-82: in-progress
+  82-1-offset-slot-as-setting: done
   82-2-offset-note-terminology-decision: backlog
   82-3-initial-pattern-catalog-and-picker-ux: backlog
   82-4-apply-offset-note-terminology-rename: backlog

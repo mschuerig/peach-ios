@@ -6,6 +6,9 @@ struct TimingOffsetDetectionScreen: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.verticalSizeClass) private var verticalSizeClass
 
+    @AppStorage(TimingOffsetDetectionSettingsKeys.offsetNotePosition)
+    private var offsetNotePosition: Int = TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition
+
     @ScaledMetric(relativeTo: .title) private var buttonIconSize: CGFloat = 80
     @ScaledMetric(relativeTo: .title) private var buttonIconSizeCompact: CGFloat = 60
 
@@ -16,8 +19,11 @@ struct TimingOffsetDetectionScreen: View {
     var body: some View {
         VStack(spacing: 8) {
             statsHeader
-            TimingDotView(litCount: session.litDotCount)
-                .padding(.vertical, 8)
+            TimingDotView(
+                litCount: session.litDotCount,
+                testedNoteIndex: TimingOffsetDetectionSettingsKeys.clamped(offsetNotePosition) - 1
+            )
+            .padding(.vertical, 8)
             answerButtonsGroup
         }
         .padding()

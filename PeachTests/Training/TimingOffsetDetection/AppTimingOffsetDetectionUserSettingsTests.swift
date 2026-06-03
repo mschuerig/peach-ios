@@ -42,5 +42,37 @@ struct AppTimingOffsetDetectionUserSettingsTests {
 
         #expect(port.maxRepetitions == 7)
     }
+
+    @Test("offsetNotePosition returns the default when no value is stored")
+    func offsetNotePositionMissingKeyReturnsDefault() {
+        let port = AppTimingOffsetDetectionUserSettings()
+        port.defaults = Self.makeSuite()
+
+        #expect(port.offsetNotePosition == TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition)
+    }
+
+    @Test(
+        "offsetNotePosition returns the default when the stored value is out of range",
+        arguments: [0, -1, 5, 99]
+    )
+    func offsetNotePositionOutOfRangeReturnsDefault(stored: Int) {
+        let port = AppTimingOffsetDetectionUserSettings()
+        port.defaults = Self.makeSuite()
+        port.defaults.set(stored, forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
+
+        #expect(port.offsetNotePosition == TimingOffsetDetectionSettingsKeys.defaultOffsetNotePosition)
+    }
+
+    @Test(
+        "offsetNotePosition returns the stored value when in 1...4",
+        arguments: [1, 2, 3, 4]
+    )
+    func offsetNotePositionValidValueIsReturned(stored: Int) {
+        let port = AppTimingOffsetDetectionUserSettings()
+        port.defaults = Self.makeSuite()
+        port.defaults.set(stored, forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
+
+        #expect(port.offsetNotePosition == stored)
+    }
 }
 #endif

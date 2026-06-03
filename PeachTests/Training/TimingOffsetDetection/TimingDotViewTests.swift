@@ -32,11 +32,6 @@ struct TimingDotViewTests {
         }
     }
 
-    @Test("tested note index matches session's tested note index")
-    func testedNoteIndex() async {
-        #expect(TimingDotView.testedNoteIndex == TimingOffsetDetectionSession.testedNoteIndex)
-    }
-
     @Test("overlap offset is half the dot diameter")
     func overlapOffset() async {
         #expect(abs(TimingDotView.overlapOffset - TimingDotView.dotDiameter / 2) < 0.001)
@@ -47,12 +42,11 @@ struct TimingDotViewTests {
         #expect(abs(TimingDotView.testedNoteFrameWidth - (TimingDotView.dotDiameter + TimingDotView.overlapOffset)) < 0.001)
     }
 
-    @Test("isTestedNote returns true only for index 2")
-    func isTestedNote() async {
-        #expect(TimingDotView.isTestedNote(index: 0) == false)
-        #expect(TimingDotView.isTestedNote(index: 1) == false)
-        #expect(TimingDotView.isTestedNote(index: 2) == true)
-        #expect(TimingDotView.isTestedNote(index: 3) == false)
+    @Test("isTestedNote returns true only for the supplied testedNoteIndex", arguments: [0, 1, 2, 3])
+    func isTestedNote(testedNoteIndex: Int) async {
+        for index in 0..<4 {
+            #expect(TimingDotView.isTestedNote(index: index, testedNoteIndex: testedNoteIndex) == (index == testedNoteIndex))
+        }
     }
 }
 #endif

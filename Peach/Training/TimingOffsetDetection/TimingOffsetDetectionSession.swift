@@ -88,10 +88,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     // MARK: - Constants
 
-    /// Index of the note that receives the timing offset (0-based among 4 sixteenth notes).
-    /// The help text in TimingOffsetDetectionScreen refers to this position by ordinal name ("third").
-    static let testedNoteIndex = 2
-
     /// 4 sixteenths per beat. Internal (not private) so tests can compute subdivision-aligned sample positions.
     static let subdivisionsPerBeat: Int = 4
 
@@ -228,14 +224,19 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     // MARK: - BeatProvider Protocol
 
     func nextBeat() -> Beat {
-        guard let trial = currentTrial else { return Self.silentBeat }
-        return Self.buildBeat(for: trial)
+        guard let trial = currentTrial, let settings else { return Self.silentBeat }
+        return Self.buildBeat(for: trial, offsetNotePosition: settings.offsetNotePosition)
     }
 
-    static func buildBeat(for trial: TimingOffsetDetectionTrial) -> Beat {
+    static func buildBeat(for trial: TimingOffsetDetectionTrial, offsetNotePosition: Int) -> Beat {
+        precondition(
+            TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange.contains(offsetNotePosition),
+            "offsetNotePosition must be in \(TimingOffsetDetectionSettingsKeys.validOffsetNotePositionRange)"
+        )
+        let offsetIndex = offsetNotePosition - 1
         let subdivisions: [Subdivision] = (0..<subdivisionsPerBeat).map { index in
             let velocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
-            let offset: Duration = (index == testedNoteIndex) ? trial.offset.duration : .zero
+            let offset: Duration = (index == offsetIndex) ? trial.offset.duration : .zero
             return .note(velocity: velocity, offset: offset)
         }
         return Beat(subdivisions: subdivisions)

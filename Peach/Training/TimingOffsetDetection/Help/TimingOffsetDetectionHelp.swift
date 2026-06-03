@@ -5,7 +5,7 @@ enum TimingOffsetDetectionHelp {
     static let trainingScreen: [HelpSection] = [
         HelpSection(
             title: String(localized: "Goal"),
-            body: String(localized: "You'll hear a repeating four-click pattern. The **third** click in each cycle may arrive slightly **early** or **late**. Your job is to decide which one it was.")
+            body: String(localized: "You'll hear a repeating four-note pattern. One of the four notes in each cycle may arrive slightly **early** or **late** — choose which one in Settings. Your job is to decide which it was.")
         ),
         HelpSection(
             title: String(localized: "Controls"),
@@ -17,7 +17,14 @@ enum TimingOffsetDetectionHelp {
         ),
         HelpSection(
             title: String(localized: "Difficulty"),
-            body: String(localized: "The percentage shows how far off-beat the last click was — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
+            body: String(localized: "The percentage shows how far off-beat the last note was — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
+        ),
+    ]
+
+    static let offsetNotePositionSettingsHelp: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Offset Note Position"),
+            body: String(localized: "**Offset Note Position** chooses which of the four 16th notes in the pattern arrives slightly early or late on each trial. The other three notes stay exactly on the beat.")
         ),
     ]
 
