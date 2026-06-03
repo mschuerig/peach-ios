@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-03 # Story 82.1 done (offset note position setting).
+# last_updated: 2026-06-03 # Story 82.2 done (offset-note terminology decision).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -729,7 +729,7 @@ development_status:
   # is renderer-only and incurs no data-model rework.
   epic-82: in-progress
   82-1-offset-slot-as-setting: done
-  82-2-offset-note-terminology-decision: backlog
+  82-2-offset-note-terminology-decision: done
   82-3-initial-pattern-catalog-and-picker-ux: backlog
   82-4-apply-offset-note-terminology-rename: backlog
   82-5-pattern-catalog-domain-layer: backlog

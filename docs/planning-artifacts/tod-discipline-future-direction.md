@@ -5,17 +5,25 @@
 **Context:** UX discussion (Sally) on extending Timing Offset Detection beyond its current fixed third-of-four-16th-notes layout. Captured to inform the upcoming "which slot carries the offset" setting and to keep future expansion cheap.
 **Implemented by:** Epic 82 — *Find the Off Note — TOD Pattern & Slot Flexibility* (`docs/planning-artifacts/epics.md`). Tuplets remain deferred to a follow-up epic per the call below.
 
-## Open: terminology
+## Resolved: terminology
 
-We need a proper term for the note in the pattern that carries the timing offset. The term must:
+**Term:** *Offset Note* (noun). **Settings-label form:** *Offset Note Position* (1-based). **Code identifier:** `offsetNotePosition`. **German:** *Position der Offset-Note* with body copy *Wähle, welche der vier Sechzehntelnoten den Timing-Offset trägt.*
 
-- Frame the discipline as **detecting unintentional playing errors**, not as cataloging deliberate rhythmic gestures.
-- Avoid collision with **rhythmic displacement** (music-theory term for intentional, grid-aware shifts) — the opposite of what TOD trains. "Displaced" is therefore rejected.
-- Read naturally in setting labels and German localization. Consult `agent-music-domain-expert` (Adam) before fixing.
+**Decided:** 2026-06-03 (story 82.2) after re-consulting `agent-music-domain-expert` (Adam).
 
-**Deferred.** Use generic placeholders ("offset slot," "offset position") in interim code, UI strings, settings keys, and analytics until a proper term is chosen.
+**Rationale (against each constraint):**
+
+- *Unintentional-error framing.* "Offset" names the *symptom* — a measurable temporal deviation from the implied grid — not a *gesture*. That keeps the discipline pointed at temporal fact rather than at deliberate musical choice. Directional pedagogical nouns ("rushed", "dragged", "lagging") pre-commit to a polarity and were rejected; judgmental nouns ("errant", "misplaced", "wayward") assert wrongness the discipline does not assert.
+- *No collision with rhythmic displacement.* "Offset" is borrowed from engineering/measurement, not from music theory. It arrives at the user without the music-theory luggage that "displaced" carries (intentional, grid-aware metric shift). The "no displaced" guardrail stays in place — see `feedback_tod_no_displaced_term` in the auto-memory — to stop future contributors from translating "offset" back into "displaced".
+- *Natural EN + informal DE.* "Offset Note Position" reads cleanly in an English Settings label. "Offset" is established Anglo-loan vocabulary in technical-musical German (cf. *Offset-Druck*, *Timing-Offset*); *Versatz / Versatznote* would be more native but sounds slightly archaic and risks confusion with grace-note adjacent vocabulary. The shipped German with informal *du* (*Wähle …*) holds.
+
+**Vocabulary boundary:** "Slot" remains a code/engineering term only — engineering layers in 82.5–82.6 may speak of *pickable slots* and *rest slots* in the pattern data structure, but the user-facing noun for the chosen audible position is always *Note*. The user picks an *Offset Note Position*; the code addresses *slots* within the pattern.
+
+**Implementation note:** The English and German strings shipped via story 82.1 already match the settled term; no string edits are required. Code identifiers were introduced under the same term in 82.1 and need no rename. The terminology rename in story 82.4 therefore focuses on removing the "placeholder, see 82.2" caveats from code comments, test names, and this doc's *Near-term step* / *Future vision* sections.
 
 ## Future vision (not now)
+
+> **Note:** Placeholder-era language below (e.g. "**Offset slot**", "Slot selection depends on the pattern") predates the *Resolved: terminology* section above and is left in place verbatim — the cleanup to "Offset Note Position" is owned by story 82.4 and applied across this doc, code, and comments in one sweep.
 
 TOD will expand from a fixed pattern to a settings model with two independent axes:
 
@@ -30,6 +38,8 @@ Two separate widgets. Slot selection depends on the pattern; changing the patter
 
 ## Near-term step — slot selection as a setting
 
+> **Note:** Story 82.1 shipped this step. The placeholder-era language in the bullets below (e.g. "which slot carries the offset", "Use the placeholder term consistently") predates the terminology resolution above and is left in place verbatim — the cleanup is owned by story 82.4 and applied across code, comments, and this section in one sweep, not piecemeal.
+
 The immediate next step is to make today's hard-coded third-of-four a user setting (one of four slots). Guidance to keep future expansion cheap:
 
 - **Frame the widget generically.** Not "third of four" — "which slot carries the offset." Today's pattern is fixed (straight 16ths) so the widget shows four slots; the same widget should scale to N without redesign.
@@ -41,10 +51,9 @@ The immediate next step is to make today's hard-coded third-of-four a user setti
 
 ## Open questions to revisit before building the future expansion
 
-- Proper term for the offset-carrying note (above).
-- Pattern-catalog UI categorization (likely *Straight / Gapped / Syncopated / Tuplet*; not decided).
-- Pattern preview rendering (text glyphs like `* - * *` vs. proportional timeline strip).
-- How slot selection presents when the pattern has rests — disabled-tap state, visual contrast, accessibility labels.
+- Pattern-catalog UI categorization (likely *Straight / Gapped / Syncopated / Tuplet*; not decided). Owned by 82.3.
+- Pattern preview rendering (text glyphs like `* - * *` vs. proportional timeline strip). Owned by 82.3.
+- How slot selection presents when the pattern has rests — disabled-tap state, visual contrast, accessibility labels. Owned by 82.6.
 
 ## References
 
