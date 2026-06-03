@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-03 # Story 81.3 done (piano-keyboard note range control).
+# last_updated: 2026-06-03 # Epic 82 added (Find the Off Note — TOD pattern & slot flexibility).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -711,3 +711,28 @@ development_status:
   81-3-piano-keyboard-for-training-note-range: done
   epic-81-retrospective: optional
   epic-80-retrospective: optional
+
+  # Epic 82: Find the Off Note — TOD Pattern & Slot Flexibility
+  # Source: UX design discussion with Sally, 2026-06-03 (conversation thread).
+  # Long-form design direction in docs/planning-artifacts/tod-discipline-future-direction.md.
+  # Loosens TOD beyond its current fixed third-of-four-16ths layout: first by
+  # making the offset-carrying slot a setting (82.1, against today's pattern),
+  # then by introducing a curated pattern catalog wrapping the existing
+  # Beat/Subdivision engine (already tuplet- and rest-capable). Terminology for
+  # the offset-carrying note is unresolved and gets settled in 82.2 before
+  # being applied across the surface in 82.4.
+  # Work order: 82.1 ships independently; 82.2 ∥ 82.3; 82.4 ← 82.2;
+  # 82.5 ← 82.3; 82.6 ← 82.4 + 82.5; 82.7 ← 82.6. Each story = own commit + PR.
+  # Tuplet patterns and the proportional-timeline renderer they require are
+  # explicitly deferred to a follow-up epic — the catalog domain layer in
+  # 82.5 is tuplet-capable by construction (it wraps `Beat`), so the deferral
+  # is renderer-only and incurs no data-model rework.
+  epic-82: backlog
+  82-1-offset-slot-as-setting: backlog
+  82-2-offset-note-terminology-decision: backlog
+  82-3-initial-pattern-catalog-and-picker-ux: backlog
+  82-4-apply-offset-note-terminology-rename: backlog
+  82-5-pattern-catalog-domain-layer: backlog
+  82-6-pattern-and-slot-picker-settings-ui: backlog
+  82-7-initial-pattern-catalog-content: backlog
+  epic-82-retrospective: optional
