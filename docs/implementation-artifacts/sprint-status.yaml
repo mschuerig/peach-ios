@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-03 # Story 81.2 done (TOD discrete-stops slider).
+# last_updated: 2026-06-03 # Story 81.3 done (piano-keyboard note range control).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -708,6 +708,6 @@ development_status:
   epic-81: in-progress
   81-1-continuous-value-slider-taxonomy-and-stepper-migration: done
   81-2-tod-max-repetitions-discrete-stops-slider: done
-  81-3-piano-keyboard-for-training-note-range: backlog
+  81-3-piano-keyboard-for-training-note-range: done
   epic-81-retrospective: optional
   epic-80-retrospective: optional

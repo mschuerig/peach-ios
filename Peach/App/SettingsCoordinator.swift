@@ -48,6 +48,19 @@ final class SettingsCoordinator {
         )
     }
 
+    func playSoundPreview(note: MIDINote, duration: Duration) async {
+        let frequency = userSettings.tuningSystem.frequency(
+            for: note,
+            referencePitch: userSettings.referencePitch
+        )
+        try? await notePlayer.play(
+            frequency: frequency,
+            duration: duration,
+            velocity: userSettings.velocity,
+            amplitudeDB: Self.previewAmplitude
+        )
+    }
+
     func stopSoundPreview() async {
         try? await notePlayer.stopAll()
     }

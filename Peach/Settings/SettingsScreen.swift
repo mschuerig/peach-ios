@@ -104,17 +104,12 @@ struct SettingsScreen: View {
 
     private var trainingRangeSection: some View {
         Section(String(localized: "Training Range")) {
-            Stepper(
-                "Lowest Note: \(MIDINote(noteRangeMin).name)",
-                value: $noteRangeMin,
-                in: SettingsKeys.lowerBoundRange(noteRangeMax: noteRangeMax),
-                step: 1
-            )
-            Stepper(
-                "Highest Note: \(MIDINote(noteRangeMax).name)",
-                value: $noteRangeMax,
-                in: SettingsKeys.upperBoundRange(noteRangeMin: noteRangeMin),
-                step: 1
+            NoteRangeSelector(
+                lowerBound: $noteRangeMin,
+                upperBound: $noteRangeMax,
+                onCommit: { note in
+                    Task { await coordinator.playSoundPreview(note: note, duration: .milliseconds(400)) }
+                }
             )
         }
     }

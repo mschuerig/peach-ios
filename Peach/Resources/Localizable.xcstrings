@@ -994,6 +994,26 @@
         }
       }
     },
+    "Drag to set the highest training note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziehe, um den höchsten Trainings-Ton einzustellen"
+          }
+        }
+      }
+    },
+    "Drag to set the lowest training note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ziehe, um den tiefsten Trainings-Ton einzustellen"
+          }
+        }
+      }
+    },
     "Duration" : {
       "localizations" : {
         "de" : {
@@ -1333,6 +1353,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Höher"
+          }
+        }
+      }
+    },
+    "Highest Note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Höchster Ton"
           }
         }
       }
@@ -1688,6 +1718,26 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Tiefer"
+          }
+        }
+      }
+    },
+    "Lowest %@ · Highest %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiefster %@ · Höchster %@"
+          }
+        }
+      }
+    },
+    "Lowest Note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tiefster Ton"
           }
         }
       }
