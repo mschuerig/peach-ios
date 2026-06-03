@@ -51,9 +51,9 @@ The immediate next step is to make today's hard-coded third-of-four a user setti
 
 ## Open questions to revisit before building the future expansion
 
-- Pattern-catalog UI categorization (likely *Straight / Gapped / Syncopated / Tuplet*; not decided). Owned by 82.3.
-- Pattern preview rendering (text glyphs like `* - * *` vs. proportional timeline strip). Owned by 82.3.
-- How slot selection presents when the pattern has rests — disabled-tap state, visual contrast, accessibility labels. Owned by 82.6.
+- ~~Pattern-catalog UI categorization (likely *Straight / Gapped / Syncopated / Tuplet*; not decided). Owned by 82.3.~~ **Resolved by 82.3** → see [`tod-initial-pattern-catalog.md` § *Categorization*](tod-initial-pattern-catalog.md#categorization). Scheme is *Straight / Gapped / (Syncopated — reserved)*; UI ships flat in 82.6.
+- ~~Pattern preview rendering (text glyphs like `* - * *` vs. proportional timeline strip). Owned by 82.3.~~ **Resolved by 82.3** → see [`tod-initial-pattern-catalog.md` § *Preview Rendering*](tod-initial-pattern-catalog.md#preview-rendering). Reuse `TimingDotView`'s visual vocabulary at a smaller scale.
+- ~~How slot selection presents when the pattern has rests — disabled-tap state, visual contrast, accessibility labels. Owned by 82.6.~~ **Specified by 82.3** → see [`tod-initial-pattern-catalog.md` § *Pickable-position rule*](tod-initial-pattern-catalog.md#pickable-position-rule) and § *Picker Sketches*. 82.6 implements the picker against the specified treatment.
 
 ## References
 
