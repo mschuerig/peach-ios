@@ -107,11 +107,45 @@ struct SettingsScreen: View {
             NoteRangeSelector(
                 lowerBound: $noteRangeMin,
                 upperBound: $noteRangeMax,
-                onCommit: { note in
-                    Task { await coordinator.playSoundPreview(note: note, duration: .milliseconds(400)) }
-                }
+                onCommit: { note in playRangePreview(note: note) }
+            )
+            Stepper(
+                "Lowest Note: \(MIDINote(noteRangeMin).name)",
+                value: lowerNoteRangeBinding,
+                in: SettingsKeys.lowerBoundRange(noteRangeMax: noteRangeMax),
+                step: 1
+            )
+            Stepper(
+                "Highest Note: \(MIDINote(noteRangeMax).name)",
+                value: upperNoteRangeBinding,
+                in: SettingsKeys.upperBoundRange(noteRangeMin: noteRangeMin),
+                step: 1
             )
         }
+    }
+
+    private var lowerNoteRangeBinding: Binding<Int> {
+        Binding(
+            get: { noteRangeMin },
+            set: { newValue in
+                noteRangeMin = newValue
+                playRangePreview(note: MIDINote(newValue))
+            }
+        )
+    }
+
+    private var upperNoteRangeBinding: Binding<Int> {
+        Binding(
+            get: { noteRangeMax },
+            set: { newValue in
+                noteRangeMax = newValue
+                playRangePreview(note: MIDINote(newValue))
+            }
+        )
+    }
+
+    private func playRangePreview(note: MIDINote) {
+        Task { await coordinator.playSoundPreview(note: note, duration: .milliseconds(400)) }
     }
 
     private var intervalSection: some View {

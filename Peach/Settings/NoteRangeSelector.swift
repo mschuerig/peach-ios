@@ -53,7 +53,7 @@ struct NoteRangeSelector: View {
     private static let blackKeyHeight: CGFloat = 40
     private static let blackKeyWidthRatio: CGFloat = 0.62
     private static let markerRowHeight: CGFloat = 30
-    private static let labelRowHeight: CGFloat = 14
+    private static let labelRowHeight: CGFloat = 20
     private static let totalKeyboardHeight: CGFloat =
         markerRowHeight + whiteKeyHeight + labelRowHeight + 8
     private static let minKeyboardWidth: CGFloat = 416 // 52 white keys × 8 pt
@@ -151,9 +151,9 @@ struct NoteRangeSelector: View {
 
     private func keyboardStack(totalWidth: CGFloat) -> some View {
         VStack(spacing: 4) {
-            markerRow(totalWidth: totalWidth)
-            keysRow(totalWidth: totalWidth)
             labelsRow(totalWidth: totalWidth)
+            keysRow(totalWidth: totalWidth)
+            markerRow(totalWidth: totalWidth)
         }
         .frame(width: totalWidth)
         .coordinateSpace(.named(Self.keyboardCoordinateSpace))
@@ -229,8 +229,25 @@ struct NoteRangeSelector: View {
                         y: Self.labelRowHeight / 2
                     )
             }
+            liveBoundHUD(for: lowerNote, totalWidth: totalWidth)
+            liveBoundHUD(for: upperNote, totalWidth: totalWidth)
         }
         .frame(width: totalWidth, height: Self.labelRowHeight)
+    }
+
+    private func liveBoundHUD(for note: MIDINote, totalWidth: CGFloat) -> some View {
+        Text(note.name)
+            .font(.caption.weight(.semibold))
+            .monospacedDigit()
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(Capsule().fill(Color.accentColor))
+            .foregroundStyle(.white)
+            .accessibilityHidden(true)
+            .position(
+                x: Self.layout.xPosition(forNote: note, totalWidth: totalWidth),
+                y: Self.labelRowHeight / 2
+            )
     }
 
     // MARK: - Gesture / tap / key handlers
@@ -431,7 +448,7 @@ private struct PianoKey: View {
                 RoundedRectangle(cornerRadius: 2)
                     .stroke(Color.gray.opacity(0.5), lineWidth: 0.5)
             )
-            .opacity(isInRange ? 1.0 : 0.35)
+            .opacity(isInRange ? 1.0 : 0.2)
             .accessibilityLabel(Text(note.name))
     }
 
@@ -445,6 +462,10 @@ private struct BoundMarker: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            Image(systemName: "arrowtriangle.up.fill")
+                .font(.caption2)
+                .foregroundStyle(Color.accentColor)
+                .offset(y: 2)
             Text(note.name)
                 .font(.caption.weight(.semibold))
                 .monospacedDigit()
@@ -452,10 +473,6 @@ private struct BoundMarker: View {
                 .padding(.vertical, 2)
                 .background(Capsule().fill(Color.accentColor))
                 .foregroundStyle(.white)
-            Image(systemName: "arrowtriangle.down.fill")
-                .font(.caption2)
-                .foregroundStyle(Color.accentColor)
-                .offset(y: -2)
         }
         .contentShape(Rectangle())
         .accessibilityHidden(true)

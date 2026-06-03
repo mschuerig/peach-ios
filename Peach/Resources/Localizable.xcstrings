@@ -1393,7 +1393,6 @@
       }
     },
     "Highest Note: %@" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1771,7 +1770,6 @@
       }
     },
     "Lowest Note: %@" : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
