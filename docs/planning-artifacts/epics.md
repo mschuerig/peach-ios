@@ -7329,6 +7329,8 @@ so that it can be approved and published on the App Store.
 
 Makes Peach available to Mac users via the Mac App Store and Homebrew. After this epic, Mac users can install Peach from their preferred channel.
 
+**Status:** Paused 2026-06-01 after iOS App Store release. Resume after Epic 80 (Timing Offset Detection continuous loop) closes. All stories remain `ready-for-dev`.
+
 ### Story 74.1: Submit to Mac App Store
 
 As a **Mac user**,
