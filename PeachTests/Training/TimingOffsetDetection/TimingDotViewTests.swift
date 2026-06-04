@@ -42,11 +42,50 @@ struct TimingDotViewTests {
         #expect(abs(TimingDotView.testedNoteFrameWidth - (TimingDotView.dotDiameter + TimingDotView.overlapOffset)) < 0.001)
     }
 
-    @Test("isTestedNote returns true only for the supplied testedNoteIndex", arguments: [0, 1, 2, 3])
-    func isTestedNote(testedNoteIndex: Int) async {
-        for index in 0..<4 {
-            #expect(TimingDotView.isTestedNote(index: index, testedNoteIndex: testedNoteIndex) == (index == testedNoteIndex))
-        }
+    // MARK: - offsetGridIndex(for:offsetNotePosition:)
+
+    @Test("offsetGridIndex returns nil when offsetNotePosition is nil (picker preview)")
+    func offsetGridIndexNilWhenPositionAbsent() async {
+        let grid = TimingDotView.offsetGridIndex(
+            for: .pattern1111,
+            offsetNotePosition: nil
+        )
+        #expect(grid == nil)
+    }
+
+    @Test(
+        "offsetGridIndex for pattern_1111 maps audible 1-based → grid 0-based identity",
+        arguments: [(1, 0), (2, 1), (3, 2), (4, 3)]
+    )
+    func offsetGridIndexPattern1111Identity(input: (Int, Int)) async {
+        let (audiblePosition, expectedGrid) = input
+        let grid = TimingDotView.offsetGridIndex(
+            for: .pattern1111,
+            offsetNotePosition: OffsetNotePosition(audiblePosition)
+        )
+        #expect(grid == expectedGrid)
+    }
+
+    @Test("offsetGridIndex translates audible→grid via audibleToGrid for a rest-bearing pattern")
+    func offsetGridIndexRestBearingTranslation() async {
+        let fixture = TimingOffsetDetectionPatternFixtures.pattern1011
+
+        // audible 2 → grid 2, audible 3 → grid 3 — NOT identity.
+        // This is the deferred-work bug closed by 82.6: an old call site that
+        // used `offsetNotePosition.zeroBasedIndex` would have produced grid 1
+        // (a rest cell) for audible position 2.
+        #expect(TimingDotView.offsetGridIndex(for: fixture, offsetNotePosition: OffsetNotePosition(2)) == 2)
+        #expect(TimingDotView.offsetGridIndex(for: fixture, offsetNotePosition: OffsetNotePosition(3)) == 3)
+    }
+
+    @Test("offsetGridIndex returns nil when the audible position is out of range")
+    func offsetGridIndexOutOfRange() async {
+        // pattern_test_1010 has audibleCount == 2; audible position 3 is out of range.
+        let grid = TimingDotView.offsetGridIndex(
+            for: TimingOffsetDetectionPatternFixtures.pattern1010,
+            offsetNotePosition: OffsetNotePosition(3)
+        )
+        #expect(grid == nil)
     }
 }
 #endif

@@ -5,7 +5,7 @@ enum TimingOffsetDetectionHelp {
     static let trainingScreen: [HelpSection] = [
         HelpSection(
             title: String(localized: "Goal"),
-            body: String(localized: "You'll hear a repeating four-note pattern. One of the four notes in each cycle may arrive slightly **early** or **late** — choose which one in Settings. Your job is to decide which it was.")
+            body: String(localized: "You'll hear a repeating rhythmic pattern. One of the notes in the pattern arrives slightly **early** or **late** on each trial — choose which one in Settings. Your job is to decide which it was.")
         ),
         HelpSection(
             title: String(localized: "Controls"),
@@ -21,10 +21,17 @@ enum TimingOffsetDetectionHelp {
         ),
     ]
 
+    static let patternPickerSettingsHelp: [HelpSection] = [
+        HelpSection(
+            title: String(localized: "Pattern"),
+            body: String(localized: "**Pattern** picks the rhythmic figure played on each trial. Each row shows the pattern's shape as a row of dots — a large dot marks the first note (the metric anchor), smaller dots mark the other notes, and empty cells mark rests. Picking a pattern resets the Offset Note Position to that pattern's default.")
+        ),
+    ]
+
     static let offsetNotePositionSettingsHelp: [HelpSection] = [
         HelpSection(
             title: String(localized: "Offset Note Position"),
-            body: String(localized: "**Offset Note Position** chooses which of the four 16th notes in the pattern arrives slightly early or late on each trial. The other three notes stay exactly on the beat.")
+            body: String(localized: "**Offset Note Position** chooses which note in the pattern carries the timing offset on each trial. The other notes stay exactly on the beat. The first note (the metric anchor) is never selectable — the listener uses it as the reference for the early/late judgment.")
         ),
     ]
 

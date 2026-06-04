@@ -1,7 +1,21 @@
 import SwiftUI
 
-/// Mirrors ``RhythmGapPositionsSettingsSection``'s visual chrome but is
-/// single-select; `GridToggleRow` is multi-toggle and isn't reusable here.
+/// Rest-aware, pattern-driven slot picker. Renders one cell per grid
+/// subdivision of the active ``TimingOffsetDetectionPattern``; cell behavior is
+/// classified by ``cellKind(for:gridIndex:)``:
+///
+/// - **Anchor** — `.note` at the first audible position. Large accent dot,
+///   non-tappable, VoiceOver-focusable as "Anchor note, not selectable".
+/// - **Pickable** — `.note` whose audible position is in
+///   ``TimingOffsetDetectionPattern/pickable``. Tappable; the doubled-glyph
+///   indicator overlays the selected cell.
+/// - **Rest** — `.rest` (and `.nested`, defensively). Empty cell of preserved
+///   width, not focusable.
+///
+/// Uses ``TimingDotView`` size constants and the shared
+/// ``TimingDotView/doubledGlyph(diameter:overlapOffset:)`` primitive so the
+/// slot vocabulary stays in lockstep with the training-screen indicator and
+/// the pattern preview.
 struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     @AppStorage(TimingOffsetDetectionSettingsKeys.offsetNotePosition)
     private var offsetNotePosition: Int = OffsetNotePosition.default.rawValue
@@ -10,9 +24,6 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     private var selectedPatternId: String = TimingOffsetDetectionPatternCatalog.defaultPatternId
 
     @ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32
-
-    private static let positions: [OffsetNotePosition] =
-        OffsetNotePosition.validRange.map { OffsetNotePosition($0) }
 
     private var activePattern: TimingOffsetDetectionPattern {
         TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId)
@@ -23,34 +34,124 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     }
 
     var body: some View {
+        let pattern = activePattern
+        let selected = effectivePosition
         Section {
             HStack(spacing: 4) {
-                ForEach(Self.positions, id: \.self) { position in
-                    cell(for: position)
+                ForEach(pattern.subdivisions.indices, id: \.self) { gridIndex in
+                    cell(at: gridIndex, in: pattern, selected: selected)
                 }
             }
         } header: {
             Text(String(localized: "Offset Note Position"))
         } footer: {
-            Text(String(localized: "Pick which of the four 16th notes carries the timing offset."))
+            Text(String(localized: "Pick which note carries the timing offset."))
         }
     }
 
-    private func cell(for position: OffsetNotePosition) -> some View {
-        let isActive = (position == effectivePosition)
-        return Button {
+    @ViewBuilder
+    private func cell(
+        at gridIndex: Int,
+        in pattern: TimingOffsetDetectionPattern,
+        selected: OffsetNotePosition
+    ) -> some View {
+        switch Self.cellKind(for: pattern, gridIndex: gridIndex) {
+        case .anchor:
+            anchorCell
+        case .pickable(let position):
+            pickableCell(position: position, isSelected: position == selected, audibleCount: pattern.audibleCount)
+        case .rest:
+            restCell
+        }
+    }
+
+    private var anchorCell: some View {
+        Circle()
+            .fill(.primary)
+            .frame(width: TimingDotView.beatOneDotDiameter, height: TimingDotView.beatOneDotDiameter)
+            .frame(width: cellSize, height: cellSize)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(String(localized: "Anchor note, not selectable"))
+            .accessibilityAddTraits(.isStaticText)
+    }
+
+    private func pickableCell(
+        position: OffsetNotePosition,
+        isSelected: Bool,
+        audibleCount: Int
+    ) -> some View {
+        Button {
             offsetNotePosition = position.rawValue
         } label: {
-            Text("\(position.rawValue)")
-                .font(.caption2)
+            glyph(isSelected: isSelected)
                 .frame(width: cellSize, height: cellSize)
-                .background(isActive ? Color.accentColor : Color.secondary.opacity(0.2))
-                .foregroundStyle(isActive ? .white : .secondary)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .platformHoverEffect()
-        .accessibilityLabel(String(localized: "Note \(position.rawValue) of \(Self.positions.count)"))
-        .accessibilityAddTraits(isActive ? [.isSelected] : [])
+        .accessibilityLabel(Self.pickableCellLabel(
+            position: position,
+            audibleCount: audibleCount
+        ))
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+    }
+
+    @ViewBuilder
+    private func glyph(isSelected: Bool) -> some View {
+        if isSelected {
+            TimingDotView.doubledGlyph(
+                diameter: TimingDotView.dotDiameter,
+                overlapOffset: TimingDotView.overlapOffset
+            )
+        } else {
+            Circle()
+                .fill(.primary)
+                .frame(width: TimingDotView.dotDiameter, height: TimingDotView.dotDiameter)
+        }
+    }
+
+    private var restCell: some View {
+        Color.clear
+            .frame(width: cellSize, height: cellSize)
+            .accessibilityHidden(true)
+    }
+
+    // MARK: - Logic (static for testability)
+
+    enum CellKind: Equatable {
+        case anchor
+        case pickable(OffsetNotePosition)
+        case rest
+    }
+
+    /// Classifies a single grid cell. The audible position for a `.note` cell
+    /// is derived from `pattern.audibleToGrid` via `firstIndex(of:)` — the
+    /// inverse of the audible → grid map.
+    static func cellKind(
+        for pattern: TimingOffsetDetectionPattern,
+        gridIndex: Int
+    ) -> CellKind {
+        switch pattern.subdivisions[gridIndex] {
+        case .rest, .nested:
+            return .rest
+        case .note:
+            guard let audibleZeroBased = pattern.audibleToGrid.firstIndex(of: gridIndex) else {
+                return .rest
+            }
+            let audiblePosition = audibleZeroBased + 1
+            return pattern.pickable.contains(audiblePosition)
+                ? .pickable(OffsetNotePosition(audiblePosition))
+                : .anchor
+        }
+    }
+
+    /// VoiceOver label for a pickable cell. K is the *audible* count per
+    /// `tod-initial-pattern-catalog.md` § *Pickable-position rule* — avoids the
+    /// audible-3-of-grid-4 mismatch on rest-bearing patterns.
+    static func pickableCellLabel(
+        position: OffsetNotePosition,
+        audibleCount: Int
+    ) -> String {
+        String(localized: "Note \(position.rawValue) of \(audibleCount)")
     }
 }

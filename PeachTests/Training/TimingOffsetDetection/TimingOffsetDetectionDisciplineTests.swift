@@ -6,26 +6,33 @@ import Foundation
 @Suite("TimingOffsetDetectionDiscipline UI contribution")
 struct TimingOffsetDetectionDisciplineTests {
 
-    @Test("settingsSections contributes the shared tempo section, the offset-note-position section, and the max-repetitions section, in that order")
+    @Test("settingsSections contributes tempo, pattern picker, offset-note-position, max-repetitions, in that order")
     func settingsSectionsContainAllEntriesInOrder() {
         let discipline = TimingOffsetDetectionDiscipline()
 
         let ids = discipline.settingsSections.map(\.id)
 
-        #expect(ids == [SharedRhythmSectionID.tempo, "tod.offsetNotePosition", "tod.maxRepetitions"])
+        #expect(ids == [
+            SharedRhythmSectionID.tempo,
+            "tod.patternPicker",
+            "tod.offsetNotePosition",
+            "tod.maxRepetitions",
+        ])
     }
 
-    @Test("settingsHelp concatenates the inherited tempo help, the offset-note-position help, and the max-repetitions help")
+    @Test("settingsHelp concatenates tempo, pattern picker, offset-note-position, and max-repetitions help")
     func settingsHelpConcatenatesAllSections() {
         let discipline = TimingOffsetDetectionDiscipline()
 
         let titles = discipline.settingsHelp.map(\.title)
         let expectedTitles = (ContinuousRhythmMatchingHelp.tempoSettingsHelp
+                              + TimingOffsetDetectionHelp.patternPickerSettingsHelp
                               + TimingOffsetDetectionHelp.offsetNotePositionSettingsHelp
                               + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp).map(\.title)
 
         #expect(titles == expectedTitles)
         #expect(titles.count == ContinuousRhythmMatchingHelp.tempoSettingsHelp.count
+                              + TimingOffsetDetectionHelp.patternPickerSettingsHelp.count
                               + TimingOffsetDetectionHelp.offsetNotePositionSettingsHelp.count
                               + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp.count)
     }

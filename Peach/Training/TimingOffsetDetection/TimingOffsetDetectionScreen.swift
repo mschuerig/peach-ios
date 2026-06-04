@@ -24,11 +24,13 @@ struct TimingOffsetDetectionScreen: View {
     }
 
     var body: some View {
+        let pattern = activePattern
         VStack(spacing: 8) {
             statsHeader
             TimingDotView(
-                litCount: session.litDotCount,
-                testedNoteIndex: activePattern.clampedOffsetNotePosition(offsetNotePosition).zeroBasedIndex
+                pattern: pattern,
+                offsetNotePosition: pattern.clampedOffsetNotePosition(offsetNotePosition),
+                litCount: session.litDotCount
             )
             .padding(.vertical, 8)
             answerButtonsGroup

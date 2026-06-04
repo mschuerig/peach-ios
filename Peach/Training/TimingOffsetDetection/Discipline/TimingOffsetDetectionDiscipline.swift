@@ -43,13 +43,14 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
 
     /// Declares the rhythm tempo section (shared with
     /// ``ContinuousRhythmMatchingDiscipline``) followed by the TOD-specific
-    /// offset-note-position and maximum-repetitions sections. The aggregator
-    /// dedupes by ``DisciplineSettingsSection/id``: the tempo section renders
-    /// once when both rhythm disciplines are active; the TOD-specific ids
-    /// never collide.
+    /// pattern, offset-note-position, and maximum-repetitions sections. The
+    /// aggregator dedupes by ``DisciplineSettingsSection/id``: the tempo
+    /// section renders once when both rhythm disciplines are active; the
+    /// TOD-specific ids never collide.
     var settingsSections: [DisciplineSettingsSection] {
         [
             DisciplineSettingsSection(id: SharedRhythmSectionID.tempo) { RhythmTempoSettingsSection() },
+            DisciplineSettingsSection(id: "tod.patternPicker") { TimingOffsetDetectionPatternPickerSettingsSection() },
             DisciplineSettingsSection(id: "tod.offsetNotePosition") { TimingOffsetDetectionOffsetNotePositionSettingsSection() },
             DisciplineSettingsSection(id: "tod.maxRepetitions") { TimingOffsetDetectionMaxRepetitionsSettingsSection() },
         ]
@@ -61,6 +62,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     /// contributed control.
     var settingsHelp: [HelpSection] {
         ContinuousRhythmMatchingHelp.tempoSettingsHelp
+            + TimingOffsetDetectionHelp.patternPickerSettingsHelp
             + TimingOffsetDetectionHelp.offsetNotePositionSettingsHelp
             + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp
     }
