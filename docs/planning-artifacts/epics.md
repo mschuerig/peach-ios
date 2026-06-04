@@ -8209,7 +8209,7 @@ so that I can pick a range in the instrument's own visual vocabulary instead of 
 
 - Tuplet patterns in the initial catalog. The catalog domain layer is tuplet-capable by construction (it wraps `Beat`, which supports `.nested(Beat)`), but the slot-picker UI primitive renders equal cells; introducing tuplet patterns later requires a proportional-timeline renderer, which is a renderer-only change with no data-model impact. Tuplets become a follow-up epic.
 - Arbitrary user-defined patterns. The catalog is curated; users pick from it but do not author entries.
-- Lifting the `PEACH_RESEARCH` build gate on TOD. Independent decision, follow-on epic.
+- ~~Lifting the `PEACH_RESEARCH` build gate on TOD. Independent decision, follow-on epic.~~ **Retroactively added as story 82.8** (2026-06-04) after the epic's pattern + slot work closed. TOD now ships in non-Research builds; Continuous Rhythm Matching stays research-only.
 - Changes to the offset *magnitude* control or the offset *direction* (early/late) control — both stay as-is.
 - Changes to `Beat` / `Subdivision` / `SoundFontStepSequencer` themselves. The engine is correct as-is; this epic only adds a wrapper layer above it.
 
@@ -8217,7 +8217,7 @@ so that I can pick a range in the instrument's own visual vocabulary instead of 
 
 **Approach:** Seven stories grouped into three stages. *Stage 1 (independent):* 82.1 ships slot choice against today's fixed pattern — the smallest blast radius, observable user value immediately. *Stage 2 (parallel design, no code):* 82.2 settles terminology; 82.3 curates the initial pattern catalog and locks the picker UX. *Stage 3 (implementation, cascading):* 82.4 applies the terminology rename; 82.5 introduces the `NamedPattern` catalog abstraction wrapping `Beat` (and refactors the TOD `BeatProvider` to consume it, with today's pattern as the sole entry — a behavioural no-op proving the wiring); 82.6 lands the Settings UI for pattern + rest-aware scalable slot picker (still with one catalog entry, but the controls now exist and work end-to-end); 82.7 ships the curated catalog content. Splitting 82.6 from 82.7 keeps the UI review surface distinct from the catalog-content review surface.
 
-**Work order:** 82.1 ships independently. 82.2 and 82.3 run in parallel after 82.1. 82.4 follows 82.2. 82.5 follows 82.3. 82.6 follows 82.4 + 82.5. 82.7 follows 82.6. Each story is its own commit and PR.
+**Work order:** 82.1 ships independently. 82.2 and 82.3 run in parallel after 82.1. 82.4 follows 82.2. 82.5 follows 82.3. 82.6 follows 82.4 + 82.5. 82.7 follows 82.6. 82.8 follows 82.7 (added retroactively after the epic's original close — see *Out of scope* annotation). Each story is its own commit and PR.
 
 ### Story 82.1: Offset slot as a setting on the current pattern
 
@@ -8274,3 +8274,40 @@ I want the initial set of patterns curated in 82.3 available to choose from,
 so that I can probe timing perception across varied rhythmic contexts (straight 16ths, gapped figures, syncopation) rather than only one.
 
 (Acceptance criteria to be elaborated at story-creation time. Sketch: register each pattern from the 82.3 catalog in `TODPatternCatalog`. For each entry: id, localized name (EN + DE via `bin/add-localization.swift`, sober factual copy), stylized notation glyph string for the in-picker preview, and the constructed `Beat`-builder applying the offset to the indexed pickable slot. Today's pattern remains as the default for existing settings (use a stable id and migration path documented in the story). No tuplet patterns in this story — the slot-picker renderer remains equal-cell; tuplets become a follow-up epic. Tests: each catalog entry produces a valid `Beat` (non-empty `events(...)`, no overlapping notes within a beat at the engine layer) for each pickable slot; per-slot metadata matches the catalog spec from 82.3; localized names round-trip through both languages; the running TOD session correctly schedules the offset on the chosen slot for each pattern in the catalog.)
+
+### Story 82.8: Lift the `PEACH_RESEARCH` gate for Timing Offset Detection
+
+As **a contributor preparing the next App Store cut**,
+I want `TimingOffsetDetectionDiscipline` registered in every build configuration, with `ContinuousRhythmMatchingDiscipline` remaining the only discipline behind `#if PEACH_RESEARCH`,
+so that the next release ships TOD as a regular discipline alongside the four pitch disciplines without bundling the CRM work that still requires sub-20 ms input latency.
+
+(Acceptance criteria — see `docs/implementation-artifacts/82-8-lift-tod-research-gate.md`. Sketch: hoist `TimingOffsetDetectionDiscipline()` out of the `#if PEACH_RESEARCH` block in `Peach/App/Training/DisciplineBootstrap.swift`; CRM stays inside. The fan-out across ~30 test files comes in three shapes: TOD-only test/mock files lose their wrapping guards wholesale; TOD-only fragments inside otherwise-shared test files are un-gated in place; mixed TOD+CRM blocks are split so TOD `@Test`s run in every configuration and CRM `@Test`s stay gated. Two `TrainingDataExporterTests` (`headerInExport`, `allRowsHave19Fields`) deliberately stay gated because they assert `columns.count == 19` and `columns[14] == "meanOffsetMs"` — both inherently coupled to the full Research schema. Shared rhythm-card tests in `SpectrogramDataTests` lose the file-wide guard because TOD's `profileCard` now exercises `SpectrogramData` in non-Research; the one CRM-specific `@Test` is re-gated individually. `TrainingLifecycleCoordinatorTests` loses its file-wide guard entirely — the suite's self-contained fixture compiles in both configurations. Stale-comment hygiene sweeps `Peach/Core/Training/Discipline/CSVHistoryRegistry.swift`, `docs/project-context.md`, `docs/arc42.md` (five locations), `docs/planning-artifacts/glossary.md` (two entries), and `docs/planning-artifacts/tod-discipline-future-direction.md`. The auto-memory `project_initial_release_pitch_only.md` is updated to mark itself as retiring once story 83.1 ships. Acceptance: pre-commit gate on all four schemes green with the non-Research test counts growing by exactly the count of TOD `@Test`s lifted; no surviving `#if PEACH_RESEARCH` block wraps a TOD-only `@Test` (the two `TrainingDataExporterTests` exceptions are schema-coupled, not TOD-coupled); `bin/add-localization.swift --missing` reports `0`. Marketing/release copy is **not** updated in this story — that lives in epic 83.)
+
+## Epic 83: Pre-Release Readiness for the Next App Store Cut
+
+**Theme:** Track every story that must complete before the next App Store cut ships. This is a flexible container, not a feature epic — stories land here when the user identifies them as release blockers, and the epic stays `in-progress` until the cut ships.
+
+**Motivation:** Story 82.8 lifted the `PEACH_RESEARCH` gate for Timing Offset Detection, so the next App Store cut will be the first version that ships TOD as a regular discipline. Several pieces of release-adjacent surface area still describe the *previous* shipping set (four pitch disciplines only): the App Store description, the App Review Notes, the in-app `HelpContent.appDescription`, and the auto-memory `project_initial_release_pitch_only.md`. The epic exists to collect those updates plus any other release blockers that surface as submission approaches.
+
+**Source:** Conversation at the close of epic 82 (2026-06-04), captured in `docs/implementation-artifacts/epic-83-context.md`.
+
+**Scope:** Documentation, localized strings, and auto-memory updates. No engine, view, schema, or @AppStorage changes. The shape of "release blocker" is intentionally open — stories may include screenshot updates, App Review Note revisions, App Store description refreshes, README/website updates, or anything else the user flags as blocking submission.
+
+**Explicitly out of scope:**
+
+- Open epics that are *not* release blockers. Epics 74 and 78 remain `in-progress` / `backlog` in their own blocks and can ship in a later cut — the user explicitly marked them as "no necessary ordering."
+- New training-discipline copy beyond TOD. Continuous Rhythm Matching stays research-only and stays out of every piece of user-facing copy this epic touches.
+- Screenshot regeneration (epic 79 covers that automation when needed).
+- Changes to the gate split itself — that landed in story 82.8.
+
+**Approach:** Add stories as the user identifies release blockers. Stories may run in parallel where they don't conflict. The epic flips from `in-progress` to `done` when the App Store cut ships, not when the last story in it is `done` (in case more blockers surface late).
+
+**Work order:** No fixed order yet. 83.1 (TOD release-copy sweep) is the only story currently drafted; it can ship at any time before submission.
+
+### Story 83.1: Update TOD-shipping release copy across App Store metadata, in-app description, and project memory
+
+As **a user discovering Peach on the App Store after the TOD-shipping release**,
+I want the App Store description, keywords, App Review Notes, and in-app "What is Peach?" section to mention the timing discipline alongside the pitch disciplines,
+so that the copy I read accurately describes what the installed app does.
+
+(Acceptance criteria — see `docs/implementation-artifacts/83-1-tod-release-copy-update.md`. Sketch: one sweep across the release-adjacent copy surface. Append a "Compare Timing" bullet to the English and German App Store description discipline lists (`docs/planning-artifacts/appstore-metadata.md`, around lines 41 and 99) and recompute the `Length:` annotations. Add one timing-relevant term to each keyword string (EN + DE) within the 100-char budget. Update the App Review Notes opening paragraph and discipline-list bullets so the reviewer is told about all five shipping disciplines, not four. Update `Peach/App/HelpContent.swift`'s `appDescription` constant so the in-app "What is Peach?" section no longer scopes the app to pitch perception; sync the German translation via `bin/add-localization.swift` or in-place in `Localizable.xcstrings` depending on whether the existing key is reused. Update or delete the auto-memory `project_initial_release_pitch_only.md` (and the matching `MEMORY.md` index line). The in-app **Training Disciplines** Info-screen section is registry-driven and needs no code edit — TOD already appears there as of 82.8. No engine, view, or @AppStorage changes. Acceptance: the EN and DE description bullet lists each show five entries in registration order; both keyword strings stay ≤ 100 chars and contain a timing-relevant term; the App Review Notes no longer claim the app is "specifically for pitch perception"; `bin/add-localization.swift --missing` reports `0`; pre-commit gate on all four schemes green; the Info screen on a fresh `Peach (Debug)` install shows the updated "What is Peach?" copy and a "Training Disciplines" section that lists Compare Timing alongside the four pitch disciplines.)
