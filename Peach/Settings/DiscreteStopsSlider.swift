@@ -43,9 +43,10 @@ struct DiscreteStopsSlider: View {
                     value = Self.decrementValue(value, in: stops)
                 } label: {
                     Image(systemName: "minus")
-                        .frame(minWidth: 44, minHeight: 44)
+                        .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
                 .disabled(!Self.isDecrementEnabled(at: value, in: stops))
                 .accessibilityLabel(Text("Decrease \(Text(label))", comment: "Accessibility label for the minus precision button next to a discrete-stops slider in Settings. The placeholder is the row label, e.g. \"Maximum Repetitions\"."))
                 .accessibilityHint(Text("Selects the next lower value", comment: "Accessibility hint for the minus precision button next to a discrete-stops slider in Settings. The per-step magnitude varies between stops, so the hint is step-agnostic."))
@@ -64,9 +65,10 @@ struct DiscreteStopsSlider: View {
                     value = Self.incrementValue(value, in: stops)
                 } label: {
                     Image(systemName: "plus")
-                        .frame(minWidth: 44, minHeight: 44)
+                        .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
                 .disabled(!Self.isIncrementEnabled(at: value, in: stops))
                 .accessibilityLabel(Text("Increase \(Text(label))", comment: "Accessibility label for the plus precision button next to a discrete-stops slider in Settings. The placeholder is the row label, e.g. \"Maximum Repetitions\"."))
                 .accessibilityHint(Text("Selects the next higher value", comment: "Accessibility hint for the plus precision button next to a discrete-stops slider in Settings. The per-step magnitude varies between stops, so the hint is step-agnostic."))

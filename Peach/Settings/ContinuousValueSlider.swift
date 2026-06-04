@@ -51,9 +51,10 @@ struct ContinuousValueSlider<Value: BinaryFloatingPoint>: View where Value.Strid
                     value = Self.decrement(value, by: step, in: range)
                 } label: {
                     Image(systemName: "minus")
-                        .frame(minWidth: 44, minHeight: 44)
+                        .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
                 .disabled(!Self.isDecrementEnabled(at: value, in: range))
                 .accessibilityLabel(Text("Decrease \(Text(label))", comment: "Accessibility label for the minus precision button next to a continuous-value slider in Settings. The placeholder is the row label, e.g. \"Duration\"."))
                 .accessibilityHint(Text("Decreases by \(displayFormat(Value(step)))", comment: "Accessibility hint for the minus precision button next to a continuous-value slider in Settings. The placeholder is the formatted step, e.g. \"0.1 s\" or \"1 BPM\"."))
@@ -67,9 +68,10 @@ struct ContinuousValueSlider<Value: BinaryFloatingPoint>: View where Value.Strid
                     value = Self.increment(value, by: step, in: range)
                 } label: {
                     Image(systemName: "plus")
-                        .frame(minWidth: 44, minHeight: 44)
+                        .frame(width: 22, height: 22)
                 }
                 .buttonStyle(.bordered)
+                .buttonBorderShape(.capsule)
                 .disabled(!Self.isIncrementEnabled(at: value, in: range))
                 .accessibilityLabel(Text("Increase \(Text(label))", comment: "Accessibility label for the plus precision button next to a continuous-value slider in Settings. The placeholder is the row label, e.g. \"Duration\"."))
                 .accessibilityHint(Text("Increases by \(displayFormat(Value(step)))", comment: "Accessibility hint for the plus precision button next to a continuous-value slider in Settings. The placeholder is the formatted step, e.g. \"0.1 s\" or \"1 BPM\"."))
