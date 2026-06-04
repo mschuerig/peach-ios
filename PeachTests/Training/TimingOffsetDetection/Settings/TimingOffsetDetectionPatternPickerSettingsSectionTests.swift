@@ -8,10 +8,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
     private static let note = String(localized: "Note")
     private static let rest = String(localized: "Rest")
 
-    @Test("pattern_1111 label reads every audible position as a single-word token")
-    func labelForPattern1111() {
+    @Test("pattern_01 label reads every audible position as a single-word token")
+    func labelForPattern01() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern1111
+            for: .pattern01
         )
         #expect(label == [Self.accent, Self.note, Self.note, Self.note].joined(separator: ", "))
     }
@@ -19,7 +19,7 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
     @Test("rest-bearing pattern label substitutes the Rest token at silent grid positions")
     func labelForRestBearingPattern() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern1011
+            for: .pattern02
         )
         #expect(label == [Self.accent, Self.rest, Self.note, Self.note].joined(separator: ", "))
     }
@@ -27,23 +27,23 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
     @Test("single-pickable pattern label preserves grid order")
     func labelForSinglePickablePattern() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern1010
+            for: .pattern04
         )
         #expect(label == [Self.accent, Self.rest, Self.note, Self.rest].joined(separator: ", "))
     }
 
     @Test("rest-in-the-middle pattern label keeps the rest token in its grid position")
-    func labelForPattern1101() {
+    func labelForPattern03() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern1101
+            for: .pattern03
         )
         #expect(label == [Self.accent, Self.note, Self.rest, Self.note].joined(separator: ", "))
     }
 
     @Test("anchor-plus-tail pattern label reads two rests between the audible bookends")
-    func labelForPattern1001() {
+    func labelForPattern05() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern1001
+            for: .pattern05
         )
         #expect(label == [Self.accent, Self.rest, Self.rest, Self.note].joined(separator: ", "))
     }

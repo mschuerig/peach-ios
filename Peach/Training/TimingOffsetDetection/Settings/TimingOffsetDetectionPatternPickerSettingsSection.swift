@@ -47,9 +47,13 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
     /// § *Cross-pattern semantics*) is atomic. The stored selected id is the
     /// *resolved* pattern's id — an unknown user-supplied id is silently
     /// rewritten to the catalog default so storage stays self-consistent.
+    /// The `get` returns the resolved canonical id (not the raw stored value)
+    /// so the drill-down `Picker`'s row tags match even when storage carries
+    /// a retired id — keeps the displayed selection in step with the outer
+    /// row's preview, which already resolves through ``pattern(forStoredId:)``.
     private var patternIdBinding: Binding<String> {
         Binding(
-            get: { selectedPatternId },
+            get: { TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId).id },
             set: { newId in
                 let resolved = Self.cascadeWrites(forNewId: newId)
                 offsetNotePosition = resolved.offsetNotePosition
@@ -90,7 +94,7 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
     /// subdivision shape per `tod-initial-pattern-catalog.md` § *Preview
     /// Rendering*: `.note` at grid 0 → "Accent"; other `.note` → "Note";
     /// `.rest` (and `.nested`, defensively) → "Rest"; joined by ", ".
-    /// `pattern_1111` reads "Accent, Note, Note, Note".
+    /// `pattern_01` reads "Accent, Note, Note, Note".
     static func patternRowAccessibilityLabel(for pattern: TimingOffsetDetectionPattern) -> String {
         let tokens: [String] = pattern.subdivisions.enumerated().map { index, subdivision in
             switch subdivision {

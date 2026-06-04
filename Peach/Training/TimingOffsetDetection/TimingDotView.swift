@@ -119,38 +119,38 @@ struct TimingDotView: View {
 
 // MARK: - Previews
 
-#Preview("pattern_1111 — no dots lit, position 3 selected") {
+#Preview("pattern_01 — no dots lit, position 3 selected") {
     TimingDotView(
-        pattern: .pattern1111,
+        pattern: .pattern01,
         offsetNotePosition: .default,
         litCount: 0
     )
     .padding()
 }
 
-#Preview("pattern_1111 — 2 dots lit, position 3 selected") {
+#Preview("pattern_01 — 2 dots lit, position 3 selected") {
     TimingDotView(
-        pattern: .pattern1111,
+        pattern: .pattern01,
         offsetNotePosition: .default,
         litCount: 2
     )
     .padding()
 }
 
-#Preview("pattern_1111 — all dots lit, position 4 selected") {
+#Preview("pattern_01 — all dots lit, position 4 selected") {
     TimingDotView(
-        pattern: .pattern1111,
+        pattern: .pattern01,
         offsetNotePosition: OffsetNotePosition(4),
         litCount: 4
     )
     .padding()
 }
 
-#Preview("pattern_1111 — picker preview (no offset glyph)") {
+#Preview("pattern_01 — picker preview (no offset glyph)") {
     TimingDotView(
-        pattern: .pattern1111,
+        pattern: .pattern01,
         offsetNotePosition: nil,
-        litCount: TimingOffsetDetectionPattern.pattern1111.subdivisions.count,
+        litCount: TimingOffsetDetectionPattern.pattern01.subdivisions.count,
         scale: TimingDotView.previewScale
     )
     .padding()

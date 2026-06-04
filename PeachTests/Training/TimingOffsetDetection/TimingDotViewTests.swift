@@ -46,20 +46,20 @@ struct TimingDotViewTests {
     @Test("offsetGridIndex returns nil when offsetNotePosition is nil (picker preview)")
     func offsetGridIndexNilWhenPositionAbsent() async {
         let grid = TimingDotView.offsetGridIndex(
-            for: .pattern1111,
+            for: .pattern01,
             offsetNotePosition: nil
         )
         #expect(grid == nil)
     }
 
     @Test(
-        "offsetGridIndex for pattern_1111 maps audible 1-based → grid 0-based identity",
+        "offsetGridIndex for pattern_01 maps audible 1-based → grid 0-based identity",
         arguments: [(1, 0), (2, 1), (3, 2), (4, 3)]
     )
-    func offsetGridIndexPattern1111Identity(input: (Int, Int)) async {
+    func offsetGridIndexPattern01Identity(input: (Int, Int)) async {
         let (audiblePosition, expectedGrid) = input
         let grid = TimingDotView.offsetGridIndex(
-            for: .pattern1111,
+            for: .pattern01,
             offsetNotePosition: OffsetNotePosition(audiblePosition)
         )
         #expect(grid == expectedGrid)
@@ -67,7 +67,7 @@ struct TimingDotViewTests {
 
     @Test("offsetGridIndex translates audible→grid via audibleToGrid for a rest-bearing pattern")
     func offsetGridIndexRestBearingTranslation() async {
-        let pattern = TimingOffsetDetectionPattern.pattern1011
+        let pattern = TimingOffsetDetectionPattern.pattern02
 
         // audible 2 → grid 2, audible 3 → grid 3 — NOT identity.
         // This is the deferred-work bug closed by 82.6: an old call site that
@@ -79,9 +79,9 @@ struct TimingDotViewTests {
 
     @Test("offsetGridIndex returns nil when the audible position is out of range")
     func offsetGridIndexOutOfRange() async {
-        // pattern_1010 has audibleCount == 2; audible position 3 is out of range.
+        // pattern_04 has audibleCount == 2; audible position 3 is out of range.
         let grid = TimingDotView.offsetGridIndex(
-            for: .pattern1010,
+            for: .pattern04,
             offsetNotePosition: OffsetNotePosition(3)
         )
         #expect(grid == nil)

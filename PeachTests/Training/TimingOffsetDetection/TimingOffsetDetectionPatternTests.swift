@@ -26,9 +26,9 @@ struct TimingOffsetDetectionPatternTests {
         #expect(pattern.audibleCount == 3)
     }
 
-    @Test("audibleCount for pattern_1111 is 4 (every subdivision is a note)")
-    func audibleCountPattern1111() {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
+    @Test("audibleCount for pattern_01 is 4 (every subdivision is a note)")
+    func audibleCountPattern01() {
+        let pattern = TimingOffsetDetectionPattern.pattern01
         #expect(pattern.audibleCount == 4)
         #expect(pattern.audibleToGrid == [0, 1, 2, 3])
     }
@@ -37,7 +37,7 @@ struct TimingOffsetDetectionPatternTests {
 
     @Test("pickable equals Set(2...audibleCount) — never contains position 1")
     func pickableEqualsTwoThroughAudibleCount() {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
+        let pattern = TimingOffsetDetectionPattern.pattern01
         #expect(pattern.pickable == Set(2...pattern.audibleCount))
         #expect(pattern.pickable.contains(1) == false)
     }
@@ -65,13 +65,13 @@ struct TimingOffsetDetectionPatternTests {
         arguments: [2, 3, 4]
     )
     func clampedPassesPickableValues(raw: Int) {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
+        let pattern = TimingOffsetDetectionPattern.pattern01
         #expect(pattern.clampedOffsetNotePosition(raw) == OffsetNotePosition(raw))
     }
 
     @Test("clampedOffsetNotePosition replaces the metric-anchor position 1 with the pattern default")
     func clampedReplacesMetricAnchorWithDefault() {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
+        let pattern = TimingOffsetDetectionPattern.pattern01
         #expect(pattern.clampedOffsetNotePosition(1) == pattern.defaultOffsetNotePosition)
         #expect(pattern.clampedOffsetNotePosition(1) == OffsetNotePosition(3))
     }
@@ -81,18 +81,18 @@ struct TimingOffsetDetectionPatternTests {
         arguments: [0, -1, 5, 99, Int.min, Int.max]
     )
     func clampedReplacesOutOfRangeWithDefault(raw: Int) {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
+        let pattern = TimingOffsetDetectionPattern.pattern01
         #expect(pattern.clampedOffsetNotePosition(raw) == pattern.defaultOffsetNotePosition)
     }
 
-    // MARK: - beat construction (pattern_1111)
+    // MARK: - beat construction (pattern_01)
 
     @Test(
-        "beat for pattern_1111 places the offset on the chosen audible position",
+        "beat for pattern_01 places the offset on the chosen audible position",
         arguments: [2, 3, 4]
     )
-    func beatForPattern1111PlacesOffsetOnChosenAudiblePosition(positionValue: Int) {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
+    func beatForPattern01PlacesOffsetOnChosenAudiblePosition(positionValue: Int) {
+        let pattern = TimingOffsetDetectionPattern.pattern01
         let position = OffsetNotePosition(positionValue)
         let offsetAmount: Duration = .milliseconds(20)
 
@@ -101,7 +101,7 @@ struct TimingOffsetDetectionPatternTests {
         #expect(beat.subdivisions.count == 4)
         for index in 0..<4 {
             guard case let .note(velocity, offset) = beat.subdivisions[index] else {
-                Issue.record("Expected subdivision \(index) to be a note in pattern_1111")
+                Issue.record("Expected subdivision \(index) to be a note in pattern_01")
                 return
             }
             let expectedVelocity: MIDIVelocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
@@ -234,32 +234,34 @@ struct TimingOffsetDetectionPatternTests {
         #expect(a.hashValue == b.hashValue)
     }
 
-    @Test("pattern_1111 carries id `pattern_1111` and defaultOffsetNotePosition 3")
-    func pattern1111Identity() {
-        let pattern = TimingOffsetDetectionPattern.pattern1111
-        #expect(pattern.id == "pattern_1111")
+    @Test("pattern_01 carries id `pattern_01` and defaultOffsetNotePosition 3")
+    func pattern01Identity() {
+        let pattern = TimingOffsetDetectionPattern.pattern01
+        #expect(pattern.id == "pattern_01")
         #expect(pattern.defaultOffsetNotePosition == OffsetNotePosition(3))
         #expect(pattern.subdivisions.count == 4)
     }
 
-    // MARK: - New catalog entries (82.7) — shape + beat-builder coverage
+    // MARK: - Rest-bearing catalog entries — shape + beat-builder coverage
 
-    /// Shape expectations for one new catalog entry. Lookup happens in the test
-    /// body via the id, so the arguments stay pure-value (no MainActor-isolated
-    /// pattern accessors leak into the `arguments:` capture). `audibleCount` is
-    /// asserted as a literal rather than `audibleToGrid.count` to avoid a
-    /// tautological assertion — the production property is defined as
-    /// `audibleToGrid.count` and so trivially agrees with itself.
+    /// Shape expectations for one rest-bearing catalog entry (every entry except
+    /// `pattern_01`, which is the all-audible reference covered above). Lookup
+    /// happens in the test body via the id, so the arguments stay pure-value
+    /// (no MainActor-isolated pattern accessors leak into the `arguments:`
+    /// capture). `audibleCount` is asserted as a literal rather than
+    /// `audibleToGrid.count` to avoid a tautological assertion — the production
+    /// property is defined as `audibleToGrid.count` and so trivially agrees
+    /// with itself.
     @Test(
-        "each new catalog entry exposes the expected shape (audibleToGrid, audibleCount, pickable, default)",
+        "each rest-bearing catalog entry exposes the expected shape (audibleToGrid, audibleCount, pickable, default)",
         arguments: [
-            ("pattern_1011", [0, 2, 3], 3, Set([2, 3]), 2),
-            ("pattern_1101", [0, 1, 3], 3, Set([2, 3]), 2),
-            ("pattern_1010", [0, 2], 2, Set([2]), 2),
-            ("pattern_1001", [0, 3], 2, Set([2]), 2)
+            ("pattern_02", [0, 2, 3], 3, Set([2, 3]), 2),
+            ("pattern_03", [0, 1, 3], 3, Set([2, 3]), 2),
+            ("pattern_04", [0, 2], 2, Set([2]), 2),
+            ("pattern_05", [0, 3], 2, Set([2]), 2)
         ] as [(String, [Int], Int, Set<Int>, Int)]
     )
-    func newCatalogEntryShape(
+    func restBearingCatalogEntryShape(
         expectation: (id: String, audibleToGrid: [Int], audibleCount: Int, pickable: Set<Int>, defaultPosition: Int)
     ) throws {
         let pattern = try TimingOffsetDetectionPatternCatalog.pattern(withId: expectation.id)
@@ -271,23 +273,23 @@ struct TimingOffsetDetectionPatternTests {
         #expect(pattern.subdivisions.count == 4)
     }
 
-    /// Beat-builder coverage at every pickable position for every new catalog
-    /// entry. Covers the default-position path for all four entries plus the
-    /// non-default pickable positions on `pattern_1011` and `pattern_1101`
+    /// Beat-builder coverage at every pickable position for every rest-bearing
+    /// catalog entry. Covers the default-position path for all four entries
+    /// plus the non-default pickable positions on `pattern_02` and `pattern_03`
     /// (the multi-pickable rest-bearing patterns) — pins the audible→grid
     /// translation that skips rests at the most-likely-regression positions.
     @Test(
-        "each new catalog entry's beat builder places the offset at the audible→grid-translated index for every pickable position",
+        "each rest-bearing catalog entry's beat builder places the offset at the audible→grid-translated index for every pickable position",
         arguments: [
-            ("pattern_1011", 2),
-            ("pattern_1011", 3),
-            ("pattern_1101", 2),
-            ("pattern_1101", 3),
-            ("pattern_1010", 2),
-            ("pattern_1001", 2)
+            ("pattern_02", 2),
+            ("pattern_02", 3),
+            ("pattern_03", 2),
+            ("pattern_03", 3),
+            ("pattern_04", 2),
+            ("pattern_05", 2)
         ] as [(String, Int)]
     )
-    func newCatalogEntryBeatBuilderPlacesOffsetAtResolvedGridIndex(
+    func restBearingCatalogEntryBeatBuilderPlacesOffsetAtResolvedGridIndex(
         expectation: (patternID: String, position: Int)
     ) throws {
         let pattern = try TimingOffsetDetectionPatternCatalog.pattern(withId: expectation.patternID)

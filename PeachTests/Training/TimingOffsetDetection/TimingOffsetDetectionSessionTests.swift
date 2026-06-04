@@ -183,14 +183,14 @@ struct TimingOffsetDetectionSessionTests {
     }
 
     @Test(
-        "pattern_1111.beat places the offset on the chosen audible position",
+        "pattern_01.beat places the offset on the chosen audible position",
         arguments: [2, 3, 4]
     )
     func buildBeatPerPosition(positionValue: Int) async throws {
         let offsetAmount: Duration = .milliseconds(50)
         let position = OffsetNotePosition(positionValue)
 
-        let beat = TimingOffsetDetectionPattern.pattern1111.beat(
+        let beat = TimingOffsetDetectionPattern.pattern01.beat(
             offsetNotePosition: position,
             offsetAmount: offsetAmount
         )

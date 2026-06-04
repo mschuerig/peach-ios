@@ -52,16 +52,16 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         port.defaults = Self.makeSuite()
 
         #expect(port.selectedPattern == TimingOffsetDetectionPatternCatalog.defaultPattern)
-        #expect(port.selectedPattern.id == "pattern_1111")
+        #expect(port.selectedPattern.id == "pattern_01")
     }
 
     @Test("selectedPattern returns the registered pattern for a known stored id")
     func selectedPatternKnownIdReturnsPattern() {
         let port = AppTimingOffsetDetectionUserSettings()
         port.defaults = Self.makeSuite()
-        port.defaults.set("pattern_1111", forKey: TimingOffsetDetectionSettingsKeys.selectedPatternId)
+        port.defaults.set("pattern_01", forKey: TimingOffsetDetectionSettingsKeys.selectedPatternId)
 
-        #expect(port.selectedPattern == TimingOffsetDetectionPattern.pattern1111)
+        #expect(port.selectedPattern == TimingOffsetDetectionPattern.pattern01)
     }
 
     @Test("selectedPattern falls back to the catalog default for an unknown stored id")
@@ -73,6 +73,23 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         #expect(port.selectedPattern == TimingOffsetDetectionPatternCatalog.defaultPattern)
     }
 
+    /// Locks the Story 84.2 migration contract: a stored id from the retired
+    /// `pattern_<bitmask>` convention (the only post-Epic-82 values Michael's
+    /// dev device could carry into the swap) resolves to `pattern_01` via
+    /// Epic 82.5's unknown-id fallback. No migration shim, no UserDefaults
+    /// rewrite — just the fallback path doing its job.
+    @Test(
+        "selectedPattern falls back to pattern_01 for the five retired bitmask ids",
+        arguments: ["pattern_1111", "pattern_1011", "pattern_1101", "pattern_1010", "pattern_1001"]
+    )
+    func selectedPatternRetiredBitmaskIdFallsBackToPattern01(retiredId: String) {
+        let port = AppTimingOffsetDetectionUserSettings()
+        port.defaults = Self.makeSuite()
+        port.defaults.set(retiredId, forKey: TimingOffsetDetectionSettingsKeys.selectedPatternId)
+
+        #expect(port.selectedPattern == TimingOffsetDetectionPattern.pattern01)
+    }
+
     // MARK: - offsetNotePosition (pattern-aware)
 
     @Test("offsetNotePosition returns the active pattern's default when no value is stored")
@@ -80,7 +97,7 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         let port = AppTimingOffsetDetectionUserSettings()
         port.defaults = Self.makeSuite()
 
-        #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern1111.defaultOffsetNotePosition)
+        #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern01.defaultOffsetNotePosition)
     }
 
     @Test(
@@ -92,7 +109,7 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         port.defaults = Self.makeSuite()
         port.defaults.set(stored, forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
 
-        #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern1111.defaultOffsetNotePosition)
+        #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern01.defaultOffsetNotePosition)
     }
 
     @Test(
@@ -114,6 +131,6 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         port.defaults.set("pattern_xxxx", forKey: TimingOffsetDetectionSettingsKeys.selectedPatternId)
         port.defaults.set(1, forKey: TimingOffsetDetectionSettingsKeys.offsetNotePosition)
 
-        #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern1111.defaultOffsetNotePosition)
+        #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern01.defaultOffsetNotePosition)
     }
 }

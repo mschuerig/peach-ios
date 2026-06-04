@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Story 84.1 done (no-code design lock for TOD tuplet renderer + catalog).
+# last_updated: 2026-06-05 # Story 84.2 done (TOD opaque pattern-id convention swap).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -767,7 +767,7 @@ development_status:
   # that work by construction.
   epic-84: in-progress
   84-1-tuplet-renderer-and-catalog-design: done
-  84-2-opaque-pattern-id-convention-swap: backlog
+  84-2-opaque-pattern-id-convention-swap: done
   84-3-proportional-timeline-renderer: backlog
   84-4-sectioned-picker-and-tuplet-catalog-content: backlog
   epic-84-retrospective: optional
