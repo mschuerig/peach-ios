@@ -23,11 +23,11 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
         }
     }
 
-    // MARK: - pattern_test_1011 (one rest, two pickable)
+    // MARK: - pattern_1011 (one rest, two pickable)
 
-    @Test("pattern_test_1011 classifies (anchor, rest, pickable(2), pickable(3))")
+    @Test("pattern_1011 classifies (anchor, rest, pickable(2), pickable(3))")
     func pattern1011AllCells() {
-        let pattern = TimingOffsetDetectionPatternFixtures.pattern1011
+        let pattern = TimingOffsetDetectionPattern.pattern1011
         let kinds = (0..<pattern.subdivisions.count).map { Section.cellKind(for: pattern, gridIndex: $0) }
         #expect(kinds == [
             .anchor,
@@ -37,17 +37,45 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
         ])
     }
 
-    // MARK: - pattern_test_1010 (single pickable)
+    // MARK: - pattern_1010 (single pickable)
 
-    @Test("pattern_test_1010 (single-pickable) classifies (anchor, rest, pickable(2), rest)")
+    @Test("pattern_1010 (single-pickable) classifies (anchor, rest, pickable(2), rest)")
     func pattern1010AllCells() {
-        let pattern = TimingOffsetDetectionPatternFixtures.pattern1010
+        let pattern = TimingOffsetDetectionPattern.pattern1010
         let kinds = (0..<pattern.subdivisions.count).map { Section.cellKind(for: pattern, gridIndex: $0) }
         #expect(kinds == [
             .anchor,
             .rest,
             .pickable(OffsetNotePosition(2)),
             .rest,
+        ])
+    }
+
+    // MARK: - pattern_1101 (early-audible mapping; rest at midpoint)
+
+    @Test("pattern_1101 classifies (anchor, pickable(2), rest, pickable(3))")
+    func pattern1101AllCells() {
+        let pattern = TimingOffsetDetectionPattern.pattern1101
+        let kinds = (0..<pattern.subdivisions.count).map { Section.cellKind(for: pattern, gridIndex: $0) }
+        #expect(kinds == [
+            .anchor,
+            .pickable(OffsetNotePosition(2)),
+            .rest,
+            .pickable(OffsetNotePosition(3)),
+        ])
+    }
+
+    // MARK: - pattern_1001 (single-pickable; anchor + tail)
+
+    @Test("pattern_1001 (single-pickable, anchor + tail) classifies (anchor, rest, rest, pickable(2))")
+    func pattern1001AllCells() {
+        let pattern = TimingOffsetDetectionPattern.pattern1001
+        let kinds = (0..<pattern.subdivisions.count).map { Section.cellKind(for: pattern, gridIndex: $0) }
+        #expect(kinds == [
+            .anchor,
+            .rest,
+            .rest,
+            .pickable(OffsetNotePosition(2)),
         ])
     }
 
@@ -60,7 +88,7 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(3), audibleCount: 4) == String(localized: "Note \(3) of \(4)"))
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(4), audibleCount: 4) == String(localized: "Note \(4) of \(4)"))
 
-        // pattern_test_1011 has audibleCount == 3 (not grid 4): audible pos 3 reads
+        // pattern_1011 has audibleCount == 3 (not grid 4): audible pos 3 reads
         // "Note 3 of 3", NOT "Note 3 of 4" — guards the audible-vs-grid mismatch
         // for the slot picker's accessibility label.
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(2), audibleCount: 3) == String(localized: "Note \(2) of \(3)"))

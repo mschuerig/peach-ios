@@ -22,17 +22,21 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
     @ScaledMetric(relativeTo: .caption2) private var dotScale: CGFloat = TimingDotView.previewScale
 
     var body: some View {
+        let activePattern = TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId)
         Section {
-            Picker(selection: patternIdBinding) {
-                ForEach(TimingOffsetDetectionPatternCatalog.all, id: \.id) { pattern in
-                    row(for: pattern).tag(pattern.id)
-                }
+            NavigationLink {
+                TimingOffsetDetectionPatternPickerDestination(
+                    patternIdBinding: patternIdBinding,
+                    dotScale: dotScale
+                )
             } label: {
-                Text(String(localized: "Pattern"))
+                LabeledContent {
+                    Self.row(for: activePattern, dotScale: dotScale)
+                } label: {
+                    Text(String(localized: "Pattern"))
+                }
             }
-            .pickerStyle(.inline)
-        } header: {
-            Text(String(localized: "Pattern"))
+            .accessibilityValue(Self.patternRowAccessibilityLabel(for: activePattern))
         } footer: {
             Text(String(localized: "Pick the rhythmic pattern used for each trial."))
         }
@@ -64,7 +68,14 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
         return (pattern.id, pattern.defaultOffsetNotePosition.rawValue)
     }
 
-    private func row(for pattern: TimingOffsetDetectionPattern) -> some View {
+    /// Dot-row preview for one pattern, with the section's `accessibilityLabel`
+    /// already applied. Static so the drill-down destination shares the exact
+    /// same renderer — single source of truth for the row vocabulary.
+    @ViewBuilder
+    static func row(
+        for pattern: TimingOffsetDetectionPattern,
+        dotScale: CGFloat
+    ) -> some View {
         TimingDotView(
             pattern: pattern,
             offsetNotePosition: nil,
@@ -72,7 +83,7 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
             scale: dotScale
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Self.patternRowAccessibilityLabel(for: pattern))
+        .accessibilityLabel(patternRowAccessibilityLabel(for: pattern))
     }
 
     /// Programmatic VoiceOver label for a pattern row, derived from the
@@ -90,5 +101,35 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
             }
         }
         return tokens.joined(separator: ", ")
+    }
+}
+
+/// Drill-down destination for the Pattern picker. Hosts the inline `Picker`
+/// previously embedded in the Settings row, so the row collapses to a single
+/// label + dot-row preview + chevron and the catalog can grow without crowding
+/// the Settings screen.
+private struct TimingOffsetDetectionPatternPickerDestination: View {
+    let patternIdBinding: Binding<String>
+    let dotScale: CGFloat
+
+    var body: some View {
+        Form {
+            Section {
+                Picker(selection: patternIdBinding) {
+                    ForEach(TimingOffsetDetectionPatternCatalog.all, id: \.id) { pattern in
+                        TimingOffsetDetectionPatternPickerSettingsSection
+                            .row(for: pattern, dotScale: dotScale)
+                            .tag(pattern.id)
+                    }
+                } label: {
+                    Text(String(localized: "Pattern"))
+                }
+                .pickerStyle(.inline)
+                .labelsHidden()
+            }
+        }
+        .platformFormStyle()
+        .navigationTitle(String(localized: "Pattern"))
+        .inlineNavigationBarTitle()
     }
 }

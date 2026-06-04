@@ -242,5 +242,76 @@ struct TimingOffsetDetectionPatternTests {
         #expect(pattern.defaultOffsetNotePosition == OffsetNotePosition(3))
         #expect(pattern.subdivisions.count == 4)
     }
+
+    // MARK: - New catalog entries (82.7) — shape + beat-builder coverage
+
+    /// Shape expectations for one new catalog entry. Lookup happens in the test
+    /// body via the id, so the arguments stay pure-value (no MainActor-isolated
+    /// pattern accessors leak into the `arguments:` capture). `audibleCount` is
+    /// asserted as a literal rather than `audibleToGrid.count` to avoid a
+    /// tautological assertion — the production property is defined as
+    /// `audibleToGrid.count` and so trivially agrees with itself.
+    @Test(
+        "each new catalog entry exposes the expected shape (audibleToGrid, audibleCount, pickable, default)",
+        arguments: [
+            ("pattern_1011", [0, 2, 3], 3, Set([2, 3]), 2),
+            ("pattern_1101", [0, 1, 3], 3, Set([2, 3]), 2),
+            ("pattern_1010", [0, 2], 2, Set([2]), 2),
+            ("pattern_1001", [0, 3], 2, Set([2]), 2)
+        ] as [(String, [Int], Int, Set<Int>, Int)]
+    )
+    func newCatalogEntryShape(
+        expectation: (id: String, audibleToGrid: [Int], audibleCount: Int, pickable: Set<Int>, defaultPosition: Int)
+    ) throws {
+        let pattern = try TimingOffsetDetectionPatternCatalog.pattern(withId: expectation.id)
+        #expect(pattern.id == expectation.id)
+        #expect(pattern.audibleToGrid == expectation.audibleToGrid)
+        #expect(pattern.audibleCount == expectation.audibleCount)
+        #expect(pattern.pickable == expectation.pickable)
+        #expect(pattern.defaultOffsetNotePosition == OffsetNotePosition(expectation.defaultPosition))
+        #expect(pattern.subdivisions.count == 4)
+    }
+
+    /// Beat-builder coverage at every pickable position for every new catalog
+    /// entry. Covers the default-position path for all four entries plus the
+    /// non-default pickable positions on `pattern_1011` and `pattern_1101`
+    /// (the multi-pickable rest-bearing patterns) — pins the audible→grid
+    /// translation that skips rests at the most-likely-regression positions.
+    @Test(
+        "each new catalog entry's beat builder places the offset at the audible→grid-translated index for every pickable position",
+        arguments: [
+            ("pattern_1011", 2),
+            ("pattern_1011", 3),
+            ("pattern_1101", 2),
+            ("pattern_1101", 3),
+            ("pattern_1010", 2),
+            ("pattern_1001", 2)
+        ] as [(String, Int)]
+    )
+    func newCatalogEntryBeatBuilderPlacesOffsetAtResolvedGridIndex(
+        expectation: (patternID: String, position: Int)
+    ) throws {
+        let pattern = try TimingOffsetDetectionPatternCatalog.pattern(withId: expectation.patternID)
+        let position = OffsetNotePosition(expectation.position)
+        let offsetAmount: Duration = .milliseconds(20)
+        let expectedOffsetGridIndex = pattern.audibleToGrid[position.zeroBasedIndex]
+
+        let beat = pattern.beat(offsetNotePosition: position, offsetAmount: offsetAmount)
+
+        #expect(beat.subdivisions.count == pattern.subdivisions.count)
+        for index in beat.subdivisions.indices {
+            switch (pattern.subdivisions[index], beat.subdivisions[index]) {
+            case (.rest, .rest):
+                continue
+            case (.note, .note(let velocity, let offset)):
+                let expectedVelocity: MIDIVelocity = (index == 0) ? RhythmVelocity.accent : RhythmVelocity.normal
+                let expectedOffset: Duration = (index == expectedOffsetGridIndex) ? offsetAmount : .zero
+                #expect(velocity == expectedVelocity, "velocity mismatch in \(pattern.id) at grid \(index)")
+                #expect(offset == expectedOffset, "offset mismatch in \(pattern.id) at grid \(index)")
+            default:
+                Issue.record("Subdivision kind changed for \(pattern.id) at grid \(index)")
+            }
+        }
+    }
 }
 #endif

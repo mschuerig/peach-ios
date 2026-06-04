@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-04 # Story 82.6 done (pattern + slot picker Settings UI).
+# last_updated: 2026-06-04 # Story 82.7 done + Epic 82 done (initial pattern catalog content; picker drill-down).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -727,12 +727,12 @@ development_status:
   # explicitly deferred to a follow-up epic — the catalog domain layer in
   # 82.5 is tuplet-capable by construction (it wraps `Beat`), so the deferral
   # is renderer-only and incurs no data-model rework.
-  epic-82: in-progress
+  epic-82: done
   82-1-offset-slot-as-setting: done
   82-2-offset-note-terminology-decision: done
   82-3-initial-pattern-catalog-and-picker-ux: done
   82-4-offset-note-terminology-caveat-sweep: done
   82-5-pattern-catalog-domain-layer: done
   82-6-pattern-and-slot-picker-settings-ui: done
-  82-7-initial-pattern-catalog-content: backlog
+  82-7-initial-pattern-catalog-content: done
   epic-82-retrospective: optional

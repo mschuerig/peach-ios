@@ -6,12 +6,23 @@ import Foundation
 /// simplest thing that works.
 enum TimingOffsetDetectionPatternCatalog {
 
-    /// Every registered pattern, in display order.
-    ///
-    /// 82.5 registers only ``TimingOffsetDetectionPattern/pattern1111``;
-    /// 82.7 adds the four remaining catalog entries from
-    /// `docs/planning-artifacts/tod-initial-pattern-catalog.md` § *Catalog*.
-    static let all: [TimingOffsetDetectionPattern] = [.pattern1111]
+    /// Every registered pattern, in design-doc display order:
+    /// ``TimingOffsetDetectionPattern/pattern1111``,
+    /// ``TimingOffsetDetectionPattern/pattern1011``,
+    /// ``TimingOffsetDetectionPattern/pattern1101``,
+    /// ``TimingOffsetDetectionPattern/pattern1010``,
+    /// ``TimingOffsetDetectionPattern/pattern1001``. The catalog spans two
+    /// categories (locked by `docs/planning-artifacts/tod-initial-pattern-catalog.md`
+    /// § *Categorization*): *Straight* — `pattern1111` (16ths) and `pattern1010`
+    /// (8ths); *Gapped* — `pattern1011`, `pattern1101`, `pattern1001`. The picker
+    /// presents them flat (no `Section`-chrome grouping) per the design doc.
+    static let all: [TimingOffsetDetectionPattern] = [
+        .pattern1111,
+        .pattern1011,
+        .pattern1101,
+        .pattern1010,
+        .pattern1001
+    ]
 
     /// Id of the pattern used when no ``selectedPatternId`` is stored, and the
     /// fallback target when a stored id can't be resolved against ``all``.

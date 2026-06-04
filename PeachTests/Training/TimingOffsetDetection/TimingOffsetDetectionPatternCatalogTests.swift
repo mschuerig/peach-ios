@@ -6,10 +6,15 @@ import Foundation
 @Suite("TimingOffsetDetectionPatternCatalog Tests")
 struct TimingOffsetDetectionPatternCatalogTests {
 
-    @Test("all contains exactly one entry — pattern_1111 — until 82.7 ships the remaining four")
-    func allContainsOnlyPattern1111() {
-        #expect(TimingOffsetDetectionPatternCatalog.all.count == 1)
-        #expect(TimingOffsetDetectionPatternCatalog.all.first == TimingOffsetDetectionPattern.pattern1111)
+    @Test("all lists the five catalog entries in display order")
+    func allListsFiveCatalogEntriesInDisplayOrder() {
+        #expect(TimingOffsetDetectionPatternCatalog.all == [
+            .pattern1111,
+            .pattern1011,
+            .pattern1101,
+            .pattern1010,
+            .pattern1001
+        ])
     }
 
     @Test("defaultPatternId is `pattern_1111`")

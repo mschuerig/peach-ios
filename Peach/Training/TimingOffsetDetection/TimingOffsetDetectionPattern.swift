@@ -127,6 +127,9 @@ extension TimingOffsetDetectionPattern {
     /// audible position non-anchor pickable. The migration target for 82.1
     /// users: with stored `offsetNotePosition ∈ {2, 3, 4}`, the emitted `Beat`
     /// is bit-identical to the pre-82.5 hand-rolled construction.
+    ///
+    /// Default 3: audible 3 = grid 3 = on the half-beat. The perceptually
+    /// strongest non-anchor position in a 4-subdivision figure.
     static let pattern1111 = TimingOffsetDetectionPattern(
         id: "pattern_1111",
         subdivisions: [
@@ -136,5 +139,77 @@ extension TimingOffsetDetectionPattern {
             .note(velocity: RhythmVelocity.normal, offset: .zero)
         ],
         defaultOffsetNotePosition: OffsetNotePosition(3)
+    )
+
+    /// `* - * *` — anchor, rest, two audible. `audibleToGrid = [0, 2, 3]`;
+    /// `pickable = {2, 3}`.
+    ///
+    /// Default 2: audible 2 = grid 2 = on the half-beat. Closest analogue to
+    /// the `pattern_1111` default — both sit on the metric midpoint of the
+    /// figure.
+    static let pattern1011 = TimingOffsetDetectionPattern(
+        id: "pattern_1011",
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* * - *` — anchor, audible, rest, audible. `audibleToGrid = [0, 1, 3]`;
+    /// `pickable = {2, 3}`.
+    ///
+    /// Default 2: the on-the-half-beat audible note is a rest in this pattern.
+    /// Audible 2 (grid 2, the early subdivision) and audible 3 (grid 4, the
+    /// tail) are both equidistant from the rest at grid 3 — a tie. Audible 2
+    /// is the starting pick; playtest evidence may revise it later. (Grid
+    /// numbers here are 1-based, matching the design doc's table notation.)
+    static let pattern1101 = TimingOffsetDetectionPattern(
+        id: "pattern_1101",
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* - * -` — anchor, rest, audible, rest. `audibleToGrid = [0, 2]`;
+    /// `pickable = {2}` (single-pickable).
+    ///
+    /// Default 2: forced — the only pickable audible position. Encoded as a
+    /// 4-subdivision `Beat` (not 2) so the equal-cell renderer shows it
+    /// alongside the other catalog entries with consistent cell counts; the
+    /// audible perception (an "8ths feel") is unchanged.
+    static let pattern1010 = TimingOffsetDetectionPattern(
+        id: "pattern_1010",
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .rest
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* - - *` — anchor, two rests, audible tail. `audibleToGrid = [0, 3]`;
+    /// `pickable = {2}` (single-pickable).
+    ///
+    /// Default 2: forced — the only pickable audible position. Probes
+    /// "anchor + tail" timing perception: judging the timing of a note
+    /// separated from its preceding reference by two rests (common in march,
+    /// dotted-eighth-plus-16th figures, folk strumming).
+    static let pattern1001 = TimingOffsetDetectionPattern(
+        id: "pattern_1001",
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .rest,
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
     )
 }

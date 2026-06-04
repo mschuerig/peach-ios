@@ -20,7 +20,7 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
     @Test("rest-bearing pattern label substitutes the Rest token at silent grid positions")
     func labelForRestBearingPattern() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: TimingOffsetDetectionPatternFixtures.pattern1011
+            for: .pattern1011
         )
         #expect(label == [Self.accent, Self.rest, Self.note, Self.note].joined(separator: ", "))
     }
@@ -28,9 +28,25 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
     @Test("single-pickable pattern label preserves grid order")
     func labelForSinglePickablePattern() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: TimingOffsetDetectionPatternFixtures.pattern1010
+            for: .pattern1010
         )
         #expect(label == [Self.accent, Self.rest, Self.note, Self.rest].joined(separator: ", "))
+    }
+
+    @Test("rest-in-the-middle pattern label keeps the rest token in its grid position")
+    func labelForPattern1101() {
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern1101
+        )
+        #expect(label == [Self.accent, Self.note, Self.rest, Self.note].joined(separator: ", "))
+    }
+
+    @Test("anchor-plus-tail pattern label reads two rests between the audible bookends")
+    func labelForPattern1001() {
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern1001
+        )
+        #expect(label == [Self.accent, Self.rest, Self.rest, Self.note].joined(separator: ", "))
     }
 
     // MARK: - cascadeWrites(forNewId:)
