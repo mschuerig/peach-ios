@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-04 # Story 82.8 done (lifted PEACH_RESEARCH gate for TOD; CRM stays gated).
+# last_updated: 2026-06-04 # Epic 83 created for pre-release readiness; story 83.1 drafted for TOD release-copy sweep.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -737,3 +737,15 @@ development_status:
   82-7-initial-pattern-catalog-content: done
   82-8-lift-tod-research-gate: done
   epic-82-retrospective: optional
+
+  # Epic 83: Pre-release readiness for the next App Store cut
+  # Source: conversation at the close of epic 82 (2026-06-04). Tracking epic,
+  # not a feature epic. Collects stories that block shipping the next App Store
+  # cut — the version that ships TOD as a regular discipline after story 82.8
+  # lifted the PEACH_RESEARCH gate. Stays in-progress until that release ships.
+  # No fixed work order; stories may run in parallel where they don't conflict.
+  # Open epics that are NOT release blockers (74, 78, 79) stay in their own
+  # blocks and may ship in a later cut.
+  epic-83: in-progress
+  83-1-tod-release-copy-update: draft
+  epic-83-retrospective: optional
