@@ -6,12 +6,12 @@ import Synchronization
 /// current build.
 ///
 /// The migration runner cannot rely on ``TrainingDisciplineRegistry/shared``:
-/// a non-research build excludes timing disciplines from the parser registry,
-/// but a v2 CSV containing `rhythmMatching` rows must still be migrated to
-/// v3 shape (the row will simply fail dispatch downstream if no parser
-/// exists). Histories therefore live in a separate, build-flag-independent
-/// registry that the App layer bootstraps with the union of all known
-/// histories at startup.
+/// a non-research build excludes Continuous Rhythm Matching from the parser
+/// registry, but a v2 CSV containing `rhythmMatching` rows must still be
+/// migrated to v3 shape (the row will simply fail dispatch downstream if no
+/// parser exists). Histories therefore live in a separate, build-flag-
+/// independent registry that the App layer bootstraps with the union of all
+/// known histories at startup.
 final class CSVHistoryRegistry: Sendable {
 
     private static let _bootstrapped = Mutex<CSVHistoryRegistry?>(nil)

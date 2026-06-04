@@ -54,7 +54,6 @@ struct DuplicateKeyTests {
 
     // MARK: - TempoDuplicateKey
 
-#if PEACH_RESEARCH
     @Test("tempo duplicate keys with same fields are equal")
     func tempoDuplicateKeysEquality() async {
         let date = Date(timeIntervalSinceReferenceDate: 1000)
@@ -72,5 +71,4 @@ struct DuplicateKeyTests {
 
         #expect(key1 != key2)
     }
-#endif
 }

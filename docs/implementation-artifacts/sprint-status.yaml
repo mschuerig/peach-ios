@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-04 # Story 82.7 done + Epic 82 done (initial pattern catalog content; picker drill-down).
+# last_updated: 2026-06-04 # Story 82.8 done (lifted PEACH_RESEARCH gate for TOD; CRM stays gated).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -735,4 +735,5 @@ development_status:
   82-5-pattern-catalog-domain-layer: done
   82-6-pattern-and-slot-picker-settings-ui: done
   82-7-initial-pattern-catalog-content: done
+  82-8-lift-tod-research-gate: done
   epic-82-retrospective: optional

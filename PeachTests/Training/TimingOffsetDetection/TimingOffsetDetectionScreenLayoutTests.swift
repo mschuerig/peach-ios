@@ -2,7 +2,6 @@ import Testing
 import SwiftUI
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionScreen Layout Tests")
 struct TimingOffsetDetectionScreenLayoutTests {
 
@@ -82,4 +81,3 @@ struct TimingOffsetDetectionScreenLayoutTests {
         }
     }
 }
-#endif

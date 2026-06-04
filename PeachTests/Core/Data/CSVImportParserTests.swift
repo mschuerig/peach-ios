@@ -9,8 +9,9 @@ struct CSVImportParserTests {
 
     private func makeCSV(_ rows: [String]) -> String {
         // Test rows use the V3 19-column layout. When the active schema has fewer
-        // columns (e.g. PEACH_RESEARCH disabled drops rhythm columns), trim each
-        // row's trailing fields so it matches the dynamic header column count.
+        // columns (a non-Research build drops the Continuous Rhythm Matching
+        // columns), trim each row's trailing fields so it matches the dynamic
+        // header column count.
         let schemaColumnCount = CSVExportSchema.allColumns.count
         let alignedRows = rows.map { row -> String in
             let fields = CSVParserHelpers.parseCSVLine(row)
@@ -572,7 +573,6 @@ struct CSVImportParserTests {
         #expect(matchings[0].payload.userCentError == 3.2)
     }
 
-#if PEACH_RESEARCH
     @Test("v2 rhythm offset detection CSV imports successfully after migration")
     func v2TimingOffsetDetectionImports() async {
         let csv = makeV2CSV(["rhythmOffsetDetection,2026-03-03T14:30:00Z,,,,,,,,true,,,120,5.3,"])
@@ -584,6 +584,7 @@ struct CSVImportParserTests {
         #expect(rhythms[0].payload.offsetMs == 5.3)
     }
 
+#if PEACH_RESEARCH
     @Test("v2 rhythmMatching CSV migrates to continuousRhythmMatching with meanOffsetMs")
     func v2RhythmMatchingMigratesToContinuous() async {
         // V2 format: 15 columns; rhythmMatching row has empty pitch fields, tempoBPM at 12, offsetMs at 13 (empty), userOffsetMs at 14
@@ -637,7 +638,6 @@ struct CSVImportParserTests {
         }
     }
 
-#if PEACH_RESEARCH
     @Test("v2 CSV with mixed pitch and rhythm rows imports all types")
     func v2MixedTypesImport() async {
         let csv = makeV2CSV([
@@ -651,7 +651,6 @@ struct CSVImportParserTests {
         #expect(pitchMatchings(from: result).count == 1)
         #expect(rhythmOffsetDetections(from: result).count == 1)
     }
-#endif
 
     // MARK: - Version Dispatch
 
@@ -677,7 +676,6 @@ struct CSVImportParserTests {
         }
     }
 
-#if PEACH_RESEARCH
     // MARK: - Rhythm Types
 
     @Test("parses rhythm offset detection row")
@@ -713,7 +711,6 @@ struct CSVImportParserTests {
         #expect(rhythmOffsetDetections(from: result).count == 1)
         #expect(result.errors.isEmpty)
     }
-#endif
 
     // MARK: - Round-Trip
 

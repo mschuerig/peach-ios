@@ -10,9 +10,10 @@ struct TrainingDisciplineRegistryTests {
     // MARK: - Registered-set invariants
     //
     // The registered set varies by build configuration (configurations without
-    // PEACH_RESEARCH register the pitch disciplines only; configurations with
-    // it additionally register the timing disciplines). Tests assert invariants
-    // that hold for any registered set, not exact counts.
+    // PEACH_RESEARCH register the pitch disciplines plus Timing Offset Detection;
+    // the Research configurations additionally register Continuous Rhythm
+    // Matching). Tests assert invariants that hold for any registered set, not
+    // exact counts.
 
     @Test("the pitch disciplines are always registered")
     func pitchDisciplinesAlwaysRegistered() async {

@@ -1,7 +1,6 @@
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 final class MockTimingOffsetDetectionObserver: TimingOffsetDetectionObserver {
     // MARK: - Test State Tracking
 
@@ -25,4 +24,3 @@ final class MockTimingOffsetDetectionObserver: TimingOffsetDetectionObserver {
         results = []
     }
 }
-#endif

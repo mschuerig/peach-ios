@@ -2,7 +2,6 @@ import Foundation
 import Testing
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("SpectrogramData")
 struct SpectrogramDataTests {
 
@@ -330,6 +329,7 @@ struct SpectrogramDataTests {
         }
     }
 
+#if PEACH_RESEARCH
     // MARK: - Continuous rhythm matching
 
     @Test("continuous rhythm matching mode produces valid classifications")
@@ -360,6 +360,7 @@ struct SpectrogramDataTests {
             }
         }
     }
+#endif
 
     // MARK: - Threshold behavior across tempo bands
 
@@ -477,4 +478,3 @@ struct SpectrogramDataTests {
         }
     }
 }
-#endif

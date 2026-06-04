@@ -37,14 +37,12 @@ struct TrainingDisciplineConfigTests {
         #expect(config.sessionGap == .seconds(1800))
     }
 
-#if PEACH_RESEARCH
     @Test("rhythm offset detection has expected parameters")
     func rhythmOffsetDetection() async {
         let config = TrainingDisciplineID.timingOffsetDetection.config
         #expect(config.optimalBaseline == 15.0)
         #expect(config.unitLabel == "ms")
     }
-#endif
 
     @Test("all configurations have unique display names")
     func uniqueDisplayNames() async {

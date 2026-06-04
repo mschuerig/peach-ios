@@ -1,7 +1,6 @@
 import Testing
 @testable import Peach
 
-#if PEACH_RESEARCH
 /// Pure state transition tests for TimingOffsetDetectionSession.reduce.
 @Suite("TimingOffsetDetectionSession.reduce")
 struct TimingOffsetDetectionReduceTests {
@@ -184,4 +183,3 @@ struct TimingOffsetDetectionReduceTests {
         }
     }
 }
-#endif

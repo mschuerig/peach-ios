@@ -25,7 +25,6 @@ extension PerceptualProfile.Builder {
         }
     }
 
-#if PEACH_RESEARCH
     func feedTimingOffsetDetections(_ entries: [(timestamp: Date, payload: TimingOffsetDetectionPayload)]) {
         for entry in entries {
             let offset = TimingOffset(.milliseconds(entry.payload.offsetMs))
@@ -37,7 +36,6 @@ extension PerceptualProfile.Builder {
             )
         }
     }
-#endif
 }
 
 // MARK: - Test-Only Convenience Extensions

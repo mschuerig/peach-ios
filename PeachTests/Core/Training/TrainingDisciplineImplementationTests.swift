@@ -98,7 +98,6 @@ struct TrainingDisciplineImplementationTests {
         )
     }
 
-#if PEACH_RESEARCH
     private func makeTimingOffsetDetectionEntry(
         tempoBPM: Int = 100,
         offsetMs: Double = 12.5,
@@ -115,6 +114,7 @@ struct TrainingDisciplineImplementationTests {
         )
     }
 
+#if PEACH_RESEARCH
     private func makeContinuousRhythmMatchingEntry(
         tempoBPM: Int = 100,
         meanOffsetMs: Double = 8.5,
@@ -205,7 +205,6 @@ struct TrainingDisciplineImplementationTests {
         #expect(dict["interval"] == "P5")
     }
 
-#if PEACH_RESEARCH
     @Test("TimingOffsetDetection csvKeyValuePairs produces correct columns")
     func timingOffsetDetectionCSVKeyValuePairs() async {
         let discipline = TimingOffsetDetectionDiscipline()
@@ -219,6 +218,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(dict["isCorrect"] == "true")
     }
 
+#if PEACH_RESEARCH
     @Test("ContinuousRhythmMatching csvKeyValuePairs produces correct columns")
     func continuousRhythmMatchingCSVKeyValuePairs() async {
         let discipline = ContinuousRhythmMatchingDiscipline()
@@ -318,7 +318,6 @@ struct TrainingDisciplineImplementationTests {
         #expect(parsed.timestamp == original.timestamp)
     }
 
-#if PEACH_RESEARCH
     @Test("TimingOffsetDetection round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func timingOffsetDetectionRoundTrip() async throws {
         let discipline = TimingOffsetDetectionDiscipline()
@@ -336,6 +335,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(parsed.timestamp == original.timestamp)
     }
 
+#if PEACH_RESEARCH
     @Test("ContinuousRhythmMatching round-trip: csvKeyValuePairs then parseCSVRow produces equal payload")
     func continuousRhythmMatchingRoundTrip() async throws {
         let discipline = ContinuousRhythmMatchingDiscipline()
@@ -445,7 +445,6 @@ struct TrainingDisciplineImplementationTests {
         #expect(mergeResult.skipped == 1)
     }
 
-#if PEACH_RESEARCH
     @Test("TimingOffsetDetection mergeImportRecords skips duplicates and imports new records")
     func timingOffsetDetectionMergeDuplicates() async throws {
         let store = try makeStore()
@@ -468,6 +467,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(mergeResult.skipped == 1)
     }
 
+#if PEACH_RESEARCH
     @Test("ContinuousRhythmMatching mergeImportRecords skips duplicates and imports new records")
     func continuousRhythmMatchingMergeDuplicates() async throws {
         let store = try makeStore()
@@ -544,7 +544,6 @@ struct TrainingDisciplineImplementationTests {
         #expect(records.count == 2)
     }
 
-#if PEACH_RESEARCH
     @Test("TimingOffsetDetection fetchExportRecords returns all records")
     func timingOffsetDetectionFetchAll() async throws {
         let store = try makeStore()
@@ -557,6 +556,7 @@ struct TrainingDisciplineImplementationTests {
         #expect(records.count == 2)
     }
 
+#if PEACH_RESEARCH
     @Test("ContinuousRhythmMatching fetchExportRecords returns all records")
     func continuousRhythmMatchingFetchAll() async throws {
         let store = try makeStore()

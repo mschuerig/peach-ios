@@ -299,8 +299,7 @@ struct PerceptualProfileTests {
         #expect(profile.comparisonMean(for: .prime) == 40.0) // (50+30)/2
     }
 
-#if PEACH_RESEARCH
-    // MARK: - Rhythm Offset Detection via Observer
+    // MARK: - Timing Offset Detection via Observer
 
     @Test("TimingOffsetDetectionObserver routes to correct key")
     func rhythmOffsetDetectionObserverDelegates() async {
@@ -377,6 +376,7 @@ struct PerceptualProfileTests {
         #expect(stats?.recordCount == 1)
     }
 
+#if PEACH_RESEARCH
     // MARK: - Trained Tempo Ranges
 
     @Test("trainedTempoRanges returns correct set")

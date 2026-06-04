@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionPatternCatalog Tests")
 struct TimingOffsetDetectionPatternCatalogTests {
 
@@ -81,4 +80,3 @@ struct TimingOffsetDetectionPatternCatalogTests {
         #expect(pattern == TimingOffsetDetectionPatternCatalog.defaultPattern)
     }
 }
-#endif

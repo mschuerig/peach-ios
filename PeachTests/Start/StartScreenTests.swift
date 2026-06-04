@@ -90,13 +90,13 @@ struct StartScreenTests {
         #expect(destination == NavigationDestination.profile)
     }
 
-#if PEACH_RESEARCH
     @Test("NavigationDestination enum has timingOffsetDetection case")
     func navigationDestinationHasTimingOffsetDetection() async {
         let destination = NavigationDestination.timingOffsetDetection
         #expect(destination == NavigationDestination.timingOffsetDetection)
     }
 
+#if PEACH_RESEARCH
     @Test("NavigationDestination enum has continuousRhythmMatching case")
     func navigationDestinationHasContinuousRhythmMatching() async {
         let destination = NavigationDestination.continuousRhythmMatching
@@ -215,15 +215,15 @@ struct StartScreenTests {
         let settings = SettingsScreen()
         let profile = ProfileScreen()
         let info = InfoScreen()
-#if PEACH_RESEARCH
         let timingOffsetDetection = TimingOffsetDetectionScreen()
+#if PEACH_RESEARCH
         let continuousRhythmMatching = ContinuousRhythmMatchingScreen()
 
         // If we can create all screens without crashing, navigation paths are valid
         _ = (comparison, intervalComparison, pitchMatching, intervalPitchMatching, settings, profile, info, timingOffsetDetection, continuousRhythmMatching)
 #else
         // If we can create all screens without crashing, navigation paths are valid
-        _ = (comparison, intervalComparison, pitchMatching, intervalPitchMatching, settings, profile, info)
+        _ = (comparison, intervalComparison, pitchMatching, intervalPitchMatching, settings, profile, info, timingOffsetDetection)
 #endif
     }
 }

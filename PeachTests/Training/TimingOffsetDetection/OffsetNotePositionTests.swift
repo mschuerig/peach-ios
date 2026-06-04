@@ -1,7 +1,6 @@
 import Testing
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("OffsetNotePosition Tests")
 struct OffsetNotePositionTests {
 
@@ -37,4 +36,3 @@ struct OffsetNotePositionTests {
         #expect(OffsetNotePosition(1) != OffsetNotePosition(4))
     }
 }
-#endif

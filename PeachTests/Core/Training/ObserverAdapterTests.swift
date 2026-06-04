@@ -148,7 +148,6 @@ struct ProfileAdapterTests {
         #expect(profile.updates[0].value == 2.0)
     }
 
-#if PEACH_RESEARCH
     // MARK: - TimingOffsetDetectionProfileAdapter
 
     @Test("TimingOffsetDetection profile adapter updates correct key for correct late trial")
@@ -206,6 +205,7 @@ struct ProfileAdapterTests {
         #expect(profile.updates.isEmpty)
     }
 
+#if PEACH_RESEARCH
     // MARK: - ContinuousRhythmMatchingProfileAdapter
 
     @Test("ContinuousRhythmMatching profile adapter updates correct key for late mean")
@@ -319,7 +319,6 @@ struct StoreAdapterTests {
         #expect(envelope.timestamp == fixedDate())
     }
 
-#if PEACH_RESEARCH
     // MARK: - TimingOffsetDetectionStoreAdapter
 
     @Test("TimingOffsetDetection store adapter creates and saves correct envelope")
@@ -346,6 +345,7 @@ struct StoreAdapterTests {
         #expect(envelope.timestamp == fixedDate())
     }
 
+#if PEACH_RESEARCH
     // MARK: - ContinuousRhythmMatchingStoreAdapter
 
     @Test("ContinuousRhythmMatching store adapter creates envelope with position means")
@@ -417,7 +417,6 @@ struct StoreAdapterTests {
         #expect(store.saveCallCount == 0)
     }
 
-#if PEACH_RESEARCH
     @Test("TimingOffsetDetection store adapter does not throw on save error")
     func rhythmOffsetDetectionStoreAdapterSaveError() async {
         let store = MockRecordPersisting()
@@ -434,6 +433,7 @@ struct StoreAdapterTests {
         #expect(store.saveCallCount == 0)
     }
 
+#if PEACH_RESEARCH
     @Test("ContinuousRhythmMatching store adapter does not throw on save error")
     func continuousRhythmMatchingStoreAdapterSaveError() async {
         let store = MockRecordPersisting()

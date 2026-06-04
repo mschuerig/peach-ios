@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("AdaptiveTimingOffsetDetectionStrategy Tests")
 struct AdaptiveTimingOffsetDetectionStrategyTests {
 
@@ -290,4 +289,3 @@ struct AdaptiveTimingOffsetDetectionStrategyTests {
         )
     }
 }
-#endif

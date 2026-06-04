@@ -11,16 +11,18 @@ import Foundation
 /// **compile-time only**, and lives in one list. There is no runtime toggle,
 /// no `UserDefaults` flag, and no debug menu — toggling a discipline always
 /// requires a rebuild. To disable a discipline locally, comment out its
-/// line in the appropriate block (the always-on block for pitch
-/// disciplines, the `#if PEACH_RESEARCH` block for timing disciplines).
+/// line in the appropriate block (the always-on block for pitch and timing
+/// offset disciplines, the `#if PEACH_RESEARCH` block for the rhythm-matching
+/// discipline).
 ///
 /// ## The `PEACH_RESEARCH` envelope
 ///
 /// The two `(Research)` build configurations (`Debug (Research)` and
 /// `Release (Research)`) define the `PEACH_RESEARCH` Swift compilation flag.
-/// The pitch disciplines are active in every configuration; the timing
-/// rows are wrapped in `#if PEACH_RESEARCH` so their types are not even
-/// referenced — and therefore not linked — in the App Store cut.
+/// The pitch disciplines and Timing Offset Detection are active in every
+/// configuration; Continuous Rhythm Matching is wrapped in
+/// `#if PEACH_RESEARCH` so it is not registered — and therefore not surfaced
+/// in the UI — in the App Store cut.
 enum DisciplineBootstrap {
 
     static let allDisciplines: [any TrainingDiscipline] = {
@@ -29,9 +31,9 @@ enum DisciplineBootstrap {
             IntervalPitchDiscriminationDiscipline(),
             UnisonPitchMatchingDiscipline(),
             IntervalPitchMatchingDiscipline(),
+            TimingOffsetDetectionDiscipline(),
         ]
         #if PEACH_RESEARCH
-        disciplines.append(TimingOffsetDetectionDiscipline())
         disciplines.append(ContinuousRhythmMatchingDiscipline())
         #endif
         return disciplines

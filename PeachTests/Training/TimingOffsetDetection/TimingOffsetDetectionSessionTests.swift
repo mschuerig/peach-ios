@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 // MARK: - Default Test Settings
 
 private let defaultTimingSettings = TimingOffsetDetectionSettings(
@@ -988,4 +987,3 @@ struct TimingOffsetDetectionSessionTests {
         f.session.stop()
     }
 }
-#endif

@@ -4,7 +4,7 @@
 
 ## Goal
 
-Loosen the two axes that Timing Offset Detection (TOD) currently hard-codes: which note in a beat carries the timing offset, and which rhythmic figure that beat is. Today TOD plays four equally-spaced 16th notes per beat with the offset locked to the third note. This epic introduces (1) a per-trial setting for which note carries the offset (under today's fixed figure), then (2) a curated catalog of named patterns — gapped, syncopated, longer-than-beat — with a settings model that lets the user pick both the pattern and the offset-carrying note within it. TOD remains `PEACH_RESEARCH`-gated throughout this epic; lifting that gate depends on a separate playtest cycle and is out of scope.
+Loosen the two axes that Timing Offset Detection (TOD) currently hard-codes: which note in a beat carries the timing offset, and which rhythmic figure that beat is. Today TOD plays four equally-spaced 16th notes per beat with the offset locked to the third note. This epic introduces (1) a per-trial setting for which note carries the offset (under today's fixed figure), then (2) a curated catalog of named patterns — gapped, syncopated, longer-than-beat — with a settings model that lets the user pick both the pattern and the offset-carrying note within it. Story 82.8 (added after the original epic close) lifts the `PEACH_RESEARCH` gate for TOD so the discipline ships in the next release; Continuous Rhythm Matching stays research-only.
 
 ## Stories
 
@@ -15,13 +15,14 @@ Loosen the two axes that Timing Offset Detection (TOD) currently hard-codes: whi
 - Story 82.5: Pattern catalog domain layer wrapping `Beat`
 - Story 82.6: Settings UI for pattern picker and rest-aware scalable slot picker
 - Story 82.7: Ship the initial pattern catalog content
+- Story 82.8: Lift the `PEACH_RESEARCH` gate for Timing Offset Detection so it ships in the next release; Continuous Rhythm Matching stays research-only
 
 ## Requirements & Constraints
 
 - **Performance Principle:** TOD must let users perform their best. The fixed third-of-four arrangement is artificial constraint with no defensible musical or perceptual rationale; loosening it is the explicit goal.
 - **Engine is already capable.** `Beat`/`Subdivision`/nested-`Beat` and `SoundFontStepSequencer` already support variable-length patterns, rests, and tuplets. This epic adds a catalog/wrapper layer plus Settings UI; it does not modify the engine.
 - **Curated catalog only.** Users pick from a curated set; arbitrary user-defined patterns are out of scope.
-- **TOD remains `PEACH_RESEARCH`-gated.** New tests are wrapped in `#if PEACH_RESEARCH`. Lifting the gate is a separate follow-up.
+- **TOD was `PEACH_RESEARCH`-gated for stories 82.1–82.7.** New tests in those stories were wrapped in `#if PEACH_RESEARCH`. Story 82.8 (added after the original epic close) lifted the gate; from 82.8 forward, TOD ships in every configuration and CRM stays research-only.
 - **No `@AppStorage` migration shims.** Research-build users are developers; document any reset explicitly when keys are renamed.
 - **Terminology constraints (this story specifically):**
   - Must frame TOD as detecting *unintentional playing errors*, not cataloging deliberate rhythmic gestures.

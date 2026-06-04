@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionDiscipline UI contribution")
 struct TimingOffsetDetectionDisciplineTests {
 
@@ -37,4 +36,3 @@ struct TimingOffsetDetectionDisciplineTests {
                               + TimingOffsetDetectionHelp.maxRepetitionsSettingsHelp.count)
     }
 }
-#endif

@@ -12,7 +12,6 @@ struct StatisticsKeyTests {
         #expect(key1 != key2)
     }
 
-#if PEACH_RESEARCH
     @Test("rhythm keys with different ranges are distinct")
     func rhythmKeysDistinctByRange() async {
         let key1 = StatisticsKey.rhythm(.timingOffsetDetection, .slow, .early)
@@ -29,20 +28,17 @@ struct StatisticsKeyTests {
 
     @Test("identical keys are equal")
     func identicalKeysEqual() async {
-        let key1 = StatisticsKey.rhythm(.continuousRhythmMatching, .moderate, .late)
-        let key2 = StatisticsKey.rhythm(.continuousRhythmMatching, .moderate, .late)
+        let key1 = StatisticsKey.rhythm(.timingOffsetDetection, .moderate, .late)
+        let key2 = StatisticsKey.rhythm(.timingOffsetDetection, .moderate, .late)
         #expect(key1 == key2)
     }
-#endif
 
     @Test("statisticsConfig returns mode config")
     func configLookup() async {
         let pitchKey = StatisticsKey.pitch(.unisonPitchDiscrimination)
         #expect(pitchKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.unisonPitchDiscrimination.config.statistics.ewmaHalflife)
 
-#if PEACH_RESEARCH
         let rhythmKey = StatisticsKey.rhythm(.timingOffsetDetection, .fast, .early)
         #expect(rhythmKey.statisticsConfig.ewmaHalflife == TrainingDisciplineID.timingOffsetDetection.config.statistics.ewmaHalflife)
-#endif
     }
 }

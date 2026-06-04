@@ -700,9 +700,9 @@ classDiagram
 
 Three things to notice. **First**, the two-protocol seam (`TrainingDiscipline` ← `TrainingDisciplineUI`) crosses the Core/App boundary; the discipline's single conformance to `TrainingDisciplineUI` satisfies both surfaces. **Second**, each adapter implements *two* protocols — the discipline's own `ExampleObserver` (so it receives trials from the session) *and* a shared-infrastructure protocol (so it drives the profile or the store). That double conformance is the adapter pattern made structural. **Third**, the payload contract (`TrainingDisciplinePayload`) is separate from the discipline contract; it travels through the JSON envelope independently.
 
-Activation is per-discipline and compile-time only. `App/Training/DisciplineBootstrap.swift` is the single source of truth: it lists the active discipline factories, with the four pitch disciplines unconditional and the two timing disciplines (`TimingOffsetDetectionDiscipline`, `ContinuousRhythmMatchingDiscipline`) wrapped in `#if PEACH_RESEARCH`. The `Debug (Research)` and `Release (Research)` build configurations define that flag; the App Store cut is built without it, so the timing types are physically absent from its binary. Toggling a discipline is always a rebuild — there is no runtime UI, no `UserDefaults` flag, no debug menu. ADR-10 records the explicit rejection of runtime activation and the rationale for moving from category-grained gating to per-discipline gating.
+Activation is per-discipline and compile-time only. `App/Training/DisciplineBootstrap.swift` is the single source of truth: it lists the active discipline factories. The four pitch disciplines and `TimingOffsetDetectionDiscipline` are unconditional; `ContinuousRhythmMatchingDiscipline` is wrapped in `#if PEACH_RESEARCH`. The `Debug (Research)` and `Release (Research)` build configurations define that flag; the App Store cut is built without it, so Continuous Rhythm Matching is not registered there. Toggling a discipline is always a rebuild — there is no runtime UI, no `UserDefaults` flag, no debug menu. ADR-10 records the explicit rejection of runtime activation and the rationale for moving from category-grained gating to per-discipline gating; story 82.8 narrowed the gate from "both timing disciplines" to "Continuous Rhythm Matching only," since the Timing Offset Detection pattern and slot work of epic 82 made TOD self-contained enough to ship.
 
-The timing disciplines require sub-20 ms input latency to be musically useful. iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter. Only wired USB MIDI is reliable enough — so the timing disciplines reach a small group of TestFlight participants via the `Research` configurations only, not the App Store.
+Continuous Rhythm Matching still requires sub-20 ms input latency to be musically useful — iOS touch input adds 50–80 ms; BLE MIDI typically adds 30–50 ms with jitter; only wired USB MIDI is reliable enough — so it reaches a small group of TestFlight participants via the `Research` configurations only. Timing Offset Detection is judgment-driven rather than input-driven (the user answers "early or late?" after listening), so it is not bound by the same latency constraint and ships in the App Store cut.
 
 ### 8.8 Platform Abstraction (Ports/Adapters)
 
@@ -910,13 +910,13 @@ The algorithm uses the formula `p * (1 ± k * sqrt(p))`, where `p` is the curren
 
 **Context:** Before epic 77, the `PEACH_RESEARCH` Swift compilation flag introduced in story 76.4 gated whole training categories — the rhythm category was either present or absent as a unit. Per-discipline experimentation required hunting through gates inside central screens. Once the architecture allowed one rhythm discipline to be excluded while another remained registered, category-grained gating became misleading: the category was no longer the meaningful unit of activation.
 
-**Decision:** Per-discipline activation lives in a single file, `App/Training/DisciplineBootstrap.swift`, as a list of factory expressions (`UnisonPitchDiscriminationDiscipline()`, `IntervalPitchDiscriminationDiscipline()`, …). The four pitch disciplines are unconditionally listed; the two timing disciplines are wrapped in `#if PEACH_RESEARCH` so their types are physically absent from the App Store binary. To disable a discipline locally during development, the developer comments out its factory line. Story 77.1 introduced the bootstrap file; subsequent stories (77.2 / 77.3 / 77.4 / 77.5 / 77.6) refined the surrounding plugin-style architecture so that the bootstrap list is the only place activation is expressed.
+**Decision:** Per-discipline activation lives in a single file, `App/Training/DisciplineBootstrap.swift`, as a list of factory expressions (`UnisonPitchDiscriminationDiscipline()`, `IntervalPitchDiscriminationDiscipline()`, …). The four pitch disciplines and `TimingOffsetDetectionDiscipline` are unconditionally listed; `ContinuousRhythmMatchingDiscipline` is wrapped in `#if PEACH_RESEARCH` so it is not registered in the App Store binary. To disable a discipline locally during development, the developer comments out its factory line. Story 77.1 introduced the bootstrap file; subsequent stories (77.2 / 77.3 / 77.4 / 77.5 / 77.6) refined the surrounding plugin-style architecture so that the bootstrap list is the only place activation is expressed. Story 82.8 narrowed the gate from "both timing disciplines" to "Continuous Rhythm Matching only" after epic 82 made the TOD pattern and slot model robust enough to ship.
 
-**Status:** Implemented (epic 77.1, refined by 77.2 / 77.3 / 77.4 / 77.5 / 77.6).
+**Status:** Implemented (epic 77.1, refined by 77.2 / 77.3 / 77.4 / 77.5 / 77.6 and 82.8).
 
 **Consequences:**
 - (+) Activation is additive: adding a discipline is a one-line edit to `DisciplineBootstrap.swift`
-- (+) Honest binary: the App Store cut contains no dormant timing code
+- (+) Honest binary: the App Store cut contains no dormant Continuous Rhythm Matching code
 - (+) Preserves the existing `Debug` / `Debug (Research)` / `Release` / `Release (Research)` build-configuration matrix from ADR-7 / story 76.4
 - (+) Per-discipline granularity replaces the misleading per-category gate
 - (-) Toggling a discipline requires a rebuild — no live experimentation
@@ -1006,13 +1006,13 @@ Quality
 | **BeatSequencer** | Protocol for gapless looped audio playback of `Beat` cycles. The session provides beats via `BeatProvider`; the sequencer handles batch scheduling and exposes a `SequencerTiming` view (sample position, samples per beat). Used by both Timing Offset Detection and Continuous Rhythm Matching. |
 | **Continuous Rhythm Matching** | A repeating rhythmic pattern plays with one gap per cycle; user taps to fill the gap. Timing accuracy is measured. |
 | **DetunedMIDINote** | A MIDI note with a cent offset — a precise pitch identity in the logical world. |
-| **DisciplineBootstrap** | Single file (`App/Training/DisciplineBootstrap.swift`) listing the active discipline factories. Pitch disciplines always; timing disciplines inside `#if PEACH_RESEARCH`. |
+| **DisciplineBootstrap** | Single file (`App/Training/DisciplineBootstrap.swift`) listing the active discipline factories. Pitch disciplines and Timing Offset Detection always; Continuous Rhythm Matching inside `#if PEACH_RESEARCH`. |
 | **EWMA** | Exponentially Weighted Moving Average. Used for smoothing progress trends over time. |
 | **Interval** | Musical distance from prime (unison, 0 semitones) through octave (12 semitones). |
 | **Kazez Algorithm** | Psychoacoustic staircase that adjusts difficulty via `p * (1 ± k * sqrt(p))`. Coefficients: narrowing 0.05, widening 0.09. Used for both pitch comparison and timing offset detection. |
 | **MIDI Note** | Standardized pitch number (0-127). 60 = middle C, 69 = A4. |
 | **PeachCommands** | SwiftUI `Commands` type providing macOS menu bar entries and keyboard shortcuts for training interactions. |
-| **PEACH_RESEARCH** | Swift compilation flag defined by the `(Research)` build configurations. Gates the timing disciplines so they are physically absent from App Store binaries. |
+| **PEACH_RESEARCH** | Swift compilation flag defined by the `(Research)` build configurations. Gates `ContinuousRhythmMatchingDiscipline` so it is not registered in App Store binaries. Story 82.8 narrowed this gate from "both timing disciplines" to "CRM only" after epic 82 made Timing Offset Detection ship-ready. |
 | **Perceptual Profile** | In-memory model of the user's pitch and rhythm perception, rebuilt from training records on startup. Keyed by `StatisticsKey`. |
 | **Pitch Bend** | MIDI mechanism for fine-tuning pitch. Peach uses a ±200 cent range with 14-bit resolution (~0.024 cents per step). |
 | **Pitch Comparison** | Two notes in sequence, user judges higher or lower. |

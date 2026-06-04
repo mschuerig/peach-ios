@@ -81,7 +81,6 @@ struct CSVFormatMigrationTests {
         #expect(migrated[0]["centOffset"] == "15.5")
     }
 
-#if PEACH_RESEARCH
     @Test("v2→v3 leaves rhythmOffsetDetection trainingType unchanged")
     func v2ToV3LeavesTimingOffsetDetectionUnchanged() async throws {
         let rows: [[String: String]] = [
@@ -90,7 +89,6 @@ struct CSVFormatMigrationTests {
         let migrated = try #require(CSVMigrationChain.migrate(from: 2, to: 3, rows: rows))
         #expect(migrated[0]["trainingType"] == "rhythmOffsetDetection")
     }
-#endif
 
     // MARK: - Chain
 

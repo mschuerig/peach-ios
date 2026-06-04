@@ -13,7 +13,7 @@
 
 | Term | Definition |
 |---|---|
-| **Training Discipline** | An ear training discipline such as pitch discrimination, pitch matching, rhythm offset detection, or rhythm matching. Each discipline has independent progress tracking via `TrainingDisciplineConfig`. The set is build-gated: Release/App Store ships four pitch disciplines (two unison, two interval); Debug and `PEACH_RESEARCH` builds additionally include the two rhythm disciplines. User-facing names: "Hear & Compare" (threshold tasks) and "Tune & Match" (reproduction tasks), each with "Single Notes" (unison) and "Intervals" variants. |
+| **Training Discipline** | An ear training discipline such as pitch discrimination, pitch matching, timing offset detection, or continuous rhythm matching. Each discipline has independent progress tracking via `TrainingDisciplineConfig`. The set is build-gated: Release/App Store ships four pitch disciplines (two unison, two interval) plus Timing Offset Detection; `PEACH_RESEARCH` builds additionally include Continuous Rhythm Matching. User-facing names: "Hear & Compare" (threshold tasks) and "Tune & Match" (reproduction tasks), each with "Single Notes" (unison) and "Intervals" variants. |
 | **Trial** | One atomic presentation-response cycle — a single exercise where the user hears stimuli and responds. The fundamental unit of training across all disciplines. Specific trial types: `PitchDiscriminationTrial`, `PitchMatchingTrial`, `RhythmOffsetDetectionTrial`. |
 | **Pitch Discrimination** | A threshold task: two sequential notes are played, and the user judges whether the second is higher or lower than the first. The atomic unit of pitch discrimination training. Contains a reference note, a target note (possibly at a different interval), and a cent offset applied to the target. Formerly "Pitch Comparison". |
 | **Completed Pitch Discrimination Trial** | A pitch discrimination trial bundled with the user's answer, tuning system, and timestamp. Contains the original trial, whether the user answered higher, whether the answer was correct, and the tuning system. Used for recording and analysis. Formerly "Completed Pitch Comparison". |
@@ -99,7 +99,7 @@
 
 | Term | Definition |
 |---|---|
-| **Start Screen** | The app's home screen. Shows one button per registered training discipline (four pitch in App Store builds; additionally two rhythm in Debug and `PEACH_RESEARCH` builds), the Profile Preview (tappable), and buttons for Settings, Profile, and Info screens. |
+| **Start Screen** | The app's home screen. Shows one button per registered training discipline (four pitch + Timing Offset Detection in App Store builds; additionally Continuous Rhythm Matching in `PEACH_RESEARCH` builds), the Profile Preview (tappable), and buttons for Settings, Profile, and Info screens. |
 | **Info Screen** | Displays app name, developer, copyright, and version number. |
 | **Pitch Discrimination Screen** | The active pitch discrimination training interface. Shows Higher/Lower buttons and the Pitch Discrimination Feedback Indicator, plus interval label when in interval mode. Navigating away stops training. Formerly "Pitch Comparison Screen". |
 | **Pitch Matching Screen** | The active pitch matching interface. Shows the Vertical Pitch Slider and Pitch Matching Feedback Indicator, plus interval label when in interval mode. Navigating away stops the session. |

@@ -1,7 +1,6 @@
 import Testing
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionPatternPickerSettingsSection — accessibility label derivation")
 struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
 
@@ -73,4 +72,3 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         #expect(resolved.offsetNotePosition == pattern.defaultOffsetNotePosition.rawValue)
     }
 }
-#endif

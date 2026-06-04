@@ -1,7 +1,6 @@
 import Testing
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionOffsetNotePositionSettingsSection — cell classification")
 struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
 
@@ -101,4 +100,3 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
                 < label24.range(of: "4")?.lowerBound ?? label24.endIndex)
     }
 }
-#endif

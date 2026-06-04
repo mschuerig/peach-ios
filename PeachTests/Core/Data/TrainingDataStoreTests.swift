@@ -319,7 +319,6 @@ struct TrainingDataStoreTests {
         #expect(fetched[0].payload.userCentError == -5.0)
     }
 
-#if PEACH_RESEARCH
     // MARK: - Timing Offset Detection
 
     @Test("Save and retrieve a single timing offset detection payload")
@@ -377,6 +376,7 @@ struct TrainingDataStoreTests {
         #expect(abs(fetched[0].timestamp.timeIntervalSince(timestamp)) < 0.001)
     }
 
+#if PEACH_RESEARCH
     // MARK: - Continuous Rhythm Matching
 
     @Test("Save and retrieve a single continuous rhythm matching payload")

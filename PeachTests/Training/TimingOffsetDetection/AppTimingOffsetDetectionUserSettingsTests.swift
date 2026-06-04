@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("AppTimingOffsetDetectionUserSettings Tests")
 struct AppTimingOffsetDetectionUserSettingsTests {
 
@@ -118,4 +117,3 @@ struct AppTimingOffsetDetectionUserSettingsTests {
         #expect(port.offsetNotePosition == TimingOffsetDetectionPattern.pattern1111.defaultOffsetNotePosition)
     }
 }
-#endif

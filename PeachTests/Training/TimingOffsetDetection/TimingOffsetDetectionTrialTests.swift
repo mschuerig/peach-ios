@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionTrial Tests")
 struct TimingOffsetDetectionTrialTests {
 
@@ -36,4 +35,3 @@ struct TimingOffsetDetectionTrialTests {
         #expect(trial.offset.direction == .late)
     }
 }
-#endif

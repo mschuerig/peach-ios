@@ -54,6 +54,6 @@ Story 82.1 shipped this step. Guidance recorded here so future expansion stays c
 - Epic 81 — Settings screen control taxonomy (stories 81.1–81.3 establish the control vocabulary this widget will draw from).
 - Stories 48.1–48.3 — original TOD implementation.
 - Story 75.11 — rhythm-to-timing naming alignment.
-- Story 76.4 — build-gated timing disciplines (TOD ships only under `PEACH_RESEARCH`).
+- Story 76.4 — build-gated timing disciplines (originally gated TOD + CRM under `PEACH_RESEARCH`; story 82.8 lifted TOD out of the gate, leaving only CRM behind it).
 - `docs/planning-artifacts/rhythm-training-spec.md` — rhythm/timing training spec.
 - `Peach/Core/Audio/SequencerTypes.swift` — `Beat` / `Subdivision` engine layer (already tuplet- and rest-capable).

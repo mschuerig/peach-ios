@@ -239,7 +239,6 @@ struct TrainingDataExporterTests {
         #expect(lines.count == 5)
     }
 
-#if PEACH_RESEARCH
     // MARK: - Rhythm Record Tests
 
     @Test("export with rhythm offset detection records produces correct CSV")
@@ -314,6 +313,7 @@ struct TrainingDataExporterTests {
 
     // MARK: - V2 Comprehensive Tests
 
+#if PEACH_RESEARCH
     @Test("header contains all 19 columns")
     func headerInExport() async throws {
         let store = try makeStore()
@@ -330,6 +330,7 @@ struct TrainingDataExporterTests {
         #expect(columns[13] == "offsetMs")
         #expect(columns[14] == "meanOffsetMs")
     }
+#endif
 
     @Test("rhythm-only export contains no pitch data")
     func rhythmOnlyExport() async throws {
@@ -360,6 +361,7 @@ struct TrainingDataExporterTests {
         #expect(csv == CSVExportSchema.metadataLine + "\n" + CSVExportSchema.headerRow)
     }
 
+#if PEACH_RESEARCH
     @Test("all rows have exactly 19 fields matching column count")
     func allRowsHave19Fields() async throws {
         let store = try makeStore()
@@ -387,6 +389,7 @@ struct TrainingDataExporterTests {
             #expect(fields.count == 19, "Row \(i) has \(fields.count) fields, expected 19")
         }
     }
+#endif
 
     @Test("discriminator column contains correct training type for each record type")
     func discriminatorColumnCorrectness() async throws {
@@ -417,5 +420,4 @@ struct TrainingDataExporterTests {
         #expect(discriminators.contains("pitchMatching"))
         #expect(discriminators.contains("rhythmOffsetDetection"))
     }
-#endif
 }

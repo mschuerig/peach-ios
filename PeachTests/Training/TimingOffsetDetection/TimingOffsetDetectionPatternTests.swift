@@ -2,7 +2,6 @@ import Testing
 import Foundation
 @testable import Peach
 
-#if PEACH_RESEARCH
 @Suite("TimingOffsetDetectionPattern Tests")
 struct TimingOffsetDetectionPatternTests {
 
@@ -314,4 +313,3 @@ struct TimingOffsetDetectionPatternTests {
         }
     }
 }
-#endif

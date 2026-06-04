@@ -11,9 +11,7 @@ struct ProgressTimelineTests {
 
     private typealias DiscriminationEntry = (timestamp: Date, payload: PitchDiscriminationPayload)
     private typealias MatchingEntry = (timestamp: Date, payload: PitchMatchingPayload)
-#if PEACH_RESEARCH
     private typealias TimingEntry = (timestamp: Date, payload: TimingOffsetDetectionPayload)
-#endif
 
     private func makeTimeline(
         pitchDiscriminationRecords: [DiscriminationEntry] = [],
@@ -26,7 +24,6 @@ struct ProgressTimelineTests {
         return ProgressTimeline(profile: profile)
     }
 
-#if PEACH_RESEARCH
     private func makeTimeline(
         pitchDiscriminationRecords: [DiscriminationEntry] = [],
         pitchMatchingRecords: [MatchingEntry] = [],
@@ -39,7 +36,6 @@ struct ProgressTimelineTests {
         }
         return ProgressTimeline(profile: profile)
     }
-#endif
 
     private func makePitchDiscriminationRecord(
         centOffset: Double,
@@ -1030,7 +1026,6 @@ struct ProgressTimelineTests {
 
     // MARK: - Rhythm Mode Tests
 
-    #if PEACH_RESEARCH
     private func timingEntry(tempoBPM: Int, offsetMs: Double, isCorrect: Bool, timestamp: Date) -> TimingEntry {
         (timestamp, TimingOffsetDetectionPayload(tempoBPM: tempoBPM, offsetMs: offsetMs, isCorrect: isCorrect))
     }
@@ -1082,5 +1077,4 @@ struct ProgressTimelineTests {
         #expect(timeline.recordCount(for: .timingOffsetDetection) == 2)
         #expect(timeline.currentEWMA(for: .timingOffsetDetection) != nil)
     }
-    #endif
 }
