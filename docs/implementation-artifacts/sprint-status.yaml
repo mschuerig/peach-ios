@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-04 # Epic 83 created for pre-release readiness; story 83.1 drafted for TOD release-copy sweep.
+# last_updated: 2026-06-04 # Epic 84 created for TOD tuplet patterns; four story shells (84.1–84.4) defined as backlog.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -749,3 +749,25 @@ development_status:
   epic-83: in-progress
   83-1-tod-release-copy-update: draft
   epic-83-retrospective: optional
+
+  # Epic 84: TOD Tuplet Patterns
+  # Source: UX/PM session 2026-06-04 (with John). Long-form planning in
+  # docs/planning-artifacts/tod-discipline-future-direction.md and
+  # docs/planning-artifacts/tod-initial-pattern-catalog.md. Follow-up to
+  # Epic 82: adds tuplet-structured patterns (triplets, nested figures,
+  # sextuplets, mixed-duration triplet derivatives), replaces Epic 82's
+  # equal-cell renderer with a proportional-timeline renderer, switches
+  # all catalog entries onto an opaque pattern-id convention (replacing
+  # the pattern_<mask> scheme), and sections the picker so the growing
+  # catalog stays scannable.
+  # Work order: 84.1 strictly blocks 84.2–84.4; 84.2 ∥ 84.3; 84.4 ← both.
+  # Each story = own commit + PR. Longer-than-beat patterns and multi-beat
+  # syncopation are explicitly deferred to a separate near-future follow-up
+  # epic; the renderer and ID convention here are forward-compatible with
+  # that work by construction.
+  epic-84: backlog
+  84-1-tuplet-renderer-and-catalog-design: backlog
+  84-2-opaque-pattern-id-convention-swap: backlog
+  84-3-proportional-timeline-renderer: backlog
+  84-4-sectioned-picker-and-tuplet-catalog-content: backlog
+  epic-84-retrospective: optional
