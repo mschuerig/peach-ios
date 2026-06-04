@@ -1,9 +1,9 @@
 # TOD — Initial Pattern Catalog & Picker UX
 
-**Status:** Locked design direction (informational, not a story spec)
+**Status:** Locked design direction (informational, not a story spec). **Partially superseded by [`tod-tuplet-renderer-design.md`](tod-tuplet-renderer-design.md)** (Epic 84 — tuplet expansion) for the proportional-timeline renderer, the opaque pattern-id convention (the five `pattern_NNNN` ids documented here are renamed to `pattern_01`–`pattern_05`), and the sectioned picker categorization. The pickable-position rule, the rest-cell a11y treatment, the `TimingDotView` visual vocabulary, and the per-pattern rationale recorded here all carry forward unchanged.
 **Date:** 2026-06-03
 **Owner story:** 82.3 (no-code)
-**Consumed by:** 82.5 (data layer), 82.6 (UI), 82.7 (catalog content)
+**Consumed by:** 82.5 (data layer), 82.6 (UI), 82.7 (catalog content). **Successor reader:** Epic 84 (84.2–84.4) reads this doc as historical baseline; the live design direction for the proportional renderer, the new id convention, and the sectioned picker lives in `tod-tuplet-renderer-design.md`.
 **Companion docs:**
 - [`tod-discipline-future-direction.md`](tod-discipline-future-direction.md) — long-form direction, including the settled *Offset Note* terminology (§ *Resolved: terminology*).
 - [`../implementation-artifacts/epic-82-context.md`](../implementation-artifacts/epic-82-context.md) — epic-wide context including the technical-decisions table and cross-story dependency chain.

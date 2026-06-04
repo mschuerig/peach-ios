@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-04 # Epic 84 created for TOD tuplet patterns; four story shells (84.1–84.4) defined as backlog.
+# last_updated: 2026-06-05 # Story 84.1 done (no-code design lock for TOD tuplet renderer + catalog).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -765,8 +765,8 @@ development_status:
   # syncopation are explicitly deferred to a separate near-future follow-up
   # epic; the renderer and ID convention here are forward-compatible with
   # that work by construction.
-  epic-84: backlog
-  84-1-tuplet-renderer-and-catalog-design: backlog
+  epic-84: in-progress
+  84-1-tuplet-renderer-and-catalog-design: done
   84-2-opaque-pattern-id-convention-swap: backlog
   84-3-proportional-timeline-renderer: backlog
   84-4-sectioned-picker-and-tuplet-catalog-content: backlog
