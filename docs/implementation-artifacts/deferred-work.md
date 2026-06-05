@@ -33,6 +33,16 @@ When a finding is fixed: remove its section and reference its `PF-###` in the cl
 
 ## WONT-FIX — Documented Exceptions
 
+### PF-006: `AsyncStream` single-consumer on `MIDIKitAdapter.events`
+
+**Found:** 2026-03-27 (MIDI pitch bend fix)
+**Severity:** Low
+**Disposition:** WONT-FIX (sessions are mutually exclusive by design and that won't change)
+
+`MIDIKitAdapter.events` is a single `AsyncStream` shared between `PitchMatchingSession` and `ContinuousRhythmMatchingSession`. `AsyncStream` is documented as single-consumer. The constraint is not violated in practice because `TrainingLifecycleCoordinator.activeSession` is a single reference — only one session is active at any time — and parallel-discipline sessions are not on any roadmap.
+
+**Fix:** No fix planned. If a future discipline ever needs to consume MIDI in parallel with another, switch to `AsyncBroadcastSequence` or per-session streams — but that would be a discipline-architecture change, not a fix to this entry.
+
 ### PF-023: AX1+ Slider partner-imposed range shifts during edit
 
 **Found:** 2026-06-03 (Story 81.3)
@@ -116,16 +126,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 `onChange(of: soundSource)` in `PeachApp` replaces `pitchMatchingSession` and `pitchDiscriminationSession` without calling `stop()` on the old instances. If a session was active, its internal Tasks (MIDI listening, training loop) capture `self`, preventing deallocation. The old session's tasks run indefinitely until the AsyncStream finishes.
 
 **Fix:** Call `stop()` before reassignment, or restructure sessions to replace their `NotePlayer` rather than being fully recreated.
-
-### PF-006: `AsyncStream` single-consumer on `MIDIKitAdapter.events`
-
-**Found:** 2026-03-27 (MIDI pitch bend fix)
-**Severity:** Low (sessions are mutually exclusive by design)
-**Disposition:** OPEN
-
-`MIDIKitAdapter.events` is a single `AsyncStream` shared between `PitchMatchingSession` and `ContinuousRhythmMatchingSession`. While sessions are mutually exclusive by design, `AsyncStream` is documented as single-consumer.
-
-**Fix:** Use `AsyncBroadcastSequence` or per-session streams if multi-consumer support is ever needed.
 
 ### PF-007: CC#123 doesn't reset pitch bend/controllers
 
