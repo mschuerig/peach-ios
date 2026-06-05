@@ -180,6 +180,8 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 
 **Fix:** Standard piano-UI behaviour requires y-coordinate awareness (top half: respect overlay; bottom half: white only).
 
+**Open question (2026-06-05, Michael):** Adult-finger contact area relative to a screen-rendered piano key may already exceed single-semitone resolution — y-aware hit-testing only helps when the user is targeting a specific key with deliberate intent, and even then the contact patch is wider than the visual key. Before implementing the catalog's proposed fix, validate that real finger taps actually misresolve often enough to justify the change — e.g., instrument the existing handler to log tap locations during normal use and measure the white-key-bottom-over-black-key rate.
+
 ### PF-025: `PianoKeyboardLayout` is main-actor-isolated; Core/Music style is `nonisolated`
 
 **Found:** 2026-06-03 (Story 81.3)
