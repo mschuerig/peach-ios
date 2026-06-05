@@ -29,6 +29,11 @@ struct PianoKeyboardLayout: Hashable, Sendable {
     }
 
     /// Centre x-position of `note`'s key within `totalWidth`.
+    ///
+    /// O(N) in the size of `noteRange`: the white-key index walks `notes`
+    /// from the lower bound. Acceptable as long as callers invoke this at a
+    /// rate well below perceptible-jank; see ``midiNote(at:totalWidth:)`` for
+    /// the trigger conditions that would justify caching.
     func xPosition(forNote note: MIDINote, totalWidth: CGFloat) -> CGFloat {
         let keyWidth = whiteKeyWidth(totalWidth: totalWidth)
 
@@ -55,6 +60,15 @@ struct PianoKeyboardLayout: Hashable, Sendable {
 
     /// Inverse of `xPosition`: returns the in-range note whose centre is nearest `x`.
     /// `x` outside `[0, totalWidth]` is clamped (returns the boundary note).
+    ///
+    /// O(N²) in the size of `noteRange`: each note's distance call invokes
+    /// the O(N) ``xPosition(forNote:totalWidth:)``. At the largest in-app
+    /// range (88 keys) sustained at 60 Hz the cost is ~465K ops/sec, well
+    /// below perceptible-jank on supported devices. Revisit this — precompute
+    /// a `[MIDINote: CGFloat]` cache or an O(1) white-key-index table — if a
+    /// future caller renders a wider keyboard, animates per-key opacity at
+    /// high frequency, or runs on a lower-performance device. Documented per
+    /// PF-019 WONT-FIX in `docs/implementation-artifacts/deferred-work.md`.
     func midiNote(at x: CGFloat, totalWidth: CGFloat) -> MIDINote {
         var best = noteRange.lowerBound
         var bestDistance = abs(xPosition(forNote: best, totalWidth: totalWidth) - x)

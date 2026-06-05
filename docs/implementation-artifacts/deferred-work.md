@@ -53,6 +53,16 @@ When a finding is fixed: remove its section and reference its `PF-###` in the cl
 
 **Fix:** No fix planned. If a future discipline ever needs to vary tempo mid-session, recompute `refillThreshold` on tempo change (or expose a tempo-change API that recomputes it as a side effect) — that story owns the refactor when planned.
 
+### PF-019: O(N²) `PianoKeyboardLayout` x-position lookups
+
+**Found:** 2026-06-03 (Story 81.3)
+**Severity:** Low
+**Disposition:** WONT-FIX (~465K ops/sec at 88 keys × 60 Hz drag — below perceptible-jank; trigger conditions documented inline)
+
+`xPosition(forNote:)` is O(N) (filters `notes.prefix(while:)` for the white-key index), and `midiNote(at:)` calls it once per note (O(N²)). At the largest in-app range (88 keys) sustained at 60 Hz the cost is well below perceptible-jank on supported devices. Doc-comments on both methods in `Peach/Core/Music/PianoKeyboardLayout.swift` name the O(N²) and the trigger conditions for revisiting.
+
+**Fix:** No fix planned. If a future caller renders a wider keyboard, animates per-key opacity at high frequency, or runs on a lower-performance device, precompute a `[MIDINote: CGFloat]` cache or an O(1) white-key-index table.
+
 ### PF-023: AX1+ Slider partner-imposed range shifts during edit
 
 **Found:** 2026-06-03 (Story 81.3)
@@ -149,16 +159,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 No tests verify that `SoundFontEngine`'s `SequencerEngine` conformance matches the contract exercised by `MockSequencerEngine`. The two could silently diverge (e.g., what `clearSchedule()` does mid-render).
 
 **Fix:** Add a conformance test suite that runs both implementations through the same set of invariants (start/stop ordering, post-clear silence, sample-position reset semantics).
-
-### PF-019: O(N²) `PianoKeyboardLayout` x-position lookups
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Low (~465K ops/sec at 88 keys × 60 Hz drag — below perceptible-jank threshold)
-**Disposition:** OPEN
-
-`xPosition(forNote:)` is O(N) (filters `notes.prefix(while:)` for the white-key index), and `midiNote(at:)` calls it once per note (O(N²)).
-
-**Fix:** Precomputed `[MIDINote: CGFloat]` cache or an O(1) white-key-index table. Required if a future caller renders a wider keyboard, animates per-key opacity at high frequency, or runs on a lower-performance device.
 
 ### PF-020: Voice Control "Tap C3" lost under marker `.accessibilityRepresentation`
 
