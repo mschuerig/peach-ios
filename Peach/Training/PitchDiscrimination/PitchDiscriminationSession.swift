@@ -232,7 +232,25 @@ final class PitchDiscriminationSession: TrainingSession {
         }
         logger.info("Session resuming from preserved trial")
         state = .playingReferenceNote
-        playReferenceForCurrentTrial()
+        chainAfterPendingStopThenPlayReference()
+    }
+
+    /// On resume, wait for the pause-spawned audio stop to complete before
+    /// re-issuing playback. Kept separate from `playReferenceForCurrentTrial`
+    /// so beginNextTrial's hot path does not pay an `await` suspension point
+    /// (which yields to the scheduler even when there is nothing to wait for,
+    /// causing the engine to occasionally swallow the first noteOn).
+    private func chainAfterPendingStopThenPlayReference() {
+        guard let priorStop = pendingAudioStop else {
+            playReferenceForCurrentTrial()
+            return
+        }
+        pendingAudioStop = nil
+        Task {
+            await priorStop.value
+            guard state == .playingReferenceNote, !Task.isCancelled else { return }
+            playReferenceForCurrentTrial()
+        }
     }
 
     // MARK: - State Machine Engine
@@ -306,11 +324,7 @@ final class PitchDiscriminationSession: TrainingSession {
         let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz, target \(freq2.rawValue)Hz, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
 
-        let priorStop = pendingAudioStop
-        pendingAudioStop = nil
         lifecycle?.setTrainingTask(Task {
-            await priorStop?.value
-            guard state != .idle, !Task.isCancelled else { return }
             do {
                 try await notePlayer.play(
                     frequency: freq1,
