@@ -117,16 +117,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 
 **Fix:** Call `stop()` before reassignment, or restructure sessions to replace their `NotePlayer` rather than being fully recreated.
 
-### PF-009: Rhythm spectrogram export temp file cleanup
-
-**Found:** 2026-03-30 (Spectrogram sharing fix)
-**Severity:** Low (cosmetic — temp dir grows until app restart)
-**Disposition:** OPEN
-
-`RhythmProfileCardView.renderShareImage()` writes PNGs to the temp directory on each re-render but doesn't track/delete previous renders, unlike `ChartImageRenderer.render()` which uses `lastRenderedURLs` for cleanup.
-
-**Fix:** Unify both export paths through `ChartImageRenderer`, or replicate the `lastRenderedURLs` tracking in `RhythmProfileCardView`.
-
 ### PF-010: Rename `currentGapPosition` → `gapPositionInCurrentBeat`
 
 **Found:** 2026-06-02 (Story 80.0)

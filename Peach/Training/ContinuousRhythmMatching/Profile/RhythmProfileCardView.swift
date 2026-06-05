@@ -39,7 +39,7 @@ struct RhythmProfileCardView: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(String(localized: "Rhythm profile for \(config.displayName)"))
         .task(id: progressTimeline.recordCount(for: mode)) {
-            shareImageURL = renderShareImage()
+            shareImageURL = renderShareImage(replacing: shareImageURL)
         }
     }
 
@@ -103,7 +103,7 @@ struct RhythmProfileCardView: View {
 
     // MARK: - Share Image
 
-    private func renderShareImage() -> URL? {
+    private func renderShareImage(replacing previousURL: URL?) -> URL? {
         let content = RhythmProfileCardExportView(mode: mode, date: Date())
             .environment(\.progressTimeline, progressTimeline)
             .environment(\.perceptualProfile, perceptualProfile)
@@ -115,6 +115,9 @@ struct RhythmProfileCardView: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
         do {
             try pngData.write(to: url)
+            if let previousURL, previousURL != url {
+                try? FileManager.default.removeItem(at: previousURL)
+            }
             return url
         } catch {
             return nil
