@@ -150,16 +150,6 @@ No tests verify that `SoundFontEngine`'s `SequencerEngine` conformance matches t
 
 **Fix:** Recompute `refillThreshold` on tempo change, or expose a tempo-change API that recomputes it as a side effect.
 
-### PF-018: `AppTimingOffsetDetectionUserSettings.maxRepetitions` should clamp `> cap` as well as `< 1`
-
-**Found:** 2026-06-03 (Story 81.2)
-**Severity:** Medium (theoretical crash path; requires corrupt UserDefaults or manual seeding)
-**Disposition:** OPEN
-
-The port currently clamps stored values `< 1` to `defaultMaxRepetitions` but lets arbitrarily large values (`Int.max`, a stale config from a future build, debugger writes) pass through unchanged. The new `DiscreteStopsSlider`'s `nearestStopIndex` computes `abs(stops[i] - value)` for each stop; with `value == Int.max` the arithmetic underflows and traps before any snap can happen.
-
-**Fix:** Clamp above the cap to `defaultMaxRepetitions` at the storage-layer port, mirroring the existing below-floor clamp. Removes the trap surface from every future caller.
-
 ### PF-019: O(N²) `PianoKeyboardLayout` x-position lookups
 
 **Found:** 2026-06-03 (Story 81.3)
@@ -179,16 +169,6 @@ The port currently clamps stored values `< 1` to `defaultMaxRepetitions` but let
 Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Voice Control ("Tap C3" works) alongside the two-marker adjustable representation for VoiceOver / Switch Control. `.accessibilityRepresentation` replaces the entire accessibility subtree, so Voice Control sees only the two Sliders. The two goals are mutually exclusive in a single SwiftUI configuration without a different mechanism.
 
 **Fix:** Restructure the accessibility tree so per-key Voice Control addressing works on the non-AX1 path as well (e.g., `.accessibilityCustomActions` plus markers as adjustable elements without `.accessibilityRepresentation`). Future story.
-
-### PF-021: Auto-recenter scroll on bound change in `NoteRangeSelector`
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Low
-**Disposition:** OPEN
-
-Scrolls to the midpoint between bounds only on first `.onAppear`. If the user drags a marker so far that it leaves the iPhone-portrait viewport, the marker stays off-screen.
-
-**Fix:** Add `.onChange(of: focusedMarker)` and `.onChange(of: lowerBound + upperBound)` to call `scroll.scrollTo(activeBound, anchor: .center)`.
 
 ### PF-022: Audio preview debouncing for keyboard `.repeat` phases
 
@@ -220,16 +200,6 @@ Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated
 
 **Fix:** Make `NoteRange` `nonisolated` (consistent with `MIDINote`) and then make `PianoKeyboardLayout` `nonisolated` too. Touches a widely-used domain type; deserves its own focused story rather than a Boy-Scout drive-by.
 
-### PF-027: `SettingsCoordinator.playSoundPreview` swallows audio errors with `try?`
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Low (pre-existing pattern in the coordinator)
-**Disposition:** OPEN
-
-Silent-failure mode means a broken preview is indistinguishable from a working one with the wrong sound font. The existing zero-arg variant has the same shape.
-
-**Fix:** Add `os.Logger` warning on error consistently across both `playSoundPreview` overloads.
-
 ### PF-030: `AppTimingOffsetDetectionUserSettings.selectedPattern` recomputes + logs on every access
 
 **Found:** 2026-06-05 (Story 84.2)
@@ -249,16 +219,6 @@ The computed property reads `defaults`, resolves via `pattern(forStoredId:)`, an
 The new beat-shape regression test added in 84.2 only handles `(.accent, .note)`, `(.normal, .note)`, `(.rest, .rest)` pairs. The expected side has no `Cell.nested` symbol, so the test cannot pin nested-shape expectations at all. The next story that registers `.nested(Beat)` entries must extend `Cell` and the matcher, or replace the matcher with a `Beat`-tree equality check, before its entries can use this regression coverage.
 
 **Fix:** Extend `Cell` with a `.nested` variant matching `Subdivision.nested(Beat)`, or replace the matcher with structural `Beat`-tree equality.
-
-### PF-032: `TimingOffsetDetectionPattern.pattern02`'s doc comment cross-references `pattern_01` by id
-
-**Found:** 2026-06-05 (Story 84.2)
-**Severity:** Low (no current breakage; load-bearing only under hypothetical retire of `pattern_01`)
-**Disposition:** OPEN
-
-The retired-id registry's job is to prevent number reuse, not to police doc-comment cross-references. If a future story rephrases without preserving the by-id reference, the connection between the two entries is silently lost.
-
-**Fix:** Resolution candidates: (a) inline the rationale ("default 2 sits on the half-beat — same metric position as the all-audible reference entry"); (b) leave as-is and accept that the catalog file is small enough to grep when retirements come; (c) add a convention rule that catalog doc comments must not cross-reference other entries by id.
 
 ### PF-033: `TimingDotView` natural width can grow unbounded on deeply nested patterns
 

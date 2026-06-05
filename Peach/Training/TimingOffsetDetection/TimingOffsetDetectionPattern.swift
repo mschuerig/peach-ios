@@ -372,10 +372,11 @@ extension TimingOffsetDetectionPattern {
 
     /// `*-*-* *` — nested 16th-triplet at host position 1 (leading) + 8th.
     /// `audibleToGrid = [[0, 0], [0, 1], [0, 2], [1]]`; `pickable = {2, 3, 4}`.
-    /// Mirror of ``pattern_nested_01``; pair coverage between trailing density
-    /// and leading density.
+    /// Pairs with the trailing-density 8th-then-16th-triplet entry to cover
+    /// both placements of the dense nested figure within the beat.
     ///
-    /// Default 3: middle of the nested 16th-triplet (mirror reasoning).
+    /// Default 3: middle of the nested 16th-triplet — cross-rhythm probe at
+    /// the densest point of the figure.
     static let pattern_nested_02 = TimingOffsetDetectionPattern(
         id: "pattern_nested_02",
         category: .nested,

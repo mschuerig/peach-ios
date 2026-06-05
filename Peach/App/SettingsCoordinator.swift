@@ -1,6 +1,9 @@
 import Foundation
+import os
 
 final class SettingsCoordinator {
+    private static let logger = Logger(subsystem: "com.peach.app", category: "SettingsCoordinator")
+
     private let dataStore: TrainingDataStore
     private let pitchDiscriminationSession: PitchDiscriminationSession
     private let profile: PerceptualProfile
@@ -40,12 +43,16 @@ final class SettingsCoordinator {
             for: Self.previewNote,
             referencePitch: userSettings.referencePitch
         )
-        try? await notePlayer.play(
-            frequency: frequency,
-            duration: duration,
-            velocity: userSettings.velocity,
-            amplitudeDB: Self.previewAmplitude
-        )
+        do {
+            try await notePlayer.play(
+                frequency: frequency,
+                duration: duration,
+                velocity: userSettings.velocity,
+                amplitudeDB: Self.previewAmplitude
+            )
+        } catch {
+            Self.logger.warning("playSoundPreview failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func playSoundPreview(note: MIDINote, duration: Duration) async {
@@ -53,12 +60,16 @@ final class SettingsCoordinator {
             for: note,
             referencePitch: userSettings.referencePitch
         )
-        try? await notePlayer.play(
-            frequency: frequency,
-            duration: duration,
-            velocity: userSettings.velocity,
-            amplitudeDB: Self.previewAmplitude
-        )
+        do {
+            try await notePlayer.play(
+                frequency: frequency,
+                duration: duration,
+                velocity: userSettings.velocity,
+                amplitudeDB: Self.previewAmplitude
+            )
+        } catch {
+            Self.logger.warning("playSoundPreview(note:) failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func stopSoundPreview() async {

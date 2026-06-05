@@ -26,6 +26,17 @@ struct NoteRangeSelector: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState private var focusedMarker: Marker?
 
+    /// MIDI-note value the scroll viewport should center on. Tracks the focused
+    /// marker so keyboard-driven moves keep their target on screen; falls back
+    /// to the midpoint between bounds when no marker is focused.
+    private var activeScrollTarget: Int {
+        switch focusedMarker {
+        case .lower: return lowerBound
+        case .upper: return upperBound
+        case .none: return (lowerBound + upperBound) / 2
+        }
+    }
+
     init(
         lowerBound: Binding<Int>,
         upperBound: Binding<Int>,
@@ -126,8 +137,13 @@ struct NoteRangeSelector: View {
                                 .frame(width: totalWidth)
                         }
                         .onAppear {
-                            let centre = (lowerBound + upperBound) / 2
-                            scroll.scrollTo(centre, anchor: .center)
+                            scroll.scrollTo(activeScrollTarget, anchor: .center)
+                        }
+                        .onChange(of: focusedMarker) { _, _ in
+                            scroll.scrollTo(activeScrollTarget, anchor: .center)
+                        }
+                        .onChange(of: lowerBound + upperBound) { _, _ in
+                            scroll.scrollTo(activeScrollTarget, anchor: .center)
                         }
                     }
                 }

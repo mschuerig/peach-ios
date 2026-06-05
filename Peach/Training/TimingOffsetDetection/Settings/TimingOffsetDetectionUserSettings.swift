@@ -16,15 +16,19 @@ final class AppTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSetti
     )
 
     /// Reads the configured maximum repetition count, clamping missing or out-of-range
-    /// values (`< 1`) to ``TimingOffsetDetectionSettingsKeys/defaultMaxRepetitions``.
-    /// Defence in depth: a corrupted UserDefaults value (0, negative, migration glitch)
-    /// must not produce a crashing `precondition` in ``TimingOffsetDetectionSettings``.
+    /// values to ``TimingOffsetDetectionSettingsKeys/defaultMaxRepetitions`` — both
+    /// below `1` and above the cap (which is also `defaultMaxRepetitions`, the
+    /// rightmost stop on the `DiscreteStopsSlider`). Defence in depth: a corrupted
+    /// UserDefaults value (0, negative, `Int.max` from a stale future build, debugger
+    /// write) must not produce a crashing `precondition` in
+    /// ``TimingOffsetDetectionSettings`` nor underflow the slider's nearest-stop
+    /// arithmetic.
     var maxRepetitions: Int {
         guard defaults.object(forKey: TimingOffsetDetectionSettingsKeys.maxRepetitions) != nil else {
             return TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions
         }
         let stored = defaults.integer(forKey: TimingOffsetDetectionSettingsKeys.maxRepetitions)
-        guard stored >= 1 else {
+        guard (1...TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions).contains(stored) else {
             return TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions
         }
         return stored
