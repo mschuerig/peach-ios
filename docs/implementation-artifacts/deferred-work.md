@@ -170,16 +170,6 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 
 **Fix:** Restructure the accessibility tree so per-key Voice Control addressing works on the non-AX1 path as well (e.g., `.accessibilityCustomActions` plus markers as adjustable elements without `.accessibilityRepresentation`). Future story.
 
-### PF-022: Audio preview debouncing for keyboard `.repeat` phases
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Low (audibly muddy, not a correctness bug)
-**Disposition:** OPEN
-
-Holding ←/→ on macOS fires `onCommit` at the system key-repeat rate (~10 Hz). Each `playSoundPreview(note:duration: .milliseconds(400))` overlaps the previous. The sampler handles overlap gracefully but it's audibly muddy.
-
-**Fix:** Serialize previews in `SettingsCoordinator` (cancel previous Task) or debounce at the call site.
-
 ### PF-024: Black-key vs white-key y-aware hit-test
 
 **Found:** 2026-06-03 (Story 81.3)

@@ -11,6 +11,13 @@ final class SettingsCoordinator {
     private let notePlayer: any NotePlayer
     private let userSettings: any UserSettings
 
+    /// Serializes audio-preview playback so a held keyboard ←/→ (which fires
+    /// `onCommit` at the system key-repeat rate of ~10 Hz on macOS) cancels
+    /// the in-flight preview before starting the next one. Without this, each
+    /// 400 ms preview overlaps the previous; the sampler handles the overlap
+    /// but the audible result is muddy.
+    private var previewTask: Task<Void, Never>?
+
     init(
         dataStore: TrainingDataStore,
         pitchDiscriminationSession: PitchDiscriminationSession,
@@ -43,16 +50,24 @@ final class SettingsCoordinator {
             for: Self.previewNote,
             referencePitch: userSettings.referencePitch
         )
-        do {
-            try await notePlayer.play(
-                frequency: frequency,
-                duration: duration,
-                velocity: userSettings.velocity,
-                amplitudeDB: Self.previewAmplitude
-            )
-        } catch {
-            Self.logger.warning("playSoundPreview failed: \(error.localizedDescription, privacy: .public)")
+        previewTask?.cancel()
+        let task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.notePlayer.play(
+                    frequency: frequency,
+                    duration: duration,
+                    velocity: self.userSettings.velocity,
+                    amplitudeDB: Self.previewAmplitude
+                )
+            } catch is CancellationError {
+                // Expected: a newer preview replaced this one.
+            } catch {
+                Self.logger.warning("playSoundPreview failed: \(error.localizedDescription, privacy: .public)")
+            }
         }
+        previewTask = task
+        await task.value
     }
 
     func playSoundPreview(note: MIDINote, duration: Duration) async {
@@ -60,19 +75,29 @@ final class SettingsCoordinator {
             for: note,
             referencePitch: userSettings.referencePitch
         )
-        do {
-            try await notePlayer.play(
-                frequency: frequency,
-                duration: duration,
-                velocity: userSettings.velocity,
-                amplitudeDB: Self.previewAmplitude
-            )
-        } catch {
-            Self.logger.warning("playSoundPreview(note:) failed: \(error.localizedDescription, privacy: .public)")
+        previewTask?.cancel()
+        let task = Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await self.notePlayer.play(
+                    frequency: frequency,
+                    duration: duration,
+                    velocity: self.userSettings.velocity,
+                    amplitudeDB: Self.previewAmplitude
+                )
+            } catch is CancellationError {
+                // Expected: a newer preview replaced this one.
+            } catch {
+                Self.logger.warning("playSoundPreview(note:) failed: \(error.localizedDescription, privacy: .public)")
+            }
         }
+        previewTask = task
+        await task.value
     }
 
     func stopSoundPreview() async {
+        previewTask?.cancel()
+        previewTask = nil
         try? await notePlayer.stopAll()
     }
 
