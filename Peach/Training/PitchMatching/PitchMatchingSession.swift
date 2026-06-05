@@ -267,25 +267,7 @@ final class PitchMatchingSession: TrainingSession {
         logger.info("Session resuming from preserved trial")
         state = .playingReference
         startMIDIListening()
-        chainAfterPendingStopThenPlayReference()
-    }
-
-    /// On resume, wait for the pause-spawned audio stop to complete before
-    /// re-issuing playback. Kept separate from `playReferenceNoteForCurrentTrial`
-    /// so beginNextTrial's hot path does not pay an `await` suspension point
-    /// (which yields to the scheduler even when there is nothing to wait for,
-    /// causing the engine to occasionally swallow the first noteOn).
-    private func chainAfterPendingStopThenPlayReference() {
-        guard let priorStop = pendingAudioStop else {
-            playReferenceNoteForCurrentTrial()
-            return
-        }
-        pendingAudioStop = nil
-        Task {
-            await priorStop.value
-            guard state == .playingReference, !Task.isCancelled else { return }
-            playReferenceNoteForCurrentTrial()
-        }
+        playReferenceNoteForCurrentTrial()
     }
 
     // MARK: - State Machine Engine
@@ -364,7 +346,11 @@ final class PitchMatchingSession: TrainingSession {
         self.referenceFrequency = targetFreq
         logger.info("Trial: ref=\(trial.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(trial.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(trial.initialCentOffset.rawValue)cents")
 
+        let priorStop = pendingAudioStop
+        pendingAudioStop = nil
         lifecycle?.setTrainingTask(Task {
+            await priorStop?.value
+            guard state != .idle, !Task.isCancelled else { return }
             do {
                 try await notePlayer.play(
                     frequency: refFreq,
@@ -449,8 +435,15 @@ final class PitchMatchingSession: TrainingSession {
         logger.info("Session stopped")
 
         isPaused = false
-        pendingAudioStop = nil
-        Task {
+        // Chain stopAll's own audio-stop Task behind any prior pause-spawned
+        // stop, and re-expose the combined chain via `pendingAudioStop` so the
+        // next `playReferenceNoteForCurrentTrial` can await it before issuing
+        // the first noteOn — otherwise an exit-then-re-enter sequence races
+        // the stop's fade-out against the new play and silences the first
+        // reference note on roughly half of attempts.
+        let priorStop = pendingAudioStop
+        pendingAudioStop = Task {
+            await priorStop?.value
             try? await notePlayer.stopAll()
         }
         lifecycle?.cancelAllTasks()
