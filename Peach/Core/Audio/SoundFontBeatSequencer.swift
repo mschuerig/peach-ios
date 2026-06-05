@@ -97,6 +97,14 @@ final class SoundFontBeatSequencer: BeatSequencer {
 
         logger.info("Beat sequencer started at \(tempo.value) BPM")
 
+        // Uniform-tempo assumption: `refillThreshold` is computed once from
+        // `samplesPerBeat` at start. Every shipping discipline keeps tempo
+        // constant within a session, so this stays correct for the life of
+        // the run-loop. A future discipline that varies tempo mid-session
+        // would need to recompute `refillThreshold` on tempo change (or
+        // expose a tempo-change API that recomputes it as a side effect) —
+        // that's the work to do when such a discipline is planned, not
+        // before. Documented per PF-016 WONT-FIX in `docs/implementation-artifacts/deferred-work.md`.
         let refillThreshold = Int64(Self.beatsPerBatch - 10) * samplesPerBeat
 
         runLoopTask = Task {

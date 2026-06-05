@@ -43,6 +43,16 @@ When a finding is fixed: remove its section and reference its `PF-###` in the cl
 
 **Fix:** No fix planned. If a future discipline ever needs to consume MIDI in parallel with another, switch to `AsyncBroadcastSequence` or per-session streams — but that would be a discipline-architecture change, not a fix to this entry.
 
+### PF-016: `refillThreshold` uniform-tempo assumption
+
+**Found:** 2026-06-02 (Story 80.0)
+**Severity:** Low
+**Disposition:** WONT-FIX (no roadmap for varying-tempo disciplines; assumption now documented inline)
+
+`SoundFontBeatSequencer.refillThreshold` is computed once from `samplesPerBeat` at start, so a future discipline that varied tempo mid-session would mis-estimate refill timing. Every shipping discipline keeps tempo constant within a session, so the assumption stays correct for the life of the run-loop. The uniform-tempo assumption is documented inline at the `refillThreshold` computation site in `Peach/Core/Audio/SoundFontBeatSequencer.swift`.
+
+**Fix:** No fix planned. If a future discipline ever needs to vary tempo mid-session, recompute `refillThreshold` on tempo change (or expose a tempo-change API that recomputes it as a side effect) — that story owns the refactor when planned.
+
 ### PF-023: AX1+ Slider partner-imposed range shifts during edit
 
 **Found:** 2026-06-03 (Story 81.3)
@@ -139,16 +149,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 No tests verify that `SoundFontEngine`'s `SequencerEngine` conformance matches the contract exercised by `MockSequencerEngine`. The two could silently diverge (e.g., what `clearSchedule()` does mid-render).
 
 **Fix:** Add a conformance test suite that runs both implementations through the same set of invariants (start/stop ordering, post-clear silence, sample-position reset semantics).
-
-### PF-016: `refillThreshold` uniform-tempo assumption
-
-**Found:** 2026-06-02 (Story 80.0)
-**Severity:** Low (no current discipline varies tempo mid-session)
-**Disposition:** OPEN
-
-`SoundFontBeatSequencer.refillThreshold` is computed from a single `samplesPerBeat` set once at start. Any future discipline that wants to vary tempo mid-session would mis-estimate refill timing.
-
-**Fix:** Recompute `refillThreshold` on tempo change, or expose a tempo-change API that recomputes it as a side effect.
 
 ### PF-019: O(N²) `PianoKeyboardLayout` x-position lookups
 
