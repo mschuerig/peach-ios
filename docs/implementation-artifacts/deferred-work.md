@@ -210,16 +210,6 @@ The computed property reads `defaults`, resolves via `pattern(forStoredId:)`, an
 
 **Fix:** Resolution candidates: (a) memoize the resolution per-port instance with a stored `lastResolvedId` guard; (b) move the warning log into `pattern(forStoredId:)` with a per-process `Set<String>` of already-warned ids; (c) accept the noise.
 
-### PF-031: `TimingOffsetDetectionPatternCatalogTests.catalogEntrySubdivisions` has no `.nested` case
-
-**Found:** 2026-06-05 (Story 84.2)
-**Severity:** Low (blocks coverage for the next nested-tuplet story)
-**Disposition:** OPEN
-
-The new beat-shape regression test added in 84.2 only handles `(.accent, .note)`, `(.normal, .note)`, `(.rest, .rest)` pairs. The expected side has no `Cell.nested` symbol, so the test cannot pin nested-shape expectations at all. The next story that registers `.nested(Beat)` entries must extend `Cell` and the matcher, or replace the matcher with a `Beat`-tree equality check, before its entries can use this regression coverage.
-
-**Fix:** Extend `Cell` with a `.nested` variant matching `Subdivision.nested(Beat)`, or replace the matcher with structural `Beat`-tree equality.
-
 ### PF-033: `TimingDotView` natural width can grow unbounded on deeply nested patterns
 
 **Found:** 2026-06-05 (Story 84.3)
