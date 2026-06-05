@@ -16,6 +16,8 @@ final class StubNotePlayer: NotePlayer {
         StubPlaybackHandle()
     }
     func stopAll() async throws {}
+    @discardableResult
+    func scheduleStopAll() -> Task<Void, Never> { Task {} }
 }
 
 private final class StubPlaybackHandle: PlaybackHandle {

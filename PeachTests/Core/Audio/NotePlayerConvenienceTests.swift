@@ -92,4 +92,7 @@ private final class ExtensionOnlyNotePlayer: NotePlayer {
     }
 
     func stopAll() async throws {}
+
+    @discardableResult
+    func scheduleStopAll() -> Task<Void, Never> { Task {} }
 }

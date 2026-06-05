@@ -31,10 +31,11 @@ final class SoundFontPlayer: NotePlayer {
 
     // MARK: - Audio-stop serialization
 
-    /// Most recent in-flight `stopAll()` chain. `play()` awaits this before
-    /// issuing its noteOn so a stop fade-out from a *different* session sharing
-    /// this instance cannot silence the new note. The chain re-entry inside
-    /// `stopAll()` itself keeps back-to-back stops sequential.
+    /// Tail of the serial audio-operation chain. `scheduleStopAll()` updates
+    /// this synchronously so any subsequent caller can see the stop in the
+    /// chain at call time; `play()` awaits it before issuing its noteOn so
+    /// a stop fade-out from a different session sharing this instance cannot
+    /// silence the new note.
     private var pendingAudioStop: Task<Void, Never>?
 
     // MARK: - Initialization
@@ -64,7 +65,12 @@ final class SoundFontPlayer: NotePlayer {
     // MARK: - stopAll
 
     func stopAll() async throws {
-        logger.debug("stopAll: clearing schedule and stopping notes on channel \(self.channel.rawValue)")
+        await scheduleStopAll().value
+    }
+
+    @discardableResult
+    func scheduleStopAll() -> Task<Void, Never> {
+        logger.debug("scheduleStopAll: queuing stop on channel \(self.channel.rawValue)")
         let priorStop = pendingAudioStop
         let task = Task<Void, Never> {
             await priorStop?.value
@@ -72,7 +78,7 @@ final class SoundFontPlayer: NotePlayer {
             await self.soundFontEngine.stopNotes(channel: self.channel, fadeOutDuration: self.fadeOutDuration)
         }
         pendingAudioStop = task
-        await task.value
+        return task
     }
 
     // MARK: - Melodic Play Sub-operations

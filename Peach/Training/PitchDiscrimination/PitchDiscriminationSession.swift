@@ -105,10 +105,6 @@ final class PitchDiscriminationSession: TrainingSession {
     private var currentTrial: PitchDiscriminationTrial?
     private var lastCompletedTrial: CompletedPitchDiscriminationTrial?
     private var isPaused = false
-    /// Chains the `pause()`-spawned audio stop so `resume()` can await it
-    /// before issuing the next `notePlayer.play(...)`. Prevents a fast
-    /// pause→resume cycle from racing stop and start.
-    private var pendingAudioStop: Task<Void, Never>?
 
     var sessionTuningSystem: TuningSystem {
         settings?.tuningSystem ?? .equalTemperament
@@ -219,7 +215,7 @@ final class PitchDiscriminationSession: TrainingSession {
         lifecycle?.cancelAllTasks()
         showFeedback = false
         isLastAnswerCorrect = nil
-        pendingAudioStop = Task { try? await notePlayer.stopAll() }
+        notePlayer.scheduleStopAll()
         logger.info("Session paused (preserving trial \(String(describing: self.currentTrial)))")
     }
 
@@ -265,9 +261,7 @@ final class PitchDiscriminationSession: TrainingSession {
 
         case .stopNote:
             logger.info("Stopping target note immediately")
-            Task {
-                try? await notePlayer.stopAll()
-            }
+            notePlayer.scheduleStopAll()
 
         case .evaluateAnswer(let isHigher):
             evaluateAnswer(isHigher: isHigher)
@@ -306,11 +300,7 @@ final class PitchDiscriminationSession: TrainingSession {
         let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz, target \(freq2.rawValue)Hz, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
 
-        let priorStop = pendingAudioStop
-        pendingAudioStop = nil
         lifecycle?.setTrainingTask(Task {
-            await priorStop?.value
-            guard state != .idle, !Task.isCancelled else { return }
             do {
                 try await notePlayer.play(
                     frequency: freq1,
@@ -412,17 +402,7 @@ final class PitchDiscriminationSession: TrainingSession {
         logger.info("Training stopped (state was transitioning to idle)")
 
         isPaused = false
-        // Chain stopAll's audio-stop Task behind any prior pause-spawned stop
-        // and re-expose it via `pendingAudioStop` so the next
-        // `playReferenceForCurrentTrial` can await it before issuing the first
-        // noteOn — otherwise an exit-then-re-enter sequence races stop's
-        // fade-out against the new play.
-        let priorStop = pendingAudioStop
-        pendingAudioStop = Task {
-            await priorStop?.value
-            try? await notePlayer.stopAll()
-            logger.info("NotePlayer stopped")
-        }
+        notePlayer.scheduleStopAll()
 
         lifecycle?.cancelAllTasks()
 

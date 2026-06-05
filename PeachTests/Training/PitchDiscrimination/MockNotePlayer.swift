@@ -101,6 +101,11 @@ final class MockNotePlayer: NotePlayer {
         }
     }
 
+    @discardableResult
+    func scheduleStopAll() -> Task<Void, Never> {
+        Task { try? await self.stopAll() }
+    }
+
     // MARK: - Test Helpers
 
     func reset() {
