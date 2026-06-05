@@ -240,11 +240,13 @@ Never run only specific test files — always the complete suite. Both platforms
 **The Performance Principle (discipline design):**
 - **Disciplines optimize for users to perform their best — never artificial difficulty.** Across all training disciplines, design decisions must favor conditions under which users demonstrate their genuine ability. Do not constrain listening time, repetition counts, or sensory exposure for the sake of test-purity, score comparability, or to make a discipline "feel harder." If a user setting helps them perform better, that is the ability we want to measure and grow. The artificial constraint is the failure mode, not the relaxed one. This principle overrides intuitions imported from psychophysical-test design (single-presentation paradigms, fixed exposure windows, etc.)
 
-**Pre-Existing Findings Catalog (`docs/pre-existing-findings.md`):**
-- The catalog is the single source of truth for all known pre-existing issues. Every finding has a disposition (CLOSED, WONT-FIX, or OPEN) and a unique ID.
+**Pre-Existing Findings Catalog (`docs/implementation-artifacts/deferred-work.md`):**
+- The catalog is the single source of truth for all known pre-existing issues. Every finding has a disposition (OPEN or WONT-FIX) and a unique `PF-###` ID. Closed entries are removed and preserved in git history.
+- The catalog file is also the append target referenced by `bmad-quick-dev`'s `defer` classification step (frontmatter `deferred_work_file`). The catalog discipline is colocated with the BMad mechanism that writes to it — any agent following the stock "Append to `{deferred_work_file}`" instruction sees the format requirements at the top of the file.
 - **During implementation:** if you encounter an issue that is not caused by your current change, check the catalog. If it has an entry, cite the ID and move on. If it has no entry, it is a **new finding** — either fix it inline (Boy Scout Rule) or add it to the catalog with a disposition.
 - **During code review:** classifying a finding as "defer" or "pre-existing" requires citing a catalog entry ID. If no entry exists, the finding is new and must be added to the catalog with a disposition before it can be deferred. Untracked deferrals are not accepted.
-- **After completing a fix:** update the catalog entry to CLOSED with a reference to the commit or story.
+- **After completing a fix:** remove the catalog entry and reference its `PF-###` in the closing story's spec or commit message. Git history preserves the removed entry.
+- `docs/pre-existing-findings.md` was the prior catalog file; superseded 2026-06-05. Historical story specs that cite IDs from that file still resolve by ID in the new location.
 
 **Architectural Boundaries (hard rules):**
 - **Views contain zero business logic** — no computation, no conditional logic beyond rendering; derived values come from `PitchDiscriminationSession` or `PerceptualProfile` as computed properties
