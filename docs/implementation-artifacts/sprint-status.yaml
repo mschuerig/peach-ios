@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Epic 84 done — story 84.4 closed (TOD sectioned picker + tuplet catalog content, iteration 4); story 84.3 marked done in same session.
+# last_updated: 2026-06-05 # Epic 85 opened as cleanup tracking epic; stories 85.1 (consolidate session lifecycle, closes PF-001/003/005) and 85.2 (defer PeachApp heavyweight init, closes PF-002) drafted ready-for-dev via deferred-work catalog triage.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -771,3 +771,17 @@ development_status:
   84-3-proportional-timeline-renderer: done
   84-4-sectioned-picker-and-tuplet-catalog-content: done
   epic-84-retrospective: optional
+
+  # Epic 85: Cleanup — Pre-Existing Findings Catalog
+  # Source: deferred-work catalog triage session 2026-06-05 (via bmad-checkpoint-preview).
+  # Tracking epic, not a feature epic. Container for stories that close clusters
+  # of related `PF-###` entries from `docs/implementation-artifacts/deferred-work.md`
+  # whose fixes share a root cause and are too large for Boy-Scout drive-bys.
+  # Each story names the `PF-###` entries it closes and includes a verification
+  # task as step 1 (catalog entries can drift from current code between
+  # deferral and triage).
+  # No fixed work order; stories may proceed in parallel where they don't conflict.
+  epic-85: in-progress
+  85-1-consolidate-session-lifecycle-under-coordinator: ready-for-dev # Closes PF-001, PF-003, PF-005
+  85-2-defer-peachapp-heavyweight-init: ready-for-dev # Closes PF-002
+  epic-85-retrospective: optional
