@@ -244,7 +244,7 @@ final class SoundFontEngine {
     /// Maximum pitch bend displacement in cents, derived from `pitchBendRangeSemitones`.
     nonisolated static let pitchBendRangeCents: Double = (Double(pitchBendRangeSemitones) * Cents.perSemitone).rawValue
 
-    private nonisolated static let scheduleCapacity = 4096
+    nonisolated static let scheduleCapacity = 4096
 
     // MARK: - SF2 URL
 

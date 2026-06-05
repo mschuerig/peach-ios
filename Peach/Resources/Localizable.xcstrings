@@ -571,6 +571,7 @@
       }
     },
     "Anchor note, not selectable" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1292,6 +1293,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Lücken-Positionen"
+          }
+        }
+      }
+    },
+    "Gapped 16ths" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lückenhafte Sechzehntel"
           }
         }
       }
@@ -2170,6 +2181,16 @@
         }
       }
     },
+    "Nested" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verschachtelt"
+          }
+        }
+      }
+    },
     "no data" : {
       "localizations" : {
         "de" : {
@@ -2213,6 +2234,7 @@
       }
     },
     "Note" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2748,6 +2770,7 @@
       }
     },
     "Rest" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -3032,6 +3055,16 @@
         }
       }
     },
+    "Sextuplet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sextolen"
+          }
+        }
+      }
+    },
     "Share %@ chart" : {
       "localizations" : {
         "de" : {
@@ -3303,6 +3336,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Gestoppt"
+          }
+        }
+      }
+    },
+    "Straight 16ths" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gerade Sechzehntel"
           }
         }
       }
@@ -3755,6 +3798,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Trend: stabil"
+          }
+        }
+      }
+    },
+    "Triplets" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Triolen"
           }
         }
       }

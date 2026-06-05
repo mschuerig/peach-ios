@@ -34,37 +34,61 @@ Story 84.3 implements this shape (per § *Notes for 84.2–84.4*); 84.4 register
 
 ---
 
-## Opaque pattern-id convention
+## Pattern-id convention
 
-**Convention:** `pattern_NN` — `pattern_` prefix followed by a zero-padded two-digit sequence number.
+**Status note (Story 84.4 iteration 4 revision):** The opaque `pattern_NN` convention this section originally locked is **superseded by a category-prefixed convention** at Michael's request. Rationale: opaque IDs were chosen to decouple identification from categorization, but in practice the IDs are used in spoken/written discussion (PR descriptions, bug reports, code reviews) where `pattern_05` is unmemorable while `pattern_gapped16ths_04` is self-explanatory. The decoupling principle was outweighed by communicability. Categorization remains a load-bearing property of a pattern (encoded in `TimingOffsetDetectionPattern.category`), so encoding the category in the ID is consistent with the type's structure.
+
+**Convention:** `pattern_<category>_<NN>` — `pattern_` prefix, then the category's `idToken` (the enum case name in camelCase, e.g. `straight16ths`, `gapped16ths`, `triplets`, `nested`, `sextuplet`), then a zero-padded two-digit sequence number **within that category**.
 
 **Rule:**
-- Sequence numbers are assigned at *first registration*. **An entry's id is fixed and never changes** — reordering the catalog table does not renumber registered entries; deleting an entry does not shift later ids backward.
-- Numbers are never reused. A removed entry's number stays retired; new entries take the next available number.
-- **Retired-id registry:** when a pattern is removed from the catalog, its id is recorded in a comment block at the top of `TimingOffsetDetectionPatternCatalog.swift`, including the removed entry's last-known notation, the commit/story that removed it, and the date. This is the canonical retired-id registry — no separate file. (Epic 84 retires nothing; the comment block starts empty in 84.2.)
-- Two-digit padding handles up to 99 entries. If the catalog ever crosses 99, **existing two-digit ids are preserved** (no migration of stored `@AppStorage` values); only new entries past `pattern_99` use three-digit padding (`pattern_100`, …). The `clamped(_:)` helper accepts either form via prefix match on `pattern_`. The migration burden is zero; the heterogeneous-padding cost is a one-time cognitive tax at the 99-to-100 boundary.
-- Multi-beat patterns from a future epic continue the same sequence. The convention does not encode pattern shape.
+- Sequence numbers are per-category, assigned at first registration. **An entry's id is fixed and never changes.**
+- Numbers within a category are never reused. A removed entry's number stays retired; new entries take the next available number in that category.
+- **Retired-id registry:** when a pattern is removed from the catalog, its id is recorded in a comment block at the top of `TimingOffsetDetectionPatternCatalog.swift`. (Epic 84 retires nothing.)
+- Two-digit padding handles up to 99 entries per category. Past `_99` within a category, new entries widen to three digits; existing two-digit ids are preserved.
+- A pattern moving to a different category would be a **rename** (its id changes). Pattern-id stability is per-category, not global. In practice, categories are determined by the pattern's structural shape; a pattern doesn't drift between categories.
+- Multi-beat patterns from a future epic introduce new categories (e.g. `pattern_multibeat_01`); the existing categories' sequences continue independently.
 
-**Why opaque (not semantic, not bitmask):**
-- *Semantic ids* (`triplet-full`, `straight-16ths`) couple ids to categorization. If a pattern moves buckets (or the bucket scheme changes), the id breaks `@AppStorage` continuity.
-- *Bitmask ids* (`pattern_1111`, `pattern_1011`) were Epic-82-shape-bound: they assume four 16th-cells. They cannot encode triplets, sextuplets, or nested figures without overloading the digit positions.
-- *Sequential opaque ids* carry zero structural information — the id is a key into the catalog, not a description of the pattern. Same semantics whether the entry is a 16th-pattern, a triplet, or a multi-beat figure.
+**Why category-prefixed (not opaque, not semantic-shape, not bitmask):**
+- *Opaque ids* (`pattern_NN`) decouple id from categorization but are unmemorable and force every discussion to reference the lookup table.
+- *Semantic-shape ids* (`triplet-full`, `straight-16ths`) encode the pattern's structural shape in the id; a future restructure of the shape would force a rename.
+- *Bitmask ids* (`pattern_1111`) were Epic-82-shape-bound (four 16th-cells); they don't generalize.
+- *Category-prefixed ids* encode the structural family (which is itself stable and a load-bearing property of the pattern) without encoding the within-category specifics. The category prefix is communicable; the sequence number is opaque within the category.
 
-**Collision check:** 15 entries × 2-digit ids → no collisions by construction. Forward-compat: any future shape is just the next number.
+**ID schema invariant (enforced at construction):** `TimingOffsetDetectionPattern.init` requires `id.hasPrefix("pattern_\(category.idToken)_")`. A misregistered pattern (e.g. `id: "pattern_triplets_01"` with `category: .gapped16ths`) traps at construction time, before any session or storage reads it.
 
-**Rename map for the five Epic-82 entries** (locks the input for Story 84.2):
+**Collision check:** 15 entries spread across 5 categories → no collisions by construction. The per-category numbering means adding new patterns in one category does not disturb numbering in other categories.
 
-| Old id | New id | Notation |
+**Catalog roster (locked):**
+
+| Id | Notation | Category |
 |---|---|---|
-| `pattern_1111` | `pattern_01` | `* * * *` |
-| `pattern_1011` | `pattern_02` | `* - * *` |
-| `pattern_1101` | `pattern_03` | `* * - *` |
-| `pattern_1010` | `pattern_04` | `* - * -` |
-| `pattern_1001` | `pattern_05` | `* - - *` |
+| `pattern_straight16ths_01` | `* * * *` | Straight 16ths |
+| `pattern_gapped16ths_01` | `* - * *` | Gapped 16ths |
+| `pattern_gapped16ths_02` | `* * - *` | Gapped 16ths |
+| `pattern_gapped16ths_03` | `* - * -` | Gapped 16ths |
+| `pattern_gapped16ths_04` | `* - - *` | Gapped 16ths |
+| `pattern_triplets_01` | `* * *` | Triplets |
+| `pattern_triplets_02` | `* * -` | Triplets |
+| `pattern_triplets_03` | `* - *` | Triplets |
+| `pattern_triplets_04` | `* *. .` | Triplets |
+| `pattern_nested_01` | `* *-*-*` | Nested (PEACH_RESEARCH-gated) |
+| `pattern_nested_02` | `*-*-* *` | Nested (PEACH_RESEARCH-gated) |
+| `pattern_nested_03` | `* * .-.` | Nested (PEACH_RESEARCH-gated) |
+| `pattern_nested_04` | `* .-. *` | Nested (PEACH_RESEARCH-gated) |
+| `pattern_nested_05` | `.-. * *` | Nested (PEACH_RESEARCH-gated) |
+| `pattern_sextuplet_01` | `. . . . . .` | Sextuplet |
 
-**Default-target id changes accordingly.** The "unknown-id-on-lookup falls back to default" behaviour from Epic 82.5 is preserved; the fallback's target id becomes `pattern_01`.
+**Default-target id:** `pattern_straight16ths_01`. The "unknown-id-on-lookup falls back to default" behaviour from Epic 82.5 is preserved.
 
-**Tuplet entries get sequence numbers `pattern_06` through `pattern_15`** in the order they appear in the *Catalog* table below.
+**Historical rename map** (preserved for traceability — `tod-initial-pattern-catalog.md` cites the old `pattern_1NNN` ids; Story 84.2 mapped them to `pattern_NN`; Story 84.4 iteration 4 maps them again to the category-prefixed form):
+
+| Epic-82 bitmask id | 84.2 opaque id | 84.4 iter-4 category-prefixed id |
+|---|---|---|
+| `pattern_1111` | `pattern_01` | `pattern_straight16ths_01` |
+| `pattern_1011` | `pattern_02` | `pattern_gapped16ths_01` |
+| `pattern_1101` | `pattern_03` | `pattern_gapped16ths_02` |
+| `pattern_1010` | `pattern_04` | `pattern_gapped16ths_03` |
+| `pattern_1001` | `pattern_05` | `pattern_gapped16ths_04` |
 
 ---
 

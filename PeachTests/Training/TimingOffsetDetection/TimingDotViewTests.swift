@@ -58,9 +58,9 @@ struct TimingDotViewTests {
     /// equality across the depth-first walk.
     private static let widthTolerance: CGFloat = 1e-6
 
-    @Test("visualCells for pattern_01 — 4 equal cells of W/4 each")
+    @Test("visualCells for pattern_straight16ths_01 — 4 equal cells of W/4 each")
     func visualCellsPattern01() async {
-        let cells = TimingDotView.visualCells(for: .pattern01)
+        let cells = TimingDotView.visualCells(for: .pattern_straight16ths_01)
         let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
             (0.0, 0.25, .accent),
             (0.25, 0.25, .normalAudible(audiblePosition: 2)),
@@ -70,9 +70,9 @@ struct TimingDotViewTests {
         Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test("visualCells for pattern_02 — widths W/2, W/4, W/4 (accent absorbs trailing rest)")
+    @Test("visualCells for pattern_gapped16ths_01 — widths W/2, W/4, W/4 (accent absorbs trailing rest)")
     func visualCellsPattern02() async {
-        let cells = TimingDotView.visualCells(for: .pattern02)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_01)
         let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
             (0.0, 0.5, .accent),
             (0.5, 0.25, .normalAudible(audiblePosition: 2)),
@@ -81,9 +81,9 @@ struct TimingDotViewTests {
         Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test("visualCells for pattern_03 — widths W/4, W/2, W/4 (audible 2 absorbs trailing rest)")
+    @Test("visualCells for pattern_gapped16ths_02 — widths W/4, W/2, W/4 (audible 2 absorbs trailing rest)")
     func visualCellsPattern03() async {
-        let cells = TimingDotView.visualCells(for: .pattern03)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_02)
         let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
             (0.0, 0.25, .accent),
             (0.25, 0.5, .normalAudible(audiblePosition: 2)),
@@ -92,9 +92,9 @@ struct TimingDotViewTests {
         Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test("visualCells for pattern_04 — 2 equal cells of W/2 each (8ths feel)")
+    @Test("visualCells for pattern_gapped16ths_03 — 2 equal cells of W/2 each (8ths feel)")
     func visualCellsPattern04() async {
-        let cells = TimingDotView.visualCells(for: .pattern04)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_03)
         let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
             (0.0, 0.5, .accent),
             (0.5, 0.5, .normalAudible(audiblePosition: 2))
@@ -102,9 +102,9 @@ struct TimingDotViewTests {
         Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test("visualCells for pattern_05 — widths 3W/4, W/4 (accent absorbs two rests)")
+    @Test("visualCells for pattern_gapped16ths_04 — widths 3W/4, W/4 (accent absorbs two rests)")
     func visualCellsPattern05() async {
-        let cells = TimingDotView.visualCells(for: .pattern05)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_04)
         let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
             (0.0, 0.75, .accent),
             (0.75, 0.25, .normalAudible(audiblePosition: 2))
@@ -115,7 +115,7 @@ struct TimingDotViewTests {
     // MARK: - cellAccessibilityLabel — Epic-82 catalog (flat patterns)
 
     @Test(
-        "cellAccessibilityLabel for pattern_01 reads the locked flat-pattern form",
+        "cellAccessibilityLabel for pattern_straight16ths_01 reads the locked flat-pattern form",
         arguments: [
             (0, String(localized: "Accent")),
             (1, String(localized: "Note \(2) of \(4)")),
@@ -125,13 +125,13 @@ struct TimingDotViewTests {
     )
     func cellAccessibilityLabelPattern01(input: (Int, String)) async {
         let (cellIndex, expected) = input
-        let cells = TimingDotView.visualCells(for: .pattern01)
-        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern01)
+        let cells = TimingDotView.visualCells(for: .pattern_straight16ths_01)
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern_straight16ths_01)
         #expect(label == expected)
     }
 
     @Test(
-        "cellAccessibilityLabel for pattern_02 — 3 audibles after rest absorption",
+        "cellAccessibilityLabel for pattern_gapped16ths_01 — 3 audibles after rest absorption",
         arguments: [
             (0, String(localized: "Accent")),
             (1, String(localized: "Note \(2) of \(3)")),
@@ -140,13 +140,13 @@ struct TimingDotViewTests {
     )
     func cellAccessibilityLabelPattern02(input: (Int, String)) async {
         let (cellIndex, expected) = input
-        let cells = TimingDotView.visualCells(for: .pattern02)
-        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern02)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_01)
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern_gapped16ths_01)
         #expect(label == expected)
     }
 
     @Test(
-        "cellAccessibilityLabel for pattern_03 — 3 audibles (audible 2 absorbs middle rest)",
+        "cellAccessibilityLabel for pattern_gapped16ths_02 — 3 audibles (audible 2 absorbs middle rest)",
         arguments: [
             (0, String(localized: "Accent")),
             (1, String(localized: "Note \(2) of \(3)")),
@@ -155,13 +155,13 @@ struct TimingDotViewTests {
     )
     func cellAccessibilityLabelPattern03(input: (Int, String)) async {
         let (cellIndex, expected) = input
-        let cells = TimingDotView.visualCells(for: .pattern03)
-        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern03)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_02)
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern_gapped16ths_02)
         #expect(label == expected)
     }
 
     @Test(
-        "cellAccessibilityLabel for pattern_04 — 2 audibles (both rests absorbed)",
+        "cellAccessibilityLabel for pattern_gapped16ths_03 — 2 audibles (both rests absorbed)",
         arguments: [
             (0, String(localized: "Accent")),
             (1, String(localized: "Note \(2) of \(2)"))
@@ -169,13 +169,13 @@ struct TimingDotViewTests {
     )
     func cellAccessibilityLabelPattern04(input: (Int, String)) async {
         let (cellIndex, expected) = input
-        let cells = TimingDotView.visualCells(for: .pattern04)
-        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern04)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_03)
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern_gapped16ths_03)
         #expect(label == expected)
     }
 
     @Test(
-        "cellAccessibilityLabel for pattern_05 — 2 audibles (accent absorbs 2 rests)",
+        "cellAccessibilityLabel for pattern_gapped16ths_04 — 2 audibles (accent absorbs 2 rests)",
         arguments: [
             (0, String(localized: "Accent")),
             (1, String(localized: "Note \(2) of \(2)"))
@@ -183,26 +183,26 @@ struct TimingDotViewTests {
     )
     func cellAccessibilityLabelPattern05(input: (Int, String)) async {
         let (cellIndex, expected) = input
-        let cells = TimingDotView.visualCells(for: .pattern05)
-        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern05)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_04)
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[cellIndex], in: .pattern_gapped16ths_04)
         #expect(label == expected)
     }
 
     // MARK: - Doubled-glyph cell mapping (regression for I/O Matrix)
 
     /// Locks the regression-risk scenario from the spec's I/O matrix:
-    /// `pattern_03` + `OffsetNotePosition(3)` must overlay the *third* visual
+    /// `pattern_gapped16ths_02` + `OffsetNotePosition(3)` must overlay the *third* visual
     /// cell (the rightmost W/4 audible cell at startX 0.75) — never the
     /// absorbed-rest mid-cell at startX 0.25.
-    @Test("doubled-glyph for pattern_03 at position 3 lands on the rightmost W/4 cell, not the absorbed-rest mid-cell")
+    @Test("doubled-glyph for pattern_gapped16ths_02 at position 3 lands on the rightmost W/4 cell, not the absorbed-rest mid-cell")
     func doubledGlyphForPattern03Position3LandsOnRightmostCell() async {
         let highlightedAudible = TimingDotView.audiblePositionToHighlight(
-            for: .pattern03,
+            for: .pattern_gapped16ths_02,
             offsetNotePosition: OffsetNotePosition(3)
         )
         #expect(highlightedAudible == 3)
 
-        let cells = TimingDotView.visualCells(for: .pattern03)
+        let cells = TimingDotView.visualCells(for: .pattern_gapped16ths_02)
         // Cell index 2 carries audible position 3 at startX 0.75 per `visualCellsPattern03`.
         let highlightedCell = cells.first {
             if case .normalAudible(let pos) = $0.kind, pos == highlightedAudible { return true }
@@ -215,7 +215,7 @@ struct TimingDotViewTests {
     @Test("audiblePositionToHighlight returns nil for the metric anchor (position 1) — accent is never pickable")
     func audiblePositionToHighlightRejectsAccent() async {
         let result = TimingDotView.audiblePositionToHighlight(
-            for: .pattern01,
+            for: .pattern_straight16ths_01,
             offsetNotePosition: OffsetNotePosition(1)
         )
         #expect(result == nil)
@@ -225,9 +225,9 @@ struct TimingDotViewTests {
 
     @Test("audiblePositionToHighlight returns nil when position out of range")
     func audiblePositionToHighlightOutOfRange() async {
-        // pattern_04 has audibleCount == 2; position 3 is out of range.
+        // pattern_gapped16ths_03 has audibleCount == 2; position 3 is out of range.
         let result = TimingDotView.audiblePositionToHighlight(
-            for: .pattern04,
+            for: .pattern_gapped16ths_03,
             offsetNotePosition: OffsetNotePosition(3)
         )
         #expect(result == nil)
@@ -239,7 +239,7 @@ struct TimingDotViewTests {
     )
     func audiblePositionToHighlightValid(rawValue: Int) async {
         let result = TimingDotView.audiblePositionToHighlight(
-            for: .pattern01,
+            for: .pattern_straight16ths_01,
             offsetNotePosition: OffsetNotePosition(rawValue)
         )
         #expect(result == rawValue)
@@ -248,7 +248,7 @@ struct TimingDotViewTests {
     // MARK: - isAudibleLit (grid-based litCount → audible lit state)
 
     @Test(
-        "isAudibleLit for pattern_04 (audibles at grid [0],[2]) follows top-level lit progression",
+        "isAudibleLit for pattern_gapped16ths_03 (audibles at grid [0],[2]) follows top-level lit progression",
         arguments: [
             (1, 0, false), (1, 1, true), (1, 2, true),
             (2, 0, false), (2, 1, false), (2, 2, false),
@@ -257,46 +257,182 @@ struct TimingDotViewTests {
     )
     func isAudibleLitPattern04(input: (Int, Int, Bool)) async {
         let (audible, litCount, expected) = input
-        #expect(TimingDotView.isAudibleLit(audiblePosition: audible, in: .pattern04, litCount: litCount) == expected)
+        #expect(TimingDotView.isAudibleLit(audiblePosition: audible, in: .pattern_gapped16ths_03, litCount: litCount) == expected)
     }
 
-    // MARK: - Tuplet-renderer stubs (enabled by Story 84.4 when pattern_06..15 register)
+    // MARK: - Tuplet-renderer coverage (Story 84.4 — pattern_triplets_01..15 registered)
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("visualCells for pattern_triplets_01 — 3 equal cells of W/3 each")
     func visualCellsPattern06Triplet() async {
-        // pattern_06 (`* * *`) — 3 equal cells of W/3 each.
-        // let cells = TimingDotView.visualCells(for: .pattern06)
-        // expected: (0, 1/3, .accent), (1/3, 1/3, .normalAudible(2)), (2/3, 1/3, .normalAudible(3))
+        let cells = TimingDotView.visualCells(for: .pattern_triplets_01)
+        let third = 1.0 / 3.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, third, .accent),
+            (third, third, .normalAudible(audiblePosition: 2)),
+            (2.0 * third, third, .normalAudible(audiblePosition: 3))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("visualCells for pattern_triplets_02 (`* * -`) — widths W/3, 2W/3 (audible 2 absorbs trailing rest)")
+    func visualCellsPattern07TripletTrailingRest() async {
+        let cells = TimingDotView.visualCells(for: .pattern_triplets_02)
+        let third = 1.0 / 3.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, third, .accent),
+            (third, 2.0 * third, .normalAudible(audiblePosition: 2))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("visualCells for pattern_triplets_03 (`* - *`) — widths 2W/3, W/3 (accent absorbs middle rest)")
+    func visualCellsPattern08TripletMiddleRest() async {
+        let cells = TimingDotView.visualCells(for: .pattern_triplets_03)
+        let third = 1.0 / 3.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, 2.0 * third, .accent),
+            (2.0 * third, third, .normalAudible(audiblePosition: 2))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("visualCells for pattern_triplets_04 (`* *. .`) — widths 2W/6, 3W/6, W/6 (mixed-duration triplet)")
     func visualCellsPattern09MixedDuration() async {
-        // pattern_09 (`* *. .`) — 3 cells of widths W/3, W/2, W/6.
+        let cells = TimingDotView.visualCells(for: .pattern_triplets_04)
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, 2.0 * sixth, .accent),
+            (2.0 * sixth, 3.0 * sixth, .normalAudible(audiblePosition: 2)),
+            (5.0 * sixth, sixth, .normalAudible(audiblePosition: 3))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("visualCells for pattern_nested_01 (`* *-*-*`) — top W/2 accent + 3 nested W/6 cells + bracket")
     func visualCellsPattern10NestedTriplet() async {
-        // pattern_10 (`* *-*-*`) — top W/2 cell + nested-bracket span over 3 cells of W/6.
+        let cells = TimingDotView.visualCells(for: .pattern_nested_01)
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, 0.5, .accent),
+            (0.5, sixth, .normalAudible(audiblePosition: 2)),
+            (0.5 + sixth, sixth, .normalAudible(audiblePosition: 3)),
+            (0.5 + 2.0 * sixth, sixth, .normalAudible(audiblePosition: 4)),
+            (0.5, 0.5, .nestingBracket(childDivision: .triplet))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("visualCells for pattern_nested_02 (`*-*-* *`) — 3 leading nested W/6 cells + top W/2 + leading bracket")
+    func visualCellsPattern11LeadingNestedTriplet() async {
+        let cells = TimingDotView.visualCells(for: .pattern_nested_02)
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, sixth, .accent),
+            (sixth, sixth, .normalAudible(audiblePosition: 2)),
+            (2.0 * sixth, sixth, .normalAudible(audiblePosition: 3)),
+            (0.5, 0.5, .normalAudible(audiblePosition: 4)),
+            (0.0, 0.5, .nestingBracket(childDivision: .triplet))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("visualCells for pattern_nested_03 (`* * .-.`) — 2 top-level triplet cells + nested duplet (W/6, W/6) + trailing bracket")
+    func visualCellsPattern12TrailingDuplet() async {
+        let cells = TimingDotView.visualCells(for: .pattern_nested_03)
+        let third = 1.0 / 3.0
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, third, .accent),
+            (third, third, .normalAudible(audiblePosition: 2)),
+            (2.0 * third, sixth, .normalAudible(audiblePosition: 3)),
+            (2.0 * third + sixth, sixth, .normalAudible(audiblePosition: 4)),
+            (2.0 * third, third, .nestingBracket(childDivision: .duplet))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("visualCells for pattern_nested_04 (`* .-. *`) — top + nested duplet (middle) + top + middle bracket")
+    func visualCellsPattern13MiddleDuplet() async {
+        let cells = TimingDotView.visualCells(for: .pattern_nested_04)
+        let third = 1.0 / 3.0
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, third, .accent),
+            (third, sixth, .normalAudible(audiblePosition: 2)),
+            (third + sixth, sixth, .normalAudible(audiblePosition: 3)),
+            (2.0 * third, third, .normalAudible(audiblePosition: 4)),
+            (third, third, .nestingBracket(childDivision: .duplet))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("visualCells for pattern_nested_05 (`.-. * *`) — 2 leading nested duplet cells + 2 top-level triplet cells + leading bracket")
+    func visualCellsPattern14LeadingDuplet() async {
+        let cells = TimingDotView.visualCells(for: .pattern_nested_05)
+        let third = 1.0 / 3.0
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, sixth, .accent),
+            (sixth, sixth, .normalAudible(audiblePosition: 2)),
+            (third, third, .normalAudible(audiblePosition: 3)),
+            (2.0 * third, third, .normalAudible(audiblePosition: 4)),
+            (0.0, third, .nestingBracket(childDivision: .duplet))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("visualCells for pattern_sextuplet_01 — 6 equal cells of W/6 each (flat sextuplet)")
+    func visualCellsPattern15Sextuplet() async {
+        let cells = TimingDotView.visualCells(for: .pattern_sextuplet_01)
+        let sixth = 1.0 / 6.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, sixth, .accent),
+            (sixth, sixth, .normalAudible(audiblePosition: 2)),
+            (2.0 * sixth, sixth, .normalAudible(audiblePosition: 3)),
+            (3.0 * sixth, sixth, .normalAudible(audiblePosition: 4)),
+            (4.0 * sixth, sixth, .normalAudible(audiblePosition: 5)),
+            (5.0 * sixth, sixth, .normalAudible(audiblePosition: 6))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    @Test("cellAccessibilityLabel for pattern_triplets_04 audible 2 carries the dotted descriptor")
     func cellAccessibilityLabelPattern09Dotted() async {
-        // pattern_09 audible 2 → "Note 2 of 3, dotted".
+        let cells = TimingDotView.visualCells(for: .pattern_triplets_04)
+        // Cell index 1 is the audible-2 cell (the dotted long cell).
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[1], in: .pattern_triplets_04)
+        let expected = "\(String(localized: "Note \(2) of \(3)")), \(String(localized: "dotted"))"
+        #expect(label == expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("cellAccessibilityLabel for pattern_nested_02 audible 1 names the leading triplet (`Accent, in triplet`)")
     func cellAccessibilityLabelPattern11LeadingNestedAccent() async {
-        // pattern_11 (`*-*-* *`) audible 1 → "Accent, in triplet".
+        let cells = TimingDotView.visualCells(for: .pattern_nested_02)
+        // Cell index 0 is the accent — leading-nested-triplet first audible.
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[0], in: .pattern_nested_02)
+        let expected = "\(String(localized: "Accent")), \(String(localized: "in triplet"))"
+        #expect(label == expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("cellAccessibilityLabel for pattern_nested_05 audible 1 names the leading duplet (`Accent, in duplet`)")
     func cellAccessibilityLabelPattern14LeadingNestedDuplet() async {
-        // pattern_14 (`.-. * *`) audible 1 → "Accent, in duplet".
+        let cells = TimingDotView.visualCells(for: .pattern_nested_05)
+        let label = TimingDotView.cellAccessibilityLabel(for: cells[0], in: .pattern_nested_05)
+        let expected = "\(String(localized: "Accent")), \(String(localized: "in duplet"))"
+        #expect(label == expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("cellAccessibilityLabel for pattern_nested_04 middle-duplet audibles read `Note N of 4, in duplet`")
     func cellAccessibilityLabelPattern13MiddleDuplet() async {
-        // pattern_13 (`* .-. *`) audible 2 → "Note 2 of 4, in duplet"; audible 3 → "Note 3 of 4, in duplet".
+        let cells = TimingDotView.visualCells(for: .pattern_nested_04)
+        // Cell index 1 is audible 2 (first cell of the nested duplet);
+        // cell index 2 is audible 3 (second cell of the nested duplet).
+        let label2 = TimingDotView.cellAccessibilityLabel(for: cells[1], in: .pattern_nested_04)
+        let label3 = TimingDotView.cellAccessibilityLabel(for: cells[2], in: .pattern_nested_04)
+        let expected2 = "\(String(localized: "Note \(2) of \(4)")), \(String(localized: "in duplet"))"
+        let expected3 = "\(String(localized: "Note \(3) of \(4)")), \(String(localized: "in duplet"))"
+        #expect(label2 == expected2)
+        #expect(label3 == expected3)
     }
 
     // MARK: - Helpers

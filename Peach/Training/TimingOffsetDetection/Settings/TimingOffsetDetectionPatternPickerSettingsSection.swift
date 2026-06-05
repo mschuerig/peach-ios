@@ -106,7 +106,7 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
 
     /// Composes the row's locked-form VoiceOver label by joining per-cell
     /// ``TimingDotView/cellAccessibilityLabel(for:in:)`` outputs (skipping rest
-    /// cells and brackets, which contribute no label). `pattern_01` reads
+    /// cells and brackets, which contribute no label). `pattern_straight16ths_01` reads
     /// "Accent, Note 2 of 4, Note 3 of 4, Note 4 of 4".
     static func patternRowAccessibilityLabel(for pattern: TimingOffsetDetectionPattern) -> String {
         TimingDotView.visualCells(for: pattern)
@@ -122,28 +122,44 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
     }
 }
 
-/// Drill-down destination for the Pattern picker. Hosts the inline `Picker`
-/// previously embedded in the Settings row, so the row collapses to a single
-/// label + dot-row preview + chevron and the catalog can grow without crowding
-/// the Settings screen.
+/// Drill-down destination for the Pattern picker. Renders one
+/// ``SwiftUI/Section`` per ``TimingOffsetDetectionPatternCategory`` present in
+/// the current build's catalog; each section embeds an inline ``Picker`` over
+/// its category's patterns, all sharing the same ``patternIdBinding`` so
+/// selection cascades through the existing
+/// `(selectedPatternId, offsetNotePosition)` reset logic regardless of which
+/// category the user picks from. Section headers vend via SwiftUI defaults
+/// (no `.lineLimit` / `.truncationMode`) so AX1 wraps rather than truncates
+/// per `tod-tuplet-renderer-design.md` § *Categorization*. Build-flag gating
+/// of categories is data-driven via
+/// ``TimingOffsetDetectionPatternCatalog/categories``.
 private struct TimingOffsetDetectionPatternPickerDestination: View {
     let patternIdBinding: Binding<String>
     let dotScale: CGFloat
 
     var body: some View {
         Form {
-            Section {
-                Picker(selection: patternIdBinding) {
-                    ForEach(TimingOffsetDetectionPatternCatalog.all, id: \.id) { pattern in
-                        TimingOffsetDetectionPatternPickerSettingsSection
-                            .row(for: pattern, dotScale: dotScale)
-                            .tag(pattern.id)
+            ForEach(TimingOffsetDetectionPatternCatalog.categories, id: \.self) { category in
+                Section {
+                    // `Picker` requires a label argument, but the section
+                    // header already carries the category name for both
+                    // sighted and VoiceOver users — `EmptyView()` +
+                    // `.labelsHidden()` ensures the label contributes no
+                    // second announcement.
+                    Picker(selection: patternIdBinding) {
+                        ForEach(TimingOffsetDetectionPatternCatalog.patterns(in: category), id: \.id) { pattern in
+                            TimingOffsetDetectionPatternPickerSettingsSection
+                                .row(for: pattern, dotScale: dotScale)
+                                .tag(pattern.id)
+                        }
+                    } label: {
+                        EmptyView()
                     }
-                } label: {
-                    Text(String(localized: "Pattern"))
+                    .pickerStyle(.inline)
+                    .labelsHidden()
+                } header: {
+                    Text(category.localizedHeader)
                 }
-                .pickerStyle(.inline)
-                .labelsHidden()
             }
         }
         .platformFormStyle()

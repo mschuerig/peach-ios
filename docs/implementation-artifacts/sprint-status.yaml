@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Story 84.3 review (TOD proportional-timeline renderer).
+# last_updated: 2026-06-05 # Epic 84 done — story 84.4 closed (TOD sectioned picker + tuplet catalog content, iteration 4); story 84.3 marked done in same session.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -765,9 +765,9 @@ development_status:
   # syncopation are explicitly deferred to a separate near-future follow-up
   # epic; the renderer and ID convention here are forward-compatible with
   # that work by construction.
-  epic-84: in-progress
+  epic-84: done
   84-1-tuplet-renderer-and-catalog-design: done
   84-2-opaque-pattern-id-convention-swap: done
-  84-3-proportional-timeline-renderer: review
-  84-4-sectioned-picker-and-tuplet-catalog-content: backlog
+  84-3-proportional-timeline-renderer: done
+  84-4-sectioned-picker-and-tuplet-catalog-content: done
   epic-84-retrospective: optional

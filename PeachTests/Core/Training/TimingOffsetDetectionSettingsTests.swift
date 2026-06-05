@@ -5,7 +5,7 @@ import Foundation
 @Suite("TimingOffsetDetectionSettings Tests")
 struct TimingOffsetDetectionSettingsTests {
 
-    @Test("default values use 80 BPM, 400ms feedback, 20% max offset, 1% min offset, the feature-default maxRepetitions, the feature-default offsetNotePosition, and pattern_01")
+    @Test("default values use 80 BPM, 400ms feedback, 20% max offset, 1% min offset, the feature-default maxRepetitions, the feature-default offsetNotePosition, and pattern_straight16ths_01")
     func defaultValues() {
         let settings = TimingOffsetDetectionSettings()
         #expect(settings.tempo == TempoBPM(80))
@@ -14,7 +14,7 @@ struct TimingOffsetDetectionSettingsTests {
         #expect(settings.minOffsetPercentage == 1.0)
         #expect(settings.maxRepetitions == TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions)
         #expect(settings.offsetNotePosition == .default)
-        #expect(settings.pattern == TimingOffsetDetectionPattern.pattern01)
+        #expect(settings.pattern == TimingOffsetDetectionPattern.pattern_straight16ths_01)
     }
 
     @Test("from(userSettings, todUserSettings:) maps tempoBPM correctly")
@@ -71,10 +71,10 @@ struct TimingOffsetDetectionSettingsTests {
     func fromUserSettingsReadsSelectedPattern() {
         let mockSettings = MockUserSettings()
         let todUserSettings = MockTimingOffsetDetectionUserSettings()
-        todUserSettings.selectedPattern = TimingOffsetDetectionPattern.pattern01
+        todUserSettings.selectedPattern = TimingOffsetDetectionPattern.pattern_straight16ths_01
 
         let settings = TimingOffsetDetectionSettings.from(mockSettings, todUserSettings: todUserSettings)
 
-        #expect(settings.pattern == TimingOffsetDetectionPattern.pattern01)
+        #expect(settings.pattern == TimingOffsetDetectionPattern.pattern_straight16ths_01)
     }
 }

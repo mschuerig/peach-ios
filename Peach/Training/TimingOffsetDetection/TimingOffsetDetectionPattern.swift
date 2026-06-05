@@ -21,6 +21,7 @@ typealias GridPath = [Int]
 /// `docs/planning-artifacts/tod-initial-pattern-catalog.md` § *Pickable-position rule*.
 struct TimingOffsetDetectionPattern: Sendable {
     let id: String
+    let category: TimingOffsetDetectionPatternCategory
     let subdivisions: [Subdivision]
     let defaultOffsetNotePosition: OffsetNotePosition
 
@@ -48,14 +49,25 @@ struct TimingOffsetDetectionPattern: Sendable {
 
     init(
         id: String,
+        category: TimingOffsetDetectionPatternCategory,
         subdivisions: [Subdivision],
         defaultOffsetNotePosition: OffsetNotePosition,
         dottedAudiblePositions: Set<Int> = []
     ) {
+        // ID schema invariant: `pattern_<category-idToken>_NN`. Validated at
+        // construction so a misregistered pattern surfaces before it reaches
+        // `@AppStorage` or the picker.
+        let expectedPrefix = "pattern_\(category.idToken)_"
+        precondition(
+            id.hasPrefix(expectedPrefix),
+            "TimingOffsetDetectionPattern '\(id)' does not match the '\(expectedPrefix)NN' ID schema for category \(category)"
+        )
+
         let audibleToGrid = Self.collectAudiblePaths(in: subdivisions, pathPrefix: [])
         let pickable: Set<Int> = audibleToGrid.count >= 2 ? Set(2...audibleToGrid.count) : []
 
         self.id = id
+        self.category = category
         self.subdivisions = subdivisions
         self.defaultOffsetNotePosition = defaultOffsetNotePosition
         self.audibleToGrid = audibleToGrid
@@ -180,14 +192,13 @@ extension TimingOffsetDetectionPattern: Hashable {
 
 extension TimingOffsetDetectionPattern {
     /// `* * * *` — four equally-spaced 16ths, accent on grid position 1, every
-    /// audible position non-anchor pickable. The migration target for 82.1
-    /// users: with stored `offsetNotePosition ∈ {2, 3, 4}`, the emitted `Beat`
-    /// is bit-identical to the pre-82.5 hand-rolled construction.
+    /// audible position non-anchor pickable.
     ///
     /// Default 3: audible 3 = grid 3 = on the half-beat. The perceptually
     /// strongest non-anchor position in a 4-subdivision figure.
-    static let pattern01 = TimingOffsetDetectionPattern(
-        id: "pattern_01",
+    static let pattern_straight16ths_01 = TimingOffsetDetectionPattern(
+        id: "pattern_straight16ths_01",
+        category: .straight16ths,
         subdivisions: [
             .note(velocity: RhythmVelocity.accent, offset: .zero),
             .note(velocity: RhythmVelocity.normal, offset: .zero),
@@ -200,11 +211,10 @@ extension TimingOffsetDetectionPattern {
     /// `* - * *` — anchor, rest, two audible. `audibleToGrid = [[0], [2], [3]]`;
     /// `pickable = {2, 3}`.
     ///
-    /// Default 2: audible 2 = grid 2 = on the half-beat. Closest analogue to
-    /// the `pattern_01` default — both sit on the metric midpoint of the
-    /// figure.
-    static let pattern02 = TimingOffsetDetectionPattern(
-        id: "pattern_02",
+    /// Default 2: audible 2 = grid 2 = on the half-beat.
+    static let pattern_gapped16ths_01 = TimingOffsetDetectionPattern(
+        id: "pattern_gapped16ths_01",
+        category: .gapped16ths,
         subdivisions: [
             .note(velocity: RhythmVelocity.accent, offset: .zero),
             .rest,
@@ -217,13 +227,12 @@ extension TimingOffsetDetectionPattern {
     /// `* * - *` — anchor, audible, rest, audible. `audibleToGrid = [[0], [1], [3]]`;
     /// `pickable = {2, 3}`.
     ///
-    /// Default 2: the on-the-half-beat audible note is a rest in this pattern.
-    /// Audible 2 (grid 2, the early subdivision) and audible 3 (grid 4, the
-    /// tail) are both equidistant from the rest at grid 3 — a tie. Audible 2
-    /// is the starting pick; playtest evidence may revise it later. (Grid
-    /// numbers here are 1-based, matching the design doc's table notation.)
-    static let pattern03 = TimingOffsetDetectionPattern(
-        id: "pattern_03",
+    /// Default 2: audible 2 (grid 2) and audible 3 (grid 4) are both
+    /// equidistant from the rest at grid 3 — a tie. Audible 2 is the starting
+    /// pick; playtest evidence may revise.
+    static let pattern_gapped16ths_02 = TimingOffsetDetectionPattern(
+        id: "pattern_gapped16ths_02",
+        category: .gapped16ths,
         subdivisions: [
             .note(velocity: RhythmVelocity.accent, offset: .zero),
             .note(velocity: RhythmVelocity.normal, offset: .zero),
@@ -236,12 +245,11 @@ extension TimingOffsetDetectionPattern {
     /// `* - * -` — anchor, rest, audible, rest. `audibleToGrid = [[0], [2]]`;
     /// `pickable = {2}` (single-pickable).
     ///
-    /// Default 2: forced — the only pickable audible position. Encoded as a
-    /// 4-subdivision `Beat` (not 2) so the equal-cell renderer shows it
-    /// alongside the other catalog entries with consistent cell counts; the
-    /// audible perception (an "8ths feel") is unchanged.
-    static let pattern04 = TimingOffsetDetectionPattern(
-        id: "pattern_04",
+    /// Default 2: forced — the only pickable audible position. Audibly an
+    /// "8ths feel" on a 16ths grid.
+    static let pattern_gapped16ths_03 = TimingOffsetDetectionPattern(
+        id: "pattern_gapped16ths_03",
+        category: .gapped16ths,
         subdivisions: [
             .note(velocity: RhythmVelocity.accent, offset: .zero),
             .rest,
@@ -254,12 +262,11 @@ extension TimingOffsetDetectionPattern {
     /// `* - - *` — anchor, two rests, audible tail. `audibleToGrid = [[0], [3]]`;
     /// `pickable = {2}` (single-pickable).
     ///
-    /// Default 2: forced — the only pickable audible position. Probes
-    /// "anchor + tail" timing perception: judging the timing of a note
-    /// separated from its preceding reference by two rests (common in march,
-    /// dotted-eighth-plus-16th figures, folk strumming).
-    static let pattern05 = TimingOffsetDetectionPattern(
-        id: "pattern_05",
+    /// Default 2: forced. Probes "anchor + tail" timing perception (common in
+    /// march, dotted-eighth-plus-16th figures, folk strumming).
+    static let pattern_gapped16ths_04 = TimingOffsetDetectionPattern(
+        id: "pattern_gapped16ths_04",
+        category: .gapped16ths,
         subdivisions: [
             .note(velocity: RhythmVelocity.accent, offset: .zero),
             .rest,
@@ -267,5 +274,189 @@ extension TimingOffsetDetectionPattern {
             .note(velocity: RhythmVelocity.normal, offset: .zero)
         ],
         defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* * *` — three equal 8th-triplet notes. `audibleToGrid = [[0], [1], [2]]`;
+    /// `pickable = {2, 3}`.
+    ///
+    /// Default 2: middle of the triplet — the clearest "between-anchors" probe.
+    static let pattern_triplets_01 = TimingOffsetDetectionPattern(
+        id: "pattern_triplets_01",
+        category: .triplets,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* * -` — 8th-triplet with trailing rest. `audibleToGrid = [[0], [1]]`;
+    /// `pickable = {2}` (single-pickable). Common in jazz comping and bossa
+    /// nova clave fragments. Default 2 is forced.
+    static let pattern_triplets_02 = TimingOffsetDetectionPattern(
+        id: "pattern_triplets_02",
+        category: .triplets,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .rest
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* - *` — 8th-triplet "long-short-long". `audibleToGrid = [[0], [2]]`;
+    /// `pickable = {2}` (single-pickable). Common in waltz syncopation and
+    /// Celtic-style triplet figures. Default 2 is forced.
+    static let pattern_triplets_03 = TimingOffsetDetectionPattern(
+        id: "pattern_triplets_03",
+        category: .triplets,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `* *. .` — mixed-duration triplet, sextuplet-grid representation with
+    /// multi-cell holds. `audibleToGrid = [[0], [2], [5]]`; `pickable = {2, 3}`;
+    /// audible 2 carries the perceptual "dotted" descriptor (its grid cell
+    /// spans 1-based grid positions 3–5, i.e. half the beat).
+    ///
+    /// Default 2: the dotted (long) cell — perceptually most marked.
+    static let pattern_triplets_04 = TimingOffsetDetectionPattern(
+        id: "pattern_triplets_04",
+        category: .triplets,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .rest,
+            .rest,
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2),
+        dottedAudiblePositions: [2]
+    )
+
+    /// `* *-*-*` — 8th + nested 16th-triplet at host position 2.
+    /// `audibleToGrid = [[0], [1, 0], [1, 1], [1, 2]]`; `pickable = {2, 3, 4}`.
+    /// Common in jazz fills, prog rock, and Indian classical tihai-adjacent
+    /// figures.
+    ///
+    /// Default 3: middle of the nested 16th-triplet — cross-rhythm probe at
+    /// the densest point of the figure.
+    static let pattern_nested_01 = TimingOffsetDetectionPattern(
+        id: "pattern_nested_01",
+        category: .nested,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .nested(Beat(subdivisions: [
+                .note(velocity: RhythmVelocity.normal, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero)
+            ]))
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(3)
+    )
+
+    /// `*-*-* *` — nested 16th-triplet at host position 1 (leading) + 8th.
+    /// `audibleToGrid = [[0, 0], [0, 1], [0, 2], [1]]`; `pickable = {2, 3, 4}`.
+    /// Mirror of ``pattern_nested_01``; pair coverage between trailing density
+    /// and leading density.
+    ///
+    /// Default 3: middle of the nested 16th-triplet (mirror reasoning).
+    static let pattern_nested_02 = TimingOffsetDetectionPattern(
+        id: "pattern_nested_02",
+        category: .nested,
+        subdivisions: [
+            .nested(Beat(subdivisions: [
+                .note(velocity: RhythmVelocity.accent, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero)
+            ])),
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(3)
+    )
+
+    /// `* * .-.` — 8th-triplet with trailing duplet (cross-rhythm into next
+    /// beat). `audibleToGrid = [[0], [1], [2, 0], [2, 1]]`; `pickable = {2, 3, 4}`.
+    /// Common in West African and Cuban contexts.
+    ///
+    /// Default 4: second cell of the trailing duplet — the cross-rhythm
+    /// landing into the next beat.
+    static let pattern_nested_03 = TimingOffsetDetectionPattern(
+        id: "pattern_nested_03",
+        category: .nested,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .nested(Beat(subdivisions: [
+                .note(velocity: RhythmVelocity.normal, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero)
+            ]))
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(4)
+    )
+
+    /// `* .-. *` — 8th-triplet with middle duplet (symmetric center case).
+    /// `audibleToGrid = [[0], [1, 0], [1, 1], [2]]`; `pickable = {2, 3, 4}`.
+    /// Least common of the three duplet-in-triplet entries in real repertoire
+    /// but valuable as the symmetric center case.
+    ///
+    /// Default 3: second cell of the middle duplet — middle cross-rhythm.
+    static let pattern_nested_04 = TimingOffsetDetectionPattern(
+        id: "pattern_nested_04",
+        category: .nested,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .nested(Beat(subdivisions: [
+                .note(velocity: RhythmVelocity.normal, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero)
+            ])),
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(3)
+    )
+
+    /// `.-. * *` — leading duplet (downbeat cross-rhythm) + 8th-triplet tail.
+    /// `audibleToGrid = [[0, 0], [0, 1], [1], [2]]`; `pickable = {2, 3, 4}`.
+    /// Very common — most Latin syncopation begins this way.
+    ///
+    /// Default 2: second cell of the leading duplet — the "cross-rhythm
+    /// settle" before the host triplet resumes.
+    static let pattern_nested_05 = TimingOffsetDetectionPattern(
+        id: "pattern_nested_05",
+        category: .nested,
+        subdivisions: [
+            .nested(Beat(subdivisions: [
+                .note(velocity: RhythmVelocity.accent, offset: .zero),
+                .note(velocity: RhythmVelocity.normal, offset: .zero)
+            ])),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(2)
+    )
+
+    /// `. . . . . .` — flat sextuplet. `audibleToGrid = [[0], [1], [2], [3], [4], [5]]`;
+    /// `pickable = {2, 3, 4, 5, 6}`. Covers fast-passagework timing perception.
+    ///
+    /// Default 4: perceptual midpoint (3/6 = half-beat) — the strongest
+    /// secondary pulse in a flat sextuplet.
+    static let pattern_sextuplet_01 = TimingOffsetDetectionPattern(
+        id: "pattern_sextuplet_01",
+        category: .sextuplet,
+        subdivisions: [
+            .note(velocity: RhythmVelocity.accent, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero),
+            .note(velocity: RhythmVelocity.normal, offset: .zero)
+        ],
+        defaultOffsetNotePosition: OffsetNotePosition(4)
     )
 }

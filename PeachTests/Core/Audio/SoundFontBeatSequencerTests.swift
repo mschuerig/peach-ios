@@ -107,6 +107,42 @@ struct SoundFontBeatSequencerTests {
         }
     }
 
+    // MARK: - Schedule-buffer overflow regression (caught by TOD pattern_sextuplet_01 trial)
+
+    /// Catalog-wide invariant: a full batch (`beatsPerBatch` repetitions of any
+    /// shipping TOD pattern) must fit inside the engine's `scheduleCapacity`
+    /// circular buffer. Regression for the Story 84.4 visual-test crash where
+    /// `pattern_sextuplet_01` (sextuplet) emitted 6 audibles × 2 events × 500 beats =
+    /// 6000 events against a 4096-event buffer, tripping
+    /// `SoundFontEngine.scheduleEvents`'s `assertionFailure` on trial start.
+    @Test("buildBatch(beatCount: beatsPerBatch) for every TOD catalog pattern fits inside the engine's scheduleCapacity")
+    func buildBatchStaysWithinScheduleCapacity() async {
+        let engine = MockSequencerEngine()
+        engine.sampleRate = Self.sampleRate
+        let sequencer = SoundFontBeatSequencer(engine: engine, preset: Self.testPreset, channel: Self.channelID)
+        sequencer.configureTiming(tempo: Self.tempo)
+
+        for pattern in TimingOffsetDetectionPatternCatalog.all {
+            // Worst case: every beat carries an offset on the default pickable
+            // position — same Beat shape as a real trial.
+            let beat = pattern.beat(
+                offsetNotePosition: pattern.defaultOffsetNotePosition,
+                offsetAmount: .zero
+            )
+            let provider = MockBeatProvider(beats: [beat])
+
+            let batch = sequencer.buildBatch(
+                beatCount: SoundFontBeatSequencer.beatsPerBatch,
+                beatProvider: provider
+            )
+
+            #expect(
+                batch.events.count <= SoundFontEngine.scheduleCapacity,
+                "Pattern \(pattern.id) over \(SoundFontBeatSequencer.beatsPerBatch) beats emitted \(batch.events.count) events — exceeds SoundFontEngine.scheduleCapacity \(SoundFontEngine.scheduleCapacity)"
+            )
+        }
+    }
+
     // MARK: - Lifecycle (start / stop / restart)
 
     @Test("start sets currentBeat from audio position")

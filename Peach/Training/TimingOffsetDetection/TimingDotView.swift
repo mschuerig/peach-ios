@@ -148,7 +148,7 @@ struct TimingDotView: View {
         // Dots are leading-aligned within their cell: the note's onset sits at
         // the cell's left edge, with absorbed-rest space extending to the right.
         // Center-alignment would shift the dot rightward as its cell absorbed
-        // rests, distorting the rhythm-as-spacing intent — pattern_05's accent
+        // rests, distorting the rhythm-as-spacing intent — pattern_gapped16ths_04's accent
         // would land at 3W/8 instead of 0, hiding the 3:1 gap.
         //
         // The doubled-glyph offset marker is shifted left by `overlapOffset/2`
@@ -469,38 +469,38 @@ extension TimingDotView {
 
 // MARK: - Previews
 
-#Preview("pattern_01 — no dots lit, position 3 selected") {
+#Preview("pattern_straight16ths_01 — no dots lit, position 3 selected") {
     TimingDotView(
-        pattern: .pattern01,
+        pattern: .pattern_straight16ths_01,
         offsetNotePosition: .default,
         litCount: 0
     )
     .padding()
 }
 
-#Preview("pattern_01 — 2 dots lit, position 3 selected") {
+#Preview("pattern_straight16ths_01 — 2 dots lit, position 3 selected") {
     TimingDotView(
-        pattern: .pattern01,
+        pattern: .pattern_straight16ths_01,
         offsetNotePosition: .default,
         litCount: 2
     )
     .padding()
 }
 
-#Preview("pattern_01 — all dots lit, position 4 selected") {
+#Preview("pattern_straight16ths_01 — all dots lit, position 4 selected") {
     TimingDotView(
-        pattern: .pattern01,
+        pattern: .pattern_straight16ths_01,
         offsetNotePosition: OffsetNotePosition(4),
         litCount: 4
     )
     .padding()
 }
 
-#Preview("pattern_01 — picker preview (no offset glyph)") {
+#Preview("pattern_straight16ths_01 — picker preview (no offset glyph)") {
     TimingDotView(
-        pattern: .pattern01,
+        pattern: .pattern_straight16ths_01,
         offsetNotePosition: nil,
-        litCount: TimingOffsetDetectionPattern.pattern01.subdivisions.count,
+        litCount: TimingOffsetDetectionPattern.pattern_straight16ths_01.subdivisions.count,
         scale: TimingDotView.previewScale
     )
     .padding()

@@ -429,3 +429,82 @@ In `TimingOffsetDetectionPatternPickerSettingsSection`, the static helper is pin
 `bracketGeometryBaseValues` pins the constants 1.5/4/1 but no test verifies the `× previewScale` multiplication actually applies in the rendered output. The design doc § *Grouping indicators* says "Offset above cell tops: **4pt** at full scale on the training screen; multiplied by `previewScale` (0.625) in the picker preview." The code multiplies the `@ScaledMetric` value by `scale` in `cellView`, but no test asserts that a `.nestingBracket` cell at `scale: previewScale` ends up at half-ish the offset of one at `scale: 1.0`.
 
 **Fix:** Resolution candidates: (a) add a UI snapshot test at two scales; (b) extract the offset-computation as a pure function and unit-test it; (c) leave to manual visual inspection.
+
+### PF-040: Sectioned `Picker` shared-binding rendering on cross-section selection transitions is unverified
+
+**Found:** 2026-06-05 (Story 84.4 review)
+**Severity:** Low (no current bug observed; surface for explicit visual check)
+**Disposition:** OPEN
+
+`TimingOffsetDetectionPatternPickerDestination.body` (Story 84.4) renders five sibling inline `Picker`s, each iterating its own `section.patternIds`, all sharing the same `patternIdBinding`. SwiftUI's inline-Picker selection-indicator behaviour with one binding shared across multiple `Picker` views (each containing a disjoint tag set) is not documented as a guaranteed contract — every section's `Picker` may render no selection indicator until its bucket's row matches the current id, which is the intended behaviour but may surface visual quirks at section transitions (e.g. a brief no-checkmark frame during a cross-section selection animation).
+
+**Fix:** Resolution candidates: (a) add an integration / snapshot test asserting exactly one row in the visible drill-down carries the selection indicator at steady state; (b) collapse to one outer `Picker` wrapping all five sections (loses the per-section visual grouping the design doc requires); (c) leave to manual visual inspection per 84.4's "Visual check" task.
+
+### PF-041: AX1 no-truncation invariant for picker section headers has no snapshot test
+
+**Found:** 2026-06-05 (Story 84.4 review)
+**Severity:** Low
+**Disposition:** OPEN
+
+`tod-tuplet-renderer-design.md` § *Categorization* "Section header behavior at AX1" locks SwiftUI default wrapping (no `.lineLimit(1)` / `.truncationMode`) and explicitly says "the 84.4 a11y test captures a screenshot at AX1 to confirm no truncation." 84.4 ships without a snapshot/UI test asserting that the longest German header (`Lückenhafte Sechzehntel`, 23 chars) wraps to two lines instead of truncating at AX1 — only manual visual inspection per the spec's "Visual check" task. A future contributor adding `.lineLimit(1)` to the picker section header could break the invariant silently.
+
+**Fix:** Resolution candidates: (a) wire snapshot-testing infrastructure (e.g. swift-snapshot-testing) and add an AX1 screenshot test for the picker destination; (b) extract header rendering into a thin view function with a static `lineLimit` accessor that a unit test can pin to `nil`; (c) accept manual visual inspection as the verification surface and document the invariant in the section's doc comment.
+
+### PF-042: `TimingOffsetDetectionPattern.init` does not validate `dottedAudiblePositions` is in-range or non-anchor
+
+**Found:** 2026-06-05 (Story 84.4 review)
+**Severity:** Low
+**Disposition:** OPEN
+
+`TimingOffsetDetectionPattern.init` enforces the catalog-default-is-pickable invariant via `precondition` but accepts any `Set<Int>` for `dottedAudiblePositions` without validating that each member is in `2...audibleCount` and a non-anchor. A future entry passing `dottedAudiblePositions: [99]` would silently never render the "dotted" descriptor; passing `[1]` would also be a no-op (the `.accent` branch in `TimingDotView.cellAccessibilityLabel` never consults `dottedAudiblePositions`).
+
+**Fix:** Add `precondition(dottedAudiblePositions.allSatisfy { (2...audibleToGrid.count).contains($0) }, "TimingOffsetDetectionPattern '\(id)' dottedAudiblePosition out of range")` to `init`. Optional: lift the test catalog-wide so misregistration surfaces in CI.
+
+### PF-043: `Cell.nested([Cell])` test matcher has no max-depth or structural-divergence guard
+
+**Found:** 2026-06-05 (Story 84.4 review)
+**Severity:** Low
+**Disposition:** OPEN
+
+`TimingOffsetDetectionPatternCatalogTests`'s recursive `expectSubdivisions` matcher (introduced in 84.4) descends whenever both sides are `.nested` with no maximum depth and no check that the matcher's recursion mirrors the renderer's depth-first walk. Epic 84 entries are depth-1 only; a future depth-3 entry could pass `catalogEntrySubdivisions` while diverging structurally between the expected `Cell.nested(.nested(...))` tree and the actual `.nested(Beat.nested(Beat))` shape.
+
+**Fix:** Add a max-depth assert or guard inside `expectSubdivisions`, or assert the recursive walk's depth matches the actual `Beat` tree depth via a parallel walk. Forward-compat concern only — no current entry exercises depth > 2.
+
+### PF-044: `1e-6` cell-width tolerance hard-codes float evaluation order
+
+**Found:** 2026-06-05 (Story 84.4 review)
+**Severity:** Low
+**Disposition:** OPEN
+
+`TimingDotViewTests.expectVisualCells` uses absolute tolerance `1e-6` to compare `startXProportion` and `widthProportion` against expected literals. For Epic 84 entries this is comfortable (the largest divisor is 6, and `1.0 / 3.0`, `1.0 / 6.0`, etc. drift by ULP-scale only — well under 1e-6). A future entry with divisor > 6 (e.g. K=7 septuplet) or deeper nesting (e.g. K=3 inside K=3 inside K=2 → /18 cells) could accumulate enough float drift to break the absolute tolerance.
+
+**Fix:** Switch to a relative tolerance (`max(abs(expected), 1.0) * 1e-6`) or use `Double.ulpOfOne * N` to scale with magnitude. Forward-compat concern — no current entry triggers it.
+
+### PF-046: `.navigationDestination(isPresented:)` inside `Form` triggers SwiftUI lazy-container warning
+
+**Found:** 2026-06-05 (Story 84.4 iteration 3 visual verification on iOS Simulator)
+**Severity:** Medium (Apple warns "It will be ignored in a future release")
+**Disposition:** OPEN
+
+`TimingOffsetDetectionPatternPickerSettingsSection.body` attaches `.navigationDestination(isPresented: $isShowingDestination)` to a `Button` inside a `Section`. The Section is part of a parent `Form` (assembled by `DisciplineSettingsSection.aggregated`), which SwiftUI implements as a lazy `List` underneath. iOS logs: "Do not put a navigation destination modifier inside a 'lazy' container, like `List` or `LazyVStack`. ... It will be ignored in a future release." The current iOS keeps the destination wired, but a future release will silently break the drill-down.
+
+The architecture creating this conflict was iteration-2 of 84.3: the iteration-2 fix replaced `NavigationLink` (which renders the system chevron) with `Button` + `.navigationDestination(isPresented:)` so a custom chevron view (`TimingDotView.patternRowChevron`) could be rendered on both the *Pattern* row and the *Offset Note Position* row at identical widths, restoring dot alignment between them. Reverting to `NavigationLink` re-introduces the chevron-alignment problem (Michael called it "completely unusable" in iteration-2).
+
+**Fix options (none chosen yet):**
+- **(a)** Hoist the `.navigationDestination(isPresented:)` modifier to `SettingsScreen.body`'s `Form` (outside the lazy container). Requires extending `DisciplineSettingsSection` to declare navigation contributions a parent screen can collect and attach. Cross-cutting architectural change touching `App/Training/`.
+- **(b)** Switch picker row back to `NavigationLink`. Reverts the iteration-2 fix; reintroduces chevron-alignment misery. Not acceptable per iteration-2 history.
+- **(c)** Restructure the picker drill-down so the Pattern picker destination also hosts the *Offset Note Position* selector (one drill-down screen containing both controls instead of two adjacent inline rows). The settings screen then shows only the *Pattern* row (drill-in to edit both). UX change worth its own design discussion.
+
+**Constraints:**
+- Iteration-2 chevron-alignment fix (`TimingDotView.patternRowChevron` rendered identically on both rows) must be preserved or replaced by an equivalent guarantee.
+- The picker's selection cascade through `patternIdBinding` (writing both `selectedPatternId` and `offsetNotePosition` atomically) must be preserved.
+
+### PF-045: Nested-pattern bracket overlay renders incorrectly in `TimingDotView`
+
+**Found:** 2026-06-05 (Story 84.4 visual verification on iOS Simulator)
+**Severity:** Medium (visual defect; gated out of non-research builds)
+**Disposition:** OPEN
+
+Michael flagged during the 84.4 visual review that "the nested patterns don't work well for me and in their visualizations, the bar on top is incorrectly displayed." The bracket overlay above the nested-child cells in `pattern_10`..`pattern_14` doesn't render at the locked geometry from `tod-tuplet-renderer-design.md` § *Grouping indicators*. As a mitigation, the nested catalog entries (`pattern_10`..`pattern_14`) and the *Nested* picker section are gated behind `PEACH_RESEARCH` (84.4 iteration 3) — App Store users see only Straight 16ths, Gapped 16ths, Triplets, and Sextuplet. The static let definitions stay defined so the renderer code path keeps exercising under unit tests; the bug surfaces only in `Debug (Research)` / `Release (Research)` configurations.
+
+**Fix:** Visual audit of the bracket rendering — likely candidates: bracket span computation (`spanStart`/`spanEnd` in `TimingDotView.walk`), bracket `y`-offset relative to the dot top, end-inset application (`bracketEndInset` × `previewScale` in the picker preview), or interaction with `bracketReserve` (which reserves vertical space only when `cells.contains { case .nestingBracket }` is true). Should be reopened when the bracket renderer is iterated; ungating the *Nested* bucket is gated on this resolving.

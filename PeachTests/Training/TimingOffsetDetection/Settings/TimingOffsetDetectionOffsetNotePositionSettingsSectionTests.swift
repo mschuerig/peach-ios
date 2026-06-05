@@ -17,12 +17,12 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
 
     @Test("pickableCellLabel uses audible count as K")
     func pickableCellLabelUsesAudibleCount() {
-        // pattern_01 has audibleCount == 4: cells read "Note N of 4".
+        // pattern_straight16ths_01 has audibleCount == 4: cells read "Note N of 4".
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(2), audibleCount: 4) == String(localized: "Note \(2) of \(4)"))
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(3), audibleCount: 4) == String(localized: "Note \(3) of \(4)"))
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(4), audibleCount: 4) == String(localized: "Note \(4) of \(4)"))
 
-        // pattern_02 has audibleCount == 3 (not grid 4): audible pos 3 reads
+        // pattern_gapped16ths_01 has audibleCount == 3 (not grid 4): audible pos 3 reads
         // "Note 3 of 3", NOT "Note 3 of 4" — guards the audible-vs-grid mismatch
         // for the slot picker's accessibility label.
         #expect(Section.pickableCellLabel(position: OffsetNotePosition(2), audibleCount: 3) == String(localized: "Note \(2) of \(3)"))

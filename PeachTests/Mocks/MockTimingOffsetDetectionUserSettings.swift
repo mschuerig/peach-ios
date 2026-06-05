@@ -4,5 +4,5 @@ import Foundation
 final class MockTimingOffsetDetectionUserSettings: TimingOffsetDetectionUserSettings {
     var maxRepetitions: Int = TimingOffsetDetectionSettingsKeys.defaultMaxRepetitions
     var offsetNotePosition: OffsetNotePosition = .default
-    var selectedPattern: TimingOffsetDetectionPattern = .pattern01
+    var selectedPattern: TimingOffsetDetectionPattern = .pattern_straight16ths_01
 }

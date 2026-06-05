@@ -9,10 +9,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
     // pattern's visual cells (rest cells contribute nothing — they're absorbed
     // into the preceding `.note`'s cell or non-focusable orphan rests).
 
-    @Test("pattern_01 composite label reads each audible position with the locked Note N of K form")
+    @Test("pattern_straight16ths_01 composite label reads each audible position with the locked Note N of K form")
     func labelForPattern01() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern01
+            for: .pattern_straight16ths_01
         )
         let expected = [
             String(localized: "Accent"),
@@ -23,10 +23,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         #expect(label == expected)
     }
 
-    @Test("pattern_02 composite label — 3 audibles after rest absorption")
+    @Test("pattern_gapped16ths_01 composite label — 3 audibles after rest absorption")
     func labelForPattern02() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern02
+            for: .pattern_gapped16ths_01
         )
         let expected = [
             String(localized: "Accent"),
@@ -36,10 +36,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         #expect(label == expected)
     }
 
-    @Test("pattern_03 composite label — 3 audibles after middle-rest absorption")
+    @Test("pattern_gapped16ths_02 composite label — 3 audibles after middle-rest absorption")
     func labelForPattern03() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern03
+            for: .pattern_gapped16ths_02
         )
         let expected = [
             String(localized: "Accent"),
@@ -49,10 +49,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         #expect(label == expected)
     }
 
-    @Test("pattern_04 composite label — 2 audibles (both rests absorbed)")
+    @Test("pattern_gapped16ths_03 composite label — 2 audibles (both rests absorbed)")
     func labelForPattern04() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern04
+            for: .pattern_gapped16ths_03
         )
         let expected = [
             String(localized: "Accent"),
@@ -61,10 +61,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         #expect(label == expected)
     }
 
-    @Test("pattern_05 composite label — 2 audibles (both rests absorbed into accent)")
+    @Test("pattern_gapped16ths_04 composite label — 2 audibles (both rests absorbed into accent)")
     func labelForPattern05() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern05
+            for: .pattern_gapped16ths_04
         )
         let expected = [
             String(localized: "Accent"),
@@ -97,20 +97,121 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         #expect(resolved.offsetNotePosition == pattern.defaultOffsetNotePosition.rawValue)
     }
 
-    // MARK: - Tuplet composite labels (enabled by Story 84.4)
+    // MARK: - Tuplet composite labels (Story 84.4 — pattern_triplets_01..15 registered)
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("pattern_nested_01 (`* *-*-*`) composite label names the trailing nested triplet on audibles 2–4")
     func labelForPattern10NestedTriplet() {
-        // pattern_10 (`* *-*-*`): "Accent, Note 2 of 4, in triplet, Note 3 of 4, in triplet, Note 4 of 4, in triplet"
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern_nested_01
+        )
+        let inTriplet = String(localized: "in triplet")
+        let expected = [
+            String(localized: "Accent"),
+            "\(String(localized: "Note \(2) of \(4)")), \(inTriplet)",
+            "\(String(localized: "Note \(3) of \(4)")), \(inTriplet)",
+            "\(String(localized: "Note \(4) of \(4)")), \(inTriplet)"
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("pattern_triplets_04 (`* *. .`) composite label carries `dotted` on audible 2")
     func labelForPattern09MixedDuration() {
-        // pattern_09 (`* *. .`): "Accent, Note 2 of 3, dotted, Note 3 of 3"
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern_triplets_04
+        )
+        let expected = [
+            String(localized: "Accent"),
+            "\(String(localized: "Note \(2) of \(3)")), \(String(localized: "dotted"))",
+            String(localized: "Note \(3) of \(3)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
 
-    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    @Test("pattern_nested_05 (`.-. * *`) composite label opens with the leading-duplet accent and trails into the host triplet")
     func labelForPattern14LeadingDuplet() {
-        // pattern_14 (`.-. * *`): "Accent, in duplet, Note 2 of 4, in duplet, Note 3 of 4, Note 4 of 4"
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern_nested_05
+        )
+        let inDuplet = String(localized: "in duplet")
+        let expected = [
+            "\(String(localized: "Accent")), \(inDuplet)",
+            "\(String(localized: "Note \(2) of \(4)")), \(inDuplet)",
+            String(localized: "Note \(3) of \(4)"),
+            String(localized: "Note \(4) of \(4)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
+
+    @Test("pattern_nested_02 (`*-*-* *`) composite label opens with the leading-triplet accent")
+    func labelForPattern11LeadingTriplet() {
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern_nested_02
+        )
+        let inTriplet = String(localized: "in triplet")
+        let expected = [
+            "\(String(localized: "Accent")), \(inTriplet)",
+            "\(String(localized: "Note \(2) of \(4)")), \(inTriplet)",
+            "\(String(localized: "Note \(3) of \(4)")), \(inTriplet)",
+            String(localized: "Note \(4) of \(4)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
+    }
+
+    @Test("pattern_sextuplet_01 (sextuplet) composite label enumerates six audibles")
+    func labelForPattern15Sextuplet() {
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern_sextuplet_01
+        )
+        let expected = [
+            String(localized: "Accent"),
+            String(localized: "Note \(2) of \(6)"),
+            String(localized: "Note \(3) of \(6)"),
+            String(localized: "Note \(4) of \(6)"),
+            String(localized: "Note \(5) of \(6)"),
+            String(localized: "Note \(6) of \(6)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
+    }
+
+    // MARK: - cascadeWrites for tuplet entries (covers each locked default)
+
+    @Test(
+        "cascade writes for each always-on Story 84.4 tuplet pattern resolve to that pattern's locked default position",
+        arguments: [
+            ("pattern_triplets_01", 2),
+            ("pattern_triplets_02", 2),
+            ("pattern_triplets_03", 2),
+            ("pattern_triplets_04", 2),
+            ("pattern_sextuplet_01", 4)
+        ] as [(String, Int)]
+    )
+    func cascadeWritesForTupletPatterns(expectation: (id: String, expectedDefault: Int)) {
+        let resolved = TimingOffsetDetectionPatternPickerSettingsSection.cascadeWrites(
+            forNewId: expectation.id
+        )
+        #expect(resolved.selectedPatternId == expectation.id)
+        #expect(resolved.offsetNotePosition == expectation.expectedDefault)
+    }
+
+    #if PEACH_RESEARCH
+    /// Nested-bucket cascade resolutions — registered only in `PEACH_RESEARCH`
+    /// builds where the entries are part of the catalog.
+    @Test(
+        "cascade writes for each Nested-bucket pattern resolve to its locked default position (PEACH_RESEARCH-gated)",
+        arguments: [
+            ("pattern_nested_01", 3),
+            ("pattern_nested_02", 3),
+            ("pattern_nested_03", 4),
+            ("pattern_nested_04", 3),
+            ("pattern_nested_05", 2)
+        ] as [(String, Int)]
+    )
+    func cascadeWritesForNestedPatterns(expectation: (id: String, expectedDefault: Int)) {
+        let resolved = TimingOffsetDetectionPatternPickerSettingsSection.cascadeWrites(
+            forNewId: expectation.id
+        )
+        #expect(resolved.selectedPatternId == expectation.id)
+        #expect(resolved.offsetNotePosition == expectation.expectedDefault)
+    }
+    #endif
 }
