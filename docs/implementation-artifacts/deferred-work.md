@@ -105,6 +105,18 @@ Spec Change Log records the trade-off (44×44 markers would visually overlap at 
 
 **Fix:** Reassess at the next discipline that needs a picker (Continuous Rhythm Matching gap-positions, currently the closest candidate).
 
+### PF-030: `AppTimingOffsetDetectionUserSettings.selectedPattern` recomputes + logs on every access
+
+**Found:** 2026-06-05 (Story 84.2)
+**Severity:** Low
+**Disposition:** WONT-FIX (self-healing on first user pick; the catalog noise was a dev-only window that closes on canonicalization)
+
+`selectedPattern` reads `defaults` and resolves via `pattern(forStoredId:)`, which writes a `.warning` log when the id is unknown. No memoization, no log dedup — every read with a stale id emits a fresh warning line.
+
+**Why this stays unfixed:** Production users start with the canonical default `selectedPatternId` (no warning). The window where the warning fires is dev-only: a device that survived the 84.2 id swap with a stale stored id, before its user makes a pattern selection (which canonicalizes the id and stops the warning). Bounded, self-healing, and tied to one specific migration that has already shipped. Memoization (option a, mutable state on a getter for no functional benefit) and a per-process warn-once `Set<String>` (option b, preventive plumbing) are both overengineering for a window that's already closed in practice.
+
+**Fix:** No fix planned. The next id-rename event (when it comes) gets the warn-once mechanism as part of that story's scope, not as preventive plumbing here.
+
 ---
 
 ## OPEN — Needs Architectural Decision
@@ -191,16 +203,6 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated, so storing `NoteRange` in a `nonisolated` value fails to compile.
 
 **Fix:** Make `NoteRange` `nonisolated` (consistent with `MIDINote`) and then make `PianoKeyboardLayout` `nonisolated` too. Touches a widely-used domain type; deserves its own focused story rather than a Boy-Scout drive-by.
-
-### PF-030: `AppTimingOffsetDetectionUserSettings.selectedPattern` recomputes + logs on every access
-
-**Found:** 2026-06-05 (Story 84.2)
-**Severity:** Low (bounded log noise; clears on first user pick or canonicalization)
-**Disposition:** OPEN
-
-The computed property reads `defaults`, resolves via `pattern(forStoredId:)`, and `pattern(forStoredId:)` writes a warning when the id is unknown. There is no memoization and no one-shot log dedup. On dev devices after the 84.2 swap, every call site that reads `selectedPattern` while `selectedPatternId` still carries a retired id (`pattern_1111` etc.) emits a fresh "unknown pattern id" log line.
-
-**Fix:** Resolution candidates: (a) memoize the resolution per-port instance with a stored `lastResolvedId` guard; (b) move the warning log into `pattern(forStoredId:)` with a per-process `Set<String>` of already-warned ids; (c) accept the noise.
 
 ### PF-033: `TimingDotView` natural width can grow unbounded on deeply nested patterns
 
