@@ -570,17 +570,6 @@
         }
       }
     },
-    "Anchor note, not selectable" : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ankernote, nicht auswählbar"
-          }
-        }
-      }
-    },
     "At ∞, the pattern keeps repeating until you submit a direction. Pick 1 to restore the single-pattern challenge." : {
       "localizations" : {
         "de" : {

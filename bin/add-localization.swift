@@ -18,6 +18,9 @@
 //   # Show entries missing a German translation
 //   bin/add-localization.swift --missing
 //
+//   # Remove a retired key (one-time cleanup after a rename)
+//   bin/add-localization.swift --remove "Anchor note, not selectable"
+//
 //   # Dry run
 //   bin/add-localization.swift --dry-run "Settings" "Einstellungen"
 //
@@ -26,6 +29,7 @@
 //   --batch FILE        Read translations from JSON or CSV file
 //   --list              List all existing keys and German translations
 //   --missing           Show keys without German translations
+//   --remove KEY        Remove a key from Localizable.xcstrings
 //   --dry-run           Show changes without writing
 
 import Foundation
@@ -369,6 +373,7 @@ struct Arguments {
     var dryRun = false
     var key: String?
     var german: String?
+    var removeKey: String?
 }
 
 func parseArguments() -> Arguments {
@@ -390,6 +395,10 @@ func parseArguments() -> Arguments {
             args.list = true
         case "--missing":
             args.missing = true
+        case "--remove":
+            i += 1
+            guard i < argv.count else { exitWithError("--remove requires a key") }
+            args.removeKey = argv[i]
         case "--dry-run":
             args.dryRun = true
         case "--help", "-h":
@@ -428,6 +437,7 @@ func printUsage() {
       --batch FILE        Read translations from JSON or CSV file
       --list              List all existing keys and German translations
       --missing           Show keys without German translations
+      --remove KEY        Remove a key from Localizable.xcstrings (one-time cleanup of retired strings)
       --dry-run           Show changes without writing
       -h, --help          Show this help
     """)
@@ -467,6 +477,31 @@ if args.list {
 // Missing mode
 if args.missing {
     showMissing(in: data)
+    exit(0)
+}
+
+// Remove mode
+if let keyToRemove = args.removeKey {
+    if args.key != nil || args.batchFile != nil {
+        exitWithError("Cannot use --remove together with positional arguments or --batch.")
+    }
+    var strings = (data["strings"] as? [String: Any]) ?? [:]
+    let existed = strings.removeValue(forKey: keyToRemove) != nil
+    if !existed {
+        print("Key not found in \(xcstringsURL.lastPathComponent): '\(keyToRemove)' — nothing to remove.")
+        exit(0)
+    }
+    data["strings"] = strings
+    if args.dryRun {
+        print("Dry run: would remove key '\(keyToRemove)' from \(xcstringsURL.lastPathComponent).")
+    } else {
+        do {
+            try saveXCStrings(data, to: xcstringsURL)
+        } catch {
+            exitWithError("Failed to write \(xcstringsURL.lastPathComponent): \(error.localizedDescription)")
+        }
+        print("Removed key '\(keyToRemove)' from \(xcstringsURL.lastPathComponent).")
+    }
     exit(0)
 }
 

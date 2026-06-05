@@ -244,16 +244,6 @@ In `TimingOffsetDetectionPatternPickerSettingsSection`, the static helper is pin
 
 **Fix:** Resolution candidates: (a) add a UI test that exercises the rendered VoiceOver label and pins it to `patternRowAccessibilityLabel`; (b) collapse the two paths by computing the row label exclusively from `.combine` and removing the static helper; (c) document the relationship inline.
 
-### PF-037: `Localizable.xcstrings` retains the retired `"Anchor note, not selectable"` key after 84.3
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low (no production caller; cruft accumulates with each rename)
-**Disposition:** OPEN
-
-84.3 flipped the slot-picker anchor label to `"Accent, not selectable"`. The localization tool (`bin/add-localization.swift`) has no removal path.
-
-**Fix:** Resolution candidates: (a) add a `--remove` flag to the tool and run a one-time cleanup; (b) extend the tool to detect un-referenced keys; (c) accept the cruft and revisit during a catalog audit.
-
 ### PF-040: Sectioned `Picker` shared-binding rendering on cross-section selection transitions is unverified
 
 **Found:** 2026-06-05 (Story 84.4 review)
