@@ -5,6 +5,7 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
 
     // MARK: - State
 
+    private weak var player: SoundFontPlayer?
     private let engine: SoundFontEngine
     private let channel: MIDIChannel
     private let midiNote: MIDINote
@@ -13,7 +14,8 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
 
     // MARK: - Initialization
 
-    init(engine: SoundFontEngine, channel: MIDIChannel, midiNote: MIDINote, fadeOutDuration: Duration) {
+    init(player: SoundFontPlayer, engine: SoundFontEngine, channel: MIDIChannel, midiNote: MIDINote, fadeOutDuration: Duration) {
+        self.player = player
         self.engine = engine
         self.channel = channel
         self.midiNote = midiNote
@@ -25,14 +27,23 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
     func stop() async throws {
         guard !hasStopped else { return }
         hasStopped = true
-        if fadeOutDuration > .zero {
-            engine.muteForFade()
-            try? await Task.sleep(for: fadeOutDuration)
-        }
-        engine.stopNote(midiNote, channel: channel)
-        engine.sendPitchBend(.center, channel: channel)
-        if fadeOutDuration > .zero {
-            engine.restoreAfterFade()
+        if let player {
+            // Chain through the player's serial audio queue so a subsequent
+            // play() awaits this stop's mute/restore window and cannot land
+            // its noteOn during the global volume==0 phase.
+            await player.scheduleNoteStop(midiNote: midiNote).value
+        } else {
+            // Player deallocated (test fixtures, app teardown). Fall back to
+            // a direct stop — no chain, but no contending plays either.
+            if fadeOutDuration > .zero {
+                engine.muteForFade()
+                try? await Task.sleep(for: fadeOutDuration)
+            }
+            engine.stopNote(midiNote, channel: channel)
+            engine.sendPitchBend(.center, channel: channel)
+            if fadeOutDuration > .zero {
+                engine.restoreAfterFade()
+            }
         }
     }
 

@@ -59,7 +59,7 @@ final class SoundFontPlayer: NotePlayer {
         try soundFontEngine.ensureEngineRunning()
         let midiNote = startNote(frequency: frequency, velocity: velocity, amplitudeDB: amplitudeDB)
         logger.debug("play: \(frequency.rawValue, format: .fixed(precision: 1))Hz, vel=\(velocity.rawValue), amp=\(amplitudeDB.rawValue, format: .fixed(precision: 1))dB → MIDI \(midiNote.rawValue)")
-        return SoundFontPlaybackHandle(engine: soundFontEngine, channel: channel, midiNote: midiNote, fadeOutDuration: fadeOutDuration)
+        return SoundFontPlaybackHandle(player: self, engine: soundFontEngine, channel: channel, midiNote: midiNote, fadeOutDuration: fadeOutDuration)
     }
 
     // MARK: - stopAll
@@ -76,6 +76,34 @@ final class SoundFontPlayer: NotePlayer {
             await priorStop?.value
             self.soundFontEngine.clearSchedule()
             await self.soundFontEngine.stopNotes(channel: self.channel, fadeOutDuration: self.fadeOutDuration)
+        }
+        pendingAudioStop = task
+        return task
+    }
+
+    /// Chains a `SoundFontPlaybackHandle.stop()` through the serial audio chain
+    /// so its `muteForFade()` cannot outlast a subsequent stopAll or silence
+    /// the next `play()`'s noteOn — the handle's mute is global (it mutes
+    /// every sampler on the engine), and `activeMuteCount` only restores
+    /// volume when it drops to zero. Without this chain, an exit-then-re-enter
+    /// sequence races the in-flight handle.stop against the new play.
+    @discardableResult
+    func scheduleNoteStop(midiNote: MIDINote) -> Task<Void, Never> {
+        let channel = self.channel
+        let fadeOutDuration = self.fadeOutDuration
+        let engine = self.soundFontEngine
+        let priorStop = pendingAudioStop
+        let task = Task<Void, Never> {
+            await priorStop?.value
+            if fadeOutDuration > .zero {
+                engine.muteForFade()
+                try? await Task.sleep(for: fadeOutDuration)
+            }
+            engine.stopNote(midiNote, channel: channel)
+            engine.sendPitchBend(.center, channel: channel)
+            if fadeOutDuration > .zero {
+                engine.restoreAfterFade()
+            }
         }
         pendingAudioStop = task
         return task
