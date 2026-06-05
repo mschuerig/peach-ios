@@ -18,7 +18,7 @@ struct ContinuousRhythmMatchingScreen: View {
             statsHeader
             ContinuousRhythmMatchingDotView(
                 activeBeatPosition: session.currentBeatPosition,
-                gapPosition: session.currentGapPosition
+                gapPosition: session.gapPositionInCurrentBeat
             )
             .padding(.vertical, 8)
             tapButton

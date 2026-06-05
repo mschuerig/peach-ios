@@ -117,16 +117,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 
 **Fix:** Call `stop()` before reassignment, or restructure sessions to replace their `NotePlayer` rather than being fully recreated.
 
-### PF-010: Rename `currentGapPosition` → `gapPositionInCurrentBeat`
-
-**Found:** 2026-06-02 (Story 80.0)
-**Severity:** Low (clarity-of-naming, low-risk pure rename)
-**Disposition:** OPEN
-
-On `ContinuousRhythmMatchingSession`, with the new `currentBeatPosition` also being `BeatPosition?`, both observable properties are typed identically and only their names disambiguate "where the playback head is" vs. "where the gap is in the current beat".
-
-**Fix:** Rename the property and call sites in `ContinuousRhythmMatchingScreen`/`DotView` plus tests. Deferred only because the 80.0 spec scope was already wide.
-
 ### PF-011: Concurrency audit of the sequencer @Observable + Task pattern
 
 **Found:** 2026-06-02 (Story 80.0; reinforced by 80.1, 80.2)

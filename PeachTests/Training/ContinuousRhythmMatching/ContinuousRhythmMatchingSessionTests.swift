@@ -106,7 +106,7 @@ struct ContinuousRhythmMatchingSessionTests {
         #expect(f.session.isIdle)
         #expect(!f.session.isRunning)
         #expect(f.session.currentBeatPosition == nil)
-        #expect(f.session.currentGapPosition == nil)
+        #expect(f.session.gapPositionInCurrentBeat == nil)
         #expect(f.session.cyclesInCurrentTrial == 0)
         #expect(f.session.lastTrialResult == nil)
     }
@@ -154,7 +154,7 @@ struct ContinuousRhythmMatchingSessionTests {
         #expect(f.session.isIdle)
         #expect(!f.session.isRunning)
         #expect(f.session.currentBeatPosition == nil)
-        #expect(f.session.currentGapPosition == nil)
+        #expect(f.session.gapPositionInCurrentBeat == nil)
         #expect(f.session.cyclesInCurrentTrial == 0)
     }
 
@@ -248,7 +248,7 @@ struct ContinuousRhythmMatchingSessionTests {
         await f.sequencer.waitForStart()
 
         f.session.stop()
-        #expect(f.session.currentGapPosition == nil)
+        #expect(f.session.gapPositionInCurrentBeat == nil)
 
         // Simulate the beat sequencer's provider calling nextBeat after stop.
         let fallback = f.session.nextBeat()
@@ -259,10 +259,10 @@ struct ContinuousRhythmMatchingSessionTests {
             Issue.record("expected fallback subdivision[3] to be .rest")
         }
 
-        // currentGapPosition must stay nil — the fallback beat must not be tracked.
+        // gapPositionInCurrentBeat must stay nil — the fallback beat must not be tracked.
         f.sequencer.currentSamplePosition = 0
         f.session.evaluatePlaybackPosition()
-        #expect(f.session.currentGapPosition == nil)
+        #expect(f.session.gapPositionInCurrentBeat == nil)
     }
 
     // MARK: - Tap Evaluation
@@ -367,7 +367,7 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
     }
 
-    @Test("tracking updates currentBeatPosition and currentGapPosition")
+    @Test("tracking updates currentBeatPosition and gapPositionInCurrentBeat")
     func trackingUpdatesObservableState() async {
         let f = makeSession()
         f.session.start(settings: f.defaultSettings(enabledGapPositions: [.third]))
@@ -381,7 +381,7 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.evaluatePlaybackPosition()
 
         #expect(f.session.currentBeatPosition == .third)
-        #expect(f.session.currentGapPosition == .third)
+        #expect(f.session.gapPositionInCurrentBeat == .third)
 
         f.session.stop()
     }

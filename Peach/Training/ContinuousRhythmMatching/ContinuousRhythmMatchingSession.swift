@@ -94,7 +94,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
 
     private(set) var state: ContinuousRhythmMatchingSessionState = .idle
     private(set) var currentBeatPosition: BeatPosition?
-    private(set) var currentGapPosition: BeatPosition?
+    private(set) var gapPositionInCurrentBeat: BeatPosition?
     private(set) var cyclesInCurrentTrial = 0
     private(set) var lastTrialResult: CompletedContinuousRhythmMatchingTrial?
     private(set) var lastHitOffsetMs: Double?
@@ -122,7 +122,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     /// Indexed by cycle number.
     private var gapPositions: [BeatPosition] = []
 
-    /// Last index published to `currentBeatPosition` / `currentGapPosition`,
+    /// Last index published to `currentBeatPosition` / `gapPositionInCurrentBeat`,
     /// gating Observation churn at the 120 Hz tracking rate.
     private var lastPublishedSubdivisionIndex: Int = -1
     private var lastPublishedCycleIndex: Int = -1
@@ -261,7 +261,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
 
         if playingCycleIndex != lastPublishedCycleIndex,
            playingCycleIndex < gapPositions.count {
-            currentGapPosition = gapPositions[playingCycleIndex]
+            gapPositionInCurrentBeat = gapPositions[playingCycleIndex]
             lastPublishedCycleIndex = playingCycleIndex
         }
 
@@ -424,7 +424,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         }
 
         currentBeatPosition = nil
-        currentGapPosition = nil
+        gapPositionInCurrentBeat = nil
         cyclesInCurrentTrial = 0
         showFeedback = false
         lastHitOffsetMs = nil
