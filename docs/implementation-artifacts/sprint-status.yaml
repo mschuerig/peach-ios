@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Story 85.3 scope widened again to fold PF-047 (awaitIdle read-then-suspend race) — same audit, same concurrency-primitive question as the polling-task work. Epic 85: 85.1 (lifecycle, PF-001/003/005), 85.2 (PeachApp lazy init, PF-002), 85.3 (sequencer concurrency + conformance + awaitIdle race, PF-011/013/047), 85.4 (Voice Control restoration, PF-020), 85.5 (NoteRange/PianoKeyboardLayout nonisolated, PF-025), 85.6 (TOD picker invariants, PF-036/040/041), 85.7 (.navigationDestination relocation, PF-046) all ready-for-dev.
+# last_updated: 2026-06-05 # Epic 85 work order recorded in three independent chains: 85.5→85.4, 85.2→85.1→85.3, 85.6→85.7. Story 85.3 closes PF-011/013/047 (sequencer concurrency + conformance + awaitIdle race). All 7 Epic 85 stories ready-for-dev.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -780,7 +780,20 @@ development_status:
   # Each story names the `PF-###` entries it closes and includes a verification
   # task as step 1 (catalog entries can drift from current code between
   # deferral and triage).
-  # No fixed work order; stories may proceed in parallel where they don't conflict.
+  #
+  # Work order: three independent chains; chains may run in parallel, sequential within a chain:
+  #   (a) 85.5 → 85.4
+  #       85.5 (nonisolated NoteRange / PianoKeyboardLayout) lands first so 85.4's
+  #       accessibility-tree restructure doesn't have to thread isolation hops.
+  #   (b) 85.2 → 85.1 → 85.3
+  #       85.2 (lazy-init PeachApp singletons) establishes the construction model
+  #       85.1's PF-005 fix (route session replacement through the coordinator)
+  #       integrates with. 85.3 audits the post-85.1 coordinator shape — auditing
+  #       a surface 85.1 is about to reshape is wasteful.
+  #   (c) 85.6 → 85.7
+  #       85.6 (snapshot-testing infrastructure) gives 85.7's chevron-alignment
+  #       regression test a cheap home. 85.7 can ship without 85.6 using a bespoke
+  #       check, but the bespoke work is wasted once 85.6 lands.
   epic-85: in-progress
   85-1-consolidate-session-lifecycle-under-coordinator: ready-for-dev # Closes PF-001, PF-003, PF-005
   85-2-defer-peachapp-heavyweight-init: ready-for-dev # Closes PF-002
