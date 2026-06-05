@@ -350,26 +350,6 @@ In `TimingOffsetDetectionPatternPickerSettingsSection`, the static helper is pin
 
 **Fix:** Resolution candidates: (a) wire snapshot-testing infrastructure (e.g. swift-snapshot-testing) and add an AX1 screenshot test for the picker destination; (b) extract header rendering into a thin view function with a static `lineLimit` accessor that a unit test can pin to `nil`; (c) accept manual visual inspection as the verification surface and document the invariant in the section's doc comment.
 
-### PF-043: `Cell.nested([Cell])` test matcher has no max-depth or structural-divergence guard
-
-**Found:** 2026-06-05 (Story 84.4 review)
-**Severity:** Low
-**Disposition:** OPEN
-
-`TimingOffsetDetectionPatternCatalogTests`'s recursive `expectSubdivisions` matcher (introduced in 84.4) descends whenever both sides are `.nested` with no maximum depth and no check that the matcher's recursion mirrors the renderer's depth-first walk. Epic 84 entries are depth-1 only; a future depth-3 entry could pass `catalogEntrySubdivisions` while diverging structurally between the expected `Cell.nested(.nested(...))` tree and the actual `.nested(Beat.nested(Beat))` shape.
-
-**Fix:** Add a max-depth assert or guard inside `expectSubdivisions`, or assert the recursive walk's depth matches the actual `Beat` tree depth via a parallel walk. Forward-compat concern only — no current entry exercises depth > 2.
-
-### PF-044: `1e-6` cell-width tolerance hard-codes float evaluation order
-
-**Found:** 2026-06-05 (Story 84.4 review)
-**Severity:** Low
-**Disposition:** OPEN
-
-`TimingDotViewTests.expectVisualCells` uses absolute tolerance `1e-6` to compare `startXProportion` and `widthProportion` against expected literals. For Epic 84 entries this is comfortable (the largest divisor is 6, and `1.0 / 3.0`, `1.0 / 6.0`, etc. drift by ULP-scale only — well under 1e-6). A future entry with divisor > 6 (e.g. K=7 septuplet) or deeper nesting (e.g. K=3 inside K=3 inside K=2 → /18 cells) could accumulate enough float drift to break the absolute tolerance.
-
-**Fix:** Switch to a relative tolerance (`max(abs(expected), 1.0) * 1e-6`) or use `Double.ulpOfOne * N` to scale with magnitude. Forward-compat concern — no current entry triggers it.
-
 ### PF-046: `.navigationDestination(isPresented:)` inside `Form` triggers SwiftUI lazy-container warning
 
 **Found:** 2026-06-05 (Story 84.4 iteration 3 visual verification on iOS Simulator)

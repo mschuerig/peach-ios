@@ -154,12 +154,23 @@ struct TimingOffsetDetectionPatternCatalogTests {
     /// ``Cell/nested(_:)``. Records a precise issue location (`pathPrefix`)
     /// on mismatch so a failure at e.g. `pattern_nested_01` nested-child index 1
     /// reports `"pattern_nested_01 grid 1.1: expected normal, got rest"`.
+    /// Hard cap on the matcher's recursion so a malformed expected fixture
+    /// (`Cell.nested(.nested(.nested(...)))` running away) can't infinite-loop
+    /// alongside an equally deep actual `Beat` tree. Raise this if a catalog
+    /// entry genuinely needs deeper nesting; Epic 84 is depth-1 only.
+    private static let maxRecursionDepth = 4
+
     private static func expectSubdivisions(
         _ subdivisions: [Subdivision],
         matches expected: [Cell],
         patternId: String,
         pathPrefix: [Int]
     ) {
+        #expect(
+            pathPrefix.count <= maxRecursionDepth,
+            "\(patternId) at path \(pathPrefix.map(String.init).joined(separator: ".")) exceeds matcher max recursion depth \(maxRecursionDepth) — raise the constant if a deeper-nesting catalog entry is being added"
+        )
+        guard pathPrefix.count <= maxRecursionDepth else { return }
         #expect(
             subdivisions.count == expected.count,
             "\(patternId) at path \(pathPrefix.map(String.init).joined(separator: ".")) count mismatch: got \(subdivisions.count), expected \(expected.count)"

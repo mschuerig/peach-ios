@@ -54,9 +54,13 @@ struct TimingDotViewTests {
     // MARK: - visualCells(for:) — Epic-82 catalog (flat patterns)
 
     /// Locked widths and start-x values per `tod-tuplet-renderer-design.md`
-    /// § *Cell-width math* worked examples. Tolerance 1e-6 for floating-point
-    /// equality across the depth-first walk.
-    private static let widthTolerance: CGFloat = 1e-6
+    /// § *Cell-width math* worked examples. Tolerance scales with the magnitude
+    /// of the expected value so deeper nesting (smaller cell widths from larger
+    /// divisors) doesn't accumulate enough float drift to break a hard-coded
+    /// absolute threshold.
+    private static func widthTolerance(forExpected expected: CGFloat) -> CGFloat {
+        max(abs(expected), 1.0) * 1e-6
+    }
 
     @Test("visualCells for pattern_straight16ths_01 — 4 equal cells of W/4 each")
     func visualCellsPattern01() async {
@@ -450,10 +454,10 @@ struct TimingDotViewTests {
         for (index, exp) in expected.enumerated() {
             let cell = cells[index]
             let (expectedStart, expectedWidth, expectedKind) = exp
-            #expect(abs(cell.startXProportion - expectedStart) < widthTolerance,
+            #expect(abs(cell.startXProportion - expectedStart) < widthTolerance(forExpected: expectedStart),
                     "cell \(index) startX: got \(cell.startXProportion), expected \(expectedStart)",
                     sourceLocation: sourceLocation)
-            #expect(abs(cell.widthProportion - expectedWidth) < widthTolerance,
+            #expect(abs(cell.widthProportion - expectedWidth) < widthTolerance(forExpected: expectedWidth),
                     "cell \(index) width: got \(cell.widthProportion), expected \(expectedWidth)",
                     sourceLocation: sourceLocation)
             #expect(cell.kind == expectedKind,
