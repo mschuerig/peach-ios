@@ -29,6 +29,14 @@ final class SoundFontPlayer: NotePlayer {
 
     private let channel: MIDIChannel
 
+    // MARK: - Audio-stop serialization
+
+    /// Most recent in-flight `stopAll()` chain. `play()` awaits this before
+    /// issuing its noteOn so a stop fade-out from a *different* session sharing
+    /// this instance cannot silence the new note. The chain re-entry inside
+    /// `stopAll()` itself keeps back-to-back stops sequential.
+    private var pendingAudioStop: Task<Void, Never>?
+
     // MARK: - Initialization
 
     init(engine: SoundFontEngine, preset: SF2Preset, channel: MIDIChannel, fadeOutDuration: Duration) {
@@ -43,6 +51,7 @@ final class SoundFontPlayer: NotePlayer {
     // MARK: - NotePlayer Protocol
 
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
+        await pendingAudioStop?.value
         try await soundFontEngine.loadPreset(preset, channel: channel)
         try validateFrequency(frequency)
         try soundFontEngine.ensureAudioSessionConfigured()
@@ -56,8 +65,14 @@ final class SoundFontPlayer: NotePlayer {
 
     func stopAll() async throws {
         logger.debug("stopAll: clearing schedule and stopping notes on channel \(self.channel.rawValue)")
-        soundFontEngine.clearSchedule()
-        await soundFontEngine.stopNotes(channel: channel, fadeOutDuration: fadeOutDuration)
+        let priorStop = pendingAudioStop
+        let task = Task<Void, Never> {
+            await priorStop?.value
+            self.soundFontEngine.clearSchedule()
+            await self.soundFontEngine.stopNotes(channel: self.channel, fadeOutDuration: self.fadeOutDuration)
+        }
+        pendingAudioStop = task
+        await task.value
     }
 
     // MARK: - Melodic Play Sub-operations
