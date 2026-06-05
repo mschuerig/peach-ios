@@ -9,6 +9,7 @@ context:
 closes:
   - 'PF-011'
   - 'PF-013'
+  - 'PF-047'
 ---
 
 <frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
@@ -26,10 +27,11 @@ The unverified static shape:
 - `BeatProvider` is not `Sendable`. The sequencer mutates `currentBeat` from a background `Task`. `ContinuousRhythmMatchingSession.gapPositions` is written from the sequencer's polling Task. Two independent adversarial reviewers (Blind hunter + Edge case hunter) flagged this as a latent data-race surface. Currently invisible to strict concurrency.
 - **Cross-discipline serialization invariant.** TOD and CRM both call `beatSequencer.start(tempo:beatProvider:)` on the shared singleton. `TrainingLifecycleCoordinator` already serializes activations, but no test pins this contract — a future coordinator refactor could break it silently.
 - **`SequencerEngine` conformance contract is unverified (PF-013).** Folded into this story because the audit reads the same surfaces: the only `SequencerEngine` conformers are `SoundFontEngine` (render-thread reset of `samplePosition` after a generation-change fence) and `MockSequencerEngine` (synchronous reset on `scheduleEvents()` / `clearSchedule()`). The semantics differ — observably so during the trial-start race the audit is investigating. The audit decides which Mock/Real divergences are load-bearing enough to pin by conformance tests, rather than designing a speculative contract suite in the abstract.
+- **`TrainingLifecycleCoordinator.awaitIdle` read-then-suspend race (PF-047).** Folded into this story because the audit reads the same surface — `awaitIdle` is the mechanism behind the cross-discipline serialization invariant the audit is pinning. `awaitIdle` checks `!session.isIdle`, then installs a one-shot `withObservationTracking` observer; if `isIdle` flips between the check and the observer install, the loop suspends forever on a mutation that already happened. Not reachable today (real sessions transition to `isIdle` asynchronously through audio teardown), but structurally fragile. The catalog's three options — (a) re-check inside the observation block; (b) restructure with the newer `Observation` `observe { ... }` API; (c) document the synchronous-flip-forbidden caller contract — have meaningfully different concurrency-primitive implications, and the audit's concurrency consult is the right context to pick.
 
 **Approach.** Two-phase: audit, then fix.
 
-1. **Audit** — invoke `/swift-concurrency-expert` (and optionally `/avdlee-swift-concurrency` as a second lens) on `BeatProvider`, `SoundFontBeatSequencer`, `ContinuousRhythmMatchingSession.gapPositionInCurrentBeat` / `currentBeatPosition` / `lastPublishedSubdivisionIndex` writers, `TimingOffsetDetectionSession.lastPublishedSubdivisionIndex` / `litDotCount` writers, and `TrainingLifecycleCoordinator`'s session-activation serialization. The audit produces: a Sendable / actor-isolation map of the current shape; a list of concrete data-race or memory-ordering risks beyond the known one; a recommendation per risk (document-as-contract / add-test / refactor); and an explicit pick between the catalog's three trial-start-race options — (a) document the post-`start()` reset latency as a `BeatSequencer` contract with a coordinator-level test; (b) anchor TOD's `globalSubdivisionIndex` to a per-trial baseline `samplePosition` captured at start; (c) extend `BeatSequencer.timing` with a "trial-relative sample position" accessor.
+1. **Audit** — invoke `/swift-concurrency-expert` (and optionally `/avdlee-swift-concurrency` as a second lens) on `BeatProvider`, `SoundFontBeatSequencer`, `ContinuousRhythmMatchingSession.gapPositionInCurrentBeat` / `currentBeatPosition` / `lastPublishedSubdivisionIndex` writers, `TimingOffsetDetectionSession.lastPublishedSubdivisionIndex` / `litDotCount` writers, `TrainingLifecycleCoordinator`'s session-activation serialization, and `TrainingLifecycleCoordinator.awaitIdle`'s `withObservationTracking` shape. The audit produces: a Sendable / actor-isolation map of the current shape; a list of concrete data-race or memory-ordering risks beyond the known one; a recommendation per risk (document-as-contract / add-test / refactor); an explicit pick between the catalog's three trial-start-race options — (a) document the post-`start()` reset latency as a `BeatSequencer` contract with a coordinator-level test; (b) anchor TOD's `globalSubdivisionIndex` to a per-trial baseline `samplePosition` captured at start; (c) extend `BeatSequencer.timing` with a "trial-relative sample position" accessor; and an explicit pick between PF-047's three options — (a) re-check `session.isIdle` inside the `withObservationTracking` block before suspending; (b) restructure with the newer `Observation` `observe { ... }` API; (c) document the synchronous-flip-forbidden caller contract on `awaitIdle`.
 
 2. **Fix** — apply the audit's recommendations. The maxReps=1 race is the must-close item; everything else is conditional on what the audit surfaces.
 
@@ -38,13 +40,14 @@ The unverified static shape:
 ## Boundaries & Constraints
 
 **Always:**
-- PF-011 and PF-013 are closed by this story or their scope is renegotiated with explicit human authorization.
+- PF-011, PF-013, and PF-047 are closed by this story or their scope is renegotiated with explicit human authorization.
 - The maxReps=1 trial-start race is fixed with a regression test that demonstrates the failure mode against the audit's chosen mitigation — written first, then made to pass by the implementation.
 - The cross-discipline serialization invariant gains a coordinator-level test pinning "the previous session has fully stopped before the next starts."
 - BeatProvider, SoundFontBeatSequencer, and the two session polling paths land with an explicit Sendable / actor-isolation contract — at minimum documented in code comments; potentially enforced by Sendable conformance and actor isolation if the audit recommends it.
 - For PF-013: if the audit identifies concrete behavioural divergences between `MockSequencerEngine` and `SoundFontEngine` under the invariants in scope (start/stop ordering, post-clear silence, sample-position reset semantics), those divergences are pinned by a focused conformance test suite that runs both implementations through the affected invariants. If the audit identifies no load-bearing divergence, the finding is documented and PF-013 closes with that documentation as its resolution.
+- For PF-047: `TrainingLifecycleCoordinator.awaitIdle` is restructured or annotated per the audit's pick from the three options. If options (a) or (b) — code change — a unit test pins the synchronous-`isIdle = true` case (the failure mode the catalog entry describes) against the new implementation. If option (c) — documentation only — the caller-contract doc-comment names the invariant and the audit's rationale for not enforcing it structurally.
 - Pre-commit gate: `bin/test.sh && bin/test.sh -p mac` AND `bin/test.sh --research && bin/test.sh --research -p mac` green.
-- Catalog hygiene on merge: remove both PF-011 and PF-013 sections from `deferred-work.md` in the same change; cite both IDs in the commit message.
+- Catalog hygiene on merge: remove PF-011, PF-013, and PF-047 sections from `deferred-work.md` in the same change; cite all three IDs in the commit message.
 
 **Ask First:**
 - If the audit surfaces additional concrete data-race or memory-ordering risks beyond PF-011's known set — pause and present findings before scoping how many to address in this story versus filing new `PF-###` entries.
@@ -54,8 +57,7 @@ The unverified static shape:
 
 **Never:**
 - No new actor or concurrency-primitive introductions unless the audit explicitly endorses them.
-- No refactor of `TrainingLifecycleCoordinator`'s session-activation flow beyond adding the contract test (Story 85.1 owns the lifecycle policy consolidation; the boundary between these stories must be respected).
-- No drive-by closures of PF-016 (`refillThreshold` uniform-tempo) or PF-047 (`awaitIdle` race) — both are coordinator/sequencer-adjacent but architecturally distinct.
+- No refactor of `TrainingLifecycleCoordinator`'s session-activation flow beyond adding the contract test and the PF-047 `awaitIdle` change (Story 85.1 owns the lifecycle policy consolidation; the boundary between these stories must be respected — `awaitIdle`'s internal mechanism is fair game, the activation-flow shape is not).
 - No introduction of new `@AppStorage` or persistence work. Concurrency-only changes.
 
 ## I/O & Edge-Case Matrix
@@ -66,6 +68,7 @@ Filled to the closure level; the audit (Task 1) may extend this with newly-surfa
 |----------|--------------|---------------------------|----------------|
 | New TOD trial with `maxRepetitions == 1` (PF-011 reachable race) | Trial starts; render thread takes >0 ms to reset `samplePosition` to 0 | Polling task does not observe stale `samplePosition`; `.repetitionCapReached` does not fire before any audio is heard | Asserted by regression test against the audit's chosen mitigation |
 | Cross-discipline session transition (cross-discipline serialization invariant) | Active CRM session; user navigates to TOD | Coordinator stops CRM and waits for fully-idle before starting TOD; no overlapping `beatSequencer.start(...)` invocations | Asserted by coordinator-level contract test |
+| `awaitIdle` synchronous `isIdle = true` (PF-047) | `awaitIdle(of:)` called; `session.isIdle` flips to `true` between the while-check and the observer install | `awaitIdle` returns instead of suspending indefinitely | Asserted by unit test against the audit's chosen mitigation (options a/b); doc-only under option c with a caller-contract test added to whichever caller can enforce the invariant |
 | New CRM trial after the maxReps fix (regression sanity) | CRM trial starts with standard `maxRepetitions` | Behaviour unchanged from `baseline_commit`; existing CRM trial-progression tests still pass | N/A |
 | Strict-concurrency build (post-audit Sendable contract) | Both Debug and Research schemes | Build remains clean; new `Sendable` / actor-isolation annotations (if any) compile without warnings | N/A |
 
@@ -97,8 +100,9 @@ Filled to the closure level; the audit (Task 1) may extend this with newly-surfa
 - [ ] **Task 5 — Coordinator serialization contract test.** Add a `TrainingLifecycleCoordinatorTests` case pinning "the previous session has fully stopped before the next starts" — exercises the CRM → TOD handover and asserts no overlapping `beatSequencer.start(...)` invocations.
 - [ ] **Task 6 — Sendable / actor-isolation contract.** Apply the audit's recommendations on the protocol and session-state shapes. Document any contract that stays as a comment-only assertion (i.e., not enforced by Sendable) with the rationale.
 - [ ] **Task 7 — `SequencerEngine` conformance (conditional, PF-013).** If the audit (Task 1) identified concrete behavioural divergences between `MockSequencerEngine` and `SoundFontEngine` under the invariants in scope, add a focused conformance test suite that runs both implementations through the affected invariants. If no load-bearing divergence was identified, instead append a `SequencerEngine` conformance-contract section to the protocol's doc comment summarising the audit's finding (i.e., "the contracts agree at points X, Y, Z"). Either way, PF-013 is closed.
-- [ ] **Task 8 — Catalog hygiene.** Remove the PF-011 and PF-013 sections from `docs/implementation-artifacts/deferred-work.md`. File any new `PF-###` entries surfaced by the audit per Task 2(d). Cite PF-011 and PF-013 in the commit message.
-- [ ] **Task 9 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four green.
+- [ ] **Task 8 — `awaitIdle` race fix (PF-047).** Apply the audit-chosen option for PF-047 — (a) re-check inside the observation block, (b) restructure with the newer `Observation` `observe { ... }` API, or (c) document the synchronous-flip-forbidden caller contract. If (a) or (b), add a unit test that exercises the synchronous-`isIdle = true` case the catalog entry describes — the test must hang against `baseline_commit` (proving the bug) and pass after the implementation lands. If (c), name the invariant inline on `awaitIdle`'s doc-comment with the audit's rationale.
+- [ ] **Task 9 — Catalog hygiene.** Remove the PF-011, PF-013, and PF-047 sections from `docs/implementation-artifacts/deferred-work.md`. File any new `PF-###` entries surfaced by the audit per Task 2(d). Cite PF-011, PF-013, and PF-047 in the commit message.
+- [ ] **Task 10 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four green.
 
 **Acceptance Criteria:**
 
@@ -106,9 +110,10 @@ Filled to the closure level; the audit (Task 1) may extend this with newly-surfa
 - **PF-011 cross-discipline serialization.** Given an active CRM session, when the user navigates to TOD, then `TrainingLifecycleCoordinator` stops CRM and waits for fully-idle before starting TOD (asserted by coordinator-level contract test); no overlapping `beatSequencer.start(...)` invocations occur.
 - **PF-011 Sendable / actor-isolation contract.** Sequencer + session polling paths have an explicit concurrency contract — either documented inline with rationale or enforced by Sendable / actor annotations per the audit's recommendation.
 - **PF-013 conformance contract.** Either: (a) a focused conformance test suite exercises `MockSequencerEngine` and `SoundFontEngine` through every audit-identified divergent invariant and passes on both, OR (b) the audit's finding that no load-bearing divergences exist is documented inline on the `SequencerEngine` protocol's doc comment with a summary of the invariants the audit checked. Either path closes PF-013.
+- **PF-047 `awaitIdle` race.** Given `awaitIdle(of:)` is invoked and `session.isIdle` flips to `true` between the while-check and the observer install, when the audit's chosen mitigation is in place, then `awaitIdle` returns instead of suspending indefinitely (asserted by unit test under options a/b; documented inline with caller-contract rationale under option c).
 - **Existing behavior parity.** All existing CRM and TOD tests pass without modification. Strict-concurrency build remains clean on both schemes.
 - **Pre-commit gate.** All four schemes green: Debug × {iOS, macOS} and Research × {iOS, macOS}. No new compiler warnings.
-- **Catalog hygiene.** PF-011 and PF-013 sections removed from `deferred-work.md` in the closing commit; any audit-surfaced new findings filed as new `PF-###` entries.
+- **Catalog hygiene.** PF-011, PF-013, and PF-047 sections removed from `deferred-work.md` in the closing commit; any audit-surfaced new findings filed as new `PF-###` entries.
 
 ## Audit Findings
 
