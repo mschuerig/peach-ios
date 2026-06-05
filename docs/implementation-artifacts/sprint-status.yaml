@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Epic 85 grew Story 85.5 (NoteRange + PianoKeyboardLayout nonisolated, closes PF-025) via continued catalog triage. Epic 85: 85.1 (lifecycle, PF-001/003/005), 85.2 (PeachApp lazy init, PF-002), 85.3 (sequencer concurrency + conformance, PF-011/013), 85.4 (Voice Control restoration, PF-020), 85.5 (NoteRange/PianoKeyboardLayout nonisolated, PF-025) all ready-for-dev.
+# last_updated: 2026-06-05 # Epic 85 grew Story 85.6 (pin TOD picker visual + a11y invariants, closes PF-036/040/041) via continued catalog triage. Epic 85: 85.1 (lifecycle, PF-001/003/005), 85.2 (PeachApp lazy init, PF-002), 85.3 (sequencer concurrency + conformance, PF-011/013), 85.4 (Voice Control restoration, PF-020), 85.5 (NoteRange/PianoKeyboardLayout nonisolated, PF-025), 85.6 (TOD picker invariants, PF-036/040/041) all ready-for-dev.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -787,4 +787,5 @@ development_status:
   85-3-audit-and-harden-sequencer-concurrency: ready-for-dev # Closes PF-011, PF-013
   85-4-restore-voice-control-per-key-addressing: ready-for-dev # Closes PF-020
   85-5-nonisolated-noterange-and-piano-keyboard-layout: ready-for-dev # Closes PF-025
+  85-6-snapshot-test-tod-picker-invariants: ready-for-dev # Closes PF-036, PF-040, PF-041
   epic-85-retrospective: optional
