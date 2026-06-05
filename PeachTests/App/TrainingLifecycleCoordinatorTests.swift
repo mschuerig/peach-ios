@@ -369,16 +369,16 @@ struct TrainingLifecycleCoordinatorTests {
     }
 
     @Test("navigate with active session uses event-driven idle confirmation")
-    func navigateUsesEventDrivenIdle() async {
+    func navigateUsesEventDrivenIdle() async throws {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
         let mockSession = MockTrainingSession()
         mockSession.isIdle = false
-        // stop() does NOT set isIdle — we'll set it after a yield
+        // stop() does NOT set isIdle — we'll set it after the bounded poll
         coordinator.activeSession = mockSession
 
         coordinator.navigate(to: .profile)
 
-        await Task.yield()
+        try await waitUntilStopped(mockSession)
 
         // Session was stopped but not yet idle — destination should not be published
         #expect(mockSession.stopCallCount == 1)
@@ -387,7 +387,7 @@ struct TrainingLifecycleCoordinatorTests {
         // Now session becomes idle (event-driven)
         mockSession.isIdle = true
 
-        await Task.yield()
+        try await waitUntilNavigationResolved(coordinator)
 
         #expect(coordinator.resolvedNavigation?.destination == .profile)
     }
@@ -543,6 +543,28 @@ struct TrainingLifecycleCoordinatorTests {
         while session.isIdle {
             if ContinuousClock.now >= deadline {
                 Issue.record("session did not become active within \(timeout)")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    private func waitUntilStopped(_ session: MockTrainingSession, timeout: Duration = .seconds(1)) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while session.stopCallCount == 0 {
+            if ContinuousClock.now >= deadline {
+                Issue.record("session.stop() was not called within \(timeout)")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
+    }
+
+    private func waitUntilNavigationResolved(_ coordinator: TrainingLifecycleCoordinator, timeout: Duration = .seconds(1)) async throws {
+        let deadline = ContinuousClock.now + timeout
+        while coordinator.resolvedNavigation == nil {
+            if ContinuousClock.now >= deadline {
+                Issue.record("coordinator did not resolve navigation within \(timeout)")
                 return
             }
             try await Task.sleep(for: .milliseconds(5))

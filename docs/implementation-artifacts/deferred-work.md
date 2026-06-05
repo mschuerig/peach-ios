@@ -107,16 +107,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 
 **Fix:** Introduce pause/resume semantics distinct from stop/start. Either add `pause()`/`resume()` to the `TrainingSession` protocol, or have the lifecycle coordinator distinguish between temporary pushes (Settings/Profile) and permanent pops (back to Start Screen). Requires multi-file change across the session protocol, all session implementations, and the lifecycle coordinator.
 
-### PF-004: Flaky `navigateUsesEventDrivenIdle` test on macOS
-
-**Found:** 2026-06-02 (Story 80.1)
-**Severity:** Low (intermittent CI noise, no production impact)
-**Disposition:** OPEN
-
-`TrainingLifecycleCoordinatorTests.navigateUsesEventDrivenIdle()` fails intermittently on macOS Research builds. The test relies on a single `await Task.yield()` between `coordinator.navigate(to:)` and `mockSession.isIdle = true`. The navigationTask must reach `awaitIdle` and install its `withObservationTracking` observer before the test mutates `isIdle`; if the Task hasn't yet reached that point, the observation doesn't fire and `resolvedNavigation` stays `nil`. Single-yield is racy under macOS scheduling; the test passes on retry.
-
-**Fix:** Replace the single `await Task.yield()` after `navigate(...)` with a bounded poll until `mockSession.stopCallCount > 0`, then another bounded poll after setting `isIdle = true` until `resolvedNavigation != nil`. Same pattern as the existing `waitUntilNotIdle` helper in this file.
-
 ### PF-005: Session leak on sound source change
 
 **Found:** 2026-03-27 (MIDI pitch bend fix)
@@ -508,3 +498,31 @@ The architecture creating this conflict was iteration-2 of 84.3: the iteration-2
 Michael flagged during the 84.4 visual review that "the nested patterns don't work well for me and in their visualizations, the bar on top is incorrectly displayed." The bracket overlay above the nested-child cells in `pattern_10`..`pattern_14` doesn't render at the locked geometry from `tod-tuplet-renderer-design.md` § *Grouping indicators*. As a mitigation, the nested catalog entries (`pattern_10`..`pattern_14`) and the *Nested* picker section are gated behind `PEACH_RESEARCH` (84.4 iteration 3) — App Store users see only Straight 16ths, Gapped 16ths, Triplets, and Sextuplet. The static let definitions stay defined so the renderer code path keeps exercising under unit tests; the bug surfaces only in `Debug (Research)` / `Release (Research)` configurations.
 
 **Fix:** Visual audit of the bracket rendering — likely candidates: bracket span computation (`spanStart`/`spanEnd` in `TimingDotView.walk`), bracket `y`-offset relative to the dot top, end-inset application (`bracketEndInset` × `previewScale` in the picker preview), or interaction with `bracketReserve` (which reserves vertical space only when `cells.contains { case .nestingBracket }` is true). Should be reopened when the bracket renderer is iterated; ungating the *Nested* bucket is gated on this resolving.
+
+### PF-047: Latent race in `TrainingLifecycleCoordinator.awaitIdle` between while-check and observer install
+
+**Found:** 2026-06-05 (PF-004 triage walk-through)
+**Severity:** Low (not reachable from any current session implementation; structurally fragile, fires only under synchronous-idle-flip)
+**Disposition:** OPEN
+
+`TrainingLifecycleCoordinator.awaitIdle(of:)` at `Peach/App/TrainingLifecycleCoordinator.swift:156-166` is:
+
+```swift
+private func awaitIdle(of session: any TrainingSession) async {
+    while !session.isIdle {
+        await withCheckedContinuation { continuation in
+            withObservationTracking {
+                _ = session.isIdle
+            } onChange: {
+                continuation.resume()
+            }
+        }
+    }
+}
+```
+
+If `session.isIdle` flips to `true` after the `while` check (line 157) but before the observer is installed inside `withObservationTracking` (line 159), the loop suspends on a one-shot observer waiting for the *next* mutation — which may never come. Production does not currently exercise this race: `session.stop()` returns synchronously while the actual idle transition happens asynchronously through real audio teardown, so there is wall-clock slack between `stop()` and the eventual `isIdle = true`. But the structure is fragile under a future change that synchronously flips `isIdle` (e.g., a session whose `stop()` short-circuits to idle when there's nothing to wind down, or any test path that mocks `isIdle` directly).
+
+Surfaced by the PF-004 (v3) triage walk-through. The test-only PF-004 fix added `waitUntilStopped` + `waitUntilNavigationResolved` polls that avoid the race in tests by waiting for an observable end-state; the production path that this entry tracks is independent of that fix.
+
+**Fix:** Resolution candidates: (a) re-check `session.isIdle` inside the `withObservationTracking` block before suspending — if `isIdle == true` at that point, resume immediately rather than installing the observer; (b) restructure with `AsyncStream` or `Observation`'s newer `observe { ... }` API that handles the read-then-suspend atomically; (c) document that callers must guarantee `isIdle` does not flip synchronously between coordinator entry and observer install (couples the contract to an implicit timing assumption — least preferred).
