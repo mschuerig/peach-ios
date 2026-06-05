@@ -137,6 +137,16 @@ With the proportional-timeline renderer driven by `GeometryReader`-supplied widt
 
 **Fix:** No fix planned. At the depth-2 epic, walk `path` through the `.nested(child)` levels to the actual containing `Beat` instead of stopping at the top.
 
+### PF-035: Dotted-and-nested precedence not specified
+
+**Found:** 2026-06-05 (Story 84.3)
+**Severity:** Low
+**Disposition:** WONT-FIX (Epic 84 has no overlap; first mixed-duration nested entry settles the precedence; question documented inline)
+
+`TimingOffsetDetectionPattern.dottedAudiblePositions` and `childDivision(forAudiblePosition:)` are independent checks. If a future catalog entry has both true for the same audible position, the dotted branch wins (line ordering in `TimingDotView.cellAccessibilityLabel`'s `.normalAudible` case) and the nested-context descriptor is silently dropped. No Epic-84 entry exercises the overlap. The latent precedence question and the three resolution options are documented inline at the precedence site in `Peach/Training/TimingOffsetDetection/TimingDotView.swift`.
+
+**Fix:** No fix planned. The first catalog entry with both flags true must pick one of (a) combine descriptors ("Note N of K, dotted, in triplet"); (b) define an explicit precedence in `tod-tuplet-renderer-design.md`; (c) make the flags mutually exclusive at the catalog boundary via `TimingOffsetDetectionPattern.init` — consult Adam (`agent-music-domain-expert`) for the user-facing label call.
+
 ---
 
 ## OPEN — Needs Architectural Decision
@@ -223,16 +233,6 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated, so storing `NoteRange` in a `nonisolated` value fails to compile.
 
 **Fix:** Make `NoteRange` `nonisolated` (consistent with `MIDINote`) and then make `PianoKeyboardLayout` `nonisolated` too. Touches a widely-used domain type; deserves its own focused story rather than a Boy-Scout drive-by.
-
-### PF-035: Dotted-and-nested precedence not specified
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low (Epic 84 has no overlap; latent for the first mixed-duration nested entry)
-**Disposition:** OPEN
-
-`TimingOffsetDetectionPattern.dottedAudiblePositions` and `childDivision(forAudiblePosition:)` are independent checks. If a future catalog entry has both flags true for the same audible position (a nested mixed-duration figure), the dotted branch wins and the nested-context descriptor is silently dropped.
-
-**Fix:** Resolution candidates: (a) combine descriptors ("Note N of K, dotted, in triplet"); (b) define an explicit precedence in the design doc; (c) catalog-side invariant that the flags are mutually exclusive.
 
 ### PF-036: `patternRowAccessibilityLabel` and SwiftUI `.accessibilityElement(children: .combine)` are two independent label paths
 

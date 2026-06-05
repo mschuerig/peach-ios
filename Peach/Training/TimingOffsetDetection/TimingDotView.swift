@@ -417,6 +417,16 @@ extension TimingDotView {
             }
             return String(localized: "Accent")
         case .normalAudible(let audiblePosition):
+            // Dotted-vs-nested precedence: today the dotted branch wins and the
+            // nested-context descriptor is silently dropped. No Epic-84 entry
+            // exercises a position with both flags true (a nested mixed-duration
+            // figure), so the question is latent. The first such catalog entry
+            // must pick one of (a) combine descriptors ("Note N of K, dotted, in
+            // triplet"), (b) define an explicit precedence in `tod-tuplet-renderer-design.md`,
+            // or (c) make the flags mutually exclusive at the catalog boundary
+            // via `TimingOffsetDetectionPattern.init` — consult Adam for the
+            // user-facing label call. Documented per PF-035 WONT-FIX in
+            // `docs/implementation-artifacts/deferred-work.md`.
             if pattern.dottedAudiblePositions.contains(audiblePosition) {
                 return composedNote(
                     audiblePosition: audiblePosition,
