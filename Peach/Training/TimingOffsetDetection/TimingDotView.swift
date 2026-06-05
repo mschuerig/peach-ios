@@ -443,6 +443,18 @@ extension TimingDotView {
         case inNested(ChildDivision)
     }
 
+    /// Returns the named child division of the top-level `.nested(_)` that
+    /// contains the given audible.
+    ///
+    /// Epic 84 caps nesting depth at 1; every shipped pattern's audible lives
+    /// in either no nested figure or exactly one. The depth-2 epic (whenever
+    /// it lands) must walk `path` through deeper `.nested(child)` levels to
+    /// find the actual containing `Beat` instead of stopping at the top — for
+    /// an audible at `path = [1, 2, 0]` (inside
+    /// `pattern.subdivisions[1].nested(_).subdivisions[2].nested(_)`),
+    /// this implementation returns the K of `subdivisions[1].nested(_)`'s
+    /// direct child rather than of the actually-containing child. Documented
+    /// per PF-034 WONT-FIX in `docs/implementation-artifacts/deferred-work.md`.
     private static func childDivision(
         forAudiblePosition audiblePosition: Int,
         in pattern: TimingOffsetDetectionPattern

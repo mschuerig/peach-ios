@@ -127,6 +127,16 @@ With the proportional-timeline renderer driven by `GeometryReader`-supplied widt
 
 **Fix:** No fix planned. A future multi-beat or depth-3 epic must either cap the renderer's effective scale on deep nests or render an alternate summary representation — that epic owns the renderer adjustment when planned.
 
+### PF-034: `TimingDotView.cellAccessibilityLabel`'s `childDivision` walk only inspects the top-level `.nested`
+
+**Found:** 2026-06-05 (Story 84.3)
+**Severity:** Low
+**Disposition:** WONT-FIX (Epic 84 max nesting depth is 1; correct for every shipped entry; assumption documented inline)
+
+`childDivision(forAudiblePosition:)` only inspects the top-level `.nested(_)` child. For an audible at `path = [1, 2, 0]` (inside `pattern.subdivisions[1].nested(_).subdivisions[2].nested(_)`) the function returns the K of `subdivisions[1].nested(_)`'s direct child, not of the actually-containing deeper nest. Every shipped pattern's audible lives at depth ≤ 1, so the function is correct for the current catalog. The assumption is documented inline on `childDivision(forAudiblePosition:)` in `Peach/Training/TimingOffsetDetection/TimingDotView.swift`.
+
+**Fix:** No fix planned. At the depth-2 epic, walk `path` through the `.nested(child)` levels to the actual containing `Beat` instead of stopping at the top.
+
 ---
 
 ## OPEN — Needs Architectural Decision
@@ -213,16 +223,6 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated, so storing `NoteRange` in a `nonisolated` value fails to compile.
 
 **Fix:** Make `NoteRange` `nonisolated` (consistent with `MIDINote`) and then make `PianoKeyboardLayout` `nonisolated` too. Touches a widely-used domain type; deserves its own focused story rather than a Boy-Scout drive-by.
-
-### PF-034: `TimingDotView.cellAccessibilityLabel`'s `childDivision` walk only inspects the top-level `.nested`
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low (Epic 84 max nesting depth is 1; correct for every shipped entry)
-**Disposition:** OPEN
-
-For an audible at path `[1, 2, 0]` (inside `pattern.subdivisions[1].nested(_).subdivisions[2].nested(_)`), `childDivision(forAudiblePosition:)` returns the K of `subdivisions[1].nested(_)`'s child, ignoring the deeper nest the audible actually sits in.
-
-**Fix:** At the depth-2 epic: walk the path through `.nested(child)` levels to the actual containing Beat.
 
 ### PF-035: Dotted-and-nested precedence not specified
 
