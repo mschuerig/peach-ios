@@ -161,16 +161,6 @@ On macOS, each session's `AudioSessionInterruptionMonitor` independently listens
 
 **Fix:** Stop passing `backgroundNotificationName` to sessions on macOS, since the coordinator now owns the training lifecycle. The notification-based stop in sessions was the original mechanism before the coordinator existed.
 
-### PF-002: PeachApp Initialized Twice on macOS
-
-**Found:** 2026-03-29 (Story 68.6)
-**Severity:** Medium (wasteful startup — double ModelContainer, AudioEngine, etc.)
-**Disposition:** OPEN
-
-On macOS, SwiftUI initializes the `@main App` struct twice before one instance is used. This creates duplicate `PerceptualProfile`, `SoundFontEngine`, sessions, and other heavyweight objects. Visible in logs as 2× "PerceptualProfile initialized (cold start)".
-
-**Fix:** Move heavyweight initialization out of `PeachApp.init()` into a lazily-created shared container, or use `@State` with a factory that guards against double init. This is a known SwiftUI macOS behavior.
-
 ### PF-003: Training Session Restart on In-Stack Navigation to Settings/Profile
 
 **Found:** 2026-04-07 (Story 75.3)
