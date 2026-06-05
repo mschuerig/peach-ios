@@ -4,48 +4,73 @@ import Testing
 @Suite("TimingOffsetDetectionPatternPickerSettingsSection — accessibility label derivation")
 struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
 
-    private static let accent = String(localized: "Accent")
-    private static let note = String(localized: "Note")
-    private static let rest = String(localized: "Rest")
+    // Locked composite labels per `tod-tuplet-renderer-design.md`
+    // § *Per-cell accessibility labels*: comma-joined per-cell labels for the
+    // pattern's visual cells (rest cells contribute nothing — they're absorbed
+    // into the preceding `.note`'s cell or non-focusable orphan rests).
 
-    @Test("pattern_01 label reads every audible position as a single-word token")
+    @Test("pattern_01 composite label reads each audible position with the locked Note N of K form")
     func labelForPattern01() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
             for: .pattern01
         )
-        #expect(label == [Self.accent, Self.note, Self.note, Self.note].joined(separator: ", "))
+        let expected = [
+            String(localized: "Accent"),
+            String(localized: "Note \(2) of \(4)"),
+            String(localized: "Note \(3) of \(4)"),
+            String(localized: "Note \(4) of \(4)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
 
-    @Test("rest-bearing pattern label substitutes the Rest token at silent grid positions")
-    func labelForRestBearingPattern() {
+    @Test("pattern_02 composite label — 3 audibles after rest absorption")
+    func labelForPattern02() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
             for: .pattern02
         )
-        #expect(label == [Self.accent, Self.rest, Self.note, Self.note].joined(separator: ", "))
+        let expected = [
+            String(localized: "Accent"),
+            String(localized: "Note \(2) of \(3)"),
+            String(localized: "Note \(3) of \(3)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
 
-    @Test("single-pickable pattern label preserves grid order")
-    func labelForSinglePickablePattern() {
-        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
-            for: .pattern04
-        )
-        #expect(label == [Self.accent, Self.rest, Self.note, Self.rest].joined(separator: ", "))
-    }
-
-    @Test("rest-in-the-middle pattern label keeps the rest token in its grid position")
+    @Test("pattern_03 composite label — 3 audibles after middle-rest absorption")
     func labelForPattern03() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
             for: .pattern03
         )
-        #expect(label == [Self.accent, Self.note, Self.rest, Self.note].joined(separator: ", "))
+        let expected = [
+            String(localized: "Accent"),
+            String(localized: "Note \(2) of \(3)"),
+            String(localized: "Note \(3) of \(3)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
 
-    @Test("anchor-plus-tail pattern label reads two rests between the audible bookends")
+    @Test("pattern_04 composite label — 2 audibles (both rests absorbed)")
+    func labelForPattern04() {
+        let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
+            for: .pattern04
+        )
+        let expected = [
+            String(localized: "Accent"),
+            String(localized: "Note \(2) of \(2)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
+    }
+
+    @Test("pattern_05 composite label — 2 audibles (both rests absorbed into accent)")
     func labelForPattern05() {
         let label = TimingOffsetDetectionPatternPickerSettingsSection.patternRowAccessibilityLabel(
             for: .pattern05
         )
-        #expect(label == [Self.accent, Self.rest, Self.rest, Self.note].joined(separator: ", "))
+        let expected = [
+            String(localized: "Accent"),
+            String(localized: "Note \(2) of \(2)")
+        ].joined(separator: ", ")
+        #expect(label == expected)
     }
 
     // MARK: - cascadeWrites(forNewId:)
@@ -70,5 +95,22 @@ struct TimingOffsetDetectionPatternPickerSettingsSectionTests {
         // resolved pattern's id so subsequent reads round-trip consistently.
         #expect(resolved.selectedPatternId == pattern.id)
         #expect(resolved.offsetNotePosition == pattern.defaultOffsetNotePosition.rawValue)
+    }
+
+    // MARK: - Tuplet composite labels (enabled by Story 84.4)
+
+    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    func labelForPattern10NestedTriplet() {
+        // pattern_10 (`* *-*-*`): "Accent, Note 2 of 4, in triplet, Note 3 of 4, in triplet, Note 4 of 4, in triplet"
+    }
+
+    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    func labelForPattern09MixedDuration() {
+        // pattern_09 (`* *. .`): "Accent, Note 2 of 3, dotted, Note 3 of 3"
+    }
+
+    @Test(.disabled("Enabled by Story 84.4 catalog registration of pattern_06..15"))
+    func labelForPattern14LeadingDuplet() {
+        // pattern_14 (`.-. * *`): "Accent, in duplet, Note 2 of 4, in duplet, Note 3 of 4, Note 4 of 4"
     }
 }

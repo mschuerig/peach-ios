@@ -7,10 +7,10 @@ struct TimingOffsetDetectionPatternTests {
 
     // MARK: - Init / derived metadata
 
-    @Test("init derives audibleToGrid by collecting the grid indices of `.note` subdivisions in order")
+    @Test("init derives audibleToGrid as path-from-root paths for `.note` subdivisions in order")
     func initDerivesAudibleToGridFromSubdivisions() {
         // Fixture: `* - * *` — grid positions 1, 3, 4 audible; grid position 2 a rest.
-        // Audible-1-based → grid-0-based: 1 → 0, 2 → 2, 3 → 3.
+        // Audible-1-based → GridPath: 1 → [0], 2 → [2], 3 → [3].
         let pattern = TimingOffsetDetectionPattern(
             id: "fixture_1011",
             subdivisions: [
@@ -22,7 +22,7 @@ struct TimingOffsetDetectionPatternTests {
             defaultOffsetNotePosition: OffsetNotePosition(2)
         )
 
-        #expect(pattern.audibleToGrid == [0, 2, 3])
+        #expect(pattern.audibleToGrid == [[0], [2], [3]])
         #expect(pattern.audibleCount == 3)
     }
 
@@ -30,7 +30,68 @@ struct TimingOffsetDetectionPatternTests {
     func audibleCountPattern01() {
         let pattern = TimingOffsetDetectionPattern.pattern01
         #expect(pattern.audibleCount == 4)
-        #expect(pattern.audibleToGrid == [0, 1, 2, 3])
+        #expect(pattern.audibleToGrid == [[0], [1], [2], [3]])
+    }
+
+    @Test("audibleToGrid for a nested-figure fixture extends paths into the nested child")
+    func audibleToGridDescendsIntoNestedChild() {
+        // Fixture: `* *-*-*` — top-level K=2, child at index 1 is a triplet
+        // (3 notes). Audibles: top-level [0], nested [1, 0], [1, 1], [1, 2].
+        let pattern = TimingOffsetDetectionPattern(
+            id: "fixture_nested_triplet",
+            subdivisions: [
+                .note(velocity: RhythmVelocity.accent, offset: .zero),
+                .nested(Beat(subdivisions: [
+                    .note(velocity: RhythmVelocity.normal, offset: .zero),
+                    .note(velocity: RhythmVelocity.normal, offset: .zero),
+                    .note(velocity: RhythmVelocity.normal, offset: .zero)
+                ]))
+            ],
+            defaultOffsetNotePosition: OffsetNotePosition(2)
+        )
+
+        #expect(pattern.audibleToGrid == [[0], [1, 0], [1, 1], [1, 2]])
+        #expect(pattern.audibleCount == 4)
+    }
+
+    @Test("beat for a nested-figure fixture rebuilds the nested Beat with offset on the addressed leaf")
+    func beatForNestedFixtureAppliesOffsetInsideChild() {
+        // Same fixture as above; offset position 3 → audibleToGrid[2] = [1, 1] —
+        // the middle note of the nested triplet.
+        let pattern = TimingOffsetDetectionPattern(
+            id: "fixture_nested_triplet",
+            subdivisions: [
+                .note(velocity: RhythmVelocity.accent, offset: .zero),
+                .nested(Beat(subdivisions: [
+                    .note(velocity: RhythmVelocity.normal, offset: .zero),
+                    .note(velocity: RhythmVelocity.normal, offset: .zero),
+                    .note(velocity: RhythmVelocity.normal, offset: .zero)
+                ]))
+            ],
+            defaultOffsetNotePosition: OffsetNotePosition(2)
+        )
+        let offsetAmount: Duration = .milliseconds(25)
+
+        let beat = pattern.beat(offsetNotePosition: OffsetNotePosition(3), offsetAmount: offsetAmount)
+
+        // Top-level: accent at index 0 (no offset), nested at index 1 (rebuilt).
+        guard case let .note(topVelocity, topOffset) = beat.subdivisions[0] else {
+            Issue.record("Expected top-level subdivision 0 to remain a note"); return
+        }
+        #expect(topVelocity == RhythmVelocity.accent)
+        #expect(topOffset == .zero)
+
+        guard case let .nested(rebuiltChild) = beat.subdivisions[1] else {
+            Issue.record("Expected top-level subdivision 1 to remain nested"); return
+        }
+        for (childIndex, sub) in rebuiltChild.subdivisions.enumerated() {
+            guard case let .note(velocity, offset) = sub else {
+                Issue.record("Expected nested subdivision \(childIndex) to be a note"); return
+            }
+            #expect(velocity == RhythmVelocity.normal)
+            let expectedOffset: Duration = (childIndex == 1) ? offsetAmount : .zero
+            #expect(offset == expectedOffset, "offset mismatch at nested index \(childIndex)")
+        }
     }
 
     // MARK: - pickable invariant
@@ -255,14 +316,14 @@ struct TimingOffsetDetectionPatternTests {
     @Test(
         "each rest-bearing catalog entry exposes the expected shape (audibleToGrid, audibleCount, pickable, default)",
         arguments: [
-            ("pattern_02", [0, 2, 3], 3, Set([2, 3]), 2),
-            ("pattern_03", [0, 1, 3], 3, Set([2, 3]), 2),
-            ("pattern_04", [0, 2], 2, Set([2]), 2),
-            ("pattern_05", [0, 3], 2, Set([2]), 2)
-        ] as [(String, [Int], Int, Set<Int>, Int)]
+            ("pattern_02", [[0], [2], [3]], 3, Set([2, 3]), 2),
+            ("pattern_03", [[0], [1], [3]], 3, Set([2, 3]), 2),
+            ("pattern_04", [[0], [2]], 2, Set([2]), 2),
+            ("pattern_05", [[0], [3]], 2, Set([2]), 2)
+        ] as [(String, [GridPath], Int, Set<Int>, Int)]
     )
     func restBearingCatalogEntryShape(
-        expectation: (id: String, audibleToGrid: [Int], audibleCount: Int, pickable: Set<Int>, defaultPosition: Int)
+        expectation: (id: String, audibleToGrid: [GridPath], audibleCount: Int, pickable: Set<Int>, defaultPosition: Int)
     ) throws {
         let pattern = try TimingOffsetDetectionPatternCatalog.pattern(withId: expectation.id)
         #expect(pattern.id == expectation.id)
@@ -295,7 +356,9 @@ struct TimingOffsetDetectionPatternTests {
         let pattern = try TimingOffsetDetectionPatternCatalog.pattern(withId: expectation.patternID)
         let position = OffsetNotePosition(expectation.position)
         let offsetAmount: Duration = .milliseconds(20)
-        let expectedOffsetGridIndex = pattern.audibleToGrid[position.zeroBasedIndex]
+        // Flat catalog patterns have single-element GridPaths — pick the
+        // top-level grid index to compare against the rebuilt subdivisions.
+        let expectedOffsetGridIndex = pattern.audibleToGrid[position.zeroBasedIndex][0]
 
         let beat = pattern.beat(offsetNotePosition: position, offsetAmount: offsetAmount)
 

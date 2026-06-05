@@ -1,13 +1,19 @@
 import Foundation
 
+/// Path from the top-level beat to a `.note` leaf — the index sequence taken at
+/// each depth to reach the leaf. Top-level leaves have single-element paths;
+/// leaves inside a `.nested(Beat)` child have multi-element paths.
+typealias GridPath = [Int]
+
 /// A TOD pattern wrapping the `[Subdivision]` shape of a single-beat figure with
 /// the metadata needed to address it from the user-facing layer.
 ///
 /// User-facing positions are *audible* (1-based, compressing rests); engine
-/// positions are *grid* (0-based, indexing the raw subdivision array). The
-/// translation runs through the precomputed ``audibleToGrid`` table — never via
-/// raw arithmetic on the audible index — so a pattern with rests cannot land
-/// the offset on a `.rest` subdivision (which ``Beat/events(...)`` would drop).
+/// addressing is by ``GridPath`` (a path-from-root through the `Beat` tree).
+/// The translation runs through the precomputed ``audibleToGrid`` table —
+/// never via raw arithmetic on the audible index — so a pattern with rests or
+/// nested figures cannot land the offset on a `.rest` subdivision (which
+/// ``Beat/events(...)`` would drop) or skip past a nested child.
 ///
 /// ``pickable`` excludes audible position 1 for every pattern: the first
 /// audible note is the metric anchor of the figure and is the perceptual
@@ -18,30 +24,35 @@ struct TimingOffsetDetectionPattern: Sendable {
     let subdivisions: [Subdivision]
     let defaultOffsetNotePosition: OffsetNotePosition
 
-    /// Audible-1-based → grid-0-based index map. Computed at init by walking
-    /// ``subdivisions`` and collecting the indices of every `.note`. Excludes
-    /// `.rest` (and, if it ever appears, `.nested`) entries.
-    let audibleToGrid: [Int]
+    /// Audible-1-based → ``GridPath`` map. Built at init by a depth-first walk
+    /// of ``subdivisions``: each `.note` contributes its path; each
+    /// `.nested(Beat)` extends the path by the child's index and recurses;
+    /// `.rest` is skipped. Top-level audibles have single-element paths
+    /// (`[0]`, `[2]`); nested audibles have multi-element paths (`[1, 0]`).
+    let audibleToGrid: [GridPath]
 
     /// Audible positions the user may pick as the Offset Note. Always excludes
     /// position 1 (the metric anchor) per the perceptual analysis in the
     /// catalog design doc.
     let pickable: Set<Int>
 
+    /// Audible positions whose VoiceOver label carries the "dotted" descriptor —
+    /// a perceptual property of mixed-duration triplet derivatives where the
+    /// audible spans a longer fraction of the beat than its grid-cell siblings
+    /// (see `tod-tuplet-renderer-design.md` § *Per-cell accessibility labels*).
+    /// Empty for the Epic-82 flat patterns; populated by Epic 84.4 for the
+    /// mixed-duration `* *. .` entry.
+    let dottedAudiblePositions: Set<Int>
+
     var audibleCount: Int { audibleToGrid.count }
 
     init(
         id: String,
         subdivisions: [Subdivision],
-        defaultOffsetNotePosition: OffsetNotePosition
+        defaultOffsetNotePosition: OffsetNotePosition,
+        dottedAudiblePositions: Set<Int> = []
     ) {
-        var audibleToGrid: [Int] = []
-        audibleToGrid.reserveCapacity(subdivisions.count)
-        for (index, subdivision) in subdivisions.enumerated() {
-            if case .note = subdivision {
-                audibleToGrid.append(index)
-            }
-        }
+        let audibleToGrid = Self.collectAudiblePaths(in: subdivisions, pathPrefix: [])
         let pickable: Set<Int> = audibleToGrid.count >= 2 ? Set(2...audibleToGrid.count) : []
 
         self.id = id
@@ -49,6 +60,7 @@ struct TimingOffsetDetectionPattern: Sendable {
         self.defaultOffsetNotePosition = defaultOffsetNotePosition
         self.audibleToGrid = audibleToGrid
         self.pickable = pickable
+        self.dottedAudiblePositions = dottedAudiblePositions
 
         // Catalog-wide invariant: the default must itself be a pickable position.
         // Caught at construction time so a misregistered pattern in the catalog
@@ -59,10 +71,32 @@ struct TimingOffsetDetectionPattern: Sendable {
         )
     }
 
+    private static func collectAudiblePaths(
+        in subdivisions: [Subdivision],
+        pathPrefix: GridPath
+    ) -> [GridPath] {
+        var paths: [GridPath] = []
+        for (index, subdivision) in subdivisions.enumerated() {
+            switch subdivision {
+            case .rest:
+                continue
+            case .note:
+                paths.append(pathPrefix + [index])
+            case .nested(let child):
+                paths.append(contentsOf: collectAudiblePaths(
+                    in: child.subdivisions,
+                    pathPrefix: pathPrefix + [index]
+                ))
+            }
+        }
+        return paths
+    }
+
     /// Builds the `Beat` for one TOD trial. The offset is applied to exactly the
-    /// `.note` subdivision at the grid index resolved from
-    /// `offsetNotePosition` via ``audibleToGrid``; every other `.note` keeps
-    /// `.zero` offset; `.rest` subdivisions are preserved.
+    /// `.note` leaf addressed by ``audibleToGrid``\[`offsetNotePosition.zeroBasedIndex`\];
+    /// every other `.note` keeps `.zero` offset; `.rest` subdivisions are
+    /// preserved; `.nested(Beat)` subdivisions are reconstructed recursively so
+    /// the offset can land on a nested-child leaf.
     ///
     /// - Precondition: `pickable.contains(offsetNotePosition.rawValue)`. The
     ///   caller must clamp first via ``clampedOffsetNotePosition(_:)`` — passing
@@ -74,19 +108,41 @@ struct TimingOffsetDetectionPattern: Sendable {
             "TimingOffsetDetectionPattern '\(id)' cannot place an offset on audible position \(offsetNotePosition.rawValue)"
         )
 
-        let audibleIndex = offsetNotePosition.zeroBasedIndex
-        let offsetGridIndex = audibleToGrid[audibleIndex]
+        let offsetPath = audibleToGrid[offsetNotePosition.zeroBasedIndex]
+        return Beat(subdivisions: Self.rebuild(
+            subdivisions: subdivisions,
+            applyOffsetAtPath: offsetPath,
+            offsetAmount: offsetAmount
+        ))
+    }
 
-        let newSubdivisions: [Subdivision] = subdivisions.enumerated().map { index, subdivision in
+    private static func rebuild(
+        subdivisions: [Subdivision],
+        applyOffsetAtPath path: GridPath,
+        offsetAmount: Duration
+    ) -> [Subdivision] {
+        guard let firstIndex = path.first else { return subdivisions }
+        let remainingPath = Array(path.dropFirst())
+
+        return subdivisions.enumerated().map { index, subdivision in
             switch subdivision {
-            case .rest, .nested:
+            case .rest:
                 return subdivision
             case .note(let velocity, _):
-                let offset: Duration = (index == offsetGridIndex) ? offsetAmount : .zero
-                return .note(velocity: velocity, offset: offset)
+                let isTargetLeaf = (index == firstIndex) && remainingPath.isEmpty
+                return .note(velocity: velocity, offset: isTargetLeaf ? offsetAmount : .zero)
+            case .nested(let child):
+                guard index == firstIndex, !remainingPath.isEmpty else {
+                    return subdivision
+                }
+                let rebuiltChild = rebuild(
+                    subdivisions: child.subdivisions,
+                    applyOffsetAtPath: remainingPath,
+                    offsetAmount: offsetAmount
+                )
+                return .nested(Beat(subdivisions: rebuiltChild))
             }
         }
-        return Beat(subdivisions: newSubdivisions)
     }
 
     /// Maps a stored 1-based `Int` to a valid ``OffsetNotePosition`` for this
@@ -141,7 +197,7 @@ extension TimingOffsetDetectionPattern {
         defaultOffsetNotePosition: OffsetNotePosition(3)
     )
 
-    /// `* - * *` — anchor, rest, two audible. `audibleToGrid = [0, 2, 3]`;
+    /// `* - * *` — anchor, rest, two audible. `audibleToGrid = [[0], [2], [3]]`;
     /// `pickable = {2, 3}`.
     ///
     /// Default 2: audible 2 = grid 2 = on the half-beat. Closest analogue to
@@ -158,7 +214,7 @@ extension TimingOffsetDetectionPattern {
         defaultOffsetNotePosition: OffsetNotePosition(2)
     )
 
-    /// `* * - *` — anchor, audible, rest, audible. `audibleToGrid = [0, 1, 3]`;
+    /// `* * - *` — anchor, audible, rest, audible. `audibleToGrid = [[0], [1], [3]]`;
     /// `pickable = {2, 3}`.
     ///
     /// Default 2: the on-the-half-beat audible note is a rest in this pattern.
@@ -177,7 +233,7 @@ extension TimingOffsetDetectionPattern {
         defaultOffsetNotePosition: OffsetNotePosition(2)
     )
 
-    /// `* - * -` — anchor, rest, audible, rest. `audibleToGrid = [0, 2]`;
+    /// `* - * -` — anchor, rest, audible, rest. `audibleToGrid = [[0], [2]]`;
     /// `pickable = {2}` (single-pickable).
     ///
     /// Default 2: forced — the only pickable audible position. Encoded as a
@@ -195,7 +251,7 @@ extension TimingOffsetDetectionPattern {
         defaultOffsetNotePosition: OffsetNotePosition(2)
     )
 
-    /// `* - - *` — anchor, two rests, audible tail. `audibleToGrid = [0, 3]`;
+    /// `* - - *` — anchor, two rests, audible tail. `audibleToGrid = [[0], [3]]`;
     /// `pickable = {2}` (single-pickable).
     ///
     /// Default 2: forced — the only pickable audible position. Probes

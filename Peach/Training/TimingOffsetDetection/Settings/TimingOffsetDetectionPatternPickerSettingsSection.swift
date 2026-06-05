@@ -72,9 +72,10 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
         return (pattern.id, pattern.defaultOffsetNotePosition.rawValue)
     }
 
-    /// Dot-row preview for one pattern, with the section's `accessibilityLabel`
-    /// already applied. Static so the drill-down destination shares the exact
-    /// same renderer — single source of truth for the row vocabulary.
+    /// Dot-row preview for one pattern. Uses ``accessibilityElement(children: .combine)``
+    /// so the row stays a single focusable element while its VoiceOver label is
+    /// composed from the per-cell labels ``TimingDotView`` now exposes (per
+    /// `tod-tuplet-renderer-design.md` § *Per-cell accessibility labels*).
     @ViewBuilder
     static func row(
         for pattern: TimingOffsetDetectionPattern,
@@ -86,25 +87,24 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
             litCount: pattern.subdivisions.count,
             scale: dotScale
         )
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(patternRowAccessibilityLabel(for: pattern))
+        .accessibilityElement(children: .combine)
     }
 
-    /// Programmatic VoiceOver label for a pattern row, derived from the
-    /// subdivision shape per `tod-initial-pattern-catalog.md` § *Preview
-    /// Rendering*: `.note` at grid 0 → "Accent"; other `.note` → "Note";
-    /// `.rest` (and `.nested`, defensively) → "Rest"; joined by ", ".
-    /// `pattern_01` reads "Accent, Note, Note, Note".
+    /// Composes the row's locked-form VoiceOver label by joining per-cell
+    /// ``TimingDotView/cellAccessibilityLabel(for:in:)`` outputs (skipping rest
+    /// cells and brackets, which contribute no label). `pattern_01` reads
+    /// "Accent, Note 2 of 4, Note 3 of 4, Note 4 of 4".
     static func patternRowAccessibilityLabel(for pattern: TimingOffsetDetectionPattern) -> String {
-        let tokens: [String] = pattern.subdivisions.enumerated().map { index, subdivision in
-            switch subdivision {
-            case .rest, .nested:
-                return String(localized: "Rest")
-            case .note:
-                return index == 0 ? String(localized: "Accent") : String(localized: "Note")
+        TimingDotView.visualCells(for: pattern)
+            .compactMap { cell -> String? in
+                switch cell.kind {
+                case .accent, .normalAudible:
+                    return TimingDotView.cellAccessibilityLabel(for: cell, in: pattern)
+                case .orphanRest, .nestingBracket:
+                    return nil
+                }
             }
-        }
-        return tokens.joined(separator: ", ")
+            .joined(separator: ", ")
     }
 }
 

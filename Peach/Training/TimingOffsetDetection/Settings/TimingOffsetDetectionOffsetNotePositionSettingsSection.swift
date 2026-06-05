@@ -71,8 +71,16 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
             .frame(width: TimingDotView.beatOneDotDiameter, height: TimingDotView.beatOneDotDiameter)
             .frame(width: cellSize, height: cellSize)
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(String(localized: "Anchor note, not selectable"))
+            .accessibilityLabel(Self.anchorCellLabel)
             .accessibilityAddTraits(.isStaticText)
+    }
+
+    /// Slot-picker anchor cell label per `tod-tuplet-renderer-design.md`
+    /// § *Per-cell accessibility labels*: locked position-1 form (`"Accent"`)
+    /// appended with `", not selectable"` so the slot-picker hint preserves
+    /// 82.3's non-tappable signal. Exposed for unit-testability.
+    static var anchorCellLabel: String {
+        String(localized: "Accent, not selectable")
     }
 
     private func pickableCell(
@@ -124,9 +132,11 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
         case rest
     }
 
-    /// Classifies a single grid cell. The audible position for a `.note` cell
-    /// is derived from `pattern.audibleToGrid` via `firstIndex(of:)` — the
-    /// inverse of the audible → grid map.
+    /// Classifies a single grid cell. The audible position for a top-level
+    /// `.note` cell is derived from `pattern.audibleToGrid` via a single-element
+    /// `GridPath` (`[gridIndex]`) lookup — the inverse of the audible → path
+    /// map. The slot picker renders top-level cells only; nested-child cells
+    /// are addressed by a different surface (forthcoming in Story 84.4).
     static func cellKind(
         for pattern: TimingOffsetDetectionPattern,
         gridIndex: Int
@@ -135,7 +145,7 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
         case .rest, .nested:
             return .rest
         case .note:
-            guard let audibleZeroBased = pattern.audibleToGrid.firstIndex(of: gridIndex) else {
+            guard let audibleZeroBased = pattern.audibleToGrid.firstIndex(of: [gridIndex]) else {
                 return .rest
             }
             let audiblePosition = audibleZeroBased + 1

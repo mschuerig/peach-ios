@@ -508,6 +508,16 @@
         }
       }
     },
+    "Accent, not selectable" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Akzent, nicht auswählbar"
+          }
+        }
+      }
+    },
     "Acknowledgments" : {
       "localizations" : {
         "de" : {
@@ -1036,6 +1046,16 @@
         }
       }
     },
+    "dotted" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "punktiert"
+          }
+        }
+      }
+    },
     "Down" : {
       "localizations" : {
         "de" : {
@@ -1489,6 +1509,36 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Verbessernd"
+          }
+        }
+      }
+    },
+    "in duplet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in Duole"
+          }
+        }
+      }
+    },
+    "in sextuplet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in Sextole"
+          }
+        }
+      }
+    },
+    "in triplet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "in Triole"
           }
         }
       }

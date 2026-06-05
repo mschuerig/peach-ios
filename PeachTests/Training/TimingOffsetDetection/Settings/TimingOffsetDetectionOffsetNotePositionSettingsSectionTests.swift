@@ -6,6 +6,13 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSectionTests {
 
     typealias Section = TimingOffsetDetectionOffsetNotePositionSettingsSection
 
+    // MARK: - anchor cell label
+
+    @Test("anchor cell label reads the locked Accent + not-selectable hint form")
+    func anchorCellLabelReadsLockedForm() {
+        #expect(Section.anchorCellLabel == String(localized: "Accent, not selectable"))
+    }
+
     // MARK: - pattern_01 (no rests, every audible position pickable except anchor)
 
     @Test("pattern_01 grid 0 classifies as anchor")
