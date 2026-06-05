@@ -117,26 +117,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 
 **Fix:** Call `stop()` before reassignment, or restructure sessions to replace their `NotePlayer` rather than being fully recreated.
 
-### PF-007: CC#123 doesn't reset pitch bend/controllers
-
-**Found:** 2026-04-25 (AVAudioUnitSampler thread crash fix)
-**Severity:** Low (mitigated by explicit `sendPitchBend` before each `startNote`)
-**Disposition:** OPEN
-
-The old `auAudioUnit.reset()` reset all controller state including pitch bend. The replacement CC#123 (All Notes Off) only silences note-ons. If pitch bend was applied during playback and a new schedule starts, the bend could carry over. In practice mitigated because `sendPitchBend` is called explicitly before each `startNote`, but scheduled-only playback paths don't reset bend state.
-
-**Fix:** Send an explicit pitch-bend-center CC before scheduled playback starts, or expose a controller-reset hook that scheduled paths can call.
-
-### PF-008: `clearSchedule()` doesn't silence hanging notes
-
-**Found:** 2026-04-25 (AVAudioUnitSampler thread crash fix)
-**Severity:** Low (pre-existing behaviour; matches the old `.reset()` placement)
-**Disposition:** OPEN
-
-When `clearSchedule()` is called, no All-Notes-Off is sent. Notes whose note-on was dispatched but note-off hasn't been reached will ring indefinitely. The old `.reset()` was also only in `scheduleEvents()`, not `clearSchedule()`.
-
-**Fix:** Send CC#123 (All Notes Off) inside `clearSchedule()` in addition to `scheduleEvents()`.
-
 ### PF-009: Rhythm spectrogram export temp file cleanup
 
 **Found:** 2026-03-30 (Spectrogram sharing fix)

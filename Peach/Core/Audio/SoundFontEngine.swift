@@ -97,9 +97,11 @@ nonisolated private final class DoubleBufferedScheduleState: @unchecked Sendable
     // MARK: - Render-Thread Reset Flag
 
     /// Set by the main thread before a generation bump to request that the render
-    /// thread send CC#123 (All Notes Off) on the next generation change detection.
-    /// Consumed by the render thread via `exchange(false)`. Visibility is guaranteed
-    /// by the generation counter's release/acquire fence.
+    /// thread reset MIDI state on the next generation change detection: CC#123
+    /// (All Notes Off) silences hanging notes, and pitch-bend-center (status
+    /// `0xE0 | ch`, LSB `0x00`, MSB `0x40` = 8192) neutralises any bend the previous
+    /// schedule applied. Consumed by the render thread via `exchange(false)`.
+    /// Visibility is guaranteed by the generation counter's release/acquire fence.
     let needsAllNotesOff: Atomic<Bool>
 
     /// Enqueue an immediate event from the main thread (producer).
@@ -502,11 +504,13 @@ final class SoundFontEngine {
             logger.warning("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity), truncating")
             assertionFailure("Schedule overflow: \(events.count) events exceeds buffer capacity \(Self.scheduleCapacity)")
         }
-        // Signal the render thread to send CC#123 (All Notes Off) on the next
-        // generation change. This replaces the previous sampler.auAudioUnit.reset()
-        // call which was unsafe — calling reset() on the main thread while the
-        // render thread is actively processing MIDI events triggers a crash in
-        // Apple's SamplerBaseElement::IncrementActiveLayerVoiceCount.
+        // Signal the render thread to reset MIDI state on the next generation
+        // change: CC#123 (All Notes Off) silences hanging notes, and pitch-bend
+        // is recentered so prior bend doesn't carry into the new schedule. This
+        // replaces the previous sampler.auAudioUnit.reset() call which was unsafe —
+        // calling reset() on the main thread while the render thread is actively
+        // processing MIDI events triggers a crash in Apple's
+        // SamplerBaseElement::IncrementActiveLayerVoiceCount.
         scheduleState.needsAllNotesOff.store(true, ordering: .relaxed)
 
         swapScheduleSlot { inactiveSlot in
@@ -523,6 +527,12 @@ final class SoundFontEngine {
         // Render thread resets samplePosition to 0 on generation change detection.
         // Do NOT reset timing atomics here: the render thread may be mid-callback
         // reading them on the old generation.
+        //
+        // Set the reset flag so the render thread silences hanging notes (CC#123)
+        // and recenters pitch bend on its next generation-change detection. Without
+        // this, notes whose note-on was dispatched but note-off hasn't been reached
+        // would ring indefinitely, and any prior pitch bend would persist.
+        scheduleState.needsAllNotesOff.store(true, ordering: .relaxed)
         swapScheduleSlot { inactiveSlot in
             scheduleState.setCount(0, forSlot: inactiveSlot)
         }
@@ -620,15 +630,21 @@ final class SoundFontEngine {
                 shared.dispatchedEventCount.store(0, ordering: .relaxed)
                 shared.resetImmediate()
 
-                // Send All Notes Off (CC#123) on the render thread if requested.
-                // This replaces the previous main-thread auAudioUnit.reset() which
-                // caused a crash in AVAudioUnitSampler's voice count management.
+                // Reset MIDI state on the render thread if requested: CC#123 silences
+                // hanging notes; pitch-bend-center recenters any prior bend. This
+                // replaces the previous main-thread auAudioUnit.reset() which caused
+                // a crash in AVAudioUnitSampler's voice count management.
                 if shared.needsAllNotesOff.exchange(false, ordering: .relaxed) {
                     let resetBlocks = shared.midiBlocks(forSlot: slotIndex)
                     for ch: UInt8 in 0..<16 {
                         guard let midiBlock = resetBlocks[Int(ch)] else { continue }
                         let ccBytes: (UInt8, UInt8, UInt8) = (0xB0 | ch, 123, 0)
                         withUnsafeMIDIBytes(ccBytes) { ptr in
+                            midiBlock(AUEventSampleTimeImmediate, 0, 3, ptr)
+                        }
+                        // Pitch-bend center: status 0xE0|ch, LSB 0x00, MSB 0x40 (= 8192).
+                        let pbBytes: (UInt8, UInt8, UInt8) = (0xE0 | ch, 0x00, 0x40)
+                        withUnsafeMIDIBytes(pbBytes) { ptr in
                             midiBlock(AUEventSampleTimeImmediate, 0, 3, ptr)
                         }
                     }
