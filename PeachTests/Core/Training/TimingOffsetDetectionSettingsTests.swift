@@ -54,7 +54,12 @@ struct TimingOffsetDetectionSettingsTests {
 
     @Test(
         "from(userSettings, todUserSettings:) reads offsetNotePosition from the feature-local port",
-        arguments: [1, 2, 3, 4]
+        // Position 1 is the metric anchor and is never pickable for any catalog
+        // pattern, so it cannot be a valid pair with the default
+        // `pattern_straight16ths_01` (pickable = {2, 3, 4}). The storage layer
+        // clamps to the pattern's `pickable` in production; tests must respect
+        // the same invariant.
+        arguments: [2, 3, 4]
     )
     func fromUserSettingsReadsOffsetNotePosition(positionValue: Int) {
         let position = OffsetNotePosition(positionValue)

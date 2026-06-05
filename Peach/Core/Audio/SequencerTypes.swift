@@ -64,6 +64,11 @@ extension Beat {
         events.reserveCapacity(subdivisions.count * 2)
 
         let subdivisionDuration = beatDuration / Int64(subdivisions.count)
+        // Degenerate-grid guard: if subdivisions are many and beatDuration is
+        // small (or after several layers of recursion), integer truncation can
+        // produce a 0 here. Returning empty keeps callers safe instead of
+        // stacking every audible at `baseOffset`.
+        guard subdivisionDuration > 0 else { return events }
         let effectiveNoteOff = max(min(noteOffDelaySamples, subdivisionDuration - 1), 1)
         let channelRaw = channel.rawValue
         let midiNoteRaw = UInt8(clickNote.rawValue)
@@ -77,6 +82,15 @@ extension Beat {
 
             case .note(let velocity, let offset):
                 let noteOnOffset = baseOffset + sampleRate.samples(for: offset)
+                // Signed offsets (Story 80.1+) can pull the first subdivision's
+                // note-on below the beat origin. The audio scheduler requires
+                // non-negative sample offsets — surface the violation at the
+                // boundary where it's actually compilable instead of letting it
+                // reach the render thread.
+                precondition(
+                    noteOnOffset >= 0,
+                    "Beat.events: signed note offset produced a negative sampleOffset (baseOffset=\(baseOffset), offset=\(offset))"
+                )
                 events.append(ScheduledMIDIEvent(
                     sampleOffset: noteOnOffset,
                     midiStatus: SoundFontEngine.noteOnBase | channelRaw,

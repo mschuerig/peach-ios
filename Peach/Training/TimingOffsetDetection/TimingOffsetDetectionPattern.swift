@@ -66,6 +66,15 @@ struct TimingOffsetDetectionPattern: Sendable {
         let audibleToGrid = Self.collectAudiblePaths(in: subdivisions, pathPrefix: [])
         let pickable: Set<Int> = audibleToGrid.count >= 2 ? Set(2...audibleToGrid.count) : []
 
+        // Catalog-wide invariant: every dotted descriptor must address a
+        // non-anchor audible position that actually exists. Caught at
+        // construction so a misregistered pattern surfaces before its
+        // descriptor is silently dropped at render time.
+        precondition(
+            dottedAudiblePositions.allSatisfy { (2...audibleToGrid.count).contains($0) },
+            "TimingOffsetDetectionPattern '\(id)' dottedAudiblePositions \(dottedAudiblePositions.sorted()) contains out-of-range or anchor positions (must be in 2...\(audibleToGrid.count))"
+        )
+
         self.id = id
         self.category = category
         self.subdivisions = subdivisions

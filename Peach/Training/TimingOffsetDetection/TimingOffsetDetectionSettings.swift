@@ -20,6 +20,10 @@ struct TimingOffsetDetectionSettings: Sendable {
     ) {
         precondition(minOffsetPercentage <= maxOffsetPercentage, "minOffsetPercentage must be <= maxOffsetPercentage")
         precondition(maxRepetitions >= 1, "maxRepetitions must be >= 1")
+        precondition(
+            pattern.pickable.contains(offsetNotePosition.rawValue),
+            "TimingOffsetDetectionSettings: offsetNotePosition \(offsetNotePosition.rawValue) is not pickable for pattern '\(pattern.id)' (pickable: \(pattern.pickable.sorted()))"
+        )
         self.tempo = tempo
         self.feedbackDuration = feedbackDuration
         self.maxOffsetPercentage = maxOffsetPercentage

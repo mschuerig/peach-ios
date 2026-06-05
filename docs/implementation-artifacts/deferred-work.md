@@ -140,26 +140,6 @@ No tests verify that `SoundFontEngine`'s `SequencerEngine` conformance matches t
 
 **Fix:** Add a conformance test suite that runs both implementations through the same set of invariants (start/stop ordering, post-clear silence, sample-position reset semantics).
 
-### PF-014: Signed-offset bounds validation in `Beat.events`
-
-**Found:** 2026-06-02 (Story 80.0)
-**Severity:** Low (no production user supplies negative offsets today)
-**Disposition:** OPEN
-
-A `.note(offset: .milliseconds(-N))` on a beat's first subdivision can produce a negative `sampleOffset`, which the audio scheduler doesn't handle. Story 80.1 (TimingOffsetDetection on `BeatProvider`) will introduce signed offsets.
-
-**Fix:** Add a bounds-check or precondition in `Beat.events`, or document that the caller is responsible for keeping offsets in-range. Decide as part of the next story to introduce signed-offset patterns.
-
-### PF-015: Deep-nesting safety in `Beat.events`
-
-**Found:** 2026-06-02 (Story 80.0)
-**Severity:** Low (not reachable from any production discipline)
-**Disposition:** OPEN
-
-`subdivisionDuration = beatDuration / Int64(subdivisions.count)` can truncate to 0 when subdivisions are many and beatDuration is small (or after several layers of recursion). The current code would then stack all notes at `baseOffset`.
-
-**Fix:** Add a precondition or saturating-floor guard. Flag for the first nested-tuplet discipline.
-
 ### PF-016: `refillThreshold` uniform-tempo assumption
 
 **Found:** 2026-06-02 (Story 80.0)
@@ -249,16 +229,6 @@ Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated
 Silent-failure mode means a broken preview is indistinguishable from a working one with the wrong sound font. The existing zero-arg variant has the same shape.
 
 **Fix:** Add `os.Logger` warning on error consistently across both `playSoundPreview` overloads.
-
-### PF-029: `TimingOffsetDetectionSettings` pair-invariant not enforced at the value-type boundary
-
-**Found:** 2026-06-04 (Story 82.7)
-**Severity:** Low (only mock/test paths construct directly today)
-**Disposition:** OPEN
-
-The settings struct's plain initializer accepts any `(OffsetNotePosition, TimingOffsetDetectionPattern)` pair; the `.from(userSettings:intervals:)` factory clamps, but a direct construction with `OffsetNotePosition(3)` and `.pattern1010` (pickable `{2}`) builds fine, then `nextBeat()` traps at runtime on the pattern's `beat(...)` precondition.
-
-**Fix:** Resolution candidates: (a) add `precondition(pattern.pickable.contains(offsetNotePosition.rawValue))` at the settings init; (b) replace the init with a private one + factory that clamps; (c) make the settings struct carry only the pattern + a `clampedOffsetNotePosition` accessor (eliminate redundant Int storage).
 
 ### PF-030: `AppTimingOffsetDetectionUserSettings.selectedPattern` recomputes + logs on every access
 
@@ -379,16 +349,6 @@ In `TimingOffsetDetectionPatternPickerSettingsSection`, the static helper is pin
 `tod-tuplet-renderer-design.md` § *Categorization* "Section header behavior at AX1" locks SwiftUI default wrapping (no `.lineLimit(1)` / `.truncationMode`) and explicitly says "the 84.4 a11y test captures a screenshot at AX1 to confirm no truncation." 84.4 ships without a snapshot/UI test asserting that the longest German header (`Lückenhafte Sechzehntel`, 23 chars) wraps to two lines instead of truncating at AX1 — only manual visual inspection per the spec's "Visual check" task. A future contributor adding `.lineLimit(1)` to the picker section header could break the invariant silently.
 
 **Fix:** Resolution candidates: (a) wire snapshot-testing infrastructure (e.g. swift-snapshot-testing) and add an AX1 screenshot test for the picker destination; (b) extract header rendering into a thin view function with a static `lineLimit` accessor that a unit test can pin to `nil`; (c) accept manual visual inspection as the verification surface and document the invariant in the section's doc comment.
-
-### PF-042: `TimingOffsetDetectionPattern.init` does not validate `dottedAudiblePositions` is in-range or non-anchor
-
-**Found:** 2026-06-05 (Story 84.4 review)
-**Severity:** Low
-**Disposition:** OPEN
-
-`TimingOffsetDetectionPattern.init` enforces the catalog-default-is-pickable invariant via `precondition` but accepts any `Set<Int>` for `dottedAudiblePositions` without validating that each member is in `2...audibleCount` and a non-anchor. A future entry passing `dottedAudiblePositions: [99]` would silently never render the "dotted" descriptor; passing `[1]` would also be a no-op (the `.accent` branch in `TimingDotView.cellAccessibilityLabel` never consults `dottedAudiblePositions`).
-
-**Fix:** Add `precondition(dottedAudiblePositions.allSatisfy { (2...audibleToGrid.count).contains($0) }, "TimingOffsetDetectionPattern '\(id)' dottedAudiblePosition out of range")` to `init`. Optional: lift the test catalog-wide so misregistration surfaces in CI.
 
 ### PF-043: `Cell.nested([Cell])` test matcher has no max-depth or structural-divergence guard
 
