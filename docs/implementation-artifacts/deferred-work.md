@@ -73,6 +73,18 @@ When the user moves one bound's Slider in `NoteRangeSelector`'s AX1+ accessibili
 
 **Fix:** No fix planned. Revisit if a user reports the announcement is disruptive.
 
+### PF-024: Black-key vs white-key y-aware hit-test
+
+**Found:** 2026-06-03 (Story 81.3)
+**Severity:** Low
+**Disposition:** WONT-FIX (the piano keyboard is used for range-bound selection only, not per-note entry; finger-tap precision already exceeds single-semitone resolution for the actual use case)
+
+`PianoKeyboardLayout.midiNote(at:)` is x-only. A tap on the bottom (white-only) half of a column over a black key resolves to the black key, even though visually the user pressed the white-key portion below it.
+
+**Why this stays unfixed:** The keyboard is used only by `NoteRangeSelector` to set the lower / upper bound of the Training Note Range — not for melody entry or per-note interaction. Range bounds are coarse-grained ("around C4"); a single-semitone misresolution is easily corrected by the user via marker drag, keyboard arrows, or the AX1+ Sliders. Combined with adult-finger contact area exceeding single-semitone width on a screen-rendered keyboard, the catalog's proposed refinement would change behaviour the user can't reliably perceive or control on a use case that doesn't need it.
+
+**Fix:** No fix planned. Revisit if/when a per-note entry use case lands on the keyboard (currently no such use case exists).
+
 ### PF-026: `BoundMarker` tap target ~30×30, below FR38's 44×44 minimum
 
 **Found:** 2026-06-03 (Story 81.3)
@@ -169,18 +181,6 @@ No tests verify that `SoundFontEngine`'s `SequencerEngine` conformance matches t
 Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Voice Control ("Tap C3" works) alongside the two-marker adjustable representation for VoiceOver / Switch Control. `.accessibilityRepresentation` replaces the entire accessibility subtree, so Voice Control sees only the two Sliders. The two goals are mutually exclusive in a single SwiftUI configuration without a different mechanism.
 
 **Fix:** Restructure the accessibility tree so per-key Voice Control addressing works on the non-AX1 path as well (e.g., `.accessibilityCustomActions` plus markers as adjustable elements without `.accessibilityRepresentation`). Future story.
-
-### PF-024: Black-key vs white-key y-aware hit-test
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Low
-**Disposition:** OPEN
-
-`PianoKeyboardLayout.midiNote(at:)` is x-only. A tap on the bottom (white-only) half of a column over a black key resolves to the black key, even though visually the user pressed the white-key portion below it.
-
-**Fix:** Standard piano-UI behaviour requires y-coordinate awareness (top half: respect overlay; bottom half: white only).
-
-**Open question (2026-06-05, Michael):** Adult-finger contact area relative to a screen-rendered piano key may already exceed single-semitone resolution — y-aware hit-testing only helps when the user is targeting a specific key with deliberate intent, and even then the contact patch is wider than the visual key. Before implementing the catalog's proposed fix, validate that real finger taps actually misresolve often enough to justify the change — e.g., instrument the existing handler to log tap locations during normal use and measure the white-key-bottom-over-black-key rate.
 
 ### PF-025: `PianoKeyboardLayout` is main-actor-isolated; Core/Music style is `nonisolated`
 
