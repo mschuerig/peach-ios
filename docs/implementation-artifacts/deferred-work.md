@@ -117,6 +117,16 @@ Spec Change Log records the trade-off (44×44 markers would visually overlap at 
 
 **Fix:** No fix planned. The next id-rename event (when it comes) gets the warn-once mechanism as part of that story's scope, not as preventive plumbing here.
 
+### PF-033: `TimingDotView` natural width can grow unbounded on deeply nested patterns
+
+**Found:** 2026-06-05 (Story 84.3)
+**Severity:** Low
+**Disposition:** WONT-FIX (Epic 84 max nesting depth is 1; future deep-nesting epic owns the rendering adjustment; assumption documented inline)
+
+With the proportional-timeline renderer driven by `GeometryReader`-supplied width, very deep nesting (e.g., sextuplet-inside-duplet-inside-triplet, smallest cell ≈ 1/36 of beat) would compress the smallest cell's pixel width below the dot diameter. Not triggered by any shipped pattern. The depth-1 assumption is documented inline on `TimingDotView.visualCells(for:)` in `Peach/Training/TimingOffsetDetection/TimingDotView.swift`.
+
+**Fix:** No fix planned. A future multi-beat or depth-3 epic must either cap the renderer's effective scale on deep nests or render an alternate summary representation — that epic owns the renderer adjustment when planned.
+
 ---
 
 ## OPEN — Needs Architectural Decision
@@ -203,16 +213,6 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated, so storing `NoteRange` in a `nonisolated` value fails to compile.
 
 **Fix:** Make `NoteRange` `nonisolated` (consistent with `MIDINote`) and then make `PianoKeyboardLayout` `nonisolated` too. Touches a widely-used domain type; deserves its own focused story rather than a Boy-Scout drive-by.
-
-### PF-033: `TimingDotView` natural width can grow unbounded on deeply nested patterns
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low (Epic 84 max nesting depth is 1; not triggered by any shipped pattern)
-**Disposition:** OPEN
-
-With the proportional-timeline renderer driven by `GeometryReader`-supplied width, very deep nesting (e.g., sextuplet-inside-duplet-inside-triplet, smallest cell ≈ 1/36 of beat) compresses the smallest cell's pixel width below the dot diameter.
-
-**Fix:** A future multi-beat or depth-3 epic must either cap the renderer's effective scale on deep nests or render an alternate summary representation.
 
 ### PF-034: `TimingDotView.cellAccessibilityLabel`'s `childDivision` walk only inspects the top-level `.nested`
 

@@ -290,6 +290,15 @@ extension TimingDotView {
     /// `nestingBracket` cells are appended after all content cells so the
     /// renderer can iterate cells linearly while treating brackets as
     /// overlays.
+    ///
+    /// Epic 84 caps nesting depth at 1; every shipped pattern's smallest
+    /// cell stays well above the dot diameter on every target form factor.
+    /// A future multi-beat or depth-3 epic where the smallest cell can
+    /// reach ≈ 1/36 of a beat (sextuplet-inside-duplet-inside-triplet)
+    /// would compress below the dot diameter — that epic must either cap
+    /// the renderer's effective scale on deep nests or render an
+    /// alternate summary representation. Documented per PF-033 WONT-FIX
+    /// in `docs/implementation-artifacts/deferred-work.md`.
     static func visualCells(for pattern: TimingOffsetDetectionPattern) -> [VisualCell] {
         var content: [VisualCell] = []
         var brackets: [VisualCell] = []
