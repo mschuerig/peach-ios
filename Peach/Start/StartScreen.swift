@@ -4,6 +4,7 @@ struct StartScreen: View {
     @State private var showInfoSheet = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.trainingLifecycle) private var lifecycle
 
     private var isCompactHeight: Bool {
         verticalSizeClass == .compact
@@ -73,6 +74,9 @@ struct StartScreen: View {
             iosSheet: { InfoScreen() },
             macPanel: { InfoContentView() }
         )
+        .onAppear {
+            lifecycle.startScreenAppeared()
+        }
     }
 
     // MARK: - Layouts

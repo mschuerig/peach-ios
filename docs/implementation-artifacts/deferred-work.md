@@ -151,35 +151,45 @@ With the proportional-timeline renderer driven by `GeometryReader`-supplied widt
 
 ## OPEN — Needs Architectural Decision
 
-### PF-001: Redundant Session Stop via Background Notification on macOS
+### PF-048: TimingOffsetDetection `gridOrigin` not refreshed on `resume()`
 
-**Found:** 2026-03-29 (Story 68.6)
-**Severity:** Low (cosmetic log noise, no correctness impact)
+**Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
+**Severity:** Low (bounded drift; audible only on long pauses)
 **Disposition:** OPEN
 
-On macOS, each session's `AudioSessionInterruptionMonitor` independently listens for `NSApplication.didResignActiveNotification` and calls `stop()`. The `TrainingLifecycleCoordinator` also stops the current session via `handleAppDeactivated()`. This results in 4× redundant "stop() called but already idle" log messages on every app switch.
+`TimingOffsetDetectionSession.gridOrigin` is set once at first `beginNextTrial` from wall-clock `currentTime()`. `pause()` preserves it; `resume()` does not refresh it. After a long pause the next `scheduleFeedbackTimer` computes `nextGridPoint(quarterNoteDuration:)` against a stale origin while the audio clock has reset to 0 inside the sequencer. The grid alignment drift is bounded (≤ one quarter-note's wait), but the post-resume rhythmic feel is no longer audio-aligned.
 
-**Fix:** Stop passing `backgroundNotificationName` to sessions on macOS, since the coordinator now owns the training lifecycle. The notification-based stop in sessions was the original mechanism before the coordinator existed.
+**Fix:** Reset `gridOrigin = currentTime()` at the top of `resume()` before issuing `restartSequencerForCurrentTrial`. Add a test that pauses the session, advances `currentTime` by ≥1 second, resumes, and asserts the next feedback-timer grid wait is bounded to one quarter-note.
 
-### PF-003: Training Session Restart on In-Stack Navigation to Settings/Profile
+### PF-049: Help sheet open at audio-interruption silently does nothing on dismiss
 
-**Found:** 2026-04-07 (Story 75.3)
-**Severity:** Medium (session progress lost on navigation round-trip)
+**Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
+**Severity:** Low (narrow interleaving; user can manually re-enter)
 **Disposition:** OPEN
 
-When the user taps Settings or Profile in the training screen toolbar, SwiftUI's NavigationStack fires `onDisappear` on the training screen, which calls `lifecycle.trainingScreenDisappeared()` → `stopCurrentSession()` → `session.stop()`. The `stop()` method fully clears session state (`sessionBestCentDifference`, `currentTrial`, `lastResult` — all nilled). When the user navigates back, `onAppear` fires and `startCurrentSession()` restarts training from scratch, losing all in-session progress.
+Sequence: user opens help sheet while training is active → coordinator pauses session. Audio interruption (phone call, AirPods disconnect) fires via `AudioInterruptionObserving.onStopRequired` → session's `stop()` runs → `isPaused = false`, state → `.idle`. User dismisses help sheet → coordinator's `helpSheetDismissed()` sees `pausedSession` still set (it points at the now-idle session) → calls `pausedSession.resume()` which is a no-op (`guard isPaused`) → clears `pausedSession`. Net effect: dismissing the help sheet after an audio interruption neither restarts training nor surfaces the interruption — the user is left on the training screen with no signal that they need to tap "Start" again.
 
-**Fix:** Introduce pause/resume semantics distinct from stop/start. Either add `pause()`/`resume()` to the `TrainingSession` protocol, or have the lifecycle coordinator distinguish between temporary pushes (Settings/Profile) and permanent pops (back to Start Screen). Requires multi-file change across the session protocol, all session implementations, and the lifecycle coordinator.
+**Fix:** When the coordinator's `pausedSession` becomes idle without going through `resume()`, the coordinator should detect this and fall through to the `shouldAutoStartTraining` branch on dismiss. One option: have the session signal "I went idle while paused" so the coordinator can drop the stale reference proactively. Simpler: in `helpSheetDismissed`, check `paused.isIdle` first — if the paused session became idle without coordination, treat as no-pause.
 
-### PF-005: Session leak on sound source change
+### PF-050: Scene-phase background while help sheet is open silently downgrades resume to cold restart
 
-**Found:** 2026-03-27 (MIDI pitch bend fix)
-**Severity:** Medium (latent leak; user-triggerable but rarely-exercised path)
+**Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
+**Severity:** Low (narrow interleaving; downgrades preservation, doesn't lose data)
 **Disposition:** OPEN
 
-`onChange(of: soundSource)` in `PeachApp` replaces `pitchMatchingSession` and `pitchDiscriminationSession` without calling `stop()` on the old instances. If a session was active, its internal Tasks (MIDI listening, training loop) capture `self`, preventing deallocation. The old session's tasks run indefinitely until the AsyncStream finishes.
+Sequence: help sheet open with `pausedSession` set → app backgrounds → `handleScenePhase(.background)` → `stopCurrentSession()` → `discardLingeringPausedSession()` stops the paused session and clears the reference → app returns active → on iOS `handleScenePhase(.active)` auto-restarts (cold) → user dismisses help sheet later → `helpSheetDismissed()` sees `pausedSession == nil` → falls through to `shouldAutoStartTraining` → starts again. Net effect: the in-trial state preserved by `helpSheetPresented`'s pause is lost; on dismiss the training restarts from scratch silently.
 
-**Fix:** Call `stop()` before reassignment, or restructure sessions to replace their `NotePlayer` rather than being fully recreated.
+**Fix:** Either (a) document the downgrade explicitly in the spec (acceptable since user-initiated backgrounding has its own stop semantics), or (b) when help sheet is open, `handleScenePhase(.background)` should defer the stop until dismiss. (b) is more invasive and probably not worth the complexity.
+
+### PF-051: Per-session pause/resume sub-state coverage in tests is partial
+
+**Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
+**Severity:** Low (no current bug; surface for future drift)
+**Disposition:** OPEN
+
+The new `PauseResumeContractTests.swift` covers pause from one representative sub-state per session (e.g. `.awaitingSliderTouch` / `.awaitingAnswer` / `.playingPatternLoop`) plus the MIDI-deflection clear in PM and the feedback-overlay clear in PD. Pause from `.playingReference` (PM), `.playingTargetNote` (PD), `.waitingForGrid` (TOD), and CRM's mid-trial sub-states is exercised only indirectly through the integration tests. A focused per-sub-state contract suite would catch future regressions earlier.
+
+**Fix:** Add `pauseFromSubState_<state>` tests for each session, asserting (a) `isIdle == false` after pause, (b) `currentTrial` preserved, (c) feedback overlay flags consistent, (d) resume re-engages the trial without auto-completion or stuck states.
 
 ### PF-011: Concurrency audit of the sequencer @Observable + Task pattern
 

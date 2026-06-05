@@ -6,8 +6,6 @@ import os
 
 @main
 struct PeachApp: App {
-    private static let backgroundNotificationName: Notification.Name? = PlatformNotifications.background
-
     private static func makeAudioInterruptionObserver() -> AudioInterruptionObserving {
         #if os(iOS)
         IOSAudioInterruptionObserver()
@@ -177,6 +175,19 @@ struct PeachApp: App {
     // MARK: - Sound Source Change
 
     private func handleSoundSourceChanged(_ newSource: String) {
+        // Stop every non-idle session before `rebuildCoordinators()` replaces
+        // `trainingLifecycle` — otherwise a paused TOD/CRM would survive with no
+        // coordinator holding its `pausedDestination`, unrecoverable until
+        // toggled manually.
+        for session in [
+            pitchDiscriminationSession as any TrainingSession,
+            pitchMatchingSession,
+            timingOffsetDetectionSession,
+            continuousRhythmMatchingSession,
+        ] where !session.isIdle {
+            session.stop()
+        }
+
         let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
         let newNotePlayer = SoundFontPlayer(
             engine: soundFontEngine,
@@ -425,8 +436,7 @@ struct PeachApp: App {
             strategy: strategy,
             profile: profile,
             observers: observers,
-            audioInterruptionObserver: makeAudioInterruptionObserver(),
-            backgroundNotificationName: backgroundNotificationName
+            audioInterruptionObserver: makeAudioInterruptionObserver()
         )
     }
 
@@ -444,8 +454,7 @@ struct PeachApp: App {
             strategy: AdaptiveTimingOffsetDetectionStrategy(),
             profile: profile,
             observers: observers,
-            audioInterruptionObserver: makeAudioInterruptionObserver(),
-            backgroundNotificationName: backgroundNotificationName
+            audioInterruptionObserver: makeAudioInterruptionObserver()
         )
     }
 
@@ -462,8 +471,7 @@ struct PeachApp: App {
             beatSequencer: beatSequencer,
             observers: observers,
             midiInput: midiInput,
-            audioInterruptionObserver: makeAudioInterruptionObserver(),
-            backgroundNotificationName: backgroundNotificationName
+            audioInterruptionObserver: makeAudioInterruptionObserver()
         )
     }
 
@@ -480,8 +488,7 @@ struct PeachApp: App {
             profile: profile,
             observers: [storeAdapter, profileAdapter],
             midiInput: midiInput,
-            audioInterruptionObserver: makeAudioInterruptionObserver(),
-            backgroundNotificationName: backgroundNotificationName
+            audioInterruptionObserver: makeAudioInterruptionObserver()
         )
     }
 

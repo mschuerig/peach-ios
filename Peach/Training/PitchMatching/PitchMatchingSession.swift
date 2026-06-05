@@ -134,6 +134,12 @@ final class PitchMatchingSession: TrainingSession {
 
     private var currentHandle: PlaybackHandle?
     private(set) var referenceFrequency: Frequency?
+    private var isPaused = false
+    /// Tracks the audio-stop Task spawned by `pause()` so `resume()` can chain
+    /// the reference-playback Task behind it. Without this, `notePlayer.stopAll`
+    /// (T1) and `notePlayer.play` (T3) execute on independent Tasks and may
+    /// overlap on a fast pause→resume cycle (e.g. help sheet toggle).
+    private var pendingAudioStop: Task<Void, Never>?
 
     // MARK: - Initialization
 
@@ -143,9 +149,7 @@ final class PitchMatchingSession: TrainingSession {
         observers: [PitchMatchingObserver] = [],
         midiInput: (any MIDIInput)? = nil,
         notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving,
-        backgroundNotificationName: Notification.Name? = nil,
-        foregroundNotificationName: Notification.Name? = nil
+        audioInterruptionObserver: AudioInterruptionObserving
     ) {
         self.notePlayer = notePlayer
         self.profile = profile
@@ -156,8 +160,6 @@ final class PitchMatchingSession: TrainingSession {
             logger: logger,
             notificationCenter: notificationCenter,
             audioInterruptionObserver: audioInterruptionObserver,
-            backgroundNotificationName: backgroundNotificationName,
-            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -230,6 +232,44 @@ final class PitchMatchingSession: TrainingSession {
         send(.stopRequested)
     }
 
+    func pause() {
+        guard !isPaused, state != .idle else { return }
+        isPaused = true
+        lifecycle?.cancelAllTasks()
+        midiListeningTask?.cancel()
+        midiListeningTask = nil
+        let handleToStop = currentHandle
+        currentHandle = nil
+        // Reset MIDI-input bookkeeping so a stale "deflected then back to neutral"
+        // sequence from before the pause does not auto-commit the resumed trial
+        // on the first MIDI bend.
+        hasBeenDeflected = false
+        midiPitchBendValue = nil
+        currentPitchValue = 0.0
+        keyboardPitchValue = nil
+        if state == .showingFeedback {
+            lastResult = nil
+        }
+        pendingAudioStop = Task {
+            try? await handleToStop?.stop()
+            try? await notePlayer.stopAll()
+        }
+        logger.info("Session paused (preserving trial \(String(describing: self.currentTrial)))")
+    }
+
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+        guard currentTrial != nil, settings != nil else {
+            logger.info("Session resume called with no current trial; staying idle")
+            return
+        }
+        logger.info("Session resuming from preserved trial")
+        state = .playingReference
+        startMIDIListening()
+        playReferenceNoteForCurrentTrial()
+    }
+
     // MARK: - State Machine Engine
 
     private func send(_ event: Event) {
@@ -293,6 +333,12 @@ final class PitchMatchingSession: TrainingSession {
         let trial = generateTrial(settings: settings, interval: interval)
         currentTrial = trial
 
+        playReferenceNoteForCurrentTrial()
+    }
+
+    private func playReferenceNoteForCurrentTrial() {
+        guard let settings, let trial = currentTrial else { return }
+
         let refFreq = settings.tuningSystem.frequency(
             for: trial.referenceNote, referencePitch: settings.referencePitch)
         let targetFreq = settings.tuningSystem.frequency(
@@ -300,7 +346,11 @@ final class PitchMatchingSession: TrainingSession {
         self.referenceFrequency = targetFreq
         logger.info("Trial: ref=\(trial.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(trial.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(trial.initialCentOffset.rawValue)cents")
 
+        let priorStop = pendingAudioStop
+        pendingAudioStop = nil
         lifecycle?.setTrainingTask(Task {
+            await priorStop?.value
+            guard state != .idle, !Task.isCancelled else { return }
             do {
                 try await notePlayer.play(
                     frequency: refFreq,
@@ -384,6 +434,8 @@ final class PitchMatchingSession: TrainingSession {
     private func stopAll() {
         logger.info("Session stopped")
 
+        isPaused = false
+        pendingAudioStop = nil
         Task {
             try? await notePlayer.stopAll()
         }

@@ -139,6 +139,8 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     /// Last subdivision index published to `litDotCount`, gating Observation churn at the 120 Hz tracking rate.
     private var lastPublishedSubdivisionIndex: Int = -1
 
+    private var isPaused = false
+
     var currentOffsetPercentage: Double? {
         guard let trial = currentTrial else { return nil }
         return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
@@ -162,8 +164,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         observers: [TimingOffsetDetectionObserver] = [],
         notificationCenter: NotificationCenter = .default,
         audioInterruptionObserver: AudioInterruptionObserving,
-        backgroundNotificationName: Notification.Name? = nil,
-        foregroundNotificationName: Notification.Name? = nil,
         currentTime: @escaping () -> Double = { CACurrentMediaTime() }
     ) {
         self.beatSequencer = beatSequencer
@@ -175,8 +175,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
             logger: logger,
             notificationCenter: notificationCenter,
             audioInterruptionObserver: audioInterruptionObserver,
-            backgroundNotificationName: backgroundNotificationName,
-            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -222,6 +220,53 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
     func stop() {
         send(.stopRequested)
+    }
+
+    func pause() {
+        guard !isPaused, state != .idle else { return }
+        isPaused = true
+        trackingTask?.cancel()
+        trackingTask = nil
+        lifecycle?.cancelAllTasks()
+        enqueueSequencerStop()
+        resetTracking()
+        showFeedback = false
+        isLastAnswerCorrect = nil
+        logger.info("Session paused (preserving trial \(String(describing: self.currentTrial)))")
+    }
+
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+        guard let settings, currentTrial != nil else {
+            logger.info("Session resume called with no current trial; staying idle")
+            return
+        }
+        logger.info("Session resuming from preserved trial")
+        // Sequencer restarts at sample position 0; the grid origin was preserved.
+        state = .playingPatternLoop
+        restartSequencerForCurrentTrial(settings: settings)
+    }
+
+    private func restartSequencerForCurrentTrial(settings: TimingOffsetDetectionSettings) {
+        let priorStop = stopTask
+        startTask = Task {
+            await priorStop?.value
+            guard state == .playingPatternLoop, !Task.isCancelled else { return }
+            do {
+                try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
+                guard state == .playingPatternLoop, !Task.isCancelled else {
+                    logger.info("State changed while restarting sequencer, aborting")
+                    return
+                }
+                startTrackingLoop()
+            } catch is CancellationError {
+                logger.info("Sequencer restart task cancelled")
+            } catch {
+                logger.error("Audio error during resume: \(error.localizedDescription)")
+                send(.audioError)
+            }
+        }
     }
 
     // MARK: - BeatProvider Protocol
@@ -452,6 +497,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     private func stopAll() {
         logger.info("Training stopped")
 
+        isPaused = false
         trackingTask?.cancel()
         trackingTask = nil
         lifecycle?.cancelAllTasks()

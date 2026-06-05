@@ -104,6 +104,11 @@ final class PitchDiscriminationSession: TrainingSession {
     private var settings: PitchDiscriminationSettings?
     private var currentTrial: PitchDiscriminationTrial?
     private var lastCompletedTrial: CompletedPitchDiscriminationTrial?
+    private var isPaused = false
+    /// Chains the `pause()`-spawned audio stop so `resume()` can await it
+    /// before issuing the next `notePlayer.play(...)`. Prevents a fast
+    /// pause→resume cycle from racing stop and start.
+    private var pendingAudioStop: Task<Void, Never>?
 
     var sessionTuningSystem: TuningSystem {
         settings?.tuningSystem ?? .equalTemperament
@@ -118,9 +123,7 @@ final class PitchDiscriminationSession: TrainingSession {
         resettables: [Resettable] = [],
         observers: [PitchDiscriminationObserver] = [],
         notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving,
-        backgroundNotificationName: Notification.Name? = nil,
-        foregroundNotificationName: Notification.Name? = nil
+        audioInterruptionObserver: AudioInterruptionObserving
     ) {
         self.notePlayer = notePlayer
         self.strategy = strategy
@@ -131,8 +134,6 @@ final class PitchDiscriminationSession: TrainingSession {
             logger: logger,
             notificationCenter: notificationCenter,
             audioInterruptionObserver: audioInterruptionObserver,
-            backgroundNotificationName: backgroundNotificationName,
-            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -212,6 +213,28 @@ final class PitchDiscriminationSession: TrainingSession {
         send(.stopRequested)
     }
 
+    func pause() {
+        guard !isPaused, state != .idle else { return }
+        isPaused = true
+        lifecycle?.cancelAllTasks()
+        showFeedback = false
+        isLastAnswerCorrect = nil
+        pendingAudioStop = Task { try? await notePlayer.stopAll() }
+        logger.info("Session paused (preserving trial \(String(describing: self.currentTrial)))")
+    }
+
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+        guard currentTrial != nil, settings != nil else {
+            logger.info("Session resume called with no current trial; staying idle")
+            return
+        }
+        logger.info("Session resuming from preserved trial")
+        state = .playingReferenceNote
+        playReferenceForCurrentTrial()
+    }
+
     // MARK: - State Machine Engine
 
     private func send(_ event: Event) {
@@ -273,11 +296,21 @@ final class PitchDiscriminationSession: TrainingSession {
         )
         currentTrial = trial
 
+        playReferenceForCurrentTrial()
+    }
+
+    private func playReferenceForCurrentTrial() {
+        guard let settings, let trial = currentTrial else { return }
+
         let freq1 = trial.referenceFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz, target \(freq2.rawValue)Hz, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
 
+        let priorStop = pendingAudioStop
+        pendingAudioStop = nil
         lifecycle?.setTrainingTask(Task {
+            await priorStop?.value
+            guard state != .idle, !Task.isCancelled else { return }
             do {
                 try await notePlayer.play(
                     frequency: freq1,
@@ -378,6 +411,8 @@ final class PitchDiscriminationSession: TrainingSession {
     private func stopAll() {
         logger.info("Training stopped (state was transitioning to idle)")
 
+        isPaused = false
+        pendingAudioStop = nil
         Task {
             try? await notePlayer.stopAll()
             logger.info("NotePlayer stopped")

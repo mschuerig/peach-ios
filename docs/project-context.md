@@ -98,7 +98,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 
 **Platform Abstraction (ports/adapters, established in Epic 67):**
 - **Port protocols in `Core/Ports/`** — `HapticFeedback`, `AudioSessionConfiguring`, `AudioInterruptionObserving`, `BackgroundPolicy`; platform-agnostic contracts that `Core/` code programs against
-- **Platform implementations in `App/Platform/`** — each port has iOS and/or macOS implementations (e.g., `HapticFeedbackManager` with `#if os()` internally, `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`, `PlatformNotifications`)
+- **Platform implementations in `App/Platform/`** — each port has iOS and/or macOS implementations (e.g., `HapticFeedbackManager` with `#if os()` internally, `IOSAudioSessionConfigurator`, `MacOSAudioSessionConfigurator`)
 - **`#if os()` policy** — prefer port abstractions; use `#if os()` only at the composition root (`PeachApp.swift`) or within `App/Platform/` implementations, never in `Core/` or feature directories
 - **macOS no-ops** — haptic feedback is a no-op on macOS; audio session configuration is minimal (no `AVAudioSession` on macOS)
 - **macOS-specific features** — keyboard shortcuts (`PeachCommands`), native Settings scene (Cmd+,), menu bar integration, platform-split `ContentView` (`ContentView+iOS.swift`, `ContentView+macOS.swift`)

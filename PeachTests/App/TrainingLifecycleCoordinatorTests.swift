@@ -234,15 +234,17 @@ struct TrainingLifecycleCoordinatorTests {
 
     // MARK: - Help Sheet
 
-    @Test("helpSheetPresented stops active session")
-    func helpSheetPresentedStopsSession() {
+    @Test("helpSheetPresented pauses — session stays paired with destination")
+    func helpSheetPresentedKeepsSessionPaired() {
         let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
         #expect(coordinator.isTrainingActive)
 
         coordinator.helpSheetPresented()
 
-        #expect(!coordinator.isTrainingActive)
+        // Pause does not clear `currentTrainingDestination`; the coordinator still
+        // owns the destination so dismissing the sheet can resume in place.
+        #expect(coordinator.currentTrainingDestination == .continuousRhythmMatching)
     }
 
     @Test("helpSheetDismissed restarts on iOS")
@@ -256,17 +258,16 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(coordinator.isTrainingActive)
     }
 
-    @Test("helpSheetDismissed restarts on macOS when was active before")
-    func helpSheetDismissedRestartsOnMacOSWhenWasActive() {
+    @Test("helpSheetDismissed resumes on macOS when was active before")
+    func helpSheetDismissedResumesOnMacOSWhenWasActive() {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
         coordinator.startCurrentSession()
         #expect(coordinator.isTrainingActive)
 
         coordinator.helpSheetPresented()
-        #expect(!coordinator.isTrainingActive)
-
         coordinator.helpSheetDismissed()
+
         #expect(coordinator.isTrainingActive)
     }
 
@@ -425,6 +426,156 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(coordinator.resolvedNavigation?.destination == .profile)
     }
 
+    // MARK: - Pause / Resume Routing (PF-003, help-sheet cluster)
+
+    @Test("trainingScreenDisappeared pauses (not stops) when session is non-idle")
+    func trainingScreenDisappearedPausesSession() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.trainingScreenDisappeared()
+
+        #expect(fixture.mock.pauseCallCount == 1)
+        #expect(fixture.mock.stopCallCount == 0)
+        #expect(fixture.coordinator.currentTrainingDestination == nil)
+    }
+
+    @Test("trainingScreenDisappeared with idle session clears destination without pausing")
+    func trainingScreenDisappearedNoOpWhenIdle() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = true
+
+        fixture.coordinator.trainingScreenDisappeared()
+
+        #expect(fixture.mock.pauseCallCount == 0)
+        #expect(fixture.mock.stopCallCount == 0)
+        #expect(fixture.coordinator.currentTrainingDestination == nil)
+    }
+
+    @Test("trainingScreenAppeared with same paused destination resumes")
+    func trainingScreenAppearedResumesPausedSameDestination() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.trainingScreenDisappeared()
+        #expect(fixture.mock.pauseCallCount == 1)
+
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+
+        #expect(fixture.mock.resumeCallCount == 1)
+        #expect(fixture.mock.stopCallCount == 0)
+    }
+
+    @Test("trainingScreenAppeared with different destination discards stale paused session")
+    func trainingScreenAppearedDiscardsPausedFromOtherDestination() {
+        let fixture = makeTwoMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.crm.isIdle = false
+        fixture.coordinator.trainingScreenDisappeared()
+        #expect(fixture.crm.pauseCallCount == 1)
+
+        fixture.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+
+        #expect(fixture.crm.stopCallCount == 1, "stale paused session should be terminated")
+        #expect(fixture.crm.resumeCallCount == 0)
+        #expect(fixture.tod.pauseCallCount == 0)
+    }
+
+    @Test("helpSheetPresented pauses (not stops) the active session")
+    func helpSheetPresentedPausesSession() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.helpSheetPresented()
+
+        #expect(fixture.mock.pauseCallCount == 1)
+        #expect(fixture.mock.stopCallCount == 0)
+    }
+
+    @Test("helpSheetPresented on idle session is a no-op")
+    func helpSheetPresentedNoOpWhenIdle() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = true
+
+        fixture.coordinator.helpSheetPresented()
+
+        #expect(fixture.mock.pauseCallCount == 0)
+        #expect(fixture.mock.stopCallCount == 0)
+    }
+
+    @Test("helpSheetDismissed resumes the paused session")
+    func helpSheetDismissedResumesSession() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+
+        fixture.coordinator.helpSheetDismissed()
+
+        #expect(fixture.mock.resumeCallCount == 1)
+    }
+
+    @Test("startCurrentSession discards lingering paused session")
+    func startCurrentSessionDiscardsPaused() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+        #expect(fixture.mock.pauseCallCount == 1)
+
+        fixture.coordinator.startCurrentSession()
+
+        #expect(fixture.mock.stopCallCount == 1, "paused session should be stopped before fresh start")
+    }
+
+    @Test("stopCurrentSession also clears paused session")
+    func stopCurrentSessionClearsPaused() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+
+        fixture.coordinator.stopCurrentSession()
+
+        // Lingering paused stopped once; current session stopped once.
+        // Since they're the same mock, total stop count is 2.
+        #expect(fixture.mock.stopCallCount == 2)
+    }
+
+    @Test("startScreenAppeared discards any lingering paused session (PF-003 negative case)")
+    func startScreenAppearedDiscardsPaused() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.trainingScreenDisappeared()
+        #expect(fixture.mock.pauseCallCount == 1)
+
+        fixture.coordinator.startScreenAppeared()
+
+        #expect(fixture.mock.stopCallCount == 1, "pop-to-Start must terminate the paused session")
+    }
+
+    @Test("navigate clears paused session before resolving")
+    func navigateClearsPaused() async {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+        fixture.mock.onStopCalled = { fixture.mock.isIdle = true }
+
+        fixture.coordinator.navigate(to: .profile)
+
+        await Task.yield()
+
+        // The lingering paused session gets stopped before navigate proceeds.
+        #expect(fixture.mock.stopCallCount >= 1)
+        #expect(fixture.coordinator.resolvedNavigation?.destination == .profile)
+    }
+
     // MARK: - Registry-Keyed Dispatch (per-destination coverage)
 
     @Test("registry dispatches start to every shipping training destination, leaving siblings idle", arguments: [
@@ -538,6 +689,59 @@ struct TrainingLifecycleCoordinatorTests {
         ).coordinator
     }
 
+    // MARK: - Mock Fixtures (pause/resume routing tests)
+
+    private struct MockFixture {
+        let coordinator: TrainingLifecycleCoordinator
+        let mock: MockTrainingSession
+    }
+
+    private struct TwoMockFixture {
+        let coordinator: TrainingLifecycleCoordinator
+        let crm: MockTrainingSession
+        let tod: MockTrainingSession
+    }
+
+    private func makeMockFixture() -> MockFixture {
+        let mock = MockTrainingSession()
+        let registry = TrainingLifecycleRegistry { builder in
+            builder.register(
+                destination: .continuousRhythmMatching,
+                session: mock,
+                start: { mock.isIdle = false }
+            )
+        }
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: IOSBackgroundPolicy(),
+            initialAutoStartSetting: true
+        )
+        return MockFixture(coordinator: coordinator, mock: mock)
+    }
+
+    private func makeTwoMockFixture() -> TwoMockFixture {
+        let crm = MockTrainingSession()
+        let tod = MockTrainingSession()
+        let registry = TrainingLifecycleRegistry { builder in
+            builder.register(
+                destination: .continuousRhythmMatching,
+                session: crm,
+                start: { crm.isIdle = false }
+            )
+            builder.register(
+                destination: .timingOffsetDetection,
+                session: tod,
+                start: { tod.isIdle = false }
+            )
+        }
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: IOSBackgroundPolicy(),
+            initialAutoStartSetting: true
+        )
+        return TwoMockFixture(coordinator: coordinator, crm: crm, tod: tod)
+    }
+
     private func waitUntilNotIdle(_ session: any TrainingSession, timeout: Duration = .seconds(1)) async throws {
         let deadline = ContinuousClock.now + timeout
         while session.isIdle {
@@ -576,10 +780,20 @@ struct TrainingLifecycleCoordinatorTests {
 private final class MockTrainingSession: TrainingSession {
     var isIdle: Bool = true
     var stopCallCount = 0
+    var pauseCallCount = 0
+    var resumeCallCount = 0
     var onStopCalled: (() -> Void)?
 
     func stop() {
         stopCallCount += 1
         onStopCalled?()
+    }
+
+    func pause() {
+        pauseCallCount += 1
+    }
+
+    func resume() {
+        resumeCallCount += 1
     }
 }

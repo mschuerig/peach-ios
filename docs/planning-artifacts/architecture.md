@@ -1914,8 +1914,6 @@ init(
     observers: [TimingOffsetDetectionObserver] = [],
     notificationCenter: NotificationCenter = .default,
     audioInterruptionObserver: AudioInterruptionObserving,
-    backgroundNotificationName: Notification.Name? = nil,
-    foregroundNotificationName: Notification.Name? = nil,
     currentTime: @escaping () -> Double = { CACurrentMediaTime() }
 )
 ```

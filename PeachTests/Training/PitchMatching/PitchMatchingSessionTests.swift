@@ -37,9 +37,7 @@ let defaultPitchMatchingTestSettings = PitchMatchingSettings(
 
 func makePitchMatchingSession(
     notificationCenter: NotificationCenter = .default,
-    audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver(),
-    backgroundNotificationName: Notification.Name? = nil,
-    foregroundNotificationName: Notification.Name? = nil
+    audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver()
 ) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver) {
     let notePlayer = MockNotePlayer()
     let profile = MockTrainingProfile()
@@ -49,9 +47,7 @@ func makePitchMatchingSession(
         profile: profile,
         observers: [observer],
         notificationCenter: notificationCenter,
-        audioInterruptionObserver: audioInterruptionObserver,
-        backgroundNotificationName: backgroundNotificationName,
-        foregroundNotificationName: foregroundNotificationName
+        audioInterruptionObserver: audioInterruptionObserver
     )
     return (session, notePlayer, profile, observer)
 }
@@ -1039,8 +1035,6 @@ struct PitchMatchingSessionTests {
 @Suite("PitchMatchingSession Audio Interruption Tests", .serialized)
 struct PitchMatchingSessionAudioInterruptionTests {
 
-    private static let testBackgroundNotification = Notification.Name("test.background")
-
     // MARK: - Audio Interruption Tests
 
     @Test("Audio interruption stops from playingTunable")
@@ -1113,56 +1107,6 @@ struct PitchMatchingSessionAudioInterruptionTests {
         #expect(session.state == .idle)
     }
 
-    // MARK: - Background Notification Tests
-
-    @Test("Background notification stops from playingTunable")
-    func backgroundNotificationStopsFromPlayingTunable() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: Self.testBackgroundNotification
-        )
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await transitionToPlayingTunable(session)
-
-        nc.post(name: Self.testBackgroundNotification, object: nil)
-
-        try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    @Test("Background notification stops from awaitingSliderTouch")
-    func backgroundNotificationStopsFromAwaitingSliderTouch() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: Self.testBackgroundNotification
-        )
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(name: Self.testBackgroundNotification, object: nil)
-
-        try await waitForState(session, .idle)
-        #expect(session.state == .idle)
-    }
-
-    @Test("Background notification on idle is safe")
-    func backgroundNotificationOnIdleIsSafe() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: Self.testBackgroundNotification
-        )
-        #expect(session.state == .idle)
-
-        nc.post(name: Self.testBackgroundNotification, object: nil)
-
-        try await Task.sleep(for: .milliseconds(50))
-        await Task.yield()
-        #expect(session.state == .idle)
-    }
-
     // MARK: - Restart Tests
 
     @Test("Training can restart after interruption stop")
@@ -1173,24 +1117,6 @@ struct PitchMatchingSessionAudioInterruptionTests {
         try await waitForState(session, .awaitingSliderTouch)
 
         mock.simulateInterruption()
-        try await waitForState(session, .idle)
-
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-        #expect(session.state == .awaitingSliderTouch)
-    }
-
-    @Test("Training can restart after background stop")
-    func canRestartAfterBackgroundStop() async throws {
-        let nc = NotificationCenter()
-        let (session, _, _, _) = makePitchMatchingSession(
-            notificationCenter: nc,
-            backgroundNotificationName: Self.testBackgroundNotification
-        )
-        session.start(settings: defaultPitchMatchingTestSettings)
-        try await waitForState(session, .awaitingSliderTouch)
-
-        nc.post(name: Self.testBackgroundNotification, object: nil)
         try await waitForState(session, .idle)
 
         session.start(settings: defaultPitchMatchingTestSettings)

@@ -32,7 +32,12 @@ final class TrainingLifecycleCoordinator {
     private var navigationTask: Task<Void, Never>?
 
     private(set) var currentTrainingDestination: NavigationDestination?
-    private var wasActiveBeforeHelpSheet = false
+
+    /// Destination whose session was paused by a transient lifecycle event
+    /// (training-screen disappear, help-sheet present). Tracking the
+    /// destination instead of the session instance avoids coupling to the
+    /// registry's instance-identity guarantee.
+    private var pausedDestination: NavigationDestination?
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "Lifecycle")
 
@@ -99,24 +104,54 @@ final class TrainingLifecycleCoordinator {
     // MARK: - Training Screen Lifecycle
 
     func trainingScreenAppeared(destination: NavigationDestination) {
-        currentTrainingDestination = destination
-        if shouldAutoStartTraining {
-            startCurrentSession()
+        if pausedDestination == destination {
+            currentTrainingDestination = destination
+            registry.contribution(for: destination)?.session.resume()
+            pausedDestination = nil
+        } else {
+            discardLingeringPausedSession()
+            currentTrainingDestination = destination
+            if shouldAutoStartTraining {
+                startCurrentSession()
+            }
         }
     }
 
     func trainingScreenDisappeared() {
-        stopCurrentSession()
+        guard let destination = currentTrainingDestination,
+              let session = registry.contribution(for: destination)?.session,
+              !session.isIdle else {
+            currentTrainingDestination = nil
+            return
+        }
+        discardLingeringPausedSession()
+        pausedDestination = destination
+        session.pause()
         currentTrainingDestination = nil
     }
 
+    /// Pop-to-Start signal — nav-push and nav-pop produce identical
+    /// `onDisappear` events at the modifier level, so without this hook a
+    /// paused session would linger until another lifecycle event arrived.
+    func startScreenAppeared() {
+        discardLingeringPausedSession()
+    }
+
     func helpSheetPresented() {
-        wasActiveBeforeHelpSheet = isTrainingActive
-        stopCurrentSession()
+        guard let destination = currentTrainingDestination,
+              let session = registry.contribution(for: destination)?.session,
+              !session.isIdle else { return }
+        discardLingeringPausedSession()
+        pausedDestination = destination
+        session.pause()
     }
 
     func helpSheetDismissed() {
-        if shouldAutoStartTraining || wasActiveBeforeHelpSheet {
+        if let pausedDest = pausedDestination,
+           let paused = registry.contribution(for: pausedDest)?.session {
+            paused.resume()
+            pausedDestination = nil
+        } else if shouldAutoStartTraining {
             startCurrentSession()
         }
     }
@@ -131,11 +166,24 @@ final class TrainingLifecycleCoordinator {
 
     func startCurrentSession() {
         guard let destination = currentTrainingDestination else { return }
+        discardLingeringPausedSession()
         registry.contribution(for: destination)?.start()
     }
 
     func stopCurrentSession() {
+        discardLingeringPausedSession()
         currentSession?.stop()
+    }
+
+    /// Stops any session paused for a no-longer-current destination. Idempotent.
+    private func discardLingeringPausedSession() {
+        guard let dest = pausedDestination,
+              let paused = registry.contribution(for: dest)?.session else {
+            pausedDestination = nil
+            return
+        }
+        paused.stop()
+        pausedDestination = nil
     }
 
     // MARK: - Menu Navigation
@@ -143,6 +191,7 @@ final class TrainingLifecycleCoordinator {
     func navigate(to destination: NavigationDestination) {
         navigationTask?.cancel()
         navigationTask = Task {
+            discardLingeringPausedSession()
             if let session = activeSession, !session.isIdle {
                 session.stop()
                 await awaitIdle(of: session)

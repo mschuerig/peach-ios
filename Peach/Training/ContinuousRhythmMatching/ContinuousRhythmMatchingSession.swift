@@ -127,6 +127,12 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     private var lastPublishedSubdivisionIndex: Int = -1
     private var lastPublishedCycleIndex: Int = -1
 
+    private var isPaused = false
+    /// Tracks the pause-spawned `beatSequencer.stop()` so the next
+    /// `startSequencer` effect can await it before re-entering the sequencer's
+    /// serial run loop.
+    private var pendingSequencerStop: Task<Void, Never>?
+
     // MARK: - Initialization
 
     init(
@@ -134,9 +140,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         observers: [ContinuousRhythmMatchingObserver] = [],
         midiInput: (any MIDIInput)? = nil,
         notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving,
-        backgroundNotificationName: Notification.Name? = nil,
-        foregroundNotificationName: Notification.Name? = nil
+        audioInterruptionObserver: AudioInterruptionObserving
     ) {
         self.beatSequencer = beatSequencer
         self.midiInput = midiInput
@@ -145,8 +149,6 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
             logger: logger,
             notificationCenter: notificationCenter,
             audioInterruptionObserver: audioInterruptionObserver,
-            backgroundNotificationName: backgroundNotificationName,
-            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: { [weak self] in self?.stop() }
         )
     }
@@ -157,6 +159,46 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
 
     func stop() {
         send(.stopRequested)
+    }
+
+    func pause() {
+        guard !isPaused, state != .idle else { return }
+        isPaused = true
+        startTask?.cancel()
+        startTask = nil
+        trackingTask?.cancel()
+        trackingTask = nil
+        midiListeningTask?.cancel()
+        midiListeningTask = nil
+        lifecycle?.cancelFeedbackTask()
+        showFeedback = false
+        lastHitOffsetMs = nil
+        pendingSequencerStop = Task { try? await beatSequencer.stop() }
+        logger.info("Session paused (preserving \(self.gapResults.count) gap results in trial cycle \(self.cyclesInCurrentTrial))")
+    }
+
+    func resume() {
+        guard isPaused else { return }
+        isPaused = false
+        guard let settings else {
+            logger.info("Session resume called with no settings; staying idle")
+            return
+        }
+        logger.info("Session resuming — restarting trial cycle, preserving lastTrialResult")
+        // History (`lastTrialResult`) survives; the in-flight cycle restarts from
+        // zero because tap-along progress isn't musically resumable mid-cycle.
+        gapResults = []
+        gapPositions = []
+        hitCycleIndices = []
+        cyclesInCurrentTrial = 0
+        lastEvaluatedCycleIndex = -1
+        lastPublishedSubdivisionIndex = -1
+        lastPublishedCycleIndex = -1
+        currentBeatPosition = nil
+        gapPositionInCurrentBeat = nil
+        // Reduce state to .idle so `.startRequested` fires the normal startup effects.
+        state = .idle
+        send(.startRequested(settings))
     }
 
     // MARK: - Public API
@@ -345,7 +387,11 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     // MARK: - Effect Implementations
 
     private func startSequencer(settings: ContinuousRhythmMatchingSettings) {
+        let priorStop = pendingSequencerStop
+        pendingSequencerStop = nil
         startTask = Task {
+            await priorStop?.value
+            guard state == .running, !Task.isCancelled else { return }
             do {
                 try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
                 send(.sequencerReady)
@@ -421,6 +467,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     private func stopAll() {
         logger.info("Stopping continuous rhythm matching session")
 
+        isPaused = false
+        pendingSequencerStop = nil
         startTask?.cancel()
         startTask = nil
         trackingTask?.cancel()

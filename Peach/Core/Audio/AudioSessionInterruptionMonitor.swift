@@ -19,8 +19,6 @@ final class AudioSessionInterruptionMonitor {
         notificationCenter: NotificationCenter = .default,
         logger: Logger,
         audioInterruptionObserver: AudioInterruptionObserving,
-        backgroundNotificationName: Notification.Name? = nil,
-        foregroundNotificationName: Notification.Name? = nil,
         onStopRequired: @escaping () -> Void
     ) {
         self.notificationCenter = notificationCenter
@@ -32,19 +30,6 @@ final class AudioSessionInterruptionMonitor {
             notificationCenter: notificationCenter,
             onStopRequired: onStopRequired
         )
-
-        for name in [backgroundNotificationName, foregroundNotificationName].compactMap({ $0 }) {
-            let token = notificationCenter.addObserver(
-                forName: name,
-                object: nil,
-                queue: .main
-            ) { [weak self] _ in
-                Task { @MainActor [weak self] in
-                    self?.onStopRequired()
-                }
-            }
-            observerTokens.append(token)
-        }
 
         logger.info("Audio interruption observers setup complete")
     }

@@ -131,7 +131,6 @@ Shared view showing latest result + session best with trend arrow. Used by pitch
 | `MacOSBackgroundPolicy` | Stop on background/inactive, no auto-start |
 | `HapticFeedbackManager` | UIKit haptics for incorrect answers (double tap pattern) |
 | `NoOpHapticFeedbackManager` | macOS no-op |
-| `PlatformNotifications` | Maps background/foreground to platform notification names |
 | `PlatformModifiers` | `.inlineNavigationBarTitle()`, `.platformFormStyle()`, `.platformBackground` |
 | `PlatformImage` | Platform-specific PNG encoding from `CGImage` |
 

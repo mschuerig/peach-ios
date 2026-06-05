@@ -15,8 +15,6 @@ final class SessionLifecycle {
         logger: Logger,
         notificationCenter: NotificationCenter = .default,
         audioInterruptionObserver: AudioInterruptionObserving,
-        backgroundNotificationName: Notification.Name? = nil,
-        foregroundNotificationName: Notification.Name? = nil,
         onStopRequired: @escaping () -> Void
     ) {
         self.logger = logger
@@ -24,8 +22,6 @@ final class SessionLifecycle {
             notificationCenter: notificationCenter,
             logger: logger,
             audioInterruptionObserver: audioInterruptionObserver,
-            backgroundNotificationName: backgroundNotificationName,
-            foregroundNotificationName: foregroundNotificationName,
             onStopRequired: onStopRequired
         )
     }
