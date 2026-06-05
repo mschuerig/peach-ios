@@ -254,6 +254,16 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         let playingCycleIndex = Int(timing.samplePosition / timing.samplesPerBeat)
         let globalSubdivisionIndex = Int(timing.samplePosition / samplesPerSubdivision)
 
+        // Detect sequencer batch-refill wrap (~every 500 beats): `samplePosition`
+        // resets to 0, jumping the derived indices backwards. Reset the
+        // published-index trackers so post-wrap state computes cleanly and
+        // `cycleMissed` keeps firing after the wrap point.
+        if globalSubdivisionIndex < lastPublishedSubdivisionIndex {
+            lastEvaluatedCycleIndex = -1
+            lastPublishedCycleIndex = -1
+            lastPublishedSubdivisionIndex = -1
+        }
+
         if globalSubdivisionIndex != lastPublishedSubdivisionIndex {
             currentBeatPosition = BeatPosition(rawValue: globalSubdivisionIndex % Int(Self.subdivisionsPerBeat))
             lastPublishedSubdivisionIndex = globalSubdivisionIndex

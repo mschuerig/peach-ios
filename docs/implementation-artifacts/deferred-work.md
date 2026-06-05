@@ -130,16 +130,6 @@ When the user taps Settings or Profile in the training screen toolbar, SwiftUI's
 
 **Fix:** Focused audit (probably via `/swift-concurrency-expert`) before any second discipline starts sharing a sequencer instance. Resolution candidates for the trial-start race: (a) document the post-`start()` reset latency as a `BeatSequencer` contract with a test; (b) anchor TOD's `globalSubdivisionIndex` to a per-trial baseline `samplePosition` captured at start; (c) extend `BeatSequencer.timing` with a "trial-relative sample position" accessor.
 
-### PF-012: CRM refill state-reset on `samplePosition` wrap
-
-**Found:** 2026-06-02 (Story 80.0)
-**Severity:** Low (unreachable in current play; refill happens at ~25 trials in, trials never span a refill boundary)
-**Disposition:** OPEN
-
-`ContinuousRhythmMatchingSession.lastEvaluatedCycleIndex` (and the new `lastPublishedCycleIndex`/`lastPublishedSubdivisionIndex`) are not reset when the sequencer refills its batch and resets `samplePosition` to 0. The latent state-mismatch means `cycleMissed` would stop firing if it ever did.
-
-**Fix:** Reset the published-index trackers on observed negative jump in `samplePosition`. Surfaced incidentally by Edge case hunter (finding #15).
-
 ### PF-013: Protocol-level contract tests for `SequencerEngine`
 
 **Found:** 2026-06-02 (Story 80.0)
@@ -179,16 +169,6 @@ A `.note(offset: .milliseconds(-N))` on a beat's first subdivision can produce a
 `SoundFontBeatSequencer.refillThreshold` is computed from a single `samplesPerBeat` set once at start. Any future discipline that wants to vary tempo mid-session would mis-estimate refill timing.
 
 **Fix:** Recompute `refillThreshold` on tempo change, or expose a tempo-change API that recomputes it as a side effect.
-
-### PF-017: One-tick `litDotCount` blip at batch refill
-
-**Found:** 2026-06-02 (Story 80.1)
-**Severity:** Low (sub-perceptual, ~8 ms, self-correcting)
-**Disposition:** OPEN
-
-In `TimingOffsetDetectionSession.evaluatePlaybackPosition`: when `SoundFontBeatSequencer` refills (~every 500 beats), `engine.samplePosition` resets to 0. The session's `lastPublishedSubdivisionIndex` is high; modulo math may light a stale dot for one polling tick (8 ms) before resyncing.
-
-**Fix:** On observed negative jump in `globalSubdivisionIndex`, reset `lastPublishedSubdivisionIndex = -1` before the equality gate.
 
 ### PF-018: `AppTimingOffsetDetectionUserSettings.maxRepetitions` should clamp `> cap` as well as `< 1`
 

@@ -339,6 +339,14 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
 
         let globalSubdivisionIndex = Int(timing.samplePosition / samplesPerSubdivision)
 
+        // Detect sequencer batch-refill wrap (~every 500 beats): `samplePosition`
+        // resets to 0, jumping `globalSubdivisionIndex` backwards. Reset the
+        // published-index tracker so the next tick republishes from the wrap
+        // without lighting a stale dot for one polling cycle.
+        if globalSubdivisionIndex < lastPublishedSubdivisionIndex {
+            lastPublishedSubdivisionIndex = -1
+        }
+
         // Cap-reached check runs *before* the `litDotCount` publish so the lit-dot
         // indicator does not flash one extra tick past the cap boundary. The
         // `.repetitionCapReached` event transitions the session out of
