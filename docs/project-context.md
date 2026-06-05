@@ -81,12 +81,14 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`SoundFontLibrary`** — `@MainActor` service created once at startup; discovers SF2 files in bundle, parses presets via `SF2PresetParser`, filters unpitched (bank >= 120, program >= 120), sorts alphabetically; conforms to `SoundSourceProvider`; injected via `@Environment(\.soundSourceProvider)` for `SettingsScreen`. Read-only at runtime
 - **`soundSource` tag format** — `@AppStorage` stores `"sf2:{bank}:{program}"` (SF2 bank and MIDI program number, e.g., `"sf2:0:0"` = Grand Piano, `"sf2:0:42"` = Cello, `"sf2:8:80"` = Sine Wave). Default: `"sf2:0:0"`
 - **Protocol boundary: `NotePlayer`** — knows only frequencies (Hz), durations, envelopes; no concept of MIDI notes, comparisons, or training
+- **Audio-stop serialization** — `SoundFontPlayer` keeps a serial chain of `stopAll()` work. `NotePlayer.scheduleStopAll() -> Task<Void, Never>` synchronously commits a stop to the chain and returns; the async `stopAll()` is `await scheduleStopAll().value`. `play()` awaits the chain tail before noteOn. Sessions and other synchronous callers MUST use `scheduleStopAll()` rather than `Task { await notePlayer.stopAll() }` so the commitment order matches source code order on `MainActor` — otherwise a subsequent `play()` can race the deferred stop and be silenced by its fade-out
 - **Two-world architecture** — logical world (`MIDINote`, `DetunedMIDINote`, `Interval`, `Cents` in `Core/Music/`) and physical world (`Frequency` in `Core/Music/`), bridged by `TuningSystem.frequency(for:referencePitch:)`. Forward conversion (logical → physical) always goes through `TuningSystem`; inverse (Hz → MIDI note + cents) is `SoundFontPlayer.decompose(frequency:)` (internal for testability, used only within the SoundFont layer). All bridge parameters are explicit (no defaults)
 
 **State Management:**
 - **`PitchDiscriminationSession` state machine** — `idle` → `playingReferenceNote` → `playingTargetNote` → `awaitingAnswer` → `showingFeedback` → (loop)
 - **`PitchMatchingSession` state machine** — `idle` → `playingReference` → `awaitingSliderTouch` → `playingTunable` → `showingFeedback` → (loop). Any state → `idle` via `stop()`
-- **Both sessions conform to `TrainingSession` protocol** — `stop()`, `isIdle`. `PeachApp` tracks `activeSession` to ensure only one runs at a time
+- **Both sessions conform to `TrainingSession` protocol** — `stop()`, `pause()`, `resume()`, `isIdle`. Pause cancels in-flight Tasks and stops audio but preserves in-trial state (`currentTrial`, `lastResult`, session-best, in-flight input bookkeeping); resume re-engages the trial. `pause()` is no-op from `.idle` or when already paused; `isIdle` stays `false` while paused. `PeachApp` tracks `activeSession` (the non-idle session) to ensure only one runs at a time
+- **`TrainingLifecycleCoordinator` owns lifecycle policy** — sessions own mechanism (their state machines and `pause/resume/stop` implementations) but the coordinator decides *when* a transition fires. Routing: scenePhase background / `handleAppDeactivated` → `stopCurrentSession`; `trainingScreenDisappeared` → `pause` (preserves state for likely resumption); `trainingScreenAppeared(destination:)` with matching `pausedDestination` → `resume`, otherwise `startCurrentSession`; `startScreenAppeared` (from Start.onAppear) → discard lingering pause (distinguishes pop-to-Start from a transient push); `helpSheetPresented/Dismissed` → `pause/resume`; `navigate(to:)` → `stop` + `awaitIdle`; `handleSoundSourceChanged` → stop every non-idle session before `rebuildCoordinators()`
 - **State transitions are guarded** — preconditions enforced; never skip states
 - **Observer pattern** — `PitchDiscriminationObserver` and `PitchMatchingObserver` protocols; observers injected as arrays into their respective sessions. Both `TrainingDataStore`, `PerceptualProfile`, and `ProgressTimeline` conform to both observer protocols
 - **Session-specific settings types** — `PitchDiscriminationSettings` and `PitchMatchingSettings` are value-type snapshots created at `start()` time via `from(userSettings, intervals:)` factory methods. Each contains all tunable parameters with sensible defaults. Sessions receive these as parameters to `start(settings:)` and are decoupled from `UserSettings`
@@ -278,6 +280,7 @@ Never run only specific test files — always the complete suite. Both platforms
 - `Pitch` struct → deleted; use `DetunedMIDINote` + `TuningSystem.frequency(for:referencePitch:)` instead
 - `print()` in production code → use `os.Logger` with appropriate log levels
 - Raw `Double`/`Int`/`String` where domain types exist → use `Cents`, `Frequency`, `MIDINote`, `NoteDuration`, `SoundSourceID`, `TuningSystem`, `Duration`, etc. This applies everywhere: default values, constants, function parameters, return types. The *only* place raw types are acceptable is at the literal `UserDefaults.set()`/`UserDefaults.value(forKey:)` call site and SwiftData `@Model` stored properties
+- `Task { try? await notePlayer.stopAll() }` from a synchronous context → use `notePlayer.scheduleStopAll()`. Spawning a `Task` defers chain registration to the `Task` body and lets a subsequent play race it; the synchronous `scheduleStopAll()` commits at call time
 
 **Error Resilience:**
 - **Both sessions are error boundaries** — `PitchDiscriminationSession` and `PitchMatchingSession` catch all service errors; training loops continue gracefully
@@ -302,4 +305,4 @@ Never run only specific test files — always the complete suite. Both platforms
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-04-25 (Added three-platform scope, platform abstraction rules, and port/adapter guidance)
+Last Updated: 2026-06-06 (Story 85.1: TrainingSession pause/resume, TrainingLifecycleCoordinator routing, synchronous `scheduleStopAll()` commit to avoid cross-session stop/play races)

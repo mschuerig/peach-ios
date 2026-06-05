@@ -3395,3 +3395,72 @@ Peach/Core/Ports/
 **Backward Compatibility:** SwiftData v1 → v2 has no automatic migration; the bootstrap wipes incompatible stores. Pre-release stores are sacrificed; CSV export/import is the supported migration path. The CSV format itself remains backward-compatible: `CSVMigrationChain` migrates v1 / v2 rows up to v3 on read. The `enabledGapPositions` UserDefaults key string is byte-identical to pre-77.6, so existing user settings persist across the relocation.
 
 **Risk Assessment:** The associated-type `Payload` requires every cross-cutting registry caller to go through one of the existential helpers; a future caller that needs `Payload`-typed access at the registry boundary cannot get it without conforming the call site to a typed protocol or threading a generic. The current callers (export, import, merge-import) all fit through the existing helpers. The `DisciplineBootstrap` candidate list is the single source of truth for activation; a future feature-flag system that wants per-user toggling will need to introduce a different mechanism (envelope-internal filtering) or accept the rebuild cost. ADR-10 documents the explicit rejection of runtime activation.
+
+## v0.10 Architecture Amendment — Session Lifecycle Consolidation and Audio-Stop Serialization
+
+*Amended: 2026-06-05 (Story 85.1)*
+
+Two related changes: the coordinator becomes the sole owner of session-lifecycle policy (replacing per-session policy code that had outgrown its original scope), and the audio layer gains a serial-commit primitive that makes cross-session stop/play ordering deterministic.
+
+### Problem
+
+The lifecycle coordinator was introduced to mediate when training starts, stops, and yields to other app activity. Over time three loose ends accumulated:
+
+- Sessions still owned a `backgroundNotificationName` subscription that duplicated the coordinator's scenePhase routing — every app deactivation triggered the same `stop()` through two unrelated paths.
+- The training-screen `onDisappear` modifier always called `stop()`, so a navigation *push* to Settings (the user intends to come back) was indistinguishable from a navigation *pop* to Start (the user is done). In-trial state was lost on every round trip.
+- `PeachApp.onChange(of: soundSource)` replaced the active pitch sessions without stopping them first. Their internal `Task`s outlived the replacement.
+
+A separate but related defect: two pitch sessions (`PitchDiscriminationSession`, `PitchMatchingSession`) are distinct instances but share a single `SoundFontPlayer`. When the user switched quickly between the two, the previous session's stop and the new session's play arrived at the player as concurrent unstructured `Task`s. Task creation order is not Task execution order. About half the time the play's noteOn landed during the prior stop's fade-out window and was silenced.
+
+### Decision
+
+#### Lifecycle policy: one owner
+
+`TrainingLifecycleCoordinator` is the single authority on *when* a session transitions. Sessions retain mechanism — they own their audio resources, their state machine, and their `stop()` / `pause()` / `resume()` implementations — but no longer decide *when* a lifecycle event occurs.
+
+The `TrainingSession` protocol gains `pause()` and `resume()` distinct from `stop()` / `start()`. Pause cancels in-flight `Task`s and stops audio while preserving in-trial state (`currentTrial`, `lastResult`, session-best accumulators, settings, in-flight user-input bookkeeping). Resume re-engages the trial — pitch sessions re-play the reference for the preserved trial; sequencer-driven sessions restart the sequencer for the preserved trial; the rhythm-matching session preserves session history while restarting the in-flight cycle (mid-cycle resume is not musically meaningful).
+
+The coordinator tracks a `pausedDestination: NavigationDestination?`. Routing:
+
+| Event | Action |
+|---|---|
+| `handleScenePhase(_, .background)` (iOS) / `(_, .background\|.inactive)` (macOS) | `stopCurrentSession()` |
+| `handleAppDeactivated()` (macOS NSApp.didResignActive) | `stopCurrentSession()` |
+| `trainingScreenAppeared(destination:)` with `pausedDestination == destination` | `resume()` |
+| `trainingScreenAppeared(destination:)` otherwise | `startCurrentSession()` if `shouldAutoStartTraining` |
+| `trainingScreenDisappeared()` | `pause()`; remember `pausedDestination` |
+| `startScreenAppeared()` (from `StartScreen.onAppear`) | Discard any lingering paused session — distinguishes pop-to-Start from a transient push |
+| `helpSheetPresented()` / `helpSheetDismissed()` | `pause()` / `resume()` |
+| `navigate(to:)` (menu) | `stop()` and `awaitIdle()` before resolving |
+| `handleSoundSourceChanged()` (PeachApp) | `stop()` every non-idle session before reassigning, then `rebuildCoordinators()` |
+
+The per-session `backgroundNotificationName` plumbing is gone. The coordinator's scenePhase route (both platforms) and its macOS-only NSApplication observer are the only consolidated stop paths.
+
+#### Audio-stop serialization: commit synchronously, execute asynchronously
+
+Sessions' synchronous lifecycle (state-machine reducers, `pause()`, `stop()`) needs to *commit* a stop to the shared audio engine at call time, not defer the commitment to a `Task` body. Synchronous commitment makes commitment order match source-code order on `MainActor`, even when subsequent execution is asynchronous and runs in whatever order the runtime chooses.
+
+`NotePlayer` therefore gains a primitive:
+
+```swift
+@discardableResult
+func scheduleStopAll() -> Task<Void, Never>
+```
+
+`SoundFontPlayer` keeps a `pendingAudioStop: Task<Void, Never>?` chain tail. `scheduleStopAll()` reads the tail synchronously, builds a new `Task` that awaits the prior + does the audio work, writes back the new tail, and returns. The async `stopAll()` becomes `await scheduleStopAll().value`. `play()` awaits `pendingAudioStop?.value` before its noteOn. Sessions' `.stopAll` effects and `pause()` call `scheduleStopAll()` directly from the synchronous effect handler — the stop's slot in the chain is reserved at the same `MainActor` tick the session schedules it.
+
+By the time any subsequent play `Task` runs and reaches `play()`, the chain on the shared player already contains the prior session's stops. `Task` scheduling order on `MainActor` is no longer load-bearing.
+
+### Why This Matters
+
+The two changes share a single principle: **the layer that owns the resource owns the discipline that keeps it consistent**. The coordinator owns session-lifecycle policy because it sees the whole stack (scenePhase, navigation, help sheet, sound-source swap); sessions cannot. The audio player owns the stop/play serial chain because it owns the shared audio engine; individual sessions cannot coordinate across each other without leaking knowledge of siblings.
+
+Both changes also share a pragmatic concurrency lesson: **commit synchronously, execute asynchronously**. Spawning a `Task` to call an `async` method defers both — that's fine for fire-and-forget *work*, but it's wrong for *commitments* whose ordering relative to subsequent commitments is load-bearing.
+
+### v0.10 Architecture Validation
+
+**Decision Compatibility:** No new frameworks. The pause/resume protocol additions are two methods; the audio-stop chain is internal state on `SoundFontPlayer` plus one new protocol primitive. `MockNotePlayer` and the preview-only `StubNotePlayer` each implement `scheduleStopAll()` trivially (no race in tests, no audio in previews).
+
+**Pattern Consistency:** The synchronous-commit / async-execute split mirrors `TrainingLifecycleCoordinator.navigate(to:)`, which already separated *issuing* a navigation request from *resolving* it asynchronously after `awaitIdle`. The single-owner policy mirrors v0.5's "ports own their resource" stance. The `Task` chain tail on `SoundFontPlayer` is the same shape as `TimingOffsetDetectionSession.enqueueSequencerStop` (introduced in 80.x for the sequencer's serial run loop) — both are an in-class minimal "serial async queue" pattern; the architecture deliberately does not factor them into a shared utility yet because the call sites and ownership boundaries differ.
+
+**Risk Assessment:** The audio-stop chain holds a `Task` reference indefinitely (the tail is reassigned each time a new stop is committed; completed tasks self-finalize when no longer referenced). This is bounded — the chain length never exceeds the number of *committed-but-not-yet-completed* stops, which on this MainActor-bound code path is small (typically 0–2). A future scenario that floods the player with stops (e.g., automated stress-test) could hold many `Task` references; if that ever matters, a periodic prune on completion or a `WeakBox` wrapper is straightforward. The pause-state lives on the coordinator, not in persistence — an app kill drops in-trial state, the same as today. Pop-to-Start uses an explicit `StartScreen.onAppear` callback to discard pause; if a future entry point bypasses Start (e.g., direct deep link into Settings while a training is paused), the paused session lingers until another lifecycle event arrives — a documented limitation, not a correctness issue (no resources are held).
