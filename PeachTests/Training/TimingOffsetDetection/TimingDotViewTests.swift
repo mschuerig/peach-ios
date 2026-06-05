@@ -439,6 +439,69 @@ struct TimingDotViewTests {
         #expect(label3 == expected3)
     }
 
+    // MARK: - Walk edge cases (fixture-driven, catalog-independent)
+
+    @Test("`.rest` immediately after `.nested` at the parent depth emits an orphan rest")
+    func orphanRestAfterNestedExit() async {
+        // No Epic-84 catalog entry currently has the shape
+        // `[.nested(...), .rest]` at the top level, so the orphan-rest branch
+        // in `walk(...)` (rule 4 case (b)) is uncovered by catalog tests. A
+        // fixture-driven case pins the behaviour so a future contributor
+        // refactoring the walk can't silently drop the case.
+        let fixture = TimingOffsetDetectionPattern(
+            id: "pattern_nested_99",
+            category: .nested,
+            subdivisions: [
+                .nested(Beat(subdivisions: [
+                    .note(velocity: RhythmVelocity.accent, offset: .zero),
+                    .note(velocity: RhythmVelocity.normal, offset: .zero),
+                    .note(velocity: RhythmVelocity.normal, offset: .zero)
+                ])),
+                .rest
+            ],
+            defaultOffsetNotePosition: OffsetNotePosition(2)
+        )
+
+        let cells = TimingDotView.visualCells(for: fixture)
+        // Three nested-triplet content cells span the first half-beat
+        // (W/2 / 3 = W/6 each); the trailing `.rest` produces an orphan rest
+        // spanning the second half-beat; the bracket spans the triplet's
+        // content cells (0..1/2).
+        let sixth: CGFloat = 1.0 / 6.0
+        let half: CGFloat = 1.0 / 2.0
+        let expected: [(CGFloat, CGFloat, TimingDotView.VisualCellKind)] = [
+            (0.0, sixth, .accent),
+            (sixth, sixth, .normalAudible(audiblePosition: 2)),
+            (2.0 * sixth, sixth, .normalAudible(audiblePosition: 3)),
+            (half, half, .orphanRest),
+            (0.0, half, .nestingBracket(childDivision: .triplet))
+        ]
+        Self.expectVisualCells(cells, matches: expected)
+    }
+
+    // MARK: - Bracket geometry scaling (PF-039)
+
+    @Test("`bracketReserve` scales linearly by the renderer's `scale` parameter")
+    func bracketReserveScalesByScaleParameter() async {
+        // The picker preview renders at `previewScale = 0.625`; the
+        // training-screen renderer uses `scale = 1.0`. A regression that
+        // drops the `* scale` step at the bracket-reserve site would silently
+        // misalign the picker dot rows against the design's locked layout.
+        let offsetAbove = TimingDotView.bracketOffsetAboveBase
+        let thickness = TimingDotView.bracketThicknessBase
+        let preview = TimingDotView.previewScale
+        let tol: CGFloat = 1e-6
+
+        let atFullScale = TimingDotView.bracketReserve(offsetAbove: offsetAbove, thickness: thickness, scale: 1.0)
+        let atPreviewScale = TimingDotView.bracketReserve(offsetAbove: offsetAbove, thickness: thickness, scale: preview)
+        let atZero = TimingDotView.bracketReserve(offsetAbove: offsetAbove, thickness: thickness, scale: 0)
+
+        #expect(abs(atFullScale - (offsetAbove + thickness)) < tol)
+        #expect(abs(atPreviewScale - (offsetAbove + thickness) * preview) < tol)
+        #expect(abs(atPreviewScale / atFullScale - preview) < tol)
+        #expect(atZero == 0)
+    }
+
     // MARK: - Helpers
 
     private static func expectVisualCells(

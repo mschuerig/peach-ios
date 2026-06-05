@@ -260,26 +260,6 @@ In `TimingOffsetDetectionPatternPickerSettingsSection`, the static helper is pin
 
 **Fix:** Resolution candidates: (a) add a `--remove` flag to the tool and run a one-time cleanup; (b) extend the tool to detect un-referenced keys; (c) accept the cruft and revisit during a catalog audit.
 
-### PF-038: Rest-after-`.nested(...)` orphan-rest emission is unit-test-uncovered
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low (no current catalog entry exercises the shape)
-**Disposition:** OPEN
-
-`TimingDotView.visualCells(for:)`'s cell-width math rule 4 case (b) ("`.rest` immediately after `.nest_exit` at the parent depth → orphan rest") is implemented in the `walk(...)` helper but no Epic-82 catalog entry exercises the shape — no flat pattern has a `.nested` followed by a `.rest`. A future contributor refactoring `walk(...)` could break case (b) without any catalog test surfacing the regression.
-
-**Fix:** Add a fixture-based test (not catalog-dependent) that exercises `[.nested(Beat([.note])), .rest]` → expected `[content cell, orphan rest cell, bracket]`.
-
-### PF-039: `bracketGeometryBaseValues` × previewScale multiplication is unit-test-uncovered
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low
-**Disposition:** OPEN
-
-`bracketGeometryBaseValues` pins the constants 1.5/4/1 but no test verifies the `× previewScale` multiplication actually applies in the rendered output. The design doc § *Grouping indicators* says "Offset above cell tops: **4pt** at full scale on the training screen; multiplied by `previewScale` (0.625) in the picker preview." The code multiplies the `@ScaledMetric` value by `scale` in `cellView`, but no test asserts that a `.nestingBracket` cell at `scale: previewScale` ends up at half-ish the offset of one at `scale: 1.0`.
-
-**Fix:** Resolution candidates: (a) add a UI snapshot test at two scales; (b) extract the offset-computation as a pure function and unit-test it; (c) leave to manual visual inspection.
-
 ### PF-040: Sectioned `Picker` shared-binding rendering on cross-section selection transitions is unverified
 
 **Found:** 2026-06-05 (Story 84.4 review)

@@ -36,7 +36,9 @@ struct TimingDotView: View {
         let highlightedAudible = offsetNotePosition.flatMap { Self.audiblePositionToHighlight(for: pattern, offsetNotePosition: $0) }
         let hasBracket = cells.contains { if case .nestingBracket = $0.kind { return true } else { return false } }
         let contentHeight = Self.beatOneDotDiameter * scale
-        let bracketReserve = hasBracket ? (bracketOffsetAbove + bracketThickness) * scale : 0
+        let bracketReserve = hasBracket
+            ? Self.bracketReserve(offsetAbove: bracketOffsetAbove, thickness: bracketThickness, scale: scale)
+            : 0
 
         GeometryReader { proxy in
             let containerWidth = proxy.size.width
@@ -184,6 +186,15 @@ struct TimingDotView: View {
     static let bracketThicknessBase: CGFloat = 1.5
     static let bracketOffsetAboveBase: CGFloat = 4
     static let bracketEndInsetBase: CGFloat = 1
+
+    /// Vertical space the nesting bracket occupies above the content cells:
+    /// `(offsetAbove + thickness) * scale`. Extracted as a static so a unit
+    /// test can pin the `* scale` step at the bracket-reserve site — the
+    /// renderer's `scale` parameter is the only knob that aligns the picker
+    /// preview at `previewScale` with the training-screen layout at full scale.
+    static func bracketReserve(offsetAbove: CGFloat, thickness: CGFloat, scale: CGFloat) -> CGFloat {
+        (offsetAbove + thickness) * scale
+    }
 
     /// Scale used by the pattern-picker preview. Centralized here so every
     /// small-preview surface stays in lockstep with the training-screen
