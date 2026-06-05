@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Epic 85 opened as cleanup tracking epic; stories 85.1 (consolidate session lifecycle, closes PF-001/003/005) and 85.2 (defer PeachApp heavyweight init, closes PF-002) drafted ready-for-dev via deferred-work catalog triage.
+# last_updated: 2026-06-05 # Epic 85 grew Story 85.3 (audit + harden sequencer concurrency, closes PF-011) via continued deferred-work catalog triage; 85.1 (lifecycle consolidation, PF-001/003/005), 85.2 (PeachApp lazy init, PF-002), 85.3 (sequencer concurrency, PF-011) all ready-for-dev.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -784,4 +784,5 @@ development_status:
   epic-85: in-progress
   85-1-consolidate-session-lifecycle-under-coordinator: ready-for-dev # Closes PF-001, PF-003, PF-005
   85-2-defer-peachapp-heavyweight-init: ready-for-dev # Closes PF-002
+  85-3-audit-and-harden-sequencer-concurrency: ready-for-dev # Closes PF-011
   epic-85-retrospective: optional
