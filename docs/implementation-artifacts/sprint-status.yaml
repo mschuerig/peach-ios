@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Epic 85 grew Story 85.3 (audit + harden sequencer concurrency, closes PF-011) via continued deferred-work catalog triage; 85.1 (lifecycle consolidation, PF-001/003/005), 85.2 (PeachApp lazy init, PF-002), 85.3 (sequencer concurrency, PF-011) all ready-for-dev.
+# last_updated: 2026-06-05 # Story 85.3 scope widened to fold PF-013 (`SequencerEngine` conformance contract); audit-then-fix structure unchanged. Epic 85: 85.1 (lifecycle, PF-001/003/005), 85.2 (PeachApp lazy init, PF-002), 85.3 (sequencer concurrency + conformance, PF-011/013) all ready-for-dev.
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -784,5 +784,5 @@ development_status:
   epic-85: in-progress
   85-1-consolidate-session-lifecycle-under-coordinator: ready-for-dev # Closes PF-001, PF-003, PF-005
   85-2-defer-peachapp-heavyweight-init: ready-for-dev # Closes PF-002
-  85-3-audit-and-harden-sequencer-concurrency: ready-for-dev # Closes PF-011
+  85-3-audit-and-harden-sequencer-concurrency: ready-for-dev # Closes PF-011, PF-013
   epic-85-retrospective: optional

@@ -8,6 +8,7 @@ context:
   - '{project-root}/docs/implementation-artifacts/deferred-work.md'
 closes:
   - 'PF-011'
+  - 'PF-013'
 ---
 
 <frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
@@ -24,6 +25,7 @@ The unverified static shape:
 
 - `BeatProvider` is not `Sendable`. The sequencer mutates `currentBeat` from a background `Task`. `ContinuousRhythmMatchingSession.gapPositions` is written from the sequencer's polling Task. Two independent adversarial reviewers (Blind hunter + Edge case hunter) flagged this as a latent data-race surface. Currently invisible to strict concurrency.
 - **Cross-discipline serialization invariant.** TOD and CRM both call `beatSequencer.start(tempo:beatProvider:)` on the shared singleton. `TrainingLifecycleCoordinator` already serializes activations, but no test pins this contract — a future coordinator refactor could break it silently.
+- **`SequencerEngine` conformance contract is unverified (PF-013).** Folded into this story because the audit reads the same surfaces: the only `SequencerEngine` conformers are `SoundFontEngine` (render-thread reset of `samplePosition` after a generation-change fence) and `MockSequencerEngine` (synchronous reset on `scheduleEvents()` / `clearSchedule()`). The semantics differ — observably so during the trial-start race the audit is investigating. The audit decides which Mock/Real divergences are load-bearing enough to pin by conformance tests, rather than designing a speculative contract suite in the abstract.
 
 **Approach.** Two-phase: audit, then fix.
 
@@ -36,12 +38,13 @@ The unverified static shape:
 ## Boundaries & Constraints
 
 **Always:**
-- PF-011 is closed by this story or its scope is renegotiated with explicit human authorization.
+- PF-011 and PF-013 are closed by this story or their scope is renegotiated with explicit human authorization.
 - The maxReps=1 trial-start race is fixed with a regression test that demonstrates the failure mode against the audit's chosen mitigation — written first, then made to pass by the implementation.
 - The cross-discipline serialization invariant gains a coordinator-level test pinning "the previous session has fully stopped before the next starts."
 - BeatProvider, SoundFontBeatSequencer, and the two session polling paths land with an explicit Sendable / actor-isolation contract — at minimum documented in code comments; potentially enforced by Sendable conformance and actor isolation if the audit recommends it.
+- For PF-013: if the audit identifies concrete behavioural divergences between `MockSequencerEngine` and `SoundFontEngine` under the invariants in scope (start/stop ordering, post-clear silence, sample-position reset semantics), those divergences are pinned by a focused conformance test suite that runs both implementations through the affected invariants. If the audit identifies no load-bearing divergence, the finding is documented and PF-013 closes with that documentation as its resolution.
 - Pre-commit gate: `bin/test.sh && bin/test.sh -p mac` AND `bin/test.sh --research && bin/test.sh --research -p mac` green.
-- Catalog hygiene on merge: remove the PF-011 section from `deferred-work.md` in the same change; cite the ID in the commit message.
+- Catalog hygiene on merge: remove both PF-011 and PF-013 sections from `deferred-work.md` in the same change; cite both IDs in the commit message.
 
 **Ask First:**
 - If the audit surfaces additional concrete data-race or memory-ordering risks beyond PF-011's known set — pause and present findings before scoping how many to address in this story versus filing new `PF-###` entries.
@@ -93,17 +96,19 @@ Filled to the closure level; the audit (Task 1) may extend this with newly-surfa
 - [ ] **Task 4 — Apply the trial-start-race mitigation.** Implement the audit-chosen option (a, b, or c). The regression test from Task 3 passes; existing tests stay green.
 - [ ] **Task 5 — Coordinator serialization contract test.** Add a `TrainingLifecycleCoordinatorTests` case pinning "the previous session has fully stopped before the next starts" — exercises the CRM → TOD handover and asserts no overlapping `beatSequencer.start(...)` invocations.
 - [ ] **Task 6 — Sendable / actor-isolation contract.** Apply the audit's recommendations on the protocol and session-state shapes. Document any contract that stays as a comment-only assertion (i.e., not enforced by Sendable) with the rationale.
-- [ ] **Task 7 — Catalog hygiene.** Remove the PF-011 section from `docs/implementation-artifacts/deferred-work.md`. File any new `PF-###` entries surfaced by the audit per Task 2(d). Cite PF-011 in the commit message.
-- [ ] **Task 8 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four green.
+- [ ] **Task 7 — `SequencerEngine` conformance (conditional, PF-013).** If the audit (Task 1) identified concrete behavioural divergences between `MockSequencerEngine` and `SoundFontEngine` under the invariants in scope, add a focused conformance test suite that runs both implementations through the affected invariants. If no load-bearing divergence was identified, instead append a `SequencerEngine` conformance-contract section to the protocol's doc comment summarising the audit's finding (i.e., "the contracts agree at points X, Y, Z"). Either way, PF-013 is closed.
+- [ ] **Task 8 — Catalog hygiene.** Remove the PF-011 and PF-013 sections from `docs/implementation-artifacts/deferred-work.md`. File any new `PF-###` entries surfaced by the audit per Task 2(d). Cite PF-011 and PF-013 in the commit message.
+- [ ] **Task 9 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four green.
 
 **Acceptance Criteria:**
 
 - **PF-011 trial-start race.** Given a TOD trial with `maxRepetitions == 1`, when the trial starts, then `.repetitionCapReached` does not fire before any audible note is produced (asserted by regression test).
 - **PF-011 cross-discipline serialization.** Given an active CRM session, when the user navigates to TOD, then `TrainingLifecycleCoordinator` stops CRM and waits for fully-idle before starting TOD (asserted by coordinator-level contract test); no overlapping `beatSequencer.start(...)` invocations occur.
 - **PF-011 Sendable / actor-isolation contract.** Sequencer + session polling paths have an explicit concurrency contract — either documented inline with rationale or enforced by Sendable / actor annotations per the audit's recommendation.
+- **PF-013 conformance contract.** Either: (a) a focused conformance test suite exercises `MockSequencerEngine` and `SoundFontEngine` through every audit-identified divergent invariant and passes on both, OR (b) the audit's finding that no load-bearing divergences exist is documented inline on the `SequencerEngine` protocol's doc comment with a summary of the invariants the audit checked. Either path closes PF-013.
 - **Existing behavior parity.** All existing CRM and TOD tests pass without modification. Strict-concurrency build remains clean on both schemes.
 - **Pre-commit gate.** All four schemes green: Debug × {iOS, macOS} and Research × {iOS, macOS}. No new compiler warnings.
-- **Catalog hygiene.** PF-011 section removed from `deferred-work.md` in the closing commit; any audit-surfaced new findings filed as new `PF-###` entries.
+- **Catalog hygiene.** PF-011 and PF-013 sections removed from `deferred-work.md` in the closing commit; any audit-surfaced new findings filed as new `PF-###` entries.
 
 ## Audit Findings
 
