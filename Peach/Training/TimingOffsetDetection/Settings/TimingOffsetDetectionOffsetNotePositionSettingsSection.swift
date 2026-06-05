@@ -1,29 +1,30 @@
 import SwiftUI
 
-/// Rest-aware, pattern-driven slot picker. Renders one cell per grid
-/// subdivision of the active ``TimingOffsetDetectionPattern``; cell behavior is
-/// classified by ``cellKind(for:gridIndex:)``:
+/// Pattern-driven slot picker. Lays its cells out with the same
+/// proportional-timeline math the pattern preview uses
+/// (``TimingDotView/visualCells(for:)``) so the slot-picker dots align
+/// horizontally with the dots in the *Pattern* section's preview row. Each
+/// visual cell renders by kind:
 ///
-/// - **Anchor** — `.note` at the first audible position. Large accent dot,
-///   non-tappable, VoiceOver-focusable as "Anchor note, not selectable".
-/// - **Pickable** — `.note` whose audible position is in
-///   ``TimingOffsetDetectionPattern/pickable``. Tappable; the doubled-glyph
-///   indicator overlays the selected cell.
-/// - **Rest** — `.rest` (and `.nested`, defensively). Empty cell of preserved
-///   width, not focusable.
+/// - **Accent** (audible 1) — large `beatOneDotDiameter` circle, non-tappable,
+///   VoiceOver-focusable as "Accent, not selectable".
+/// - **Normal audible** (audible 2..K) — tappable `Button` whose label is the
+///   selection glyph (single dot if not selected, doubled glyph if selected).
+///   The cell's full proportional width is the tap target.
+/// - **Orphan rest** — empty cell of preserved proportional width, not
+///   focusable. None of the Epic-82 flat catalog entries triggers this case.
+/// - **Nesting bracket** — suppressed in the slot picker; brackets are a
+///   visual-grouping affordance for the pattern preview only.
 ///
-/// Uses ``TimingDotView`` size constants and the shared
-/// ``TimingDotView/doubledGlyph(diameter:overlapOffset:)`` primitive so the
-/// slot vocabulary stays in lockstep with the training-screen indicator and
-/// the pattern preview.
+/// Dots are leading-aligned within their cell so the audible's note onset sits
+/// at the cell's left edge; the doubled-glyph's first circle sits at the same
+/// x as the pattern preview's dot for that audible position.
 struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     @AppStorage(TimingOffsetDetectionSettingsKeys.offsetNotePosition)
     private var offsetNotePosition: Int = OffsetNotePosition.default.rawValue
 
     @AppStorage(TimingOffsetDetectionSettingsKeys.selectedPatternId)
     private var selectedPatternId: String = TimingOffsetDetectionPatternCatalog.defaultPatternId
-
-    @ScaledMetric(relativeTo: .caption2) private var cellSize: CGFloat = 32
 
     private var activePattern: TimingOffsetDetectionPattern {
         TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId)
@@ -36,11 +37,35 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     var body: some View {
         let pattern = activePattern
         let selected = effectivePosition
+        let cells = TimingDotView.visualCells(for: pattern).filter {
+            if case .nestingBracket = $0.kind { return false }
+            return true
+        }
+        let contentHeight = TimingDotView.beatOneDotDiameter
+
         Section {
-            HStack(spacing: 4) {
-                ForEach(pattern.subdivisions.indices, id: \.self) { gridIndex in
-                    cell(at: gridIndex, in: pattern, selected: selected)
+            HStack(spacing: TimingDotView.patternRowChevronSpacing) {
+                GeometryReader { proxy in
+                    let containerWidth = proxy.size.width
+                    ZStack(alignment: .topLeading) {
+                        ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+                            slotCell(
+                                cell,
+                                containerWidth: containerWidth,
+                                contentHeight: contentHeight,
+                                selected: selected,
+                                audibleCount: pattern.audibleCount
+                            )
+                        }
+                    }
                 }
+                .frame(height: contentHeight)
+
+                // Render the same chevron view as the *Pattern* row, just
+                // hidden. SwiftUI sizes both to the same intrinsic width →
+                // both dot rows occupy identical container widths → audible
+                // positions land at the same x by construction.
+                TimingDotView.patternRowChevron(isVisible: false)
             }
         } header: {
             Text(String(localized: "Offset Note Position"))
@@ -50,29 +75,55 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     }
 
     @ViewBuilder
-    private func cell(
-        at gridIndex: Int,
-        in pattern: TimingOffsetDetectionPattern,
-        selected: OffsetNotePosition
+    private func slotCell(
+        _ cell: TimingDotView.VisualCell,
+        containerWidth: CGFloat,
+        contentHeight: CGFloat,
+        selected: OffsetNotePosition,
+        audibleCount: Int
     ) -> some View {
-        switch Self.cellKind(for: pattern, gridIndex: gridIndex) {
-        case .anchor:
-            anchorCell
-        case .pickable(let position):
-            pickableCell(position: position, isSelected: position == selected, audibleCount: pattern.audibleCount)
-        case .rest:
-            restCell
-        }
-    }
+        let cellWidth = cell.widthProportion * containerWidth
+        let cellLeftX = cell.startXProportion * containerWidth
 
-    private var anchorCell: some View {
-        Circle()
-            .fill(.primary)
-            .frame(width: TimingDotView.beatOneDotDiameter, height: TimingDotView.beatOneDotDiameter)
-            .frame(width: cellSize, height: cellSize)
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel(Self.anchorCellLabel)
-            .accessibilityAddTraits(.isStaticText)
+        switch cell.kind {
+        case .accent:
+            Circle()
+                .fill(.primary)
+                .frame(width: TimingDotView.beatOneDotDiameter, height: TimingDotView.beatOneDotDiameter)
+                .frame(width: cellWidth, height: contentHeight, alignment: .leading)
+                .offset(x: cellLeftX, y: 0)
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Self.anchorCellLabel)
+                .accessibilityAddTraits(.isStaticText)
+
+        case .normalAudible(let audiblePosition):
+            let isSelected = (selected.rawValue == audiblePosition)
+            Button {
+                offsetNotePosition = audiblePosition
+            } label: {
+                glyph(isSelected: isSelected)
+                    .frame(width: cellWidth, height: contentHeight, alignment: .leading)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .platformHoverEffect()
+            .offset(x: cellLeftX, y: 0)
+            .accessibilityLabel(Self.pickableCellLabel(
+                position: OffsetNotePosition(audiblePosition),
+                audibleCount: audibleCount
+            ))
+            .accessibilityAddTraits(isSelected ? [.isSelected] : [])
+
+        case .orphanRest:
+            Color.clear
+                .frame(width: cellWidth, height: contentHeight)
+                .offset(x: cellLeftX, y: 0)
+                .accessibilityHidden(true)
+
+        case .nestingBracket:
+            // Filtered out before this switch; included for exhaustiveness.
+            EmptyView()
+        }
     }
 
     /// Slot-picker anchor cell label per `tod-tuplet-renderer-design.md`
@@ -83,75 +134,23 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
         String(localized: "Accent, not selectable")
     }
 
-    private func pickableCell(
-        position: OffsetNotePosition,
-        isSelected: Bool,
-        audibleCount: Int
-    ) -> some View {
-        Button {
-            offsetNotePosition = position.rawValue
-        } label: {
-            glyph(isSelected: isSelected)
-                .frame(width: cellSize, height: cellSize)
-                .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .platformHoverEffect()
-        .accessibilityLabel(Self.pickableCellLabel(
-            position: position,
-            audibleCount: audibleCount
-        ))
-        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
-    }
 
     @ViewBuilder
     private func glyph(isSelected: Bool) -> some View {
         if isSelected {
+            // Shift the doubled-glyph left by `overlapOffset/2` so its visual
+            // center sits at the same x as the corresponding single dot in the
+            // *Pattern* row's preview. Same rationale as
+            // `TimingDotView.audibleDot`.
             TimingDotView.doubledGlyph(
                 diameter: TimingDotView.dotDiameter,
                 overlapOffset: TimingDotView.overlapOffset
             )
+            .offset(x: -TimingDotView.overlapOffset / 2)
         } else {
             Circle()
                 .fill(.primary)
                 .frame(width: TimingDotView.dotDiameter, height: TimingDotView.dotDiameter)
-        }
-    }
-
-    private var restCell: some View {
-        Color.clear
-            .frame(width: cellSize, height: cellSize)
-            .accessibilityHidden(true)
-    }
-
-    // MARK: - Logic (static for testability)
-
-    enum CellKind: Equatable {
-        case anchor
-        case pickable(OffsetNotePosition)
-        case rest
-    }
-
-    /// Classifies a single grid cell. The audible position for a top-level
-    /// `.note` cell is derived from `pattern.audibleToGrid` via a single-element
-    /// `GridPath` (`[gridIndex]`) lookup — the inverse of the audible → path
-    /// map. The slot picker renders top-level cells only; nested-child cells
-    /// are addressed by a different surface (forthcoming in Story 84.4).
-    static func cellKind(
-        for pattern: TimingOffsetDetectionPattern,
-        gridIndex: Int
-    ) -> CellKind {
-        switch pattern.subdivisions[gridIndex] {
-        case .rest, .nested:
-            return .rest
-        case .note:
-            guard let audibleZeroBased = pattern.audibleToGrid.firstIndex(of: [gridIndex]) else {
-                return .rest
-            }
-            let audiblePosition = audibleZeroBased + 1
-            return pattern.pickable.contains(audiblePosition)
-                ? .pickable(OffsetNotePosition(audiblePosition))
-                : .anchor
         }
     }
 

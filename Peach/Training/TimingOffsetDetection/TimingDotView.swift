@@ -145,10 +145,23 @@ struct TimingDotView: View {
         normalDot: CGFloat,
         overlapOffset: CGFloat
     ) -> some View {
+        // Dots are leading-aligned within their cell: the note's onset sits at
+        // the cell's left edge, with absorbed-rest space extending to the right.
+        // Center-alignment would shift the dot rightward as its cell absorbed
+        // rests, distorting the rhythm-as-spacing intent — pattern_05's accent
+        // would land at 3W/8 instead of 0, hiding the 3:1 gap.
+        //
+        // The doubled-glyph offset marker is shifted left by `overlapOffset/2`
+        // so its visual center sits at the same x as a single dot's center
+        // (cellLeftX + dotDiameter/2). Without the shift, the glyph's first
+        // circle would align with the single dot but its visual mass would
+        // skew right, making the offset note appear displaced from the audible
+        // it represents.
         Group {
             if isHighlighted {
                 Self.doubledGlyph(diameter: normalDot, overlapOffset: overlapOffset)
                     .opacity(opacity)
+                    .offset(x: -overlapOffset / 2)
             } else {
                 Circle()
                     .fill(.primary)
@@ -156,7 +169,7 @@ struct TimingDotView: View {
                     .opacity(opacity)
             }
         }
-        .frame(width: cellWidth, height: contentHeight)
+        .frame(width: cellWidth, height: contentHeight, alignment: .leading)
         .offset(x: cellLeftX, y: topInset)
     }
 
@@ -184,6 +197,26 @@ struct TimingDotView: View {
     ) -> CGFloat {
         index == 0 ? beatOne : normal
     }
+
+    /// Disclosure-style trailing chevron used by both the *Pattern* row (where
+    /// it is visible and signals "drill down") and the *Offset Note Position*
+    /// row (where it is rendered transparent purely to reserve identical
+    /// trailing width). Rendering the same view in both surfaces guarantees
+    /// that SwiftUI gives each its identical intrinsic width — the dot rows
+    /// in both surfaces then occupy identical container widths by construction,
+    /// so audible positions land at the same x without empirical tuning.
+    static func patternRowChevron(isVisible: Bool) -> some View {
+        Image(systemName: "chevron.forward")
+            .font(.subheadline.weight(.semibold))
+            .foregroundStyle(.tertiary)
+            .opacity(isVisible ? 1 : 0)
+            .accessibilityHidden(true)
+    }
+
+    /// Horizontal spacing between the dot row and the trailing chevron in both
+    /// the *Pattern* row and the *Offset Note Position* row. Centralized so
+    /// the two surfaces stay in lockstep.
+    static let patternRowChevronSpacing: CGFloat = 8
 
     /// Doubled-glyph indicator: two overlapping `Circle`s used by both the
     /// training-screen offset marker and the slot-picker selected-cell marker.

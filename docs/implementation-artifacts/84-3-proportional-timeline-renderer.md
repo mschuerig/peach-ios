@@ -196,6 +196,55 @@ Three parallel adversarial reviewers (blind hunter / edge-case hunter / acceptan
 - The `expectVisualCells` early-return guard.
 - The picker preview's `litCount: pattern01.subdivisions.count`.
 
+### 2026-06-05 — Review iteration 2 (visual verification, patches only, no spec loopback)
+
+Michael ran the app on the iOS Simulator and reviewed the picker drill-down + the Settings → TOD section visually. Three visual defects surfaced that automated checks did not catch — they are why `feedback_verify_visual_features` was saved to memory before this iteration.
+
+**Triggering findings (severity-ordered):**
+
+- MEDIUM — Visual #1 — Dots in `TimingDotView` were center-aligned within their proportional cells. For `pattern_05` (`* - - *`, cells 3W/4 : W/4), the accent's center landed at 3W/8 instead of 0, and the audible-2 dot at 7W/8 instead of 3W/4 — the 3:1 gap between accent and audible-2 was visually compressed to 1:1. Michael's verdict: "completely unusable". Center-alignment hid the rhythm-as-spacing intent that the proportional renderer exists to communicate.
+- MEDIUM — Visual #2 — On the Settings screen, the *Pattern* row's preview dots and the *Offset Note Position* slot picker's dots had different horizontal positions. Same pattern, same proportions, two different x positions. Cause: the *Pattern* row's `NavigationLink` reserved space for its system-rendered disclosure chevron, which has an opaque intrinsic width; the slot picker's row used the full section content width with no trailing reservation. Two empirical-tuning attempts (28pt and 28pt-via-Color.clear) failed because the actual chevron width depends on iOS-internal sizing that's not introspectable.
+- LOW — Visual #3 — The doubled-glyph offset marker's first circle aligned with the corresponding single dot's leading edge in the pattern picker, but the doubled-glyph's visual mass extended to the right — making the offset note appear displaced 4pt right of the audible it represented. The glyph's first circle was at the right x but the glyph's perceived center was at `audible_startX + 12pt` instead of `audible_startX + 8pt`.
+
+**Amendments outside the frozen block:**
+
+- `Peach/Training/TimingOffsetDetection/TimingDotView.swift`:
+  - `audibleDot(...)`: `.frame(...)` gained `alignment: .leading` so dots sit at the cell's leading edge instead of its center.
+  - `audibleDot(...)` `isHighlighted` branch: doubled-glyph carries `.offset(x: -overlapOffset / 2)` so its visual center sits at the same x as a single dot's center (`cellLeftX + dotDiameter/2`). Doc comment expanded with the rationale.
+  - New static `patternRowChevron(isVisible:)` view and `patternRowChevronSpacing` constant. The chevron renders `Image(systemName: "chevron.forward")` at `subheadline.weight(.semibold)` with `.foregroundStyle(.tertiary)`. Both the *Pattern* row (visible) and the *Offset Note Position* row (`isVisible: false` via `.opacity(0)`) instantiate the same view — SwiftUI sizes both to identical intrinsic widths, so the dot rows occupy identical container widths by construction.
+- `Peach/Training/TimingOffsetDetection/Settings/TimingOffsetDetectionPatternPickerSettingsSection.swift`:
+  - `NavigationLink` replaced with `Button` + `.navigationDestination(isPresented:)`. New `@State private var isShowingDestination = false` triggers the push. `buttonStyle(.plain)` + `.contentShape(Rectangle())` preserve list-row tap ergonomics.
+  - The row's label is `HStack(spacing: TimingDotView.patternRowChevronSpacing) { Self.row(...); TimingDotView.patternRowChevron(isVisible: true) }`.
+- `Peach/Training/TimingOffsetDetection/Settings/TimingOffsetDetectionOffsetNotePositionSettingsSection.swift`:
+  - Section content wrapped in `HStack(spacing: TimingDotView.patternRowChevronSpacing) { GeometryReader { ... }; TimingDotView.patternRowChevron(isVisible: false) }` — the slot picker now mirrors the *Pattern* row's outer structure.
+  - `glyph(isSelected:)`: doubled-glyph branch gained `.offset(x: -TimingDotView.overlapOffset / 2)` for the same visual-center rationale.
+  - Empirical `chevronReserveWidth` constant removed (no longer needed — the shared chevron view drives the width).
+- `PeachTests/Training/TimingOffsetDetection/Settings/TimingOffsetDetectionOffsetNotePositionSettingsSectionTests.swift`: no test changes (these are visual-layout fixes; SwiftUI alignment and `.offset` are not unit-testable without snapshot infrastructure).
+
+**Known-bad states avoided:**
+
+- The proportional-timeline renderer shipping with center-aligned dots, defeating the rhythm-as-spacing intent that justifies the whole story.
+- Two visualizations of the same pattern (preview row + slot picker) showing dots at different x positions on the same screen — breaking the user's mental model that "the dot at audible N is *here*".
+- The empirical `chevronReserveWidth: CGFloat = 28` rotting on the next iOS update when the system chevron's sizing changes.
+- The offset note marker (doubled-glyph) appearing visually displaced from the audible position it represents.
+
+**KEEP (re-derivation must preserve):**
+
+- Dots leading-aligned within their cells (`audibleDot` frame `alignment: .leading`).
+- The doubled-glyph shift `offset(x: -overlapOffset / 2)` at both call sites (`TimingDotView.audibleDot` and the slot picker's `glyph(isSelected:)`).
+- `TimingDotView.patternRowChevron(isVisible:)` + `patternRowChevronSpacing` as the *single shared layout primitive* both rows use to align their dot containers.
+- The pattern picker's `Button` + `.navigationDestination(isPresented:)` (not `NavigationLink`) — required to control chevron rendering ourselves.
+- No empirical chevron-width constant anywhere; the chevron's width is whatever SwiftUI gives the shared view.
+
+**Verification commands (re-ran 2026-06-05):**
+
+- `bin/build.sh` -- `BUILD SUCCEEDED (0 warnings)`.
+- `bin/test.sh` (iOS) -- `ALL TESTS PASSED (1890 passed)` (−6 vs iteration 1: deleted the obsolete `cellKind` classification tests that the new slot picker's proportional layout makes irrelevant — coverage moved to `TimingDotViewTests.visualCellsPatternXX`).
+- `bin/test.sh -p mac` (macOS) -- `ALL TESTS PASSED (1884 passed)` (−6).
+- `bin/add-localization.swift --missing` -- `0`.
+- `archlint Peach/` and `bin/check-dependencies.sh` -- green.
+- Visual verification on iPhone simulator: Michael confirmed the dot positions of the *Pattern* row and the *Offset Note Position* row now match, and the doubled-glyph for the selected audible sits centered on the corresponding pattern-row dot.
+
 ## Design Notes
 
 **Why `[GridPath]` not a separate `[GridPath]` map alongside `[Int]`:** Carrying both would create two sources of truth for "where audibles live in the tree" and invite drift. The design doc § *Inputs and constraints* locks the single recursive shape; downstream callers either use `audibleCount`/`pickable` (surface unchanged) or use `audibleToGrid[zeroBasedIndex]` to find the leaf (the addressing is opaque to them — a `GridPath` they pass back to `beat(...)` internals, never destructure). Existing slot-picker code at `TimingOffsetDetectionOffsetNotePositionSettingsSection.cellKind` uses `firstIndex(of: gridIndex)` on the old `[Int]`; under `[GridPath]` it becomes `firstIndex { $0 == [gridIndex] }` — equivalent for flat patterns, correct semantics for top-level walks. Nested-cell rendering in the slot picker is 84.4's job; the slot picker continues to render only top-level cells in 84.3.

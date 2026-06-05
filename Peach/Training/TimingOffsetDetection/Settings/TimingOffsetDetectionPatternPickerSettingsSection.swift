@@ -21,22 +21,36 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
     /// lockstep with the training-screen vocabulary.
     @ScaledMetric(relativeTo: .caption2) private var dotScale: CGFloat = TimingDotView.previewScale
 
+    /// Drives the programmatic push to the drill-down picker destination.
+    /// We don't use `NavigationLink` here because its system-rendered
+    /// disclosure chevron has an opaque intrinsic width — we render the
+    /// chevron ourselves via ``TimingDotView/patternRowChevron(isVisible:)``
+    /// so the *Offset Note Position* row can reserve identical trailing width
+    /// and the two rows' dot positions align by construction.
+    @State private var isShowingDestination = false
+
     var body: some View {
         let activePattern = TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId)
         Section {
-            NavigationLink {
+            Button {
+                isShowingDestination = true
+            } label: {
+                HStack(spacing: TimingDotView.patternRowChevronSpacing) {
+                    Self.row(for: activePattern, dotScale: dotScale)
+                    TimingDotView.patternRowChevron(isVisible: true)
+                }
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityValue(Self.patternRowAccessibilityLabel(for: activePattern))
+            .navigationDestination(isPresented: $isShowingDestination) {
                 TimingOffsetDetectionPatternPickerDestination(
                     patternIdBinding: patternIdBinding,
                     dotScale: dotScale
                 )
-            } label: {
-                LabeledContent {
-                    Self.row(for: activePattern, dotScale: dotScale)
-                } label: {
-                    Text(String(localized: "Pattern"))
-                }
             }
-            .accessibilityValue(Self.patternRowAccessibilityLabel(for: activePattern))
+        } header: {
+            Text(String(localized: "Pattern"))
         } footer: {
             Text(String(localized: "Pick the rhythmic pattern used for each trial."))
         }
