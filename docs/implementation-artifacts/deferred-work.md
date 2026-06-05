@@ -293,6 +293,8 @@ Michael flagged during the 84.4 visual review that "the nested patterns don't wo
 
 **Fix:** Visual audit of the bracket rendering — likely candidates: bracket span computation (`spanStart`/`spanEnd` in `TimingDotView.walk`), bracket `y`-offset relative to the dot top, end-inset application (`bracketEndInset` × `previewScale` in the picker preview), or interaction with `bracketReserve` (which reserves vertical space only when `cells.contains { case .nestingBracket }` is true). Should be reopened when the bracket renderer is iterated; ungating the *Nested* bucket is gated on this resolving.
 
+**Deferral (2026-06-05, Michael):** Known limitation. The PEACH_RESEARCH gate is acceptable mitigation; the fix is only needed when the decision is made to release nested patterns publicly. Re-triage when that decision is on the table — the *Nested* category remains research-only until then.
+
 ### PF-047: Latent race in `TrainingLifecycleCoordinator.awaitIdle` between while-check and observer install
 
 **Found:** 2026-06-05 (PF-004 triage walk-through)
