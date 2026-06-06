@@ -191,36 +191,6 @@ The new `PauseResumeContractTests.swift` covers pause from one representative su
 
 **Fix:** Add `pauseFromSubState_<state>` tests for each session, asserting (a) `isIdle == false` after pause, (b) `currentTrial` preserved, (c) feedback overlay flags consistent, (d) resume re-engages the trial without auto-completion or stuck states.
 
-### PF-036: `patternRowAccessibilityLabel` and SwiftUI `.accessibilityElement(children: .combine)` are two independent label paths
-
-**Found:** 2026-06-05 (Story 84.3)
-**Severity:** Low (latent test/UI drift)
-**Disposition:** OPEN
-
-In `TimingOffsetDetectionPatternPickerSettingsSection`, the static helper is pinned by unit tests; the runtime label is what VoiceOver actually reads after `.combine` joins the `TimingDotView` per-cell labels. Today both produce the same comma-joined string. If the per-cell label format changes in the renderer without a parallel update to the static helper (or vice versa), tests pass against the helper while VoiceOver reads different text.
-
-**Fix:** Resolution candidates: (a) add a UI test that exercises the rendered VoiceOver label and pins it to `patternRowAccessibilityLabel`; (b) collapse the two paths by computing the row label exclusively from `.combine` and removing the static helper; (c) document the relationship inline.
-
-### PF-040: Sectioned `Picker` shared-binding rendering on cross-section selection transitions is unverified
-
-**Found:** 2026-06-05 (Story 84.4 review)
-**Severity:** Low (no current bug observed; surface for explicit visual check)
-**Disposition:** OPEN
-
-`TimingOffsetDetectionPatternPickerDestination.body` (Story 84.4) renders five sibling inline `Picker`s, each iterating its own `section.patternIds`, all sharing the same `patternIdBinding`. SwiftUI's inline-Picker selection-indicator behaviour with one binding shared across multiple `Picker` views (each containing a disjoint tag set) is not documented as a guaranteed contract — every section's `Picker` may render no selection indicator until its bucket's row matches the current id, which is the intended behaviour but may surface visual quirks at section transitions (e.g. a brief no-checkmark frame during a cross-section selection animation).
-
-**Fix:** Resolution candidates: (a) add an integration / snapshot test asserting exactly one row in the visible drill-down carries the selection indicator at steady state; (b) collapse to one outer `Picker` wrapping all five sections (loses the per-section visual grouping the design doc requires); (c) leave to manual visual inspection per 84.4's "Visual check" task.
-
-### PF-041: AX1 no-truncation invariant for picker section headers has no snapshot test
-
-**Found:** 2026-06-05 (Story 84.4 review)
-**Severity:** Low
-**Disposition:** OPEN
-
-`tod-tuplet-renderer-design.md` § *Categorization* "Section header behavior at AX1" locks SwiftUI default wrapping (no `.lineLimit(1)` / `.truncationMode`) and explicitly says "the 84.4 a11y test captures a screenshot at AX1 to confirm no truncation." 84.4 ships without a snapshot/UI test asserting that the longest German header (`Lückenhafte Sechzehntel`, 23 chars) wraps to two lines instead of truncating at AX1 — only manual visual inspection per the spec's "Visual check" task. A future contributor adding `.lineLimit(1)` to the picker section header could break the invariant silently.
-
-**Fix:** Resolution candidates: (a) wire snapshot-testing infrastructure (e.g. swift-snapshot-testing) and add an AX1 screenshot test for the picker destination; (b) extract header rendering into a thin view function with a static `lineLimit` accessor that a unit test can pin to `nil`; (c) accept manual visual inspection as the verification surface and document the invariant in the section's doc comment.
-
 ### PF-046: `.navigationDestination(isPresented:)` inside `Form` triggers SwiftUI lazy-container warning
 
 **Found:** 2026-06-05 (Story 84.4 iteration 3 visual verification on iOS Simulator)

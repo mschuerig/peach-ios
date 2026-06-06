@@ -303,12 +303,12 @@ For Epic 84, `pattern.beats.count == 1` for every entry. The current `TimingOffs
 
 **Section headers (English / German):**
 - Straight 16ths / Gerade Sechzehntel
-- Gapped 16ths / Lückenhafte Sechzehntel
+- Gapped 16ths / Sechzehntel mit Lücken
 - Triplets / Triolen
 - Nested / Verschachtelt
 - Sextuplet / Sextolen
 
-**Section header behavior at AX1:** SwiftUI `Section { ... } header: { Text(...) }` defaults to `lineLimit(nil)` for `Text` — headers wrap to multiple lines at AX1 rather than truncate. This is the locked behavior: 84.4 does NOT apply `lineLimit(1)` or `truncationMode` to the section headers. The longest German header is "Lückenhafte Sechzehntel" (23 chars); at AX1 on iPhone portrait it will wrap to two lines. The 84.4 a11y test captures a screenshot at AX1 to confirm no truncation. If wrapping looks visually broken at AX1, the fallback is to abbreviate "Lückenhafte Sechzehntel" to "Lückenh. Sechzehntel" — a known-bad-state mitigation, not a default.
+**Section header behavior at AX1:** SwiftUI `Section { ... } header: { Text(...) }` defaults to `lineLimit(nil)` for `Text` — headers wrap to multiple lines at AX1 rather than truncate. This is the locked behavior: 84.4 does NOT apply `lineLimit(1)` or `truncationMode` to the section headers. The longest German header is "Sechzehntel mit Lücken" (22 chars); at AX1 on iPhone portrait it will wrap to two lines. The 84.4 a11y test captures a screenshot at AX1 to confirm no truncation; Story 85.6 replaces that manual check with an automated AX1 height-measurement test against this fixture (see `docs/implementation-artifacts/85-6-snapshot-test-tod-picker-invariants.md`). If wrapping looks visually broken at AX1, the fallback is to abbreviate the longest German header to a shorter equivalent — a known-bad-state mitigation, not a default.
 
 ---
 

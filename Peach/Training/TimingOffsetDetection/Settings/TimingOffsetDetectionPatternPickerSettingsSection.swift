@@ -120,6 +120,19 @@ struct TimingOffsetDetectionPatternPickerSettingsSection: View {
             }
             .joined(separator: ", ")
     }
+
+    /// Section header `Text` rendered by the drill-down picker destination.
+    /// Extracted so the Story 85.6 AX1 no-truncation test can render this
+    /// exact view shape against the longest German header fixture. SwiftUI
+    /// default `Text` modifiers are load-bearing here: any modifier that
+    /// constrains line count, truncates, or scales text down (e.g.
+    /// `.lineLimit(1)`, `.truncationMode(...)`, `.minimumScaleFactor(...)`,
+    /// or wrapping the `Text` in a fixed-height container) breaks
+    /// `TimingOffsetDetectionPatternPickerDestinationAX1Tests` by design, per
+    /// `tod-tuplet-renderer-design.md` § *Categorization*.
+    static func categoryHeader(text: String) -> some View {
+        Text(text)
+    }
 }
 
 /// Drill-down destination for the Pattern picker. Renders one
@@ -158,7 +171,9 @@ private struct TimingOffsetDetectionPatternPickerDestination: View {
                     .pickerStyle(.inline)
                     .labelsHidden()
                 } header: {
-                    Text(category.localizedHeader)
+                    TimingOffsetDetectionPatternPickerSettingsSection.categoryHeader(
+                        text: category.localizedHeader
+                    )
                 }
             }
         }
