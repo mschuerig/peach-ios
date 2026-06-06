@@ -346,3 +346,21 @@ When the user changes the `noteDuration` setting (Settings → Reference Note Du
 The likely cause is that `noteDuration` is read once at trial start (via `from(userSettings:intervals:)` factory or equivalent settings snapshot) and the snapshot is held for the duration of the trial. Other settings either re-read on each `play()` call or are pure environment lookups that always reflect current state.
 
 **Fix:** Either (a) re-read `noteDuration` from `userSettings` at each `play(frequency:duration:)` call site instead of at trial-start, or (b) document explicitly that `noteDuration` is a per-trial snapshot (current behaviour, just needs to be intentional). Decision lives with whether immediate change is a UX expectation worth the cost — verify with user before coding.
+
+### PF-054: Three uncoordinated MIDI dispatch paths into the shared `AVAudioUnitSampler`
+
+**Found:** 2026-06-06 (Story 85.1 v2 diagnosis — root-cause framing)
+**Severity:** Medium (latent — the load-bearing race is fixed; this is the underlying debt)
+**Disposition:** OPEN
+
+`SoundFontEngine` has **three** uncoordinated dispatch paths from main → the shared `AVAudioUnitSampler`'s MIDI input. They share no ordering and no acknowledgement primitive:
+
+1. **Direct MainActor dispatch.** `sampler.startNote(...)`, `sampler.stopNote(...)`, `sampler.sendController(...)`, `sampler.sendPitchBend(...)` called synchronously from MainActor. Used by `SoundFontPlayer.play()`, `SoundFontEngine.stopNotes()`, `SoundFontEngine.stopNote()`. Ordering against itself within MainActor source order.
+2. **Sample-accurate scheduled queue.** Events with sample positions enqueued via `scheduleState`; drained on the render thread by reading `eventBuffer(forSlot:)` against `samplePosition`. Used by `SoundFontBeatSequencer` for rhythm patterns. Sample-accurate ordering against itself.
+3. **Render-thread flag-driven reset.** `needsAllNotesOff: Atomic<Bool>` set from MainActor (`clearSchedule()`); read by the render thread on the next generation change via `exchange(false)`, then CC#123 + pitch-bend-center dispatched on all 16 channels via `midiBlock(AUEventSampleTimeImmediate, 0, 3, ptr)`. Used by `clearSchedule()` (rhythm sequencer's stop path). Code comment says this replaced an `auAudioUnit.reset()` that was crashing.
+
+Story 85.1 v2 surfaced the cost: removing redundant cleanup paths (NotePlayer+TimedPlay's cancellation `handle.stop`, pitch's invocation of `clearSchedule`) was sufficient to close the immediate race, but the underlying three-path structure remains. The next caller added to any of these paths must understand all three to avoid reintroducing a similar race. Future drift is the latent risk.
+
+**Research backing:** `docs/planning-artifacts/research/technical-rt-audio-control-plane-2026-06-06.md` — community consensus (Bencina, Doumler, Tyson, Liljedahl) is "unify all MIDI dispatch through one ordered SPSC queue drained on the render thread via `AUScheduleMIDIEventBlock` with `AUEventSampleTimeImmediate + offsetFrames`". The current research did not investigate the original `auAudioUnit.reset()` crash that motivated the flag mechanism; that gap should be closed before any unification, since the flag may be a workaround for a sampler defect that would also bite a unified design.
+
+**Fix:** Resolution candidates: (a) unify all dispatch through `enqueueImmediate` / scheduled queue (largest refactor; requires understanding the original `reset()` crash so the new path doesn't reintroduce it); (b) preserve all three paths but document the ordering contract between them inline (cheapest; still leaves the trap for future callers); (c) restrict path 3 to the rhythm sequencer's actual need and remove its accessibility from pitch (smaller surface; partially done in 85.1 v2 — pitch no longer summons `clearSchedule`, but the path itself remains shared on the engine). Recommendation: track until either a 4th dispatch caller is contemplated OR the `auAudioUnit.reset()` crash root cause is understood; then pick (a) or (c).
