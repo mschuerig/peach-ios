@@ -365,3 +365,15 @@ Reachable when: session stops while a tunable note is sounding AND the user re-e
 Reachable when: user changes Sound Source while a session is active. Narrow window; symptom is a transient audio glitch, not a crash.
 
 **Fix:** `handleSoundSourceChanged` should `await` each non-idle session's `awaitIdle` before constructing the replacement `SoundFontPlayer` and rebuilding coordinators. Alternative: route the rebuild through the coordinator's stop+await pattern (the same path `TrainingLifecycleCoordinator.navigate(to:)` uses), so all "stop everything and replace" surfaces share one mechanism. Out of 85.3's framing (composition-root orchestration, not sequencer/session concurrency); track separately.
+
+### PF-060: `NoteRangeSelector` keyboard requires horizontal scroll on ≤402-pt-wide portrait
+
+**Found:** 2026-06-06 (Story 85.5 follow-up — user-reported usability degradation)
+**Severity:** Medium (visible UX issue on the default iPhone 17 Pro portrait, every user touches Settings → Training Range)
+**Disposition:** OPEN
+
+`Peach/Settings/NoteRangeSelector.swift:70` sets `minKeyboardWidth = 416` (52 white keys × 8 pt). iPhone 17 Pro portrait has ~402 pt of screen width minus Form insets (~370 pt usable), so the `fitsWithoutScrolling` branch at line 128 is false and the keyboard falls into the `ScrollView(.horizontal)` branch (line 134). The full 88-key piano never fits at once in portrait on any modern iPhone — the user sees a partial keyboard and must scroll.
+
+Symptom is "doesn't fit on the screen in full in portrait" — by design today, but the design predates iPhone-17-Pro-as-default and is unsatisfying on devices the user works on day-to-day. The horizontal-scroll fallback was added to allow the keyboard to remain "full pitch" on iPad / mac, but on phone portrait it pushes the user into a non-obvious gesture.
+
+**Fix:** Resolution candidates: (a) compress to 6 pt per white key on portrait (reduces `minKeyboardWidth` to 312 pt — fits any modern iPhone, but the BoundMarker tap target shrinks too); (b) render only the absolute training range (`absoluteMinNote`...`absoluteMaxNote` = 36...108, 43 white keys) so the keyboard is `43 × 8 = 344 pt` wide and fits portrait; (c) fall back to the AX1+ `KeyboardSummary` (summary line + 2 system Sliders) on horizontally-constrained layouts, not just at large Dynamic Type. Touches the same layout policy 81.3 set; deserves a focused story rather than a Boy-Scout drive-by.

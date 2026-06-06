@@ -25,6 +25,7 @@ struct NoteRangeSelector: View {
 
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @FocusState private var focusedMarker: Marker?
+    @State private var isDragging = false
 
     /// MIDI-note value the scroll viewport should center on. Tracks the focused
     /// marker so keyboard-driven moves keep their target on screen; falls back
@@ -143,6 +144,12 @@ struct NoteRangeSelector: View {
                             scroll.scrollTo(activeScrollTarget, anchor: .center)
                         }
                         .onChange(of: lowerBound + upperBound) { _, _ in
+                            // Skip auto-recenter while a touch drag is in
+                            // flight — re-centering shifts the keyboard under
+                            // the finger and oscillates the marker. Keyboard
+                            // arrows / Steppers / accessibility Sliders still
+                            // re-center because they never enter `isDragging`.
+                            guard !isDragging else { return }
                             scroll.scrollTo(activeScrollTarget, anchor: .center)
                         }
                     }
@@ -271,10 +278,12 @@ struct NoteRangeSelector: View {
     private func dragGesture(for marker: Marker, totalWidth: CGFloat) -> some Gesture {
         DragGesture(minimumDistance: 0, coordinateSpace: .named(Self.keyboardCoordinateSpace))
             .onChanged { value in
+                isDragging = true
                 applyDrag(marker: marker, location: value.location, totalWidth: totalWidth, commit: false)
             }
             .onEnded { value in
                 applyDrag(marker: marker, location: value.location, totalWidth: totalWidth, commit: true)
+                isDragging = false
             }
     }
 
