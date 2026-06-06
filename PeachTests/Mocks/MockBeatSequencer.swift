@@ -41,6 +41,18 @@ final class MockBeatSequencer: BeatSequencer {
     var shouldThrowOnPlayImmediateNote = false
     var errorToThrow: AudioError = .engineStartFailed("Mock error")
 
+    /// Interleaved start/stop event log for serialization-ordering tests.
+    /// Each entry carries the call's monotonic index plus identifying info
+    /// (the beat provider for `start`). Tests that need to assert "stop of A
+    /// completed before start of B" inspect this log directly.
+    enum CallEvent: Equatable {
+        /// Start was called. `providerTypeName` identifies which session.
+        case start(providerTypeName: String)
+        /// Stop was called.
+        case stop
+    }
+    private(set) var callLog: [CallEvent] = []
+
     // MARK: - Callbacks
 
     var onStartCalled: (() -> Void)?
@@ -72,6 +84,15 @@ final class MockBeatSequencer: BeatSequencer {
         startCallCount += 1
         lastTempo = tempo
         lastBeatProvider = beatProvider
+        callLog.append(.start(providerTypeName: String(describing: type(of: beatProvider))))
+
+        // `currentSamplePosition` is intentionally NOT reset here. This mirrors
+        // the production sequencer: `SoundFontEngine` bumps the generation on
+        // `scheduleEvents` and the render thread observes the reset to 0 on its
+        // next callback, NOT synchronously on `start()` return. Tests that need
+        // to simulate a stale pre-start value pre-set it on the mock, then call
+        // `flushDeferredReset()` to model the render-thread reset.
+        // See PF-011 audit in Story 85.3.
 
         onStartCalled?()
 
@@ -84,6 +105,13 @@ final class MockBeatSequencer: BeatSequencer {
         if shouldThrowError {
             throw errorToThrow
         }
+    }
+
+    /// Drops `currentSamplePosition` to 0, simulating the render thread's
+    /// deferred reset observed on the next callback after `start()` /
+    /// `scheduleEvents()` bump the generation. Test-only.
+    func flushDeferredReset() {
+        currentSamplePosition = 0
     }
 
     func playImmediateNote(velocity: MIDIVelocity) throws {
@@ -101,6 +129,7 @@ final class MockBeatSequencer: BeatSequencer {
     func stop() async throws {
         stopCallCount += 1
         currentBeat = nil
+        callLog.append(.stop)
 
         onStopCalled?()
 
@@ -120,6 +149,7 @@ final class MockBeatSequencer: BeatSequencer {
     func reset() {
         startCallCount = 0
         stopCallCount = 0
+        callLog = []
         playImmediateNoteCallCount = 0
         lastPlayImmediateNoteVelocity = nil
         playImmediateNoteVelocities = []

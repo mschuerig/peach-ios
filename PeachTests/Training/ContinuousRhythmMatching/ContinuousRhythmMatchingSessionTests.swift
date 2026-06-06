@@ -326,6 +326,54 @@ struct ContinuousRhythmMatchingSessionTests {
 
     // MARK: - Miss Detection via Tracking
 
+    // MARK: - Trial-start race against stale samplePosition (PF-011)
+
+    /// Regression for the PF-011 trial-start race against CRM's cycle-miss
+    /// accumulator: between `beatSequencer.start(...)` returning and the
+    /// render thread observing the generation bump that resets
+    /// `samplePosition` to 0, the polling task can sample a stale large value.
+    /// Without the gate, the `while lastEvaluatedCycleIndex < playingCycleIndex - 1`
+    /// loop would fire 16 `cycleMissed` events in one tick and silently
+    /// complete the trial.
+    ///
+    /// The mock's `start()` mirrors the real engine by leaving
+    /// `currentSamplePosition` untouched — the test pre-sets a stale value and
+    /// later calls `flushDeferredReset()` to model the render-thread's deferred
+    /// reset. The polling gate captures the pre-start sample position as a
+    /// stale upper bound and skips cycle-miss accumulation until the
+    /// render-thread reset is observed.
+    @Test("no cycleMissed accumulation on stale samplePosition observed before render-thread reset")
+    func trialStartDoesNotAccumulateMissesOnStaleSamplePosition() async {
+        let f = makeSession()
+
+        // Simulate a previous trial's accumulated sample position — far past
+        // any cycle the trial would actually reach. The mock's `start()`
+        // preserves this stale value until `flushDeferredReset()` is called.
+        f.sequencer.currentSamplePosition = f.samplesPerBeat * 100
+
+        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
+        await f.sequencer.waitForStart()
+
+        // Without the gate, the cycle-miss loop would fire 16 `cycleMissed`
+        // events and complete the trial. With the gate, `cyclesInCurrentTrial`
+        // stays at 0 until the reset is observed.
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.cyclesInCurrentTrial == 0, "No cycle misses accumulated on stale read")
+        #expect(f.session.isRunning, "Trial remains running rather than auto-completing on the stale read")
+
+        // Render-thread reset observed.
+        f.sequencer.flushDeferredReset()
+
+        // Advance partway into beat 1 — beat 0 was missed, gate released.
+        _ = f.session.nextBeat() // beat 0
+        _ = f.session.nextBeat() // beat 1
+        f.sequencer.currentSamplePosition = f.samplesPerBeat + f.samplesPerBeat / 2
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.cyclesInCurrentTrial == 1, "Trial proceeds normally once the gate releases")
+
+        f.session.stop()
+    }
+
     @Test("missed gap is recorded when beat advances without tap")
     func missedGapRecordedWhenBeatAdvances() async {
         let f = makeSession()

@@ -426,6 +426,110 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(coordinator.resolvedNavigation?.destination == .profile)
     }
 
+    // MARK: - awaitIdle Defensive Re-Check (PF-047)
+
+    /// PF-047 contract — short-circuit path only.
+    ///
+    /// **What this pins.** When `session.isIdle` flips to `true` synchronously
+    /// inside `stop()`, the outer `while !session.isIdle` check in `awaitIdle`
+    /// short-circuits and the `withObservationTracking` body is never entered.
+    /// This test pins that synchronous-flip path so the navigation resolves
+    /// rather than suspending.
+    ///
+    /// **What this does NOT exercise.** Under default-MainActor isolation with
+    /// the current synchronous `TrainingSession.isIdle`, the defensive in-block
+    /// re-check inside the `withObservationTracking` body is unreachable from a
+    /// test like this — the outer while-check beats it to the punch. The
+    /// in-block re-check is future-proofing for any future async-`isIdle`
+    /// migration where a flip could land after the outer check but before the
+    /// observer installs. See the audit Risks §3 in
+    /// `docs/implementation-artifacts/85-3-audit-and-harden-sequencer-concurrency.md`
+    /// — the catalog's described race is "structurally impossible while
+    /// `isIdle` remains a synchronous MainActor-readable property", so a
+    /// pure-unit test of the in-block re-check would need an async-`isIdle`
+    /// stub that the protocol cannot today express.
+    @Test("navigate returns immediately when session.isIdle flips synchronously inside stop() (outer short-circuit path)")
+    func awaitIdleHandlesSynchronousIdleFlip() async throws {
+        // Stub session whose stop() flips `isIdle` to `true` synchronously.
+        let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
+        let session = MockTrainingSession()
+        session.isIdle = false
+        session.onStopCalled = {
+            // Synchronous flip — same MainActor turn as the navigate path's
+            // stop() call. The outer `while !session.isIdle` short-circuits
+            // before `withObservationTracking` is even entered.
+            session.isIdle = true
+        }
+        coordinator.activeSession = session
+
+        coordinator.navigate(to: .profile)
+
+        try await waitUntilNavigationResolved(coordinator, timeout: .seconds(2))
+        #expect(session.stopCallCount == 1)
+        #expect(coordinator.resolvedNavigation?.destination == .profile)
+    }
+
+    // MARK: - Cross-Discipline Serialization Contract (PF-011)
+
+    /// Contract: the previous session's sequencer stop completes BEFORE the next
+    /// session's `beatSequencer.start(...)` is invoked on a CRM → TOD handover
+    /// (the surface PF-011 identified). Asserted via the shared `MockBeatSequencer`'s
+    /// interleaved call log: the sequence must contain `start(CRM)` … `stop` …
+    /// `start(TOD)` with no overlap.
+    @Test("CRM → TOD handover serializes: CRM sequencer stop completes before TOD sequencer start")
+    func crmToTodHandoverSerializesSequencerStartStop() async throws {
+        let fixture = makeSharedSequencerFixture()
+
+        // Start CRM via the normal lifecycle path.
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        // Wait for CRM's startTask to actually call `beatSequencer.start`.
+        try await waitUntilStartLogged(fixture.sequencer, providerType: "ContinuousRhythmMatchingSession")
+        fixture.coordinator.activeSession = fixture.crm
+
+        // Trigger the handover.
+        fixture.coordinator.navigate(to: .timingOffsetDetection)
+        try await waitUntilNavigationResolved(fixture.coordinator)
+
+        // Drive TOD's start (in production, the destination resolution leads to
+        // the new training screen mounting and auto-starting TOD).
+        fixture.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilStartLogged(fixture.sequencer, providerType: "TimingOffsetDetectionSession")
+
+        // Verify the STRUCTURAL exclusivity invariant by walking the call log
+        // as a state machine: at most one provider may be "active" at a time
+        // (active = its `start` has been logged but no subsequent `stop` has
+        // landed yet). A `start(Y)` while X is active violates "no overlapping
+        // starts"; a `start(X)` while X is already active is also a violation.
+        // This is strictly stronger than `firstIndex`-based ordering — it
+        // tolerates legitimate repeated starts after intervening stops (e.g.,
+        // pause/resume cycles) while still catching any overlap.
+        let log = fixture.sequencer.callLog
+        var activeProvider: String?
+        for (index, event) in log.enumerated() {
+            switch event {
+            case .start(let providerTypeName):
+                if let existing = activeProvider {
+                    Issue.record(
+                        "Overlapping start at log index \(index): \(providerTypeName) started while \(existing) was still active. Full log: \(log)"
+                    )
+                }
+                activeProvider = providerTypeName
+            case .stop:
+                activeProvider = nil
+            }
+        }
+
+        // Sanity: both starts are present and the CRM→TOD ordering is reflected.
+        let crmStartCount = log.filter {
+            if case .start("ContinuousRhythmMatchingSession") = $0 { return true } else { return false }
+        }.count
+        let todStartCount = log.filter {
+            if case .start("TimingOffsetDetectionSession") = $0 { return true } else { return false }
+        }.count
+        #expect(crmStartCount >= 1, "CRM start must have been logged")
+        #expect(todStartCount >= 1, "TOD start must have been logged")
+    }
+
     // MARK: - Pause / Resume Routing (PF-003, help-sheet cluster)
 
     @Test("trainingScreenDisappeared pauses (not stops) when session is non-idle")
@@ -694,6 +798,76 @@ struct TrainingLifecycleCoordinatorTests {
     private struct MockFixture {
         let coordinator: TrainingLifecycleCoordinator
         let mock: MockTrainingSession
+    }
+
+    /// Cross-discipline serialization test fixture: real TOD + CRM sessions
+    /// backed by a SHARED `MockBeatSequencer`, mirroring the production wiring
+    /// where both disciplines share one `SoundFontBeatSequencer` instance.
+    private struct SharedSequencerFixture {
+        let coordinator: TrainingLifecycleCoordinator
+        let crm: ContinuousRhythmMatchingSession
+        let tod: TimingOffsetDetectionSession
+        let sequencer: MockBeatSequencer
+    }
+
+    private func makeSharedSequencerFixture() -> SharedSequencerFixture {
+        let sequencer = MockBeatSequencer()
+        sequencer.samplesPerBeat = 22050
+        sequencer.sampleRate = .standard44100
+
+        let profile = PerceptualProfile()
+        let userSettings = MockUserSettings()
+        let crmUserSettings = MockContinuousRhythmMatchingUserSettings()
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
+
+        let crm = ContinuousRhythmMatchingSession(
+            beatSequencer: sequencer,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        )
+        let tod = TimingOffsetDetectionSession(
+            beatSequencer: sequencer,
+            strategy: MockNextTimingOffsetDetectionStrategy(),
+            profile: profile,
+            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        )
+
+        let registry = TrainingLifecycleRegistry { builder in
+            crm.contribute(to: builder, userSettings: userSettings, crmUserSettings: crmUserSettings)
+            tod.contribute(to: builder, userSettings: userSettings, todUserSettings: todUserSettings)
+        }
+        // Mirror `PeachApp.makeBackgroundPolicy()` so the fixture exercises the
+        // same lifecycle policy the production composition root selects on the
+        // test platform. macOS runs (`bin/test.sh -p mac`) previously hardcoded
+        // an iOS policy, masking macOS-specific lifecycle behaviour.
+        #if os(iOS)
+        let backgroundPolicy: BackgroundPolicy = IOSBackgroundPolicy()
+        #elseif os(macOS)
+        let backgroundPolicy: BackgroundPolicy = MacOSBackgroundPolicy()
+        #else
+        #error("Unsupported platform")
+        #endif
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: backgroundPolicy,
+            initialAutoStartSetting: true
+        )
+        return SharedSequencerFixture(coordinator: coordinator, crm: crm, tod: tod, sequencer: sequencer)
+    }
+
+    private func waitUntilStartLogged(
+        _ sequencer: MockBeatSequencer,
+        providerType: String,
+        timeout: Duration = .seconds(1)
+    ) async throws {
+        let target: MockBeatSequencer.CallEvent = .start(providerTypeName: providerType)
+        let deadline = ContinuousClock.now + timeout
+        while !sequencer.callLog.contains(target) {
+            if ContinuousClock.now >= deadline {
+                Issue.record("sequencer did not log \(target) within \(timeout); log = \(sequencer.callLog)")
+                return
+            }
+            try await Task.sleep(for: .milliseconds(5))
+        }
     }
 
     private struct TwoMockFixture {

@@ -191,29 +191,6 @@ The new `PauseResumeContractTests.swift` covers pause from one representative su
 
 **Fix:** Add `pauseFromSubState_<state>` tests for each session, asserting (a) `isIdle == false` after pause, (b) `currentTrial` preserved, (c) feedback overlay flags consistent, (d) resume re-engages the trial without auto-completion or stuck states.
 
-### PF-011: Concurrency audit of the sequencer @Observable + Task pattern
-
-**Found:** 2026-06-02 (Story 80.0; reinforced by 80.1, 80.2)
-**Severity:** Medium (latent data-race surface; clean strict-concurrency build but unverified contract)
-**Disposition:** OPEN
-
-`BeatProvider` is not `Sendable`, `SoundFontBeatSequencer.currentBeat` is mutated from a background `Task`, and `ContinuousRhythmMatchingSession.gapPositions` is written from the sequencer's polling Task. The shape predates 80.0 and the Swift 6.2 strict-concurrency build is clean, but the Blind hunter + Edge case hunter flagged it as a latent data-race surface. Consolidates two cross-referenced concerns:
-
-- *Sequencer cross-discipline serialization (Story 80.1):* with TOD and CRM both calling `beatSequencer.start(tempo:beatProvider:)` on the shared singleton, the lifecycle coordinator must ensure the previous session has fully stopped before the next starts. Today the coordinator already serializes activations, but no test pins this contract at the coordinator level.
-- *Stale `samplePosition` at new-trial start (Story 80.2):* between `beatSequencer.start(...)` returning and the render thread resetting `engine.currentSamplePosition` to 0, the polling task may sample a stale large value. With `maxRepetitions == 1` and an unlucky 8 ms tick at the boundary, `completedCycles` could already meet the cap before any audio is heard, immediately triggering `.repetitionCapReached`.
-
-**Fix:** Focused audit (probably via `/swift-concurrency-expert`) before any second discipline starts sharing a sequencer instance. Resolution candidates for the trial-start race: (a) document the post-`start()` reset latency as a `BeatSequencer` contract with a test; (b) anchor TOD's `globalSubdivisionIndex` to a per-trial baseline `samplePosition` captured at start; (c) extend `BeatSequencer.timing` with a "trial-relative sample position" accessor.
-
-### PF-013: Protocol-level contract tests for `SequencerEngine`
-
-**Found:** 2026-06-02 (Story 80.0)
-**Severity:** Low (predates 80.0; same gap existed for `StepSequencerEngine`)
-**Disposition:** OPEN
-
-No tests verify that `SoundFontEngine`'s `SequencerEngine` conformance matches the contract exercised by `MockSequencerEngine`. The two could silently diverge (e.g., what `clearSchedule()` does mid-render).
-
-**Fix:** Add a conformance test suite that runs both implementations through the same set of invariants (start/stop ordering, post-clear silence, sample-position reset semantics).
-
 ### PF-020: Voice Control "Tap C3" lost under marker `.accessibilityRepresentation`
 
 **Found:** 2026-06-03 (Story 81.3)
@@ -295,34 +272,6 @@ Michael flagged during the 84.4 visual review that "the nested patterns don't wo
 
 **Deferral (2026-06-05, Michael):** Known limitation. The PEACH_RESEARCH gate is acceptable mitigation; the fix is only needed when the decision is made to release nested patterns publicly. Re-triage when that decision is on the table — the *Nested* category remains research-only until then.
 
-### PF-047: Latent race in `TrainingLifecycleCoordinator.awaitIdle` between while-check and observer install
-
-**Found:** 2026-06-05 (PF-004 triage walk-through)
-**Severity:** Low (not reachable from any current session implementation; structurally fragile, fires only under synchronous-idle-flip)
-**Disposition:** OPEN
-
-`TrainingLifecycleCoordinator.awaitIdle(of:)` at `Peach/App/TrainingLifecycleCoordinator.swift:156-166` is:
-
-```swift
-private func awaitIdle(of session: any TrainingSession) async {
-    while !session.isIdle {
-        await withCheckedContinuation { continuation in
-            withObservationTracking {
-                _ = session.isIdle
-            } onChange: {
-                continuation.resume()
-            }
-        }
-    }
-}
-```
-
-If `session.isIdle` flips to `true` after the `while` check (line 157) but before the observer is installed inside `withObservationTracking` (line 159), the loop suspends on a one-shot observer waiting for the *next* mutation — which may never come. Production does not currently exercise this race: `session.stop()` returns synchronously while the actual idle transition happens asynchronously through real audio teardown, so there is wall-clock slack between `stop()` and the eventual `isIdle = true`. But the structure is fragile under a future change that synchronously flips `isIdle` (e.g., a session whose `stop()` short-circuits to idle when there's nothing to wind down, or any test path that mocks `isIdle` directly).
-
-Surfaced by the PF-004 (v3) triage walk-through. The test-only PF-004 fix added `waitUntilStopped` + `waitUntilNavigationResolved` polls that avoid the race in tests by waiting for an observable end-state; the production path that this entry tracks is independent of that fix.
-
-**Fix:** Resolution candidates: (a) re-check `session.isIdle` inside the `withObservationTracking` block before suspending — if `isIdle == true` at that point, resume immediately rather than installing the observer; (b) restructure with `AsyncStream` or `Observation`'s newer `observe { ... }` API that handles the read-then-suspend atomically; (c) document that callers must guarantee `isIdle` does not flip synchronously between coordinator entry and observer install (couples the contract to an implicit timing assumption — least preferred).
-
 ### PF-052: Sine wave SF2 preset clicks audibly on note tail
 
 **Found:** 2026-06-06 (Story 85.1 v2 verification listening test)
@@ -400,3 +349,29 @@ The notification can fire on a background thread; the handler must bounce to the
 Peach has no observer (`grep -rn "mediaServicesWereReset" Peach/` returns zero hits). The frequency in production is low, but the failure mode is irrecoverable and silent, so the support-load cost per occurrence is high. The `audio-programming` skill's `references/avaudiosession.md` flags this as the canonical hardening item most apps skip.
 
 **Fix:** Observe `AVAudioSession.mediaServicesWereResetNotification`. On fire: tear down `SoundFontEngine` and every `AVAudioUnitSampler` it owns; re-configure `AVAudioSession` (category/mode/options/active); construct a fresh `AVAudioEngine` + `AVAudioUnitSampler` graph; reload presets that were loaded before the reset; stop any active training session cleanly via the coordinator (resuming mid-trial after a `mediaserverd` reset is likely not desirable — surface the reset as a user-visible "audio reconnected, session stopped" notice and let the user start a new session). Decision needed during verification: silent recovery vs. user-visible notice. Hard to reproduce without inducing a `mediaserverd` crash; if no reliable trigger recipe is found, document the recovery path is unverified-in-production until a real crash occurs.
+
+### PF-058: `PitchMatchingSession` deferred `handle.stop()` violates 85.1 v2 chain-registration invariant
+
+**Found:** 2026-06-06 (Story 85.3 Task 1 audit — surfaced while mapping `SoundFontPlayer.scheduleStopAll()` chain invariant across session surfaces)
+**Severity:** Medium (reproduces the 85.1 v2 silencing race on a different surface; conditional reachability — requires session stop with a sounding tunable note followed by rapid re-entry)
+**Disposition:** OPEN
+
+`Peach/Training/PitchMatching/PitchMatchingSession.swift:377` and `:441-443` spawn `Task { try? await handle.stop() }` from inside the session's MainActor-isolated effect interpreter / `stopAll`. Per the 85.1 v2 chain-registration invariant documented at `docs/project-context.md:84`: *"From an async cleanup continuation … cleanup paths in async continuations must NOT register additional chain entries that are already redundant with the session-level stop."*
+
+The deferred `handle.stop()` Task body runs in a later MainActor turn and routes through `SoundFontPlaybackHandle.stop()` → `player.scheduleNoteStop(midiNote:)`, registering a fresh entry on `SoundFontPlayer.pendingAudioStop`. The session-level `scheduleStopAll()` (line 425) already committed an earlier chain entry that silences the same note via global `stopNotes`. Chain becomes `[scheduleStopAll, handleStop]`; the `handleStop`'s `muteForFade` re-engages `activeMuteCount`, silencing any concurrent `play()` that lands during the mute window. Same shape as the 85.1 v2 race that `NotePlayer+TimedPlay.swift`'s cancellation catch caused.
+
+Reachable when: session stops while a tunable note is sounding AND the user re-enters a pitch session quickly (within the mute window). Probability non-trivial on rapid pause/resume.
+
+**Fix:** Apply the 85.1 v2 pattern: route session-level stops exclusively through `scheduleStopAll()` (which calls `stopNotes` globally — silences the specific note as a side effect), drop the deferred `handle.stop()` calls. `currentHandle = nil` is sufficient bookkeeping for the session's own state machine. Out of 85.3's framing; tracked separately so the fix doesn't expand sequencer-concurrency scope. Reachable but bounded — defer to a focused PitchMatching cleanup story.
+
+### PF-059: `handleSoundSourceChanged` synchronous stop without awaiting idle before `rebuildCoordinators()`
+
+**Found:** 2026-06-06 (Story 85.3 Task 1 audit — surfaced while mapping cross-discipline serialization invariant)
+**Severity:** Low (single-user-action surface — Sound Source change during an active session; symptom is a one-shot audio glitch on the rebuilt graph)
+**Disposition:** OPEN
+
+`Peach/App/PeachApp.swift:177-215` `handleSoundSourceChanged` calls `session.stop()` synchronously on each non-idle session, then immediately constructs a new `SoundFontPlayer`, replaces session instances, and calls `rebuildCoordinators()`. The old sessions' fire-and-forget `Task { await beatSequencer.stop() }` (CRM) or `enqueueSequencerStop` (TOD) is still in flight; the new sessions begin observing the new (replaced) sequencer/notePlayer. Old in-flight stops may complete after the rebuild, possibly clearing or muting the new graph.
+
+Reachable when: user changes Sound Source while a session is active. Narrow window; symptom is a transient audio glitch, not a crash.
+
+**Fix:** `handleSoundSourceChanged` should `await` each non-idle session's `awaitIdle` before constructing the replacement `SoundFontPlayer` and rebuilding coordinators. Alternative: route the rebuild through the coordinator's stop+await pattern (the same path `TrainingLifecycleCoordinator.navigate(to:)` uses), so all "stop everything and replace" surfaces share one mechanism. Out of 85.3's framing (composition-root orchestration, not sequencer/session concurrency); track separately.

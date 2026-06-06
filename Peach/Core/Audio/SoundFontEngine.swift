@@ -511,6 +511,13 @@ final class SoundFontEngine {
         // calling reset() on the main thread while the render thread is actively
         // processing MIDI events triggers a crash in Apple's
         // SamplerBaseElement::IncrementActiveLayerVoiceCount.
+        //
+        // Coordination with `SoundFontPlayer`'s direct MainActor MIDI dispatch
+        // path relies on `PeachApp.trackActiveSession`'s invariant that pitch
+        // and rhythm sessions are not concurrently active (see PF-054 in
+        // `docs/implementation-artifacts/deferred-work.md`). A future feature
+        // introducing co-active dispatch would re-open the path-1 vs path-3
+        // race that PF-054 documents.
         scheduleState.needsAllNotesOff.store(true, ordering: .relaxed)
 
         swapScheduleSlot { inactiveSlot in
@@ -532,6 +539,11 @@ final class SoundFontEngine {
         // and recenters pitch bend on its next generation-change detection. Without
         // this, notes whose note-on was dispatched but note-off hasn't been reached
         // would ring indefinitely, and any prior pitch bend would persist.
+        //
+        // Coordination with `SoundFontPlayer`'s direct MainActor MIDI dispatch
+        // path relies on `PeachApp.trackActiveSession`'s invariant that pitch
+        // and rhythm sessions are not concurrently active (see PF-054 in
+        // `docs/implementation-artifacts/deferred-work.md`).
         scheduleState.needsAllNotesOff.store(true, ordering: .relaxed)
         swapScheduleSlot { inactiveSlot in
             scheduleState.setCount(0, forSlot: inactiveSlot)

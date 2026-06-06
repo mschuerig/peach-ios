@@ -961,6 +961,65 @@ struct TimingOffsetDetectionSessionTests {
         f.session.stop()
     }
 
+    // MARK: - Trial-start race against stale samplePosition (PF-011)
+
+    /// Regression for the PF-011 trial-start race: between
+    /// `beatSequencer.start(...)` returning and the render thread observing
+    /// the generation bump that resets `samplePosition` to 0, the polling
+    /// task can sample a stale large value. With `maxRepetitions == 1` and an
+    /// unlucky tick, the cap would fire immediately, before any audible note.
+    ///
+    /// The mock's `start()` mirrors the real engine by leaving
+    /// `currentSamplePosition` untouched — the test pre-sets a stale value and
+    /// later calls `flushDeferredReset()` to model the render-thread's deferred
+    /// reset. The polling gate added in Story 85.3 captures the pre-start
+    /// sample position as a stale upper bound and skips cap accounting until
+    /// the render-thread reset is observed.
+    @Test("maxRepetitions == 1 does not fire cap on stale samplePosition observed before render-thread reset")
+    func trialStartDoesNotFireCapOnStaleSamplePosition() async throws {
+        let trial = TimingOffsetDetectionTrial(
+            tempo: TempoBPM(80),
+            offset: TimingOffset(.milliseconds(50))
+        )
+        let f = makeSession(trialToReturn: trial, maxRepetitions: 1)
+
+        // Simulate a previous trial's accumulated sample position. With
+        // 22050 samplesPerBeat and 4 subdivisions/beat, this lands in cycle
+        // 100 — far past any maxRepetitions cap. The mock's `start()`
+        // preserves this stale value until `flushDeferredReset()` is called.
+        f.sequencer.currentSamplePosition = f.samplesPerBeat * 100
+
+        f.session.start(settings: f.settings)
+        await f.sequencer.waitForStart()
+        try await waitForState(f.session, .playingPatternLoop)
+
+        // With the polling gate in place, the stale read does NOT fire the cap.
+        // Without the gate, `globalSubdivisionIndex` is huge and the next
+        // evaluate transitions to `.awaitingAnswer` (and litDotCount resets to 0).
+        f.session.evaluatePlaybackPosition()
+        #expect(
+            f.session.state == .playingPatternLoop,
+            "Cap must NOT fire while samplePosition is stale (>= pre-start upper bound)"
+        )
+
+        // Render-thread reset is observed: `samplePosition` drops below the
+        // stale upper bound; the gate releases.
+        f.sequencer.flushDeferredReset()
+
+        // Advance partway into cycle 1 — well below the cap of one cycle.
+        f.sequencer.currentSamplePosition = f.samplesPerSubdivision
+        f.session.evaluatePlaybackPosition()
+        #expect(f.session.state == .playingPatternLoop, "Trial proceeds normally once the gate releases")
+        // After flush + advance by 1 subdivision:
+        //   samplePosition = samplesPerSubdivision
+        //   globalSubdivisionIndex = samplePosition / samplesPerSubdivision = 1
+        //   litDotCount = (globalSubdivisionIndex % subdivisionsPerBeat) + 1
+        //                = (1 % 4) + 1 = 2
+        #expect(f.session.litDotCount == 2, "litDotCount tracks the post-reset subdivision")
+
+        f.session.stop()
+    }
+
     @Test("very high maxRepetitions cap never fires — behaviour matches the uncapped loop")
     func veryHighCapNeverFires() async throws {
         let trial = TimingOffsetDetectionTrial(

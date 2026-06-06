@@ -202,15 +202,146 @@ final class TrainingLifecycleCoordinator {
         }
     }
 
+    /// Suspends until `session.isIdle` becomes `true`.
+    ///
+    /// PF-047 defensive shape: the read of `session.isIdle` is performed INSIDE
+    /// the `withObservationTracking` block, and a synchronous re-check decides
+    /// whether to resume immediately or wait for the next mutation. This
+    /// eliminates the read-then-suspend race window for any future
+    /// async-`isIdle` migration — under the current synchronous
+    /// MainActor-readable `isIdle`, the race is not reachable, but the
+    /// defensive pattern locks the contract in place. See PF-047 audit in
+    /// `docs/implementation-artifacts/85-3-audit-and-harden-sequencer-concurrency.md`.
+    ///
+    /// Honors Task cancellation: `withCheckedContinuation` does NOT integrate
+    /// with cancellation on its own, so the continuation is wrapped in
+    /// `withTaskCancellationHandler`. On cancel, the `SingleShotResumerBox` is
+    /// resumed so the await returns; the caller's subsequent `Task.isCancelled`
+    /// check propagates the cancellation.
     private func awaitIdle(of session: any TrainingSession) async {
         while !session.isIdle {
-            await withCheckedContinuation { continuation in
-                withObservationTracking {
-                    _ = session.isIdle
-                } onChange: {
-                    continuation.resume()
+            if Task.isCancelled { return }
+            // Hoist `SingleShotResumerBox` out so both the observation block's
+            // resume paths AND `onCancel` can target the same one-shot guard.
+            // The lock-wrapped continuation is set on demand inside
+            // `withCheckedContinuation`'s body.
+            let resumeBox = SingleShotResumerBox()
+            await withTaskCancellationHandler {
+                await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+                    resumeBox.install(continuation: continuation)
+                    withObservationTracking {
+                        // Re-check inside the tracking block: if idle is already
+                        // true at this point, resume immediately rather than
+                        // installing the observer for a mutation that already
+                        // happened. The `_ = session.isIdle` read in the else
+                        // branch is what registers the observer for the next
+                        // mutation.
+                        if session.isIdle {
+                            resumeBox.resume()
+                        } else {
+                            _ = session.isIdle
+                        }
+                    } onChange: {
+                        resumeBox.resume()
+                    }
                 }
+            } onCancel: {
+                // Release the await so the caller's Task.isCancelled check
+                // can propagate the cancellation. The box guarantees at-most-
+                // once resume across all paths.
+                resumeBox.resume()
+            }
+            if Task.isCancelled { return }
+        }
+    }
+}
+
+/// One-shot wrapper around `CheckedContinuation` for `withObservationTracking`
+/// patterns where multiple paths — the synchronous re-check inside the tracking
+/// block, the asynchronous `onChange`, AND the `withTaskCancellationHandler`'s
+/// `onCancel` — may attempt to resume the same continuation. Resuming a
+/// `CheckedContinuation` twice traps; the single-shot guard makes the order
+/// between the paths irrelevant.
+///
+/// The box is allocated BEFORE `withCheckedContinuation` so the cancellation
+/// handler (which is set up outside the continuation) can reach it; the
+/// continuation is `install`ed once it exists. `resume()` is a no-op until
+/// installation, which keeps `onCancel` safe to fire at any point — including
+/// before the continuation body runs.
+///
+/// `onChange` and `onCancel` may run on whichever isolation context dispatches
+/// them; the type is `nonisolated` and uses an `OSAllocatedUnfairLock` so the
+/// guard is safe regardless of caller isolation.
+///
+/// **Sendable safety rationale.** Per the Swift Concurrency Continuation
+/// contract, `CheckedContinuation.resume()` is documented as thread-safe and
+/// may be invoked from any isolation domain. The lock-wrapped optional
+/// guarantees at most one path observes a non-nil continuation, so the
+/// at-most-once invariant the continuation requires is preserved across
+/// cross-isolation callers. The combination of `nonisolated` + a lock-wrapped
+/// `CheckedContinuation<Void, Never>?` therefore satisfies `Sendable` without
+/// requiring `@unchecked`.
+nonisolated private final class SingleShotResumerBox: Sendable {
+    private let state: OSAllocatedUnfairLock<State>
+
+    private enum State {
+        /// Continuation not yet installed AND no resume requested.
+        case pending
+        /// Continuation installed and still waiting to be resumed.
+        case armed(CheckedContinuation<Void, Never>)
+        /// A resume was requested before the continuation was installed; the
+        /// installation will resume immediately.
+        case resumeRequested
+        /// Already resumed; further calls are no-ops.
+        case consumed
+    }
+
+    init() {
+        self.state = OSAllocatedUnfairLock(initialState: .pending)
+    }
+
+    /// Install the continuation. If `resume()` was already called — or, in
+    /// the pathological double-install case, if a prior continuation already
+    /// completed — the incoming continuation resumes immediately. Resuming
+    /// rather than swallowing avoids the `CheckedContinuation` leak trap on
+    /// the incoming continuation if `install()` is ever reached from an
+    /// unexpected path.
+    func install(continuation: CheckedContinuation<Void, Never>) {
+        let shouldResumeNow: Bool = state.withLock { storage in
+            switch storage {
+            case .pending:
+                storage = .armed(continuation)
+                return false
+            case .resumeRequested, .consumed:
+                storage = .consumed
+                return true
+            case .armed:
+                // Two live continuations cannot share one box; this is a logic
+                // bug. The new continuation resumes so it doesn't trap; the
+                // old one is left to be resumed by some other path (or trap
+                // and surface the bug).
+                assertionFailure("SingleShotResumerBox.install called twice with two live continuations")
+                return true
             }
         }
+        if shouldResumeNow {
+            continuation.resume()
+        }
+    }
+
+    func resume() {
+        let toResume: CheckedContinuation<Void, Never>? = state.withLock { storage in
+            switch storage {
+            case .pending:
+                storage = .resumeRequested
+                return nil
+            case .armed(let continuation):
+                storage = .consumed
+                return continuation
+            case .resumeRequested, .consumed:
+                return nil
+            }
+        }
+        toResume?.resume()
     }
 }

@@ -18,6 +18,23 @@ enum Subdivision: Sendable, Equatable {
 
 // MARK: - BeatProvider
 
+/// Provides a beat per request to a `BeatSequencer`.
+///
+/// **Actor-isolation contract.** `BeatProvider` is intentionally NOT `Sendable`.
+/// Under the project's `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` build
+/// setting, every conformer in the codebase is MainActor-isolated; the
+/// sequencer invokes `nextBeat()` synchronously from MainActor on the same
+/// actor-turn as its polling Task, so there is no cross-isolation hop. Marking
+/// the protocol `Sendable` would force one of:
+///   - actor-isolating the conformers (incompatible with `@Observable` + SwiftUI),
+///   - `@unchecked Sendable` (defeats the analysis), or
+///   - dropping the conformers' mutable trial state into actors of their own
+///     (a substantial refactor with no observable safety gain).
+///
+/// Adding a non-MainActor caller would re-open the question. The PF-011 audit
+/// (Story 85.3) verified the current shape is safe under default-MainActor
+/// isolation; the contract stays documented inline rather than enforced by
+/// Sendable conformance.
 protocol BeatProvider {
     func nextBeat() -> Beat
 }

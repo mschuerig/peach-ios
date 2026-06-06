@@ -139,6 +139,18 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     /// Last subdivision index published to `litDotCount`, gating Observation churn at the 120 Hz tracking rate.
     private var lastPublishedSubdivisionIndex: Int = -1
 
+    /// Pre-start `samplePosition` captured immediately after `beatSequencer.start(...)`
+    /// returns — see PF-011 audit (Story 85.3). The post-`start()` reset to
+    /// `samplePosition = 0` is observed on the render thread's next callback,
+    /// not synchronously on return; until that reset is observed, the polling
+    /// task would otherwise read the previous trial's tail value and trip the
+    /// cap immediately. While `timing.samplePosition >= staleSamplePositionUpperBound`,
+    /// `evaluatePlaybackPosition` skips cap-check and lit-dot publishing. The
+    /// gate clears on the first observed transition below the bound (i.e., the
+    /// render thread observed the reset) or on session lifecycle transitions
+    /// that reset tracking.
+    private var staleSamplePositionUpperBound: Int64?
+
     private var isPaused = false
 
     var currentOffsetPercentage: Double? {
@@ -253,12 +265,15 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         startTask = Task {
             await priorStop?.value
             guard state == .playingPatternLoop, !Task.isCancelled else { return }
+            // PF-011: see `beginNextTrial` for rationale — snapshot BEFORE the await.
+            let prestartSamplePosition = beatSequencer.timing.samplePosition
             do {
                 try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
                 guard state == .playingPatternLoop, !Task.isCancelled else {
                     logger.info("State changed while restarting sequencer, aborting")
                     return
                 }
+                setStaleSamplePositionUpperBound(prestartSamplePosition)
                 startTrackingLoop()
             } catch is CancellationError {
                 logger.info("Sequencer restart task cancelled")
@@ -341,12 +356,22 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         resetTracking()
 
         startTask = Task {
+            // PF-011: snapshot `samplePosition` BEFORE the await on
+            // `beatSequencer.start(...)`. The render thread may observe the
+            // gen-bump reset to 0 DURING the await (e.g., while `loadPreset`
+            // runs); reading `timing.samplePosition` after the await can return
+            // 0 even though a stale large value was in flight when start was
+            // requested. The pre-await value IS the stale upper bound: while
+            // `samplePosition >= bound`, the polling task knows the render
+            // thread has not yet committed the post-start reset.
+            let prestartSamplePosition = beatSequencer.timing.samplePosition
             do {
                 try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
                 guard state == .playingPatternLoop, !Task.isCancelled else {
                     logger.info("State changed while starting sequencer, aborting")
                     return
                 }
+                setStaleSamplePositionUpperBound(prestartSamplePosition)
                 startTrackingLoop()
             } catch is CancellationError {
                 logger.info("Sequencer start task cancelled")
@@ -357,8 +382,27 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         }
     }
 
+    /// Installs the PF-011 polling gate from a pre-start `samplePosition`
+    /// snapshot. A non-positive observed value cannot be a stale upper bound —
+    /// the gate condition is `>= bound`, so a bound of 0 would suppress every
+    /// poll until the position advances above zero, which is the opposite of
+    /// what we want; leave the gate nil in that case (no stale value to guard
+    /// against, e.g., first-ever start after process launch).
+    private func setStaleSamplePositionUpperBound(_ prestartSamplePosition: Int64) {
+        staleSamplePositionUpperBound = prestartSamplePosition > 0 ? prestartSamplePosition : nil
+    }
+
     private func startTrackingLoop() {
         trackingTask?.cancel()
+        // Isolation contract (PF-011 audit, Story 85.3): this `Task` inherits
+        // MainActor from `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. The
+        // closure is NOT cross-actor; `evaluatePlaybackPosition()` runs on
+        // MainActor on every tick. The `@Observable` writes it issues
+        // (`litDotCount`, `lastPublishedSubdivisionIndex`,
+        // `staleSamplePositionUpperBound`) are therefore NOT data races —
+        // safety is provided by isolation, not by Sendable conformance on the
+        // BeatProvider/session shape. See Audit Findings §A in
+        // `docs/implementation-artifacts/85-3-audit-and-harden-sequencer-concurrency.md`.
         trackingTask = Task {
             while !Task.isCancelled {
                 evaluatePlaybackPosition()
@@ -375,6 +419,17 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
               let settings,
               timing.samplePosition >= 0,
               timing.samplesPerBeat > 0 else { return }
+
+        // PF-011 polling gate: while the render thread has not yet observed
+        // the post-start `samplePosition` reset, the read is stale; skip
+        // cap-check and lit-dot publishing. Once a value below the bound is
+        // observed (reset committed), release the gate.
+        if let bound = staleSamplePositionUpperBound {
+            if timing.samplePosition >= bound {
+                return
+            }
+            staleSamplePositionUpperBound = nil
+        }
 
         let subdivisionsPerBeat = settings.pattern.subdivisions.count
         guard subdivisionsPerBeat > 0 else { return }
@@ -549,6 +604,9 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     private func resetTracking() {
         litDotCount = 0
         lastPublishedSubdivisionIndex = -1
+        // Lifecycle transitions invalidate the stale-position gate; the next
+        // `beatSequencer.start(...)` re-captures the bound.
+        staleSamplePositionUpperBound = nil
     }
 
     private func nextGridPoint(quarterNoteDuration: Double) -> Double {

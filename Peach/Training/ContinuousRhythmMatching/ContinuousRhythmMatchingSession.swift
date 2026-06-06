@@ -127,10 +127,27 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     private var lastPublishedSubdivisionIndex: Int = -1
     private var lastPublishedCycleIndex: Int = -1
 
+    /// Pre-start `samplePosition` captured immediately after
+    /// `beatSequencer.start(...)` returns — see PF-011 audit (Story 85.3). The
+    /// post-`start()` reset to `samplePosition = 0` is observed on the render
+    /// thread's next callback, not synchronously on return; until that reset
+    /// is observed, the polling task would otherwise read the previous trial's
+    /// tail value and fire 16 `cycleMissed` events in one tick, silently
+    /// completing the trial. While `timing.samplePosition >=
+    /// staleSamplePositionUpperBound`, `evaluatePlaybackPosition` skips
+    /// cycle-miss accumulation and observable publishing. The gate clears on
+    /// the first observed transition below the bound or on session lifecycle
+    /// transitions that reset tracking.
+    private var staleSamplePositionUpperBound: Int64?
+
     private var isPaused = false
-    /// Tracks the pause-spawned `beatSequencer.stop()` so the next
-    /// `startSequencer` effect can await it before re-entering the sequencer's
-    /// serial run loop.
+    /// Tail of the serial sequencer-stop chain (mirrors TOD's `stopTask`).
+    /// Each new stop awaits its predecessor and any in-flight `startTask`,
+    /// then issues `beatSequencer.stop()`. This serialization ensures that
+    /// back-to-back stops (e.g., pause followed by stopAll) cannot race on
+    /// the sequencer's internal `runLoopTask`. Also let the next
+    /// `startSequencer` effect await this tail before re-entering the
+    /// sequencer's serial run loop.
     private var pendingSequencerStop: Task<Void, Never>?
 
     // MARK: - Initialization
@@ -164,8 +181,6 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     func pause() {
         guard !isPaused, state != .idle else { return }
         isPaused = true
-        startTask?.cancel()
-        startTask = nil
         trackingTask?.cancel()
         trackingTask = nil
         midiListeningTask?.cancel()
@@ -173,7 +188,8 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         lifecycle?.cancelFeedbackTask()
         showFeedback = false
         lastHitOffsetMs = nil
-        pendingSequencerStop = Task { try? await beatSequencer.stop() }
+        staleSamplePositionUpperBound = nil
+        enqueueSequencerStop()
         logger.info("Session paused (preserving \(self.gapResults.count) gap results in trial cycle \(self.cyclesInCurrentTrial))")
     }
 
@@ -194,6 +210,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         lastEvaluatedCycleIndex = -1
         lastPublishedSubdivisionIndex = -1
         lastPublishedCycleIndex = -1
+        staleSamplePositionUpperBound = nil
         currentBeatPosition = nil
         gapPositionInCurrentBeat = nil
         // Reduce state to .idle so `.startRequested` fires the normal startup effects.
@@ -216,6 +233,7 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         self.lastEvaluatedCycleIndex = -1
         self.lastPublishedSubdivisionIndex = -1
         self.lastPublishedCycleIndex = -1
+        self.staleSamplePositionUpperBound = nil
         self.lastTrialResult = nil
 
         logger.info("Starting continuous rhythm matching at \(settings.tempo.value) BPM")
@@ -289,6 +307,17 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         guard state == .running,
               timing.samplePosition >= 0,
               timing.samplesPerBeat > 0 else { return }
+
+        // PF-011 polling gate: while the render thread has not yet observed
+        // the post-start `samplePosition` reset, the read is stale; skip
+        // cycle-miss accumulation and observable publishing. Once a value
+        // below the bound is observed (reset committed), release the gate.
+        if let bound = staleSamplePositionUpperBound {
+            if timing.samplePosition >= bound {
+                return
+            }
+            staleSamplePositionUpperBound = nil
+        }
 
         let samplesPerSubdivision = timing.samplesPerBeat / Self.subdivisionsPerBeat
         guard samplesPerSubdivision > 0 else { return }
@@ -392,8 +421,18 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         startTask = Task {
             await priorStop?.value
             guard state == .running, !Task.isCancelled else { return }
+            // PF-011: snapshot `samplePosition` BEFORE the await on
+            // `beatSequencer.start(...)`. The render thread may observe the
+            // gen-bump reset to 0 DURING the await; reading
+            // `timing.samplePosition` after the await can return 0 even though
+            // a stale large value was in flight when start was requested. The
+            // pre-await value IS the stale upper bound: while
+            // `samplePosition >= bound`, the polling task knows the render
+            // thread has not yet committed the post-start reset.
+            let prestartSamplePosition = beatSequencer.timing.samplePosition
             do {
                 try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
+                setStaleSamplePositionUpperBound(prestartSamplePosition)
                 send(.sequencerReady)
             } catch is CancellationError {
                 logger.info("Session task cancelled")
@@ -404,7 +443,27 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         }
     }
 
+    /// Installs the PF-011 polling gate from a pre-start `samplePosition`
+    /// snapshot. A non-positive observed value cannot be a stale upper bound —
+    /// the gate condition is `>= bound`, so a bound of 0 would suppress every
+    /// poll until the position advances above zero, which is the opposite of
+    /// what we want; leave the gate nil in that case (no stale value to guard
+    /// against, e.g., first-ever start after process launch).
+    private func setStaleSamplePositionUpperBound(_ prestartSamplePosition: Int64) {
+        staleSamplePositionUpperBound = prestartSamplePosition > 0 ? prestartSamplePosition : nil
+    }
+
     private func startTrackingLoop() {
+        // Isolation contract (PF-011 audit, Story 85.3): this `Task` inherits
+        // MainActor from `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`. The
+        // closure is NOT cross-actor; `evaluatePlaybackPosition()` runs on
+        // MainActor on every tick. The `@Observable` writes it issues
+        // (`gapPositionInCurrentBeat`, `currentBeatPosition`,
+        // `lastPublishedSubdivisionIndex`, `staleSamplePositionUpperBound`) are
+        // therefore NOT data races — safety is provided by isolation, not by
+        // Sendable conformance on the BeatProvider/session shape. See Audit
+        // Findings §A in
+        // `docs/implementation-artifacts/85-3-audit-and-harden-sequencer-concurrency.md`.
         trackingTask = Task {
             while !Task.isCancelled {
                 evaluatePlaybackPosition()
@@ -468,18 +527,13 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         logger.info("Stopping continuous rhythm matching session")
 
         isPaused = false
-        pendingSequencerStop = nil
-        startTask?.cancel()
-        startTask = nil
         trackingTask?.cancel()
         trackingTask = nil
         midiListeningTask?.cancel()
         midiListeningTask = nil
         lifecycle?.cancelFeedbackTask()
 
-        Task {
-            try? await beatSequencer.stop()
-        }
+        enqueueSequencerStop()
 
         currentBeatPosition = nil
         gapPositionInCurrentBeat = nil
@@ -493,5 +547,40 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         lastEvaluatedCycleIndex = -1
         lastPublishedSubdivisionIndex = -1
         lastPublishedCycleIndex = -1
+        staleSamplePositionUpperBound = nil
+    }
+
+    /// Serializes sequencer stops mirroring TOD's `enqueueSequencerStop`
+    /// pattern. Each enqueued stop awaits the previous stop, cancels-and-awaits
+    /// any in-flight `startTask`, then calls `beatSequencer.stop()`. This
+    /// prevents back-to-back stops from racing the sequencer's internal
+    /// `runLoopTask` and also lets the next `startSequencer` await
+    /// `pendingSequencerStop` before re-entering the run loop.
+    ///
+    /// Signature differs from TOD's `enqueueSequencerStop` (which takes an
+    /// `onFailure: @escaping () -> Void = {}` for answer-driven audio-error
+    /// escalation in `stopSequencerForAnswer`). CRM has no equivalent
+    /// answer-driven stop path — trial completion runs through
+    /// `evaluatePlaybackPosition` cycle accumulation, not user-driven input —
+    /// so non-cancellation errors are logged and dropped. If a CRM caller
+    /// later needs escalation, re-add the parameter alongside that caller.
+    private func enqueueSequencerStop() {
+        let inflightStart = startTask
+        startTask = nil
+        let previousStop = pendingSequencerStop
+        pendingSequencerStop = Task {
+            await previousStop?.value
+            if let inflightStart {
+                inflightStart.cancel()
+                await inflightStart.value
+            }
+            do {
+                try await self.beatSequencer.stop()
+            } catch is CancellationError {
+                return
+            } catch {
+                self.logger.error("Failed to stop beat sequencer: \(error.localizedDescription)")
+            }
+        }
     }
 }

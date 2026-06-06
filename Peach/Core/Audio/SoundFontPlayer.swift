@@ -68,6 +68,14 @@ final class SoundFontPlayer: NotePlayer {
         await scheduleStopAll().value
     }
 
+    /// Synchronous-commit only enforces order on synchronous code paths. From an
+    /// async cleanup continuation (e.g. a cancelled-trial `catch`), "commit"
+    /// happens at whatever MainActor turn processes the continuation — after
+    /// siblings may have already captured the chain tail — so callers from
+    /// async-continuation contexts must NOT register additional chain entries
+    /// that are already redundant with a session-level stop already in the
+    /// chain. See `docs/project-context.md:84` and `NotePlayer+TimedPlay.swift`
+    /// for the canonical pattern (cancellation catch does NOT call `handle.stop()`).
     @discardableResult
     func scheduleStopAll() -> Task<Void, Never> {
         logger.debug("scheduleStopAll: queuing stop on channel \(self.channel.rawValue)")
