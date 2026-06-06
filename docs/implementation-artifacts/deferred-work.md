@@ -322,3 +322,27 @@ If `session.isIdle` flips to `true` after the `while` check (line 157) but befor
 Surfaced by the PF-004 (v3) triage walk-through. The test-only PF-004 fix added `waitUntilStopped` + `waitUntilNavigationResolved` polls that avoid the race in tests by waiting for an observable end-state; the production path that this entry tracks is independent of that fix.
 
 **Fix:** Resolution candidates: (a) re-check `session.isIdle` inside the `withObservationTracking` block before suspending — if `isIdle == true` at that point, resume immediately rather than installing the observer; (b) restructure with `AsyncStream` or `Observation`'s newer `observe { ... }` API that handles the read-then-suspend atomically; (c) document that callers must guarantee `isIdle` does not flip synchronously between coordinator entry and observer install (couples the contract to an implicit timing assumption — least preferred).
+
+### PF-052: Sine wave SF2 preset clicks audibly on note tail
+
+**Found:** 2026-06-06 (Story 85.1 v2 verification listening test)
+**Severity:** Low (single preset; not a default; doesn't affect training correctness)
+**Disposition:** OPEN
+
+When the user selects Sine Wave (`sf2:8:80`) as Sound Source, every note tail produces an audible click at note-off. The Grand Piano (`sf2:0:0`) and Cello (`sf2:0:42`) presets do not click — their SF2 release envelopes handle the tail gracefully. The sine preset's release envelope is near-zero, so `sampler.stopNote()` cuts the sample mid-cycle.
+
+Today the only mitigation is `SoundFontPlayer.fadeOutDuration = .milliseconds(25)` for this specific preset (set by `PeachApp.determineFadeOutDuration(for:)`), which engages `SoundFontEngine.muteForFade()` — a global `sampler.volume = 0` on every channel that previously had race-source implications (resolved separately in Story 85.1 v2 by removing the redundant cleanup paths that engaged it from cancellation continuations). The mute mechanism remains in place and silences the click for sine; the architectural untidiness of a "global volume = 0" primitive remains.
+
+**Fix:** Resolution candidates: (a) convert `muteForFade` to a per-channel mute (parameterized `muteForFade(channel:)` / `restoreAfterFade(channel:)` with a per-channel counter) — keeps the same shape but removes the global-mute surface; (b) shape the SF2 sine preset's release envelope at asset-prep time (offline `polyphone` or `sf2parse` re-export with a longer release segment) — eliminates the click at source, removes the need for any runtime mute mechanism; (c) inline per-sample fade-out on the render thread (more invasive, larger code surface). Recommendation: (b) if the SF2 asset can be re-shaped without significant musical change; (a) as fallback.
+
+### PF-053: `noteDuration` setting change doesn't take effect immediately
+
+**Found:** 2026-06-06 (Story 85.1 v2 listening test side-finding)
+**Severity:** Low (workaround: end the current trial / restart training)
+**Disposition:** OPEN
+
+When the user changes the `noteDuration` setting (Settings → Reference Note Duration) during an active session, the new value does not apply to the in-flight trial. The change takes effect only after the current trial completes or the session is stopped and restarted. Several other settings (e.g. velocity, sound source) update mid-session via observation/environment; `noteDuration` does not.
+
+The likely cause is that `noteDuration` is read once at trial start (via `from(userSettings:intervals:)` factory or equivalent settings snapshot) and the snapshot is held for the duration of the trial. Other settings either re-read on each `play()` call or are pure environment lookups that always reflect current state.
+
+**Fix:** Either (a) re-read `noteDuration` from `userSettings` at each `play(frequency:duration:)` call site instead of at trial-start, or (b) document explicitly that `noteDuration` is a per-trial snapshot (current behaviour, just needs to be intentional). Decision lives with whether immediate change is a UX expectation worth the cost — verify with user before coding.

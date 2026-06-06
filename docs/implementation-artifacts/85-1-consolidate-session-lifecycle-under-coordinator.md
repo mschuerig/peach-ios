@@ -126,6 +126,22 @@ Filled to the cluster-closure level; per-PF acceptance lives in the Acceptance C
 
 This was not in the catalog. It is the same root cause and the same fix shape — routing `helpSheetPresented` through pause and `helpSheetDismissed` through resume instead of stop/start. **Question for human:** include in this story's scope (one extra line at each call site once pause/resume exists), or open a PF-### follow-up and leave help-sheet alone?
 
+### v2 — Audio-mute race actual surfaces (resolved 2026-06-06)
+
+The architect's initial framing (deferred render-thread global mute) was wrong. The bug had two compounding roots, both narrow:
+
+| Surface | Action |
+|---|---|
+| [`NotePlayer+TimedPlay.swift`](../../Peach/Core/Audio/NotePlayer+TimedPlay.swift):12–14 | Split the single `catch { try? await handle.stop(); throw }` into `catch is CancellationError { throw CancellationError() }` (no handle.stop) and the original error-path `catch` (unchanged). Reason: cancellation cleanup ran in a deferred MainActor continuation, registering a chain entry AFTER a subsequent `play()` had already captured the chain tail at `await pendingAudioStop?.value`. The late noteOff then fired concurrently with the new noteOn and empirically silenced it. Session-level pause/stop ALWAYS issues `scheduleStopAll()` which sends CC#123 through the chain that `play()` does await — so the redundant cleanup is gone and the active note is still silenced by the path `play()` orders against. |
+| [`SoundFontPlayer.swift`](../../Peach/Core/Audio/SoundFontPlayer.swift):77 | Remove `self.soundFontEngine.clearSchedule()` call from `scheduleStopAll`'s Task body. Reason: `clearSchedule` is rhythm-sequencer machinery — it flushes the scheduled-event queue and sets a render-thread `needsAllNotesOff` flag for a deferred CC#123. Pitch has no scheduled events to flush and no stuck-note scenario. The deferred render-thread CC#123 was a latent silencer that could fire after a subsequent `play()`'s noteOn. The synchronous `sampler.sendController(123)` in `stopNotes()` already silences the channel in MainActor source order. |
+
+**Untouched (and verified correct as-is):**
+
+- `muteForFade` / `restoreAfterFade` / `activeMuteCount` — orthogonal to the race; they relate to sine-wave click suppression on note tails, not ordering. (Sine-wave click on note tail is a separate finding from Task V verification — cataloged as a follow-up PF entry.)
+- `pendingAudioStop` chain / `scheduleNoteStop` / `weak var player` / fade plumbing — all kept. They support `handle.stop()` in non-cancellation paths (normal note tail, slider-commit cut) where the chain ordering does apply. The chain pattern (v0.10 arc42 amendment) is still architecturally correct for its actual responsibility.
+
+**Test impact:** none — the two changes are behaviour-preserving for every test that doesn't depend on cancellation triggering a chain-registered handle.stop. Pre-commit gates verify.
+
 ## Tasks & Acceptance
 
 **Execution:**
@@ -141,6 +157,16 @@ This was not in the catalog. It is the same root cause and the same fix shape �
 - [x] **Task 8 — Catalog hygiene.** Remove the PF-001, PF-003, PF-005 sections from `docs/implementation-artifacts/deferred-work.md`. Cite the closed IDs in the commit message.
 - [x] **Task 9 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. Both green.
 
+**v2 — Audio-mute race resolution (post-merge follow-up, scope reopened 2026-06-06):**
+
+- [x] **Task V — Verification listening test.** Bypassed `muteForFade` in `SoundFontPlaybackHandle.stop()` and `SoundFontEngine.stopNotes()`; listened on Grand Piano / Cello / Sine Wave across four scenarios. Verdict: sine-wave click confirmed on note tail (separate concern, cataloged); **first-note-silent symptom PERSISTED on Grand Piano**, falsifying the architect's framing that `muteForFade` was the silencer. Reverted that patch.
+- [x] **Task V.2 — Deep-research re-framing.** Ran a 102-agent deep-research pass on RT-audio + AVAudioEngine + AVAudioUnitSampler dispatch patterns (Bencina, Doumler, Tyson, Liljedahl, AudioKit source). Findings: the community-consensus "SPSC FIFO drained on render thread" pattern is correct for buffer-fill ordering but the wrong scale of solution here — Peach's actual problem is narrower (redundant cleanup paths racing into one sampler). Result captured in working memory, not exhumed into a refactor.
+- [x] **Task V.3 — Sharper diagnosis.** Tested second hypothesis: `SoundFontPlayer.scheduleStopAll()` calling `SoundFontEngine.clearSchedule()` (rhythm-sequencer machinery) triggers a deferred render-thread CC#123 that races subsequent `play()` noteOn. Removed it. Symptom persisted on its own. Tested third hypothesis: `NotePlayer+TimedPlay.swift`'s cancellation catch's `try? await handle.stop()` registers a chain entry from a deferred MainActor continuation, racing a subsequent play()'s chain-tail capture. Removed it (in combination with the clearSchedule removal). **Symptom closed.**
+- [x] **Task 10 — Surgical fix.** Two-file change captured in the v2 Code Map above. No removal of `muteForFade` / `pendingAudioStop` / fade plumbing — those are orthogonal. Original 85.1 chain pattern (v0.10 arc42) stays correct for its actual responsibility.
+- [x] **Task 11 — Docs + close.** Delete `docs/implementation-artifacts/85-1-audio-mute-race-handover.md` (architect framing was wrong; preserved in git history). Update `docs/project-context.md`'s `scheduleStopAll()` rule with the cleanup-multiplexing learning. Brief arc42 addendum: chain pattern unchanged; one-line rule added about cleanup paths in async continuations. Update spec status to `done`; sprint-status row to `done`.
+- [x] **Task 12 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four schemes green.
+- [x] **Task 13 — Catalog new findings.** Two new PF entries added to `docs/implementation-artifacts/deferred-work.md`: sine-wave SF2 click on note tail; `noteDuration` setting change not taking effect immediately.
+
 **Acceptance Criteria:**
 
 - **PF-001.** Given an active training session on macOS, when the user switches to another app, then exactly one `Lifecycle` "App deactivated" log line appears (from the coordinator's `handleAppDeactivated()` path), and no per-session `AudioSessionInterruptionMonitor` fires its `backgroundNotificationName` handler. (Reframed during Task 1 verification: the catalog's "4× 'stop() called but already idle' log lines" claim was not literal — no such log exists; the redundancy is silent. The reframed acceptance pins the architectural fix to an observable signal.)
@@ -153,7 +179,44 @@ This was not in the catalog. It is the same root cause and the same fix shape �
 - **Pre-commit gate.** Both schemes pass on both platforms: `bin/test.sh && bin/test.sh -p mac` (Debug) and `bin/test.sh --research && bin/test.sh --research -p mac` (Research). No new compiler warnings.
 - **Catalog hygiene.** PF-001, PF-003, PF-005 sections are removed from `deferred-work.md` in the closing commit, which cites the three IDs.
 
+**v2 — Audio-mute race resolution (added 2026-06-06):**
+
+- **First-note-audible on quick discipline switch (main symptom).** Given a user rapidly switches between pitch trainings (PitchDiscrimination ⇄ PitchMatching) at `noteDuration = 1s`, when the new session's reference note plays, then the noteOn produces audible sound on the first attempt — no silent first reference note. Empirically verified by listening test on Grand Piano. Closes the symptom that drove commits 868fda34..a3a75d1b.
+- **No cleanup multiplex against the audio-stop chain.** Given a `play(frequency:duration:)` Task is cancelled via session pause/stop, when the cancellation catch fires, then it does NOT call `handle.stop()`. The session-level `scheduleStopAll()` (committed synchronously by pause/stop) sends CC#123 through the chain that the next `play()` actually awaits — that is the single, definitive silencing path.
+- **Pitch's `scheduleStopAll` does not summon rhythm-sequencer reset.** Given a pitch session's stopAll fires, when its Task body runs, then `SoundFontEngine.clearSchedule()` is NOT called. Pitch has no scheduled events to flush; `stopNotes()`'s synchronous `sampler.sendController(123)` is the sample-accurate silencer.
+- **Chain pattern (v0.10) unchanged for its actual responsibility.** `pendingAudioStop` chain still serializes intentional stop sequences (pause-then-stop) against subsequent plays. `scheduleNoteStop` still backs `handle.stop()` for non-cancellation paths (normal note tail, slider-commit cut) where the chain ordering does apply.
+- **Pre-commit gate (v2).** Both schemes pass on both platforms after the fix: `bin/test.sh && bin/test.sh -p mac` (Debug) and `bin/test.sh --research && bin/test.sh --research -p mac` (Research). No new compiler warnings.
+
 ## Spec Change Log
+
+### 2026-06-06 — v2: Audio-mute race resolution (cancelled-trial cleanup multiplex)
+
+After 85.1 merged to `main`, a deterministic "first reference note silent on quick discipline switch" symptom surfaced. Six commits (868fda34, 6ef030a7, dac70df1, a3a75d1b — plus `e168b63a` doc-only) attempted to fix it by extending the audio-stop chain to cover more callers. The symptom persisted.
+
+**False starts.** The architect (Winston / `bmad-agent-architect`) framed the silencer as `SoundFontEngine.muteForFade()` setting `sampler.volume = 0` globally. Task V's verification patch bypassed the mute mechanism and listened across Grand Piano / Cello / Sine Wave at four scenarios. Sine wave clicked on note tail (separate concern — cataloged as a new PF entry), but the **first-note-silent symptom persisted on Grand Piano** — falsifying the mute-as-silencer framing. A second hypothesis — `SoundFontPlayer.scheduleStopAll()` invoking `SoundFontEngine.clearSchedule()`, which sets a render-thread `needsAllNotesOff` flag for a deferred CC#123 — was tested next and also did not close the symptom on its own.
+
+**Deep-research re-framing.** A 102-agent deep-research pass on RT-audio + AVAudioEngine + AVAudioUnitSampler dispatch (Bencina, Doumler, Tyson, Liljedahl, AudioKit primary source) confirmed the community-consensus pattern is single SPSC FIFO drained on the render thread. But that pattern targets buffer-fill ordering at low latency — the wrong scale of solution for Peach's narrower symptom, which is just redundant cleanup paths racing into one sampler. Findings captured in working memory; no full architectural refactor pursued.
+
+**Actual root cause.** Two compounding faults, narrow scope:
+
+1. **Cancelled-trial cleanup race (load-bearing silencer).** `NotePlayer+TimedPlay.swift`'s `catch { try? await handle.stop(); throw error }` block fired in a deferred MainActor continuation when `pause()`/`stop()` cancelled the in-flight `Task.sleep`. The handle.stop registered a chain entry from that continuation — but in a continuation scheduled AFTER the synchronous part of `pause()` already returned. Depending on MainActor scheduling, a subsequent `play()` could capture the chain tail at `await pendingAudioStop?.value` BEFORE the cancelled-trial's `scheduleNoteStop` registered. The new noteOn proceeded; the late noteOff fired concurrently and empirically silenced the new voice. (AVAudioUnitSampler's voice management is opaque — strict MIDI polyphony rules say `stopNote(N_A)` shouldn't affect `N_B`'s voice, but it does here.)
+2. **Pitch summoning rhythm-sequencer reset (latent silencer).** `SoundFontPlayer.scheduleStopAll()`'s Task body called `SoundFontEngine.clearSchedule()`, which sets the render-thread `needsAllNotesOff` flag for a deferred CC#123 on all 16 channels. This mechanism was designed for the rhythm sequencer (flushing scheduled events + silencing stuck notes from cleared schedule). Pitch has no scheduled events to flush; the deferred CC#123 is an extra latent silencer.
+
+**Resolution.** Two minimal patches:
+
+- `NotePlayer+TimedPlay.swift`: split the catch so `CancellationError` no longer calls `handle.stop()`. Session-level pause/stop ALWAYS issues `scheduleStopAll()` which sends CC#123 through the chain that `play()` does await. The redundant cleanup is removed; the definitive cleanup path remains.
+- `SoundFontPlayer.scheduleStopAll()`: removed the `self.soundFontEngine.clearSchedule()` call. `stopNotes()` already issues `sampler.sendController(123)` synchronously from MainActor — that's the sample-accurate silencer pitch needs.
+
+**What stays unchanged.** `muteForFade` / `pendingAudioStop` chain / `scheduleNoteStop` / fade plumbing. They support `handle.stop()` in non-cancellation paths where the chain ordering does apply. The chain pattern (v0.10 arc42 amendment) is architecturally correct for its actual responsibility — the bug was redundant cleanup paths registering against it from async continuations, not the chain itself.
+
+**Audio-programming rules learned.** (1) Don't multiplex cleanup paths for the same logical operation — one definitive cleanup beats two redundant ones competing on chain ordering. (2) Synchronous-commit-to-chain only enforces order on synchronous code paths; an async continuation's "commit" happens at whatever MainActor turn processes it, after siblings may have captured the tail. (3) Don't summon machinery you don't need (pitch invoking rhythm-sequencer reset). (4) `AVAudioUnitSampler` voice management is opaque — defensive fix is to not issue the contended operation at all.
+
+**arc42 disposition.** v0.10 (chain pattern) is correct for what it described. A brief addendum in v0.10 records the new rule: cleanup paths in async continuations are not safely chain-ordered; remove redundant ones rather than chain them. No supersession needed.
+
+**Open follow-ups (separate from this story):**
+- Sine-wave SF2 preset clicks on note tail. Tracked as a new PF entry in `deferred-work.md`. Resolution candidates: per-channel mute or release-envelope shaping.
+- `noteDuration` setting changes don't take effect immediately. Tracked as a new PF entry.
+- The wider "three uncoordinated MIDI dispatch paths into one sampler" architectural debt remains as latent risk. Current fix removes the race without unifying paths.
 
 ### 2026-06-05 — Step-04 review patches (Blind / Edge Case / Acceptance reviewers)
 

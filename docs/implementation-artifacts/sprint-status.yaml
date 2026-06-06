@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-05 # Story 85.1 (PF-001/003/005 + help-sheet cluster) moved to review; PF-048/049/050/051 cataloged for follow-up. Epic 85 work order recorded in three independent chains: 85.5→85.4, 85.2→85.1→85.3, 85.6→85.7. Story 85.3 closes PF-011/013/047 (sequencer concurrency + conformance + awaitIdle race). Story 85.2 closed as no-op (PF-002 no longer reproduces on current main; entry removed from deferred-work.md).
+# last_updated: 2026-06-06 # Story 85.1 reopened then re-closed: post-merge audio-mute race resolved via 2-line surgical fix after architect's initial muteForFade-as-silencer framing was empirically falsified. Actual cause: cancelled-trial cleanup catch (NotePlayer+TimedPlay) registering chain entry from async continuation, racing subsequent play()'s chain-tail capture; compounded by SoundFontPlayer.scheduleStopAll() summoning rhythm-sequencer clearSchedule (deferred render-thread CC#123). Chain pattern (v0.10) stays correct — bug was redundant cleanup multiplex, not the chain itself. Two new PF entries added: sine-wave click on note tail; noteDuration change not taking effect immediately. Previous: 2026-06-05 — PF-048/049/050/051 cataloged for follow-up. Epic 85 work order recorded in three independent chains: 85.5→85.4, 85.2→85.1→85.3, 85.6→85.7. Story 85.3 closes PF-011/013/047 (sequencer concurrency + conformance + awaitIdle race). Story 85.2 closed as no-op (PF-002 no longer reproduces on current main; entry removed from deferred-work.md).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -795,7 +795,7 @@ development_status:
   #       regression test a cheap home. 85.7 can ship without 85.6 using a bespoke
   #       check, but the bespoke work is wasted once 85.6 lands.
   epic-85: in-progress
-  85-1-consolidate-session-lifecycle-under-coordinator: review # Closes PF-001, PF-003, PF-005
+  85-1-consolidate-session-lifecycle-under-coordinator: done # Closes PF-001, PF-003, PF-005 + post-merge audio-mute race (2026-06-06): cancelled-trial cleanup race + pitch summoning rhythm-sequencer reset; 2-line surgical fix
   85-2-defer-peachapp-heavyweight-init: done # PF-002 no longer reproduces; closed as no-op (entry removed from deferred-work.md)
   85-3-audit-and-harden-sequencer-concurrency: ready-for-dev # Closes PF-011, PF-013, PF-047
   85-4-restore-voice-control-per-key-addressing: ready-for-dev # Closes PF-020

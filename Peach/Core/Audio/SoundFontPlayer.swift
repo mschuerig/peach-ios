@@ -74,7 +74,7 @@ final class SoundFontPlayer: NotePlayer {
         let priorStop = pendingAudioStop
         let task = Task<Void, Never> {
             await priorStop?.value
-            self.soundFontEngine.clearSchedule()
+            // Don't call clearSchedule: pitch never schedules events, and the deferred render-thread CC#123 it triggers would race a subsequent play()'s noteOn.
             await self.soundFontEngine.stopNotes(channel: self.channel, fadeOutDuration: self.fadeOutDuration)
         }
         pendingAudioStop = task
