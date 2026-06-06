@@ -1058,6 +1058,7 @@
     },
     "Drag to set the highest training note" : {
       "comment" : "Accessibility hint for the draggable upper-bound marker on the Training Range piano-keyboard control.",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1069,6 +1070,7 @@
     },
     "Drag to set the lowest training note" : {
       "comment" : "Accessibility hint for the draggable lower-bound marker on the Training Range piano-keyboard control.",
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

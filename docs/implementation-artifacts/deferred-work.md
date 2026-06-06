@@ -191,16 +191,6 @@ The new `PauseResumeContractTests.swift` covers pause from one representative su
 
 **Fix:** Add `pauseFromSubState_<state>` tests for each session, asserting (a) `isIdle == false` after pause, (b) `currentTrial` preserved, (c) feedback overlay flags consistent, (d) resume re-engages the trial without auto-completion or stuck states.
 
-### PF-020: Voice Control "Tap C3" lost under marker `.accessibilityRepresentation`
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Medium (Voice Control regression on the non-AX1 path)
-**Disposition:** OPEN
-
-Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Voice Control ("Tap C3" works) alongside the two-marker adjustable representation for VoiceOver / Switch Control. `.accessibilityRepresentation` replaces the entire accessibility subtree, so Voice Control sees only the two Sliders. The two goals are mutually exclusive in a single SwiftUI configuration without a different mechanism.
-
-**Fix:** Restructure the accessibility tree so per-key Voice Control addressing works on the non-AX1 path as well (e.g., `.accessibilityCustomActions` plus markers as adjustable elements without `.accessibilityRepresentation`). Future story.
-
 ### PF-036: `patternRowAccessibilityLabel` and SwiftUI `.accessibilityElement(children: .combine)` are two independent label paths
 
 **Found:** 2026-06-05 (Story 84.3)
@@ -365,6 +355,36 @@ Reachable when: session stops while a tunable note is sounding AND the user re-e
 Reachable when: user changes Sound Source while a session is active. Narrow window; symptom is a transient audio glitch, not a crash.
 
 **Fix:** `handleSoundSourceChanged` should `await` each non-idle session's `awaitIdle` before constructing the replacement `SoundFontPlayer` and rebuilding coordinators. Alternative: route the rebuild through the coordinator's stop+await pattern (the same path `TrainingLifecycleCoordinator.navigate(to:)` uses), so all "stop everything and replace" surfaces share one mechanism. Out of 85.3's framing (composition-root orchestration, not sequencer/session concurrency); track separately.
+
+### PF-061: `keyboardCommit` reverses adjust direction when `current` lies outside `legalRange`
+
+**Found:** 2026-06-06 (Story 85.4 step-04 review — Edge Case Hunter)
+**Severity:** Low (corrupt `@AppStorage` write only; debugger-injected reach)
+**Disposition:** OPEN
+
+`NoteRangeSelector.keyboardCommit(_:modifiers:current:legalRange:)` computes `candidateRaw = current ± 1` (or ±12 with Shift) then clamps into `legalRange`. When `current` is itself outside `legalRange` — possible if `@AppStorage` holds an invariant-violating pair where `lowerBound = upperBound` (zero span < `NoteRange.minimumSpan = 12`) — the clamped candidate is many semitones away from `current` and in the **opposite** direction from what was requested. A user pressing `.rightArrow` (or VoiceOver swipe-up `.increment`) with `current = 60, legalRange = 21...48` snaps the bound DOWN to 48, perceived as a backwards adjust. Affects both the hardware-arrow-key path (pre-existing) and the new `adjustMarker(_:direction:)` accessibility surface added by Story 85.4. The marker's `.accessibilityValue(Text(currentNote.name))` also announces a value outside the legal range.
+
+**Fix:** At the top of `keyboardCommit`, if `current` is outside `legalRange`, snap to the nearest legal endpoint and return that (so the first adjust is a "land in legal range" jump; subsequent adjusts behave normally). Or: pre-clamp `current` into the legal range before computing the candidate. Add a corrupt-state test for both surfaces.
+
+### PF-062: `NoteRangeSelector` marker `.accessibilityValue` reads English `note.name` regardless of locale
+
+**Found:** 2026-06-06 (Story 85.4 step-04 review — Edge Case Hunter)
+**Severity:** Low (Voice Control / VoiceOver fluency gap; addressing is locale-aware via `accessibilityInputLabels`, but value announcement isn't)
+**Disposition:** OPEN
+
+Both `BoundMarker` accessibility composition blocks (`Peach/Settings/NoteRangeSelector.swift` markers row) set `.accessibilityValue(Text(lowerNote.name))` / `Text(upperNote.name)`. `MIDINote.name` returns `"C#4"` etc. unconditionally in English with a literal `#` character. German VoiceOver may read this as "C Raute vier" or "C number sign four" depending on voice synthesis; the locale-aware spelled-out form `"Cis vier"` is available via the new `voiceControlInputLabels(for:locale:)` helper but is not used for the value announcement. Symmetrical gap on the AX1+ Slider path (`KeyboardSummary` uses the same `lower.name` for its `.accessibilityValue`).
+
+**Fix:** Extend `MIDINote` with a `localizedSpokenName(locale: Locale) -> String` (or, scoped: a small helper on `NoteRangeSelector`) that returns "Cis 4" / "C-sharp 4" per locale. Wire into the marker value AND the AX1+ Slider value. Resolution candidates: (a) the new helper on `MIDINote`, used by both Settings surfaces and any future spoken-pitch UI; (b) a private helper on `NoteRangeSelector`, scoped to Settings only.
+
+### PF-063: German Voice Control `"Tap B 4"` is ambiguous between A#4 (flat-of) and B4 (English-literal)
+
+**Found:** 2026-06-06 (Story 85.4 step-04 review — Edge Case Hunter / Blind Hunter)
+**Severity:** Low (Voice Control disambiguates via "Show numbers" overlay; reachable only when speaking the literal "B" in German Voice Control)
+**Disposition:** OPEN
+
+`NoteRangeSelector.voiceControlInputLabels(for:locale:)` adds the English spaced form `"<englishPitchClass> <octave>"` unconditionally in every locale; in German locale it also adds the flat-of-A# alternative `"B <octave>"`. Result for German locale: pitch class 10 (A#) emits `["A#4", "A sharp 4", "Ais 4", "Ais4", "Ais vier", "B 4", "B4", "B vier"]`, and pitch class 11 (B) emits `["B4", "B 4", "H 4", "H4", "H vier"]`. Both keys claim `"B 4"`; a user speaking `"Tap B 4"` in German Voice Control triggers a number-overlay disambiguation prompt instead of an immediate tap. The "Show numbers" UX is acceptable but suboptimal for a frequent training-range adjustment.
+
+**Fix:** Resolution candidates: (a) in German locale, drop the unconditional English spaced form `"B 4"` for pitch class 11 — leave only the literal `"B4"` for visual-reading and `"H 4"`/`"H 4"`/`"H vier"` for spoken; (b) drop the German flat-of-A# form `"B 4"` for pitch class 10 — leave `"Ais 4"`/`"Ais vier"` only; users must say "Ais" for A-sharp. (a) preserves classical German convention (B = A-flat, H = B-natural); (b) prefers English literal mapping at the cost of German classical idiom. Consult `agent-music-domain-expert` for the call.
 
 ### PF-060: `NoteRangeSelector` keyboard requires horizontal scroll on ≤402-pt-wide portrait
 

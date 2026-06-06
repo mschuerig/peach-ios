@@ -230,4 +230,110 @@ struct NoteRangeSelectorTests {
         #expect(line.contains("C2"))
         #expect(line.contains("C6"))
     }
+
+    // MARK: - voiceControlInputLabels
+
+    @Test("English locale yields literal name, spaced digit form, and word form for a white key")
+    func englishWhiteKeyLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(60), locale: Locale(identifier: "en_US"))
+        #expect(labels.contains("C4"))
+        #expect(labels.contains("C 4"))
+        #expect(labels.contains("C four"))
+    }
+
+    @Test("English locale yields sharp word form plus hyphenated alternative for a black key")
+    func englishBlackKeyLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(61), locale: Locale(identifier: "en_US"))
+        #expect(labels.contains("C#4"))
+        #expect(labels.contains("C sharp 4"))
+        #expect(labels.contains("C sharp four"))
+        #expect(labels.contains("C-sharp 4"))
+    }
+
+    @Test("English locale handles A0 boundary with octave-zero spoken form")
+    func englishLowBoundaryLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(21), locale: Locale(identifier: "en_US"))
+        #expect(labels.contains("A0"))
+        #expect(labels.contains("A 0"))
+        #expect(labels.contains("A zero"))
+    }
+
+    @Test("English locale handles C8 boundary with octave-eight spoken form")
+    func englishHighBoundaryLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(108), locale: Locale(identifier: "en_US"))
+        #expect(labels.contains("C8"))
+        #expect(labels.contains("C 8"))
+        #expect(labels.contains("C eight"))
+    }
+
+    @Test("German locale yields literal name, spaced digit form, and German word form for a white key")
+    func germanWhiteKeyLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(60), locale: Locale(identifier: "de_DE"))
+        #expect(labels.contains("C4"))
+        #expect(labels.contains("C 4"))
+        #expect(labels.contains("C vier"))
+    }
+
+    @Test("German locale uses the Cis sharp form for a C-sharp, with and without space")
+    func germanCisLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(61), locale: Locale(identifier: "de_DE"))
+        #expect(labels.contains("C#4"))
+        #expect(labels.contains("Cis 4"))
+        #expect(labels.contains("Cis4"))
+        #expect(labels.contains("Cis vier"))
+    }
+
+    @Test("German locale provides both Dis and Es for a D-sharp / E-flat")
+    func germanDisAndEsLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(63), locale: Locale(identifier: "de_DE"))
+        #expect(labels.contains("D#4"))
+        #expect(labels.contains("Dis 4"))
+        #expect(labels.contains("Dis vier"))
+        #expect(labels.contains("Es 4"))
+        #expect(labels.contains("Es vier"))
+    }
+
+    @Test("German locale provides both Gis and As for a G-sharp / A-flat")
+    func germanGisAndAsLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(68), locale: Locale(identifier: "de_DE"))
+        #expect(labels.contains("G#4"))
+        #expect(labels.contains("Gis 4"))
+        #expect(labels.contains("As 4"))
+    }
+
+    @Test("German locale provides Ais plus B (flat) alternative for an A-sharp")
+    func germanAisAndBFlatLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(70), locale: Locale(identifier: "de_DE"))
+        #expect(labels.contains("A#4"))
+        #expect(labels.contains("Ais 4"))
+        #expect(labels.contains("Ais vier"))
+        #expect(labels.contains("B 4"))
+        #expect(labels.contains("B vier"))
+    }
+
+    @Test("German locale uses H for an English B-natural and keeps the literal English label")
+    func germanHForBNaturalLabels() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(71), locale: Locale(identifier: "de_DE"))
+        #expect(labels.contains("B4"))
+        #expect(labels.contains("H 4"))
+        #expect(labels.contains("H vier"))
+    }
+
+    @Test("Locale other than German falls back to the English form")
+    func unknownLocaleFallsBackToEnglish() async {
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(61), locale: Locale(identifier: "fr_FR"))
+        #expect(labels.contains("C sharp 4"))
+        #expect(!labels.contains("Cis 4"))
+    }
+
+    @Test("Out-of-octave-table notes fall back to digit-only spoken form")
+    func wordFormFallsBackToDigitForExtremeOctaves() async {
+        // MIDI 9 = octave -1; the spoken table only covers 0...9.
+        let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(9), locale: Locale(identifier: "en_US"))
+        #expect(labels.contains("A-1"))
+        #expect(labels.contains("A -1"))
+        // Digit fallback only — never coined as "A negative one" / "A minus one".
+        #expect(!labels.contains("A negative one"))
+        #expect(!labels.contains("A minus one"))
+    }
 }

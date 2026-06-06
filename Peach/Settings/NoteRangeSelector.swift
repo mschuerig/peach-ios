@@ -158,18 +158,6 @@ struct NoteRangeSelector: View {
         }
         .frame(height: Self.totalKeyboardHeight)
         .accessibilityElement(children: .contain)
-        .accessibilityRepresentation {
-            VStack {
-                Slider(value: lowerSliderBinding, in: sliderRange(lowerLegalRange), step: 1) {
-                    Text("Lowest Note", comment: "Accessibility label for the lower-bound marker on the Training Range piano-keyboard control.")
-                }
-                .accessibilityValue(Text(lowerNote.name))
-                Slider(value: upperSliderBinding, in: sliderRange(upperLegalRange), step: 1) {
-                    Text("Highest Note", comment: "Accessibility label for the upper-bound marker on the Training Range piano-keyboard control.")
-                }
-                .accessibilityValue(Text(upperNote.name))
-            }
-        }
     }
 
     private func keyboardStack(totalWidth: CGFloat) -> some View {
@@ -195,7 +183,13 @@ struct NoteRangeSelector: View {
                 .onKeyPress(phases: [.down, .repeat]) { press in
                     handleKey(press, marker: .lower)
                 }
-                .accessibilityHint(Text("Drag to set the lowest training note", comment: "Accessibility hint for the draggable lower-bound marker on the Training Range piano-keyboard control."))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Lowest Note", comment: "Accessibility label for the lower-bound marker on the Training Range piano-keyboard control."))
+                .accessibilityValue(Text(lowerNote.name))
+                .accessibilityAdjustableAction { direction in
+                    adjustMarker(.lower, direction: direction)
+                }
+                .accessibilitySortPriority(1)
             BoundMarker(note: upperNote)
                 .position(x: Self.layout.xPosition(forNote: upperNote, totalWidth: totalWidth), y: Self.markerRowHeight / 2)
                 .gesture(dragGesture(for: .upper, totalWidth: totalWidth))
@@ -204,7 +198,13 @@ struct NoteRangeSelector: View {
                 .onKeyPress(phases: [.down, .repeat]) { press in
                     handleKey(press, marker: .upper)
                 }
-                .accessibilityHint(Text("Drag to set the highest training note", comment: "Accessibility hint for the draggable upper-bound marker on the Training Range piano-keyboard control."))
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text("Highest Note", comment: "Accessibility label for the upper-bound marker on the Training Range piano-keyboard control."))
+                .accessibilityValue(Text(upperNote.name))
+                .accessibilityAdjustableAction { direction in
+                    adjustMarker(.upper, direction: direction)
+                }
+                .accessibilitySortPriority(1)
         }
         .frame(width: totalWidth, height: Self.markerRowHeight)
     }
@@ -220,6 +220,9 @@ struct NoteRangeSelector: View {
                     PianoKey(note: note, isWhite: true, isInRange: isInRange(note))
                         .frame(width: keyWidth, height: Self.whiteKeyHeight)
                         .id(note.rawValue)
+                        .accessibilityAddTraits(.isButton)
+                        .accessibilityInputLabels(Self.voiceControlInputLabels(for: note))
+                        .accessibilityAction { tapNote(note) }
                 }
             }
             ForEach(Self.blackKeys, id: \.rawValue) { note in
@@ -228,6 +231,9 @@ struct NoteRangeSelector: View {
                     .frame(width: blackWidth, height: Self.blackKeyHeight)
                     .position(x: x, y: Self.blackKeyHeight / 2)
                     .id(note.rawValue)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityInputLabels(Self.voiceControlInputLabels(for: note))
+                    .accessibilityAction { tapNote(note) }
             }
         }
         .frame(width: totalWidth, height: Self.whiteKeyHeight, alignment: .topLeading)
@@ -306,19 +312,7 @@ struct NoteRangeSelector: View {
     }
 
     private func handleTap(location: CGPoint, totalWidth: CGFloat) {
-        let tapped = Self.layout.midiNote(at: location.x, totalWidth: totalWidth)
-        switch Self.tapResolution(at: tapped, lower: lowerNote, upper: upperNote) {
-        case .noOp:
-            return
-        case .moveLower(let note):
-            let clamped = Self.clampedToAbsoluteRange(Self.clampLower(note, against: upperNote).rawValue)
-            lowerBound = clamped.rawValue
-            onCommit?(clamped)
-        case .moveUpper(let note):
-            let clamped = Self.clampedToAbsoluteRange(Self.clampUpper(note, against: lowerNote).rawValue)
-            upperBound = clamped.rawValue
-            onCommit?(clamped)
-        }
+        tapNote(Self.layout.midiNote(at: location.x, totalWidth: totalWidth))
     }
 
     private func handleKey(_ press: KeyPress, marker: Marker) -> KeyPress.Result {
@@ -348,7 +342,57 @@ struct NoteRangeSelector: View {
         return .handled
     }
 
-    // MARK: - Slider-binding bridges for the accessibilityRepresentation
+    // MARK: - Accessibility-action dispatch
+
+    private func tapNote(_ note: MIDINote) {
+        switch Self.tapResolution(at: note, lower: lowerNote, upper: upperNote) {
+        case .noOp:
+            return
+        case .moveLower(let candidate):
+            let clamped = Self.clampedToAbsoluteRange(Self.clampLower(candidate, against: upperNote).rawValue)
+            lowerBound = clamped.rawValue
+            onCommit?(clamped)
+        case .moveUpper(let candidate):
+            let clamped = Self.clampedToAbsoluteRange(Self.clampUpper(candidate, against: lowerNote).rawValue)
+            upperBound = clamped.rawValue
+            onCommit?(clamped)
+        }
+    }
+
+    /// Reuses `keyboardCommit` so the VoiceOver / Switch Control adjustable
+    /// path and the hardware-keyboard arrow-key path move the marker through
+    /// the same legal-range clamp.
+    private func adjustMarker(_ marker: Marker, direction: AccessibilityAdjustmentDirection) {
+        let key: KeyEquivalent
+        switch direction {
+        case .increment: key = .rightArrow
+        case .decrement: key = .leftArrow
+        @unknown default: return
+        }
+        let current: MIDINote
+        let legalRange: ClosedRange<MIDINote>
+        switch marker {
+        case .lower:
+            current = lowerNote
+            legalRange = lowerLegalRange
+        case .upper:
+            current = upperNote
+            legalRange = upperLegalRange
+        }
+        guard let next = Self.keyboardCommit(
+            key,
+            modifiers: [],
+            current: current,
+            legalRange: legalRange
+        ) else { return }
+        switch marker {
+        case .lower: lowerBound = next.rawValue
+        case .upper: upperBound = next.rawValue
+        }
+        onCommit?(next)
+    }
+
+    // MARK: - AX1+ fallback Slider bindings
 
     private var lowerSliderBinding: Binding<Double> {
         Binding(
@@ -376,10 +420,6 @@ struct NoteRangeSelector: View {
                 }
             }
         )
-    }
-
-    private func sliderRange(_ range: ClosedRange<MIDINote>) -> ClosedRange<Double> {
-        Double(range.lowerBound.rawValue)...Double(range.upperBound.rawValue)
     }
 
     private func isInRange(_ note: MIDINote) -> Bool {
@@ -457,6 +497,78 @@ struct NoteRangeSelector: View {
             comment: "AX1+ summary line for the Training Range piano-keyboard control. Placeholders are MIDI note names like \"C2\" and \"C6\"."
         )
     }
+
+    /// Voice Control synonym labels for a piano key. The short-form name
+    /// (`note.name`, e.g. `"C#3"`) does not robustly match spoken phrases
+    /// like `"C sharp 3"`, so each key advertises locale-specific spelled-out
+    /// alternatives in addition to the short form.
+    ///
+    /// The short-form name is included in every locale so a user reading the
+    /// marker can speak what they see. The spelled-out form is locale-specific:
+    /// German uses the classical sharp suffix (`Cis`, `Dis`, ...) and the `H`
+    /// letter for English B-natural; flat alternatives (`Es`, `As`, `B`) are
+    /// included for the historically two-named black keys. All other locales
+    /// fall back to English spelled-out forms (`"C sharp 3"`, `"C three"`).
+    static func voiceControlInputLabels(
+        for note: MIDINote,
+        locale: Locale = .current
+    ) -> [String] {
+        let pitchClass = note.rawValue % 12
+        let octave = (note.rawValue / 12) - 1
+        let octaveDigit = String(octave)
+        let isGerman = locale.language.languageCode?.identifier == "de"
+
+        var labels: [String] = [note.name, "\(englishPitchClassNames[pitchClass]) \(octaveDigit)"]
+
+        if isGerman {
+            let primary = germanSharpPitchClassNames[pitchClass]
+            let word = germanOctaveWord(octave)
+            labels.append("\(primary) \(octaveDigit)")
+            labels.append("\(primary)\(octaveDigit)")
+            labels.append("\(primary) \(word)")
+            let flat = germanFlatPitchClassNames[pitchClass]
+            if !flat.isEmpty {
+                labels.append("\(flat) \(octaveDigit)")
+                labels.append("\(flat)\(octaveDigit)")
+                labels.append("\(flat) \(word)")
+            }
+        } else {
+            let primary = englishPitchClassNames[pitchClass]
+            let word = englishOctaveWord(octave)
+            labels.append("\(primary) \(word)")
+            if primary.contains(" ") {
+                labels.append("\(primary.replacingOccurrences(of: " ", with: "-")) \(octaveDigit)")
+            }
+        }
+        var seen = Set<String>()
+        return labels.filter { seen.insert($0).inserted }
+    }
+
+    private static let englishPitchClassNames: [String] = [
+        "C", "C sharp", "D", "D sharp", "E", "F", "F sharp", "G", "G sharp", "A", "A sharp", "B"
+    ]
+    private static let germanSharpPitchClassNames: [String] = [
+        "C", "Cis", "D", "Dis", "E", "F", "Fis", "G", "Gis", "A", "Ais", "H"
+    ]
+    // Flat alternatives for the five "two-named" black keys. Empty for the
+    // seven naturals and for C#/F# (which have no Germanic flat name).
+    private static let germanFlatPitchClassNames: [String] = [
+        "", "", "", "Es", "", "", "", "", "As", "", "B", ""
+    ]
+    private static let englishOctaveWords: [String] = [
+        "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine"
+    ]
+    private static let germanOctaveWords: [String] = [
+        "null", "eins", "zwei", "drei", "vier", "fünf", "sechs", "sieben", "acht", "neun"
+    ]
+
+    private static func englishOctaveWord(_ octave: Int) -> String {
+        englishOctaveWords.indices.contains(octave) ? englishOctaveWords[octave] : String(octave)
+    }
+
+    private static func germanOctaveWord(_ octave: Int) -> String {
+        germanOctaveWords.indices.contains(octave) ? germanOctaveWords[octave] : String(octave)
+    }
 }
 
 // MARK: - Private subviews
@@ -500,7 +612,6 @@ private struct BoundMarker: View {
                 .foregroundStyle(.white)
         }
         .contentShape(Rectangle())
-        .accessibilityHidden(true)
     }
 }
 
