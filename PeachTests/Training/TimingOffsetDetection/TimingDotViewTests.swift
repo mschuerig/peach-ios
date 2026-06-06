@@ -51,6 +51,26 @@ struct TimingDotViewTests {
         #expect(TimingDotView.bracketEndInsetBase == 1)
     }
 
+    // MARK: - Settings-row dot-row width (Story 85.7 — replaces the iteration-2 chevron-mirroring mechanism)
+
+    /// Story 85.7 / PF-046: the *Pattern* row and the *Offset Note Position*
+    /// row in `SettingsScreen` must render their flexible dot containers at
+    /// identical widths so audible positions land at the same x in both. The
+    /// pre-85.7 mechanism delivered this by mirroring an intrinsic-width
+    /// chevron on the trailing edge of both rows; option (f) replaces that
+    /// with a directly assigned fixed width on both rows via `.frame(maxWidth:)`,
+    /// sourcing the base value from this constant so the two rows can never
+    /// drift. Both section views wrap the base in `@ScaledMetric(relativeTo:
+    /// .caption2)` so the width grows with Dynamic Type symmetrically. The
+    /// value 220 fits comfortably within iPhone SE Form row inner widths
+    /// (`~288`pt) after the system NavigationLink chevron and gives a
+    /// 6-cell sextuplet at `previewScale` (0.625) enough breathing room to
+    /// render without dot crowding.
+    @Test("settingsRowDotsBaseWidth is the locked shared base width for both TOD settings dot rows")
+    func settingsRowDotsBaseWidth() async {
+        #expect(TimingDotView.settingsRowDotsBaseWidth == 220)
+    }
+
     // MARK: - visualCells(for:) — Epic-82 catalog (flat patterns)
 
     /// Locked widths and start-x values per `tod-tuplet-renderer-design.md`

@@ -26,6 +26,12 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
     @AppStorage(TimingOffsetDetectionSettingsKeys.selectedPatternId)
     private var selectedPatternId: String = TimingOffsetDetectionPatternCatalog.defaultPatternId
 
+    /// Story 85.7: fixed shared width mirrored from the *Pattern* row above.
+    /// The two flexible dot containers are guaranteed identical by direct
+    /// assignment of this width, so audible positions land at the same x in
+    /// both rows regardless of what trails them.
+    @ScaledMetric(relativeTo: .caption2) private var dotRowWidth: CGFloat = TimingDotView.settingsRowDotsBaseWidth
+
     private var activePattern: TimingOffsetDetectionPattern {
         TimingOffsetDetectionPatternCatalog.pattern(forStoredId: selectedPatternId)
     }
@@ -44,29 +50,22 @@ struct TimingOffsetDetectionOffsetNotePositionSettingsSection: View {
         let contentHeight = TimingDotView.beatOneDotDiameter
 
         Section {
-            HStack(spacing: TimingDotView.patternRowChevronSpacing) {
-                GeometryReader { proxy in
-                    let containerWidth = proxy.size.width
-                    ZStack(alignment: .topLeading) {
-                        ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
-                            slotCell(
-                                cell,
-                                containerWidth: containerWidth,
-                                contentHeight: contentHeight,
-                                selected: selected,
-                                audibleCount: pattern.audibleCount
-                            )
-                        }
+            GeometryReader { proxy in
+                let containerWidth = proxy.size.width
+                ZStack(alignment: .topLeading) {
+                    ForEach(Array(cells.enumerated()), id: \.offset) { _, cell in
+                        slotCell(
+                            cell,
+                            containerWidth: containerWidth,
+                            contentHeight: contentHeight,
+                            selected: selected,
+                            audibleCount: pattern.audibleCount
+                        )
                     }
                 }
-                .frame(height: contentHeight)
-
-                // Render the same chevron view as the *Pattern* row, just
-                // hidden. SwiftUI sizes both to the same intrinsic width →
-                // both dot rows occupy identical container widths → audible
-                // positions land at the same x by construction.
-                TimingDotView.patternRowChevron(isVisible: false)
             }
+            .frame(maxWidth: dotRowWidth, alignment: .leading)
+            .frame(height: contentHeight)
         } header: {
             Text(String(localized: "Offset Note Position"))
         } footer: {

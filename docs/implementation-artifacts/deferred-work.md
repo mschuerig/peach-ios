@@ -191,25 +191,6 @@ The new `PauseResumeContractTests.swift` covers pause from one representative su
 
 **Fix:** Add `pauseFromSubState_<state>` tests for each session, asserting (a) `isIdle == false` after pause, (b) `currentTrial` preserved, (c) feedback overlay flags consistent, (d) resume re-engages the trial without auto-completion or stuck states.
 
-### PF-046: `.navigationDestination(isPresented:)` inside `Form` triggers SwiftUI lazy-container warning
-
-**Found:** 2026-06-05 (Story 84.4 iteration 3 visual verification on iOS Simulator)
-**Severity:** Medium (Apple warns "It will be ignored in a future release")
-**Disposition:** OPEN
-
-`TimingOffsetDetectionPatternPickerSettingsSection.body` attaches `.navigationDestination(isPresented: $isShowingDestination)` to a `Button` inside a `Section`. The Section is part of a parent `Form` (assembled by `DisciplineSettingsSection.aggregated`), which SwiftUI implements as a lazy `List` underneath. iOS logs: "Do not put a navigation destination modifier inside a 'lazy' container, like `List` or `LazyVStack`. ... It will be ignored in a future release." The current iOS keeps the destination wired, but a future release will silently break the drill-down.
-
-The architecture creating this conflict was iteration-2 of 84.3: the iteration-2 fix replaced `NavigationLink` (which renders the system chevron) with `Button` + `.navigationDestination(isPresented:)` so a custom chevron view (`TimingDotView.patternRowChevron`) could be rendered on both the *Pattern* row and the *Offset Note Position* row at identical widths, restoring dot alignment between them. Reverting to `NavigationLink` re-introduces the chevron-alignment problem (Michael called it "completely unusable" in iteration-2).
-
-**Fix options (none chosen yet):**
-- **(a)** Hoist the `.navigationDestination(isPresented:)` modifier to `SettingsScreen.body`'s `Form` (outside the lazy container). Requires extending `DisciplineSettingsSection` to declare navigation contributions a parent screen can collect and attach. Cross-cutting architectural change touching `App/Training/`.
-- **(b)** Switch picker row back to `NavigationLink`. Reverts the iteration-2 fix; reintroduces chevron-alignment misery. Not acceptable per iteration-2 history.
-- **(c)** Restructure the picker drill-down so the Pattern picker destination also hosts the *Offset Note Position* selector (one drill-down screen containing both controls instead of two adjacent inline rows). The settings screen then shows only the *Pattern* row (drill-in to edit both). UX change worth its own design discussion.
-
-**Constraints:**
-- Iteration-2 chevron-alignment fix (`TimingDotView.patternRowChevron` rendered identically on both rows) must be preserved or replaced by an equivalent guarantee.
-- The picker's selection cascade through `patternIdBinding` (writing both `selectedPatternId` and `offsetNotePosition` atomically) must be preserved.
-
 ### PF-045: Nested-pattern bracket overlay renders incorrectly in `TimingDotView`
 
 **Found:** 2026-06-05 (Story 84.4 visual verification on iOS Simulator)
@@ -367,3 +348,27 @@ Both `BoundMarker` accessibility composition blocks (`Peach/Settings/NoteRangeSe
 Symptom is "doesn't fit on the screen in full in portrait" — by design today, but the design predates iPhone-17-Pro-as-default and is unsatisfying on devices the user works on day-to-day. The horizontal-scroll fallback was added to allow the keyboard to remain "full pitch" on iPad / mac, but on phone portrait it pushes the user into a non-obvious gesture.
 
 **Fix:** Resolution candidates: (a) compress to 6 pt per white key on portrait (reduces `minKeyboardWidth` to 312 pt — fits any modern iPhone, but the BoundMarker tap target shrinks too); (b) render only the absolute training range (`absoluteMinNote`...`absoluteMaxNote` = 36...108, 43 white keys) so the keyboard is `43 × 8 = 344 pt` wide and fits portrait; (c) fall back to the AX1+ `KeyboardSummary` (summary line + 2 system Sliders) on horizontally-constrained layouts, not just at large Dynamic Type. Touches the same layout policy 81.3 set; deserves a focused story rather than a Boy-Scout drive-by.
+
+### PF-064: Two parallel `@ScaledMetric` wrappers carry the TOD settings dot-row width contract
+
+**Found:** 2026-06-06 (Story 85.7 step-04 review — Blind Hunter / Edge Case Hunter)
+**Severity:** Low (no current bug; structural symmetry risk for a load-bearing contract)
+**Disposition:** OPEN
+
+Story 85.7's option (f) replaced iteration-2's structurally-identical mirrored-chevron alignment mechanism with two parallel `@ScaledMetric(relativeTo: .caption2) private var dotRowWidth: CGFloat = TimingDotView.settingsRowDotsBaseWidth` declarations — one in `TimingOffsetDetectionPatternPickerSettingsSection.swift`, one in `TimingOffsetDetectionOffsetNotePositionSettingsSection.swift`. The two wrappers resolve from each view's environment at instantiation. In production both views are siblings in the same `Form` and share the same `\.dynamicTypeSize`, so the resolved widths are equal. But a future per-section environment override (e.g., a snapshot test that sets `.dynamicTypeSize(.accessibility5)` on one section only) could cause silent divergence, breaking the dot-x-alignment contract — the entire point of option (f).
+
+The existing precedent `dotScale` (`previewScale`) uses the same parallel-wrapper pattern across these two views without issue, so this isn't unprecedented. The hoist to a single declaration in a shared parent would require extending `DisciplineSettingsSection` with a navigation/measurement contribution channel — exactly the special-case-second-channel mechanism Michael rejected in 85.7's Task 1 audit.
+
+**Fix:** Resolution candidates: (a) accept current parallel pattern (consistent with `dotScale` precedent), document the contract that both sections must inherit identical Dynamic Type environment; (b) hoist `@ScaledMetric` resolution to a parent via the rejected option (a) channel — re-open if a second concrete use case appears; (c) extract a shared `ViewModifier` (`.settingsRowDotsWidth()`) that encapsulates the `@ScaledMetric` + `.frame(maxWidth:)` so the contract is DRY at the symbol level even though each instance still resolves independently. (c) is the lightest near-term hardening; revisit if a divergence actually surfaces.
+
+### PF-065: Dot-x alignment regression test missing for TOD settings rows
+
+**Found:** 2026-06-06 (Story 85.7 step-04 review — Blind Hunter)
+**Severity:** Low (no current bug; gap in test coverage for a load-bearing visual contract)
+**Disposition:** OPEN
+
+Story 85.7's option (f) pins `TimingDotView.settingsRowDotsBaseWidth == 220` (`PeachTests/Training/TimingOffsetDetection/TimingDotViewTests.swift:163`) but doesn't directly assert the actual contract: both the *Pattern* row's dot preview and the *Offset Note Position* row's slot picker render their flexible dot containers at the same width and audible positions land at the same x. A future refactor that changes one site's `.frame(maxWidth: dotRowWidth, alignment: .leading)` to `.frame(width: dotRowWidth)` (or drops the wrapper, or swaps the alignment) would leave the constant-equals-220 test green while alignment regresses silently.
+
+Story 85.6's TOD picker invariant infrastructure (structural / catalog-discipline tests after the iOS 26 SwiftUI hosting a11y-tree regression — cashapp/AccessibilitySnapshot #245, #259) provides a cheap home for this kind of assertion.
+
+**Fix:** Add a structural test in `PeachTests/Training/TimingOffsetDetection/Settings/` that renders both sections with identical inputs and asserts (a) the two dot containers resolve to the same width, and (b) audible positions land at the same x. If the runtime hosting tree is still broken for layout introspection on iOS 26, fall back to a snapshot-image comparison via 85.6's snapshot infrastructure. At minimum, pin the structural invariant that both views declare `@ScaledMetric(relativeTo: .caption2) private var dotRowWidth: CGFloat = TimingDotView.settingsRowDotsBaseWidth` (source-level grep or doc-test) so a refactor that drops one is caught at review time.

@@ -209,25 +209,19 @@ struct TimingDotView: View {
         index == 0 ? beatOne : normal
     }
 
-    /// Disclosure-style trailing chevron used by both the *Pattern* row (where
-    /// it is visible and signals "drill down") and the *Offset Note Position*
-    /// row (where it is rendered transparent purely to reserve identical
-    /// trailing width). Rendering the same view in both surfaces guarantees
-    /// that SwiftUI gives each its identical intrinsic width — the dot rows
-    /// in both surfaces then occupy identical container widths by construction,
-    /// so audible positions land at the same x without empirical tuning.
-    static func patternRowChevron(isVisible: Bool) -> some View {
-        Image(systemName: "chevron.forward")
-            .font(.subheadline.weight(.semibold))
-            .foregroundStyle(.tertiary)
-            .opacity(isVisible ? 1 : 0)
-            .accessibilityHidden(true)
-    }
-
-    /// Horizontal spacing between the dot row and the trailing chevron in both
-    /// the *Pattern* row and the *Offset Note Position* row. Centralized so
-    /// the two surfaces stay in lockstep.
-    static let patternRowChevronSpacing: CGFloat = 8
+    /// Story 85.7 / PF-046: base width applied via `.frame(maxWidth:)` to both
+    /// the *Pattern* row's dot preview and the *Offset Note Position* row's
+    /// slot picker in `SettingsScreen`. Sourced from a single constant so the
+    /// two flexible dot containers can never drift; each section view wraps
+    /// this base in `@ScaledMetric(relativeTo: .caption2)` so the width grows
+    /// with Dynamic Type symmetrically across both rows. Replaces the
+    /// pre-85.7 mechanism that mirrored an intrinsic-width chevron on both
+    /// rows to deliver identical residual widths — the chevron-mirroring trick
+    /// retires entirely. 220pt fits within iPhone SE Form row inner widths
+    /// after the system NavigationLink chevron and gives a 6-cell sextuplet at
+    /// `previewScale` (0.625) enough breathing room to render without
+    /// dot crowding.
+    static let settingsRowDotsBaseWidth: CGFloat = 220
 
     /// Doubled-glyph indicator: two overlapping `Circle`s used by both the
     /// training-screen offset marker and the slot-picker selected-cell marker.
