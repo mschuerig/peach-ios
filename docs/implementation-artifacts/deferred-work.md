@@ -201,16 +201,6 @@ Spec Always rule line 30 wanted per-key `MIDINote.name` labels addressable by Vo
 
 **Fix:** Restructure the accessibility tree so per-key Voice Control addressing works on the non-AX1 path as well (e.g., `.accessibilityCustomActions` plus markers as adjustable elements without `.accessibilityRepresentation`). Future story.
 
-### PF-025: `PianoKeyboardLayout` is main-actor-isolated; Core/Music style is `nonisolated`
-
-**Found:** 2026-06-03 (Story 81.3)
-**Severity:** Medium (architectural inconsistency; blocks `nonisolated` storage of `NoteRange`)
-**Disposition:** OPEN
-
-Spec Change Log records the trap — `NoteRange.Hashable` is main-actor-isolated, so storing `NoteRange` in a `nonisolated` value fails to compile.
-
-**Fix:** Make `NoteRange` `nonisolated` (consistent with `MIDINote`) and then make `PianoKeyboardLayout` `nonisolated` too. Touches a widely-used domain type; deserves its own focused story rather than a Boy-Scout drive-by.
-
 ### PF-036: `patternRowAccessibilityLabel` and SwiftUI `.accessibilityElement(children: .combine)` are two independent label paths
 
 **Found:** 2026-06-05 (Story 84.3)

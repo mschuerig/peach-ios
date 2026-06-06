@@ -7,16 +7,16 @@ import Foundation
 /// pitch-class arithmetic (`MIDINote.rawValue % 12`), so it works for any
 /// `NoteRange` whose endpoints fall on white keys at the extremes (A0–C8 in
 /// practice for this app).
-struct PianoKeyboardLayout: Hashable, Sendable {
+nonisolated struct PianoKeyboardLayout: Hashable, Sendable {
     let noteRange: NoteRange
 
-    nonisolated private static let whitePitchClasses: Set<Int> = [0, 2, 4, 5, 7, 9, 11]
+    private static let whitePitchClasses: Set<Int> = [0, 2, 4, 5, 7, 9, 11]
 
-    nonisolated static func isWhiteKey(_ note: MIDINote) -> Bool {
+    static func isWhiteKey(_ note: MIDINote) -> Bool {
         whitePitchClasses.contains(note.rawValue % 12)
     }
 
-    nonisolated static func isOctaveBoundary(_ note: MIDINote) -> Bool {
+    static func isOctaveBoundary(_ note: MIDINote) -> Bool {
         note.rawValue % 12 == 0
     }
 

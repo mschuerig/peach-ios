@@ -5,7 +5,7 @@ import Foundation
 /// NoteRange encapsulates a lower and upper MIDI note bound, validating
 /// that the span is at least 12 semitones at construction time. Used throughout
 /// the codebase to express note range constraints consistently.
-struct NoteRange: Hashable, Sendable {
+nonisolated struct NoteRange: Hashable, Sendable {
     static let minimumSpan = 12
 
     let lowerBound: MIDINote

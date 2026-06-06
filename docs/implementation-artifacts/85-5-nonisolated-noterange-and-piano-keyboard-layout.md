@@ -2,8 +2,8 @@
 title: 'Story 85.5: Make NoteRange and PianoKeyboardLayout nonisolated to match Core/Music convention'
 type: 'cleanup'
 created: '2026-06-05'
-status: 'ready-for-dev'
-baseline_commit: '6c6784f5'
+status: 'done'
+baseline_commit: '3d6dec25'
 context:
   - '{project-root}/docs/implementation-artifacts/deferred-work.md'
 closes:
@@ -66,18 +66,37 @@ The inconsistency is Medium-severity not because of a concrete current bug — s
 
 **Added during verification (scope discovery):**
 
-- *(populated by Task 1)*
+Direct `NoteRange` consumers (source):
+- `Peach/Core/Music/NoteRange.swift` — the type
+- `Peach/Core/Music/PianoKeyboardLayout.swift:11` — stored property `let noteRange: NoteRange`
+- `Peach/Core/Music/TempoRange.swift:6` — doc-comment reference only ("Follows the same pattern as `NoteRange`"); no code dependency
+- `Peach/Core/Ports/UserSettings.swift:4` — `var noteRange: NoteRange { get }` protocol requirement
+- `Peach/Settings/SettingsKeys.swift:38-51` — `static let defaultNoteRange = NoteRange(...)`, `NoteRange.minimumSpan` arithmetic
+- `Peach/Settings/AppUserSettings.swift:6-12` — `UserSettings` conformer returning `NoteRange`
+- `Peach/Settings/NoteRangeSelector.swift:8,58,93,99,103,106,385,395` — constructor call, `minimumSpan` constant, doc comment
+- `Peach/Settings/SettingsScreen.swift` — uses `NoteRangeSelector`, never the type directly
+- `Peach/App/PreviewDefaults.swift:29` — `let noteRange = NoteRange(...)`
+- `Peach/Training/PitchDiscrimination/PitchDiscriminationSettings.swift:4,18` — settings struct property + default
+- `Peach/Training/PitchMatching/PitchMatchingSettings.swift:4,16` — settings struct property + default
+
+Direct `NoteRange` consumers (tests): `PeachTests/Mocks/MockUserSettings.swift`; `PeachTests/Settings/{SettingsTests, AppUserSettingsTests, NoteRangeSelectorTests}.swift`; `PeachTests/Core/Music/{NoteRangeTests, PianoKeyboardLayoutTests}.swift`; `PeachTests/Core/Training/{PitchDiscriminationSettingsTests, PitchMatchingSettingsTests}.swift`; `PeachTests/Core/Algorithm/KazezNoteStrategyTests.swift`; `PeachTests/Training/PitchDiscrimination/PitchDiscriminationSessionUserDefaultsTests.swift`, `PitchDiscriminationSessionSettingsTests.swift`; `PeachTests/Training/PitchMatching/PitchMatchingSessionTests.swift`.
+
+Direct `PianoKeyboardLayout` consumers (source):
+- `Peach/Core/Music/PianoKeyboardLayout.swift` — the type
+- `Peach/Settings/NoteRangeSelector.swift:57,75,76` — `static let layout`, `PianoKeyboardLayout.isWhiteKey` (already `nonisolated`)
+
+Direct `PianoKeyboardLayout` consumers (tests): `PeachTests/Core/Music/PianoKeyboardLayoutTests.swift`.
 
 ## Tasks & Acceptance
 
 **Execution:**
 
-- [ ] **Task 1 — Audit (must complete and review before any code change).** `grep -rn` for every `NoteRange` and `PianoKeyboardLayout` reference across `Peach/` and `PeachTests/`. For each consumer, classify: (a) compiles unchanged after isolation removal, (b) requires an explicit isolation hop, or (c) genuinely depends on main-actor isolation (the only case requiring human decision). Output: append the consumer map under the "Code Map" heading above; flag any (c) entries explicitly. **Halt for human review if any (c) entries surface.** If only (a) and (b) categories appear, the audit's finding is "safe to unwind" and Task 2 proceeds.
-- [ ] **Task 2 — Approach lock-in (post-audit).** Confirm the isolation-removal pattern based on the audit. Typical pattern: drop the `@MainActor` annotation on `NoteRange.Hashable`'s `==` / `hash(into:)` (or on `NoteRange` itself, depending on how the isolation propagates today); drop `@MainActor` on `PianoKeyboardLayout`. Identify any (b) call sites that need isolation hops.
-- [ ] **Task 3 — Remove `NoteRange`'s isolation.** Apply the change. Run `bin/build.sh` (both schemes) to surface any (b)-category call-site updates needed. Apply those updates.
-- [ ] **Task 4 — Remove `PianoKeyboardLayout`'s isolation.** Apply the change. Build again; apply any further (b)-category updates.
-- [ ] **Task 5 — Catalog hygiene.** Remove the PF-025 section from `docs/implementation-artifacts/deferred-work.md`. Cite PF-025 in the commit message.
-- [ ] **Task 6 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four green; strict-concurrency build clean.
+- [x] **Task 1 — Audit (must complete and review before any code change).** `grep -rn` for every `NoteRange` and `PianoKeyboardLayout` reference across `Peach/` and `PeachTests/`. For each consumer, classify: (a) compiles unchanged after isolation removal, (b) requires an explicit isolation hop, or (c) genuinely depends on main-actor isolation (the only case requiring human decision). Output: append the consumer map under the "Code Map" heading above; flag any (c) entries explicitly. **Halt for human review if any (c) entries surface.** If only (a) and (b) categories appear, the audit's finding is "safe to unwind" and Task 2 proceeds.
+- [x] **Task 2 — Approach lock-in (post-audit).** Confirm the isolation-removal pattern based on the audit. Typical pattern: drop the `@MainActor` annotation on `NoteRange.Hashable`'s `==` / `hash(into:)` (or on `NoteRange` itself, depending on how the isolation propagates today); drop `@MainActor` on `PianoKeyboardLayout`. Identify any (b) call sites that need isolation hops.
+- [x] **Task 3 — Remove `NoteRange`'s isolation.** Apply the change. Run `bin/build.sh` (both schemes) to surface any (b)-category call-site updates needed. Apply those updates.
+- [x] **Task 4 — Remove `PianoKeyboardLayout`'s isolation.** Apply the change. Build again; apply any further (b)-category updates.
+- [x] **Task 5 — Catalog hygiene.** Remove the PF-025 section from `docs/implementation-artifacts/deferred-work.md`. Cite PF-025 in the commit message.
+- [x] **Task 6 — Pre-commit gates.** Run `bin/test.sh && bin/test.sh -p mac` and `bin/test.sh --research && bin/test.sh --research -p mac`. All four green; strict-concurrency build clean.
 
 **Acceptance Criteria:**
 
@@ -89,8 +108,46 @@ The inconsistency is Medium-severity not because of a concrete current bug — s
 
 ## Audit Findings
 
-*(empty — populated by Task 1; halt for human review if (c)-category consumers surface)*
+**Finding: safe to unwind.** All consumers fall into category **(a) compiles unchanged**. Zero **(b)** isolation-hop sites; zero **(c)** main-actor-dependent sites.
+
+**Reasoning.** With `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, every consumer surveyed is implicitly main-actor isolated (SwiftUI Views, Settings structs, test suites, the `UserSettings` protocol). Main-actor code can freely read and call `nonisolated` types — `nonisolated` strictly removes a constraint without imposing new ones. Concretely:
+
+- **`PianoKeyboardLayout.swift`** stores `let noteRange: NoteRange`. Currently this transitively pins `PianoKeyboardLayout` to main-actor. After both types become `nonisolated`, the storage relationship stays valid (nonisolated type storing nonisolated value).
+- **`SettingsKeys.swift`** holds `static let defaultNoteRange = NoteRange(...)`. The `NoteRange.init` precondition path (`upperBound - lowerBound >= minimumSpan`) executes via the `MIDINote.-` operator already marked `nonisolated`. The static stays main-actor-accessible (its enclosing type is main-actor) and the initializer remains valid.
+- **`NoteRangeSelector.swift`** holds `static let layout = PianoKeyboardLayout(noteRange: NoteRange(...))`. View struct stays main-actor; constructing nonisolated values from a main-actor context is legal.
+- **`UserSettings`** protocol declares `var noteRange: NoteRange { get }`. The getter requirement is main-actor (protocol is implicitly main-actor); returning a nonisolated value type is fine. `AppUserSettings` and `MockUserSettings` conformances stay main-actor.
+- **Settings structs (`PitchDiscriminationSettings`, `PitchMatchingSettings`)** hold `var noteRange: NoteRange` with a default constructor expression. Both structs are value types passed across `start(settings:)` calls; the default expressions run at the call site (main-actor) and remain valid.
+- **Tests** are struct-based with `async` test methods (main-actor by default). `Set<NoteRange>` literal usage exercises `Hashable` which becomes nonisolated — main-actor callers retain access.
+
+No SwiftUI `@State` of `NoteRange`, no `Task.detached`, no actor-isolated background storage of `NoteRange` was discovered.
+
+Task 2 proceeds.
 
 ## Spec Change Log
 
 *(empty — populated by review iterations if any)*
+
+## Suggested Review Order
+
+**Domain-type isolation change (the core of the story)**
+
+- Single-token addition; mirrors `MIDINote.swift:8` — the canonical Core/Music pattern.
+  [`NoteRange.swift:8`](../../Peach/Core/Music/NoteRange.swift#L8)
+
+- Type-level `nonisolated` subsumes the three previously-redundant inner markers; whole struct now follows the MIDINote shape.
+  [`PianoKeyboardLayout.swift:10`](../../Peach/Core/Music/PianoKeyboardLayout.swift#L10)
+
+**Pattern reference**
+
+- Compare against the canonical Core/Music shape this story is now matching.
+  [`MIDINote.swift:8`](../../Peach/Core/Music/MIDINote.swift#L8)
+
+**Catalog hygiene**
+
+- PF-025 section deleted; entry no longer occupies a slot between PF-022 (line ~191) and PF-036 (now line ~204).
+  [`deferred-work.md:204`](deferred-work.md#L204)
+
+**Sprint-status**
+
+- Story key flipped `ready-for-dev` → `in-progress` → (will be) `review` on commit.
+  [`sprint-status.yaml:806`](sprint-status.yaml#L806)
