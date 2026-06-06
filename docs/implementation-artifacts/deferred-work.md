@@ -364,3 +364,39 @@ Story 85.1 v2 surfaced the cost: removing redundant cleanup paths (NotePlayer+Ti
 **Research backing:** `docs/planning-artifacts/research/technical-rt-audio-control-plane-2026-06-06.md` — community consensus (Bencina, Doumler, Tyson, Liljedahl) is "unify all MIDI dispatch through one ordered SPSC queue drained on the render thread via `AUScheduleMIDIEventBlock` with `AUEventSampleTimeImmediate + offsetFrames`". The current research did not investigate the original `auAudioUnit.reset()` crash that motivated the flag mechanism; that gap should be closed before any unification, since the flag may be a workaround for a sampler defect that would also bite a unified design.
 
 **Fix:** Resolution candidates: (a) unify all dispatch through `enqueueImmediate` / scheduled queue (largest refactor; requires understanding the original `reset()` crash so the new path doesn't reintroduce it); (b) preserve all three paths but document the ordering contract between them inline (cheapest; still leaves the trap for future callers); (c) restrict path 3 to the rhythm sequencer's actual need and remove its accessibility from pitch (smaller surface; partially done in 85.1 v2 — pitch no longer summons `clearSchedule`, but the path itself remains shared on the engine). Recommendation: track until either a 4th dispatch caller is contemplated OR the `auAudioUnit.reset()` crash root cause is understood; then pick (a) or (c).
+
+### PF-055: `appWasSuspended` interruption reason not filtered
+
+**Found:** 2026-06-06 (`audio-programming` skill audit — lifecycle observation gap)
+**Severity:** Low (false-positive engine stops on iOS 16+; user-visible as audio cutting out when the app is briefly suspended and resumed)
+**Disposition:** OPEN
+
+`IOSAudioInterruptionObserver.handleAudioInterruption` at `Peach/App/Platform/IOSAudioInterruptionObserver.swift:52-60` treats every `.began` interruption notification as a real interruption requiring engine stop. iOS 14.5+ added `AVAudioSessionInterruptionReasonKey` so apps can distinguish genuine interruptions (phone call, Siri, timer) from the framework-internal `.appWasSuspended` case, where iOS synthesizes an interruption notification for an app that was merely suspended in background. Treating `.appWasSuspended` as a real interruption stops a session that was about to resume cleanly; on iOS 16+ this is the dominant false-positive case for backgrounded media apps and is called out explicitly in the `audio-programming` skill's `references/avaudiosession.md`.
+
+The reason key on `.ended` (e.g., `.shouldResume`) is also not consulted, but the current handler intentionally remains stopped on `.ended` ("ended - remains stopped" — comment at line 57). That choice is independent of this entry; this PF tracks only the `.began` filter.
+
+**Fix:** Read `AVAudioSessionInterruptionReasonKey` from `notification.userInfo`; if reason is `.appWasSuspended`, return without calling `onStopRequired`. Other reasons (`.default`, `.builtInMicMuted`, `.routeDisconnected`) continue to stop as today. Regression test: synthetic `.began` notification with reason `.appWasSuspended` asserts `onStopRequired` is NOT called; `.began` with `.default` asserts it IS called.
+
+### PF-056: `AVAudioEngineConfigurationChangeNotification` not observed
+
+**Found:** 2026-06-06 (`audio-programming` skill audit — lifecycle observation gap)
+**Severity:** Medium (engine stays silent after hardware sample-rate or route change until app relaunch; reproducible by Bluetooth codec switching or external interface plug-in)
+**Disposition:** OPEN
+
+When the audio I/O unit observes a hardware sample-rate or channel-count change — Bluetooth codec switch (A2DP ↔ HFP), external interface plug-in at a different rate, or `AVAudioSession` re-activation — `AVAudioEngine` stops itself and uninitializes, then posts `AVAudioEngineConfigurationChangeNotification`. Peach has no observer for this notification (`grep -rn "configurationChangeNotification" Peach/` returns zero hits). After the OS event the engine is stopped and no code restarts it; the next training session produces no audio until the app is killed and relaunched.
+
+The notification can fire on a background thread; the handler must bounce to the right isolation domain before mutating the engine. `SoundFontEngine` is the canonical owner of the engine and its sample-rate-dependent state (`sourceFormat` derived from `engine.outputNode.outputFormat(forBus: 0).sampleRate` at `Peach/Core/Audio/SoundFontEngine.swift:299`); the observer should live near the engine instance, not in the iOS-specific interruption observer.
+
+**Fix:** Add an observer for `AVAudioEngineConfigurationChangeNotification` on the engine instance. On notification: re-read `outputNode.outputFormat(forBus: 0)`; reconnect nodes that were attached with explicit formats derived from the previous hardware format (`sourceNode` is the explicit case in current code); call `engine.start()` again. Integration test via `engine.enableManualRenderingMode(.realtime, ...)` that flips the sample rate and asserts the engine re-runs. Manual verification of which iOS routes reliably trigger this notification (BT codec switch is reportedly reliable; external mic on iPad reportedly reliable) needed.
+
+### PF-057: `AVAudioSession.mediaServicesWereResetNotification` not observed
+
+**Found:** 2026-06-06 (`audio-programming` skill audit — lifecycle observation gap)
+**Severity:** Medium (catastrophic when it occurs — silent audio death for the rest of the process lifetime — but rare; `mediaserverd` crashes are uncommon in production)
+**Disposition:** OPEN
+
+`AVAudioSession.mediaServicesWereResetNotification` posts when `mediaserverd` (the iOS audio server) crashes and respawns. When this happens, all audio-framework state held by the app is invalid: `AVAudioEngine` is dead, every `AVAudioUnit*` instance points at a recycled component, `AVAudioFile` handles are stale, `AudioComponentInstance` references are unusable. Without an observer, audio remains dead for the rest of the process lifetime; the user cannot recover without force-killing the app. Apple's docs treat the recovery handler as mandatory for any non-trivial audio app.
+
+Peach has no observer (`grep -rn "mediaServicesWereReset" Peach/` returns zero hits). The frequency in production is low, but the failure mode is irrecoverable and silent, so the support-load cost per occurrence is high. The `audio-programming` skill's `references/avaudiosession.md` flags this as the canonical hardening item most apps skip.
+
+**Fix:** Observe `AVAudioSession.mediaServicesWereResetNotification`. On fire: tear down `SoundFontEngine` and every `AVAudioUnitSampler` it owns; re-configure `AVAudioSession` (category/mode/options/active); construct a fresh `AVAudioEngine` + `AVAudioUnitSampler` graph; reload presets that were loaded before the reset; stop any active training session cleanly via the coordinator (resuming mid-trial after a `mediaserverd` reset is likely not desirable — surface the reset as a user-visible "audio reconnected, session stopped" notice and let the user start a new session). Decision needed during verification: silent recovery vs. user-visible notice. Hard to reproduce without inducing a `mediaserverd` crash; if no reliable trigger recipe is found, document the recovery path is unverified-in-production until a real crash occurs.

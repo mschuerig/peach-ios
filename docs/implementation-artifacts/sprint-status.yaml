@@ -1,5 +1,5 @@
 # generated: 2026-03-02
-# last_updated: 2026-06-06 # Story 85.1 reopened then re-closed: post-merge audio-mute race resolved via 2-line surgical fix after architect's initial muteForFade-as-silencer framing was empirically falsified. Actual cause: cancelled-trial cleanup catch (NotePlayer+TimedPlay) registering chain entry from async continuation, racing subsequent play()'s chain-tail capture; compounded by SoundFontPlayer.scheduleStopAll() summoning rhythm-sequencer clearSchedule (deferred render-thread CC#123). Chain pattern (v0.10) stays correct — bug was redundant cleanup multiplex, not the chain itself. Two new PF entries added: sine-wave click on note tail; noteDuration change not taking effect immediately. Previous: 2026-06-05 — PF-048/049/050/051 cataloged for follow-up. Epic 85 work order recorded in three independent chains: 85.5→85.4, 85.2→85.1→85.3, 85.6→85.7. Story 85.3 closes PF-011/013/047 (sequencer concurrency + conformance + awaitIdle race). Story 85.2 closed as no-op (PF-002 no longer reproduces on current main; entry removed from deferred-work.md).
+# last_updated: 2026-06-06 # Story 85.8 added: audio-session lifecycle observation hardening (closes PF-055/056/057), surfaced by the new audio-programming skill audit at .claude/skills/audio-programming/. Three gaps: appWasSuspended interruption reason not filtered (false-positive stops on iOS 16+); AVAudioEngineConfigurationChangeNotification not observed (silent engine after BT codec switch); mediaServicesWereResetNotification not observed (irrecoverable silence after rare mediaserverd crash). Independent of all existing 85.x chains. Previous: 2026-06-06 — Story 85.1 reopened then re-closed: post-merge audio-mute race resolved via 2-line surgical fix after architect's initial muteForFade-as-silencer framing was empirically falsified. Actual cause: cancelled-trial cleanup catch (NotePlayer+TimedPlay) registering chain entry from async continuation, racing subsequent play()'s chain-tail capture; compounded by SoundFontPlayer.scheduleStopAll() summoning rhythm-sequencer clearSchedule (deferred render-thread CC#123). Chain pattern (v0.10) stays correct — bug was redundant cleanup multiplex, not the chain itself. Two new PF entries added: sine-wave click on note tail; noteDuration change not taking effect immediately. Previous: 2026-06-05 — PF-048/049/050/051 cataloged for follow-up. Epic 85 work order recorded in three independent chains: 85.5→85.4, 85.2→85.1→85.3, 85.6→85.7. Story 85.3 closes PF-011/013/047 (sequencer concurrency + conformance + awaitIdle race). Story 85.2 closed as no-op (PF-002 no longer reproduces on current main; entry removed from deferred-work.md).
 # project: peach
 # project_key: NOKEY
 # tracking_system: file-system
@@ -794,6 +794,10 @@ development_status:
   #       85.6 (snapshot-testing infrastructure) gives 85.7's chevron-alignment
   #       regression test a cheap home. 85.7 can ship without 85.6 using a bespoke
   #       check, but the bespoke work is wasted once 85.6 lands.
+  #   (d) 85.8 alone
+  #       Audio-session lifecycle observation hardening; independent of all other
+  #       85.x stories. Surfaced by the audio-programming skill audit; closes
+  #       PF-055/056/057.
   epic-85: in-progress
   85-1-consolidate-session-lifecycle-under-coordinator: done # Closes PF-001, PF-003, PF-005 + post-merge audio-mute race (2026-06-06): cancelled-trial cleanup race + pitch summoning rhythm-sequencer reset; 2-line surgical fix
   85-2-defer-peachapp-heavyweight-init: done # PF-002 no longer reproduces; closed as no-op (entry removed from deferred-work.md)
@@ -802,4 +806,5 @@ development_status:
   85-5-nonisolated-noterange-and-piano-keyboard-layout: ready-for-dev # Closes PF-025
   85-6-snapshot-test-tod-picker-invariants: ready-for-dev # Closes PF-036, PF-040, PF-041
   85-7-resolve-navigation-destination-in-lazy-form: ready-for-dev # Closes PF-046
+  85-8-harden-audio-lifecycle-observation: draft # Closes PF-055, PF-056, PF-057 — story added to epics.md 2026-06-06; spec file pending /bmad-create-story
   epic-85-retrospective: optional
