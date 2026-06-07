@@ -808,4 +808,4 @@ development_status:
   85-6-snapshot-test-tod-picker-invariants: done # Closes PF-036, PF-040, PF-041; PF-036 + PF-040 pivoted from runtime a11y-tree to structural tests after the iOS 26 SwiftUI hosting regression (cashapp/AccessibilitySnapshot #245, #259) — PF-041 retains layout-based AX1 measurement via extracted `categoryHeader(text:)` helper
   85-7-resolve-navigation-destination-in-lazy-form: done # Closes PF-046; PF-064/PF-065 filed
   85-8-harden-audio-lifecycle-observation: done # Closes PF-055, PF-056, PF-057; filed PF-066/067/068/069 as follow-ups
-  epic-85-retrospective: optional
+  epic-85-retrospective: done
