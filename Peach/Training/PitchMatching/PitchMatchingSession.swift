@@ -142,21 +142,13 @@ final class PitchMatchingSession: TrainingSession {
         notePlayer: NotePlayer,
         profile: TrainingProfile,
         observers: [PitchMatchingObserver] = [],
-        midiInput: (any MIDIInput)? = nil,
-        notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving
+        midiInput: (any MIDIInput)? = nil
     ) {
         self.notePlayer = notePlayer
         self.profile = profile
         self.observers = observers
         self.midiInput = midiInput
-
-        self.lifecycle = SessionLifecycle(
-            logger: logger,
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: audioInterruptionObserver,
-            onStopRequired: { [weak self] in self?.stop() }
-        )
+        self.lifecycle = SessionLifecycle(logger: logger)
     }
 
     // MARK: - Public API

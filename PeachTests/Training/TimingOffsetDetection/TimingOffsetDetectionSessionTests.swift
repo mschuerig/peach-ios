@@ -65,7 +65,6 @@ private func makeSession(
         strategy: strategy,
         profile: profile,
         observers: [observer],
-        audioInterruptionObserver: NoOpAudioInterruptionObserver(),
         currentTime: currentTime
     )
 

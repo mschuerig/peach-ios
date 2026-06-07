@@ -8,15 +8,9 @@ struct SessionLifecycleTests {
 
     // MARK: - Factory
 
-    private static func makeLifecycle(
-        notificationCenter: NotificationCenter = NotificationCenter(),
-        onStopRequired: @escaping () -> Void = {}
-    ) -> SessionLifecycle {
+    private static func makeLifecycle() -> SessionLifecycle {
         SessionLifecycle(
-            logger: .init(subsystem: "test", category: "SessionLifecycleTests"),
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: NoOpAudioInterruptionObserver(),
-            onStopRequired: onStopRequired
+            logger: .init(subsystem: "test", category: "SessionLifecycleTests")
         )
     }
 
@@ -98,42 +92,4 @@ struct SessionLifecycleTests {
         #expect(secondTaskRan.withLock { $0 })
     }
 
-    // MARK: - interruptionMonitor calls onStopRequired
-
-    @Test("interruptionMonitor triggers onStopRequired via injected observer")
-    func interruptionMonitorCallsOnStopRequired() async {
-        let notificationCenter = NotificationCenter()
-        let stopRequiredCalled = Mutex(false)
-        let mockObserver = CallbackAudioInterruptionObserver()
-
-        let lifecycle = SessionLifecycle(
-            logger: .init(subsystem: "test", category: "SessionLifecycleTests"),
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: mockObserver,
-            onStopRequired: { stopRequiredCalled.withLock { $0 = true } }
-        )
-
-        mockObserver.simulateInterruption()
-
-        #expect(stopRequiredCalled.withLock { $0 })
-        _ = lifecycle // keep alive
-    }
-}
-
-// MARK: - Test Helpers
-
-private final class CallbackAudioInterruptionObserver: AudioInterruptionObserving {
-    private var storedOnStopRequired: (() -> Void)?
-
-    func setupObservers(
-        notificationCenter: NotificationCenter,
-        onStopRequired: @escaping () -> Void
-    ) -> [NSObjectProtocol] {
-        storedOnStopRequired = onStopRequired
-        return []
-    }
-
-    func simulateInterruption() {
-        storedOnStopRequired?()
-    }
 }

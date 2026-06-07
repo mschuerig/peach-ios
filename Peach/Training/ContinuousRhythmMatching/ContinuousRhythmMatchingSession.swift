@@ -155,19 +155,12 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
     init(
         beatSequencer: any BeatSequencer,
         observers: [ContinuousRhythmMatchingObserver] = [],
-        midiInput: (any MIDIInput)? = nil,
-        notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving
+        midiInput: (any MIDIInput)? = nil
     ) {
         self.beatSequencer = beatSequencer
         self.midiInput = midiInput
         self.observers = observers
-        self.lifecycle = SessionLifecycle(
-            logger: logger,
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: audioInterruptionObserver,
-            onStopRequired: { [weak self] in self?.stop() }
-        )
+        self.lifecycle = SessionLifecycle(logger: logger)
     }
 
     // MARK: - TrainingSession Protocol

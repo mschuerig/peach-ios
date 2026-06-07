@@ -117,21 +117,14 @@ final class PitchDiscriminationSession: TrainingSession {
         strategy: NextPitchDiscriminationStrategy,
         profile: TrainingProfile,
         resettables: [Resettable] = [],
-        observers: [PitchDiscriminationObserver] = [],
-        notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving
+        observers: [PitchDiscriminationObserver] = []
     ) {
         self.notePlayer = notePlayer
         self.strategy = strategy
         self.profile = profile
         self.resettables = resettables
         self.observers = observers
-        self.lifecycle = SessionLifecycle(
-            logger: logger,
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: audioInterruptionObserver,
-            onStopRequired: { [weak self] in self?.stop() }
-        )
+        self.lifecycle = SessionLifecycle(logger: logger)
     }
 
     // MARK: - Public API

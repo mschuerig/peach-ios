@@ -30,8 +30,7 @@ struct ResettableTests {
             notePlayer: MockNotePlayer(),
             strategy: MockNextPitchDiscriminationStrategy(),
             profile: PerceptualProfile(),
-            resettables: [mock1, mock2],
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            resettables: [mock1, mock2]
         )
 
         try session.resetTrainingData()

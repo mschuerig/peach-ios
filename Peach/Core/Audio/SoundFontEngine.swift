@@ -224,14 +224,24 @@ final class SoundFontEngine {
 
     // MARK: - Audio Components
 
-    private let engine: AVAudioEngine
+    private var engine: AVAudioEngine
     private var channels: [MIDIChannel: AVAudioUnitSampler] = [:]
-    private let sourceNode: AVAudioSourceNode
+    private var sourceNode: AVAudioSourceNode
+    private var sourceSampleRate: Double
 
     // MARK: - State
 
     private var loadedPresets: [MIDIChannel: SF2Preset] = [:]
     private var activeMuteCount = 0
+
+    /// Re-entrance guard for `rebuildAfterMediaReset` — coalesces concurrent
+    /// `mediaServicesWereResetNotification` posts. (Story 85.8 C3a)
+    private var rebuildInFlight = false
+
+    /// Presets that failed to reload during a prior `rebuildAfterMediaReset`
+    /// (transient sampler error after reset). Retried on the next rebuild
+    /// before the regular `loadedPresets` snapshot. (Story 85.8 C4a)
+    private var pendingPresetReload: [MIDIChannel: SF2Preset] = [:]
 
     // MARK: - MIDI Constants
 
@@ -266,10 +276,17 @@ final class SoundFontEngine {
     // MARK: - Initialization
 
     private let audioSessionConfigurator: AudioSessionConfiguring
+    private let notificationCenter: NotificationCenter
+    private var configChangeObserver: NSObjectProtocol?
 
-    init(sf2URL: URL, audioSessionConfigurator: AudioSessionConfiguring) throws {
+    init(
+        sf2URL: URL,
+        audioSessionConfigurator: AudioSessionConfiguring,
+        notificationCenter: NotificationCenter = .default
+    ) throws {
         self.sf2URL = sf2URL
         self.audioSessionConfigurator = audioSessionConfigurator
+        self.notificationCenter = notificationCenter
 
         let engine = AVAudioEngine()
         self.engine = engine
@@ -296,20 +313,57 @@ final class SoundFontEngine {
         shared.midiBlocks(forSlot: 1)[Int(channel0.rawValue)] = block0
 
         // Create source node (outputs silence, serves as render-thread clock)
-        let sampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
-        let sourceFormat = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
-
-        let sourceNode = AVAudioSourceNode(format: sourceFormat,
-            renderBlock: Self.makeRenderCallback(shared: shared))
+        let (sourceNode, sampleRate) = try Self.makeSourceNode(on: engine, scheduleState: shared)
         self.sourceNode = sourceNode
+        self.sourceSampleRate = sampleRate
 
-        engine.attach(sourceNode)
-        engine.connect(sourceNode, to: engine.mainMixerNode, format: sourceFormat)
+        configChangeObserver = installConfigurationChangeObserver(on: engine)
 
         logger.info("SoundFontEngine initialized with \(sf2URL.lastPathComponent)")
     }
 
+    // MARK: - Graph Helpers
+
+    /// Builds a fresh source node bound to `scheduleState` at the engine's
+    /// current output sample rate, attaches + connects it to `mainMixerNode`,
+    /// and returns the node and its sample rate. Used by both `init` and the
+    /// rebuild path. Throws if the format cannot be constructed.
+    nonisolated private static func makeSourceNode(
+        on engine: AVAudioEngine,
+        scheduleState: DoubleBufferedScheduleState
+    ) throws -> (AVAudioSourceNode, Double) {
+        let sampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
+        guard let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else {
+            throw AudioError.invalidPreset("Could not construct source format at sample rate \(sampleRate)")
+        }
+        let node = AVAudioSourceNode(format: format,
+            renderBlock: makeRenderCallback(shared: scheduleState))
+        engine.attach(node)
+        engine.connect(node, to: engine.mainMixerNode, format: format)
+        return (node, sampleRate)
+    }
+
+    /// Registers an `AVAudioEngineConfigurationChange` observer scoped to the
+    /// specified engine instance. `NotificationCenter`'s `object` parameter
+    /// already filters by sender, so no identity guard is needed in the
+    /// closure. Bounces to `@MainActor` for engine mutation. Used by both
+    /// `init` and the rebuild path.
+    private func installConfigurationChangeObserver(on engine: AVAudioEngine) -> NSObjectProtocol {
+        notificationCenter.addObserver(
+            forName: .AVAudioEngineConfigurationChange,
+            object: engine,
+            queue: nil
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.handleConfigurationChange()
+            }
+        }
+    }
+
     isolated deinit {
+        if let configChangeObserver {
+            notificationCenter.removeObserver(configChangeObserver)
+        }
         engine.stop()
     }
 
@@ -358,6 +412,202 @@ final class SoundFontEngine {
     func ensureEngineRunning() throws {
         if !engine.isRunning {
             try engine.start()
+        }
+    }
+
+    // MARK: - Test Seams
+    //
+    // The properties and methods below exist solely for unit tests. They are
+    // internal because Swift Testing requires `@testable import Peach` to
+    // reach them, but production code must not call them. PF-068 tracks the
+    // follow-up to gate these behind `@_spi(Testing)` or `#if DEBUG`.
+
+    /// Posts a synthetic `AVAudioEngineConfigurationChangeNotification` for the
+    /// engine — used by tests to exercise the PF-056 observer path without real
+    /// hardware. Identical to what `AVAudioEngine` posts on a real SR change.
+    func postSyntheticConfigurationChangeForTesting() {
+        notificationCenter.post(
+            name: .AVAudioEngineConfigurationChange,
+            object: engine,
+            userInfo: nil
+        )
+    }
+
+    /// Stops the underlying `AVAudioEngine` — used by tests to simulate the
+    /// engine-self-stopped state that PF-056's handler must recover from.
+    func stopEngineForTesting() {
+        engine.stop()
+    }
+
+    /// Number of presets currently tracked as loaded — used by tests to verify
+    /// PF-057's media-reset reload behavior.
+    var loadedPresetCountForTesting: Int { loadedPresets.count }
+
+    /// Number of presets pending retry after a partial-failure rebuild — used
+    /// by tests to verify PF-057's C4a retry tracking.
+    var pendingPresetReloadCountForTesting: Int { pendingPresetReload.count }
+
+    /// Stable identity of the current `sourceNode` — used by tests to verify
+    /// PF-056's SR-changed rewire branch and PF-057's rebuild replaced the node.
+    var sourceNodeIdentityForTesting: ObjectIdentifier { ObjectIdentifier(sourceNode) }
+
+    /// Stable identity of the current `AVAudioEngine` — used by tests to
+    /// verify PF-057's rebuild replaced the engine instance.
+    var engineIdentityForTesting: ObjectIdentifier { ObjectIdentifier(engine) }
+
+    /// Forces a stale `sourceSampleRate` value so the next configuration-change
+    /// handler enters the SR-changed branch — used by tests that exercise
+    /// PF-056's rewire path without real hardware route changes.
+    func forceStaleSourceSampleRateForTesting() {
+        sourceSampleRate = -1
+    }
+
+    // MARK: - Media Services Reset Recovery (PF-057)
+
+    /// Rebuilds the audio infrastructure after `mediaserverd` has crashed and
+    /// respawned. Every `AVAudioEngine` / `AVAudioUnit*` / `AudioComponentInstance`
+    /// reference held before the reset is invalid; this method tears them down
+    /// and constructs fresh instances bound to the same `DoubleBufferedScheduleState`.
+    /// Re-runs `audioSessionConfigurator.configure`, re-creates samplers for each
+    /// previously-known channel, reloads every preset that was loaded before the
+    /// reset, rewires `sourceNode`, restarts the engine. Reuses the same
+    /// `SoundFontEngine` instance so injected references remain valid.
+    ///
+    /// The caller (typically `TrainingLifecycleCoordinator`) is responsible for
+    /// stopping any active training session before invoking this — the session's
+    /// in-flight Tasks reference the old samplers, which become invalid.
+    func rebuildAfterMediaReset() async throws {
+        logger.notice("Rebuilding audio infrastructure after media services reset")
+
+        guard !rebuildInFlight else {
+            logger.warning("rebuildAfterMediaReset re-entered while a prior rebuild is in flight; coalescing")
+            return
+        }
+        rebuildInFlight = true
+        defer { rebuildInFlight = false }
+
+        // Snapshot recovery inventory before any teardown so a configure() throw
+        // can short-circuit without leaving channels/presets unrecoverable.
+        let presetsSnapshot = pendingPresetReload.merging(loadedPresets, uniquingKeysWith: { _, current in current })
+        let channelKeys = Array(channels.keys)
+
+        // Re-activate the audio session BEFORE tearing down the old engine: if
+        // configure() throws (HAL not ready yet after mediaserverd respawn), the
+        // old (already-dead) engine state is no worse than before; the catalog
+        // entry remains "pending" so the next Reset can retry from clean state.
+        try audioSessionConfigurator.configure(logger: Self.audioSessionLogger)
+
+        // Build the new graph completely BEFORE swapping it in. If any
+        // attach/connect throws, the old engine state is untouched; the next
+        // rebuild attempts again. After success, atomically swap.
+        let newEngine = AVAudioEngine()
+
+        var newChannels: [MIDIChannel: AVAudioUnitSampler] = [:]
+        for channelID in channelKeys {
+            let sampler = AVAudioUnitSampler()
+            newEngine.attach(sampler)
+            newEngine.connect(sampler, to: newEngine.mainMixerNode, format: nil)
+            newChannels[channelID] = sampler
+        }
+
+        // sourceNode must be attached + connected BEFORE engine.start() so the
+        // render-clock callback is wired into the graph on first pull. Attach
+        // after start() works for samplers (whose connections are static) but
+        // a sourceNode whose render callback drives `scheduleState` consumers
+        // needs to be hot when the engine starts pulling.
+        let (newSourceNode, newSampleRate) = try Self.makeSourceNode(on: newEngine, scheduleState: scheduleState)
+
+        try newEngine.start()
+
+        // From here on: new graph is live. Commit the swap atomically — tear
+        // down the old engine first to release its MIDI blocks, then swap.
+        if let configChangeObserver {
+            notificationCenter.removeObserver(configChangeObserver)
+            self.configChangeObserver = nil
+        }
+        engine.stop()
+
+        self.engine = newEngine
+        self.channels = newChannels
+        self.sourceNode = newSourceNode
+        self.sourceSampleRate = newSampleRate
+        loadedPresets.removeAll()
+        mainThreadMidiBlocks.removeAll()
+
+        // MIDI blocks are populated by `loadPreset` for each reloaded preset —
+        // no need to pre-populate here against empty samplers (the render
+        // thread would briefly see stale, no-instrument blocks if we did).
+
+        configChangeObserver = installConfigurationChangeObserver(on: newEngine)
+
+        // Track failed presets so a subsequent rebuild attempts them again
+        // (the failure may have been transient — sampler quirks after reset).
+        var stillPending: [MIDIChannel: SF2Preset] = [:]
+        for (channelID, preset) in presetsSnapshot {
+            do {
+                try await loadPreset(preset, channel: channelID)
+            } catch {
+                logger.error("Failed to reload preset \(preset.rawValue) on channel \(channelID.rawValue); will retry on next rebuild: \(error.localizedDescription)")
+                stillPending[channelID] = preset
+            }
+        }
+        pendingPresetReload = stillPending
+
+        let reloaded = presetsSnapshot.count - stillPending.count
+        if stillPending.isEmpty {
+            logger.info("Audio infrastructure rebuild complete; \(reloaded) presets reloaded")
+        } else {
+            logger.warning("Audio infrastructure rebuild complete; \(reloaded) of \(presetsSnapshot.count) presets reloaded, \(stillPending.count) pending retry")
+        }
+    }
+
+    // MARK: - Configuration Change Recovery (PF-056)
+
+    /// Handles `AVAudioEngineConfigurationChangeNotification` — re-reads the
+    /// current output sample rate; if the rate changed (BT codec switch,
+    /// external interface plug-in, route change), recreates the source node
+    /// bound to the same `DoubleBufferedScheduleState` at the new format and
+    /// reconnects. Then restarts the engine. Idempotent if the rate is
+    /// unchanged. Samplers are SR-agnostic at the `AVAudioUnit` boundary —
+    /// no preset reload needed; the mainMixer SRCs at the boundary.
+    func handleConfigurationChange() {
+        // Story 85.8 C3b: a configuration-change Task queued from the old
+        // engine's observer can resolve after `rebuildAfterMediaReset` has
+        // swapped the engine pointer. Bail to avoid mutating a freshly-built
+        // graph mid-rebuild; the new observer (registered on `newEngine`)
+        // owns the new engine's notifications.
+        guard !rebuildInFlight else {
+            logger.info("Configuration change suppressed during media-reset rebuild")
+            return
+        }
+
+        let newSampleRate = engine.outputNode.outputFormat(forBus: 0).sampleRate
+
+        if newSampleRate == sourceSampleRate {
+            logger.info("Engine configuration change: sample rate unchanged (\(newSampleRate)); ensuring engine running")
+            if !engine.isRunning {
+                do {
+                    try engine.start()
+                } catch {
+                    logger.error("Engine start after configuration change failed: \(error.localizedDescription)")
+                }
+            }
+            return
+        }
+
+        logger.notice("Engine configuration change: sample rate \(self.sourceSampleRate) -> \(newSampleRate); rewiring source node")
+
+        engine.disconnectNodeOutput(sourceNode)
+        engine.detach(sourceNode)
+
+        do {
+            let (newSourceNode, resolvedSampleRate) = try Self.makeSourceNode(on: engine, scheduleState: scheduleState)
+            sourceNode = newSourceNode
+            sourceSampleRate = resolvedSampleRate
+            try engine.start()
+            logger.info("Engine restarted at \(resolvedSampleRate)")
+        } catch {
+            logger.error("Engine start after source-node rewire failed: \(error.localizedDescription)")
         }
     }
 

@@ -33,6 +33,7 @@ struct PeachApp: App {
     @State private var activeSession: (any TrainingSession)?
     @State private var trainingLifecycle: TrainingLifecycleCoordinator
     @State private var settingsCoordinator: SettingsCoordinator
+    @State private var audioInfrastructureMonitor: AppAudioInfrastructureMonitor
     @AppStorage(SettingsKeys.soundSource) private var soundSource: String = SettingsKeys.defaultSoundSource
     private let userSettings = AppUserSettings()
     private let crmUserSettings = AppContinuousRhythmMatchingUserSettings()
@@ -89,12 +90,21 @@ struct PeachApp: App {
                 profile: profile,
                 transferService: transferService,
                 notePlayer: audio.notePlayer,
+                soundFontEngine: engine,
                 userSettings: userSettings,
                 crmUserSettings: crmUserSettings,
                 todUserSettings: todUserSettings
             )
             _trainingLifecycle = State(wrappedValue: coordinators.lifecycle)
             _settingsCoordinator = State(wrappedValue: coordinators.settings)
+
+            // The app-scoped audio observer routes the three iOS audio-lifecycle
+            // notifications to coordinator methods. Tokens are retained on the
+            // monitor for the duration of the app process.
+            _audioInfrastructureMonitor = State(wrappedValue: AppAudioInfrastructureMonitor(
+                observer: Self.makeAudioInterruptionObserver(),
+                coordinator: coordinators.lifecycle
+            ))
 
             try? Tips.configure()
         } catch {
@@ -224,12 +234,22 @@ struct PeachApp: App {
             profile: profile,
             transferService: transferService,
             notePlayer: notePlayer,
+            soundFontEngine: soundFontEngine,
             userSettings: userSettings,
             crmUserSettings: crmUserSettings,
             todUserSettings: todUserSettings
         )
         trainingLifecycle = coordinators.lifecycle
         settingsCoordinator = coordinators.settings
+        // The prior monitor's `[weak coordinator]` closures point at the
+        // now-replaced coordinator instance. Recreate the monitor so the
+        // centralized observer routes to the live coordinator. Replacing the
+        // `@State` wrapper drops the old monitor; its `isolated deinit` removes
+        // its tokens.
+        audioInfrastructureMonitor = AppAudioInfrastructureMonitor(
+            observer: Self.makeAudioInterruptionObserver(),
+            coordinator: coordinators.lifecycle
+        )
     }
 
     // MARK: - Data Store Setup
@@ -435,8 +455,7 @@ struct PeachApp: App {
             notePlayer: notePlayer,
             strategy: strategy,
             profile: profile,
-            observers: observers,
-            audioInterruptionObserver: makeAudioInterruptionObserver()
+            observers: observers
         )
     }
 
@@ -453,8 +472,7 @@ struct PeachApp: App {
             beatSequencer: beatSequencer,
             strategy: AdaptiveTimingOffsetDetectionStrategy(),
             profile: profile,
-            observers: observers,
-            audioInterruptionObserver: makeAudioInterruptionObserver()
+            observers: observers
         )
     }
 
@@ -470,8 +488,7 @@ struct PeachApp: App {
         return ContinuousRhythmMatchingSession(
             beatSequencer: beatSequencer,
             observers: observers,
-            midiInput: midiInput,
-            audioInterruptionObserver: makeAudioInterruptionObserver()
+            midiInput: midiInput
         )
     }
 
@@ -487,8 +504,7 @@ struct PeachApp: App {
             notePlayer: notePlayer,
             profile: profile,
             observers: [storeAdapter, profileAdapter],
-            midiInput: midiInput,
-            audioInterruptionObserver: makeAudioInterruptionObserver()
+            midiInput: midiInput
         )
     }
 
@@ -513,6 +529,7 @@ struct PeachApp: App {
         profile: PerceptualProfile,
         transferService: TrainingDataTransferService,
         notePlayer: any NotePlayer,
+        soundFontEngine: SoundFontEngine,
         userSettings: any UserSettings,
         crmUserSettings: any ContinuousRhythmMatchingUserSettings,
         todUserSettings: any TimingOffsetDetectionUserSettings
@@ -534,7 +551,10 @@ struct PeachApp: App {
         let lifecycle = TrainingLifecycleCoordinator(
             registry: lifecycleRegistry,
             backgroundPolicy: makeBackgroundPolicy(),
-            initialAutoStartSetting: userSettings.autoStartTraining
+            initialAutoStartSetting: userSettings.autoStartTraining,
+            mediaInfrastructureRebuild: { [soundFontEngine] in
+                try await soundFontEngine.rebuildAfterMediaReset()
+            }
         )
         let settings = SettingsCoordinator(
             dataStore: dataStore,

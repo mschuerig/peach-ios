@@ -49,7 +49,7 @@ struct ContinuousRhythmMatchingSessionTests {
         var samplesPerSubdivision: Int64 { sequencer.samplesPerBeat / 4 }
     }
 
-    private func makeSession(audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver()) -> Fixture {
+    private func makeSession() -> Fixture {
         let sequencer = MockBeatSequencer()
         sequencer.samplesPerBeat = 22050  // 120 BPM @ 44100 Hz
         sequencer.sampleRate = .standard44100
@@ -59,9 +59,7 @@ struct ContinuousRhythmMatchingSessionTests {
 
         let session = ContinuousRhythmMatchingSession(
             beatSequencer: sequencer,
-            observers: [observer],
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: audioInterruptionObserver
+            observers: [observer]
         )
 
         return Fixture(
@@ -84,9 +82,7 @@ struct ContinuousRhythmMatchingSessionTests {
         let session = ContinuousRhythmMatchingSession(
             beatSequencer: sequencer,
             observers: [observer],
-            midiInput: midiInput,
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            midiInput: midiInput
         )
 
         return MIDIFixture(
@@ -538,30 +534,6 @@ struct ContinuousRhythmMatchingSessionTests {
         #expect(f.observer.results.count == 2)
 
         f.session.stop()
-    }
-
-    // MARK: - Interruption Handling
-
-    @Test("audio interruption stops session and discards incomplete trial")
-    func audioInterruptionStopsSession() async {
-        let mock = MockAudioInterruptionObserver()
-        let f = makeSession(audioInterruptionObserver: mock)
-        f.session.start(settings: f.defaultSettings(enabledGapPositions: [.fourth]))
-        await f.sequencer.waitForStart()
-
-        for i in 0..<5 {
-            _ = f.session.nextBeat()
-            let gapSamplePosition = Int64(i) * f.samplesPerBeat + Int64(3) * f.samplesPerSubdivision
-            f.sequencer.currentSamplePosition = gapSamplePosition + 220
-            f.session.handleTap()
-        }
-
-        mock.simulateInterruption()
-
-        try? await Task.sleep(for: .milliseconds(50))
-
-        #expect(f.session.isIdle)
-        #expect(f.observer.completedCallCount == 0)
     }
 
     // MARK: - BeatProvider Conformance

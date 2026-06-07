@@ -35,19 +35,15 @@ let defaultPitchMatchingTestSettings = PitchMatchingSettings(
     noteDuration: NoteDuration(0.3)
 )
 
-func makePitchMatchingSession(
-    notificationCenter: NotificationCenter = .default,
-    audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver()
-) -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver) {
+func makePitchMatchingSession()
+    -> (session: PitchMatchingSession, notePlayer: MockNotePlayer, profile: MockTrainingProfile, observer: MockPitchMatchingObserver) {
     let notePlayer = MockNotePlayer()
     let profile = MockTrainingProfile()
     let observer = MockPitchMatchingObserver()
     let session = PitchMatchingSession(
         notePlayer: notePlayer,
         profile: profile,
-        observers: [observer],
-        notificationCenter: notificationCenter,
-        audioInterruptionObserver: audioInterruptionObserver
+        observers: [observer]
     )
     return (session, notePlayer, profile, observer)
 }
@@ -1037,71 +1033,66 @@ struct PitchMatchingSessionAudioInterruptionTests {
 
     // MARK: - Audio Interruption Tests
 
-    @Test("Audio interruption stops from playingTunable")
-    func audioInterruptionStopsFromPlayingTunable() async throws {
-        let mock = MockAudioInterruptionObserver()
-        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
+    @Test("stop() from playingTunable transitions to idle")
+    func stopFromPlayingTunable() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
-        mock.simulateInterruption()
+        session.stop()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption stops from awaitingSliderTouch")
-    func audioInterruptionStopsFromAwaitingSliderTouch() async throws {
-        let mock = MockAudioInterruptionObserver()
-        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
+    @Test("stop() from awaitingSliderTouch transitions to idle")
+    func stopFromAwaitingSliderTouch() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
-        mock.simulateInterruption()
+        session.stop()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption on idle is safe")
-    func audioInterruptionOnIdleIsSafe() async throws {
-        let mock = MockAudioInterruptionObserver()
-        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
+    @Test("stop() on idle is safe")
+    func stopOnIdleIsSafe() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
         #expect(session.state == .idle)
 
-        mock.simulateInterruption()
+        session.stop()
 
         try await Task.sleep(for: .milliseconds(50))
         await Task.yield()
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption stops from playingReference")
-    func audioInterruptionStopsFromPlayingReference() async throws {
-        let mock = MockAudioInterruptionObserver()
-        let (session, notePlayer, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
+    @Test("stop() from playingReference transitions to idle")
+    func stopFromPlayingReference() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
         notePlayer.instantPlayback = false
         notePlayer.simulatedPlaybackDuration = .seconds(5)
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .playingReference)
 
-        mock.simulateInterruption()
+        session.stop()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
     }
 
-    @Test("Audio interruption stops from showingFeedback")
-    func audioInterruptionStopsFromShowingFeedback() async throws {
-        let mock = MockAudioInterruptionObserver()
-        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
+    @Test("stop() from showingFeedback transitions to idle")
+    func stopFromShowingFeedback() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
         session.start(settings: defaultPitchMatchingTestSettings)
         try await transitionToPlayingTunable(session)
 
         session.commitPitch(0.0)
         try await waitForState(session, .showingFeedback)
 
-        mock.simulateInterruption()
+        session.stop()
 
         try await waitForState(session, .idle)
         #expect(session.state == .idle)
@@ -1109,14 +1100,13 @@ struct PitchMatchingSessionAudioInterruptionTests {
 
     // MARK: - Restart Tests
 
-    @Test("Training can restart after interruption stop")
-    func canRestartAfterInterruptionStop() async throws {
-        let mock = MockAudioInterruptionObserver()
-        let (session, _, _, _) = makePitchMatchingSession(audioInterruptionObserver: mock)
+    @Test("Training can restart after stop()")
+    func canRestartAfterStop() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
 
-        mock.simulateInterruption()
+        session.stop()
         try await waitForState(session, .idle)
 
         session.start(settings: defaultPitchMatchingTestSettings)
@@ -1137,8 +1127,7 @@ func makePitchMatchingSessionWithMIDI(
         notePlayer: notePlayer,
         profile: profile,
         observers: [observer],
-        midiInput: midiInput,
-        audioInterruptionObserver: NoOpAudioInterruptionObserver()
+        midiInput: midiInput
     )
     return (session, notePlayer, profile, observer, midiInput)
 }

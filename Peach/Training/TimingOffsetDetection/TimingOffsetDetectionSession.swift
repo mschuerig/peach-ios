@@ -174,8 +174,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         strategy: NextTimingOffsetDetectionStrategy,
         profile: TrainingProfile,
         observers: [TimingOffsetDetectionObserver] = [],
-        notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving,
         currentTime: @escaping () -> Double = { CACurrentMediaTime() }
     ) {
         self.beatSequencer = beatSequencer
@@ -183,12 +181,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         self.profile = profile
         self.observers = observers
         self.currentTime = currentTime
-        self.lifecycle = SessionLifecycle(
-            logger: logger,
-            notificationCenter: notificationCenter,
-            audioInterruptionObserver: audioInterruptionObserver,
-            onStopRequired: { [weak self] in self?.stop() }
-        )
+        self.lifecycle = SessionLifecycle(logger: logger)
     }
 
     // MARK: - Public API

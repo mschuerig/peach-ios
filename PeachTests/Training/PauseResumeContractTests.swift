@@ -212,8 +212,7 @@ struct ContinuousRhythmMatchingSessionPauseResumeTests {
 
     private func makeSession() -> ContinuousRhythmMatchingSession {
         ContinuousRhythmMatchingSession(
-            beatSequencer: MockBeatSequencer(),
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            beatSequencer: MockBeatSequencer()
         )
     }
 

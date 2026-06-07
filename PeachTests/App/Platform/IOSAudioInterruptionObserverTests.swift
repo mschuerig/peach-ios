@@ -55,6 +55,62 @@ struct IOSAudioInterruptionObserverTests {
         _ = f.observer
     }
 
+    // MARK: - Audio Interruption Reason Filter (PF-055)
+
+    @Test("Interruption began with reason appWasSuspended does not call onStopRequired")
+    func interruptionBeganAppWasSuspendedDoesNotCallOnStopRequired() async {
+        let f = makeFixture()
+
+        f.nc.post(
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: [
+                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
+                AVAudioSessionInterruptionReasonKey: UInt(1) // rawValue of deprecated .appWasSuspended
+            ]
+        )
+
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(!f.stopCalled())
+        _ = f.observer
+    }
+
+    @Test("Interruption began with reason default calls onStopRequired")
+    func interruptionBeganDefaultCallsOnStopRequired() async {
+        let f = makeFixture()
+
+        f.nc.post(
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: [
+                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
+                AVAudioSessionInterruptionReasonKey: AVAudioSession.InterruptionReason.default.rawValue
+            ]
+        )
+
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(f.stopCalled())
+        _ = f.observer
+    }
+
+    @Test("Interruption began with reason builtInMicMuted calls onStopRequired")
+    func interruptionBeganBuiltInMicMutedCallsOnStopRequired() async {
+        let f = makeFixture()
+
+        f.nc.post(
+            name: AVAudioSession.interruptionNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: [
+                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
+                AVAudioSessionInterruptionReasonKey: AVAudioSession.InterruptionReason.builtInMicMuted.rawValue
+            ]
+        )
+
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(f.stopCalled())
+        _ = f.observer
+    }
+
     // MARK: - Route Change
 
     @Test("Route change oldDeviceUnavailable calls onStopRequired")
@@ -104,12 +160,97 @@ struct IOSAudioInterruptionObserverTests {
 
     // MARK: - Token Management
 
-    @Test("setupObservers returns exactly two tokens")
-    func setupObserversReturnsTwoTokens() {
+    @Test("setupObservers returns exactly four tokens")
+    func setupObserversReturnsFourTokens() {
         let nc = NotificationCenter()
         let observer = IOSAudioInterruptionObserver()
-        let tokens = observer.setupObservers(notificationCenter: nc, onStopRequired: {})
-        #expect(tokens.count == 2)
+        let tokens = observer.setupObservers(
+            notificationCenter: nc,
+            onStopRequired: {},
+            onMediaServicesLost: {},
+            onMediaServicesReset: {}
+        )
+        #expect(tokens.count == 4)
+    }
+
+    // MARK: - Media Services Reset (PF-057)
+
+    @Test("mediaServicesWereResetNotification calls onMediaServicesReset")
+    func mediaServicesResetFiresClosure() async {
+        let nc = NotificationCenter()
+        let observer = IOSAudioInterruptionObserver()
+        var resetCalled = false
+        let tokens = observer.setupObservers(
+            notificationCenter: nc,
+            onStopRequired: {},
+            onMediaServicesLost: {},
+            onMediaServicesReset: { resetCalled = true }
+        )
+
+        nc.post(
+            name: AVAudioSession.mediaServicesWereResetNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: nil
+        )
+
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(resetCalled)
+        _ = tokens
+        _ = observer
+    }
+
+    @Test("mediaServicesWereLostNotification calls onMediaServicesLost")
+    func mediaServicesLostFiresClosure() async {
+        let nc = NotificationCenter()
+        let observer = IOSAudioInterruptionObserver()
+        var lostCalled = false
+        let tokens = observer.setupObservers(
+            notificationCenter: nc,
+            onStopRequired: {},
+            onMediaServicesLost: { lostCalled = true },
+            onMediaServicesReset: {}
+        )
+
+        nc.post(
+            name: AVAudioSession.mediaServicesWereLostNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: nil
+        )
+
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(lostCalled)
+        _ = tokens
+        _ = observer
+    }
+
+    @Test("lost-then-reset fires both closures in order")
+    func lostThenResetFiresBothInOrder() async {
+        let nc = NotificationCenter()
+        let observer = IOSAudioInterruptionObserver()
+        var sequence: [String] = []
+        let tokens = observer.setupObservers(
+            notificationCenter: nc,
+            onStopRequired: {},
+            onMediaServicesLost: { sequence.append("lost") },
+            onMediaServicesReset: { sequence.append("reset") }
+        )
+
+        nc.post(
+            name: AVAudioSession.mediaServicesWereLostNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: nil
+        )
+        try? await Task.sleep(for: .milliseconds(30))
+        nc.post(
+            name: AVAudioSession.mediaServicesWereResetNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: nil
+        )
+        try? await Task.sleep(for: .milliseconds(50))
+
+        #expect(sequence == ["lost", "reset"])
+        _ = tokens
+        _ = observer
     }
 
     // MARK: - Helpers
@@ -127,9 +268,12 @@ struct IOSAudioInterruptionObserverTests {
         let nc = NotificationCenter()
         var stopped = false
         let observer = IOSAudioInterruptionObserver()
-        let tokens = observer.setupObservers(notificationCenter: nc) {
-            stopped = true
-        }
+        let tokens = observer.setupObservers(
+            notificationCenter: nc,
+            onStopRequired: { stopped = true },
+            onMediaServicesLost: {},
+            onMediaServicesReset: {}
+        )
         return Fixture(nc: nc, observer: observer, tokens: tokens, stopCalled: { stopped })
     }
 }

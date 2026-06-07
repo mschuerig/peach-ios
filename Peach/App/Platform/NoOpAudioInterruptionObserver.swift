@@ -4,7 +4,9 @@ import Foundation
 struct NoOpAudioInterruptionObserver: AudioInterruptionObserving {
     func setupObservers(
         notificationCenter: NotificationCenter,
-        onStopRequired: @escaping () -> Void
+        onStopRequired: @escaping () -> Void,
+        onMediaServicesLost: @escaping () -> Void,
+        onMediaServicesReset: @escaping () -> Void
     ) -> [NSObjectProtocol] {
         []
     }

@@ -1,29 +1,20 @@
 import Foundation
 import os
 
+/// Owns task cancellation for a training session. Audio-interruption observation
+/// moved to `AppAudioInfrastructureMonitor` (Story 85.8) — the centralized
+/// observer routes session stops via `TrainingLifecycleCoordinator`.
 final class SessionLifecycle {
 
     private let logger: Logger
-    private var interruptionMonitor: AudioSessionInterruptionMonitor?
     private var trainingTask: Task<Void, Never>?
     private var feedbackTask: Task<Void, Never>?
 
     var hasTrainingTask: Bool { trainingTask != nil }
     var hasFeedbackTask: Bool { feedbackTask != nil }
 
-    init(
-        logger: Logger,
-        notificationCenter: NotificationCenter = .default,
-        audioInterruptionObserver: AudioInterruptionObserving,
-        onStopRequired: @escaping () -> Void
-    ) {
+    init(logger: Logger) {
         self.logger = logger
-        self.interruptionMonitor = AudioSessionInterruptionMonitor(
-            notificationCenter: notificationCenter,
-            logger: logger,
-            audioInterruptionObserver: audioInterruptionObserver,
-            onStopRequired: onStopRequired
-        )
     }
 
     // MARK: - Training Task

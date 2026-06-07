@@ -253,8 +253,7 @@ struct PitchDiscriminationSessionTests {
             notePlayer: mockPlayer,
             strategy: strategy,
             profile: profile,
-            observers: [mockDataStore, PitchDiscriminationProfileAdapter(profile: profile)],
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            observers: [mockDataStore, PitchDiscriminationProfileAdapter(profile: profile)]
         )
 
         session.start(settings: PitchDiscriminationSettings(referencePitch: Frequency(440.0), intervals: [.up(.perfectFifth)]))

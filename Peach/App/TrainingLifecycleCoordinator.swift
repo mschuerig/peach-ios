@@ -26,6 +26,18 @@ struct NavigationRequest: Equatable {
 final class TrainingLifecycleCoordinator {
     private let registry: TrainingLifecycleRegistry
     private let backgroundPolicy: BackgroundPolicy
+
+    /// Invoked when `mediaServicesWereResetNotification` fires. The production
+    /// wiring forwards to `SoundFontEngine.rebuildAfterMediaReset`; tests can
+    /// substitute a spy. The coordinator owns the policy ("stop active session,
+    /// then rebuild infrastructure") and the closure owns the mechanism.
+    private let mediaInfrastructureRebuild: () async throws -> Void
+
+    /// Set when `mediaServicesWereLost` posted but `mediaServicesWereReset`
+    /// has not yet arrived. The Reset handler observes this for diagnostics
+    /// (a Reset without a prior Lost still rebuilds; the flag is permissive).
+    private(set) var mediaRebuildPending: Bool = false
+
     var activeSession: (any TrainingSession)?
 
     private(set) var resolvedNavigation: NavigationRequest?
@@ -44,11 +56,13 @@ final class TrainingLifecycleCoordinator {
     init(
         registry: TrainingLifecycleRegistry,
         backgroundPolicy: BackgroundPolicy,
-        initialAutoStartSetting: Bool
+        initialAutoStartSetting: Bool,
+        mediaInfrastructureRebuild: @escaping () async throws -> Void
     ) {
         self.registry = registry
         self.backgroundPolicy = backgroundPolicy
         self.autoStartSetting = initialAutoStartSetting
+        self.mediaInfrastructureRebuild = mediaInfrastructureRebuild
     }
 
     // MARK: - Computed Properties
@@ -173,6 +187,52 @@ final class TrainingLifecycleCoordinator {
     func stopCurrentSession() {
         discardLingeringPausedSession()
         currentSession?.stop()
+    }
+
+    // MARK: - Audio Infrastructure Lifecycle
+
+    /// Called by the centralized iOS audio observer when an interruption OR
+    /// a route change (`.oldDeviceUnavailable`) requires stopping playback.
+    /// Routes through the canonical session-stop path. PF-055's
+    /// `.appWasSuspended` filter happens inside the observer before this
+    /// callback fires.
+    func handleAudioStopRequired() {
+        Self.logger.info("Audio stop requested — stopping current session")
+        stopCurrentSession()
+    }
+
+    /// Called by the centralized iOS audio observer when `mediaserverd` has
+    /// died. Stops the active session immediately — session Tasks reference
+    /// `AVAudioUnitSampler` instances that are now dead; continuing would
+    /// dispatch MIDI into the void. Then marks `mediaRebuildPending` so the
+    /// Reset handler observes the prior-Lost diagnostic state. Rebuilding
+    /// before `mediaserverd` respawns would fail, so the engine rebuild waits
+    /// for Reset. (PF-057 companion — Story 85.8 Decision C, C5 patch)
+    func handleMediaServicesLost() {
+        Self.logger.warning("Media services were lost — stopping current session and awaiting reset")
+        stopCurrentSession()
+        mediaRebuildPending = true
+    }
+
+    /// Called by the centralized iOS audio observer when `mediaserverd` has
+    /// respawned. Stops the active session via the canonical path, then
+    /// rebuilds the audio infrastructure in place. Recovery is silent —
+    /// the user perceives the session stop (UI returns to idle) and audio
+    /// resumes on the next user-initiated trial. Re-entrant calls coalesce
+    /// on the engine side via `rebuildInFlight`. (PF-057, Decision D)
+    func handleMediaServicesReset() {
+        Self.logger.notice("Media services were reset — stopping session and rebuilding audio infrastructure")
+        stopCurrentSession()
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                try await mediaInfrastructureRebuild()
+                Self.logger.info("Audio infrastructure rebuilt after media reset")
+            } catch {
+                Self.logger.error("Audio infrastructure rebuild after media reset failed: \(error.localizedDescription)")
+            }
+            mediaRebuildPending = false
+        }
     }
 
     /// Stops any session paused for a no-longer-current destination. Idempotent.

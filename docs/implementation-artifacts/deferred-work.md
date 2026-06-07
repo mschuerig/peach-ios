@@ -245,42 +245,6 @@ Story 85.1 v2 surfaced the cost: removing redundant cleanup paths (NotePlayer+Ti
 
 **Fix:** Resolution candidates: (a) unify all dispatch through `enqueueImmediate` / scheduled queue (largest refactor; requires understanding the original `reset()` crash so the new path doesn't reintroduce it); (b) preserve all three paths but document the ordering contract between them inline (cheapest; still leaves the trap for future callers); (c) restrict path 3 to the rhythm sequencer's actual need and remove its accessibility from pitch (smaller surface; partially done in 85.1 v2 — pitch no longer summons `clearSchedule`, but the path itself remains shared on the engine). Recommendation: track until either a 4th dispatch caller is contemplated OR the `auAudioUnit.reset()` crash root cause is understood; then pick (a) or (c).
 
-### PF-055: `appWasSuspended` interruption reason not filtered
-
-**Found:** 2026-06-06 (`audio-programming` skill audit — lifecycle observation gap)
-**Severity:** Low (false-positive engine stops on iOS 16+; user-visible as audio cutting out when the app is briefly suspended and resumed)
-**Disposition:** OPEN
-
-`IOSAudioInterruptionObserver.handleAudioInterruption` at `Peach/App/Platform/IOSAudioInterruptionObserver.swift:52-60` treats every `.began` interruption notification as a real interruption requiring engine stop. iOS 14.5+ added `AVAudioSessionInterruptionReasonKey` so apps can distinguish genuine interruptions (phone call, Siri, timer) from the framework-internal `.appWasSuspended` case, where iOS synthesizes an interruption notification for an app that was merely suspended in background. Treating `.appWasSuspended` as a real interruption stops a session that was about to resume cleanly; on iOS 16+ this is the dominant false-positive case for backgrounded media apps and is called out explicitly in the `audio-programming` skill's `references/avaudiosession.md`.
-
-The reason key on `.ended` (e.g., `.shouldResume`) is also not consulted, but the current handler intentionally remains stopped on `.ended` ("ended - remains stopped" — comment at line 57). That choice is independent of this entry; this PF tracks only the `.began` filter.
-
-**Fix:** Read `AVAudioSessionInterruptionReasonKey` from `notification.userInfo`; if reason is `.appWasSuspended`, return without calling `onStopRequired`. Other reasons (`.default`, `.builtInMicMuted`, `.routeDisconnected`) continue to stop as today. Regression test: synthetic `.began` notification with reason `.appWasSuspended` asserts `onStopRequired` is NOT called; `.began` with `.default` asserts it IS called.
-
-### PF-056: `AVAudioEngineConfigurationChangeNotification` not observed
-
-**Found:** 2026-06-06 (`audio-programming` skill audit — lifecycle observation gap)
-**Severity:** Medium (engine stays silent after hardware sample-rate or route change until app relaunch; reproducible by Bluetooth codec switching or external interface plug-in)
-**Disposition:** OPEN
-
-When the audio I/O unit observes a hardware sample-rate or channel-count change — Bluetooth codec switch (A2DP ↔ HFP), external interface plug-in at a different rate, or `AVAudioSession` re-activation — `AVAudioEngine` stops itself and uninitializes, then posts `AVAudioEngineConfigurationChangeNotification`. Peach has no observer for this notification (`grep -rn "configurationChangeNotification" Peach/` returns zero hits). After the OS event the engine is stopped and no code restarts it; the next training session produces no audio until the app is killed and relaunched.
-
-The notification can fire on a background thread; the handler must bounce to the right isolation domain before mutating the engine. `SoundFontEngine` is the canonical owner of the engine and its sample-rate-dependent state (`sourceFormat` derived from `engine.outputNode.outputFormat(forBus: 0).sampleRate` at `Peach/Core/Audio/SoundFontEngine.swift:299`); the observer should live near the engine instance, not in the iOS-specific interruption observer.
-
-**Fix:** Add an observer for `AVAudioEngineConfigurationChangeNotification` on the engine instance. On notification: re-read `outputNode.outputFormat(forBus: 0)`; reconnect nodes that were attached with explicit formats derived from the previous hardware format (`sourceNode` is the explicit case in current code); call `engine.start()` again. Integration test via `engine.enableManualRenderingMode(.realtime, ...)` that flips the sample rate and asserts the engine re-runs. Manual verification of which iOS routes reliably trigger this notification (BT codec switch is reportedly reliable; external mic on iPad reportedly reliable) needed.
-
-### PF-057: `AVAudioSession.mediaServicesWereResetNotification` not observed
-
-**Found:** 2026-06-06 (`audio-programming` skill audit — lifecycle observation gap)
-**Severity:** Medium (catastrophic when it occurs — silent audio death for the rest of the process lifetime — but rare; `mediaserverd` crashes are uncommon in production)
-**Disposition:** OPEN
-
-`AVAudioSession.mediaServicesWereResetNotification` posts when `mediaserverd` (the iOS audio server) crashes and respawns. When this happens, all audio-framework state held by the app is invalid: `AVAudioEngine` is dead, every `AVAudioUnit*` instance points at a recycled component, `AVAudioFile` handles are stale, `AudioComponentInstance` references are unusable. Without an observer, audio remains dead for the rest of the process lifetime; the user cannot recover without force-killing the app. Apple's docs treat the recovery handler as mandatory for any non-trivial audio app.
-
-Peach has no observer (`grep -rn "mediaServicesWereReset" Peach/` returns zero hits). The frequency in production is low, but the failure mode is irrecoverable and silent, so the support-load cost per occurrence is high. The `audio-programming` skill's `references/avaudiosession.md` flags this as the canonical hardening item most apps skip.
-
-**Fix:** Observe `AVAudioSession.mediaServicesWereResetNotification`. On fire: tear down `SoundFontEngine` and every `AVAudioUnitSampler` it owns; re-configure `AVAudioSession` (category/mode/options/active); construct a fresh `AVAudioEngine` + `AVAudioUnitSampler` graph; reload presets that were loaded before the reset; stop any active training session cleanly via the coordinator (resuming mid-trial after a `mediaserverd` reset is likely not desirable — surface the reset as a user-visible "audio reconnected, session stopped" notice and let the user start a new session). Decision needed during verification: silent recovery vs. user-visible notice. Hard to reproduce without inducing a `mediaserverd` crash; if no reliable trigger recipe is found, document the recovery path is unverified-in-production until a real crash occurs.
-
 ### PF-058: `PitchMatchingSession` deferred `handle.stop()` violates 85.1 v2 chain-registration invariant
 
 **Found:** 2026-06-06 (Story 85.3 Task 1 audit — surfaced while mapping `SoundFontPlayer.scheduleStopAll()` chain invariant across session surfaces)
@@ -372,3 +336,49 @@ Story 85.7's option (f) pins `TimingDotView.settingsRowDotsBaseWidth == 220` (`P
 Story 85.6's TOD picker invariant infrastructure (structural / catalog-discipline tests after the iOS 26 SwiftUI hosting a11y-tree regression — cashapp/AccessibilitySnapshot #245, #259) provides a cheap home for this kind of assertion.
 
 **Fix:** Add a structural test in `PeachTests/Training/TimingOffsetDetection/Settings/` that renders both sections with identical inputs and asserts (a) the two dot containers resolve to the same width, and (b) audible positions land at the same x. If the runtime hosting tree is still broken for layout introspection on iOS 26, fall back to a snapshot-image comparison via 85.6's snapshot infrastructure. At minimum, pin the structural invariant that both views declare `@ScaledMetric(relativeTo: .caption2) private var dotRowWidth: CGFloat = TimingDotView.settingsRowDotsBaseWidth` (source-level grep or doc-test) so a refactor that drops one is caught at review time.
+
+### PF-066: PF-055 `.appWasSuspended` filter is dead code on iOS 26 deployment
+
+**Found:** 2026-06-07 (Story 85.8 implementation surfaced during build)
+**Severity:** Low (code is correct and harmless; just unreachable on the supported deployment target)
+**Disposition:** OPEN
+
+`AVAudioSession.InterruptionReason.appWasSuspended` is deprecated on iOS 16+ with the documentation note "wasSuspended reason no longer present" — the system no longer fires `.began` interruption notifications with this reason. PF-055's defensive filter compares `reasonValue == 1` (the rawValue of `.appWasSuspended`) at `Peach/App/Platform/IOSAudioInterruptionObserver.swift:91-100`; on Peach's iOS 26 deployment target the comparison never matches because the system never emits the reason. The unit tests still pass because they synthesize the notification themselves, but the production code path is unreachable.
+
+This finding surfaced because the audit (`/audio-programming`, Story 85.8 Task 1) confirmed PF-055's framing against the catalog text but didn't cross-check the deprecation status against Peach's `iOS 26` minimum target. The Apple-docs cross-check belongs in future audits invoked against catalog entries that name specific OS-version behaviors.
+
+**Fix:** Two viable options. (a) **Close as no-op**: delete the `reasonValue == 1` branch and its three regression tests; mark PF-055 closed in the catalog with a note that the bug is unreachable on iOS 26. (b) **Keep as defensive**: leave the code in place against the slim chance Apple revives the reason, with the existing rawValue-comparison comment documenting why the deprecated enum case isn't named directly. Option (a) is cleaner — dead code is a maintenance hazard; option (b) is paranoid. Recommend (a) and a one-line spec note that 85.8's PF-055 closure was downgraded to "no-op on iOS 26+, code removed."
+
+### PF-067: No transient-banner pattern for audio-error UI surfacing
+
+**Found:** 2026-06-07 (Story 85.8 step-04 review — Acceptance Auditor)
+**Severity:** Low (Story 85.8 catalog-tracked errors all log at `.error` already; no user-visible regression. Gap is between the spec's frozen I/O-matrix promise and the existing UI surface.)
+**Disposition:** OPEN
+
+Story 85.8's frozen I/O matrix promises that PF-056's `engine.start()` failure path and PF-057's rebuild-throw path will "surface via existing audio-error path." The existing `AudioError` surface is structured for *fatal* error display via `fatalError` at startup (per the Task 1 audit's own analysis), not transient banners. The Story 85.8 implementation logs at `.error` from `SoundFontEngine.handleConfigurationChange` and `TrainingLifecycleCoordinator.handleMediaServicesReset`, which is the most reasonable behavior absent a transient-banner pattern, but the frozen I/O matrix expectation is partially unmet at the UX layer.
+
+The catalog framing for Decision D=silent already accepted that PF-057 recovery is silent on the success path. The asymmetry is the *failure* path — when rebuild itself throws, the user sees only "session returned to idle" with no signal that audio is now permanently dead until app relaunch. PF-066 follow-up may take care of this if it folds into a broader "audio error UX" decision.
+
+**Fix:** Either (a) leave as-is (current `.error` logging is informational and matches the project's "sober factual UI" stance); (b) add a transient-banner pattern on the active training screen that surfaces `AudioError` with informal-du copy; (c) extend the existing `AudioError` enum with a "recoverable-failure" case and wire a SwiftUI `.alert` to a coordinator-published `currentRecoverableError` value. Decision deferred — no current production trigger has been observed, and the cost of a banner pattern outweighs the value for a low-frequency failure mode. Revisit if user reports of "audio went dead and didn't come back" surface in TestFlight.
+
+### PF-068: `ForTesting`-suffixed methods sit on production type surface
+
+**Found:** 2026-06-07 (Story 85.8 step-04 review — Acceptance Auditor)
+**Severity:** Low (no current bug; production calls never reach these methods, but the surface area is technically callable from any internal site.)
+**Disposition:** OPEN
+
+`SoundFontEngine` exposes five test-only seams: `postSyntheticConfigurationChangeForTesting`, `stopEngineForTesting`, `loadedPresetCountForTesting`, `pendingPresetReloadCountForTesting`, `sourceNodeIdentityForTesting`, `engineIdentityForTesting`, `forceStaleSourceSampleRateForTesting`. They are internal (default access) with no `#if DEBUG` gating or `@_spi(Testing)` attribute. A future contributor could call them from production code by mistake, and they show up in autocomplete next to the real API.
+
+**Fix:** Two options. (a) Wrap each with `#if DEBUG` — release builds drop them entirely. (b) Add `@_spi(Testing)` attribute — opt-in import for tests, still excluded from the auto-suggested API surface elsewhere. (a) is the heavier hammer; (b) is the canonical Swift solution and what other Apple-platform projects use for test seams. Recommend (b) — `@_spi(Testing) internal` on each — but holding off until the broader Story 85.8 work is settled.
+
+### PF-069: Lifecycle-test timing waits use blanket `Task.sleep(50ms)`
+
+**Found:** 2026-06-07 (Story 85.8 step-04 review — Blind Hunter + Edge Case Hunter)
+**Severity:** Low (tests pass reliably on dev machines; CI flakiness is hypothetical.)
+**Disposition:** OPEN
+
+Multiple new tests added in Story 85.8 use `try? await Task.sleep(for: .milliseconds(50))` followed by an assertion as their progress signal — `IOSAudioInterruptionObserverTests` (PF-055, Lost/Reset closure tests), `SoundFontEngineConfigurationChangeTests`, `SoundFontEngineMediaResetTests` (rebuild + re-registration), and `TrainingLifecycleCoordinatorTests` (handleMediaServicesReset, lost-then-reset). The 50ms is empirically fine on a quiet machine, but the lack of a progress-based signal (e.g., `CheckedContinuation` resumed inside the spy closure, or `waitForState`-style retry loop) means CI under load could see flakiness — particularly under `-O` Research builds or on contention-heavy Xcode-cloud agents.
+
+The project's existing `waitForState` helper in `PitchDiscriminationTestHelpers.swift` is the canonical pattern: yield-in-a-loop with a max retry budget and an early-exit on observable state change. The Story 85.8 audio-observer tests don't have a directly-equivalent state-change API to poll, but a `CheckedContinuation`-based pattern would replace the blanket sleep.
+
+**Fix:** For each Story 85.8 timing-based test, replace `Task.sleep(50ms)` with either: (a) a `CheckedContinuation` resumed by the spy closure (cleanest for closure-based assertions like the Lost/Reset/Reset-after-Lost tests); (b) a `waitForState`-style polling helper that checks the assertion target up to a max-budget timeout; (c) for engine tests, expose a counter the test polls until incremented. Acceptable to keep as-is for the foreseeable future — flakiness has not been observed locally — but a follow-up cleanup pass when extending Story 85.8 coverage should adopt the better pattern.

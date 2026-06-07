@@ -19,7 +19,6 @@ struct PitchDiscriminationSessionFixture {
     let profile: PerceptualProfile
     let mockStrategy: MockNextPitchDiscriminationStrategy
     let mockHaptic: MockHapticFeedbackManager?
-    let notificationCenter: NotificationCenter?
 }
 
 func makePitchDiscriminationSession(
@@ -28,9 +27,7 @@ func makePitchDiscriminationSession(
         PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)))
     ],
     resettables: [Resettable] = [],
-    includeHaptic: Bool = false,
-    audioInterruptionObserver: AudioInterruptionObserving = NoOpAudioInterruptionObserver(),
-    notificationCenter: NotificationCenter? = nil
+    includeHaptic: Bool = false
 ) -> PitchDiscriminationSessionFixture {
     let mockPlayer = MockNotePlayer()
     let mockDataStore = MockTrainingDataStore()
@@ -53,9 +50,7 @@ func makePitchDiscriminationSession(
         strategy: mockStrategy,
         profile: profile,
         resettables: resettables,
-        observers: observers,
-        notificationCenter: notificationCenter ?? .default,
-        audioInterruptionObserver: audioInterruptionObserver
+        observers: observers
     )
 
     return PitchDiscriminationSessionFixture(
@@ -64,8 +59,7 @@ func makePitchDiscriminationSession(
         mockDataStore: mockDataStore,
         profile: profile,
         mockStrategy: mockStrategy,
-        mockHaptic: mockHaptic,
-        notificationCenter: notificationCenter
+        mockHaptic: mockHaptic
     )
 }
 

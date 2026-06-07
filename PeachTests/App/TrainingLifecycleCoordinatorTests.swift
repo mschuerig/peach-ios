@@ -714,6 +714,107 @@ struct TrainingLifecycleCoordinatorTests {
         }
     }
 
+    // MARK: - Audio Infrastructure Lifecycle (Story 85.8)
+
+    @Test("handleAudioStopRequired stops current session")
+    func handleAudioStopRequiredRoutesThroughStopCurrentSession() async throws {
+        let fixture = makeFixture(policy: IOSBackgroundPolicy())
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.coordinator.startCurrentSession()
+        try await waitUntilNotIdle(fixture.crmSession)
+
+        fixture.coordinator.handleAudioStopRequired()
+
+        #expect(!fixture.coordinator.isTrainingActive)
+    }
+
+    @Test("handleMediaServicesLost sets mediaRebuildPending")
+    func handleMediaServicesLostSetsPendingFlag() {
+        let coordinator = makeCoordinator(policy: IOSBackgroundPolicy())
+        #expect(coordinator.mediaRebuildPending == false)
+
+        coordinator.handleMediaServicesLost()
+
+        #expect(coordinator.mediaRebuildPending == true)
+    }
+
+    @Test("handleMediaServicesLost stops current session")
+    func handleMediaServicesLostStopsSession() async throws {
+        let fixture = makeFixture(policy: IOSBackgroundPolicy())
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.coordinator.startCurrentSession()
+        try await waitUntilNotIdle(fixture.crmSession)
+
+        fixture.coordinator.handleMediaServicesLost()
+
+        // Session Tasks reference now-dead samplers; coordinator must stop
+        // the session synchronously rather than wait for Reset.
+        #expect(!fixture.coordinator.isTrainingActive)
+    }
+
+    @Test("handleMediaServicesReset stops session and invokes rebuild closure")
+    func handleMediaServicesResetStopsAndRebuilds() async throws {
+        var rebuildCallCount = 0
+        let policy = IOSBackgroundPolicy()
+        let fixture = makeFixture(policy: policy)
+        // Replace the coordinator with one that uses a spy rebuild closure;
+        // sessions stay attached to the fixture's registry.
+        let registry = TrainingLifecycleRegistry { builder in
+            fixture.pdSession.contribute(to: builder, userSettings: MockUserSettings())
+            fixture.pmSession.contribute(to: builder, userSettings: MockUserSettings())
+            fixture.todSession.contribute(to: builder, userSettings: MockUserSettings(), todUserSettings: MockTimingOffsetDetectionUserSettings())
+            fixture.crmSession.contribute(to: builder, userSettings: MockUserSettings(), crmUserSettings: MockContinuousRhythmMatchingUserSettings())
+        }
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: policy,
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: {
+                rebuildCallCount += 1
+            }
+        )
+        coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        coordinator.startCurrentSession()
+        try await waitUntilNotIdle(fixture.crmSession)
+
+        coordinator.handleMediaServicesReset()
+
+        // The rebuild closure runs in a Task; wait for it to complete.
+        try await Task.sleep(for: .milliseconds(50))
+        await Task.yield()
+
+        #expect(!coordinator.isTrainingActive)
+        #expect(rebuildCallCount == 1)
+        #expect(coordinator.mediaRebuildPending == false)
+    }
+
+    @Test("Lost-then-Reset clears mediaRebuildPending after rebuild")
+    func lostThenResetClearsPendingFlag() async throws {
+        let policy = IOSBackgroundPolicy()
+        let fixture = makeFixture(policy: policy)
+        let registry = TrainingLifecycleRegistry { builder in
+            fixture.pdSession.contribute(to: builder, userSettings: MockUserSettings())
+            fixture.pmSession.contribute(to: builder, userSettings: MockUserSettings())
+            fixture.todSession.contribute(to: builder, userSettings: MockUserSettings(), todUserSettings: MockTimingOffsetDetectionUserSettings())
+            fixture.crmSession.contribute(to: builder, userSettings: MockUserSettings(), crmUserSettings: MockContinuousRhythmMatchingUserSettings())
+        }
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: policy,
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: { }
+        )
+
+        coordinator.handleMediaServicesLost()
+        #expect(coordinator.mediaRebuildPending == true)
+
+        coordinator.handleMediaServicesReset()
+        try await Task.sleep(for: .milliseconds(50))
+        await Task.yield()
+
+        #expect(coordinator.mediaRebuildPending == false)
+    }
+
     // MARK: - Helpers
 
     private struct LifecycleFixture {
@@ -741,23 +842,19 @@ struct TrainingLifecycleCoordinatorTests {
             notePlayer: notePlayer,
             strategy: MockNextPitchDiscriminationStrategy(),
             profile: profile,
-            observers: [],
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            observers: []
         )
         let pmSession = PitchMatchingSession(
             notePlayer: notePlayer,
-            profile: profile,
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            profile: profile
         )
         let todSession = TimingOffsetDetectionSession(
             beatSequencer: MockBeatSequencer(),
             strategy: MockNextTimingOffsetDetectionStrategy(),
-            profile: profile,
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            profile: profile
         )
         let crmSession = ContinuousRhythmMatchingSession(
-            beatSequencer: MockBeatSequencer(),
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            beatSequencer: MockBeatSequencer()
         )
         let registry = TrainingLifecycleRegistry { builder in
             pdSession.contribute(to: builder, userSettings: userSettings)
@@ -768,7 +865,8 @@ struct TrainingLifecycleCoordinatorTests {
         let coordinator = TrainingLifecycleCoordinator(
             registry: registry,
             backgroundPolicy: policy,
-            initialAutoStartSetting: userSettings.autoStartTraining
+            initialAutoStartSetting: userSettings.autoStartTraining,
+            mediaInfrastructureRebuild: { }
         )
         return LifecycleFixture(
             coordinator: coordinator,
@@ -821,14 +919,12 @@ struct TrainingLifecycleCoordinatorTests {
         let todUserSettings = MockTimingOffsetDetectionUserSettings()
 
         let crm = ContinuousRhythmMatchingSession(
-            beatSequencer: sequencer,
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            beatSequencer: sequencer
         )
         let tod = TimingOffsetDetectionSession(
             beatSequencer: sequencer,
             strategy: MockNextTimingOffsetDetectionStrategy(),
-            profile: profile,
-            audioInterruptionObserver: NoOpAudioInterruptionObserver()
+            profile: profile
         )
 
         let registry = TrainingLifecycleRegistry { builder in
@@ -849,7 +945,8 @@ struct TrainingLifecycleCoordinatorTests {
         let coordinator = TrainingLifecycleCoordinator(
             registry: registry,
             backgroundPolicy: backgroundPolicy,
-            initialAutoStartSetting: true
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: { }
         )
         return SharedSequencerFixture(coordinator: coordinator, crm: crm, tod: tod, sequencer: sequencer)
     }
@@ -888,7 +985,8 @@ struct TrainingLifecycleCoordinatorTests {
         let coordinator = TrainingLifecycleCoordinator(
             registry: registry,
             backgroundPolicy: IOSBackgroundPolicy(),
-            initialAutoStartSetting: true
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: { }
         )
         return MockFixture(coordinator: coordinator, mock: mock)
     }
@@ -911,7 +1009,8 @@ struct TrainingLifecycleCoordinatorTests {
         let coordinator = TrainingLifecycleCoordinator(
             registry: registry,
             backgroundPolicy: IOSBackgroundPolicy(),
-            initialAutoStartSetting: true
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: { }
         )
         return TwoMockFixture(coordinator: coordinator, crm: crm, tod: tod)
     }
