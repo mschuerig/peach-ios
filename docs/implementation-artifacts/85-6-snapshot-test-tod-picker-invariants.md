@@ -200,6 +200,12 @@ Open question for Michael:
 
 **2026-06-06 — iOS 26 a11y-tree regression: PF-036 and PF-040 pivoted to structural tests.** The first pass of PF-036 and PF-040 implemented runtime-hosted assertions (`UIHostingController` → `UIWindow.makeKeyAndVisible()` → walk `accessibilityElements` for the `.combine`-joined label or `.selected` trait). On iOS 26, SwiftUI's accessibility-tree materialization in `UIHostingController` unit-test contexts is broken — the hosted view's `accessibilityElements` is always `[]` regardless of `makeKeyAndVisible()`, `UIWindow(windowScene:)`, `UIAccessibility.post(.screenChanged, …)`, runloop ticks, or live-window injection. Confirmed by cashapp/AccessibilitySnapshot open issues #245 (June 2025) and #259 (September 2025); no supported workaround from Apple.
 
+> **2026-06-11 verification correction.** The two cited issues were re-read during the 2026-06-11 skills-research delta pass. Neither substantiates the iOS-26 `UIHostingController.accessibilityElements` claim made above:
+> - **#245** is titled *"Voice over description panel not recorded when using ScrollView - iOS 18.x"* — iOS **18.x**, VoiceOver, ScrollView; not iOS 26, not `UIHostingController.accessibilityElements`.
+> - **#259** is *"SwiftUI TextField and TextEditor do not record any accessibility elements"* — no iOS version stated, no `UIHostingController.accessibilityElements` mention.
+>
+> The empirical observation (hosted view's `accessibilityElements` is `[]` on iOS 26 in unit-test context) remains true — it was reproduced live during this story. The **citation was the wrong evidence for it.** The pivot to structural tests stands; the framing did not require those issues to be load-bearing. Logged here to preserve the original record while marking the misattribution. See `feedback_citation_must_match_claim.md`.
+
 Pivot (authorised by Michael 2026-06-06): keep the production extraction of `categoryHeader(text:)` and the AX1 height-measurement test for PF-041 (works because layout is independent of the broken a11y path); replace the PF-036 and PF-040 runtime tests with structural tests that pin the *necessary* invariants:
 
 - **PF-036 structural test** (`TimingOffsetDetectionPatternPickerAccessibilityRowLabelTests.patternRowLabelEqualsCellByCellJoinForEveryCatalogPattern`): for every catalog pattern, assert `patternRowAccessibilityLabel(for: pattern)` equals the focusable-cell join via `TimingDotView.cellAccessibilityLabel(for:in:)`. Pins the composition contract.

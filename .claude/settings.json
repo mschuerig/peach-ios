@@ -28,22 +28,33 @@
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "network": {
-      "allowedDomains": [
-        "github.com",
-        "*.apple.com",
-        "*.swift.org"
-      ]
+      "allowedDomains": ["github.com", "*.apple.com", "*.swift.org"]
     },
     "filesystem": {
-      "allowWrite": [
-        "~/Library/Developer/Xcode/DerivedData",
-        "//tmp"
-      ],
-      "denyRead": [
-        "~/.ssh",
-        "~/.aws",
-        "~/.gnupg"
-      ]
+      "allowWrite": ["~/Library/Developer/Xcode/DerivedData", "//tmp"],
+      "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg"]
     }
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/bin/patch-count-circuit-breaker.sh"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/bin/patch-count-circuit-breaker.sh"
+          }
+        ]
+      }
+    ]
   }
 }

@@ -1,0 +1,22 @@
+# Team overrides for bmad-quick-dev.
+# Committed — applies to every developer on the project.
+#
+# Merge rules (from _bmad/scripts/resolve_customization.py):
+#   - Scalars: override wins (here: on_complete)
+#   - Arrays: append (here: persistent_facts)
+#
+# Personal overrides go in bmad-quick-dev.user.toml (gitignored).
+
+[workflow]
+
+# Add foundational context the workflow carries for the whole run.
+# Appended to the skill's default persistent_facts (project-context.md glob).
+persistent_facts = [
+  "Anthropic Week 21 (May 2026) shipped /code-review (effort low|medium|high) for first-party correctness sweeps on the current diff. /simplify is the --fix variant for cleanup. claude ultrareview is the cloud-fleet release-readiness sweep. These are additive to the three BMad review layers — they cover correctness from a different angle and have no spec coupling.",
+  "Memory rule feedback_citation_must_match_claim: when any review finding, classification rationale, or spec amendment cites an external source as evidence, the cited title or body must literally mention the version, API, or behavior being claimed. Thematically-adjacent sources are context, not evidence. Triggered by the Epic 85.6 AccessibilitySnapshot misattribution.",
+  "When classifying a finding as intent_gap or bad_spec — which triggers a code revert and loopback — pause and answer Q1 and Q2 from feedback_progress_check_and_substantiation in writing before authorising the revert. The classification is the expensive move in the cascade; substantiating it cheaply prevents a wasted loopback."
+]
+
+# Run after the workflow's final step (step-05-present).
+# String is read as instruction text — agent follows the referenced file.
+on_complete = "Read fully and follow `{project-root}/_bmad/custom/steps/post-workflow-code-review.md` as the workflow's terminal step."

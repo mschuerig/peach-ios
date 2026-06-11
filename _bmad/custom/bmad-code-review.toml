@@ -1,0 +1,21 @@
+# Team overrides for bmad-code-review.
+# Committed — applies to every developer on the project.
+#
+# Merge rules (from _bmad/scripts/resolve_customization.py):
+#   - Scalars: override wins (here: on_complete)
+#   - Arrays: append (here: persistent_facts)
+#
+# Personal overrides go in bmad-code-review.user.toml (gitignored).
+
+[workflow]
+
+# Add foundational context the workflow carries for the whole run.
+# Appended to the skill's default persistent_facts (project-context.md glob).
+persistent_facts = [
+  "Anthropic Week 21 (May 2026) shipped /code-review (effort low|medium|high) for first-party correctness sweeps on the current diff. /simplify is the --fix variant for cleanup. claude ultrareview is the cloud-fleet release-readiness sweep. These are additive to the three BMad review layers — they cover correctness from a different angle and have no spec coupling.",
+  "Memory rule feedback_citation_must_match_claim: when any review finding, triage rationale, or referenced issue/PR is cited as evidence, the cited title or body must literally mention the version, API, or behavior being claimed. Thematically-adjacent sources are context, not evidence. Triggered by the Epic 85.6 AccessibilitySnapshot misattribution."
+]
+
+# Run after the workflow's final step (step-04-present).
+# String is read as instruction text — agent follows the referenced file.
+on_complete = "Read fully and follow `{project-root}/_bmad/custom/steps/post-workflow-code-review.md` as the workflow's terminal step."
