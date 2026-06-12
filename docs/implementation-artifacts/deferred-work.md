@@ -395,3 +395,4 @@ The project's existing `waitForState` helper in `PitchDiscriminationTestHelpers.
 This is the first cross-feature warning since Story 85.7 introduced the comment. The check has been silently allowing pre-existing-on-main runs to "pass" anyway because the violation count was zero — re-reading the script confirms its exit is non-zero only when violations are *introduced*. Story 86.1's full-gate run surfaced it.
 
 **Fix:** Either (a) strip Swift comments (`// …` / `/// …` / `/* … */`) before running the cross-feature regex; (b) restrict the regex to import statements and identifier references (e.g. require a leading `.` or word boundary against a typed name); or (c) re-word the `TimingDotView` comment to avoid naming `SettingsScreen` (workaround, not a fix to the script). Recommendation: (a) — the script is the right place to handle the syntax-vs-comment distinction. Until then, this is a low-noise false positive.
+

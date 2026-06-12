@@ -4,12 +4,73 @@ import os
 
 enum ChromaticConstructionSessionState: Equatable {
     case idle
-    case walking(activeSlot: Slot, committed: [Slot], ladder: Ladder)
-    case showingResult(ladder: Ladder, committed: [Slot])
+    case walking
+    case showingResult
 }
 
+/// Session for the chromatic-construction discipline.
+///
+/// Shape follows `PitchDiscriminationSession`: a small state enum, an
+/// explicit `Event`/`Effect`/`reduce` split, and trial / completed-trial
+/// values held alongside state. Per-trial path construction goes through the
+/// injected `NextPathStrategy`; per-trial direction is drawn from the
+/// settings' `outerIntervals` via `randomElement()`.
 @Observable
 final class ChromaticConstructionSession: TrainingSession {
+
+    // MARK: - State Machine Types
+
+    enum Event {
+        case startRequested
+        case placeRequested(offset: Cents)
+        case stepBackRequested
+        case nextTrialRequested
+        case stopRequested
+        case audioError
+    }
+
+    enum Effect {
+        case beginNextTrial
+        case playOrientingCue
+        case stopAll
+    }
+
+    static func reduce(
+        state: inout ChromaticConstructionSessionState,
+        event: Event
+    ) -> [Effect] {
+        switch (state, event) {
+        case (.idle, .startRequested):
+            state = .walking
+            return [.beginNextTrial]
+
+        case (.walking, .placeRequested):
+            // Resulting state set by the caller after applying the placement,
+            // based on `trial.isComplete`.
+            return []
+
+        case (.walking, .stepBackRequested):
+            return []
+
+        case (.showingResult, .stepBackRequested):
+            state = .walking
+            return [.playOrientingCue]
+
+        case (.showingResult, .nextTrialRequested):
+            state = .walking
+            return [.beginNextTrial]
+
+        case (.idle, .stopRequested), (.idle, .audioError):
+            return []
+
+        case (_, .stopRequested), (_, .audioError):
+            state = .idle
+            return [.stopAll]
+
+        default:
+            return []
+        }
+    }
 
     // MARK: - Logger
 
@@ -18,10 +79,13 @@ final class ChromaticConstructionSession: TrainingSession {
     // MARK: - Observable State
 
     private(set) var state: ChromaticConstructionSessionState = .idle
+    private(set) var currentTrial: ChromaticConstructionTrial?
+    private(set) var lastCompletedTrial: CompletedChromaticConstructionTrial?
 
     // MARK: - Dependencies
 
     private let notePlayer: any NotePlayer
+    private let strategy: any NextPathStrategy
     private var lifecycle: SessionLifecycle?
 
     // MARK: - Trial State
@@ -31,26 +95,18 @@ final class ChromaticConstructionSession: TrainingSession {
 
     // MARK: - Initialization
 
-    init(notePlayer: any NotePlayer) {
+    init(notePlayer: any NotePlayer, strategy: any NextPathStrategy) {
         self.notePlayer = notePlayer
+        self.strategy = strategy
         self.lifecycle = SessionLifecycle(logger: logger)
     }
 
     // MARK: - TrainingSession Protocol
 
-    var isIdle: Bool {
-        if case .idle = state { return true }
-        return false
-    }
+    var isIdle: Bool { state == .idle }
 
     func stop() {
-        guard !isIdle else { return }
-        logger.info("Session stopped")
-        isPaused = false
-        lifecycle?.cancelAllTasks()
-        notePlayer.scheduleStopAll()
-        settings = nil
-        state = .idle
+        send(.stopRequested)
     }
 
     func pause() {
@@ -58,132 +114,158 @@ final class ChromaticConstructionSession: TrainingSession {
         isPaused = true
         lifecycle?.cancelAllTasks()
         notePlayer.scheduleStopAll()
-        logger.info("Session paused (preserving state \(String(describing: self.state)))")
+        logger.info("Session paused (preserving state \(String(describing: self.state), privacy: .public))")
     }
 
     func resume() {
         guard isPaused else { return }
         isPaused = false
-        guard case .walking = state else {
+        guard state == .walking, currentTrial != nil else {
             logger.info("Session resume called outside .walking; no audio re-engagement")
             return
         }
         logger.info("Session resuming, re-engaging orienting cue")
-        playOrientingCueForCurrentActiveSlot()
+        playOrientingCueForCurrentActivePosition()
     }
 
     // MARK: - Trial Inputs
 
-    /// Starts a fresh trial. The session must be idle.
+    /// Starts a fresh trial. No-op unless `state == .idle`.
     func start(settings: ChromaticConstructionSettings) {
         guard isIdle else {
-            logger.warning("start() called but state is \(String(describing: self.state)), not idle")
+            logger.warning("start() called but state is \(String(describing: self.state), privacy: .public), not idle")
             return
         }
         self.settings = settings
-        let firstSlot = Slot(index: 1, state: .active, placedCents: nil)
-        state = .walking(activeSlot: firstSlot, committed: [], ladder: settings.ladder)
-        logger.info("Trial started: ladder slotCount=\(settings.ladder.slotCount)")
-        playOrientingCueForCurrentActiveSlot()
+        send(.startRequested)
     }
 
-    /// Commits the active slot with the given cent value. For interior slots,
-    /// advances to the next slot and plays the just-committed pitch as the
-    /// orienting cue. For the final slot, transitions to `.showingResult`
-    /// with no orienting cue (implicit submit per spec).
-    func place(cents: Cents) {
-        guard case .walking(let activeSlot, let committed, let ladder) = state else {
-            logger.debug("place(cents:) ignored — not in .walking")
+    /// Commits the active position with the given cent offset. For interior
+    /// positions, advances to the next position and plays the just-committed
+    /// pitch as the orienting cue. For the final interior position, the trial
+    /// completes implicitly and the session transitions to `.showingResult`.
+    func place(offset: Cents) {
+        guard state == .walking, var trial = currentTrial else {
+            logger.debug("place(offset:) ignored — not in .walking")
             return
         }
-        let committedSlot = activeSlot.committing(at: cents)
-        let nextCommitted = committed + [committedSlot]
-        if activeSlot.index == ladder.slotCount {
-            // Final slot — implicit submit, no orienting cue.
-            logger.info("Final slot committed; advancing to .showingResult")
+        trial.place(offset: offset)
+        currentTrial = trial
+        if trial.isComplete {
             notePlayer.scheduleStopAll()
-            state = .showingResult(ladder: ladder, committed: nextCommitted)
-            return
+            state = .showingResult
+            lastCompletedTrial = CompletedChromaticConstructionTrial(trial: trial, timestamp: Date())
+            logger.info("Trial complete; advancing to .showingResult")
+        } else {
+            playOrientingCueForCurrentActivePosition()
         }
-        // Interior slot — advance and cue the just-committed pitch.
-        let nextSlot = Slot(index: activeSlot.index + 1, state: .active, placedCents: nil)
-        state = .walking(activeSlot: nextSlot, committed: nextCommitted, ladder: ladder)
-        playOrientingCueForCurrentActiveSlot()
     }
 
-    /// Lossy step-back: re-activates the immediately previous slot, preserving
-    /// its `placedCents` as the slider's starting position. Any forward slots
-    /// (already implicitly `.pending` because they aren't in `committed`) stay
-    /// `.pending`. In `.showingResult`, returns to `.walking` at the final
-    /// slot with its placedCents preserved.
+    /// Lossy step-back. From `.walking` at position > 1: re-activates the
+    /// prior position with its placed value preserved. From `.showingResult`:
+    /// re-opens the final interior position for revision. No-op at position 1
+    /// and from `.idle`.
     func stepBack() {
         switch state {
-        case .walking(let activeSlot, let committed, let ladder):
-            guard activeSlot.index > 1, let prior = committed.last else {
-                logger.debug("stepBack at slot 1 is a no-op")
+        case .walking:
+            guard var trial = currentTrial else { return }
+            let wasAtFirst = trial.active?.index == 1
+            trial.stepBack()
+            currentTrial = trial
+            guard !wasAtFirst else {
+                logger.debug("stepBack at position 1 is a no-op")
                 return
             }
-            let revivedSlot = prior.reactivated()  // preserves placedCents
-            state = .walking(
-                activeSlot: revivedSlot,
-                committed: Array(committed.dropLast()),
-                ladder: ladder
-            )
-            playOrientingCueForCurrentActiveSlot()
-
-        case .showingResult(let ladder, let committed):
-            guard let prior = committed.last else {
-                logger.debug("stepBack from showingResult with empty committed; no-op")
-                return
-            }
-            let revivedSlot = prior.reactivated()
-            state = .walking(
-                activeSlot: revivedSlot,
-                committed: Array(committed.dropLast()),
-                ladder: ladder
-            )
-            playOrientingCueForCurrentActiveSlot()
-
+            playOrientingCueForCurrentActivePosition()
+        case .showingResult:
+            guard var trial = currentTrial else { return }
+            trial.reopenFinalPosition()
+            currentTrial = trial
+            lastCompletedTrial = nil
+            state = .walking
+            playOrientingCueForCurrentActivePosition()
         case .idle:
             logger.debug("stepBack while idle is a no-op")
         }
     }
 
-    /// Returns to `.idle` from `.showingResult` so the screen can call
-    /// `start(settings:)` with a fresh ladder. Audio stops.
+    /// From `.showingResult`: returns to `.idle` so the screen can re-invoke
+    /// `start(settings:)` for the next trial. No-op outside `.showingResult`.
     func nextTrial() {
-        guard case .showingResult = state else {
+        guard state == .showingResult else {
             logger.debug("nextTrial ignored — not in .showingResult")
             return
         }
+        send(.nextTrialRequested)
+    }
+
+    // MARK: - State Machine Engine
+
+    private func send(_ event: Event) {
+        let effects = Self.reduce(state: &state, event: event)
+        for effect in effects {
+            interpret(effect)
+        }
+    }
+
+    private func interpret(_ effect: Effect) {
+        switch effect {
+        case .beginNextTrial:
+            beginNextTrial()
+        case .playOrientingCue:
+            playOrientingCueForCurrentActivePosition()
+        case .stopAll:
+            stopAll()
+        }
+    }
+
+    // MARK: - Effect Implementations
+
+    private func beginNextTrial() {
+        guard let settings else { return }
+        guard let outerInterval = settings.outerIntervals.randomElement() else { return }
+
+        let path = try! strategy.chromaticPath(
+            lowerAnchor: settings.lowerAnchor,
+            outerInterval: outerInterval
+        )
+
+        let trial = ChromaticConstructionTrial(path: path)
+        currentTrial = trial
+        logger.info("Trial started: outerInterval=\(outerInterval.displayName, privacy: .public), interiorPositionCount=\(path.interiorPositionCount)")
+        playOrientingCueForCurrentActivePosition()
+    }
+
+    private func stopAll() {
+        logger.info("Session stopped")
+        isPaused = false
+        lifecycle?.cancelAllTasks()
         notePlayer.scheduleStopAll()
         settings = nil
-        state = .idle
+        currentTrial = nil
+        lastCompletedTrial = nil
     }
 
     // MARK: - Audio
 
-    private func playOrientingCueForCurrentActiveSlot() {
-        guard case .walking(let activeSlot, let committed, let ladder) = state,
+    private func playOrientingCueForCurrentActivePosition() {
+        guard state == .walking,
+              let trial = currentTrial,
+              let active = trial.active,
               let settings else { return }
 
+        let lowerAnchorFreq = TuningSystem.equalTemperament.frequency(
+            for: trial.path.lowerAnchor,
+            referencePitch: settings.referencePitch
+        )
+
         let cueFrequency: Frequency
-        if activeSlot.index == 1 {
-            cueFrequency = ladder.lowerAnchor.frequency(
-                in: ladder.tuningSystem,
-                referencePitch: settings.referencePitch
-            )
+        if active.index == 1 {
+            cueFrequency = lowerAnchorFreq
         } else {
             // Predecessor pitch: lowerAnchor * 2^(predecessorCents / 1200).
-            guard let predecessor = committed.last,
-                  let predecessorCents = predecessor.placedCents else {
-                logger.warning("Cannot compute predecessor cue: committed.last has no placedCents")
-                return
-            }
-            let lowerAnchorFreq = ladder.lowerAnchor.frequency(
-                in: ladder.tuningSystem,
-                referencePitch: settings.referencePitch
-            )
+            // By invariant: active.index > 1 implies placed.count >= 1.
+            let predecessorCents = trial.placed.last!.offset
             cueFrequency = lowerAnchorFreq * pow(2.0, predecessorCents / Cents.perOctave)
         }
         playCue(at: cueFrequency)
@@ -191,7 +273,7 @@ final class ChromaticConstructionSession: TrainingSession {
 
     private func playCue(at frequency: Frequency) {
         notePlayer.scheduleStopAll()
-        lifecycle?.setTrainingTask(Task {
+        lifecycle?.setTrainingTask(Task { [notePlayer, logger] in
             do {
                 try await notePlayer.play(
                     frequency: frequency,
@@ -202,7 +284,7 @@ final class ChromaticConstructionSession: TrainingSession {
             } catch is CancellationError {
                 return
             } catch {
-                logger.error("Audio error during orienting cue: \(error.localizedDescription)")
+                logger.error("Audio error during orienting cue: \(error.localizedDescription, privacy: .public)")
             }
         })
     }

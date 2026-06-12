@@ -1,14 +1,16 @@
-import Foundation
-
-/// Generates a `Path` for a chromatic-construction trial given the outer span
-/// and target cent step. The `rng` parameter is consumed by future meandering
-/// strategies; monotonic conformances ignore it. Per Adam's consultation
-/// (2026-06-12), RNG-injection symmetry with `ChromaticConstructionSettings.from(...)`
-/// avoids signature churn when meandering ships.
+/// Builds a `ChromaticPath` from high-level inputs.
 ///
-/// Conformances must produce a `Path` satisfying the invariant documented at
-/// `Path`'s typealias site:
-/// `path.reduce(0) { $0 + ($1 == .up ? +1 : -1) } * targetStepCents == outerCents`.
+/// The protocol surface is RNG-free. Strategies that need randomness hold it
+/// as an implementation detail (matching the `NextPitchDiscriminationStrategy`
+/// precedent — `KazezNoteStrategy` uses `Bool.random()` and
+/// `MIDINote.random(in:)` with the implicit `SystemRandomNumberGenerator`,
+/// no RNG parameter at the call site).
+///
+/// Stateless by contract. A future signature evolution may add a `profile`
+/// parameter for difficulty-aware strategies; that addition is additive.
 protocol NextPathStrategy: Sendable {
-    func path(forOuterCents outerCents: Cents, targetStep: Cents, rng: inout some RandomNumberGenerator) -> ChromaticPath
+    func chromaticPath(
+        lowerAnchor: MIDINote,
+        outerInterval: DirectedInterval
+    ) throws(ChromaticConstructionError) -> ChromaticPath
 }

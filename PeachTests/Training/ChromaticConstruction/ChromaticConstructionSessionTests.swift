@@ -1,344 +1,269 @@
 import Testing
-import Foundation
 @testable import Peach
 
-@Suite("ChromaticConstructionSession Tests")
+@MainActor
+@Suite("ChromaticConstructionSession")
 struct ChromaticConstructionSessionTests {
 
     // MARK: - Fixtures
 
-    /// Build a session with a MockNotePlayer set to instantPlayback mode.
-    private static func makeSession() -> (session: ChromaticConstructionSession, notePlayer: MockNotePlayer) {
+    private func makeFixture(
+        outerIntervals: Set<DirectedInterval> = [.up(.majorSecond)],  // 2 interior positions
+        lowerAnchor: MIDINote = MIDINote(60)
+    ) -> (session: ChromaticConstructionSession, notePlayer: MockNotePlayer, settings: ChromaticConstructionSettings) {
         let notePlayer = MockNotePlayer()
-        notePlayer.instantPlayback = true
-        let session = ChromaticConstructionSession(notePlayer: notePlayer)
-        return (session, notePlayer)
-    }
-
-    /// Build settings with a fixed ascending P3 ladder (300 cents / 100-cent target → slotCount = 2).
-    /// Small slotCount keeps stepBack tests focused without combinatorial blowup.
-    private static func makeAscendingP3Settings() throws -> ChromaticConstructionSettings {
-        let userSettings = MockUserSettings()
-        userSettings.tuningSystem = .equalTemperament
-        userSettings.referencePitch = .concert440
-        var rng = SeededRNG(seed: 1)
-        return try ChromaticConstructionSettings.from(
-            userSettings: userSettings,
-            outerCents: Cents(300.0),
-            lowerAnchor: MIDINote(60),
-            directionPolicy: .ascending,
-            rng: &rng
+        let strategy = MonotonicPath()
+        let session = ChromaticConstructionSession(notePlayer: notePlayer, strategy: strategy)
+        let settings = ChromaticConstructionSettings(
+            lowerAnchor: lowerAnchor,
+            outerIntervals: outerIntervals,
+            referencePitch: Frequency(440.0)
         )
+        return (session, notePlayer, settings)
     }
 
-    // MARK: - Initial state
+    // MARK: - Lifecycle
 
-    @Test("Starts in idle state")
-    func startsInIdleState() async {
-        let (session, _) = Self.makeSession()
+    @Test("session starts in .idle with no current or completed trial")
+    func initialState() {
+        let (session, _, _) = makeFixture()
+        #expect(session.state == .idle)
+        #expect(session.currentTrial == nil)
+        #expect(session.lastCompletedTrial == nil)
         #expect(session.isIdle)
-        guard case .idle = session.state else {
-            Issue.record("Expected .idle, got \(session.state)")
-            return
-        }
     }
 
-    // MARK: - start(settings:)
-
-    @Test("start(settings:) transitions to walking with activeSlotIndex=1, empty committed")
-    func startTransitionsToWalking() async throws {
-        let (session, notePlayer) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("start from .idle transitions to .walking and builds a trial via the strategy")
+    func startFromIdle() async {
+        let (session, notePlayer, settings) = makeFixture()
         session.start(settings: settings)
+        await notePlayer.waitForPlay()
 
-        guard case .walking(let activeSlot, let committed, let ladder) = session.state else {
-            Issue.record("Expected .walking, got \(session.state)")
-            return
-        }
-        #expect(activeSlot.index == 1)
-        #expect(activeSlot.state == .active)
-        #expect(activeSlot.placedCents == nil)
-        #expect(committed.isEmpty)
-        #expect(ladder.slotCount == 2)
-        #expect(!session.isIdle)
-
-        // Orienting cue: lower-anchor frequency must have played.
-        await Task.yield()
+        #expect(session.state == .walking)
+        #expect(session.currentTrial != nil)
+        #expect(session.currentTrial?.active?.index == 1)
         #expect(notePlayer.playCallCount >= 1)
-        let expected = settings.ladder.lowerAnchor.frequency(
-            in: .equalTemperament,
-            referencePitch: settings.referencePitch
-        )
-        #expect(notePlayer.lastFrequency == expected.rawValue)
     }
 
-    @Test("start(settings:) from non-idle is a no-op (warns)")
-    func startFromNonIdleIsNoOp() async throws {
-        let (session, _) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("start from non-idle is a no-op")
+    func startFromNonIdleIsNoOp() async {
+        let (session, notePlayer, settings) = makeFixture()
         session.start(settings: settings)
+        await notePlayer.waitForPlay()
 
-        // Second start should be ignored — state stays walking with index 1.
+        let stateBefore = session.state
         session.start(settings: settings)
-        guard case .walking(let activeSlot, _, _) = session.state else {
-            Issue.record("Expected .walking")
-            return
-        }
-        #expect(activeSlot.index == 1)
+        #expect(session.state == stateBefore)
     }
 
-    // MARK: - place(cents:) — interior slot
-
-    @Test("place(cents:) at slot 1 commits and advances to slot 2 (interior)")
-    func placeInteriorSlot() async throws {
-        let (session, notePlayer) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("stop from .walking returns to .idle and clears trial state")
+    func stopFromWalking() async {
+        let (session, notePlayer, settings) = makeFixture()
         session.start(settings: settings)
+        await notePlayer.waitForPlay()
 
-        notePlayer.reset()
-        notePlayer.instantPlayback = true
+        session.stop()
 
-        session.place(cents: Cents(95.0))
-
-        guard case .walking(let activeSlot, let committed, _) = session.state else {
-            Issue.record("Expected .walking, got \(session.state)")
-            return
-        }
-        #expect(activeSlot.index == 2)
-        #expect(activeSlot.state == .active)
-        #expect(activeSlot.placedCents == nil)
-        #expect(committed.count == 1)
-        #expect(committed[0].index == 1)
-        #expect(committed[0].placedCents == Cents(95.0))
-        #expect(committed[0].state == .committed)
-
-        // Orienting cue for slot 2: predecessor's pitch (slot 1 at +95 cents from lower anchor).
-        await Task.yield()
-        let lowerAnchorFreq = settings.ladder.lowerAnchor.frequency(
-            in: .equalTemperament,
-            referencePitch: settings.referencePitch
-        )
-        let expectedPredecessorFreq = lowerAnchorFreq * pow(2.0, Cents(95.0) / Cents.perOctave)
-        #expect(notePlayer.lastFrequency == expectedPredecessorFreq.rawValue)
-    }
-
-    // MARK: - place(cents:) — final slot (implicit submit)
-
-    @Test("place(cents:) at final slot transitions directly to showingResult (no awaitingSubmit)")
-    func placeFinalSlotImplicitSubmit() async throws {
-        let (session, notePlayer) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
-        session.start(settings: settings)
-
-        session.place(cents: Cents(95.0))   // slot 1 commits → spawns slot-2 orienting cue task
-        await Task.yield()                  // drain queued play()
-        let playCountBeforeFinal = notePlayer.playCallCount
-
-        session.place(cents: Cents(205.0))  // slot 2 commits → showingResult (slotCount = 2)
-
-        guard case .showingResult(let ladder, let committed) = session.state else {
-            Issue.record("Expected .showingResult, got \(session.state)")
-            return
-        }
-        #expect(ladder.slotCount == 2)
-        #expect(committed.count == 2)
-        #expect(committed[1].placedCents == Cents(205.0))
-        // No orienting cue for the result phase: place call count must not advance
-        // beyond what was already in flight from the prior interior transition.
-        await Task.yield()
-        #expect(notePlayer.playCallCount == playCountBeforeFinal,
-                "place() at final slot must not initiate a new orienting cue")
-        // stopAll must be called as part of the final-slot transition.
+        #expect(session.state == .idle)
+        #expect(session.currentTrial == nil)
         #expect(notePlayer.stopAllCallCount >= 1)
     }
 
-    // MARK: - stepBack from walking
+    @Test("stop from .idle is a no-op")
+    func stopFromIdleIsNoOp() {
+        let (session, notePlayer, _) = makeFixture()
+        session.stop()
+        #expect(session.state == .idle)
+        #expect(notePlayer.stopAllCallCount == 0)
+    }
 
-    @Test("stepBack at slot 1 is a no-op")
-    func stepBackAtSlotOneIsNoOp() async throws {
-        let (session, _) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    // MARK: - Place / Interior advancement
+
+    @Test("place at an interior position advances active and plays the predecessor cue")
+    func placeAdvancesInteriorPosition() async {
+        // outerInterval = .up(.minorThird) → 3 .up steps → interiorPositionCount = 2.
+        let (session, notePlayer, settings) = makeFixture(outerIntervals: [.up(.minorThird)])
         session.start(settings: settings)
+        await notePlayer.waitForPlay()  // anchor cue
+        notePlayer.reset()
+
+        session.place(offset: Cents(95.0))
+        await notePlayer.waitForPlay()  // predecessor cue for position 2
+
+        #expect(session.state == .walking)
+        #expect(session.currentTrial?.active?.index == 2)
+        #expect(notePlayer.playCallCount >= 1)
+        #expect(notePlayer.stopAllCallCount >= 1)
+    }
+
+    @Test("place at the final interior position completes the trial implicitly")
+    func placeFinalImplicitSubmit() async {
+        let (session, notePlayer, settings) = makeFixture(outerIntervals: [.up(.majorSecond)])
+        session.start(settings: settings)
+        await notePlayer.waitForPlay()
+        notePlayer.reset()
+
+        session.place(offset: Cents(95.0))  // sole interior position → trial completes
+        await notePlayer.waitForStopAll()
+
+        #expect(session.state == .showingResult)
+        #expect(session.currentTrial?.isComplete == true)
+        #expect(session.lastCompletedTrial != nil)
+        #expect(notePlayer.stopAllCallCount >= 1)
+    }
+
+    @Test("place outside .walking is a no-op")
+    func placeOutsideWalkingIsNoOp() {
+        let (session, _, _) = makeFixture()
+        session.place(offset: Cents(100.0))  // from .idle
+        #expect(session.state == .idle)
+        #expect(session.currentTrial == nil)
+    }
+
+    // MARK: - StepBack
+
+    @Test("stepBack from position 2 re-activates position 1 with placedOffset preserved")
+    func stepBackFromPositionTwo() async {
+        let (session, notePlayer, settings) = makeFixture(outerIntervals: [.up(.minorThird)])
+        session.start(settings: settings)
+        await notePlayer.waitForPlay()
+        session.place(offset: Cents(95.0))
+        await notePlayer.waitForPlay(minCount: 2)
 
         session.stepBack()
 
-        guard case .walking(let activeSlot, let committed, _) = session.state else {
-            Issue.record("Expected .walking")
-            return
-        }
-        #expect(activeSlot.index == 1)
-        #expect(committed.isEmpty)
+        #expect(session.state == .walking)
+        #expect(session.currentTrial?.active?.index == 1)
+        #expect(session.currentTrial?.active?.preservedValue == DetunedMIDINote(note: MIDINote(60), offset: Cents(95.0)))
+        #expect(session.currentTrial?.placed.isEmpty == true)
     }
 
-    @Test("stepBack at slot 2 reactivates slot 1 with its previous placedCents preserved")
-    func stepBackReactivatesPriorSlot() async throws {
-        let (session, _) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("stepBack at position 1 is a no-op")
+    func stepBackAtFirstPositionNoOp() async {
+        let (session, notePlayer, settings) = makeFixture()
         session.start(settings: settings)
+        await notePlayer.waitForPlay()
 
-        session.place(cents: Cents(95.0))   // slot 1 committed at 95
-        session.stepBack()                  // back to slot 1
-
-        guard case .walking(let activeSlot, let committed, _) = session.state else {
-            Issue.record("Expected .walking")
-            return
-        }
-        #expect(activeSlot.index == 1)
-        #expect(activeSlot.state == .active)
-        #expect(activeSlot.placedCents == Cents(95.0))  // previous value preserved
-        #expect(committed.isEmpty)
+        let stateBefore = session.currentTrial
+        session.stepBack()
+        #expect(session.currentTrial == stateBefore)
     }
 
-    // MARK: - stepBack from showingResult
-
-    @Test("stepBack in showingResult returns to walking at final slot with its placedCents preserved")
-    func stepBackFromShowingResult() async throws {
-        let (session, _) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("stepBack from .showingResult reopens the final interior position")
+    func stepBackFromShowingResult() async {
+        let (session, notePlayer, settings) = makeFixture(outerIntervals: [.up(.majorSecond)])
         session.start(settings: settings)
-
-        session.place(cents: Cents(95.0))
-        session.place(cents: Cents(205.0))  // showingResult
+        await notePlayer.waitForPlay()
+        session.place(offset: Cents(95.0))  // trial completes
+        #expect(session.state == .showingResult)
 
         session.stepBack()
 
-        guard case .walking(let activeSlot, let committed, _) = session.state else {
-            Issue.record("Expected .walking after stepBack from showingResult")
-            return
-        }
-        #expect(activeSlot.index == 2)
-        #expect(activeSlot.placedCents == Cents(205.0))
-        #expect(committed.count == 1)
-        #expect(committed[0].placedCents == Cents(95.0))
+        #expect(session.state == .walking)
+        #expect(session.currentTrial?.active?.index == 1)
+        #expect(session.currentTrial?.active?.preservedValue == DetunedMIDINote(note: MIDINote(60), offset: Cents(95.0)))
+        #expect(session.lastCompletedTrial == nil)
     }
 
     // MARK: - nextTrial
 
-    @Test("nextTrial in showingResult returns to idle")
-    func nextTrialReturnsToIdle() async throws {
-        let (session, _) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("nextTrial from .showingResult builds a fresh trial via the strategy")
+    func nextTrialBuildsFreshTrial() async {
+        let (session, notePlayer, settings) = makeFixture(outerIntervals: [.up(.majorSecond)])
         session.start(settings: settings)
-
-        session.place(cents: Cents(95.0))
-        session.place(cents: Cents(205.0))
+        await notePlayer.waitForPlay()
+        session.place(offset: Cents(95.0))
+        #expect(session.state == .showingResult)
 
         session.nextTrial()
 
-        guard case .idle = session.state else {
-            Issue.record("Expected .idle")
-            return
-        }
-        #expect(session.isIdle)
+        #expect(session.state == .walking)
+        #expect(session.currentTrial?.active?.index == 1)
+        #expect(session.currentTrial?.placed.isEmpty == true)
     }
 
-    @Test("nextTrial while walking is a no-op")
-    func nextTrialWhileWalkingIsNoOp() async throws {
-        let (session, _) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
-        session.start(settings: settings)
-
+    @Test("nextTrial outside .showingResult is a no-op")
+    func nextTrialOutsideShowingResultNoOp() {
+        let (session, _, _) = makeFixture()
         session.nextTrial()
-
-        guard case .walking(let activeSlot, _, _) = session.state else {
-            Issue.record("Expected .walking")
-            return
-        }
-        #expect(activeSlot.index == 1)
+        #expect(session.state == .idle)
     }
 
-    // MARK: - pause / resume
+    // MARK: - Pause / Resume
 
-    @Test("pause preserves walking state and isIdle stays false")
-    func pausePreservesState() async throws {
-        let (session, notePlayer) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
+    @Test("pause from .walking preserves currentTrial and calls scheduleStopAll")
+    func pausePreservesState() async {
+        let (session, notePlayer, settings) = makeFixture()
         session.start(settings: settings)
-        session.place(cents: Cents(95.0))
-
+        await notePlayer.waitForPlay()
         notePlayer.reset()
-        notePlayer.instantPlayback = true
 
         session.pause()
+        await notePlayer.waitForStopAll()
 
-        guard case .walking(let activeSlot, let committed, _) = session.state else {
-            Issue.record("Expected .walking preserved")
-            return
-        }
-        #expect(activeSlot.index == 2)
-        #expect(committed.count == 1)
-        #expect(!session.isIdle)
-        await Task.yield()
-        #expect(notePlayer.stopAllCallCount >= 1, "pause must call scheduleStopAll")
-    }
-
-    @Test("resume replays the active-slot orienting cue without changing state")
-    func resumeReplaysOrientingCue() async throws {
-        let (session, notePlayer) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
-        session.start(settings: settings)
-        session.place(cents: Cents(95.0))
-        session.pause()
-
-        notePlayer.reset()
-        notePlayer.instantPlayback = true
-
-        session.resume()
-
-        guard case .walking(let activeSlot, _, _) = session.state else {
-            Issue.record("Expected .walking after resume")
-            return
-        }
-        #expect(activeSlot.index == 2)
-
-        await Task.yield()
-        // Predecessor pitch (slot 1 at +95 cents from lower anchor) is the cue.
-        let lowerAnchorFreq = settings.ladder.lowerAnchor.frequency(
-            in: .equalTemperament,
-            referencePitch: settings.referencePitch
-        )
-        let expectedPredecessorFreq = lowerAnchorFreq * pow(2.0, Cents(95.0) / Cents.perOctave)
-        #expect(notePlayer.lastFrequency == expectedPredecessorFreq.rawValue)
-    }
-
-    @Test("pause from idle is a no-op")
-    func pauseFromIdleIsNoOp() async {
-        let (session, notePlayer) = Self.makeSession()
-        session.pause()
-        await Task.yield()
-        #expect(session.isIdle)
-        #expect(notePlayer.stopAllCallCount == 0)
-    }
-
-    // MARK: - stop
-
-    @Test("stop returns to idle and clears state")
-    func stopClearsState() async throws {
-        let (session, notePlayer) = Self.makeSession()
-        let settings = try Self.makeAscendingP3Settings()
-        session.start(settings: settings)
-        session.place(cents: Cents(95.0))
-
-        notePlayer.reset()
-        notePlayer.instantPlayback = true
-
-        session.stop()
-
-        #expect(session.isIdle)
-        guard case .idle = session.state else {
-            Issue.record("Expected .idle")
-            return
-        }
-        await Task.yield()
+        #expect(session.state == .walking)
+        #expect(session.currentTrial != nil)
         #expect(notePlayer.stopAllCallCount >= 1)
     }
 
-    @Test("stop from idle is a no-op (no audio call)")
-    func stopFromIdleIsNoOp() async {
-        let (session, notePlayer) = Self.makeSession()
-        session.stop()
-        await Task.yield()
-        #expect(session.isIdle)
+    @Test("pause from .idle is a no-op")
+    func pauseFromIdleIsNoOp() {
+        let (session, notePlayer, _) = makeFixture()
+        session.pause()
+        #expect(session.state == .idle)
         #expect(notePlayer.stopAllCallCount == 0)
+    }
+
+    @Test("resume after pause replays the orienting cue and clears isPaused")
+    func resumeAfterPauseReplaysCue() async {
+        let (session, notePlayer, settings) = makeFixture()
+        session.start(settings: settings)
+        await notePlayer.waitForPlay()
+        session.pause()
+        notePlayer.reset()
+
+        session.resume()
+        await notePlayer.waitForPlay()
+
+        #expect(notePlayer.playCallCount >= 1)
+    }
+
+    @Test("start after pause re-engages cleanly (isPaused does not leak)")
+    func startAfterPauseDoesNotLeakPaused() async {
+        let (session, notePlayer, settings) = makeFixture()
+        session.start(settings: settings)
+        await notePlayer.waitForPlay()
+        session.pause()
+        session.stop()  // returns to .idle, clears isPaused
+
+        session.start(settings: settings)
+        await notePlayer.waitForPlay()
+        // A subsequent pause should not be a no-op (which is what would happen if isPaused leaked).
+        notePlayer.reset()
+        session.pause()
+        await notePlayer.waitForStopAll()
+        #expect(notePlayer.stopAllCallCount >= 1)
+    }
+
+    @Test("resume outside paused-walking is a no-op")
+    func resumeOutsidePausedWalkingNoOp() {
+        let (session, notePlayer, _) = makeFixture()
+        session.resume()  // from .idle without pause
+        #expect(notePlayer.playCallCount == 0)
+    }
+
+    // MARK: - Cue frequency correctness
+
+    @Test("orienting cue at position 1 plays the lower anchor frequency in equal temperament")
+    func anchorCueIsEqualTemperedLowerAnchorFreq() async {
+        let (session, notePlayer, settings) = makeFixture(lowerAnchor: MIDINote(69))
+        session.start(settings: settings)
+        await notePlayer.waitForPlay()
+
+        let expectedFreq = TuningSystem.equalTemperament.frequency(
+            for: MIDINote(69),
+            referencePitch: Frequency(440.0)
+        )
+        #expect(notePlayer.lastFrequency == expectedFreq.rawValue)
     }
 }

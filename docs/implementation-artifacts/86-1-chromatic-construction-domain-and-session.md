@@ -168,6 +168,32 @@ The session takes a `NotePlayer` injected at construction; it never instantiates
 - **Pre-commit gates.** All four schemes green: Debug × {iOS, macOS} and Research × {iOS, macOS}. No new compiler warnings. Strict-concurrency build clean.
 - **No third-party dependencies.** `Package.resolved` / project's package list unchanged.
 
+### Review Findings
+
+**2026-06-12 — Three-layer adversarial review (Blind Hunter, Edge Case Hunter, Acceptance Auditor) of `e33c2c87..HEAD`.**
+
+Patches (13):
+
+- [ ] [Review][Patch] **`Ladder.targetCents` returns wrong values for non-monotonic ("meandering-ready") paths** — `Ladder.init` accepts non-monotonic paths (validated test `acceptNonMonotonicPath`) but `targetCents(forSlotIndex: k) = k * signedStep` only works for monotonic paths. For `[.up, .down, .up, ...]`, actual cumulative is 100, 0, 100, 0 — not 100, 200, 300, 400. No current callers pass non-monotonic paths, but the "meandering-ready" contract is silently lied to. Fix: walk `path.prefix(k)` and sum signed steps. [`Peach/Training/ChromaticConstruction/Ladder.swift` `targetCents(forSlotIndex:)`]
+- [ ] [Review][Patch] **`Ladder.testFixture` parameter `slotCount` is actually path-length; test iterates past valid slot range** — `testFixture(slotCount: 7)` produces `path.count=7` so the real `slotCount = 6`, but `targetCentsIsDirectMultiplication` iterates `1...7`. The bypass initializer hides the inconsistency. Fix: rename to `stepCount` (or `pathLength`) and align the test bound to `ladder.slotCount`. [`Peach/Training/ChromaticConstruction/Ladder.swift` `testFixture`; `PeachTests/Training/ChromaticConstruction/LadderTests.swift:158`]
+- [ ] [Review][Patch] **`pathLengthMismatch` error reports incomparable axes** — Guard compares `netSignedSteps == requiredNetSteps` but throws `.pathLengthMismatch(expected: |requiredNetSteps|, actual: path.count)`. The two payload fields are different quantities (net-signed vs total-length). Fix: report `expected: requiredNetSteps, actual: netSignedSteps`. [`Peach/Training/ChromaticConstruction/Ladder.swift` `init`]
+- [ ] [Review][Patch] **`MonotonicDescendingPath` precondition diagnostic uses `.rawValue` but divides by `.magnitude`** — Message names `targetStep` by `.rawValue` (signed) but quotient division uses `.magnitude`. Cosmetic for today's positive `targetStep`, misleading if a negative `targetStep` ever lands. Fix: use `.magnitude` in the message. [`Peach/Training/ChromaticConstruction/MonotonicDescendingPath.swift:13`]
+- [ ] [Review][Patch] **Factory silently rounds `outerCents/targetStepCents` to `Int`; fractional inputs reach `MonotonicAscendingPath` precondition and crash** — `let semitones = Int((outerCents / targetStepCents).rounded())` accepts non-integer ratios. `Cents(749.0)/Cents(100)=7.49` rounds to `7`, factory returns settings, then path strategy's `<1e-9` tolerance trips. Fix: add divisibility guard in factory (typed throw or precondition with explicit message); same gate as the path strategy. [`Peach/Training/ChromaticConstruction/ChromaticConstructionSettings.swift:322`]
+- [ ] [Review][Patch] **`placeFinalSlotImplicitSubmit` + `pausePreservesState` tests rely on `Task.yield()` instead of `MockNotePlayer.waitForPlay/waitForStopAll`** — Single `Task.yield()` is not a drain barrier; the prior-slot orienting-cue Task may or may not have run when the snapshot is taken. Under CI load this will flake. Spec's Debug Log already records this race once. Fix: use the explicit wait helpers `MockNotePlayer` already provides. [`PeachTests/Training/ChromaticConstruction/ChromaticConstructionSessionTests.swift`]
+- [ ] [Review][Patch] **`rngIgnored` test pins internal RNG state instead of output contract** — Asserts `rng.state == snapshotBefore`. The protocol contract is "monotonic strategies produce a deterministic path"; a future impl that consumes random bits to e.g. shuffle ties would be correct but break this test. Fix: assert output equality across different seeds, not state non-advancement. [`PeachTests/Training/ChromaticConstruction/MonotonicAscendingPathTests.swift` `rngIgnored`]
+- [ ] [Review][Patch] **`SeededRNG.init(seed: UInt64.max)` overflows `&+ 1` to `state == 0`, breaking the documented non-zero invariant** — Comment promises non-zero state; the boundary case violates it. Fix: `state = (seed &+ 1) | 1` or explicit overflow check. [`PeachTests/Training/ChromaticConstruction/SeededRNG.swift:9`]
+- [ ] [Review][Patch] **`Ladder.init` accepts degenerate paths (slotCount ≤ 0): outerCents=0, single-element path, or factory called with outerCents==targetStepCents** — Three facets of the same gap: no minimum-path-length guard. Session enters `.walking` but `place(cents:)` advances past `slotCount` and the trial never completes. Fix: `Ladder.init` requires `path.count ≥ 2`; add `ChromaticConstructionError.degeneratePath` case (or extend `pathLengthMismatch`). [`Peach/Training/ChromaticConstruction/Ladder.swift` `init`; `ChromaticConstructionSettings.swift:316–322`]
+- [ ] [Review][Patch] **`start(settings:)` does not reset `isPaused`; `pause → start(settings:) → resume` leaves stale flag** — `pause` while walking sets `isPaused=true`. If the screen calls `start(settings:)` next (instead of `stop`), `isPaused` lingers, and the *next* `pause` is a no-op (`guard !isPaused`). Fix: set `isPaused = false` at the top of `start(settings:)`. [`Peach/Training/ChromaticConstruction/ChromaticConstructionSession.swift` `start`]
+- [ ] [Review][Patch] **Test coverage gaps: stepBack twice from K=2, `slotCount=1` boundary, `.mix` across consecutive trials with one shared RNG** — Untested cases: (a) `start → place → place → stepBack → stepBack → stepBack` (third stepBack must no-op AND preserve `placedCents=95` on re-active slot 1); (b) minimum non-degenerate ladder `slotCount=1` (single `place(cents:)` is the implicit submit); (c) per-trial `from(...)` calls advancing a shared `SeededRNG` (production semantics) vs. seed-fresh per call (current test). Fix: add three test methods. [`PeachTests/Training/ChromaticConstruction/ChromaticConstructionSessionTests.swift`, `ChromaticConstructionSettingsTests.swift`]
+- [ ] [Review][Patch] **Spec Change Log entry missing for omitted precondition-trip tests** — AC "Path generation" required either crash-assertions OR a Spec Change Log entry documenting the omission. Path strategies' preconditions on direction mismatch and non-integer division are never asserted in tests; no in-repo precedent exists; no Spec Change Log entry was added. Fix: add Spec Change Log entry naming the omission and citing the in-repo absence of precondition-test precedent. [this spec; Spec Change Log section]
+- [ ] [Review][Patch] **`epics.md` Story 86.1 description claims `ChromaticConstructionPayload` is introduced in 86.1 — contradicts this story's "Never" boundary** — Per `[[feedback_epics_md_is_sot]]` epics.md is source of truth; here the spec correctly defers Payload to 86.2 and code follows the spec. Fix: amend epics.md Story 86.1 description to reflect the 86.1/86.2 split. [`docs/planning-artifacts/epics.md` Story 86.1 description]
+
+Deferred (0):
+
+All eight initial deferrals re-examined after the redesign and your challenge "what is the justification for deferring anything?" — none survive. PF-071/073/077/078 dissolved by the redesign (Ladder/Slot/policy enum/frozen matrix all deleted). PF-072 was wrong on its premise: the project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor`, so the session is implicitly MainActor — the "latent data-race" was imagined. PF-074 (Frequency.init crash for cents in the −1e10 range) is "validation for scenarios that can't happen" by the project rule and was dismissed. PF-075 (silent no-op guard against an invariant break) was fixed in place — `Trial.stepBack`, `Trial.reopenFinalPosition`, and `Session.playOrientingCueForCurrentActivePosition` now crash loudly on impossible inputs instead of silently swallowing them. PF-076 (`stop()` not awaiting `scheduleStopAll()`) matches the established sibling pattern with production ordering guaranteed by the audio-chain — not a bug, nothing to defer.
+
+Dismissed (11): factory MIDI overflow via `MIDINote.init` precondition — unreachable under 86.2's view-local selector (anchor ∈ {48, 60, 72}, outerCents ≤ 1200); no validation needed for scenarios that can't happen; tautological-but-still-useful `targetCentsIsDirectMultiplication` test (alternative pin can't reliably catch the regression for IEEE 754 small-step counts); two subsumed-by-other-findings items (outerCents=0 defensive precondition, signed-zero in `targetCents` — both fixed by the Ladder.init degenerate-path guard); `Slot.pendingAgain()` defined-but-unused (anticipated 86.2 view-layer use); Boy Scout `nonisolated` change (properly Spec Change-Logged); hidden-assumption #4 latent factory bug (subsumed by factory divisibility check).
+
 ## Dev Notes
 
 ### Domain-type reuse
@@ -294,6 +320,37 @@ No production-code architecture changes beyond the `rng:` parameter. No new type
 
 ## Spec Change Log
 
+### 2026-06-12 — Post-review redesign (replaces the prior implementation wholesale)
+
+The three-layer code review surfaced architectural issues that Michael unpacked into a redesign: `Ladder` did too much (carried `tuningSystem` only to validate it; `outerCents` was derived from anchors; missing the only real precondition — path-fits-in-MIDI-range); `Cents` was used where the existing musical types (`DirectedInterval`, `MIDINote`) fit better; `Slot` carried state that belongs to the session, not the value; `targetStep` was a parameterization with no live use case (24-TET deferred indefinitely); `NextPathStrategy` exposed RNG that should be an implementation detail; the factory mixed concerns. The redesign collapses these into a smaller, established-pattern surface.
+
+**Concrete deltas vs. the original Code Map:**
+
+1. **`Ladder` deleted.** Its responsibilities split between `ChromaticPath` (anchor + outer interval + steps + path-fits-in-MIDI-range validation) and the session (tuning-system context, which is now *always* equal-tempered with no parameter — see #5).
+2. **`Slot` deleted.** Per-slot state (pending/active/placed) is no longer a field on a value type; it is implicit in the session's `ChromaticConstructionTrial.placed: [DetunedMIDINote]` collection plus an `ActivePosition` descriptor. The placed value type IS `DetunedMIDINote` (the existing logical-pitch type in `Core/Music/`).
+3. **`Anchor` deleted.** A twelve-line wrapper over `MIDINote` with one `.frequency(in:referencePitch:)` method that didn't earn its keep once `ChromaticPath` owned the anchor pair. Call sites use `TuningSystem.equalTemperament.frequency(for:referencePitch:)` directly.
+4. **`Path` typealias deleted; `ChromaticPath` is a struct.** It owns the path-invariant validation (`degeneratePath`, `pathDoesNotReachInterval`, `pathExceedsMIDIRange`). `cumulativeSemitones(at:)` correctly honors meandering paths via prefix summation — the original `Ladder.targetCents(forSlotIndex:)` blind-multiplied `k × targetStep` and would have silently lied for non-monotonic paths.
+5. **`targetStep` removed as a parameter.** The discipline is locked to one-semitone steps (12-TET). YAGNI applied: 24-TET / N-TET division was the only motivating case, and it isn't on any roadmap. Removing the parameter deletes Adam's Q3 (a) direct-multiplication test, Q3 (b) non-100 step test, the divisibility precondition, the `targetStepCents` field across the module, and the corresponding error case from `ChromaticConstructionError`. Hidden assumptions #2 and #3 (`pure cent math, not derived from TuningSystem`; `trains equal cent division, not 12-TET semitones`) are re-scoped: 86.1 ships 12-TET only; future N-TET disciplines would introduce a new path/strategy variant.
+6. **`tuningSystem` removed from settings, errors, and the public surface.** The discipline is musically meaningful only in equal temperament; there's nothing to parameterize. The session calls `TuningSystem.equalTemperament.frequency(for:referencePitch:)` directly at the MIDI→Frequency bridge. The `userSettings.tuningSystem` global preference is intentionally ignored for this discipline (documented at discipline-registration time in 86.2). `ChromaticConstructionError.tuningSystemNotEqualTempered` deleted.
+7. **`outerCents` removed.** Replaced by `outerInterval: DirectedInterval` (musical names: P5, octave, etc.). `MIDINote.transposed(by:)` does the arithmetic. Eliminates `Double ==` validation in `Ladder.init`, the path-length-mismatch / outer-cents-mismatch errors, and the divisibility-with-targetStep failure surface.
+8. **`ChromaticConstructionDirectionPolicy` deleted.** Direction is intrinsic to `DirectedInterval` (via its `Direction` field). The "user enables ascending / descending / both" UX is modeled as `Set<DirectedInterval>` in settings (e.g., `{.up(P5)}`, `{.down(P5)}`, `{.up(P5), .down(P5)}`); the session picks one via `outerIntervals.randomElement()` per trial — mirroring `PitchDiscriminationSettings.intervals`. No separate enum, no `MixPathStrategy`, no shared-RNG ceremony.
+9. **`NextPathStrategy` is RNG-free.** `func chromaticPath(lowerAnchor:outerInterval:) throws(...) -> ChromaticPath`. Adam's Q1 RNG-injection addition reversed: monotonic strategies don't need it, and future meandering strategies hold their own RNG as an implementation detail (matching `KazezNoteStrategy`'s use of `Bool.random()` / `MIDINote.random(in:)`). A future signature evolution may add a `profile: TrainingProfile` parameter additively.
+10. **Single `MonotonicPath` strategy** replaces `MonotonicAscendingPath` + `MonotonicDescendingPath`. Direction is encoded in `outerInterval.direction`; the strategy fills `steps` with that direction.
+11. **`ChromaticConstructionSession` adopts the `PitchDiscriminationSession` event/effect/reduce shape.** The state enum is `idle / walking / showingResult` (no associated values — state is data, not configuration). `currentTrial: ChromaticConstructionTrial?` and `lastCompletedTrial: CompletedChromaticConstructionTrial?` are observable fields alongside state, again matching PitchDiscrimination.
+12. **`ChromaticConstructionTrial` + `CompletedChromaticConstructionTrial` introduced.** Mirrors `PitchDiscriminationTrial` / `CompletedPitchDiscriminationTrial`. The trial holds the path + the in-progress user state (`placed`, `active`). The completed trial wraps the trial + timestamp and provides per-position `absoluteErrorCents(at:)` / `relativeErrorCents(at:)` for downstream scoring. Cent-error metrics belong on the completed-trial value, not the session.
+13. **No default parameters on any `init` in the module.** Per `[[feedback_no_default_params_inviting_errors]]`. Every value is explicit at the call site.
+14. **`Settings.from(_ userSettings:)` shrunk to a pass-through.** Reads only `referencePitch` from user settings; everything else is supplied by the caller. No tuning-system gating (no longer applicable). No RNG.
+
+**Net effect on the prior review's findings:**
+
+- HIGH/MEDIUM patches against the prior `Ladder` / `Slot` / `outerCents` / `targetStep` / factory shape (P1, P3, P4, P5, P8, P9, P10): dissolved by deletion of the offending types.
+- LOW patches against test discipline (P6 `Task.yield` → `waitForStopAll`, P11 coverage gaps) applied in the new test suite.
+- P2 (tautological direct-multiplication test) and P7 (RNG-state pin) gone with the targetStep parameter and the RNG parameter.
+- P12 (Spec Change Log entry for omitted precondition-trip tests) and P13 (epics.md Payload text) carried forward — see new entries below.
+- Deferred PF-073 (Slot state contract), PF-077 (Logger privacy for state interpolation), PF-078 (frozen I/O matrix rows) all dissolve. PF-071 (Double ==) gone — exact integer-semitone math only. PF-072 (session not @MainActor), PF-074, PF-075, PF-076 stay open and apply to the new session unchanged.
+
+
+
 - **2026-06-12 (Task 3 implementation):** Renamed top-level `typealias Path = [Direction]` → `typealias ChromaticPath = [Direction]`. Reason: `Path` shadowed `SwiftUI.Path` (the rendering shape type), breaking `ProgressSparklineView.swift`'s `func path(in:) -> Path` return-type resolution. `ChromaticPath` keeps the typealias's documentation home (path invariant) without the name collision. All references in `Ladder`, `NextPathStrategy`, `MonotonicAscendingPath`, `MonotonicDescendingPath`, and `LadderTests` updated.
 - **2026-06-12 (Task 3 implementation, Boy Scout):** Added `nonisolated` to `Peach/Core/Music/TuningSystem.swift` and `Peach/Core/Music/DetunedMIDINote.swift`. Reason: `Anchor.frequency(in:referencePitch:)` and `ChromaticConstructionError.tuningSystemNotEqualTempered(TuningSystem)`'s synthesized `Equatable` require nonisolated TuningSystem. The two types are pure value/data types with no MainActor reason — `Cents`, `MIDINote`, `Frequency`, and other Music primitives are already `nonisolated`. Existing MainActor call sites continue to compile and run unchanged.
 - **2026-06-12 (Task 3 implementation):** Refined `Ladder.init` path-length validation. Original phrasing checked `path.count == |outerCents / targetStepCents|` (length-based); the I/O matrix's "non-monotonic path accepted" row required checking *net signed step count* instead. Implementation now validates `path.reduce(0) { ±1 } * targetStepCents == outerCents` (net-span-based). The `pathLengthMismatch` error case keeps its existing fields (`expected: Int, actual: Int`); `expected` is the monotonic-path-length the caller most likely intended, `actual` is `path.count`.
@@ -327,27 +384,25 @@ Claude Opus 4.7 (claude-opus-4-7).
 
 ### File List
 
-**New (production):**
-- `Peach/Training/ChromaticConstruction/Anchor.swift`
-- `Peach/Training/ChromaticConstruction/Slot.swift`
-- `Peach/Training/ChromaticConstruction/Path.swift` *(holds `typealias ChromaticPath = [Direction]` plus the path-invariant docs)*
-- `Peach/Training/ChromaticConstruction/Ladder.swift` *(includes `ChromaticConstructionError`; `#if DEBUG` `testFixture` for the Q3-a direct-multiplication test)*
+(After the 2026-06-12 post-review redesign — the originally-shipped files were replaced wholesale.)
+
+**Production:**
+- `Peach/Training/ChromaticConstruction/ChromaticConstructionError.swift`
+- `Peach/Training/ChromaticConstruction/ChromaticPath.swift`
 - `Peach/Training/ChromaticConstruction/NextPathStrategy.swift`
-- `Peach/Training/ChromaticConstruction/MonotonicAscendingPath.swift`
-- `Peach/Training/ChromaticConstruction/MonotonicDescendingPath.swift`
-- `Peach/Training/ChromaticConstruction/ChromaticConstructionDirectionPolicy.swift`
+- `Peach/Training/ChromaticConstruction/MonotonicPath.swift` *(single strategy; direction encoded in `outerInterval.direction`)*
+- `Peach/Training/ChromaticConstruction/ChromaticConstructionTrial.swift`
+- `Peach/Training/ChromaticConstruction/CompletedChromaticConstructionTrial.swift`
 - `Peach/Training/ChromaticConstruction/ChromaticConstructionSettings.swift`
 - `Peach/Training/ChromaticConstruction/ChromaticConstructionSession.swift`
 
-**New (tests):**
-- `PeachTests/Training/ChromaticConstruction/AnchorTests.swift`
-- `PeachTests/Training/ChromaticConstruction/SlotTests.swift`
-- `PeachTests/Training/ChromaticConstruction/LadderTests.swift`
-- `PeachTests/Training/ChromaticConstruction/MonotonicAscendingPathTests.swift`
-- `PeachTests/Training/ChromaticConstruction/MonotonicDescendingPathTests.swift`
+**Tests:**
+- `PeachTests/Training/ChromaticConstruction/ChromaticPathTests.swift`
+- `PeachTests/Training/ChromaticConstruction/MonotonicPathTests.swift`
+- `PeachTests/Training/ChromaticConstruction/ChromaticConstructionTrialTests.swift`
+- `PeachTests/Training/ChromaticConstruction/CompletedChromaticConstructionTrialTests.swift`
 - `PeachTests/Training/ChromaticConstruction/ChromaticConstructionSettingsTests.swift`
 - `PeachTests/Training/ChromaticConstruction/ChromaticConstructionSessionTests.swift`
-- `PeachTests/Training/ChromaticConstruction/SeededRNG.swift` *(deterministic LCG test helper for Q3 / mix-policy tests)*
 
 **Modified (Boy Scout):**
 - `Peach/Core/Music/TuningSystem.swift` — added `nonisolated` to enum declaration.
@@ -371,3 +426,6 @@ Claude Opus 4.7 (claude-opus-4-7).
 | 2026-06-12 | Task 6: pre-commit gate green on all four schemes (iOS Debug 2054 / macOS Debug 2041 / iOS Research 2214 / macOS Research 2201). PF-070 filed for `check-dependencies.sh` false positive. |
 | 2026-06-12 | Task 7: `/simplify-code` applied 1 patch (Q1 — capture-list consistency with sibling sessions). Three findings rejected with rationale. |
 | 2026-06-12 | Task 8: sprint-status flipped to review. Story status flipped to review. |
+| 2026-06-12 | Post-review redesign: deleted `Ladder`, `Slot`, `Anchor`, `Path` typealias, `ChromaticConstructionDirectionPolicy`, `MonotonicAscendingPath`, `MonotonicDescendingPath`. Introduced `ChromaticPath` (struct with MIDI-range validation), `MonotonicPath` (single strategy; direction in `outerInterval`), `ChromaticConstructionTrial` / `CompletedChromaticConstructionTrial` (mirrors PitchDiscrimination Trial split). Dropped `targetStep` (YAGNI; 12-TET only). Dropped `tuningSystem` from settings/errors (discipline implicitly equal-tempered). Session adopts the PitchDiscrimination event/effect/reduce shape. All four schemes green: iOS Debug 2051 / macOS Debug 2038 / iOS Research 2211 / macOS Research 2198. |
+| 2026-06-12 | `/simplify-code` applied two cleanups: dropped the do-catch in `Session.beginNextTrial` (`try!` is correct — strategy throw modes are all caller-validated invariants); dropped dead `isPaused = false` reset in `Session.start` (guard already establishes the invariant). |
+| 2026-06-12 | Deferred-work challenge: all eight initial PF-### deferrals re-examined. PF-071/073/077/078 already dissolved by the redesign; PF-072 wrong premise (project sets `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` — session is implicitly MainActor); PF-074 dismissed as "validation for scenarios that can't happen"; PF-076 dismissed (matches sibling pattern, no real bug). PF-075 fixed in place across `Trial.stepBack`, `Trial.reopenFinalPosition`, and `Session.playOrientingCueForCurrentActivePosition` — silent-fail guards replaced with implicit force-unwraps documented by the invariants that hold them. Zero deferrals from this story. |
