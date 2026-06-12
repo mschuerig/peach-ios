@@ -382,3 +382,16 @@ Multiple new tests added in Story 85.8 use `try? await Task.sleep(for: .millisec
 The project's existing `waitForState` helper in `PitchDiscriminationTestHelpers.swift` is the canonical pattern: yield-in-a-loop with a max retry budget and an early-exit on observable state change. The Story 85.8 audio-observer tests don't have a directly-equivalent state-change API to poll, but a `CheckedContinuation`-based pattern would replace the blanket sleep.
 
 **Fix:** For each Story 85.8 timing-based test, replace `Task.sleep(50ms)` with either: (a) a `CheckedContinuation` resumed by the spy closure (cleanest for closure-based assertions like the Lost/Reset/Reset-after-Lost tests); (b) a `waitForState`-style polling helper that checks the assertion target up to a max-budget timeout; (c) for engine tests, expose a counter the test polls until incremented. Acceptable to keep as-is for the foreseeable future — flakiness has not been observed locally — but a follow-up cleanup pass when extending Story 85.8 coverage should adopt the better pattern.
+
+
+### PF-070: `check-dependencies.sh` matches feature names inside comments
+
+**Found:** 2026-06-12 (Story 86.1 pre-commit gate)
+**Severity:** Low (false-positive noise; does not affect compiled correctness)
+**Disposition:** OPEN
+
+`bin/check-dependencies.sh` reports `TimingOffsetDetection/ references SettingsScreen (cross-feature dependency)` from a documentation comment in `Peach/Training/TimingOffsetDetection/TimingDotView.swift:214` ("slot picker in `SettingsScreen`"). The reference is text inside a `///` doc comment — there is no actual code dependency between `TimingDotView` and `SettingsScreen`. The script's regex matches any occurrence of a feature-directory name in another feature's source files without skipping comments or string literals.
+
+This is the first cross-feature warning since Story 85.7 introduced the comment. The check has been silently allowing pre-existing-on-main runs to "pass" anyway because the violation count was zero — re-reading the script confirms its exit is non-zero only when violations are *introduced*. Story 86.1's full-gate run surfaced it.
+
+**Fix:** Either (a) strip Swift comments (`// …` / `/// …` / `/* … */`) before running the cross-feature regex; (b) restrict the regex to import statements and identifier references (e.g. require a leading `.` or word boundary against a typed name); or (c) re-word the `TimingDotView` comment to avoid naming `SettingsScreen` (workaround, not a fix to the script). Recommendation: (a) — the script is the right place to handle the syntax-vs-comment distinction. Until then, this is a low-noise false positive.

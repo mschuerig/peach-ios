@@ -5,7 +5,7 @@ import Foundation
 /// An enum (not a protocol) so it can drive the Settings picker via
 /// `CaseIterable`. Adding a new case supplies non-zero cent deviations
 /// and a `displayName` — no changes to interval or training logic required.
-enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
+nonisolated enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     case equalTemperament
     case justIntonation
 

@@ -4,7 +4,7 @@
 /// and Cents. It carries no frequency or tuning knowledge. To convert to a
 /// sounding frequency, pass it through the explicit bridge:
 /// `TuningSystem.frequency(for:referencePitch:)`.
-struct DetunedMIDINote: Hashable, Sendable {
+nonisolated struct DetunedMIDINote: Hashable, Sendable {
     let note: MIDINote
     let offset: Cents
 
