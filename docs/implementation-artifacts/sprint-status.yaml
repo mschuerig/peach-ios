@@ -824,6 +824,6 @@ development_status:
   # 86.2 is the screen + PEACH_RESEARCH-gated registration). Each story = own
   # commit + own PR.
   epic-86: in-progress
-  86-1-chromatic-construction-domain-and-session: review
-  86-2-chromatic-construction-screen-and-registration: backlog
+  86-1-chromatic-construction-domain-and-session: done
+  86-2-chromatic-construction-screen-and-registration: review
   epic-86-retrospective: optional

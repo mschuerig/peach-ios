@@ -92,6 +92,14 @@ final class ChromaticConstructionSession: TrainingSession {
 
     private var settings: ChromaticConstructionSettings?
     private var isPaused = false
+    /// Continuous-tone handle held while the user is dragging an active
+    /// position's slider. Pattern mirrors `PitchMatchingSession.currentHandle`:
+    /// `startContinuousTone(at:)` issues a non-duration-bounded `play(…)`,
+    /// stashes the returned handle here, and subsequent
+    /// `adjustContinuousTone(to:)` calls reroute the live pitch via
+    /// `handle.adjustFrequency(_:)` without re-triggering the note.
+    /// `stopContinuousTone()` releases it.
+    private var currentHandle: PlaybackHandle?
 
     // MARK: - Initialization
 
@@ -114,6 +122,7 @@ final class ChromaticConstructionSession: TrainingSession {
         isPaused = true
         lifecycle?.cancelAllTasks()
         notePlayer.scheduleStopAll()
+        currentHandle = nil
         logger.info("Session paused (preserving state \(String(describing: self.state), privacy: .public))")
     }
 
@@ -141,9 +150,12 @@ final class ChromaticConstructionSession: TrainingSession {
     }
 
     /// Commits the active position with the given cent offset. For interior
-    /// positions, advances to the next position and plays the just-committed
-    /// pitch as the orienting cue. For the final interior position, the trial
-    /// completes implicitly and the session transitions to `.showingResult`.
+    /// positions, simply advances to the next position — the user already
+    /// heard the placed pitch via the continuous tone during their drag,
+    /// so no post-place orienting cue is needed (iteration-4 feedback: the
+    /// redundant cue was confusing). For the final interior position, the
+    /// trial completes implicitly and the session transitions to
+    /// `.showingResult`.
     func place(offset: Cents) {
         guard state == .walking, var trial = currentTrial else {
             logger.debug("place(offset:) ignored — not in .walking")
@@ -153,12 +165,14 @@ final class ChromaticConstructionSession: TrainingSession {
         currentTrial = trial
         if trial.isComplete {
             notePlayer.scheduleStopAll()
+            currentHandle = nil
             state = .showingResult
             lastCompletedTrial = CompletedChromaticConstructionTrial(trial: trial, timestamp: Date())
             logger.info("Trial complete; advancing to .showingResult")
-        } else {
-            playOrientingCueForCurrentActivePosition()
         }
+        // No post-place orienting cue: the user heard their placed pitch
+        // via the continuous tone during drag, so a redundant cue at the
+        // same pitch only confused them (iteration-4 feedback).
     }
 
     /// Lossy step-back. From `.walking` at position > 1: re-activates the
@@ -241,9 +255,99 @@ final class ChromaticConstructionSession: TrainingSession {
         isPaused = false
         lifecycle?.cancelAllTasks()
         notePlayer.scheduleStopAll()
+        currentHandle = nil
         settings = nil
         currentTrial = nil
         lastCompletedTrial = nil
+    }
+
+    /// Plays the given frequency for the orienting-cue duration. Used by the
+    /// screen for tap-replay of committed positions and result-mode dot taps
+    /// (single-shot, ~600 ms). For the user's *live* drag on an active
+    /// position's slider, use `startContinuousTone(at:)` /
+    /// `adjustContinuousTone(to:)` / `stopContinuousTone()` instead — those
+    /// hold the note open and re-pitch it without retriggering.
+    func replay(frequency: Frequency) {
+        guard state != .idle else { return }
+        playCue(at: frequency)
+    }
+
+    /// Opens a sustained note at the given frequency, stashing the playback
+    /// handle so subsequent `adjustContinuousTone(to:)` calls can re-pitch
+    /// the live tone. Mirrors `PitchMatchingSession.startTunablePlayback`'s
+    /// shape: synchronous `scheduleStopAll()` cancels any in-flight note,
+    /// then a training-task spawns the `play(...)` call and captures the
+    /// returned handle on completion. The note's `velocity` and
+    /// `amplitudeDB` match the orienting-cue defaults so the tone level
+    /// stays continuous across cue → drag transitions.
+    func startContinuousTone(at frequency: Frequency) {
+        guard state != .idle else { return }
+        notePlayer.scheduleStopAll()
+        lifecycle?.setTrainingTask(Task { [notePlayer, logger] in
+            do {
+                let handle = try await notePlayer.play(
+                    frequency: frequency,
+                    velocity: MIDIVelocity.mezzoPiano,
+                    amplitudeDB: AmplitudeDB(0.0)
+                )
+                guard self.state != .idle, !Task.isCancelled else {
+                    Task { try? await handle.stop() }
+                    return
+                }
+                self.currentHandle = handle
+            } catch is CancellationError {
+                return
+            } catch {
+                logger.error("Audio error during continuous tone start: \(error.localizedDescription, privacy: .public)")
+            }
+        })
+    }
+
+    /// Re-pitches the live continuous tone (if any) to the given frequency
+    /// via `PlaybackHandle.adjustFrequency(_:)`. No retrigger, no
+    /// `scheduleStopAll()` — the audio chain stays intact so the user
+    /// hears a smooth glide rather than discrete note onsets.
+    func adjustContinuousTone(to frequency: Frequency) {
+        guard state != .idle, let handle = currentHandle else { return }
+        Task {
+            try? await handle.adjustFrequency(frequency)
+        }
+    }
+
+    /// Releases the continuous tone (if any). The handle's `stop()` fades
+    /// out the note on the audio chain; the next call to `playCue(at:)`,
+    /// `startContinuousTone(at:)`, or `scheduleStopAll()` will register
+    /// after this stop completes.
+    func stopContinuousTone() {
+        let handleToStop = currentHandle
+        currentHandle = nil
+        Task {
+            try? await handleToStop?.stop()
+        }
+    }
+
+    /// Atomic revert-to: drops every placement at index > k back to pending
+    /// and re-activates position k. Routes through `ChromaticConstructionTrial.revertTo`,
+    /// which preserves placed[k-1] as the position's slider starting value.
+    /// From `.showingResult`, this reopens the trial (drops `lastCompletedTrial`)
+    /// and returns the session to `.walking`. The caller is expected to play
+    /// any orienting cue via `replay(frequency:)`; this method itself does
+    /// not schedule audio.
+    func revertTo(positionIndex k: Int) {
+        switch state {
+        case .walking:
+            guard var trial = currentTrial else { return }
+            trial.revertTo(positionIndex: k)
+            currentTrial = trial
+        case .showingResult:
+            guard var trial = currentTrial else { return }
+            trial.revertTo(positionIndex: k)
+            currentTrial = trial
+            lastCompletedTrial = nil
+            state = .walking
+        case .idle:
+            return
+        }
     }
 
     // MARK: - Audio
@@ -268,7 +372,35 @@ final class ChromaticConstructionSession: TrainingSession {
             let predecessorCents = trial.placed.last!.offset
             cueFrequency = lowerAnchorFreq * pow(2.0, predecessorCents / Cents.perOctave)
         }
-        playCue(at: cueFrequency)
+        playDelayedCue(at: cueFrequency)
+    }
+
+    /// Plays a single 600 ms note after a brief silence. Used by the
+    /// orienting cue path so the cue is perceptibly distinct from the
+    /// continuous tone's tail (the user hears a clear silence → re-attack
+    /// rather than one continuous note that gets retriggered at the same
+    /// pitch). Synchronous `scheduleStopAll()` cleanly cuts any in-flight
+    /// audio first; the cue task then sleeps ~150 ms before issuing the
+    /// `play(...)`, so the audio chain ends up with: stopAll → ~150 ms of
+    /// silence → cue play.
+    private func playDelayedCue(at frequency: Frequency) {
+        notePlayer.scheduleStopAll()
+        lifecycle?.setTrainingTask(Task { [notePlayer, logger] in
+            do {
+                try await Task.sleep(for: .milliseconds(150))
+                guard self.state == .walking, !Task.isCancelled else { return }
+                try await notePlayer.play(
+                    frequency: frequency,
+                    duration: .milliseconds(600),
+                    velocity: MIDIVelocity.mezzoPiano,
+                    amplitudeDB: AmplitudeDB(0.0)
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                logger.error("Audio error during orienting cue: \(error.localizedDescription, privacy: .public)")
+            }
+        })
     }
 
     private func playCue(at frequency: Frequency) {
@@ -284,7 +416,7 @@ final class ChromaticConstructionSession: TrainingSession {
             } catch is CancellationError {
                 return
             } catch {
-                logger.error("Audio error during orienting cue: \(error.localizedDescription, privacy: .public)")
+                logger.error("Audio error during tap-replay: \(error.localizedDescription, privacy: .public)")
             }
         })
     }

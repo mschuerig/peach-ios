@@ -35,6 +35,7 @@ enum DisciplineBootstrap {
         ]
         #if PEACH_RESEARCH
         disciplines.append(ContinuousRhythmMatchingDiscipline())
+        disciplines.append(ChromaticConstructionDiscipline())
         #endif
         return disciplines
     }()
@@ -53,5 +54,6 @@ enum DisciplineBootstrap {
         PitchMatchingCSVHistory.history,
         TimingOffsetDetectionCSVHistory.history,
         ContinuousRhythmMatchingCSVHistory.history,
+        ChromaticConstructionCSVHistory.history,
     ]
 }

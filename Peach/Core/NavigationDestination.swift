@@ -9,4 +9,5 @@ enum NavigationDestination: Hashable {
     case profile
     case timingOffsetDetection
     case continuousRhythmMatching
+    case chromaticConstruction
 }

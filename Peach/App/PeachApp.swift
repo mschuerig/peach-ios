@@ -22,6 +22,9 @@ struct PeachApp: App {
     @State private var pitchMatchingSession: PitchMatchingSession
     @State private var timingOffsetDetectionSession: TimingOffsetDetectionSession
     @State private var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession
+    #if PEACH_RESEARCH
+    @State private var chromaticConstructionSession: ChromaticConstructionSession
+    #endif
     @State private var profile: PerceptualProfile
     @State private var progressTimeline: ProgressTimeline
     @State private var soundFontLibrary: SoundFontLibrary
@@ -81,11 +84,23 @@ struct PeachApp: App {
             _continuousRhythmMatchingSession = State(wrappedValue: sessions.continuousRhythmMatching)
             _midiAdapter = State(wrappedValue: sessions.midiAdapter)
 
+            #if PEACH_RESEARCH
+            let ccSession = Self.createChromaticConstructionSession(notePlayer: audio.notePlayer)
+            _chromaticConstructionSession = State(wrappedValue: ccSession)
+            #endif
+
             let coordinators = Self.buildCoordinators(
                 pitchDiscriminationSession: sessions.pitchDiscrimination,
                 pitchMatchingSession: sessions.pitchMatching,
                 timingOffsetDetectionSession: sessions.timingOffsetDetection,
                 continuousRhythmMatchingSession: sessions.continuousRhythmMatching,
+                chromaticConstructionSession: {
+                    #if PEACH_RESEARCH
+                    return ccSession
+                    #else
+                    return nil
+                    #endif
+                }(),
                 dataStore: dataStore,
                 profile: profile,
                 transferService: transferService,
@@ -119,6 +134,9 @@ struct PeachApp: App {
                 .environment(\.pitchMatchingSession, pitchMatchingSession)
                 .environment(\.timingOffsetDetectionSession, timingOffsetDetectionSession)
                 .environment(\.continuousRhythmMatchingSession, continuousRhythmMatchingSession)
+                #if PEACH_RESEARCH
+                .environment(\.chromaticConstructionSession, chromaticConstructionSession)
+                #endif
                 .environment(\.activeSession, activeSession)
                 .environment(\.perceptualProfile, profile)
                 .environment(\.progressTimeline, progressTimeline)
@@ -145,6 +163,11 @@ struct PeachApp: App {
                 .onChange(of: continuousRhythmMatchingSession.isIdle) { _, isIdle in
                     trackActiveSession(continuousRhythmMatchingSession, isIdle: isIdle)
                 }
+                #if PEACH_RESEARCH
+                .onChange(of: chromaticConstructionSession.isIdle) { _, isIdle in
+                    trackActiveSession(chromaticConstructionSession, isIdle: isIdle)
+                }
+                #endif
         }
         #if os(macOS)
         .defaultSize(width: 500, height: 700)
@@ -189,12 +212,16 @@ struct PeachApp: App {
         // `trainingLifecycle` — otherwise a paused TOD/CRM would survive with no
         // coordinator holding its `pausedDestination`, unrecoverable until
         // toggled manually.
-        for session in [
-            pitchDiscriminationSession as any TrainingSession,
+        var sessionsToStop: [any TrainingSession] = [
+            pitchDiscriminationSession,
             pitchMatchingSession,
             timingOffsetDetectionSession,
             continuousRhythmMatchingSession,
-        ] where !session.isIdle {
+        ]
+        #if PEACH_RESEARCH
+        sessionsToStop.append(chromaticConstructionSession)
+        #endif
+        for session in sessionsToStop where !session.isIdle {
             session.stop()
         }
 
@@ -221,6 +248,9 @@ struct PeachApp: App {
             dataStore: dataStore,
             midiInput: midiAdapter
         )
+        #if PEACH_RESEARCH
+        chromaticConstructionSession = Self.createChromaticConstructionSession(notePlayer: newNotePlayer)
+        #endif
         rebuildCoordinators()
     }
 
@@ -230,6 +260,13 @@ struct PeachApp: App {
             pitchMatchingSession: pitchMatchingSession,
             timingOffsetDetectionSession: timingOffsetDetectionSession,
             continuousRhythmMatchingSession: continuousRhythmMatchingSession,
+            chromaticConstructionSession: {
+                #if PEACH_RESEARCH
+                return chromaticConstructionSession
+                #else
+                return nil
+                #endif
+            }(),
             dataStore: dataStore,
             profile: profile,
             transferService: transferService,
@@ -492,6 +529,17 @@ struct PeachApp: App {
         )
     }
 
+    #if PEACH_RESEARCH
+    private static func createChromaticConstructionSession(
+        notePlayer: any NotePlayer
+    ) -> ChromaticConstructionSession {
+        ChromaticConstructionSession(
+            notePlayer: notePlayer,
+            strategy: MonotonicPath()
+        )
+    }
+    #endif
+
     private static func createPitchMatchingSession(
         notePlayer: NotePlayer,
         profile: PerceptualProfile,
@@ -525,6 +573,7 @@ struct PeachApp: App {
         pitchMatchingSession: PitchMatchingSession,
         timingOffsetDetectionSession: TimingOffsetDetectionSession,
         continuousRhythmMatchingSession: ContinuousRhythmMatchingSession,
+        chromaticConstructionSession: ChromaticConstructionSession?,
         dataStore: TrainingDataStore,
         profile: PerceptualProfile,
         transferService: TrainingDataTransferService,
@@ -547,6 +596,9 @@ struct PeachApp: App {
                 userSettings: userSettings,
                 crmUserSettings: crmUserSettings
             )
+            #if PEACH_RESEARCH
+            chromaticConstructionSession?.contribute(to: builder, userSettings: userSettings)
+            #endif
         }
         let lifecycle = TrainingLifecycleCoordinator(
             registry: lifecycleRegistry,

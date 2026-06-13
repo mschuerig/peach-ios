@@ -79,7 +79,7 @@ struct ChromaticConstructionSessionTests {
 
     // MARK: - Place / Interior advancement
 
-    @Test("place at an interior position advances active and plays the predecessor cue")
+    @Test("place at an interior position advances active without firing a redundant cue")
     func placeAdvancesInteriorPosition() async {
         // outerInterval = .up(.minorThird) → 3 .up steps → interiorPositionCount = 2.
         let (session, notePlayer, settings) = makeFixture(outerIntervals: [.up(.minorThird)])
@@ -88,12 +88,14 @@ struct ChromaticConstructionSessionTests {
         notePlayer.reset()
 
         session.place(offset: Cents(95.0))
-        await notePlayer.waitForPlay()  // predecessor cue for position 2
 
         #expect(session.state == .walking)
         #expect(session.currentTrial?.active?.index == 2)
-        #expect(notePlayer.playCallCount >= 1)
-        #expect(notePlayer.stopAllCallCount >= 1)
+        // Iteration-4: the post-place orienting cue was removed. The user
+        // already heard the placed pitch via the continuous tone during
+        // their drag; a same-pitch cue with a 150 ms silence was confusing.
+        #expect(notePlayer.playCallCount == 0)
+        #expect(notePlayer.stopAllCallCount == 0)
     }
 
     @Test("place at the final interior position completes the trial implicitly")

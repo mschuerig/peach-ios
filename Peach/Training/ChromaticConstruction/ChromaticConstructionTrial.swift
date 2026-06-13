@@ -14,10 +14,45 @@ struct ChromaticConstructionTrial: Hashable, Sendable {
     private(set) var placed: [DetunedMIDINote]
     private(set) var active: ActivePosition?
 
+    /// Per-interior-position *audible* offset, fixed at trial init.
+    ///
+    /// During a drag of position `k`, the audio plays at
+    /// `drag_cents + audibleOffsets[k - 1]`. The cents value committed via
+    /// `place(offset:)` is the same `drag_cents + audibleOffsets[k - 1]`,
+    /// i.e. the pitch the user heard. The walking-view's *visual* dot Y
+    /// reflects the drag value (without the offset), so two columns with the
+    /// same committed audio commit at different visual Y — visual
+    /// triangulation across columns fails and the user is forced into
+    /// ear-based adjustment. Result-view labels and tap-replay use the
+    /// committed (audible) value directly, so the training data records what
+    /// the user actually heard.
+    let audibleOffsets: [Cents]
+
     init(path: ChromaticPath) {
+        self.init(path: path, audibleOffsets: Self.randomAudibleOffsets(count: path.interiorPositionCount))
+    }
+
+    /// Designated initialiser; tests pass deterministic offsets via the
+    /// `audibleOffsets:` argument. Production callers use `init(path:)`,
+    /// which fills the array with random values in `Self.maxOffsetRange`.
+    init(path: ChromaticPath, audibleOffsets: [Cents]) {
+        precondition(audibleOffsets.count == path.interiorPositionCount,
+                     "audibleOffsets must have one entry per interior position")
         self.path = path
         self.placed = []
         self.active = ActivePosition(index: 1, preservedValue: nil)
+        self.audibleOffsets = audibleOffsets
+    }
+
+    /// The audible-offset range. `±50¢` chosen to push different sliders
+    /// into pitches that audibly differ from their visual cent position —
+    /// enough that the user can't rely on visual cent reading, but small
+    /// enough that the drag-range clamp (`±300¢`) still gives generous
+    /// adjustment headroom in either direction.
+    static let maxOffsetRange: ClosedRange<Double> = -50.0...50.0
+
+    private static func randomAudibleOffsets(count: Int) -> [Cents] {
+        (0..<count).map { _ in Cents(Double.random(in: maxOffsetRange)) }
     }
 
     /// Commits the active position with the given cent offset from the lower
@@ -49,6 +84,22 @@ struct ChromaticConstructionTrial: Hashable, Sendable {
         guard active == nil else { return }
         let prior = placed.removeLast()
         self.active = ActivePosition(index: path.interiorPositionCount, preservedValue: prior)
+    }
+
+    /// Atomic step-back-to-index: drops every placed entry at index > `k`
+    /// back to pending and re-activates position `k` with `placed[k-1]`
+    /// preserved as the slider's starting value. No-op if `k < 1`, `k`
+    /// exceeds the current active index, or the trial is already at `k`.
+    /// Used by the touch-and-drag interaction: tapping a placed dot at
+    /// index `k` reverts to that position in one observable step.
+    mutating func revertTo(positionIndex k: Int) {
+        guard k >= 1 else { return }
+        if active == nil, placed.count == path.interiorPositionCount {
+            reopenFinalPosition()
+        }
+        while let current = active, current.index > k {
+            stepBack()
+        }
     }
 
     /// True once every interior position is placed.

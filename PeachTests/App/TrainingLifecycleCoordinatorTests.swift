@@ -698,6 +698,7 @@ struct TrainingLifecycleCoordinatorTests {
         case .timingOffsetDetection: fixture.todSession
         case .continuousRhythmMatching: fixture.crmSession
         case .settings, .profile: fatalError("non-training destination not in test arguments")
+        case .chromaticConstruction: fatalError("chromatic-construction destination not in test arguments")
         }
 
         fixture.coordinator.trainingScreenAppeared(destination: destination)

@@ -2,7 +2,7 @@
 title: 'Story 86.1: Chromatic Construction domain types, session, and path strategies'
 type: 'feature'
 created: '2026-06-12'
-status: 'review'
+status: 'done'
 baseline_commit: 'e33c2c877a47222bc5faa0b89c495daf01607ebf'
 context:
   - '{project-root}/docs/planning-artifacts/chromatic-construction-discipline-direction.md'

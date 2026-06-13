@@ -66,6 +66,12 @@ struct StartScreen: View {
                 TimingOffsetDetectionScreen()
             case .continuousRhythmMatching:
                 ContinuousRhythmMatchingScreen()
+            case .chromaticConstruction:
+                #if PEACH_RESEARCH
+                ChromaticConstructionScreen()
+                #else
+                EmptyView()
+                #endif
             }
         }
         .platformHelp(

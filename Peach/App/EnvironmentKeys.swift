@@ -45,6 +45,10 @@ private struct ContinuousRhythmMatchingSessionKey: EnvironmentKey {
     static var defaultValue: ContinuousRhythmMatchingSession = .stub
 }
 
+private struct ChromaticConstructionSessionKey: EnvironmentKey {
+    static var defaultValue: ChromaticConstructionSession = .stub
+}
+
 extension EnvironmentValues {
     var soundSourceProvider: any SoundSourceProvider {
         get { self[SoundSourceProviderKey.self] }
@@ -77,5 +81,9 @@ extension EnvironmentValues {
     var continuousRhythmMatchingSession: ContinuousRhythmMatchingSession {
         get { self[ContinuousRhythmMatchingSessionKey.self] }
         set { self[ContinuousRhythmMatchingSessionKey.self] = newValue }
+    }
+    var chromaticConstructionSession: ChromaticConstructionSession {
+        get { self[ChromaticConstructionSessionKey.self] }
+        set { self[ChromaticConstructionSessionKey.self] = newValue }
     }
 }

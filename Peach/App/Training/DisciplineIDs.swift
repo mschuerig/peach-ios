@@ -5,6 +5,7 @@ nonisolated extension TrainingDisciplineID {
     static let intervalPitchMatching        = TrainingDisciplineID("interval-matching")
     static let timingOffsetDetection        = TrainingDisciplineID("timing-offset-detection")
     static let continuousRhythmMatching     = TrainingDisciplineID("continuous-rhythm-matching")
+    static let chromaticConstruction        = TrainingDisciplineID("chromatic-construction")
 
     /// All discipline IDs declared by the App. Iterate this only when a structural
     /// invariant of the catalog itself is being asserted (e.g. tests). Production
@@ -18,5 +19,6 @@ nonisolated extension TrainingDisciplineID {
         .intervalPitchMatching,
         .timingOffsetDetection,
         .continuousRhythmMatching,
+        .chromaticConstruction,
     ]
 }

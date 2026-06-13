@@ -127,6 +127,15 @@ extension ContinuousRhythmMatchingSession {
     }()
 }
 
+extension ChromaticConstructionSession {
+    static let stub: ChromaticConstructionSession = {
+        ChromaticConstructionSession(
+            notePlayer: StubNotePlayer(),
+            strategy: MonotonicPath()
+        )
+    }()
+}
+
 // MARK: - Coordinator Stub Factories
 
 extension TrainingLifecycleCoordinator {
@@ -146,6 +155,10 @@ extension TrainingLifecycleCoordinator {
                 to: builder,
                 userSettings: userSettings,
                 crmUserSettings: crmUserSettings
+            )
+            ChromaticConstructionSession.stub.contribute(
+                to: builder,
+                userSettings: userSettings
             )
         }
         return TrainingLifecycleCoordinator(
@@ -195,6 +208,7 @@ extension View {
             .environment(\.pitchMatchingSession, .stub)
             .environment(\.timingOffsetDetectionSession, .stub)
             .environment(\.continuousRhythmMatchingSession, .stub)
+            .environment(\.chromaticConstructionSession, .stub)
     }
 }
 #endif
