@@ -313,15 +313,17 @@ struct PeachApp: App {
             return (container, TrainingDataStore(modelContext: container.mainContext))
         } catch {
             let nserror = error as NSError
-            guard shouldWipeStore(after: error) else {
-                logger.error("ModelContainer init failed with non-schema error (\(nserror.domain, privacy: .public) #\(nserror.code, privacy: .public)): \(error.localizedDescription, privacy: .public). Rethrowing without wiping.")
+            guard PeachSchemaCompatibility.shouldWipeStore(after: error) else {
+                logger.error("ModelContainer init failed with non-recoverable error (\(nserror.domain, privacy: .public) #\(nserror.code, privacy: .public)): \(error.localizedDescription, privacy: .public). Rethrowing without wiping.")
                 throw error
             }
-            logger.error("ModelContainer init failed with schema-incompatibility (\(nserror.domain, privacy: .public) #\(nserror.code, privacy: .public)): \(error.localizedDescription, privacy: .public). Wiping store and retrying.")
+            // The classifier matches SwiftDataError's "Container" + "Migration" groupings
+            // plus the Core Data hash-mismatch code — broader than literal schema mismatch.
+            logger.error("ModelContainer init failed with a schema-or-container-load error (\(nserror.domain, privacy: .public) #\(nserror.code, privacy: .public)): \(error.localizedDescription, privacy: .public). Wiping store and retrying.")
             do {
                 try wipeDefaultStoreFiles()
             } catch let wipeError {
-                logger.error("wipeDefaultStoreFiles failed after schema-incompatibility: \(wipeError.localizedDescription, privacy: .public). Rethrowing the original schema error.")
+                logger.error("wipeDefaultStoreFiles failed after schema-or-container-load error: \(wipeError.localizedDescription, privacy: .public). Rethrowing the original error.")
                 throw error
             }
             let container = try ModelContainer(
@@ -329,39 +331,6 @@ struct PeachApp: App {
                 migrationPlan: PeachSchemaMigrationPlan.self
             )
             return (container, TrainingDataStore(modelContext: container.mainContext))
-        }
-    }
-
-    /// Best-effort classifier: returns `true` when `error` matches a known
-    /// schema-incompatibility signal — the only condition under which wiping
-    /// `default.store{,-shm,-wal}` is the correct recovery. Returns `false` for
-    /// everything else (disk-full, permission, sqlite corruption, encrypted-store
-    /// unlock failure, any `SwiftDataError` case outside the schema set, or
-    /// unrecognized errors), so the caller rethrows without destroying user data.
-    ///
-    /// The schema-incompatibility set: `SwiftDataError.loadIssueModelContainer`,
-    /// `.backwardMigration`, `.unknownSchema`; plus Core Data's
-    /// `CocoaError(.persistentStoreIncompatibleVersionHash)` if SwiftData passes it
-    /// through unwrapped (NSError bridging is automatic for the `NSCocoaErrorDomain`
-    /// `NSPersistentStoreIncompatibleVersionHashError` code). The three SwiftData
-    /// cases are the members of the "Container" and "Migration" groupings on
-    /// <https://developer.apple.com/documentation/swiftdata/swiftdataerror>;
-    /// Apple does not publish prose stating "schema mismatch ⇒ these cases", so
-    /// this is calibrated narrow matching, not a guarantee.
-    static func shouldWipeStore(after error: Error) -> Bool {
-        switch error {
-        case SwiftDataError.loadIssueModelContainer,
-             SwiftDataError.backwardMigration,
-             SwiftDataError.unknownSchema:
-            return true
-        default:
-            // Match the raw NSError shape SwiftData may pass through unwrapped:
-            // `NSCocoaErrorDomain` + `NSPersistentStoreIncompatibleVersionHashError`.
-            // `CocoaError(.persistentStoreIncompatibleVersionHash)` bridges to the same
-            // shape via `as NSError`, so a single check covers both forms.
-            let nserror = error as NSError
-            return nserror.domain == NSCocoaErrorDomain
-                && nserror.code == CocoaError.Code.persistentStoreIncompatibleVersionHash.rawValue
         }
     }
 
