@@ -24,12 +24,12 @@ Invoke the relevant installed skills proactively as part of your workflow. Do no
 
 ### Core (use during any implementation work)
 
-- `/swiftui-pro` — When working with SwiftUI views or modifiers
+- `/swiftui-expert-skill` — When working with SwiftUI views, reviewing/refactoring SwiftUI code, recording/analyzing Instruments traces, charts, previews, localization, or macOS scenes
 - `/swiftdata-pro` — When working with SwiftData models or queries
 - `/swift-concurrency` — When working with async/await, actors, or Sendable types
 - `/swift-testing-pro` — When writing or reviewing tests
 
-### SwiftUI Specialized (use alongside `/swiftui-pro` when relevant)
+### SwiftUI Specialized (use alongside `/swiftui-expert-skill` when relevant)
 
 - `/swiftui-performance-audit` — When profiling or optimizing SwiftUI view invalidation and rendering
 - `/swiftui-liquid-glass` — When implementing iOS 26 Liquid Glass UI effects
@@ -57,6 +57,7 @@ Invoke the relevant installed skills proactively as part of your workflow. Do no
 ### Release
 
 - `/appstore-review` — Before App Store submission, audit against Apple's Review Guidelines
+- `/audit-xcode-security-settings` — Before App Store submission, audit Xcode build settings for security flags
 - `/app-store-changelog` — Generate user-facing release notes from git history
 
 
