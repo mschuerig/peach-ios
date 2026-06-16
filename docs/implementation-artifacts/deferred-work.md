@@ -396,3 +396,40 @@ This is the first cross-feature warning since Story 85.7 introduced the comment.
 
 **Fix:** Either (a) strip Swift comments (`// …` / `/// …` / `/* … */`) before running the cross-feature regex; (b) restrict the regex to import statements and identifier references (e.g. require a leading `.` or word boundary against a typed name); or (c) re-word the `TimingDotView` comment to avoid naming `SettingsScreen` (workaround, not a fix to the script). Recommendation: (a) — the script is the right place to handle the syntax-vs-comment distinction. Until then, this is a low-noise false positive.
 
+
+
+### PF-071: No integration test for `setupDataStore`'s wipe-then-retry path
+
+**Found:** 2026-06-16 (spec-fix-overbroad-data-store-wipe step-04 review — Blind Hunter)
+**Severity:** Low
+**Disposition:** OPEN
+
+`PeachAppDataStoreClassifierTests` exercises the `shouldWipeStore(after:)` classifier in isolation; the full `setupDataStore` code path (initial `ModelContainer.init` failure → classifier check → `wipeDefaultStoreFiles` → second `ModelContainer.init` → final outcome) has no test. The classifier covers the decision logic correctly, so most of the risk is captured, but the integration story — including the second-init-also-fails branch and the new "wipe failed, rethrow original error" branch added during this same review — is verified only by code reading.
+
+The wipe path is a startup-only code path that's triggered at most once per major schema bump (story 77.4 was the only such bump on record). The wipe-then-retry orchestration was the same shape both before and after this fix; this story narrowed only the classification. Test coverage is nice-to-have, not load-bearing.
+
+**Fix:** Refactor `setupDataStore` to accept a `ModelContainerFactory` seam — a protocol with one `make(schema:migrationPlan:) throws -> ModelContainer` method — that production satisfies with the real `ModelContainer.init` and tests satisfy with a stub that injects per-call outcomes (first-call throws X, second-call throws Y, second-call succeeds, etc.). Then add tests for the four branches: success-first-try; wipe-then-success; wipe-fails-rethrows-original; second-init-fails-rethrows-second. Defer until SwiftData adds a new schema migration that exercises the path — at that point the testing investment pays off.
+
+
+### PF-072: Pre-existing `privacy: .public` convention on `error.localizedDescription`
+
+**Found:** 2026-06-16 (spec-fix-overbroad-data-store-wipe step-04 review — Edge Case Hunter + Blind Hunter)
+**Severity:** Low (sysdiagnose / unified-log exposure, not network or persistent storage)
+**Disposition:** OPEN
+
+`PeachApp.setupDataStore` and other startup error paths emit `error.localizedDescription` with `privacy: .public`. For `CocoaError` / `SwiftDataError` instances surfaced from the file system, `localizedDescription` can include the on-disk store path, which on iOS includes the app container UUID and on macOS includes the user's home directory and account short name. Both end up in unified log and sysdiagnose bundles unredacted. This story propagated the pattern (the original line was already `.public`) rather than introducing it.
+
+**Fix:** Audit all startup-error logger sites for `error.localizedDescription, privacy: .public` and decide a project-wide convention — likely `privacy: .private(mask: .hash)` for `localizedDescription` and `.public` for the error type's domain + code (which is the actionable triage info anyway). Single-file changes are not enough; the convention belongs in a CLAUDE.md / project-context.md note so future logger sites follow it.
+
+
+### PF-073: No telemetry / no backup on the destructive `wipeDefaultStoreFiles` path
+
+**Found:** 2026-06-16 (spec-fix-overbroad-data-store-wipe step-04 review — Blind Hunter)
+**Severity:** Low (the failure mode requires a real schema-incompatible store on disk — rare per major version bump — and the path is already narrower than it was)
+**Disposition:** OPEN
+
+When `setupDataStore` decides to wipe the on-disk store, it does so silently — one `logger.error` line and then `FileManager.removeItem` for `default.store{,-shm,-wal}`. No `os_signpost` for crash triage, no analytic event, no "we destroyed N rows" telemetry, no first-run flag the user can inspect on next launch, no backup of the about-to-be-deleted files to `~/tmp` for forensic recovery in TestFlight. For an explicitly destructive action this is thin.
+
+Peach has no analytics infrastructure today and adding one is out of scope for an isolated bugfix. The story narrowed the wipe surface so the destructive path fires only on actual schema mismatches; the previous "wipe on anything" surface had the same telemetry gap with a much wider blast radius, so this is strictly an improvement.
+
+**Fix:** When telemetry / signpost infrastructure lands — or whenever the project decides on a structured-event pipeline — add a single event at the wipe site recording: pre-wipe file sizes, the classifying error's domain + code, and the post-wipe init outcome. Optionally: copy the three files to `temporaryDirectory/peach-wipe-{ISO8601}/` before removal so a developer can recover them from a sysdiagnose bundle. Both are nice-to-have. Acceptable to leave indefinitely — the failure mode is rare and self-recovering.
