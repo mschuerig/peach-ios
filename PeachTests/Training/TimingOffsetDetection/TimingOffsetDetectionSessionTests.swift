@@ -83,7 +83,8 @@ private func makeSession(
 private func waitForState(
     _ session: TimingOffsetDetectionSession,
     _ expectedState: TimingOffsetDetectionSessionState,
-    timeout: Duration = .seconds(2)
+    timeout: Duration = .seconds(2),
+    sourceLocation: SourceLocation = #_sourceLocation
 ) async throws {
     await Task.yield()
     if session.state == expectedState { return }
@@ -93,7 +94,10 @@ private func waitForState(
         try await Task.sleep(for: .milliseconds(5))
         await Task.yield()
     }
-    Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
+    Issue.record(
+        "Timeout waiting for state \(expectedState), current state: \(session.state)",
+        sourceLocation: sourceLocation
+    )
 }
 
 // MARK: - Tests

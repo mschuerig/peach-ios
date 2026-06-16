@@ -7,7 +7,8 @@ import Testing
 func waitForState(
     _ session: PitchMatchingSession,
     _ expectedState: PitchMatchingSessionState,
-    timeout: Duration = .seconds(5)
+    timeout: Duration = .seconds(5),
+    sourceLocation: SourceLocation = #_sourceLocation
 ) async throws {
     await Task.yield()
     if session.state == expectedState { return }
@@ -17,7 +18,10 @@ func waitForState(
         try await Task.sleep(for: .milliseconds(5))
         await Task.yield()
     }
-    Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
+    Issue.record(
+        "Timeout waiting for state \(expectedState), current state: \(session.state)",
+        sourceLocation: sourceLocation
+    )
 }
 
 /// Transition session from awaitingSliderTouch to playingTunable with handle assigned

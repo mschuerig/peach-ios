@@ -65,7 +65,12 @@ func makePitchDiscriminationSession(
 
 // MARK: - Shared Async Test Helpers
 
-func waitForState(_ session: PitchDiscriminationSession, _ expectedState: PitchDiscriminationSessionState, timeout: Duration = .seconds(2)) async throws {
+func waitForState(
+    _ session: PitchDiscriminationSession,
+    _ expectedState: PitchDiscriminationSessionState,
+    timeout: Duration = .seconds(2),
+    sourceLocation: SourceLocation = #_sourceLocation
+) async throws {
     await Task.yield()
     if session.state == expectedState { return }
     let deadline = ContinuousClock.now + timeout
@@ -74,16 +79,23 @@ func waitForState(_ session: PitchDiscriminationSession, _ expectedState: PitchD
         try await Task.sleep(for: .milliseconds(5))
         await Task.yield()
     }
-    Issue.record("Timeout waiting for state \(expectedState), current state: \(session.state)")
+    Issue.record(
+        "Timeout waiting for state \(expectedState), current state: \(session.state)",
+        sourceLocation: sourceLocation
+    )
 }
 
 
-func waitForFeedbackToClear(_ session: PitchDiscriminationSession, timeout: Duration = .seconds(2)) async throws {
+func waitForFeedbackToClear(
+    _ session: PitchDiscriminationSession,
+    timeout: Duration = .seconds(2),
+    sourceLocation: SourceLocation = #_sourceLocation
+) async throws {
     let deadline = ContinuousClock.now + timeout
     while ContinuousClock.now < deadline {
         if !session.showFeedback { return }
         try await Task.sleep(for: .milliseconds(10))
         await Task.yield()
     }
-    Issue.record("Timeout waiting for feedback to clear")
+    Issue.record("Timeout waiting for feedback to clear", sourceLocation: sourceLocation)
 }

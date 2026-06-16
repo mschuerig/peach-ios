@@ -3,6 +3,7 @@ import Testing
 @MainActor
 func waitForCondition(
     timeout: Duration = .seconds(5),
+    sourceLocation: SourceLocation = #_sourceLocation,
     _ condition: () -> Bool
 ) async throws {
     await Task.yield()
@@ -13,5 +14,5 @@ func waitForCondition(
         try await Task.sleep(for: .milliseconds(5))
         await Task.yield()
     }
-    Issue.record("Timeout waiting for condition")
+    Issue.record("Timeout waiting for condition", sourceLocation: sourceLocation)
 }
