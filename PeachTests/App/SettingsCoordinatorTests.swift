@@ -7,9 +7,9 @@ import Testing
 struct SettingsCoordinatorTests {
 
     @Test("playSoundPreview plays note at reference pitch A4")
-    func playSoundPreviewPlaysAtReferencePitch() async {
+    func playSoundPreviewPlaysAtReferencePitch() async throws {
         let mockPlayer = MockNotePlayer()
-        let coordinator = makeCoordinator(notePlayer: mockPlayer)
+        let coordinator = try makeCoordinator(notePlayer: mockPlayer)
 
         await coordinator.playSoundPreview(duration: .seconds(2))
 
@@ -18,9 +18,9 @@ struct SettingsCoordinatorTests {
     }
 
     @Test("stopSoundPreview calls stopAll on note player")
-    func stopSoundPreviewCallsStopAll() async {
+    func stopSoundPreviewCallsStopAll() async throws {
         let mockPlayer = MockNotePlayer()
-        let coordinator = makeCoordinator(notePlayer: mockPlayer)
+        let coordinator = try makeCoordinator(notePlayer: mockPlayer)
 
         await coordinator.stopSoundPreview()
 
@@ -30,15 +30,15 @@ struct SettingsCoordinatorTests {
     @Test("resetAllData calls deleteAll, resetTrainingData, resetAll, refreshExport")
     func resetAllDataCallsAllServices() async throws {
         let mockPlayer = MockNotePlayer()
-        let coordinator = makeCoordinator(notePlayer: mockPlayer)
+        let coordinator = try makeCoordinator(notePlayer: mockPlayer)
 
         // Verifies no crash — the real services are wired with an in-memory store
         try coordinator.resetAllData()
     }
 
     @Test("prepareImport returns failure for non-existent file")
-    func prepareImportReturnsFailureForBadFile() {
-        let coordinator = makeCoordinator(notePlayer: MockNotePlayer())
+    func prepareImportReturnsFailureForBadFile() throws {
+        let coordinator = try makeCoordinator(notePlayer: MockNotePlayer())
 
         let result = coordinator.prepareImport(url: URL(filePath: "/nonexistent.csv"))
 
@@ -51,20 +51,20 @@ struct SettingsCoordinatorTests {
     }
 
     @Test("formatImportSummary returns formatted string")
-    func formatImportSummaryReturnsString() {
-        let coordinator = makeCoordinator(notePlayer: MockNotePlayer())
+    func formatImportSummaryReturnsString() throws {
+        let coordinator = try makeCoordinator(notePlayer: MockNotePlayer())
         let summary = TrainingDataImporter.ImportSummary(perDiscipline: [:], parseErrorCount: 0)
 
         let result = coordinator.formatImportSummary(summary)
 
-        #expect(!result.isEmpty)
+        #expect(result.isEmpty == false)
     }
 
     // MARK: - Helpers
 
-    private func makeCoordinator(notePlayer: any NotePlayer) -> SettingsCoordinator {
+    private func makeCoordinator(notePlayer: any NotePlayer) throws -> SettingsCoordinator {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        let container = try! ModelContainer(
+        let container = try ModelContainer(
             for: TrainingRecord.self,
             configurations: config
         )
