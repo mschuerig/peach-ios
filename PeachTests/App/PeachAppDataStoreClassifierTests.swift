@@ -30,20 +30,37 @@ struct PeachAppDataStoreClassifierTests {
 
     @Test("Raw NSError with NSCocoaErrorDomain hash-mismatch code triggers wipe")
     func bridgedNSErrorHashMismatchWipes() async {
-        // 134140 = NSPersistentStoreIncompatibleVersionHashError. Verifies the
+        // 134100 = NSPersistentStoreIncompatibleVersionHashError. Verifies the
         // NSError-fallback path in `shouldWipeStore`: `as? CocoaError` does NOT
         // bridge a bare-constructed NSError, so the explicit domain+code check
         // is what matches here.
-        let bridged: Error = NSError(domain: NSCocoaErrorDomain, code: 134140)
+        let bridged: Error = NSError(domain: NSCocoaErrorDomain, code: 134100)
         #expect(PeachApp.shouldWipeStore(after: bridged))
     }
 
+    @Test("NSPersistentStoreIncompatibleVersionHashError integer constant is 134100")
+    func nsCoreDataConstantSanity() async {
+        // Future-proof anchor: if Apple ever rotates the Core Data error codes,
+        // this test pins the integer the classifier's NSError fallback compares
+        // against (and which `bridgedNSErrorHashMismatchWipes` constructs).
+        #expect(CocoaError.Code.persistentStoreIncompatibleVersionHash.rawValue == 134100)
+    }
 
     // MARK: - Non-schema cases (must not wipe — would destroy user data)
 
     @Test("CocoaError fileWriteOutOfSpace does not wipe (disk full)")
     func diskFullDoesNotWipe() async {
         #expect(PeachApp.shouldWipeStore(after: CocoaError(.fileWriteOutOfSpace)) == false)
+    }
+
+    @Test("NSError with NSMigrationMissingMappingModelError (134140) does not wipe")
+    func migrationMissingMappingModelDoesNotWipe() async {
+        // Regression anchor: `134140` was previously hardcoded in the classifier
+        // by mistake (it's NSMigrationMissingMappingModelError, not the hash
+        // mismatch). This test makes sure that confusion can't return — a real
+        // 134140 NSError must NOT trigger a wipe of the user's store.
+        let migrationError: Error = NSError(domain: NSCocoaErrorDomain, code: 134140)
+        #expect(PeachApp.shouldWipeStore(after: migrationError) == false)
     }
 
     @Test("CocoaError fileWriteNoPermission does not wipe")

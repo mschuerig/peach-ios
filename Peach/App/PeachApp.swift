@@ -355,21 +355,13 @@ struct PeachApp: App {
              SwiftDataError.unknownSchema:
             return true
         default:
-            // Match both `CocoaError(.persistentStoreIncompatibleVersionHash)` (the
-            // Swift wrapper) and the raw NSError shape SwiftData may pass through
-            // (`NSCocoaErrorDomain` + 134140 = `NSPersistentStoreIncompatibleVersionHashError`).
-            // The literal 134140 is the stable Core Data constant; relying on
-            // `CocoaError.Code.persistentStoreIncompatibleVersionHash.rawValue` doesn't
-            // work in the test target's compilation context.
-            if let cocoaError = error as? CocoaError,
-               cocoaError.code == .persistentStoreIncompatibleVersionHash {
-                return true
-            }
+            // Match the raw NSError shape SwiftData may pass through unwrapped:
+            // `NSCocoaErrorDomain` + `NSPersistentStoreIncompatibleVersionHashError`.
+            // `CocoaError(.persistentStoreIncompatibleVersionHash)` bridges to the same
+            // shape via `as NSError`, so a single check covers both forms.
             let nserror = error as NSError
-            if nserror.domain == NSCocoaErrorDomain, nserror.code == 134140 {
-                return true
-            }
-            return false
+            return nserror.domain == NSCocoaErrorDomain
+                && nserror.code == CocoaError.Code.persistentStoreIncompatibleVersionHash.rawValue
         }
     }
 
