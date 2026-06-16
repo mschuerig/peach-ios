@@ -18,7 +18,7 @@ struct ChromaticConstructionTrialTests {
         #expect(trial.placed.isEmpty)
         #expect(trial.active?.index == 1)
         #expect(trial.active?.preservedValue == nil)
-        #expect(!trial.isComplete)
+        #expect(trial.isComplete == false)
     }
 
     @Test("place advances active by one and appends a DetunedMIDINote anchored at lowerAnchor")
@@ -82,7 +82,7 @@ struct ChromaticConstructionTrialTests {
         #expect(trial.active?.index == 6)
         #expect(trial.active?.preservedValue == DetunedMIDINote(note: MIDINote(60), offset: Cents(600.0)))
         #expect(trial.placed.count == 5)
-        #expect(!trial.isComplete)
+        #expect(trial.isComplete == false)
     }
 
     @Test("reopenFinalPosition is a no-op when trial is not complete")

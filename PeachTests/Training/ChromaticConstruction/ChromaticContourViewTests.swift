@@ -74,7 +74,7 @@ struct ChromaticContourViewTests {
         let p = ChromaticContourView.renderedPoint(forStepIndex: 1, cents: Cents(50), path: path, in: drawable)
         #expect(p.x == drawable.width * 0.5)
         #expect(p.y == drawable.midY)
-        #expect(!p.y.isNaN)
+        #expect(p.y.isNaN == false)
     }
 
     @Test("slider clamp confines drag values to ±sliderRangeCents around prior")

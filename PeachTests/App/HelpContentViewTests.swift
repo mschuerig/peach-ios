@@ -118,8 +118,8 @@ struct HelpContentViewTests {
         let pitchOnly: [any TrainingDiscipline] = [UnisonPitchDiscriminationDiscipline()]
         TrainingDisciplineRegistry.withOverride(disciplines: pitchOnly) {
             let titles = HelpContent.settingsHelpSections().map(\.title)
-            #expect(!titles.contains(String(localized: "Rhythm")))
-            #expect(!titles.contains(String(localized: "Gap Positions")))
+            #expect(titles.contains(String(localized: "Rhythm")) == false)
+            #expect(titles.contains(String(localized: "Gap Positions")) == false)
         }
     }
 
@@ -130,7 +130,7 @@ struct HelpContentViewTests {
             let titles = HelpContent.profileHelpSections().map(\.title)
             let spectrogramTitle = String(localized: "Rhythm Spectrogram",
                                           comment: "Spectrogram overview help title")
-            #expect(!titles.contains(spectrogramTitle))
+            #expect(titles.contains(spectrogramTitle) == false)
         }
     }
 }

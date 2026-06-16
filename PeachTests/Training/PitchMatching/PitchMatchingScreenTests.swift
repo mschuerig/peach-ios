@@ -38,7 +38,7 @@ struct PitchMatchingScreenTests {
     @Test("each help section has a non-empty body")
     func helpSectionBodiesNonEmpty() async {
         for section in PitchMatchingHelp.trainingScreen {
-            #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
+            #expect(section.body.isEmpty == false, "Section '\(section.title)' has empty body")
         }
     }
 

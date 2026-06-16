@@ -130,7 +130,7 @@ struct BeatTests {
 
         let subdivisionDuration = Self.beatDuration / 4
         let gapOffset = Int64(1) * subdivisionDuration
-        #expect(!noteOns.contains { $0.sampleOffset == gapOffset })
+        #expect(noteOns.contains { $0.sampleOffset == gapOffset } == false)
     }
 
     @Test("beat consisting entirely of rests produces no events")

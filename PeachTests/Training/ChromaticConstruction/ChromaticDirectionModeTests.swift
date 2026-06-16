@@ -27,7 +27,7 @@ struct ChromaticDirectionModeTests {
         ]
         for interval in allowed {
             for mode in ChromaticDirectionMode.allCases {
-                #expect(!mode.outerIntervals(for: interval).isEmpty)
+                #expect(mode.outerIntervals(for: interval).isEmpty == false)
             }
         }
     }

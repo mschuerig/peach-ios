@@ -174,7 +174,7 @@ struct StartScreenTests {
             // In the test target, Bundle.main is the test runner bundle so
             // CFBundleShortVersionString is absent and appVersion falls back
             // to "Unknown". This verifies the fallback produces a non-empty string.
-            #expect(!version.isEmpty)
+            #expect(version.isEmpty == false)
         }
     }
 

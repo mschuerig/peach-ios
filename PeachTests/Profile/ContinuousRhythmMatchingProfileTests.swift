@@ -19,7 +19,7 @@ struct ContinuousRhythmMatchingProfileTests {
             return false
         }
         #expect(allAreRhythmKeys)
-        #expect(!keys.isEmpty)
+        #expect(keys.isEmpty == false)
     }
 
     // MARK: - Profile Card Integration
@@ -51,7 +51,7 @@ struct ContinuousRhythmMatchingProfileTests {
         let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
         let name = TrainingDisciplineID.continuousRhythmMatching.config.displayName
-        #expect(!summary.contains(name))
+        #expect(summary.contains(name) == false)
     }
 
     @Test("ProgressTimeline reports noData for continuous rhythm matching with no data")
@@ -107,7 +107,7 @@ struct ContinuousRhythmMatchingProfileTests {
         let data = SpectrogramData.compute(mode: .continuousRhythmMatching, profile: profile, timeBuckets: buckets)
 
         #expect(data.trainedRanges == [.moderate])
-        #expect(!data.columns.isEmpty)
+        #expect(data.columns.isEmpty == false)
     }
 
     // MARK: - Share Image File Name

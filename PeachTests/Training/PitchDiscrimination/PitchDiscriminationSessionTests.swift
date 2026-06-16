@@ -199,7 +199,7 @@ struct PitchDiscriminationSessionTests {
         f.session.start(settings: defaultTestSettings)
         try await waitForState(f.session, .awaitingAnswer)
 
-        #expect(!f.session.isIntervalMode)
+        #expect(f.session.isIntervalMode == false)
     }
 
     @Test("isIntervalMode is true for perfectFifth")

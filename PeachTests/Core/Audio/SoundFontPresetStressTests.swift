@@ -48,7 +48,7 @@ struct SoundFontPresetStressTests {
     @Test("Every preset loads and plays a note without crash")
     func presetSmoke() async throws {
         let allPresets = makeLibrary().melodicPresets
-        #expect(!allPresets.isEmpty, "SoundFontLibrary discovered no presets")
+        #expect(allPresets.isEmpty == false, "SoundFontLibrary discovered no presets")
 
         for preset in allPresets {
             do {
@@ -71,7 +71,7 @@ struct SoundFontPresetStressTests {
         let presets = makeLibrary().melodicPresets.filter {
             Self.representativeRawValues.contains($0.rawValue)
         }
-        #expect(!presets.isEmpty, "No representative presets found")
+        #expect(presets.isEmpty == false, "No representative presets found")
 
         for preset in presets {
             let player = try makePlayer(preset: preset)

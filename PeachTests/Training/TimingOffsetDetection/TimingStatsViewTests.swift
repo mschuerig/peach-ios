@@ -38,21 +38,21 @@ struct TimingStatsViewTests {
     @Test("latest accessibility label is non-empty and contains percentage")
     func latestAccessibilityLabel() async {
         let label = TimingStatsView.latestAccessibilityLabel(4.0, trend: .improving)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
         #expect(label.contains("4%"))
     }
 
     @Test("best accessibility label is non-empty and contains percentage")
     func bestAccessibilityLabel() async {
         let label = TimingStatsView.bestAccessibilityLabel(2.0)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
         #expect(label.contains("2%"))
     }
 
     @Test("latest accessibility label without trend is non-empty")
     func latestAccessibilityLabelNoTrend() async {
         let label = TimingStatsView.latestAccessibilityLabel(10.0, trend: nil)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
         #expect(label.contains("10%"))
     }
 }

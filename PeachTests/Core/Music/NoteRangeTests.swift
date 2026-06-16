@@ -80,27 +80,27 @@ struct NoteRangeTests {
     @Test("does not contain note below lowerBound")
     func doesNotContainBelow() async {
         let range = NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84))
-        #expect(!range.contains(MIDINote(35)))
+        #expect(range.contains(MIDINote(35)) == false)
     }
 
     @Test("does not contain note above upperBound")
     func doesNotContainAbove() async {
         let range = NoteRange(lowerBound: MIDINote(36), upperBound: MIDINote(84))
-        #expect(!range.contains(MIDINote(85)))
+        #expect(range.contains(MIDINote(85)) == false)
     }
 
     @Test("contains note at MIDI zero boundary")
     func containsMIDIZero() async {
         let range = NoteRange(lowerBound: MIDINote(0), upperBound: MIDINote(12))
         #expect(range.contains(MIDINote(0)))
-        #expect(!range.contains(MIDINote(127)))
+        #expect(range.contains(MIDINote(127)) == false)
     }
 
     @Test("contains note at MIDI 127 boundary")
     func containsMIDI127() async {
         let range = NoteRange(lowerBound: MIDINote(115), upperBound: MIDINote(127))
         #expect(range.contains(MIDINote(127)))
-        #expect(!range.contains(MIDINote(0)))
+        #expect(range.contains(MIDINote(0)) == false)
     }
 
     // MARK: - clamped

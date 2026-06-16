@@ -74,7 +74,7 @@ struct TrainingRecordTests {
         #expect(envelope.disciplineIdentifier == DummyPayload.disciplineIdentifier)
         #expect(envelope.payloadVersion == DummyPayload.currentPayloadVersion)
         #expect(abs(envelope.timestamp.timeIntervalSince(timestamp)) < 0.001)
-        #expect(!envelope.payloadData.isEmpty)
+        #expect(envelope.payloadData.isEmpty == false)
     }
 
     @Test("JSONEnvelope round-trip preserves payload contents")

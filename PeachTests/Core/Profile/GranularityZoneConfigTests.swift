@@ -55,8 +55,8 @@ struct GranularityZoneConfigTests {
         let janLabel = config.formatAxisLabel(janDate)
         let junLabel = config.formatAxisLabel(junDate)
         #expect(janLabel != junLabel)
-        #expect(!janLabel.isEmpty)
-        #expect(!junLabel.isEmpty)
+        #expect(janLabel.isEmpty == false)
+        #expect(junLabel.isEmpty == false)
     }
 
     // MARK: - DailyZoneConfig Tests
@@ -101,8 +101,8 @@ struct GranularityZoneConfigTests {
         let monLabel = config.formatAxisLabel(monDate)
         let friLabel = config.formatAxisLabel(friDate)
         #expect(monLabel != friLabel)
-        #expect(!monLabel.isEmpty)
-        #expect(!friLabel.isEmpty)
+        #expect(monLabel.isEmpty == false)
+        #expect(friLabel.isEmpty == false)
     }
 
     // MARK: - SessionZoneConfig Tests
@@ -118,7 +118,7 @@ struct GranularityZoneConfigTests {
         let config = SessionZoneConfig()
         let now = Date()
         let label = config.formatAxisLabel(now)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
     }
 
     // MARK: - Protocol Conformance Tests

@@ -103,7 +103,7 @@ struct ProgressChartViewTests {
     @Test("trend label for improving")
     func trendLabelImproving() async {
         let label = TrainingStatsView.trendLabel(.improving)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
     }
 
     // MARK: - EWMA Formatting
@@ -129,7 +129,7 @@ struct ProgressChartViewTests {
             trend: .improving,
             unitLabel: "cents"
         )
-        #expect(!value.isEmpty)
+        #expect(value.isEmpty == false)
     }
 
     // MARK: - Zone Separator Metadata (Index-Based)
@@ -342,9 +342,9 @@ struct ProgressChartViewTests {
         ]
 
         let label = ChartData.formatAxisLabel(base, size: .month, index: 0, buckets: buckets)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
         // Should not end with a trailing dot (German abbreviation fix)
-        #expect(!label.hasSuffix("."))
+        #expect(label.hasSuffix(".") == false)
     }
 
     // MARK: - annotationDateLabel
@@ -553,7 +553,7 @@ struct ProgressChartViewTests {
         for discipline in disciplines {
             let name = discipline.config.displayName
             let label = String(localized: "Share \(name) chart")
-            #expect(!label.isEmpty)
+            #expect(label.isEmpty == false)
             #expect(label.contains(name),
                     "Expected label to contain '\(name)' but got: \(label)")
             for other in disciplines where other.id != discipline.id {

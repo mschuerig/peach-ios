@@ -16,8 +16,8 @@ struct TempoRangeTests {
     @Test("contains returns false for tempo outside bounds")
     func containsOutsideBounds() async {
         let range = TempoRange.moderate
-        #expect(!range.contains(TempoBPM(79)))
-        #expect(!range.contains(TempoBPM(100)))
+        #expect(range.contains(TempoBPM(79)) == false)
+        #expect(range.contains(TempoBPM(100)) == false)
     }
 
     @Test("range(for:) returns correct range")
@@ -90,7 +90,7 @@ struct TempoRangeTests {
     @Test("defaultRanges displayName returns non-empty strings")
     func defaultRangesDisplayNames() async {
         for range in TempoRange.defaultRanges {
-            #expect(!range.displayName.isEmpty)
+            #expect(range.displayName.isEmpty == false)
         }
     }
 }

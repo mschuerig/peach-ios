@@ -22,7 +22,7 @@ struct ChartDataTests {
 
         #expect(chartData.buckets.count == 5)
         #expect(chartData.positions.count == 5)
-        #expect(!chartData.lineData.isEmpty)
+        #expect(chartData.lineData.isEmpty == false)
         #expect(chartData.yDomain.lowerBound == 0.0)
     }
 
@@ -123,6 +123,6 @@ struct ChartDataTests {
 
         let chartData = ChartData(buckets: buckets)
 
-        #expect(!chartData.needsScrolling)
+        #expect(chartData.needsScrolling == false)
     }
 }

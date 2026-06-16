@@ -54,7 +54,7 @@ struct TrainingDataExporterTests {
         #expect(lines.count == 4)
         #expect(lines[0] == CSVExportSchema.metadataLine)
         #expect(lines[1] == CSVExportSchema.headerRow)
-        #expect(!csv.hasSuffix("\n"))
+        #expect(csv.hasSuffix("\n") == false)
 
         // Verify pitch matching row (earlier timestamp — first data row)
         let pmFields = lines[2].split(separator: ",", omittingEmptySubsequences: false).map(String.init)
@@ -205,7 +205,7 @@ struct TrainingDataExporterTests {
         let csv = try TrainingDataExporter.export(from: store)
         let lines = csv.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
 
-        #expect(!lines.isEmpty)
+        #expect(lines.isEmpty == false)
         #expect(lines[0] == CSVExportSchema.metadataLine)
         #expect(lines[1] == CSVExportSchema.headerRow)
     }

@@ -24,7 +24,7 @@ struct PianoKeyboardLayoutTests {
 
     @Test("C# is a black key")
     func cSharpIsBlack() async {
-        #expect(!PianoKeyboardLayout.isWhiteKey(MIDINote(61)))
+        #expect(PianoKeyboardLayout.isWhiteKey(MIDINote(61)) == false)
     }
 
     @Test("B is a white key")
@@ -44,9 +44,9 @@ struct PianoKeyboardLayoutTests {
 
     @Test("Non-C notes are not octave boundaries")
     func nonCNotBoundary() async {
-        #expect(!PianoKeyboardLayout.isOctaveBoundary(MIDINote(61)))
-        #expect(!PianoKeyboardLayout.isOctaveBoundary(MIDINote(69)))
-        #expect(!PianoKeyboardLayout.isOctaveBoundary(MIDINote(71)))
+        #expect(PianoKeyboardLayout.isOctaveBoundary(MIDINote(61)) == false)
+        #expect(PianoKeyboardLayout.isOctaveBoundary(MIDINote(69)) == false)
+        #expect(PianoKeyboardLayout.isOctaveBoundary(MIDINote(71)) == false)
     }
 
     // MARK: - White-key count

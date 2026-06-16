@@ -14,7 +14,7 @@ struct SoundFontLibraryTests {
     @Test("Discovers presets from explicit SF2 URL")
     func discoversPresetsFromURL() async {
         let library = makeLibrary()
-        #expect(!library.melodicPresets.isEmpty)
+        #expect(library.melodicPresets.isEmpty == false)
     }
 
     @Test("Excludes drum kits (bank >= 120)")

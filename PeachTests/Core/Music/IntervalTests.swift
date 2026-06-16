@@ -172,7 +172,7 @@ struct IntervalTests {
     @Test("all intervals have non-empty name")
     func allIntervalsHaveName() async {
         for interval in Interval.allCases {
-            #expect(!interval.name.isEmpty)
+            #expect(interval.name.isEmpty == false)
         }
     }
 

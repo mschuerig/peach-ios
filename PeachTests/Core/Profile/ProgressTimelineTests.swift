@@ -591,7 +591,7 @@ struct ProgressTimelineTests {
             return
         }
         let subs = timeline.subBuckets(for: .unisonPitchDiscrimination, expanding: monthBucket)
-        #expect(!subs.isEmpty)
+        #expect(subs.isEmpty == false)
         for sub in subs {
             #expect(sub.bucketSize == .day)
         }
@@ -614,7 +614,7 @@ struct ProgressTimelineTests {
             return
         }
         let subs = timeline.subBuckets(for: .unisonPitchDiscrimination, expanding: dayBucket)
-        #expect(!subs.isEmpty)
+        #expect(subs.isEmpty == false)
         for sub in subs {
             #expect(sub.bucketSize == .session)
         }
@@ -678,7 +678,7 @@ struct ProgressTimelineTests {
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.allGranularityBuckets(for: .unisonPitchDiscrimination)
 
-        #expect(!buckets.isEmpty)
+        #expect(buckets.isEmpty == false)
         for bucket in buckets {
             #expect(bucket.bucketSize == .session)
         }
@@ -782,9 +782,9 @@ struct ProgressTimelineTests {
         let dayBuckets = buckets.filter { $0.bucketSize == .day }
         let sessionBuckets = buckets.filter { $0.bucketSize == .session }
 
-        #expect(!monthBuckets.isEmpty)
-        #expect(!dayBuckets.isEmpty)
-        #expect(!sessionBuckets.isEmpty)
+        #expect(monthBuckets.isEmpty == false)
+        #expect(dayBuckets.isEmpty == false)
+        #expect(sessionBuckets.isEmpty == false)
 
         if let lastMonth = monthBuckets.last, let firstDay = dayBuckets.first {
             #expect(lastMonth.periodStart < firstDay.periodStart)
@@ -811,7 +811,7 @@ struct ProgressTimelineTests {
         let buckets = timeline.allGranularityBuckets(for: .unisonPitchDiscrimination)
 
         let sizes = Set(buckets.map(\.bucketSize))
-        #expect(!sizes.contains(.month))
+        #expect(sizes.contains(.month) == false)
         #expect(sizes.contains(.day))
         #expect(sizes.contains(.session))
     }
@@ -836,8 +836,8 @@ struct ProgressTimelineTests {
 
         let sessionBuckets = buckets.filter { $0.bucketSize == .session }
         let dayBuckets = buckets.filter { $0.bucketSize == .day }
-        #expect(!sessionBuckets.isEmpty, "Record after midnight today should be in session zone")
-        #expect(!dayBuckets.isEmpty, "Record before midnight today should be in day zone")
+        #expect(sessionBuckets.isEmpty == false, "Record after midnight today should be in session zone")
+        #expect(dayBuckets.isEmpty == false, "Record before midnight today should be in day zone")
     }
 
     @Test("day zone covers 7 calendar days before today")
@@ -859,8 +859,8 @@ struct ProgressTimelineTests {
 
         let dayBuckets = buckets.filter { $0.bucketSize == .day }
         let monthBuckets = buckets.filter { $0.bucketSize == .month }
-        #expect(!dayBuckets.isEmpty, "Record within 7 calendar days should be in day zone")
-        #expect(!monthBuckets.isEmpty, "Record older than 7 calendar days should be in month zone")
+        #expect(dayBuckets.isEmpty == false, "Record within 7 calendar days should be in day zone")
+        #expect(monthBuckets.isEmpty == false, "Record older than 7 calendar days should be in month zone")
     }
 
     @Test("last monthly bucket is truncated at day zone start date")
@@ -883,8 +883,8 @@ struct ProgressTimelineTests {
         let monthBuckets = buckets.filter { $0.bucketSize == .month }
         let dayBuckets = buckets.filter { $0.bucketSize == .day }
 
-        #expect(!monthBuckets.isEmpty)
-        #expect(!dayBuckets.isEmpty)
+        #expect(monthBuckets.isEmpty == false)
+        #expect(dayBuckets.isEmpty == false)
 
         if let lastMonth = monthBuckets.last {
             #expect(lastMonth.periodEnd <= dayStart, "Monthly bucket should be truncated at dayStart")
@@ -905,7 +905,7 @@ struct ProgressTimelineTests {
         let timeline = makeTimeline(pitchDiscriminationRecords: records)
         let buckets = timeline.allGranularityBuckets(for: .unisonPitchDiscrimination)
 
-        #expect(!buckets.isEmpty)
+        #expect(buckets.isEmpty == false)
         let dayBuckets = buckets.filter { $0.bucketSize == .day }
         let monthBuckets = buckets.filter { $0.bucketSize == .month }
         #expect(dayBuckets.isEmpty, "New user with only today's data should have no day buckets")
@@ -1060,7 +1060,7 @@ struct ProgressTimelineTests {
         }
         let timeline = makeTimeline(timingOffsetDetectionRecords: records)
         let buckets = timeline.buckets(for: .timingOffsetDetection)
-        #expect(!buckets.isEmpty)
+        #expect(buckets.isEmpty == false)
         let totalRecords = buckets.reduce(0) { $0 + $1.recordCount }
         #expect(totalRecords == 5)
     }

@@ -153,7 +153,7 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         #expect(data.trainedRanges == [.slow])
-        #expect(!data.columns.isEmpty)
+        #expect(data.columns.isEmpty == false)
     }
 
     @Test("multiple tempo ranges produce sorted trained ranges")
@@ -178,9 +178,9 @@ struct SpectrogramDataTests {
             timeBuckets: timeline.allGranularityBuckets(for: .timingOffsetDetection)
         )
         // moderate range has no data — must not appear in trainedRanges or any cell
-        #expect(!data.trainedRanges.contains(.moderate))
+        #expect(data.trainedRanges.contains(.moderate) == false)
         for column in data.columns {
-            #expect(!column.cells.contains(where: { $0.tempoRange == .moderate }))
+            #expect(column.cells.contains(where: { $0.tempoRange == .moderate }) == false)
         }
     }
 
@@ -325,7 +325,7 @@ struct SpectrogramDataTests {
     @Test("tempo range display names are localized")
     func tempoRangeDisplayNames() async {
         for range in TempoRange.defaultRanges {
-            #expect(!range.displayName.isEmpty)
+            #expect(range.displayName.isEmpty == false)
         }
     }
 

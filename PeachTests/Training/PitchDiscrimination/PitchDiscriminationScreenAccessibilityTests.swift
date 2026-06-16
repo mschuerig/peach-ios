@@ -25,13 +25,13 @@ struct PitchDiscriminationScreenAccessibilityTests {
     @Test("PitchDiscriminationFeedbackIndicator correct state returns non-empty label")
     func feedbackIndicatorCorrectLabel() async throws {
         let label = PitchDiscriminationFeedbackIndicator.accessibilityLabel(isCorrect: true)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
     }
 
     @Test("PitchDiscriminationFeedbackIndicator incorrect state returns non-empty label")
     func feedbackIndicatorIncorrectLabel() async throws {
         let label = PitchDiscriminationFeedbackIndicator.accessibilityLabel(isCorrect: false)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
     }
 
     @Test("PitchDiscriminationFeedbackIndicator correct and incorrect labels are distinct")
@@ -51,8 +51,8 @@ struct PitchDiscriminationScreenAccessibilityTests {
         // This verifies the underlying localization keys are valid and distinct.
         let higher = String(localized: "Higher")
         let lower = String(localized: "Lower")
-        #expect(!higher.isEmpty)
-        #expect(!lower.isEmpty)
+        #expect(higher.isEmpty == false)
+        #expect(lower.isEmpty == false)
         #expect(higher != lower,
                 "Higher and Lower labels must be distinct for VoiceOver navigation")
     }

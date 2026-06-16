@@ -43,7 +43,7 @@ struct TrainingDisciplineRegistryTests {
     @Test("every active category has at least one registered discipline")
     func activeCategoryNonEmpty() async {
         for category in registry.activeCategories {
-            #expect(!registry.disciplines(in: category).isEmpty,
+            #expect(registry.disciplines(in: category).isEmpty == false,
                     "Category \(category) is active but has no disciplines")
         }
     }
@@ -85,7 +85,7 @@ struct TrainingDisciplineRegistryTests {
 
         for discipline in registry.all {
             for column in discipline.csvColumns {
-                #expect(!commonSet.contains(column),
+                #expect(commonSet.contains(column) == false,
                         "Discipline \(discipline.csvTrainingType) declares common column '\(column)'")
             }
         }

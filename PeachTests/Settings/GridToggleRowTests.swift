@@ -46,12 +46,12 @@ struct GridToggleRowTests {
     @Test("isLastRemaining returns false when multiple elements selected")
     func isLastRemainingFalseMultiple() {
         let selection: Set<Fruit> = [.apple, .banana]
-        #expect(!GridToggleRow<Fruit>.isLastRemaining(.apple, in: selection))
+        #expect(GridToggleRow<Fruit>.isLastRemaining(.apple, in: selection) == false)
     }
 
     @Test("isLastRemaining returns false for non-selected element")
     func isLastRemainingFalseNotSelected() {
         let selection: Set<Fruit> = [.banana]
-        #expect(!GridToggleRow<Fruit>.isLastRemaining(.apple, in: selection))
+        #expect(GridToggleRow<Fruit>.isLastRemaining(.apple, in: selection) == false)
     }
 }

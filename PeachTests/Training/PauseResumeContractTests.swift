@@ -19,7 +19,7 @@ struct PitchMatchingSessionPauseResumeTests {
         #expect(session.currentTrial?.referenceNote == trialBefore.referenceNote)
         #expect(session.currentTrial?.targetNote == trialBefore.targetNote)
         #expect(session.currentTrial?.initialCentOffset == trialBefore.initialCentOffset)
-        #expect(!session.isIdle, "paused session must not appear idle to the coordinator")
+        #expect(session.isIdle == false, "paused session must not appear idle to the coordinator")
         session.stop()
     }
 
@@ -129,7 +129,7 @@ struct PitchDiscriminationSessionPauseResumeTests {
         fixture.session.pause()
 
         #expect(fixture.session.currentInterval == intervalBefore)
-        #expect(!fixture.session.isIdle, "paused session must not appear idle to the coordinator")
+        #expect(fixture.session.isIdle == false, "paused session must not appear idle to the coordinator")
         fixture.session.stop()
     }
 
@@ -227,11 +227,11 @@ struct ContinuousRhythmMatchingSessionPauseResumeTests {
     func pauseKeepsNonIdle() {
         let session = makeSession()
         session.start(settings: settings)
-        #expect(!session.isIdle)
+        #expect(session.isIdle == false)
 
         session.pause()
 
-        #expect(!session.isIdle, "paused session must not appear idle to the coordinator")
+        #expect(session.isIdle == false, "paused session must not appear idle to the coordinator")
         session.stop()
     }
 
@@ -243,7 +243,7 @@ struct ContinuousRhythmMatchingSessionPauseResumeTests {
 
         session.resume()
 
-        #expect(!session.isIdle)
+        #expect(session.isIdle == false)
         #expect(session.cyclesInCurrentTrial == 0)
         session.stop()
     }

@@ -209,7 +209,7 @@ struct NoteRangeSelectorTests {
 
     @Test("Width below 416 pt requires scrolling")
     func widthJustBelowThresholdScrolls() async {
-        #expect(!NoteRangeSelector.fitsWithoutScrolling(availableWidth: 415))
+        #expect(NoteRangeSelector.fitsWithoutScrolling(availableWidth: 415) == false)
     }
 
     @Test("Width equal to 416 pt fits without scrolling")
@@ -323,7 +323,7 @@ struct NoteRangeSelectorTests {
     func unknownLocaleFallsBackToEnglish() async {
         let labels = NoteRangeSelector.voiceControlInputLabels(for: MIDINote(61), locale: Locale(identifier: "fr_FR"))
         #expect(labels.contains("C sharp 4"))
-        #expect(!labels.contains("Cis 4"))
+        #expect(labels.contains("Cis 4") == false)
     }
 
     @Test("Out-of-octave-table notes fall back to digit-only spoken form")
@@ -333,7 +333,7 @@ struct NoteRangeSelectorTests {
         #expect(labels.contains("A-1"))
         #expect(labels.contains("A -1"))
         // Digit fallback only — never coined as "A negative one" / "A minus one".
-        #expect(!labels.contains("A negative one"))
-        #expect(!labels.contains("A minus one"))
+        #expect(labels.contains("A negative one") == false)
+        #expect(labels.contains("A minus one") == false)
     }
 }

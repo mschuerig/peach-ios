@@ -11,7 +11,7 @@ struct SF2PresetParserTests {
     func parsesBundledSF2() async throws {
         let url = try sf2URL()
         let presets = try SF2PresetParser.parsePresets(from: url)
-        #expect(!presets.isEmpty)
+        #expect(presets.isEmpty == false)
     }
 
     @Test("Preset count matches expected total (150 presets)")
@@ -66,7 +66,7 @@ struct SF2PresetParserTests {
         let url = try sf2URL()
         let presets = try SF2PresetParser.parsePresets(from: url)
         for preset in presets {
-            #expect(!preset.name.contains("\0"), "Preset '\(preset.name)' contains null bytes")
+            #expect(preset.name.contains("\0") == false, "Preset '\(preset.name)' contains null bytes")
         }
     }
 
@@ -127,7 +127,7 @@ struct SF2PresetParserTests {
     @Test("isPercussion returns false for bank 0")
     func isNotPercussionBank0() async {
         let preset = SF2Preset(name: "Piano", program: 0, bank: 0)
-        #expect(!preset.isPercussion)
+        #expect(preset.isPercussion == false)
     }
 
     @Test("bankMSB returns percussionBankMSB for percussion preset")

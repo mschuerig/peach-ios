@@ -25,7 +25,7 @@ struct TrainingSessionTests {
         fixture.session.start(settings: defaultTestSettings)
         try await waitForState(fixture.session, .awaitingAnswer)
         let trainingSession: TrainingSession = fixture.session
-        #expect(!trainingSession.isIdle)
+        #expect(trainingSession.isIdle == false)
         trainingSession.stop()
     }
 
@@ -35,7 +35,7 @@ struct TrainingSessionTests {
         session.start(settings: defaultPitchMatchingTestSettings)
         try await waitForState(session, .awaitingSliderTouch)
         let trainingSession: TrainingSession = session
-        #expect(!trainingSession.isIdle)
+        #expect(trainingSession.isIdle == false)
         trainingSession.stop()
     }
 

@@ -30,6 +30,6 @@ struct ProfileScreenLayoutTests {
         let timeline = ProgressTimeline(profile: PerceptualProfile())
         let summary = ProfileScreen.accessibilitySummary(progressTimeline: timeline)
 
-        #expect(!summary.isEmpty)
+        #expect(summary.isEmpty == false)
     }
 }

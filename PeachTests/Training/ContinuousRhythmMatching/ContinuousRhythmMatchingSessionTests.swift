@@ -100,7 +100,7 @@ struct ContinuousRhythmMatchingSessionTests {
     func startsInIdleState() async {
         let f = makeSession()
         #expect(f.session.isIdle)
-        #expect(!f.session.isRunning)
+        #expect(f.session.isRunning == false)
         #expect(f.session.currentBeatPosition == nil)
         #expect(f.session.gapPositionInCurrentBeat == nil)
         #expect(f.session.cyclesInCurrentTrial == 0)
@@ -117,7 +117,7 @@ struct ContinuousRhythmMatchingSessionTests {
         await f.sequencer.waitForStart()
 
         #expect(f.session.isRunning)
-        #expect(!f.session.isIdle)
+        #expect(f.session.isIdle == false)
         #expect(f.sequencer.startCallCount == 1)
         #expect(f.sequencer.lastTempo == TempoBPM(120))
 
@@ -148,7 +148,7 @@ struct ContinuousRhythmMatchingSessionTests {
         f.session.stop()
 
         #expect(f.session.isIdle)
-        #expect(!f.session.isRunning)
+        #expect(f.session.isRunning == false)
         #expect(f.session.currentBeatPosition == nil)
         #expect(f.session.gapPositionInCurrentBeat == nil)
         #expect(f.session.cyclesInCurrentTrial == 0)
@@ -779,7 +779,7 @@ struct ContinuousRhythmMatchingSessionTests {
 
         #expect(f.session.cyclesInCurrentTrial == 0)
         #expect(f.sequencer.playImmediateNoteCallCount == 0)
-        #expect(!f.session.showFeedback)
+        #expect(f.session.showFeedback == false)
 
         f.session.stop()
     }
@@ -886,7 +886,7 @@ struct ContinuousRhythmMatchingSessionTests {
         try await Task.sleep(for: .milliseconds(100))
 
         #expect(f.session.cyclesInCurrentTrial == 0)
-        #expect(!f.session.isRunning)
+        #expect(f.session.isRunning == false)
     }
 
     @Test("MIDI noteOn while session is not running is ignored")
@@ -897,7 +897,7 @@ struct ContinuousRhythmMatchingSessionTests {
 
         try await Task.sleep(for: .milliseconds(100))
 
-        #expect(!f.session.isRunning)
+        #expect(f.session.isRunning == false)
         #expect(f.session.cyclesInCurrentTrial == 0)
     }
 

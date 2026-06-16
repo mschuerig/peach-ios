@@ -14,14 +14,14 @@ struct TimingOffsetDetectionFeedbackViewTests {
     @Test("accessibility label for correct answer is non-empty and contains percentage")
     func accessibilityLabelCorrect() async {
         let label = TimingOffsetDetectionFeedbackView.accessibilityLabel(isCorrect: true, offsetPercentage: 4)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
         #expect(label.contains("4"))
     }
 
     @Test("accessibility label for incorrect answer is non-empty and contains percentage")
     func accessibilityLabelIncorrect() async {
         let label = TimingOffsetDetectionFeedbackView.accessibilityLabel(isCorrect: false, offsetPercentage: 12)
-        #expect(!label.isEmpty)
+        #expect(label.isEmpty == false)
         #expect(label.contains("12"))
     }
 

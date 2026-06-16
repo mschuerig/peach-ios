@@ -89,7 +89,7 @@ struct CSVImportParserTests {
     func missingVersionErrorDescription() async throws {
         let error = CSVImportError.missingVersion
         let desc = try #require(error.errorDescription)
-        #expect(!desc.isEmpty)
+        #expect(desc.isEmpty == false)
     }
 
     @Test("unsupportedVersion error description contains the version number")
@@ -178,7 +178,7 @@ struct CSVImportParserTests {
         let header = "trainingType,timestamp"
         let csv = CSVExportSchema.metadataLine + "\n" + header + "\n" + validPitchDiscriminationRow
         let result = CSVImportParser.parse(csv)
-        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } } == false)
         #expect(result.errors.contains { if case .invalidRowData = $0 { return true } else { return false } })
         #expect(pitchDiscriminations(from: result).isEmpty)
     }
@@ -191,7 +191,7 @@ struct CSVImportParserTests {
         let extendedRow = (baseFields + [""]).map { CSVParserHelpers.escapeField($0) }.joined(separator: ",")
         let csv = ([CSVExportSchema.metadataLine, extraHeader, extendedRow]).joined(separator: "\n")
         let result = CSVImportParser.parse(csv)
-        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } } == false)
         #expect(pitchDiscriminations(from: result).count == 1)
     }
 
@@ -210,7 +210,7 @@ struct CSVImportParserTests {
 
         let csv = ([CSVExportSchema.metadataLine, header, row]).joined(separator: "\n")
         let result = CSVImportParser.parse(csv)
-        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } } == false)
         #expect(pitchDiscriminations(from: result).count == 1)
     }
 
@@ -233,7 +233,7 @@ struct CSVImportParserTests {
             validPitchMatchingRow,
         ]).joined(separator: "\n")
         let result = CSVImportParser.parse(csv)
-        #expect(!result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } })
+        #expect(result.errors.contains { if case .invalidHeader = $0 { return true } else { return false } } == false)
         #expect(pitchDiscriminations(from: result).count == 1)
         #expect(pitchMatchings(from: result).count == 1)
     }
@@ -406,7 +406,7 @@ struct CSVImportParserTests {
         let result = CSVImportParser.parse(csv)
         #expect(pitchDiscriminations(from: result).isEmpty)
         #expect(pitchMatchings(from: result).isEmpty)
-        #expect(!result.errors.isEmpty)
+        #expect(result.errors.isEmpty == false)
     }
 
     @Test("CSV with mix of valid and invalid rows parses valid rows")

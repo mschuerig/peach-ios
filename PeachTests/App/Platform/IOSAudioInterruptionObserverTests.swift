@@ -36,7 +36,7 @@ struct IOSAudioInterruptionObserverTests {
         )
 
         try? await Task.sleep(for: .milliseconds(50))
-        #expect(!f.stopCalled())
+        #expect(f.stopCalled() == false)
         _ = f.observer
     }
 
@@ -51,7 +51,7 @@ struct IOSAudioInterruptionObserverTests {
         )
 
         try? await Task.sleep(for: .milliseconds(50))
-        #expect(!f.stopCalled())
+        #expect(f.stopCalled() == false)
         _ = f.observer
     }
 
@@ -71,7 +71,7 @@ struct IOSAudioInterruptionObserverTests {
         )
 
         try? await Task.sleep(for: .milliseconds(50))
-        #expect(!f.stopCalled())
+        #expect(f.stopCalled() == false)
         _ = f.observer
     }
 
@@ -139,7 +139,7 @@ struct IOSAudioInterruptionObserverTests {
         )
 
         try? await Task.sleep(for: .milliseconds(50))
-        #expect(!f.stopCalled())
+        #expect(f.stopCalled() == false)
         _ = f.observer
     }
 
@@ -154,7 +154,7 @@ struct IOSAudioInterruptionObserverTests {
         )
 
         try? await Task.sleep(for: .milliseconds(50))
-        #expect(!f.stopCalled())
+        #expect(f.stopCalled() == false)
         _ = f.observer
     }
 

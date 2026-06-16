@@ -16,7 +16,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.handleScenePhase(old: .active, new: .background)
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     @Test("does not crash when no training destination")
@@ -47,7 +47,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.handleScenePhase(old: .active, new: .inactive)
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     @Test("macOS: stops session on background")
@@ -59,7 +59,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.handleScenePhase(old: .active, new: .background)
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     // MARK: - Auto-Restart on Foreground Return
@@ -71,7 +71,7 @@ struct TrainingLifecycleCoordinatorTests {
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
         coordinator.stopCurrentSession()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
 
         coordinator.handleScenePhase(old: .background, new: .active)
 
@@ -86,11 +86,11 @@ struct TrainingLifecycleCoordinatorTests {
         coordinator.startCurrentSession()
         coordinator.stopCurrentSession()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
 
         coordinator.handleScenePhase(old: .inactive, new: .active)
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     // MARK: - macOS App Activation
@@ -104,7 +104,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.handleAppDeactivated()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     @Test("handleAppActivated restarts when auto-start enabled")
@@ -116,7 +116,7 @@ struct TrainingLifecycleCoordinatorTests {
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
         coordinator.startCurrentSession()
         coordinator.handleAppDeactivated()
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
 
         coordinator.handleAppActivated()
 
@@ -132,7 +132,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.handleAppActivated()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     // MARK: - Training Screen Lifecycle
@@ -155,7 +155,7 @@ struct TrainingLifecycleCoordinatorTests {
         coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
 
         #expect(coordinator.currentTrainingDestination == .timingOffsetDetection)
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     @Test("trainingScreenDisappeared stops session and clears destination")
@@ -166,7 +166,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.trainingScreenDisappeared()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
         #expect(coordinator.currentTrainingDestination == nil)
     }
 
@@ -176,7 +176,7 @@ struct TrainingLifecycleCoordinatorTests {
     func toggleTrainingStartsWhenIdle() {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
 
         coordinator.toggleTraining()
 
@@ -192,7 +192,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.toggleTraining()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     // MARK: - Auto-Start Setting
@@ -214,7 +214,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     @Test("macOS: auto-start setting enables auto-restart on foreground return")
@@ -275,12 +275,12 @@ struct TrainingLifecycleCoordinatorTests {
     func helpSheetDismissedDoesNotRestartOnMacOSWhenWasIdle() {
         let coordinator = makeCoordinator(policy: MacOSBackgroundPolicy())
         coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
 
         coordinator.helpSheetPresented()
         coordinator.helpSheetDismissed()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     // MARK: - startCurrentSession Dispatch
@@ -336,7 +336,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         coordinator.startCurrentSession()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
     }
 
     // MARK: - Menu Navigation
@@ -708,7 +708,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         for session in fixture.allSessions {
             if session === expected {
-                #expect(!session.isIdle, "expected session for \(destination) to start")
+                #expect(session.isIdle == false, "expected session for \(destination) to start")
             } else {
                 #expect(session.isIdle, "sibling session became active for \(destination)")
             }
@@ -726,7 +726,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         fixture.coordinator.handleAudioStopRequired()
 
-        #expect(!fixture.coordinator.isTrainingActive)
+        #expect(fixture.coordinator.isTrainingActive == false)
     }
 
     @Test("handleMediaServicesLost sets mediaRebuildPending")
@@ -750,7 +750,7 @@ struct TrainingLifecycleCoordinatorTests {
 
         // Session Tasks reference now-dead samplers; coordinator must stop
         // the session synchronously rather than wait for Reset.
-        #expect(!fixture.coordinator.isTrainingActive)
+        #expect(fixture.coordinator.isTrainingActive == false)
     }
 
     @Test("handleMediaServicesReset stops session and invokes rebuild closure")
@@ -784,7 +784,7 @@ struct TrainingLifecycleCoordinatorTests {
         try await Task.sleep(for: .milliseconds(50))
         await Task.yield()
 
-        #expect(!coordinator.isTrainingActive)
+        #expect(coordinator.isTrainingActive == false)
         #expect(rebuildCallCount == 1)
         #expect(coordinator.mediaRebuildPending == false)
     }

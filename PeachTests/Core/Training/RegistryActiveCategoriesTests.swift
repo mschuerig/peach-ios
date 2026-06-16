@@ -75,7 +75,7 @@ struct RegistryActiveCategoriesTests {
             ("p", .pitch),
             ("i", .intervals)
         )
-        #expect(!registry.activeCategories.contains(.rhythm))
+        #expect(registry.activeCategories.contains(.rhythm) == false)
     }
 
     @Test("activeCategories with a single rhythm discipline contains only rhythm")

@@ -198,13 +198,13 @@ struct SettingsTests {
     @Test("isLastRemaining returns false when multiple intervals selected")
     func isLastRemainingFalseMultiple() async {
         let selection = IntervalSelection([.up(.perfectFifth), .up(.majorThird)])
-        #expect(!selection.isLastRemaining(.up(.perfectFifth)))
+        #expect(selection.isLastRemaining(.up(.perfectFifth)) == false)
     }
 
     @Test("isLastRemaining returns false for interval not in selection")
     func isLastRemainingFalseNotInSelection() async {
         let selection = IntervalSelection([.up(.perfectFifth)])
-        #expect(!selection.isLastRemaining(.up(.majorThird)))
+        #expect(selection.isLastRemaining(.up(.majorThird)) == false)
     }
 
     // MARK: - NoteRange Integration
@@ -296,7 +296,7 @@ struct SettingsTests {
     @Test("each help section has a non-empty body")
     func helpSectionBodiesNonEmpty() async {
         for section in HelpContent.settingsHelpSections() {
-            #expect(!section.body.isEmpty, "Section '\(section.title)' has empty body")
+            #expect(section.body.isEmpty == false, "Section '\(section.title)' has empty body")
         }
     }
 
@@ -354,7 +354,7 @@ struct SettingsTests {
         // With upper at 84 (C6), lower can go up to 72 (C5)
         let range = SettingsKeys.lowerBoundRange(noteRangeMax: 84)
         #expect(range == 21...72)
-        #expect(!range.contains(73))
+        #expect(range.contains(73) == false)
 
         // With upper at 48 (C3), lower can go up to 36 (C2)
         let smallRange = SettingsKeys.lowerBoundRange(noteRangeMax: 48)
@@ -366,7 +366,7 @@ struct SettingsTests {
         // With lower at 36 (C2), upper must be at least 48 (C3)
         let range = SettingsKeys.upperBoundRange(noteRangeMin: 36)
         #expect(range == 48...108)
-        #expect(!range.contains(47))
+        #expect(range.contains(47) == false)
 
         // With lower at 60 (C4), upper must be at least 72 (C5)
         let highRange = SettingsKeys.upperBoundRange(noteRangeMin: 60)

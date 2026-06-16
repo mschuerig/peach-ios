@@ -95,17 +95,17 @@ struct PitchBendValueTests {
 
     @Test("isInNeutralZone returns false just below lower boundary (7935)")
     func neutralZoneBelowLower() async {
-        #expect(!PitchBendValue(7935).isInNeutralZone)
+        #expect(PitchBendValue(7935).isInNeutralZone == false)
     }
 
     @Test("isInNeutralZone returns false just above upper boundary (8449)")
     func neutralZoneAboveUpper() async {
-        #expect(!PitchBendValue(8449).isInNeutralZone)
+        #expect(PitchBendValue(8449).isInNeutralZone == false)
     }
 
     @Test("isInNeutralZone returns false at extremes")
     func neutralZoneExtremes() async {
-        #expect(!PitchBendValue(0).isInNeutralZone)
-        #expect(!PitchBendValue(16383).isInNeutralZone)
+        #expect(PitchBendValue(0).isInNeutralZone == false)
+        #expect(PitchBendValue(16383).isInNeutralZone == false)
     }
 }

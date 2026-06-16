@@ -19,7 +19,7 @@ struct SettingsScreenAggregationTests {
             let titles = HelpContent.settingsHelpSections().map(\.title)
             #expect(titles.first == String(localized: "Training Range"))
             #expect(titles.last == String(localized: "Data"))
-            #expect(!titles.contains(where: { $0 == "Tempo" || $0 == "Gap" }))
+            #expect(titles.contains(where: { $0 == "Tempo" || $0 == "Gap" }) == false)
         }
     }
 

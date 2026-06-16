@@ -15,13 +15,13 @@ struct BackgroundPolicyTests {
     @Test("iOS policy does not stop on inactive")
     func iosDoesNotStopOnInactive() async {
         let policy = IOSBackgroundPolicy()
-        #expect(!policy.shouldStopTraining(newPhase: .inactive))
+        #expect(policy.shouldStopTraining(newPhase: .inactive) == false)
     }
 
     @Test("iOS policy does not stop on active")
     func iosDoesNotStopOnActive() async {
         let policy = IOSBackgroundPolicy()
-        #expect(!policy.shouldStopTraining(newPhase: .active))
+        #expect(policy.shouldStopTraining(newPhase: .active) == false)
     }
 
     @Test("iOS policy auto-starts training")
@@ -47,12 +47,12 @@ struct BackgroundPolicyTests {
     @Test("macOS policy does not stop on active")
     func macosDoesNotStopOnActive() async {
         let policy = MacOSBackgroundPolicy()
-        #expect(!policy.shouldStopTraining(newPhase: .active))
+        #expect(policy.shouldStopTraining(newPhase: .active) == false)
     }
 
     @Test("macOS policy does not auto-start training")
     func macosDoesNotAutoStartTraining() {
         let policy = MacOSBackgroundPolicy()
-        #expect(!policy.shouldAutoStartTraining)
+        #expect(policy.shouldAutoStartTraining == false)
     }
 }

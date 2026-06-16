@@ -140,7 +140,7 @@ struct TuningSystemTests {
     @Test("all cases have non-empty displayName")
     func allCasesHaveDisplayName() async {
         for system in TuningSystem.allCases {
-            #expect(!system.displayName.isEmpty)
+            #expect(system.displayName.isEmpty == false)
         }
     }
 

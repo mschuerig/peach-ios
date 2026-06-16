@@ -32,8 +32,8 @@ struct SessionLifecycleTests {
 
         lifecycle.cancelAllTasks()
 
-        #expect(!lifecycle.hasTrainingTask)
-        #expect(!lifecycle.hasFeedbackTask)
+        #expect(lifecycle.hasTrainingTask == false)
+        #expect(lifecycle.hasFeedbackTask == false)
     }
 
     // MARK: - setFeedbackTask replaces previous

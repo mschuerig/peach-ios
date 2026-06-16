@@ -112,7 +112,7 @@ struct PerceptualProfileTests {
 
         #expect(profile.comparisonMean(for: .up(.perfectFifth)) == 25.0)
         #expect(profile.hasData(for: .intervalPitchDiscrimination))
-        #expect(!profile.hasData(for: .unisonPitchDiscrimination))
+        #expect(profile.hasData(for: .unisonPitchDiscrimination) == false)
     }
 
     @Test("PitchMatchingObserver records centError correctly for non-prime interval")
@@ -133,7 +133,7 @@ struct PerceptualProfileTests {
         let mean = try #require(profile.matchingMean)
         #expect(abs(mean.rawValue - 12.3) < 0.01)
         #expect(profile.hasData(for: .intervalPitchMatching))
-        #expect(!profile.hasData(for: .unisonPitchMatching))
+        #expect(profile.hasData(for: .unisonPitchMatching) == false)
     }
 
     // MARK: - Per-Mode Query API
@@ -142,7 +142,7 @@ struct PerceptualProfileTests {
     func hasDataEmptyProfile() async {
         let profile = PerceptualProfile()
         for mode in [TrainingDisciplineID.unisonPitchDiscrimination, .intervalPitchDiscrimination, .unisonPitchMatching, .intervalPitchMatching] {
-            #expect(!profile.hasData(for: mode))
+            #expect(profile.hasData(for: mode) == false)
         }
     }
 
@@ -197,7 +197,7 @@ struct PerceptualProfileTests {
         profile.resetAll()
 
         for mode in [TrainingDisciplineID.unisonPitchDiscrimination, .intervalPitchDiscrimination, .unisonPitchMatching, .intervalPitchMatching] {
-            #expect(!profile.hasData(for: mode))
+            #expect(profile.hasData(for: mode) == false)
         }
         #expect(profile.comparisonMean(for: .prime) == nil)
         #expect(profile.matchingMean == nil)
