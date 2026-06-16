@@ -130,7 +130,6 @@ struct ChromaticConstructionSessionTests {
         session.start(settings: settings)
         await notePlayer.waitForPlay()
         session.place(offset: Cents(95.0))
-        await notePlayer.waitForPlay(minCount: 2)
 
         session.stepBack()
 
