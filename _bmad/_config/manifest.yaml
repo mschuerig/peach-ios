@@ -1,26 +1,35 @@
 installation:
-  version: 6.6.0
+  version: 6.8.0
   installDate: 2026-02-11T13:34:49.643Z
-  lastUpdated: 2026-05-05T10:26:32.528Z
+  lastUpdated: 2026-06-21T12:16:29.235Z
 modules:
   - name: core
-    version: 6.6.0
+    version: 6.8.0
     installDate: 2026-02-11T13:34:48.595Z
-    lastUpdated: 2026-05-05T10:26:32.368Z
+    lastUpdated: 2026-06-21T12:16:29.229Z
     source: built-in
     npmPackage: null
     repoUrl: null
   - name: bmm
-    version: 6.6.0
+    version: 6.8.0
     installDate: 2026-02-11T13:34:44.762Z
-    lastUpdated: 2026-05-05T10:26:32.368Z
+    lastUpdated: 2026-06-21T12:16:29.229Z
     source: built-in
     npmPackage: null
     repoUrl: null
+  - name: tea
+    version: v1.15.1
+    installDate: 2026-02-11T13:34:48.558Z
+    lastUpdated: 2026-06-21T12:16:29.230Z
+    source: external
+    npmPackage: bmad-method-test-architecture-enterprise
+    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
+    channel: pinned
+    sha: 7c94bdc6e3d2c8c3cad09eb0a32a42fade0e9079
   - name: bmb
     version: v1.7.0
     installDate: 2026-02-11T13:34:45.934Z
-    lastUpdated: 2026-05-05T10:26:32.391Z
+    lastUpdated: 2026-06-21T12:16:29.231Z
     source: external
     npmPackage: bmad-builder
     repoUrl: https://github.com/bmad-code-org/bmad-builder
@@ -29,36 +38,27 @@ modules:
   - name: cis
     version: v0.2.0
     installDate: 2026-02-11T13:34:47.340Z
-    lastUpdated: 2026-05-05T10:26:32.414Z
+    lastUpdated: 2026-06-21T12:16:29.232Z
     source: external
     npmPackage: bmad-creative-intelligence-suite
     repoUrl: https://github.com/bmad-code-org/bmad-module-creative-intelligence-suite
     channel: pinned
     sha: 14a63b893c07173b7a6cfe0fb6a9a72ba51d3cf1
-  - name: tea
-    version: v1.15.1
-    installDate: 2026-02-11T13:34:48.558Z
-    lastUpdated: 2026-05-05T10:26:32.437Z
-    source: external
-    npmPackage: bmad-method-test-architecture-enterprise
-    repoUrl: https://github.com/bmad-code-org/bmad-method-test-architecture-enterprise
-    channel: pinned
-    sha: 7c94bdc6e3d2c8c3cad09eb0a32a42fade0e9079
   - name: arc42-documentation-architect
-    version: 1.0.0
-    installDate: 2026-05-05T10:26:32.226Z
-    lastUpdated: 2026-05-05T10:26:32.481Z
+    version: main
+    installDate: 2026-06-21T12:11:49.673Z
+    lastUpdated: 2026-06-21T12:16:29.234Z
     source: custom
     npmPackage: null
-    repoUrl: null
-    localPath: /Users/michael/Projekte/BMAD/arc42-documentation-architect
+    repoUrl: https://github.com/mschuerig/claude-plugins
+    channel: next
   - name: music-domain-expert
-    version: 1.0.0
-    installDate: 2026-05-05T10:26:32.253Z
-    lastUpdated: 2026-05-05T10:26:32.528Z
+    version: main
+    installDate: 2026-06-21T12:11:49.677Z
+    lastUpdated: 2026-06-21T12:16:29.235Z
     source: custom
     npmPackage: null
-    repoUrl: null
-    localPath: /Users/michael/Projekte/BMAD/music-domain-expert
+    repoUrl: https://github.com/mschuerig/claude-plugins
+    channel: next
 ides:
   - claude-code
