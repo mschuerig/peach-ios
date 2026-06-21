@@ -89,7 +89,7 @@ Adam is especially useful during planning sessions, where he proactively flags h
 Adam is installed as a BMAD agent in this project. To activate him in a Claude Code session, use the slash command:
 
 ```
-/bmad-agent-music-domain-expert
+/agent-music-domain-expert
 ```
 
 His commands:
@@ -98,6 +98,48 @@ His commands:
 - **[CM] Concept Map** — Generate a domain concept map for a musical topic
 
 Adam is most valuable during planning sessions, where he can review stories, epics, and specifications before implementation begins. He catches domain-level errors that developers wouldn't know to look for.
+
+## Installing & Updating BMad
+
+This project is developed with the [BMad method](https://docs.bmad-method.org/). BMad lives under `_bmad/` and deploys its agent skills to `.claude/skills/`; both are git-ignored **except** the manifest (`_bmad/_config/manifest.yaml`) and module configs, which are committed so the installed module set is reproducible.
+
+Two **custom agents** are maintained in a separate repository — [mschuerig/claude-plugins](https://github.com/mschuerig/claude-plugins) — and installed here as BMad custom modules:
+
+- **Adam** — Music Domain Expert (`/agent-music-domain-expert`); see [above](#music-domain-expert-adam).
+- **Gernot** — arc42 Documentation Architect (`/agent-arc42-documentation-architect`), for creating and maintaining architecture documentation.
+
+All commands below run from the project root.
+
+### Install BMad (first time)
+
+```bash
+npx bmad-method install
+```
+
+Select the modules to install when prompted. This populates `_bmad/` and deploys the agent skills into `.claude/skills/`.
+
+### Update BMad
+
+⚠️ **Use Quick Update, not "Modify".** Run the installer and choose **Quick Update** (the first menu option), or run it non-interactively:
+
+```bash
+npx bmad-method install --action quick-update
+```
+
+Do **not** use the "Modify BMAD Installation" flow (`--action update`) for a routine update: it removes any module you don't re-select, and the external modules (`bmb`, `cis`, `tea`) and the custom agents **cannot** be re-selected from the menu — so they get wiped. Quick Update preserves every installed module and only refreshes them.
+
+### Install or update the custom agents
+
+The custom agents are installed from the `claude-plugins` repo. Use this after a fresh BMad install, or to pull new versions of Adam and Gernot:
+
+```bash
+npx bmad-method install --action update --yes \
+  --custom-source "https://github.com/mschuerig/claude-plugins/tree/v1.0.0/bmad/arc42-documentation-architect,https://github.com/mschuerig/claude-plugins/tree/v1.0.0/bmad/music-domain-expert"
+```
+
+⚠️ **`--yes` is required.** Without it, `--custom-source` clears the module selection and drops every other module. With `--yes`, the installer keeps all installed modules and adds the custom agents on top. Swap `/tree/v1.0.0/` for `/tree/main/` (or omit it) to track the latest commit instead of the pinned release.
+
+Restart the Claude Code session afterward so the new skills load, then verify with `/bmad-help` or by activating an agent.
 
 ## Feature Flags
 
