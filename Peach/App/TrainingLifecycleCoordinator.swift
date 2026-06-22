@@ -170,12 +170,37 @@ final class TrainingLifecycleCoordinator {
         }
     }
 
+    /// Pauses the foreground training session when the macOS Settings window
+    /// opens. The training window stays up while the user edits settings in the
+    /// separate Settings window, so without this its session keeps looping
+    /// audibly behind Settings. Pausing (not stopping) preserves the current
+    /// trial so the paired `reconcileForegroundSession()` on window dismissal
+    /// resumes it (settings unchanged) or restarts it fresh (settings changed).
+    ///
+    /// Keyed off `currentTrainingDestination` — NOT the `pausedDestination`
+    /// machinery used by `helpSheetPresented()` — because the dismissal hook
+    /// reconciles via `currentTrainingDestination`; setting `pausedDestination`
+    /// here would leave it lingering after reconcile resumes the session.
+    ///
+    /// No-op when no training is foreground (`currentTrainingDestination == nil`,
+    /// e.g. Settings opened from Start) or the session is already idle. iOS has
+    /// no separate Settings window; there the pushed Settings screen covers the
+    /// training screen and pauses via `trainingScreenDisappeared`.
+    func pauseForegroundSession() {
+        guard let destination = currentTrainingDestination,
+              let session = registry.contribution(for: destination)?.session,
+              !session.isIdle else { return }
+        session.pause()
+    }
+
     /// Reconciles the foreground training session with the current settings,
     /// restarting it if anything changed (no-op otherwise). Driven on macOS when
     /// the separate Settings window is dismissed: the training window stays up
     /// while the user edits settings, so its session may be left running a stale
     /// snapshot — reconciling on dismissal applies all the edits at once, with no
-    /// mid-edit restart churn. No-op when no training is foreground
+    /// mid-edit restart churn. A session paused on Settings-window open (see
+    /// `pauseForegroundSession()`) is non-idle, so it reconciles too: unchanged →
+    /// `resume()`, changed → restart. No-op when no training is foreground
     /// (`currentTrainingDestination == nil`, e.g. Settings opened from Start) or
     /// the session is idle. iOS has no separate Settings window; there the
     /// equivalent reconcile happens in `trainingScreenAppeared` on return from

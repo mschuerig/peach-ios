@@ -433,3 +433,16 @@ When `setupDataStore` decides to wipe the on-disk store, it does so silently —
 Peach has no analytics infrastructure today and adding one is out of scope for an isolated bugfix. The story narrowed the wipe surface so the destructive path fires only on actual schema mismatches; the previous "wipe on anything" surface had the same telemetry gap with a much wider blast radius, so this is strictly an improvement.
 
 **Fix:** When telemetry / signpost infrastructure lands — or whenever the project decides on a structured-event pipeline — add a single event at the wipe site recording: pre-wipe file sizes, the classifying error's domain + code, and the post-wipe init outcome. Optionally: copy the three files to `temporaryDirectory/peach-wipe-{ISO8601}/` before removal so a developer can recover them from a sysdiagnose bundle. Both are nice-to-have. Acceptable to leave indefinitely — the failure mode is rare and self-recovering.
+
+
+### PF-075: macOS Help sheet + Settings window coexist — closing Settings resumes audio behind the still-open Help sheet
+
+**Found:** 2026-06-22 (spec-macos-stop-playback-on-settings-open step-04 review — Edge Case Hunter)
+**Severity:** Low (transient audio behind a modal Help sheet; self-corrects when the sheet is dismissed)
+**Disposition:** OPEN
+
+On macOS the training Help sheet is presented on the training window while Settings is a separate `Window`. The Settings command (`Cmd+,` / `Settings…`, `PeachCommands.swift`) is ungated, so the user can open Settings while the Help sheet is up. Both `helpSheetPresented()` and `pauseForegroundSession()` key off `currentTrainingDestination`. Sequence: Help sheet opens → `helpSheetPresented()` pauses and sets `pausedDestination`. Settings opens → `pauseForegroundSession()` is an idempotent no-op (`pause()` guards `!isPaused`). Settings closes → `.onDisappear` → `reconcileForegroundSession()` resumes (unchanged) or restarts (changed) the session, which now **plays audibly behind the still-open Help sheet**. Closing the Help sheet then runs `helpSheetDismissed()` → reconcile no-op, leaving correct final state.
+
+**Pre-existing, not caused by this change.** The audible resume on Settings-close flows through `reconcileForegroundSession()` on `.onDisappear`, which shipped in commit f002d0f6 before the Settings-open pause was added. The new `.onAppear` pause is idempotent when the Help sheet already paused the session, so it neither introduces nor worsens this interaction. Only the contrived Help-sheet-AND-Settings-both-open interleaving is affected; the common path (Settings without Help) is correct.
+
+**Fix:** Most localized option — when `reconcileForegroundSession()` runs, skip the `resume()`/restart if a training Help sheet is still presented (the Help sheet owns the pause and intends to keep it). Alternatives: gate the Settings command so it cannot open while a training Help sheet is presented; or have the Settings open/close hooks defer to the Help-sheet pause ownership via `pausedDestination`. Defer until the coexistence is observed in practice — the window is narrow and the end state is already correct.

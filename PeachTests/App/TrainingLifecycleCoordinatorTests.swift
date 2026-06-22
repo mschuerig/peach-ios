@@ -716,6 +716,122 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(fixture.tod.resumeCallCount == 0, "a non-foreground discipline is left untouched")
     }
 
+    // MARK: - pauseForegroundSession (macOS Settings-window open)
+
+    @Test("pauseForegroundSession pauses (not stops) the active foreground session")
+    func pauseForegroundSessionPausesActive() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.pauseForegroundSession()
+
+        #expect(fixture.mock.pauseCallCount == 1)
+        #expect(fixture.mock.stopCallCount == 0)
+    }
+
+    @Test("pauseForegroundSession is a no-op when the session is idle")
+    func pauseForegroundSessionNoOpWhenIdle() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = true
+
+        fixture.coordinator.pauseForegroundSession()
+
+        #expect(fixture.mock.pauseCallCount == 0)
+    }
+
+    @Test("pauseForegroundSession is a no-op when no training is foreground")
+    func pauseForegroundSessionNoOpWhenNoForeground() {
+        let fixture = makeMockFixture()
+        // Settings opened from Start: no training destination ever became foreground.
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.pauseForegroundSession()
+
+        #expect(fixture.mock.pauseCallCount == 0)
+    }
+
+    @Test("pauseForegroundSession pauses only the foreground discipline")
+    func pauseForegroundSessionPausesOnlyForeground() {
+        let fixture = makeTwoMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.crm.isIdle = false
+        fixture.tod.isIdle = false
+
+        fixture.coordinator.pauseForegroundSession()
+
+        #expect(fixture.crm.pauseCallCount == 1, "the foreground (CRM) session is paused")
+        #expect(fixture.tod.pauseCallCount == 0, "a non-foreground discipline is left untouched")
+    }
+
+    @Test("macOS Settings cycle: open then close routes the paused foreground session through reconcile (dispatch only)")
+    func pauseThenReconcileRoutesForegroundSession() {
+        // Dispatch-level test: it proves the coordinator pauses the foreground
+        // session on open and routes it through `reconcile()` (not `stop()`) on
+        // close. The mock's reconcile closure is hardcoded to `resume()`, so the
+        // changed-vs-unchanged reconcile *decision* is NOT exercised here — that
+        // is covered by the real-session tests below
+        // (`settingsCyclePausesThenRestartsTodWithNewPattern` and
+        // `settingsCycleUnchangedResumesPausedTodTrial`).
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.pauseForegroundSession()      // Settings window opens
+        fixture.coordinator.reconcileForegroundSession()  // Settings window closes
+
+        #expect(fixture.mock.pauseCallCount == 1)
+        #expect(fixture.mock.resumeCallCount == 1, "closing Settings routes the paused session through reconcile, not stop")
+        #expect(fixture.mock.stopCallCount == 0)
+    }
+
+    @Test("macOS Settings cycle: opening pauses the TOD session, closing restarts it with the new pattern")
+    func settingsCyclePausesThenRestartsTodWithNewPattern() async throws {
+        let f = makeTodCoordinatorFixture()
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
+        let trialsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+
+        // Settings window opens — playback must pause, trial preserved (non-idle).
+        f.coordinator.pauseForegroundSession()
+        #expect(f.session.isIdle == false, "a paused session stays non-idle so it can reconcile on close")
+
+        // User changes the pattern, then closes the Settings window.
+        f.todUserSettings.selectedPattern = .pattern_gapped16ths_01
+        f.coordinator.reconcileForegroundSession()
+
+        try await waitUntilNotIdle(f.session)
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialsBefore + 1,
+            "a changed snapshot after pause must restart with a fresh trial"
+        )
+        let beat = f.session.nextBeat()
+        guard case .rest = beat.subdivisions[1] else {
+            Issue.record("Expected the new gapped pattern after the Settings cycle; got \(beat.subdivisions)")
+            return
+        }
+        f.session.stop()
+    }
+
+    @Test("macOS Settings cycle: closing with no change resumes the paused TOD trial")
+    func settingsCycleUnchangedResumesPausedTodTrial() async throws {
+        let f = makeTodCoordinatorFixture()
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
+        let trialsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+
+        f.coordinator.pauseForegroundSession()      // Settings window opens
+        f.coordinator.reconcileForegroundSession()  // closes with no change
+
+        #expect(f.session.isIdle == false, "resuming the preserved trial keeps the session playing")
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialsBefore,
+            "an unchanged reconcile must resume the same trial, not start a new one"
+        )
+        f.session.stop()
+    }
+
     @Test("helpSheetPresented pauses (not stops) the active session")
     func helpSheetPresentedPausesSession() {
         let fixture = makeMockFixture()
