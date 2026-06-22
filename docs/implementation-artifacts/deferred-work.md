@@ -435,14 +435,25 @@ Peach has no analytics infrastructure today and adding one is out of scope for a
 **Fix:** When telemetry / signpost infrastructure lands — or whenever the project decides on a structured-event pipeline — add a single event at the wipe site recording: pre-wipe file sizes, the classifying error's domain + code, and the post-wipe init outcome. Optionally: copy the three files to `temporaryDirectory/peach-wipe-{ISO8601}/` before removal so a developer can recover them from a sysdiagnose bundle. Both are nice-to-have. Acceptable to leave indefinitely — the failure mode is rare and self-recovering.
 
 
-### PF-075: macOS Help sheet + Settings window coexist — closing Settings resumes audio behind the still-open Help sheet
+### PF-075: macOS Help + Settings windows coexist — closing Settings resumes audio while Help is still open
 
 **Found:** 2026-06-22 (spec-macos-stop-playback-on-settings-open step-04 review — Edge Case Hunter)
-**Severity:** Low (transient audio behind a modal Help sheet; self-corrects when the sheet is dismissed)
+**Severity:** Low (transient audio behind a non-modal Help window; self-corrects when it is dismissed)
+**Disposition:** RESOLVED — fixed in spec-pf-075-macos-window-coordination (2026-06-23)
+
+Correction to the original premise: on macOS, Help is **not** a sheet on the training window. It is a standalone, **non-modal** `NSWindow` managed by the `HelpPanelController` singleton (`HelpPanel.swift`); only iOS presents Help as a `.sheet`. So the user can have the training window, a separate Settings `Window`, and a separate Help window all open at once.
+
+Root cause: "training is suspended" had two independent, divergent mechanisms — `pausedDestination` for Help, and `currentTrainingDestination`-keying for Settings — so closing one window reconciled/resumed the session even while the other still wanted it quiet. Two adjacent defects shared the cause: (a) the training surface stayed clickable while suspended, so a Timing Offset Detection answer-click resumed audio behind the open Settings window; (b) closing Settings resumed audio while the Help window was still open.
+
+**Fix (shipped):** `TrainingLifecycleCoordinator` now models foreground suspension as a multi-owner reason set (`.settingsWindow`, `.helpWindow`); the session pauses on the first reason and only reconciles once the last reason clears, independent of open/close order. An observable `isForegroundSuspended` drives a macOS-only `trainingSuspendedGate()` that makes the training surface non-interactive while suspended. Help opened from the training screen now follows the current discipline (`HelpPanelController.updateIfShowingTrainingHelp`). iOS behavior is unchanged (it never adds the `.settingsWindow` reason and its Help sheet already covers the surface).
+
+
+### PF-079: iOS — backgrounding with the training Help sheet open restarts audio behind the sheet on return
+
+**Found:** 2026-06-23 (spec-pf-075-macos-window-coordination step-04 review — Acceptance Auditor)
+**Severity:** Low (transient audio behind a modal sheet; stops/self-corrects on the next lifecycle event)
 **Disposition:** OPEN
 
-On macOS the training Help sheet is presented on the training window while Settings is a separate `Window`. The Settings command (`Cmd+,` / `Settings…`, `PeachCommands.swift`) is ungated, so the user can open Settings while the Help sheet is up. Both `helpSheetPresented()` and `pauseForegroundSession()` key off `currentTrainingDestination`. Sequence: Help sheet opens → `helpSheetPresented()` pauses and sets `pausedDestination`. Settings opens → `pauseForegroundSession()` is an idempotent no-op (`pause()` guards `!isPaused`). Settings closes → `.onDisappear` → `reconcileForegroundSession()` resumes (unchanged) or restarts (changed) the session, which now **plays audibly behind the still-open Help sheet**. Closing the Help sheet then runs `helpSheetDismissed()` → reconcile no-op, leaving correct final state.
+On iOS, with a training session active and the training Help sheet presented, sending the app to the background stops the session (`handleScenePhase` background path) and returning to the foreground auto-restarts it — audibly, behind the still-presented Help sheet. PF-075 added a `!isForegroundSuspended` guard to the macOS scene-phase auto-restart that would also close this on iOS, but it was deliberately scoped `#if os(macOS)` so PF-075 could keep its frozen "iOS behavior provably unchanged" guarantee. This is therefore pre-existing, not introduced by PF-075.
 
-**Pre-existing, not caused by this change.** The audible resume on Settings-close flows through `reconcileForegroundSession()` on `.onDisappear`, which shipped in commit f002d0f6 before the Settings-open pause was added. The new `.onAppear` pause is idempotent when the Help sheet already paused the session, so it neither introduces nor worsens this interaction. Only the contrived Help-sheet-AND-Settings-both-open interleaving is affected; the common path (Settings without Help) is correct.
-
-**Fix:** Most localized option — when `reconcileForegroundSession()` runs, skip the `resume()`/restart if a training Help sheet is still presented (the Help sheet owns the pause and intends to keep it). Alternatives: gate the Settings command so it cannot open while a training Help sheet is presented; or have the Settings open/close hooks defer to the Help-sheet pause ownership via `pausedDestination`. Defer until the coexistence is observed in practice — the window is narrow and the end state is already correct.
+**Fix:** Drop the `#if os(macOS)` so the `!isForegroundSuspended` guard in `handleScenePhase` applies on iOS too (the suspension reason is set whenever the Help sheet is up, so the guard suppresses the restart until the sheet is dismissed, at which point `helpSheetDismissed` resumes per policy). Trivial and low-risk — gated only because the PF-075 spec froze iOS behavior. Pick up when an iOS-behavior change is in scope.

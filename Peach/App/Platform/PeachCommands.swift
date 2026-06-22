@@ -116,9 +116,12 @@ struct PeachCommands: Commands {
     private var helpCommands: some Commands {
         CommandGroup(replacing: .help) {
             Button("About Peach") {
+                let lifecycle = commandState?.trainingLifecycle
+                lifecycle?.helpSheetPresented()
                 HelpPanelController.shared.show(
                     title: String(localized: "About Peach"),
-                    view: InfoContentView()
+                    view: InfoContentView(),
+                    onDismiss: { lifecycle?.helpSheetDismissed() }
                 )
             }
 
@@ -129,12 +132,27 @@ struct PeachCommands: Commands {
                 Section(category.localizedTitle) {
                     ForEach(registry.disciplines(in: category), id: \.id) { discipline in
                         Button(discipline.config.displayName) {
-                            HelpPanelController.shared.show(content: .discipline(discipline.id))
+                            presentDisciplineHelp(.discipline(discipline.id))
                         }
                     }
                 }
             }
         }
+    }
+
+    /// Opens a discipline's help in the singleton Help window from the menu bar.
+    /// Like the training-screen Help button, this suspends the foreground session
+    /// (audio shouldn't loop behind the Help window) and releases it on close.
+    /// Unlike the toolbar button, menu help is *pinned* — it does not follow a
+    /// later discipline switch (the user explicitly chose this discipline).
+    private func presentDisciplineHelp(_ content: HelpSheetContent) {
+        let lifecycle = commandState?.trainingLifecycle
+        lifecycle?.helpSheetPresented()
+        HelpPanelController.shared.show(
+            title: content.title,
+            sections: content.sections,
+            onDismiss: { lifecycle?.helpSheetDismissed() }
+        )
     }
 
     // MARK: - Navigation

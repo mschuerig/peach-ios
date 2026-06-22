@@ -868,6 +868,150 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(fixture.mock.resumeCallCount == 1)
     }
 
+    // MARK: - Foreground Suspension (multi-owner: Settings + Help windows, PF-075)
+
+    @Test("isForegroundSuspended is false with no auxiliary window open")
+    func notSuspendedByDefault() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        #expect(fixture.coordinator.isForegroundSuspended == false)
+    }
+
+    @Test("opening Settings over active training suspends the surface and pauses once")
+    func settingsOpenSuspends() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.pauseForegroundSession()
+
+        #expect(fixture.coordinator.isForegroundSuspended)
+        #expect(fixture.mock.pauseCallCount == 1)
+    }
+
+    @Test("Settings opened from Start suspends, so entering a discipline doesn't auto-start behind it")
+    func settingsFromStartSuspendsLaterDisciplineEntry() {
+        let fixture = makeMockFixture()  // IOSBackgroundPolicy → auto-start on
+        // Settings opened from Start — no training foreground yet.
+        fixture.coordinator.pauseForegroundSession()
+        #expect(fixture.coordinator.isForegroundSuspended)
+        #expect(fixture.mock.pauseCallCount == 0, "nothing to pause yet")
+
+        // Enter a discipline while Settings stays open — must not auto-start.
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        #expect(fixture.mock.isIdle, "a discipline entered behind Settings must stay suspended")
+
+        // Closing Settings then starts it per auto-start policy.
+        fixture.coordinator.reconcileForegroundSession()
+        #expect(fixture.mock.isIdle == false)
+    }
+
+    @Test("two auxiliary windows pause the session only once")
+    func twoWindowsPauseOnce() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.helpSheetPresented()      // Help opens
+        fixture.coordinator.pauseForegroundSession()  // Settings opens too
+
+        #expect(fixture.mock.pauseCallCount == 1, "the second window must not pause again")
+        #expect(fixture.coordinator.isForegroundSuspended)
+    }
+
+    @Test("closing one window while the other stays open keeps the session suspended (PF-075)")
+    func closingOneOfTwoStaysSuspended() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()      // Help opens (pause)
+        fixture.coordinator.pauseForegroundSession()  // Settings opens
+
+        fixture.coordinator.reconcileForegroundSession()  // Settings closes, Help still open
+
+        #expect(fixture.coordinator.isForegroundSuspended, "Help still owns the suspension")
+        #expect(fixture.mock.resumeCallCount == 0, "must not resume audibly while Help is still open")
+    }
+
+    @Test("closing the last window reconciles the session exactly once")
+    func closingLastWindowReconciles() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+        fixture.coordinator.pauseForegroundSession()
+
+        fixture.coordinator.reconcileForegroundSession()  // Settings closes (Help still open)
+        fixture.coordinator.helpSheetDismissed()          // Help closes (last)
+
+        #expect(fixture.coordinator.isForegroundSuspended == false)
+        #expect(fixture.mock.resumeCallCount == 1, "reconcile fires once, when the last window closes")
+    }
+
+    @Test("window-close order independent: Help first then Settings still reconciles once")
+    func closingHelpThenSettingsReconcilesOnce() {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+        fixture.coordinator.pauseForegroundSession()
+
+        fixture.coordinator.helpSheetDismissed()          // Help closes first
+        #expect(fixture.coordinator.isForegroundSuspended, "Settings still open")
+        #expect(fixture.mock.resumeCallCount == 0)
+
+        fixture.coordinator.reconcileForegroundSession()  // Settings closes (last)
+        #expect(fixture.coordinator.isForegroundSuspended == false)
+        #expect(fixture.mock.resumeCallCount == 1)
+    }
+
+    @Test("switching disciplines while suspended does not auto-start the new session")
+    func switchDisciplineWhileSuspendedDoesNotAutoStart() {
+        let fixture = makeTwoMockFixture()  // IOSBackgroundPolicy → auto-start on
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.crm.isIdle = false
+        fixture.coordinator.helpSheetPresented()  // Help opens, CRM pauses
+
+        // User switches discipline while the Help window stays open.
+        fixture.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+
+        #expect(fixture.tod.isIdle, "the new discipline must not auto-start behind the open window")
+        #expect(fixture.coordinator.isForegroundSuspended)
+    }
+
+    @Test("closing Settings after switching disciplines auto-starts the new (idle) discipline")
+    func closingSettingsAfterSwitchAutoStartsNewDiscipline() {
+        let fixture = makeTwoMockFixture()  // IOSBackgroundPolicy → auto-start on
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.crm.isIdle = false
+        fixture.coordinator.pauseForegroundSession()  // Settings opens, CRM pauses
+
+        // Switch to TOD while Settings stays open — suppressed, so TOD stays idle.
+        fixture.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        #expect(fixture.tod.isIdle)
+
+        fixture.coordinator.reconcileForegroundSession()  // Settings closes
+
+        #expect(fixture.tod.isIdle == false, "the new discipline auto-starts once the window closes")
+    }
+
+    @Test("iOS single-window help: suspends on present, clears and resumes on dismiss (unchanged)")
+    func iosSingleWindowHelpUnchanged() {
+        let fixture = makeMockFixture()  // IOSBackgroundPolicy
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.helpSheetPresented()
+        #expect(fixture.coordinator.isForegroundSuspended)
+        #expect(fixture.mock.pauseCallCount == 1)
+
+        fixture.coordinator.helpSheetDismissed()
+        #expect(fixture.coordinator.isForegroundSuspended == false)
+        #expect(fixture.mock.resumeCallCount == 1)
+    }
+
     @Test("startCurrentSession discards lingering paused session")
     func startCurrentSessionDiscardsPaused() {
         let fixture = makeMockFixture()

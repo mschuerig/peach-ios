@@ -45,11 +45,29 @@ final class TrainingLifecycleCoordinator {
 
     private(set) var currentTrainingDestination: NavigationDestination?
 
-    /// Destination whose session was paused by a transient lifecycle event
-    /// (training-screen disappear, help-sheet present). Tracking the
-    /// destination instead of the session instance avoids coupling to the
-    /// registry's instance-identity guarantee.
+    /// Destination whose session was paused by a navigation event (training
+    /// screen disappear). Tracking the destination instead of the session
+    /// instance avoids coupling to the registry's instance-identity guarantee.
     private var pausedDestination: NavigationDestination?
+
+    /// A macOS auxiliary window that holds the foreground training session
+    /// suspended while it is open. The two windows can be open at once, so
+    /// suspension is multi-owner: the session pauses on the first reason and
+    /// only reconciles/resumes once the *last* reason clears.
+    enum ForegroundSuspensionReason {
+        case settingsWindow
+        case helpWindow
+    }
+
+    private var foregroundSuspensions: Set<ForegroundSuspensionReason> = []
+
+    /// True while at least one auxiliary window (Settings or Help) suspends the
+    /// foreground training session. The macOS training surface reads this to
+    /// make itself non-interactive; otherwise a click (e.g. a Timing Offset
+    /// Detection answer button) would resume audio behind the open window. iOS
+    /// never adds the `.settingsWindow` reason (its Settings is a pushed screen),
+    /// and its Help sheet already covers the surface, so this drives no iOS UI.
+    var isForegroundSuspended: Bool { !foregroundSuspensions.isEmpty }
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "Lifecycle")
 
@@ -95,6 +113,12 @@ final class TrainingLifecycleCoordinator {
         }
         if appPhase == .active && shouldAutoStartTraining
             && currentTrainingDestination != nil && !isTrainingActive {
+            #if os(macOS)
+            // Don't auto-restart behind an open Settings/Help window. macOS-only:
+            // on iOS this keeps scene-phase behavior byte-identical to before, and
+            // the help sheet already covers the surface either way.
+            if isForegroundSuspended { return }
+            #endif
             Self.logger.info("App returned to active — auto-restarting training")
             startCurrentSession()
         }
@@ -110,7 +134,8 @@ final class TrainingLifecycleCoordinator {
     func handleAppActivated() {
         guard shouldAutoStartTraining,
               currentTrainingDestination != nil,
-              !isTrainingActive else { return }
+              !isTrainingActive,
+              !isForegroundSuspended else { return }
         Self.logger.info("App activated — auto-restarting training")
         startCurrentSession()
     }
@@ -125,7 +150,10 @@ final class TrainingLifecycleCoordinator {
         } else {
             discardLingeringPausedSession()
             currentTrainingDestination = destination
-            if shouldAutoStartTraining {
+            // Don't auto-start behind an open auxiliary window — e.g. switching
+            // disciplines on macOS while the Settings or Help window stays open
+            // must leave the new discipline suspended until that window closes.
+            if shouldAutoStartTraining && !isForegroundSuspended {
                 startCurrentSession()
             }
         }
@@ -152,60 +180,93 @@ final class TrainingLifecycleCoordinator {
     }
 
     func helpSheetPresented() {
-        guard let destination = currentTrainingDestination,
-              let session = registry.contribution(for: destination)?.session,
-              !session.isIdle else { return }
-        discardLingeringPausedSession()
-        pausedDestination = destination
-        session.pause()
+        suspendForeground(.helpWindow)
     }
 
     func helpSheetDismissed() {
-        if let pausedDest = pausedDestination,
-           let contribution = registry.contribution(for: pausedDest) {
-            contribution.reconcile()
-            pausedDestination = nil
-        } else if shouldAutoStartTraining {
-            startCurrentSession()
-        }
+        // `autoStartIfIdle`: on the iOS sheet path the session may have ended
+        // while help was up; auto-start it again if policy allows.
+        releaseForeground(.helpWindow, autoStartIfIdle: true)
     }
 
-    /// Pauses the foreground training session when the macOS Settings window
+    /// Suspends the foreground training session when the macOS Settings window
     /// opens. The training window stays up while the user edits settings in the
     /// separate Settings window, so without this its session keeps looping
     /// audibly behind Settings. Pausing (not stopping) preserves the current
     /// trial so the paired `reconcileForegroundSession()` on window dismissal
     /// resumes it (settings unchanged) or restarts it fresh (settings changed).
     ///
-    /// Keyed off `currentTrainingDestination` — NOT the `pausedDestination`
-    /// machinery used by `helpSheetPresented()` — because the dismissal hook
-    /// reconciles via `currentTrainingDestination`; setting `pausedDestination`
-    /// here would leave it lingering after reconcile resumes the session.
-    ///
     /// No-op when no training is foreground (`currentTrainingDestination == nil`,
-    /// e.g. Settings opened from Start) or the session is already idle. iOS has
-    /// no separate Settings window; there the pushed Settings screen covers the
-    /// training screen and pauses via `trainingScreenDisappeared`.
+    /// e.g. Settings opened from Start). iOS has no separate Settings window;
+    /// there the pushed Settings screen covers the training screen and pauses
+    /// via `trainingScreenDisappeared`.
     func pauseForegroundSession() {
-        guard let destination = currentTrainingDestination,
-              let session = registry.contribution(for: destination)?.session,
-              !session.isIdle else { return }
+        suspendForeground(.settingsWindow)
+    }
+
+    /// Releases the macOS Settings window's suspension. Reconciles the foreground
+    /// session with the current settings — restarting if anything changed,
+    /// resuming the preserved trial otherwise — but only once the Help window
+    /// (if also open) has released its suspension too. The training window stays
+    /// up while the user edits settings, so reconciling on dismissal applies all
+    /// the edits at once with no mid-edit restart churn. `autoStartIfIdle: true`
+    /// mirrors the Help path: if the foreground discipline ended up idle while
+    /// Settings was open (e.g. the user switched disciplines, which suppresses
+    /// auto-start while suspended), closing Settings starts it per policy. iOS
+    /// has no separate Settings window; there the equivalent reconcile happens in
+    /// `trainingScreenAppeared` on return from the pushed Settings screen.
+    func reconcileForegroundSession() {
+        releaseForeground(.settingsWindow, autoStartIfIdle: true)
+    }
+
+    // MARK: - Foreground Suspension (macOS auxiliary windows)
+
+    /// Records that `reason` now suspends the foreground session and pauses it on
+    /// the *first* reason. Later reasons are no-ops while already paused, so the
+    /// session pauses once no matter how many windows are open. The pause is
+    /// recorded in `pausedDestination` (like a navigation pause) so the canonical
+    /// `discardLingeringPausedSession()` cleanup terminates it on stop/navigate.
+    /// The reason is recorded even with no foreground training (e.g. Settings
+    /// opened from Start): `isForegroundSuspended` then suppresses auto-start when
+    /// the user enters a discipline while the window is still open, so nothing
+    /// plays behind it regardless of which opened first.
+    private func suspendForeground(_ reason: ForegroundSuspensionReason) {
+        let wasEmpty = foregroundSuspensions.isEmpty
+        foregroundSuspensions.insert(reason)
+        guard wasEmpty, let session = currentSession, !session.isIdle else { return }
+        discardLingeringPausedSession()
+        pausedDestination = currentTrainingDestination
         session.pause()
     }
 
-    /// Reconciles the foreground training session with the current settings,
-    /// restarting it if anything changed (no-op otherwise). Driven on macOS when
-    /// the separate Settings window is dismissed: the training window stays up
-    /// while the user edits settings, so its session may be left running a stale
-    /// snapshot — reconciling on dismissal applies all the edits at once, with no
-    /// mid-edit restart churn. A session paused on Settings-window open (see
-    /// `pauseForegroundSession()`) is non-idle, so it reconciles too: unchanged →
-    /// `resume()`, changed → restart. No-op when no training is foreground
-    /// (`currentTrainingDestination == nil`, e.g. Settings opened from Start) or
-    /// the session is idle. iOS has no separate Settings window; there the
-    /// equivalent reconcile happens in `trainingScreenAppeared` on return from
-    /// the pushed Settings screen.
-    func reconcileForegroundSession() {
+    /// Removes `reason` and reconciles the foreground session only once the last
+    /// reason has cleared — while another window still suspends it, it stays
+    /// paused. Resume keys off `currentTrainingDestination` (not the pause
+    /// bookkeeping), so it is independent of which window opened or closed first.
+    /// If the screen was navigated away from (`currentTrainingDestination == nil`),
+    /// a navigation pause owns `pausedDestination` — left untouched, honouring
+    /// only `autoStartIfIdle`. With a foreground destination present, any
+    /// `pausedDestination` is this suspension's own marker (== the foreground
+    /// destination), so it is cleared before resuming.
+    private func releaseForeground(_ reason: ForegroundSuspensionReason, autoStartIfIdle: Bool) {
+        foregroundSuspensions.remove(reason)
+        guard foregroundSuspensions.isEmpty else { return }
+        guard currentTrainingDestination != nil else {
+            if autoStartIfIdle && shouldAutoStartTraining { startCurrentSession() }
+            return
+        }
+        pausedDestination = nil
+        if let session = currentSession, !session.isIdle {
+            reconcileCurrentForegroundSession()
+        } else if autoStartIfIdle && shouldAutoStartTraining {
+            startCurrentSession()
+        }
+    }
+
+    /// Reconciles the current foreground session with its live settings snapshot
+    /// (resume if unchanged, restart if changed). No-op when no training is
+    /// foreground or the session is idle.
+    private func reconcileCurrentForegroundSession() {
         guard let destination = currentTrainingDestination,
               let contribution = registry.contribution(for: destination),
               !contribution.session.isIdle else { return }

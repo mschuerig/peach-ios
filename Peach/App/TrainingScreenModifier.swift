@@ -24,7 +24,8 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
                 onDismissed: {
                     isFocused = true
                     lifecycle.helpSheetDismissed()
-                }
+                },
+                followsTrainingDiscipline: true
             )
             .focusable()
             .focusEffectDisabled()
@@ -36,11 +37,21 @@ struct TrainingScreenModifier<Title: View>: ViewModifier {
             .onAppear {
                 isFocused = true
                 lifecycle.trainingScreenAppeared(destination: destination)
+                #if os(macOS)
+                // Switching disciplines while a training Help window is open: keep
+                // its content in sync with the now-current discipline (HIG: an
+                // inspector-class window must match the current state).
+                HelpPanelController.shared.updateIfShowingTrainingHelp(
+                    title: String(localized: "Training Help"),
+                    sections: helpSections
+                )
+                #endif
             }
             .onDisappear {
                 lifecycle.trainingScreenDisappeared()
             }
             .trainingIdleOverlay()
+            .trainingSuspendedGate()
     }
 
     @ToolbarContentBuilder

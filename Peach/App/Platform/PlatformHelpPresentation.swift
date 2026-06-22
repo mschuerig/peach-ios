@@ -8,6 +8,9 @@ struct PlatformHelpModifier: ViewModifier {
     let sections: [HelpSection]
     var onPresented: (() -> Void)?
     var onDismissed: (() -> Void)?
+    /// macOS only: when true, the help window follows the current training
+    /// discipline (see `HelpPanelController.updateIfShowingTrainingHelp`).
+    var followsTrainingDiscipline: Bool = false
 
     func body(content: Content) -> some View {
         content
@@ -39,7 +42,8 @@ struct PlatformHelpModifier: ViewModifier {
                     HelpPanelController.shared.show(
                         title: title,
                         sections: sections,
-                        onDismiss: onDismissed
+                        onDismiss: onDismissed,
+                        followsTrainingDiscipline: followsTrainingDiscipline
                     )
                     isPresented = false
                     #endif
@@ -88,14 +92,16 @@ extension View {
         title: String,
         sections: [HelpSection],
         onPresented: (() -> Void)? = nil,
-        onDismissed: (() -> Void)? = nil
+        onDismissed: (() -> Void)? = nil,
+        followsTrainingDiscipline: Bool = false
     ) -> some View {
         modifier(PlatformHelpModifier(
             isPresented: isPresented,
             title: title,
             sections: sections,
             onPresented: onPresented,
-            onDismissed: onDismissed
+            onDismissed: onDismissed,
+            followsTrainingDiscipline: followsTrainingDiscipline
         ))
     }
 
