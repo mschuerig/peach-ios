@@ -1,6 +1,6 @@
 import Foundation
 
-struct PitchDiscriminationSettings {
+struct PitchDiscriminationSettings: Equatable {
     var noteRange: NoteRange
     var referencePitch: Frequency
     var intervals: Set<DirectedInterval>

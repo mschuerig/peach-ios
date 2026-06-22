@@ -211,6 +211,22 @@ final class ContinuousRhythmMatchingSession: TrainingSession, BeatProvider {
         send(.startRequested(settings))
     }
 
+    /// Reconciles the session with the live settings snapshot. Driven by the
+    /// lifecycle coordinator when the user leaves the settings UI (iOS: returning
+    /// to a paused training screen; macOS: dismissing the separate Settings
+    /// window while the session is still active). Idle → no-op; paused &
+    /// unchanged → resume the trial cycle; changed (paused or active) → restart
+    /// fresh so playback reflects the new configuration.
+    func reconcile(with refreshed: ContinuousRhythmMatchingSettings) {
+        guard !isIdle else { return }
+        if let settings, settings == refreshed {
+            if isPaused { resume() }
+        } else {
+            stop()
+            start(settings: refreshed)
+        }
+    }
+
     // MARK: - Public API
 
     func start(settings: ContinuousRhythmMatchingSettings) {

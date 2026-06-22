@@ -1,6 +1,6 @@
 import Foundation
 
-struct ContinuousRhythmMatchingSettings: Sendable {
+struct ContinuousRhythmMatchingSettings: Sendable, Equatable {
     var tempo: TempoBPM
     var enabledGapPositions: Set<BeatPosition>
 

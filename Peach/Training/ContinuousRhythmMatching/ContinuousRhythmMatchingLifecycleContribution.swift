@@ -13,7 +13,9 @@ extension ContinuousRhythmMatchingSession {
             start: {
                 self.start(settings: .from(userSettings, crmUserSettings: crmUserSettings))
             },
-            reconcile: { self.resume() }
+            reconcile: {
+                self.reconcile(with: .from(userSettings, crmUserSettings: crmUserSettings))
+            }
         )
     }
 }

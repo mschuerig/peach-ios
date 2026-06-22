@@ -112,6 +112,71 @@ struct PitchMatchingSessionPauseResumeTests {
         #expect(session.lastResult == nil, "no trial result should have been recorded")
         session.stop()
     }
+
+    // MARK: - Settings-aware reconcile
+
+    @Test("reconcile(with:) when idle is a no-op")
+    func reconcileWhenIdleIsNoOp() async {
+        let (session, _, _, _) = makePitchMatchingSession()
+        #expect(session.isIdle)
+        session.reconcile(with: defaultPitchMatchingTestSettings)
+        #expect(session.isIdle)
+    }
+
+    @Test("reconcile(with:) unchanged on an active session does not restart")
+    func reconcileActiveUnchangedDoesNotRestart() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+        let playCallsBefore = notePlayer.playCallCount
+
+        session.reconcile(with: defaultPitchMatchingTestSettings)
+
+        #expect(session.state == .awaitingSliderTouch)
+        #expect(notePlayer.playCallCount == playCallsBefore, "unchanged active reconcile must not restart")
+        session.stop()
+    }
+
+    @Test("reconcile(with:) changed on an active session restarts with the new settings")
+    func reconcileActiveChangedRestarts() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+        let playCallsBefore = notePlayer.playCallCount
+
+        var changed = defaultPitchMatchingTestSettings
+        changed.noteDuration = NoteDuration(0.5)
+        session.reconcile(with: changed)
+
+        try await waitForState(session, .awaitingSliderTouch)
+        #expect(notePlayer.playCallCount > playCallsBefore, "changed reconcile must restart and replay")
+        session.stop()
+    }
+
+    @Test("reconcile(with:) unchanged on a paused session resumes the preserved trial")
+    func reconcilePausedUnchangedResumes() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+        let referenceBefore = session.currentTrial?.referenceNote
+        let playCallsBefore = notePlayer.playCallCount
+        session.pause()
+
+        session.reconcile(with: defaultPitchMatchingTestSettings)
+
+        try await waitForState(session, .awaitingSliderTouch)
+        #expect(session.currentTrial?.referenceNote == referenceBefore, "unchanged reconcile preserves the trial")
+        #expect(notePlayer.playCallCount > playCallsBefore, "resume re-plays the reference")
+        session.stop()
+    }
+
+    @Test("PitchMatchingSettings Equatable distinguishes a changed field")
+    func settingsEquatableDistinguishesChange() {
+        var changed = defaultPitchMatchingTestSettings
+        changed.noteDuration = NoteDuration(0.5)
+        #expect(defaultPitchMatchingTestSettings != changed)
+        #expect(defaultPitchMatchingTestSettings == defaultPitchMatchingTestSettings)
+    }
 }
 
 // MARK: - PitchDiscriminationSession
@@ -202,6 +267,71 @@ struct PitchDiscriminationSessionPauseResumeTests {
         #expect(fixture.session.isLastAnswerCorrect == nil)
         fixture.session.stop()
     }
+
+    // MARK: - Settings-aware reconcile
+
+    @Test("reconcile(with:) when idle is a no-op")
+    func reconcileWhenIdleIsNoOp() async {
+        let fixture = makePitchDiscriminationSession()
+        #expect(fixture.session.isIdle)
+        fixture.session.reconcile(with: defaultTestSettings)
+        #expect(fixture.session.isIdle)
+    }
+
+    @Test("reconcile(with:) unchanged on an active session does not restart")
+    func reconcileActiveUnchangedDoesNotRestart() async throws {
+        let fixture = makePitchDiscriminationSession()
+        fixture.session.start(settings: defaultTestSettings)
+        try await waitForState(fixture.session, .awaitingAnswer)
+        let playCallsBefore = fixture.mockPlayer.playCallCount
+
+        fixture.session.reconcile(with: defaultTestSettings)
+
+        #expect(fixture.session.state == .awaitingAnswer)
+        #expect(fixture.mockPlayer.playCallCount == playCallsBefore, "unchanged active reconcile must not restart")
+        fixture.session.stop()
+    }
+
+    @Test("reconcile(with:) changed on an active session restarts with the new settings")
+    func reconcileActiveChangedRestarts() async throws {
+        let fixture = makePitchDiscriminationSession()
+        fixture.session.start(settings: defaultTestSettings)
+        try await waitForState(fixture.session, .awaitingAnswer)
+        let playCallsBefore = fixture.mockPlayer.playCallCount
+
+        var changed = defaultTestSettings
+        changed.noteDuration = NoteDuration(0.5)
+        fixture.session.reconcile(with: changed)
+
+        try await waitForState(fixture.session, .awaitingAnswer)
+        #expect(fixture.mockPlayer.playCallCount > playCallsBefore, "changed reconcile must restart and replay")
+        fixture.session.stop()
+    }
+
+    @Test("reconcile(with:) unchanged on a paused session resumes the preserved trial")
+    func reconcilePausedUnchangedResumes() async throws {
+        let fixture = makePitchDiscriminationSession()
+        fixture.session.start(settings: defaultTestSettings)
+        try await waitForState(fixture.session, .awaitingAnswer)
+        let intervalBefore = fixture.session.currentInterval
+        let playCallsBefore = fixture.mockPlayer.playCallCount
+        fixture.session.pause()
+
+        fixture.session.reconcile(with: defaultTestSettings)
+
+        try await waitForState(fixture.session, .awaitingAnswer)
+        #expect(fixture.session.currentInterval == intervalBefore, "unchanged reconcile preserves the trial")
+        #expect(fixture.mockPlayer.playCallCount > playCallsBefore, "resume re-plays the reference")
+        fixture.session.stop()
+    }
+
+    @Test("PitchDiscriminationSettings Equatable distinguishes a changed field")
+    func settingsEquatableDistinguishesChange() {
+        var changed = defaultTestSettings
+        changed.noteDuration = NoteDuration(0.5)
+        #expect(defaultTestSettings != changed)
+        #expect(defaultTestSettings == defaultTestSettings)
+    }
 }
 
 // MARK: - ContinuousRhythmMatchingSession (research-build only)
@@ -256,6 +386,53 @@ struct ContinuousRhythmMatchingSessionPauseResumeTests {
         session.pause()
 
         #expect(session.isIdle)
+    }
+
+    // MARK: - Settings-aware reconcile
+
+    private var changedSettings: ContinuousRhythmMatchingSettings {
+        ContinuousRhythmMatchingSettings(tempo: TempoBPM(100), enabledGapPositions: [.second])
+    }
+
+    @Test("reconcile(with:) when idle is a no-op")
+    func reconcileWhenIdleIsNoOp() {
+        let session = makeSession()
+        #expect(session.isIdle)
+
+        session.reconcile(with: settings)
+
+        #expect(session.isIdle)
+    }
+
+    @Test("reconcile(with:) unchanged on an active session keeps it running")
+    func reconcileActiveUnchangedKeepsRunning() {
+        let session = makeSession()
+        session.start(settings: settings)
+        #expect(session.isIdle == false)
+
+        session.reconcile(with: settings)
+
+        #expect(session.isIdle == false)
+        session.stop()
+    }
+
+    @Test("reconcile(with:) changed on an active session restarts the trial cycle")
+    func reconcileChangedRestarts() {
+        let session = makeSession()
+        session.start(settings: settings)
+        #expect(session.isIdle == false)
+
+        session.reconcile(with: changedSettings)
+
+        #expect(session.isIdle == false)
+        #expect(session.cyclesInCurrentTrial == 0)
+        session.stop()
+    }
+
+    @Test("ContinuousRhythmMatchingSettings Equatable distinguishes a changed field")
+    func settingsEquatableDistinguishesChange() {
+        #expect(settings != changedSettings)
+        #expect(settings == ContinuousRhythmMatchingSettings(tempo: TempoBPM(120), enabledGapPositions: [.second]))
     }
 }
 #endif

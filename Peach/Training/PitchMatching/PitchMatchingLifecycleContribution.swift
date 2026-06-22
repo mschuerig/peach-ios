@@ -9,7 +9,9 @@ extension PitchMatchingSession {
             start: {
                 self.start(settings: .from(userSettings, intervals: [.prime]))
             },
-            reconcile: { self.resume() }
+            reconcile: {
+                self.reconcile(with: .from(userSettings, intervals: [.prime]))
+            }
         )
         builder.register(
             destination: .pitchMatching(isIntervalMode: true),
@@ -17,7 +19,9 @@ extension PitchMatchingSession {
             start: {
                 self.start(settings: .from(userSettings, intervals: userSettings.intervals))
             },
-            reconcile: { self.resume() }
+            reconcile: {
+                self.reconcile(with: .from(userSettings, intervals: userSettings.intervals))
+            }
         )
     }
 }
