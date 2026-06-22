@@ -184,6 +184,13 @@ struct PeachApp: App {
             .environment(\.soundSourceProvider, soundFontLibrary)
             .environment(\.settingsCoordinator, settingsCoordinator)
             .modelContainer(modelContainer)
+            // On macOS Settings is a separate window, so the training window
+            // keeps playing a stale snapshot while the user edits. Reconciling
+            // when this window closes applies all the edits at once — the
+            // training session restarts with the new settings if anything
+            // changed. `.onDisappear` on the NavigationStack (the window's
+            // root) fires on window teardown, not on internal drill-downs.
+            .onDisappear { trainingLifecycle.reconcileForegroundSession() }
         }
         .windowToolbarStyle(.unified)
         .windowResizability(.contentSize)

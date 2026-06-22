@@ -1049,7 +1049,7 @@ struct TimingOffsetDetectionSessionTests {
         f.session.stop()
     }
 
-    // MARK: - Settings-Aware Resume (resume-or-restart)
+    // MARK: - Settings-Aware Reconcile (resume / restart on settings change)
 
     private var straightSettings: TimingOffsetDetectionSettings {
         TimingOffsetDetectionSettings(
@@ -1069,30 +1069,64 @@ struct TimingOffsetDetectionSessionTests {
         )
     }
 
-    @Test("resume(orRestartWith:) when not paused is a no-op")
-    func resumeOrRestartWhenNotPausedIsNoOp() async throws {
+    @Test("reconcile(with:) when idle is a no-op")
+    func reconcileWhenIdleIsNoOp() async throws {
+        let f = makeSession()
+        #expect(f.session.isIdle)
+
+        f.session.reconcile(with: straightSettings)
+
+        #expect(f.session.isIdle)
+        #expect(f.sequencer.startCallCount == 0)
+    }
+
+    @Test("reconcile(with:) on an active session with unchanged settings keeps playing (no restart)")
+    func reconcileActiveUnchangedKeepsPlaying() async throws {
         let f = makeSession()
         f.session.start(settings: straightSettings)
         await f.sequencer.waitForStart()
         let startsBefore = f.sequencer.startCallCount
-        let stateBefore = f.session.state
+        let trialCallsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
 
-        f.session.resume(orRestartWith: straightSettings)
+        f.session.reconcile(with: straightSettings)
 
-        #expect(f.session.state == stateBefore)
-        #expect(f.sequencer.startCallCount == startsBefore)
+        #expect(f.session.state == .playingPatternLoop)
+        #expect(f.sequencer.startCallCount == startsBefore, "unchanged active session must not restart")
+        #expect(f.strategy.nextTimingOffsetDetectionTrialCallCount == trialCallsBefore)
         f.session.stop()
     }
 
-    @Test("resume(orRestartWith:) with unchanged settings preserves the trial (no new trial generated)")
-    func resumeOrRestartUnchangedPreservesTrial() async throws {
+    @Test("reconcile(with:) on an active session with a changed pattern restarts and plays the new pattern (macOS path)")
+    func reconcileActiveChangedRestartsWithNewPattern() async throws {
+        let f = makeSession()
+        f.session.start(settings: straightSettings)
+        await f.sequencer.waitForStart()
+        let trialCallsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+
+        // No pause: the session is actively playing when the setting changes,
+        // as on macOS where the Settings window is separate.
+        f.session.reconcile(with: gappedSettings)
+
+        try await waitForState(f.session, .playingPatternLoop)
+        await f.sequencer.waitForStart(minCount: 2)
+        #expect(f.strategy.nextTimingOffsetDetectionTrialCallCount == trialCallsBefore + 1)
+        let beat = f.session.nextBeat()
+        guard case .rest = beat.subdivisions[1] else {
+            Issue.record("Expected gapped pattern after an active settings change: subdivision 1 should be a rest")
+            return
+        }
+        f.session.stop()
+    }
+
+    @Test("reconcile(with:) with unchanged settings on a paused session preserves the trial (no new trial generated)")
+    func reconcilePausedUnchangedPreservesTrial() async throws {
         let f = makeSession()
         f.session.start(settings: straightSettings)
         await f.sequencer.waitForStart()
         let trialCallsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
         f.session.pause()
 
-        f.session.resume(orRestartWith: straightSettings)
+        f.session.reconcile(with: straightSettings)
 
         try await waitForState(f.session, .playingPatternLoop)
         await f.sequencer.waitForStart(minCount: 2)
@@ -1103,15 +1137,15 @@ struct TimingOffsetDetectionSessionTests {
         f.session.stop()
     }
 
-    @Test("resume(orRestartWith:) with a changed pattern restarts fresh and nextBeat plays the new pattern")
-    func resumeOrRestartChangedPatternPlaysNewPattern() async throws {
+    @Test("reconcile(with:) with a changed pattern on a paused session restarts fresh and nextBeat plays the new pattern")
+    func reconcilePausedChangedPatternPlaysNewPattern() async throws {
         let f = makeSession()
         f.session.start(settings: straightSettings)
         await f.sequencer.waitForStart()
         let trialCallsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
         f.session.pause()
 
-        f.session.resume(orRestartWith: gappedSettings)
+        f.session.reconcile(with: gappedSettings)
 
         try await waitForState(f.session, .playingPatternLoop)
         await f.sequencer.waitForStart(minCount: 2)
@@ -1130,14 +1164,14 @@ struct TimingOffsetDetectionSessionTests {
         f.session.stop()
     }
 
-    @Test("resume(orRestartWith:) changed-settings restart is audio-safe: fresh start lands after the restart stop")
-    func resumeOrRestartChangedIsAudioSafe() async throws {
+    @Test("reconcile(with:) changed-settings restart is audio-safe: fresh start lands after the restart stop")
+    func reconcileChangedIsAudioSafe() async throws {
         let f = makeSession()
         f.session.start(settings: straightSettings)
         await f.sequencer.waitForStart()
         f.session.pause()
 
-        f.session.resume(orRestartWith: gappedSettings)
+        f.session.reconcile(with: gappedSettings)
 
         try await waitForState(f.session, .playingPatternLoop)
         await f.sequencer.waitForStart(minCount: 2)

@@ -22,7 +22,7 @@ extension ChromaticConstructionSession {
                     outerIntervals: ChromaticDirectionMode.mix.outerIntervals(for: .perfectFifth)
                 ))
             },
-            resume: { self.resume() }
+            reconcile: { self.resume() }
         )
     }
 }

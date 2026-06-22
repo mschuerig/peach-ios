@@ -13,8 +13,8 @@ extension TimingOffsetDetectionSession {
             start: {
                 self.start(settings: .from(userSettings, todUserSettings: todUserSettings))
             },
-            resume: {
-                self.resume(orRestartWith: .from(userSettings, todUserSettings: todUserSettings))
+            reconcile: {
+                self.reconcile(with: .from(userSettings, todUserSettings: todUserSettings))
             }
         )
     }

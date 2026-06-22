@@ -9,7 +9,7 @@ extension PitchDiscriminationSession {
             start: {
                 self.start(settings: .from(userSettings, intervals: [.prime]))
             },
-            resume: { self.resume() }
+            reconcile: { self.resume() }
         )
         builder.register(
             destination: .pitchDiscrimination(isIntervalMode: true),
@@ -17,7 +17,7 @@ extension PitchDiscriminationSession {
             start: {
                 self.start(settings: .from(userSettings, intervals: userSettings.intervals))
             },
-            resume: { self.resume() }
+            reconcile: { self.resume() }
         )
     }
 }

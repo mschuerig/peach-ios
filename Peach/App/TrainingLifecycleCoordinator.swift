@@ -120,7 +120,7 @@ final class TrainingLifecycleCoordinator {
     func trainingScreenAppeared(destination: NavigationDestination) {
         if pausedDestination == destination {
             currentTrainingDestination = destination
-            registry.contribution(for: destination)?.resume()
+            registry.contribution(for: destination)?.reconcile()
             pausedDestination = nil
         } else {
             discardLingeringPausedSession()
@@ -163,11 +163,28 @@ final class TrainingLifecycleCoordinator {
     func helpSheetDismissed() {
         if let pausedDest = pausedDestination,
            let contribution = registry.contribution(for: pausedDest) {
-            contribution.resume()
+            contribution.reconcile()
             pausedDestination = nil
         } else if shouldAutoStartTraining {
             startCurrentSession()
         }
+    }
+
+    /// Reconciles the foreground training session with the current settings,
+    /// restarting it if anything changed (no-op otherwise). Driven on macOS when
+    /// the separate Settings window is dismissed: the training window stays up
+    /// while the user edits settings, so its session may be left running a stale
+    /// snapshot — reconciling on dismissal applies all the edits at once, with no
+    /// mid-edit restart churn. No-op when no training is foreground
+    /// (`currentTrainingDestination == nil`, e.g. Settings opened from Start) or
+    /// the session is idle. iOS has no separate Settings window; there the
+    /// equivalent reconcile happens in `trainingScreenAppeared` on return from
+    /// the pushed Settings screen.
+    func reconcileForegroundSession() {
+        guard let destination = currentTrainingDestination,
+              let contribution = registry.contribution(for: destination),
+              !contribution.session.isIdle else { return }
+        contribution.reconcile()
     }
 
     func toggleTraining() {

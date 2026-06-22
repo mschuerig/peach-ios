@@ -7,12 +7,15 @@ final class TrainingLifecycleRegistry {
     struct Contribution {
         let session: any TrainingSession
         let start: () -> Void
-        /// Re-engages a paused session when the training screen reappears.
-        /// Owns the discipline-specific resume policy: most disciplines simply
-        /// forward to `session.resume()`, but a discipline whose settings can
-        /// change while paused (e.g. Timing Offset Detection's pattern) rebuilds
-        /// the live snapshot here and restarts fresh when it differs.
-        let resume: () -> Void
+        /// Reconciles the session with the live settings snapshot — on iOS when
+        /// a paused training screen reappears, and on macOS when a setting
+        /// changes while the session is still active (separate Settings window).
+        /// Owns the discipline-specific policy: most disciplines simply forward
+        /// to `session.resume()`, but a discipline whose settings can change
+        /// out from under a running/paused session (e.g. Timing Offset
+        /// Detection's pattern) rebuilds the live snapshot here and restarts
+        /// fresh when it differs.
+        let reconcile: () -> Void
     }
 
     final class Builder {
@@ -22,13 +25,13 @@ final class TrainingLifecycleRegistry {
             destination: NavigationDestination,
             session: any TrainingSession,
             start: @escaping () -> Void,
-            resume: @escaping () -> Void
+            reconcile: @escaping () -> Void
         ) {
             precondition(
                 contributions[destination] == nil,
                 "Duplicate lifecycle contribution for \(destination)"
             )
-            contributions[destination] = Contribution(session: session, start: start, resume: resume)
+            contributions[destination] = Contribution(session: session, start: start, reconcile: reconcile)
         }
     }
 

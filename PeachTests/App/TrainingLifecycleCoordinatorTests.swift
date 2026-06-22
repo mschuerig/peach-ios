@@ -619,42 +619,101 @@ struct TrainingLifecycleCoordinatorTests {
 
     @Test("returning to TOD without changing settings resumes the same trial (no new trial generated)")
     func todReturnWithoutChangeResumesSameTrial() async throws {
-        // A bespoke fixture so the strategy is observable: the mock returns a
-        // fixed trial, so a scalar like `currentOffsetPercentage` cannot tell a
-        // resumed trial apart from a freshly generated identical one. The
-        // strategy's call count is the only signal that distinguishes resume
-        // (no new trial) from restart (one new trial).
-        let strategy = MockNextTimingOffsetDetectionStrategy()
-        let todUserSettings = MockTimingOffsetDetectionUserSettings()
-        let session = TimingOffsetDetectionSession(
-            beatSequencer: MockBeatSequencer(),
-            strategy: strategy,
-            profile: PerceptualProfile()
-        )
-        let registry = TrainingLifecycleRegistry { builder in
-            session.contribute(to: builder, userSettings: MockUserSettings(), todUserSettings: todUserSettings)
-        }
-        let coordinator = TrainingLifecycleCoordinator(
-            registry: registry,
-            backgroundPolicy: IOSBackgroundPolicy(),
-            initialAutoStartSetting: true,
-            mediaInfrastructureRebuild: { }
-        )
+        // The strategy's call count is the signal that distinguishes resume (no
+        // new trial) from restart (one new trial) — a scalar like
+        // `currentOffsetPercentage` cannot, since the mock returns a fixed trial.
+        let f = makeTodCoordinatorFixture()
 
-        coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
-        try await waitUntilNotIdle(session)
-        let trialsAfterStart = strategy.nextTimingOffsetDetectionTrialCallCount
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
+        let trialsAfterStart = f.strategy.nextTimingOffsetDetectionTrialCallCount
 
-        coordinator.trainingScreenDisappeared()
+        f.coordinator.trainingScreenDisappeared()
         // No settings change.
-        coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
-        try await waitUntilNotIdle(session)
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
 
         #expect(
-            strategy.nextTimingOffsetDetectionTrialCallCount == trialsAfterStart,
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialsAfterStart,
             "an unchanged excursion must resume the existing trial, not generate a new one"
         )
-        session.stop()
+        f.session.stop()
+    }
+
+    // MARK: - reconcileForegroundSession (macOS Settings-window dismissal)
+
+    @Test("reconcileForegroundSession restarts the foreground TOD session with the new pattern after a settings change")
+    func reconcileForegroundSessionRestartsWithNewPattern() async throws {
+        let f = makeTodCoordinatorFixture()
+        // Training screen foreground and auto-started: currentTrainingDestination == TOD.
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
+        let trialsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+
+        // The user edited the pattern in the (macOS) Settings window; reconcile
+        // fires when that window is dismissed.
+        f.todUserSettings.selectedPattern = .pattern_gapped16ths_01
+        f.coordinator.reconcileForegroundSession()
+
+        try await waitUntilNotIdle(f.session)
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialsBefore + 1,
+            "a changed snapshot must restart with a fresh trial"
+        )
+        let beat = f.session.nextBeat()
+        guard case .rest = beat.subdivisions[1] else {
+            Issue.record("Expected the new gapped pattern after reconcile; got \(beat.subdivisions)")
+            return
+        }
+        f.session.stop()
+    }
+
+    @Test("reconcileForegroundSession keeps the foreground TOD session playing when nothing changed")
+    func reconcileForegroundSessionUnchangedKeepsPlaying() async throws {
+        let f = makeTodCoordinatorFixture()
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
+        let trialsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+
+        // Settings window dismissed without changing anything.
+        f.coordinator.reconcileForegroundSession()
+
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialsBefore,
+            "an unchanged reconcile must not restart the active session"
+        )
+        f.session.stop()
+    }
+
+    @Test("reconcileForegroundSession is a no-op when no training is foreground")
+    func reconcileForegroundSessionNoOpWhenNoForeground() async throws {
+        let f = makeTodCoordinatorFixture()
+        f.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(f.session)
+        // Settings opened from Start (or no training active): destination cleared.
+        f.coordinator.trainingScreenDisappeared()
+        let trialsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+
+        f.todUserSettings.selectedPattern = .pattern_gapped16ths_01
+        f.coordinator.reconcileForegroundSession()
+
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialsBefore,
+            "with no foreground training, reconcile must not restart anything"
+        )
+        f.session.stop()
+    }
+
+    @Test("reconcileForegroundSession reconciles only the foreground discipline")
+    func reconcileForegroundSessionReconcilesOnlyForeground() {
+        let fixture = makeTwoMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.crm.isIdle = false
+
+        fixture.coordinator.reconcileForegroundSession()
+
+        #expect(fixture.crm.resumeCallCount == 1, "the foreground (CRM) session is reconciled")
+        #expect(fixture.tod.resumeCallCount == 0, "a non-foreground discipline is left untouched")
     }
 
     @Test("helpSheetPresented pauses (not stops) the active session")
@@ -962,6 +1021,42 @@ struct TrainingLifecycleCoordinatorTests {
         ).coordinator
     }
 
+    // MARK: - Real-TOD Coordinator Fixture (settings-aware reconcile tests)
+
+    private struct TodCoordinatorFixture {
+        let coordinator: TrainingLifecycleCoordinator
+        let session: TimingOffsetDetectionSession
+        let strategy: MockNextTimingOffsetDetectionStrategy
+        let todUserSettings: MockTimingOffsetDetectionUserSettings
+    }
+
+    private func makeTodCoordinatorFixture(
+        policy: BackgroundPolicy = IOSBackgroundPolicy()
+    ) -> TodCoordinatorFixture {
+        let strategy = MockNextTimingOffsetDetectionStrategy()
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
+        let session = TimingOffsetDetectionSession(
+            beatSequencer: MockBeatSequencer(),
+            strategy: strategy,
+            profile: PerceptualProfile()
+        )
+        let registry = TrainingLifecycleRegistry { builder in
+            session.contribute(to: builder, userSettings: MockUserSettings(), todUserSettings: todUserSettings)
+        }
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: policy,
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: { }
+        )
+        return TodCoordinatorFixture(
+            coordinator: coordinator,
+            session: session,
+            strategy: strategy,
+            todUserSettings: todUserSettings
+        )
+    }
+
     // MARK: - Mock Fixtures (pause/resume routing tests)
 
     private struct MockFixture {
@@ -1051,7 +1146,7 @@ struct TrainingLifecycleCoordinatorTests {
                 destination: .continuousRhythmMatching,
                 session: mock,
                 start: { mock.isIdle = false },
-                resume: { mock.resume() }
+                reconcile: { mock.resume() }
             )
         }
         let coordinator = TrainingLifecycleCoordinator(
@@ -1071,13 +1166,13 @@ struct TrainingLifecycleCoordinatorTests {
                 destination: .continuousRhythmMatching,
                 session: crm,
                 start: { crm.isIdle = false },
-                resume: { crm.resume() }
+                reconcile: { crm.resume() }
             )
             builder.register(
                 destination: .timingOffsetDetection,
                 session: tod,
                 start: { tod.isIdle = false },
-                resume: { tod.resume() }
+                reconcile: { tod.resume() }
             )
         }
         let coordinator = TrainingLifecycleCoordinator(

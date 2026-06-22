@@ -253,19 +253,29 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         launchSequencer(settings: settings)
     }
 
-    /// Settings-aware resume used by the lifecycle coordinator when the user
-    /// returns to the training screen. If the live settings snapshot is
-    /// unchanged from the one this session is running, preserve the in-trial
-    /// state and `resume()` (the Story 85.1 behaviour for a quick excursion
-    /// such as peeking at Profile). If anything changed — e.g. the pattern was
-    /// changed in Settings — restart fresh with the new settings so playback
-    /// reflects the new configuration, exactly as returning via the Start
-    /// screen does. `start()`'s sequencer launch drains the `stop()` enqueued
-    /// here, so the back-to-back stop/start is audio-safe.
-    func resume(orRestartWith refreshed: TimingOffsetDetectionSettings) {
-        guard isPaused else { return }
+    /// Reconciles the session with the live settings snapshot. Driven by the
+    /// lifecycle coordinator on two triggers:
+    ///
+    /// - **iOS** — returning to a paused training screen (`trainingScreenAppeared`).
+    /// - **macOS** — a setting changes while the session is still actively
+    ///   playing, because the Settings window is separate and the training
+    ///   screen never paused.
+    ///
+    /// Behaviour:
+    /// - Idle → no-op (the next `start()` will pick up the new settings).
+    /// - Paused & unchanged → `resume()` the preserved trial (the Story 85.1
+    ///   quick-excursion behaviour, e.g. peeking at Profile and back).
+    /// - Changed (paused or active) → restart fresh with the new settings, so
+    ///   playback reflects the new configuration exactly as returning via the
+    ///   Start screen does. `start()`'s sequencer launch drains the `stop()`
+    ///   enqueued here, so the back-to-back stop/start is audio-safe.
+    /// - Active & unchanged → no-op (keep playing). This is what dedupes the
+    ///   pattern picker's paired `selectedPatternId` + `offsetNotePosition`
+    ///   writes into a single restart on macOS.
+    func reconcile(with refreshed: TimingOffsetDetectionSettings) {
+        guard !isIdle else { return }
         if let settings, settings == refreshed {
-            resume()
+            if isPaused { resume() }
         } else {
             stop()
             start(settings: refreshed)
@@ -277,9 +287,9 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
     /// path (`resume()`).
     ///
     /// Drains any in-flight stop (the one `pause()` or `stop()` enqueued) before
-    /// starting, so a back-to-back `stop()` + `start()` — as in
-    /// `resume(orRestartWith:)`'s restart branch — cannot let `beatSequencer.start`
-    /// race the pending stop and leave the sequencer silenced.
+    /// starting, so a back-to-back `stop()` + `start()` — as in `reconcile(with:)`'s
+    /// restart branch — cannot let `beatSequencer.start` race the pending stop and
+    /// leave the sequencer silenced.
     private func launchSequencer(settings: TimingOffsetDetectionSettings) {
         let priorStop = stopTask
         startTask = Task {
