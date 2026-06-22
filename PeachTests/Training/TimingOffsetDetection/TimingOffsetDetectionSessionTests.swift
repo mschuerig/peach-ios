@@ -1048,4 +1048,106 @@ struct TimingOffsetDetectionSessionTests {
 
         f.session.stop()
     }
+
+    // MARK: - Settings-Aware Resume (resume-or-restart)
+
+    private var straightSettings: TimingOffsetDetectionSettings {
+        TimingOffsetDetectionSettings(
+            tempo: TempoBPM(80),
+            feedbackDuration: .milliseconds(50),
+            offsetNotePosition: OffsetNotePosition(3),
+            pattern: .pattern_straight16ths_01
+        )
+    }
+
+    private var gappedSettings: TimingOffsetDetectionSettings {
+        TimingOffsetDetectionSettings(
+            tempo: TempoBPM(80),
+            feedbackDuration: .milliseconds(50),
+            offsetNotePosition: OffsetNotePosition(2),
+            pattern: .pattern_gapped16ths_01
+        )
+    }
+
+    @Test("resume(orRestartWith:) when not paused is a no-op")
+    func resumeOrRestartWhenNotPausedIsNoOp() async throws {
+        let f = makeSession()
+        f.session.start(settings: straightSettings)
+        await f.sequencer.waitForStart()
+        let startsBefore = f.sequencer.startCallCount
+        let stateBefore = f.session.state
+
+        f.session.resume(orRestartWith: straightSettings)
+
+        #expect(f.session.state == stateBefore)
+        #expect(f.sequencer.startCallCount == startsBefore)
+        f.session.stop()
+    }
+
+    @Test("resume(orRestartWith:) with unchanged settings preserves the trial (no new trial generated)")
+    func resumeOrRestartUnchangedPreservesTrial() async throws {
+        let f = makeSession()
+        f.session.start(settings: straightSettings)
+        await f.sequencer.waitForStart()
+        let trialCallsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+        f.session.pause()
+
+        f.session.resume(orRestartWith: straightSettings)
+
+        try await waitForState(f.session, .playingPatternLoop)
+        await f.sequencer.waitForStart(minCount: 2)
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialCallsBefore,
+            "unchanged settings must resume the same trial, not generate a new one"
+        )
+        f.session.stop()
+    }
+
+    @Test("resume(orRestartWith:) with a changed pattern restarts fresh and nextBeat plays the new pattern")
+    func resumeOrRestartChangedPatternPlaysNewPattern() async throws {
+        let f = makeSession()
+        f.session.start(settings: straightSettings)
+        await f.sequencer.waitForStart()
+        let trialCallsBefore = f.strategy.nextTimingOffsetDetectionTrialCallCount
+        f.session.pause()
+
+        f.session.resume(orRestartWith: gappedSettings)
+
+        try await waitForState(f.session, .playingPatternLoop)
+        await f.sequencer.waitForStart(minCount: 2)
+        #expect(
+            f.strategy.nextTimingOffsetDetectionTrialCallCount == trialCallsBefore + 1,
+            "changed settings must generate a fresh trial"
+        )
+        // gapped16ths_01 is `* - * *`: subdivision index 1 is a rest. The old
+        // straight pattern had a note there — so this asserts the new pattern plays.
+        let beat = f.session.nextBeat()
+        #expect(beat.subdivisions.count == 4)
+        guard case .rest = beat.subdivisions[1] else {
+            Issue.record("Expected gapped pattern after a settings change: subdivision 1 should be a rest")
+            return
+        }
+        f.session.stop()
+    }
+
+    @Test("resume(orRestartWith:) changed-settings restart is audio-safe: fresh start lands after the restart stop")
+    func resumeOrRestartChangedIsAudioSafe() async throws {
+        let f = makeSession()
+        f.session.start(settings: straightSettings)
+        await f.sequencer.waitForStart()
+        f.session.pause()
+
+        f.session.resume(orRestartWith: gappedSettings)
+
+        try await waitForState(f.session, .playingPatternLoop)
+        await f.sequencer.waitForStart(minCount: 2)
+        // The pause stop and the restart stop must both drain before the fresh
+        // start; the call log must therefore END on a start, not a stop that
+        // would silence the new pattern.
+        #expect(
+            f.sequencer.callLog.last == .start(providerTypeName: "TimingOffsetDetectionSession"),
+            "fresh sequencer start must land after the restart stop; log = \(f.sequencer.callLog)"
+        )
+        f.session.stop()
+    }
 }

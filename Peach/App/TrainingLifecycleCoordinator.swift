@@ -120,7 +120,7 @@ final class TrainingLifecycleCoordinator {
     func trainingScreenAppeared(destination: NavigationDestination) {
         if pausedDestination == destination {
             currentTrainingDestination = destination
-            registry.contribution(for: destination)?.session.resume()
+            registry.contribution(for: destination)?.resume()
             pausedDestination = nil
         } else {
             discardLingeringPausedSession()
@@ -162,8 +162,8 @@ final class TrainingLifecycleCoordinator {
 
     func helpSheetDismissed() {
         if let pausedDest = pausedDestination,
-           let paused = registry.contribution(for: pausedDest)?.session {
-            paused.resume()
+           let contribution = registry.contribution(for: pausedDest) {
+            contribution.resume()
             pausedDestination = nil
         } else if shouldAutoStartTraining {
             startCurrentSession()

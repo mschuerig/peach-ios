@@ -14,13 +14,15 @@ extension ChromaticConstructionSession {
     ) {
         builder.register(
             destination: .chromaticConstruction,
-            session: self
-        ) {
-            self.start(settings: ChromaticConstructionSettings.from(
-                userSettings,
-                lowerAnchor: MIDINote(60),
-                outerIntervals: ChromaticDirectionMode.mix.outerIntervals(for: .perfectFifth)
-            ))
-        }
+            session: self,
+            start: {
+                self.start(settings: ChromaticConstructionSettings.from(
+                    userSettings,
+                    lowerAnchor: MIDINote(60),
+                    outerIntervals: ChromaticDirectionMode.mix.outerIntervals(for: .perfectFifth)
+                ))
+            },
+            resume: { self.resume() }
+        )
     }
 }

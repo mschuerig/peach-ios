@@ -587,6 +587,76 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(fixture.tod.pauseCallCount == 0)
     }
 
+    @Test("changing the TOD pattern while paused restarts playback with the new pattern on return (the reported bug)")
+    func todPatternChangeWhilePausedRestartsWithNewPattern() async throws {
+        // Default selectedPattern is straight16ths_01 (`* * * *`).
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
+        let fixture = makeFixture(policy: IOSBackgroundPolicy(), todUserSettings: todUserSettings)
+
+        // Enter TOD — iOS auto-starts the session.
+        fixture.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(fixture.todSession)
+
+        // Leave directly to Settings — the screen disappears and the session pauses.
+        fixture.coordinator.trainingScreenDisappeared()
+        #expect(fixture.todSession.isIdle == false, "paused session must stay non-idle")
+
+        // The user picks a different pattern in Settings.
+        todUserSettings.selectedPattern = .pattern_gapped16ths_01
+
+        // Return to TOD — the coordinator resumes, sees the changed snapshot, and restarts.
+        fixture.coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(fixture.todSession)
+
+        // Playback now reflects the new gapped pattern (`* - * *`): subdivision 1 is a rest.
+        let beat = fixture.todSession.nextBeat()
+        guard case .rest = beat.subdivisions[1] else {
+            Issue.record("Returning after a pattern change must play the new pattern; got \(beat.subdivisions)")
+            return
+        }
+        fixture.todSession.stop()
+    }
+
+    @Test("returning to TOD without changing settings resumes the same trial (no new trial generated)")
+    func todReturnWithoutChangeResumesSameTrial() async throws {
+        // A bespoke fixture so the strategy is observable: the mock returns a
+        // fixed trial, so a scalar like `currentOffsetPercentage` cannot tell a
+        // resumed trial apart from a freshly generated identical one. The
+        // strategy's call count is the only signal that distinguishes resume
+        // (no new trial) from restart (one new trial).
+        let strategy = MockNextTimingOffsetDetectionStrategy()
+        let todUserSettings = MockTimingOffsetDetectionUserSettings()
+        let session = TimingOffsetDetectionSession(
+            beatSequencer: MockBeatSequencer(),
+            strategy: strategy,
+            profile: PerceptualProfile()
+        )
+        let registry = TrainingLifecycleRegistry { builder in
+            session.contribute(to: builder, userSettings: MockUserSettings(), todUserSettings: todUserSettings)
+        }
+        let coordinator = TrainingLifecycleCoordinator(
+            registry: registry,
+            backgroundPolicy: IOSBackgroundPolicy(),
+            initialAutoStartSetting: true,
+            mediaInfrastructureRebuild: { }
+        )
+
+        coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(session)
+        let trialsAfterStart = strategy.nextTimingOffsetDetectionTrialCallCount
+
+        coordinator.trainingScreenDisappeared()
+        // No settings change.
+        coordinator.trainingScreenAppeared(destination: .timingOffsetDetection)
+        try await waitUntilNotIdle(session)
+
+        #expect(
+            strategy.nextTimingOffsetDetectionTrialCallCount == trialsAfterStart,
+            "an unchanged excursion must resume the existing trial, not generate a new one"
+        )
+        session.stop()
+    }
+
     @Test("helpSheetPresented pauses (not stops) the active session")
     func helpSheetPresentedPausesSession() {
         let fixture = makeMockFixture()
@@ -980,7 +1050,8 @@ struct TrainingLifecycleCoordinatorTests {
             builder.register(
                 destination: .continuousRhythmMatching,
                 session: mock,
-                start: { mock.isIdle = false }
+                start: { mock.isIdle = false },
+                resume: { mock.resume() }
             )
         }
         let coordinator = TrainingLifecycleCoordinator(
@@ -999,12 +1070,14 @@ struct TrainingLifecycleCoordinatorTests {
             builder.register(
                 destination: .continuousRhythmMatching,
                 session: crm,
-                start: { crm.isIdle = false }
+                start: { crm.isIdle = false },
+                resume: { crm.resume() }
             )
             builder.register(
                 destination: .timingOffsetDetection,
                 session: tod,
-                start: { tod.isIdle = false }
+                start: { tod.isIdle = false },
+                resume: { tod.resume() }
             )
         }
         let coordinator = TrainingLifecycleCoordinator(

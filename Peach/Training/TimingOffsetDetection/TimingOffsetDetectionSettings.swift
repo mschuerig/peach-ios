@@ -1,6 +1,6 @@
 import Foundation
 
-struct TimingOffsetDetectionSettings: Sendable {
+struct TimingOffsetDetectionSettings: Sendable, Equatable {
     var tempo: TempoBPM
     var feedbackDuration: Duration
     var maxOffsetPercentage: Double

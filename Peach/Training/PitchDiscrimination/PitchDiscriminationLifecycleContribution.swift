@@ -5,15 +5,19 @@ extension PitchDiscriminationSession {
     ) {
         builder.register(
             destination: .pitchDiscrimination(isIntervalMode: false),
-            session: self
-        ) {
-            self.start(settings: .from(userSettings, intervals: [.prime]))
-        }
+            session: self,
+            start: {
+                self.start(settings: .from(userSettings, intervals: [.prime]))
+            },
+            resume: { self.resume() }
+        )
         builder.register(
             destination: .pitchDiscrimination(isIntervalMode: true),
-            session: self
-        ) {
-            self.start(settings: .from(userSettings, intervals: userSettings.intervals))
-        }
+            session: self,
+            start: {
+                self.start(settings: .from(userSettings, intervals: userSettings.intervals))
+            },
+            resume: { self.resume() }
+        )
     }
 }

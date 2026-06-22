@@ -82,4 +82,71 @@ struct TimingOffsetDetectionSettingsTests {
 
         #expect(settings.pattern == TimingOffsetDetectionPattern.pattern_straight16ths_01)
     }
+
+    // MARK: - Equatable (drives the coordinator's resume-vs-restart decision)
+
+    @Test("snapshots built from identical user settings compare equal")
+    func equalSnapshotsCompareEqual() {
+        let user = MockUserSettings()
+        let tod = MockTimingOffsetDetectionUserSettings()
+
+        let a = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+        let b = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        #expect(a == b)
+    }
+
+    @Test("changing the pattern makes the snapshot compare unequal")
+    func patternChangeBreaksEquality() {
+        let user = MockUserSettings()
+        let tod = MockTimingOffsetDetectionUserSettings()
+        let before = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        // OffsetNotePosition.default (3) is pickable for gapped16ths_01 ({2, 3}),
+        // so only the pattern changes.
+        tod.selectedPattern = .pattern_gapped16ths_01
+        let after = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        #expect(before != after)
+    }
+
+    @Test("changing the tempo makes the snapshot compare unequal")
+    func tempoChangeBreaksEquality() {
+        let user = MockUserSettings()
+        user.tempoBPM = TempoBPM(80)
+        let tod = MockTimingOffsetDetectionUserSettings()
+        let before = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        user.tempoBPM = TempoBPM(120)
+        let after = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        #expect(before != after)
+    }
+
+    @Test("changing maxRepetitions makes the snapshot compare unequal")
+    func maxRepetitionsChangeBreaksEquality() {
+        let user = MockUserSettings()
+        let tod = MockTimingOffsetDetectionUserSettings()
+        let before = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        tod.maxRepetitions = before.maxRepetitions + 1
+        let after = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        #expect(before != after)
+    }
+
+    @Test("changing offsetNotePosition makes the snapshot compare unequal")
+    func offsetNotePositionChangeBreaksEquality() {
+        let user = MockUserSettings()
+        let tod = MockTimingOffsetDetectionUserSettings()
+        // Default pattern straight16ths_01 is pickable at {2, 3, 4}; default
+        // position is 3, so 2 is a valid distinct value.
+        tod.offsetNotePosition = OffsetNotePosition(3)
+        let before = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        tod.offsetNotePosition = OffsetNotePosition(2)
+        let after = TimingOffsetDetectionSettings.from(user, todUserSettings: tod)
+
+        #expect(before != after)
+    }
 }

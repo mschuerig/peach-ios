@@ -433,3 +433,14 @@ When `setupDataStore` decides to wipe the on-disk store, it does so silently —
 Peach has no analytics infrastructure today and adding one is out of scope for an isolated bugfix. The story narrowed the wipe surface so the destructive path fires only on actual schema mismatches; the previous "wipe on anything" surface had the same telemetry gap with a much wider blast radius, so this is strictly an improvement.
 
 **Fix:** When telemetry / signpost infrastructure lands — or whenever the project decides on a structured-event pipeline — add a single event at the wipe site recording: pre-wipe file sizes, the classifying error's domain + code, and the post-wipe init outcome. Optionally: copy the three files to `temporaryDirectory/peach-wipe-{ISO8601}/` before removal so a developer can recover them from a sysdiagnose bundle. Both are nice-to-have. Acceptable to leave indefinitely — the failure mode is rare and self-recovering.
+
+
+### PF-074: macOS — changing TOD settings in the separate Settings window does not refresh the live session
+
+**Found:** 2026-06-22 (spec-fix-timing-offset-detection-stale-pattern-playback step-04 review — Edge Case Hunter; flagged "Ask First" in the spec)
+**Severity:** Medium (functional, macOS-only; the reported bug was iOS)
+**Disposition:** OPEN
+
+The stale-pattern fix hooks the iOS pause→resume lifecycle: leaving the training screen for Settings (a `NavigationLink` push) pauses the session, and returning runs `resume(orRestartWith:)`, which restarts when the live snapshot differs. On macOS, Settings opens as a **separate window** (`PeachApp.swift` `Window("Settings", id: "settings")`, opened via `PlatformSettingsButton`→`openWindow`), so the training window never disappears: `trainingScreenDisappeared`/`pause()` and `trainingScreenAppeared`/`resume(orRestartWith:)` never fire, and window-to-window focus changes within the same app do not trigger `handleAppActivated`/`handleAppDeactivated` (those are app-level). `TimingOffsetDetectionScreen` reads `selectedPatternId` only for its visual preview. Net: on macOS a user can change the pattern in the Settings window and the live session keeps playing the OLD pattern until a stop/start. This is the same class of bug as the reported iOS one, left unaddressed by the iOS-scoped fix — exactly as the spec's "Ask First / Never change macOS behavior" boundary intended.
+
+**Fix:** TBD — decide between (a) observe the relevant TOD `@AppStorage` keys at the composition root (or in the training window) and restart the active session when they change while a macOS Settings window is open, mirroring `handleSoundSourceChanged`; or (b) stop the active session when the macOS Settings window opens, so returning focus re-derives fresh settings. Shared settings like tempo affect every discipline, so the observation must be discipline-aware. Needs Michael's decision on whether macOS settings-while-training is in scope at all.

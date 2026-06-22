@@ -9,9 +9,13 @@ extension TimingOffsetDetectionSession {
     ) {
         builder.register(
             destination: .timingOffsetDetection,
-            session: self
-        ) {
-            self.start(settings: .from(userSettings, todUserSettings: todUserSettings))
-        }
+            session: self,
+            start: {
+                self.start(settings: .from(userSettings, todUserSettings: todUserSettings))
+            },
+            resume: {
+                self.resume(orRestartWith: .from(userSettings, todUserSettings: todUserSettings))
+            }
+        )
     }
 }

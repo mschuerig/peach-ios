@@ -250,28 +250,65 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         logger.info("Session resuming from preserved trial")
         // Sequencer restarts at sample position 0; the grid origin was preserved.
         state = .playingPatternLoop
-        restartSequencerForCurrentTrial(settings: settings)
+        launchSequencer(settings: settings)
     }
 
-    private func restartSequencerForCurrentTrial(settings: TimingOffsetDetectionSettings) {
+    /// Settings-aware resume used by the lifecycle coordinator when the user
+    /// returns to the training screen. If the live settings snapshot is
+    /// unchanged from the one this session is running, preserve the in-trial
+    /// state and `resume()` (the Story 85.1 behaviour for a quick excursion
+    /// such as peeking at Profile). If anything changed — e.g. the pattern was
+    /// changed in Settings — restart fresh with the new settings so playback
+    /// reflects the new configuration, exactly as returning via the Start
+    /// screen does. `start()`'s sequencer launch drains the `stop()` enqueued
+    /// here, so the back-to-back stop/start is audio-safe.
+    func resume(orRestartWith refreshed: TimingOffsetDetectionSettings) {
+        guard isPaused else { return }
+        if let settings, settings == refreshed {
+            resume()
+        } else {
+            stop()
+            start(settings: refreshed)
+        }
+    }
+
+    /// Launches the beat sequencer for the current trial. Shared by the
+    /// next-trial start path (`beginNextTrial`) and the paused-resume restart
+    /// path (`resume()`).
+    ///
+    /// Drains any in-flight stop (the one `pause()` or `stop()` enqueued) before
+    /// starting, so a back-to-back `stop()` + `start()` — as in
+    /// `resume(orRestartWith:)`'s restart branch — cannot let `beatSequencer.start`
+    /// race the pending stop and leave the sequencer silenced.
+    private func launchSequencer(settings: TimingOffsetDetectionSettings) {
         let priorStop = stopTask
         startTask = Task {
             await priorStop?.value
-            guard state == .playingPatternLoop, !Task.isCancelled else { return }
-            // PF-011: see `beginNextTrial` for rationale — snapshot BEFORE the await.
+            guard state == .playingPatternLoop, !Task.isCancelled else {
+                logger.info("State changed before starting sequencer, aborting")
+                return
+            }
+            // PF-011: snapshot `samplePosition` BEFORE the await on
+            // `beatSequencer.start(...)`. The render thread may observe the
+            // gen-bump reset to 0 DURING the await (e.g., while `loadPreset`
+            // runs); reading `timing.samplePosition` after the await can return
+            // 0 even though a stale large value was in flight when start was
+            // requested. The pre-await value IS the stale upper bound: while
+            // `samplePosition >= bound`, the polling task knows the render
+            // thread has not yet committed the post-start reset.
             let prestartSamplePosition = beatSequencer.timing.samplePosition
             do {
                 try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
                 guard state == .playingPatternLoop, !Task.isCancelled else {
-                    logger.info("State changed while restarting sequencer, aborting")
+                    logger.info("State changed while starting sequencer, aborting")
                     return
                 }
                 setStaleSamplePositionUpperBound(prestartSamplePosition)
                 startTrackingLoop()
             } catch is CancellationError {
-                logger.info("Sequencer restart task cancelled")
+                logger.info("Sequencer start task cancelled")
             } catch {
-                logger.error("Audio error during resume: \(error.localizedDescription)")
+                logger.error("Audio error starting sequencer: \(error.localizedDescription)")
                 send(.audioError)
             }
         }
@@ -348,31 +385,7 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         currentTrial = trial
         resetTracking()
 
-        startTask = Task {
-            // PF-011: snapshot `samplePosition` BEFORE the await on
-            // `beatSequencer.start(...)`. The render thread may observe the
-            // gen-bump reset to 0 DURING the await (e.g., while `loadPreset`
-            // runs); reading `timing.samplePosition` after the await can return
-            // 0 even though a stale large value was in flight when start was
-            // requested. The pre-await value IS the stale upper bound: while
-            // `samplePosition >= bound`, the polling task knows the render
-            // thread has not yet committed the post-start reset.
-            let prestartSamplePosition = beatSequencer.timing.samplePosition
-            do {
-                try await beatSequencer.start(tempo: settings.tempo, beatProvider: self)
-                guard state == .playingPatternLoop, !Task.isCancelled else {
-                    logger.info("State changed while starting sequencer, aborting")
-                    return
-                }
-                setStaleSamplePositionUpperBound(prestartSamplePosition)
-                startTrackingLoop()
-            } catch is CancellationError {
-                logger.info("Sequencer start task cancelled")
-            } catch {
-                logger.error("Audio error, stopping training: \(error.localizedDescription)")
-                send(.audioError)
-            }
-        }
+        launchSequencer(settings: settings)
     }
 
     /// Installs the PF-011 polling gate from a pre-start `samplePosition`

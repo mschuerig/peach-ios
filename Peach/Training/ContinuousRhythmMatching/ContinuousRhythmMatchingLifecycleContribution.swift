@@ -9,9 +9,11 @@ extension ContinuousRhythmMatchingSession {
     ) {
         builder.register(
             destination: .continuousRhythmMatching,
-            session: self
-        ) {
-            self.start(settings: .from(userSettings, crmUserSettings: crmUserSettings))
-        }
+            session: self,
+            start: {
+                self.start(settings: .from(userSettings, crmUserSettings: crmUserSettings))
+            },
+            resume: { self.resume() }
+        )
     }
 }
