@@ -3,11 +3,13 @@ title: 'Skill-usefulness assessment after Epic 85 follow-up shipped 2026-06-11'
 type: 'chore'
 created: '2026-06-11'
 status: 'ready-for-dev'
-earliest_execution_date: '2026-07-09'
+earliest_execution_date: '2026-08-14'
 context:
   - '{project-root}/docs/planning-artifacts/research/technical-claude-code-skills-research-2026-03-27.md'
   - '{project-root}/docs/implementation-artifacts/epic-85-retro-2026-06-07.md'
 ---
+
+> **Deferred 2026-07-10 (Michael).** Date gate passed (07-10 ≥ 07-09), but the *data-sufficiency* precondition did not: the 06-11 → 07-10 window holds only 14 sessions, 13 of them in the first 12 days, then near-silence after 06-23. Per-artifact exercise falls below the story's own ≥5-session floor — `systematic-debugging` 3, patch-count circuit breaker 3, post-workflow sweep 2 — and raw grep counts for `/code-review` (14/14) and `citation_must_match_claim` (8/14) are contaminated by `MEMORY.md`/skill-listing context injection, not real use. Re-armed to 2026-08-14. **Note for the next run:** Task 1's date gate is necessary but not sufficient — re-verify session volume (≥5 relevant sessions per artifact domain) before proceeding past Task 1, and declassify injected-context grep hits from actual invocations.
 
 <frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
 
