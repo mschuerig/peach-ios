@@ -863,10 +863,7 @@ struct PitchMatchingSessionTests {
         session.adjustPitch(0.3)
         session.adjustPitch(0.7)
         await notePlayer.waitForPlay(minCount: 2)
-        let deadline = ContinuousClock.now + .seconds(5)
-        while ContinuousClock.now < deadline, notePlayer.lastHandle?.lastAdjustedFrequency == nil {
-            try await Task.sleep(for: .milliseconds(5))
-        }
+        try await waitForCondition { notePlayer.lastHandle?.lastAdjustedFrequency != nil }
 
         let trial = try #require(session.currentTrial)
         let inTune = try #require(session.inTuneTargetFrequency)
@@ -889,10 +886,7 @@ struct PitchMatchingSessionTests {
         session.adjustPitch(0.3)
         session.commitPitch(0.3)
         await notePlayer.waitForPlay(minCount: 2)
-        let deadline = ContinuousClock.now + .seconds(5)
-        while ContinuousClock.now < deadline, (notePlayer.lastHandle?.stopCallCount ?? 0) < 1 {
-            try await Task.sleep(for: .milliseconds(5))
-        }
+        try await waitForCondition { (notePlayer.lastHandle?.stopCallCount ?? 0) >= 1 }
 
         let handle = try #require(notePlayer.lastHandle)
         #expect(handle.stopCallCount >= 1)

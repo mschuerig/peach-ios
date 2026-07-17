@@ -1,6 +1,6 @@
 import Foundation
 
-struct PitchDiscriminationTrial {
+struct PitchDiscriminationTrial: PitchTrial {
     let referenceNote: MIDINote
     let targetNote: DetunedMIDINote
     let interval: DirectedInterval
@@ -17,12 +17,6 @@ struct PitchDiscriminationTrial {
 
     var isTargetHigher: Bool {
         targetNote.offset > 0
-    }
-
-    /// The reference tone sounds at its equal-tempered pitch in every tuning
-    /// system — only the interval to the target is judged (Story 87.1).
-    func referenceFrequency(referencePitch: Frequency) -> Frequency {
-        TuningSystem.equalTemperament.frequency(for: referenceNote, referencePitch: referencePitch)
     }
 
     /// In-tune point = the directed interval's size in the given tuning

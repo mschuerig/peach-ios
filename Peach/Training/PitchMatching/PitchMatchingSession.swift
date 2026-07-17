@@ -182,9 +182,14 @@ final class PitchMatchingSession: TrainingSession {
         if state == .awaitingSliderTouch {
             send(.sliderTouched)
         }
-        guard state == .playingTunable, let frequency = sliderFrequency(for: value) else { return }
+        guard state == .playingTunable else { return }
         Task {
-            try? await currentHandle?.adjustFrequency(frequency)
+            // Re-derive from the live slider state at execution time:
+            // unstructured Tasks have no ordering guarantee, so a task
+            // applying its spawn-time value could land after a newer one and
+            // revert the audible pitch to a stale position.
+            guard let handle = currentHandle, let frequency = sliderFrequency(for: currentPitchValue) else { return }
+            try? await handle.adjustFrequency(frequency)
         }
     }
 

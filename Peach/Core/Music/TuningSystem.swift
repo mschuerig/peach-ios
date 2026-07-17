@@ -51,7 +51,7 @@ nonisolated enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     /// tuning system's interval table. Must NOT be used for interval-trial
     /// playback — under `.justIntonation` the result depends on the note's
     /// position relative to A (the root lottery Story 87.1 removed); interval
-    /// trials derive the target from the reference tone via
+    /// trials derive the target via the root-relative bridge
     /// `frequency(for:from:referencePitch:)` instead. Retained as the single-note
     /// logical → physical conversion (e.g. Settings previews) and for a future
     /// drone/tonal-context discipline where a fixed scale root is the point.
@@ -64,7 +64,7 @@ nonisolated enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
         frequency(for: DetunedMIDINote(note), referencePitch: referencePitch)
     }
 
-    // MARK: - Frequency Bridge (Reference-Relative)
+    // MARK: - Frequency Bridge (Root-Relative)
 
     /// Signed size of a directed interval in this tuning system:
     /// the pure-ratio size under `.justIntonation`, `semitones × 100` under
@@ -87,11 +87,17 @@ nonisolated enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     /// in pitch space on top of the pure in-tune point.
     ///
     /// Interval trials pass the trial's reference note as `root` — the scale
-    /// is re-rooted at every trial. For a two-note trial this assumption is
-    /// benign (either note as root yields the same target frequency); a
-    /// future discipline with a root that persists across notes (drone /
-    /// tonal context) needs a root distinct from the sounding notes and must
-    /// use the absolute A-rooted bridge instead.
+    /// is re-rooted at every trial, and `root` MUST be the note the trial's
+    /// other frequency math anchors on. Either note of a dyad as root yields
+    /// the same *sounding interval* (cent relationship between the tones),
+    /// but NOT the same target frequency: rule (3) pins the root to equal
+    /// temperament, so the pair's absolute placement shifts by the
+    /// interval's tuning deviation (e.g. ~13.7¢ for a JI major third).
+    /// Anchoring the rest of the trial on one note while rooting this bridge
+    /// on the other silently collapses the tuning system toward ET. A future
+    /// discipline with a root that persists across notes (drone / tonal
+    /// context) needs a root distinct from the sounding notes and must use
+    /// the absolute A-rooted bridge instead.
     func frequency(for interval: DetunedDirectedInterval, from root: MIDINote, referencePitch: Frequency) -> Frequency {
         let rootFrequency = TuningSystem.equalTemperament.frequency(for: root, referencePitch: referencePitch)
         let cents = intervalCents(for: interval.interval) + interval.offset
