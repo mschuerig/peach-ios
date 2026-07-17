@@ -402,7 +402,7 @@ struct TuningSystemTests {
     func justIntonationFifthPureFromWolfRoots(root: MIDINote) async {
         let reference = etFrequency(of: root)
         let target = TuningSystem.justIntonation.frequency(
-            for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.up(.perfectFifth)), from: root, referencePitch: .concert440)
         #expect(abs(centsAbove(reference, target) - 701.955) < 0.001)
     }
 
@@ -412,7 +412,7 @@ struct TuningSystemTests {
     func justIntonationMajorThirdPureFromWolfRoots(root: MIDINote) async {
         let reference = etFrequency(of: root)
         let target = TuningSystem.justIntonation.frequency(
-            for: .up(.majorThird), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.up(.majorThird)), from: root, referencePitch: .concert440)
         #expect(abs(centsAbove(reference, target) - 386.314) < 0.001)
     }
 
@@ -427,8 +427,9 @@ struct TuningSystemTests {
         for interval in intervals {
             let refA = etFrequency(of: MIDINote(60))
             let refB = etFrequency(of: MIDINote(78))
-            let targetA = TuningSystem.justIntonation.frequency(for: interval, detunedBy: detune, from: refA)
-            let targetB = TuningSystem.justIntonation.frequency(for: interval, detunedBy: detune, from: refB)
+            let detuned = DetunedDirectedInterval(interval: interval, offset: detune)
+            let targetA = TuningSystem.justIntonation.frequency(for: detuned, from: MIDINote(60), referencePitch: .concert440)
+            let targetB = TuningSystem.justIntonation.frequency(for: detuned, from: MIDINote(78), referencePitch: .concert440)
             #expect(
                 abs(centsAbove(refA, targetA) - centsAbove(refB, targetB)) < 0.000001,
                 "Root-dependent in-tune point for \(interval)"
@@ -442,7 +443,7 @@ struct TuningSystemTests {
     func justIntonationDescendingFifthInverted() async {
         let reference = etFrequency(of: MIDINote(69))
         let target = TuningSystem.justIntonation.frequency(
-            for: .down(.perfectFifth), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.down(.perfectFifth)), from: MIDINote(69), referencePitch: .concert440)
         #expect(abs(centsAbove(reference, target) + 701.955) < 0.001)
     }
 
@@ -461,7 +462,8 @@ struct TuningSystemTests {
                     for: DetunedMIDINote(note: targetNote, offset: detune),
                     referencePitch: .concert440)
                 let relative = TuningSystem.equalTemperament.frequency(
-                    for: directed, detunedBy: detune, from: etFrequency(of: referenceNote))
+                    for: DetunedDirectedInterval(interval: directed, offset: detune),
+                    from: referenceNote, referencePitch: .concert440)
                 #expect(
                     abs(centsAbove(absolute, relative)) < 0.000001,
                     "ET divergence for \(directed) from \(referenceNote.rawValue) detuned \(detune.rawValue)"
@@ -476,7 +478,8 @@ struct TuningSystemTests {
     func justIntonationDetuneOnTopOfPureRatio() async {
         let reference = etFrequency(of: MIDINote(64))
         let target = TuningSystem.justIntonation.frequency(
-            for: .up(.perfectFifth), detunedBy: Cents(8.0), from: reference)
+            for: DetunedDirectedInterval(interval: .up(.perfectFifth), offset: Cents(8.0)),
+            from: MIDINote(64), referencePitch: .concert440)
         #expect(abs(centsAbove(reference, target) - (701.955 + 8.0)) < 0.001)
     }
 
@@ -484,7 +487,8 @@ struct TuningSystemTests {
     func justIntonationUnisonDetune() async {
         let reference = etFrequency(of: MIDINote(57))
         let target = TuningSystem.justIntonation.frequency(
-            for: .prime, detunedBy: Cents(8.0), from: reference)
+            for: DetunedDirectedInterval(interval: .prime, offset: Cents(8.0)),
+            from: MIDINote(57), referencePitch: .concert440)
         #expect(abs(centsAbove(reference, target) - 8.0) < 0.001)
     }
 
@@ -494,7 +498,7 @@ struct TuningSystemTests {
     func octavePureInBothSystems() async {
         let reference = etFrequency(of: MIDINote(52))
         for system in TuningSystem.allCases {
-            let target = system.frequency(for: .up(.octave), detunedBy: Cents(0), from: reference)
+            let target = system.frequency(for: DetunedDirectedInterval(.up(.octave)), from: MIDINote(52), referencePitch: .concert440)
             #expect(abs(centsAbove(reference, target) - 1200.0) < 0.000001)
         }
     }
@@ -503,21 +507,19 @@ struct TuningSystemTests {
 
     @Test("justIntonation major third target is 13.686 cents flat of the equal-tempered target")
     func justIntonationMajorThirdDivergenceFromET() async {
-        let reference = etFrequency(of: MIDINote(61))
         let etTarget = TuningSystem.equalTemperament.frequency(
-            for: .up(.majorThird), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.up(.majorThird)), from: MIDINote(61), referencePitch: .concert440)
         let jiTarget = TuningSystem.justIntonation.frequency(
-            for: .up(.majorThird), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.up(.majorThird)), from: MIDINote(61), referencePitch: .concert440)
         #expect(abs(centsAbove(jiTarget, etTarget) - 13.686) < 0.001)
     }
 
     @Test("justIntonation perfect fifth target is 1.955 cents sharp of the equal-tempered target")
     func justIntonationPerfectFifthDivergenceFromET() async {
-        let reference = etFrequency(of: MIDINote(71))
         let etTarget = TuningSystem.equalTemperament.frequency(
-            for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.up(.perfectFifth)), from: MIDINote(71), referencePitch: .concert440)
         let jiTarget = TuningSystem.justIntonation.frequency(
-            for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
+            for: DetunedDirectedInterval(.up(.perfectFifth)), from: MIDINote(71), referencePitch: .concert440)
         #expect(abs(centsAbove(etTarget, jiTarget) - 1.955) < 0.001)
     }
 

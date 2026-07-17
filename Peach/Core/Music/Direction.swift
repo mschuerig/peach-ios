@@ -1,6 +1,6 @@
 import Foundation
 
-enum Direction: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
+nonisolated enum Direction: Int, Hashable, Comparable, Sendable, CaseIterable, Codable {
     case up = 0
     case down = 1
 

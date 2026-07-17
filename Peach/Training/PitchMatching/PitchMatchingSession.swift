@@ -344,7 +344,9 @@ final class PitchMatchingSession: TrainingSession {
         let refFreq = TuningSystem.equalTemperament.frequency(
             for: trial.referenceNote, referencePitch: settings.referencePitch)
         let targetFreq = settings.tuningSystem.frequency(
-            for: trial.interval, detunedBy: Cents(0), from: refFreq)
+            for: DetunedDirectedInterval(trial.interval),
+            from: trial.referenceNote,
+            referencePitch: settings.referencePitch)
         self.inTuneTargetFrequency = targetFreq
         logger.info("Trial: ref=\(trial.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(trial.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(trial.initialCentOffset.rawValue)cents")
 

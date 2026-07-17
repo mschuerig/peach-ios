@@ -25,13 +25,14 @@ struct PitchDiscriminationTrial {
         TuningSystem.equalTemperament.frequency(for: referenceNote, referencePitch: referencePitch)
     }
 
-    /// In-tune point = reference frequency × the directed interval's size in
-    /// the given tuning system; the target's cent offset detunes on top.
+    /// In-tune point = the directed interval's size in the given tuning
+    /// system, reckoned from the reference note; the target's cent offset
+    /// detunes on top.
     func targetFrequency(tuningSystem: TuningSystem, referencePitch: Frequency) -> Frequency {
         tuningSystem.frequency(
-            for: interval,
-            detunedBy: targetNote.offset,
-            from: referenceFrequency(referencePitch: referencePitch)
+            for: DetunedDirectedInterval(interval: interval, offset: targetNote.offset),
+            from: referenceNote,
+            referencePitch: referencePitch
         )
     }
 

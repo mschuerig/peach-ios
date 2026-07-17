@@ -466,7 +466,7 @@ The most fundamental design pattern in Peach: strict separation between the **lo
 | `TempoBPM` — musical tempo | `SampleRate` — audio samples per second |
 | `TimingOffset` — signed timing deviation from a grid point | Sample offsets — integer positions in the audio buffer |
 
-`TuningSystem` is the **pitch bridge** between the two worlds. It is the *only* path from logical pitch to physical frequency. It offers two forward conversions: an **absolute** one (a single note's pitch, measured from A4) and a **reference-relative** one (a target frequency derived from an already-computed reference frequency and a directed interval). Interval-trial playback uses the reference-relative form so that the in-tune point depends only on the interval the listener actually hears — under just intonation the absolute form would tie it to the note's position relative to A, an inaudible root. The absolute form remains for single-note conversion (previews, reference tones) and for a future discipline where a fixed tonal root is the point.
+`TuningSystem` is the **pitch bridge** between the two worlds. It is the *only* path from logical pitch to physical frequency. It offers two forward conversions: an **absolute** one (a single note's pitch, measured from A4) and a **root-relative** one (a target frequency for a detuned directed interval reckoned from a root note — the tuning system's interval sizes derive from an implicit scale built on that root, which interval trials re-root at each trial's reference note). Interval-trial playback uses the reference-relative form so that the in-tune point depends only on the interval the listener actually hears — under just intonation the absolute form would tie it to the note's position relative to A, an inaudible root. The absolute form remains for single-note conversion (previews, reference tones) and for a future discipline where a fixed tonal root is the point.
 
 For rhythm, the bridge is simpler: `TempoBPM.sixteenthNoteDuration` converts musical time to `Duration`, which is then multiplied by `SampleRate` to yield sample-accurate offsets for the audio engine.
 
@@ -475,7 +475,7 @@ For rhythm, the bridge is simpler: `TempoBPM.sixteenthNoteDuration` converts mus
 Sessions, the algorithm, profiles, data stores, and observers work **exclusively in the logical world**. They reason about MIDI notes, intervals, cents, tempos, and rhythm offsets. They never see or produce a frequency or sample offset.
 
 Only the audio layer touches the physical world — and it does so through explicit conversions:
-1. **Pitch (logical → physical):** `TuningSystem.frequency(for:referencePitch:)` for a single note, `TuningSystem.frequency(for:detunedBy:from:)` for an interval target relative to a reference frequency — used by sessions and trials before calling the audio layer
+1. **Pitch (logical → physical):** `TuningSystem.frequency(for:referencePitch:)` for a single note, `TuningSystem.frequency(for:from:referencePitch:)` for a `DetunedDirectedInterval` reckoned from a root `MIDINote` — both take logical inputs plus exactly one physical parameter (the concert reference pitch) and are used by sessions and trials before calling the audio layer
 2. **Pitch (physical → MIDI hardware):** internal to the SoundFont player, invisible to the rest of the app
 3. **Rhythm (logical → physical):** `SampleRate × Duration` — used inside `SoundFontBeatSequencer` when scheduling each `Beat` against the engine's sample clock
 

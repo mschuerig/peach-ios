@@ -1,6 +1,6 @@
 import Foundation
 
-struct DirectedInterval: Hashable, Comparable, Sendable, Codable {
+nonisolated struct DirectedInterval: Hashable, Comparable, Sendable, Codable {
     let interval: Interval
     let direction: Direction
 

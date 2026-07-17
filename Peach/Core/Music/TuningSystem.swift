@@ -52,7 +52,7 @@ nonisolated enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
     /// playback — under `.justIntonation` the result depends on the note's
     /// position relative to A (the root lottery Story 87.1 removed); interval
     /// trials derive the target from the reference tone via
-    /// `frequency(for:detunedBy:from:)` instead. Retained as the single-note
+    /// `frequency(for:from:referencePitch:)` instead. Retained as the single-note
     /// logical → physical conversion (e.g. Settings previews) and for a future
     /// drone/tonal-context discipline where a fixed scale root is the point.
     func frequency(for note: DetunedMIDINote, referencePitch: Frequency) -> Frequency {
@@ -74,14 +74,28 @@ nonisolated enum TuningSystem: Hashable, Sendable, CaseIterable, Codable {
         return interval.direction == .up ? magnitude : -magnitude
     }
 
-    /// Reference-relative bridge for interval-trial playback: derives the
-    /// target frequency from the reference tone the listener just heard, so
-    /// the in-tune point depends only on the directed interval — never on the
-    /// reference note's position relative to A. Detune is applied on top of
-    /// the in-tune point.
-    func frequency(for interval: DirectedInterval, detunedBy offset: Cents, from reference: Frequency) -> Frequency {
-        let cents = intervalCents(for: interval) + offset
-        return reference * pow(2.0, cents / Cents.perOctave)
+    /// Root-relative bridge for interval-trial playback. Explicit rules:
+    /// (1) the tuning system's interval sizes derive from an implicit scale
+    /// built on `root` — under `.justIntonation` the 5-limit just scale
+    /// (whose per-interval ratio choices the table encodes); under
+    /// `.equalTemperament` the root choice is immaterial (root-invariant);
+    /// (2) the interval is reckoned from `root`, ascending or descending per
+    /// its direction; (3) `root`'s own pitch is its equal-tempered pitch in
+    /// every tuning system (absolute placement of a contextless tone is
+    /// imperceptible, and an A-rooted alternative would reintroduce the root
+    /// lottery Story 87.1 removed); (4) the cent offset detunes the far tone
+    /// in pitch space on top of the pure in-tune point.
+    ///
+    /// Interval trials pass the trial's reference note as `root` — the scale
+    /// is re-rooted at every trial. For a two-note trial this assumption is
+    /// benign (either note as root yields the same target frequency); a
+    /// future discipline with a root that persists across notes (drone /
+    /// tonal context) needs a root distinct from the sounding notes and must
+    /// use the absolute A-rooted bridge instead.
+    func frequency(for interval: DetunedDirectedInterval, from root: MIDINote, referencePitch: Frequency) -> Frequency {
+        let rootFrequency = TuningSystem.equalTemperament.frequency(for: root, referencePitch: referencePitch)
+        let cents = intervalCents(for: interval.interval) + interval.offset
+        return rootFrequency * pow(2.0, cents / Cents.perOctave)
     }
 
     // MARK: - Display
