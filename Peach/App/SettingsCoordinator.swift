@@ -71,7 +71,10 @@ final class SettingsCoordinator {
     }
 
     func playSoundPreview(note: MIDINote, duration: Duration) async {
-        let frequency = userSettings.tuningSystem.frequency(
+        // A lone preview tone has no interval to tune; it sounds
+        // equal-tempered in every tuning system, matching the reference
+        // tones in trials (Story 87.1).
+        let frequency = TuningSystem.equalTemperament.frequency(
             for: note,
             referencePitch: userSettings.referencePitch
         )

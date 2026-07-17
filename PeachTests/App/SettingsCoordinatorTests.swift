@@ -17,6 +17,21 @@ struct SettingsCoordinatorTests {
         #expect(mockPlayer.lastFrequency == 440.0)
     }
 
+    @Test("note preview sounds equal-tempered even with Just Intonation selected")
+    func notePreviewIsEqualTemperedUnderJustIntonation() async throws {
+        let mockPlayer = MockNotePlayer()
+        let userSettings = MockUserSettings()
+        userSettings.tuningSystem = .justIntonation
+        let coordinator = try makeCoordinator(notePlayer: mockPlayer, userSettings: userSettings)
+
+        await coordinator.playSoundPreview(note: MIDINote(61), duration: .milliseconds(400))
+
+        let expected = TuningSystem.equalTemperament.frequency(
+            for: MIDINote(61), referencePitch: userSettings.referencePitch)
+        let played = try #require(mockPlayer.lastFrequency)
+        #expect(abs(centsAbove(expected, Frequency(played))) < 0.001)
+    }
+
     @Test("stopSoundPreview calls stopAll on note player")
     func stopSoundPreviewCallsStopAll() async throws {
         let mockPlayer = MockNotePlayer()
@@ -62,7 +77,7 @@ struct SettingsCoordinatorTests {
 
     // MARK: - Helpers
 
-    private func makeCoordinator(notePlayer: any NotePlayer) throws -> SettingsCoordinator {
+    private func makeCoordinator(notePlayer: any NotePlayer, userSettings: MockUserSettings = MockUserSettings()) throws -> SettingsCoordinator {
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(
             for: TrainingRecord.self,
@@ -86,7 +101,7 @@ struct SettingsCoordinatorTests {
             profile: profile,
             transferService: transferService,
             notePlayer: notePlayer,
-            userSettings: MockUserSettings()
+            userSettings: userSettings
         )
     }
 }
