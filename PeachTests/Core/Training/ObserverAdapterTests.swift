@@ -118,6 +118,7 @@ struct ProfileAdapterTests {
             referenceNote: MIDINote(60),
             targetNote: MIDINote(60),
             initialCentOffset: Cents(25),
+            interval: .prime,
             userCentError: Cents(-3.5),
             tuningSystem: .equalTemperament,
             timestamp: fixedDate()
@@ -139,6 +140,7 @@ struct ProfileAdapterTests {
             referenceNote: MIDINote(60),
             targetNote: MIDINote(67),
             initialCentOffset: Cents(25),
+            interval: .up(.perfectFifth),
             userCentError: Cents(2.0),
             tuningSystem: .equalTemperament,
             timestamp: fixedDate()
@@ -303,6 +305,7 @@ struct StoreAdapterTests {
             referenceNote: MIDINote(60),
             targetNote: MIDINote(67),
             initialCentOffset: Cents(25),
+            interval: .up(.perfectFifth),
             userCentError: Cents(-3.5),
             tuningSystem: .equalTemperament,
             timestamp: fixedDate()
@@ -413,7 +416,7 @@ struct StoreAdapterTests {
 
         let completed = CompletedPitchMatchingTrial(
             referenceNote: MIDINote(60), targetNote: MIDINote(67),
-            initialCentOffset: Cents(25), userCentError: Cents(-3.5),
+            initialCentOffset: Cents(25), interval: .up(.perfectFifth), userCentError: Cents(-3.5),
             tuningSystem: .equalTemperament, timestamp: fixedDate()
         )
 

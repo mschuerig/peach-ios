@@ -133,11 +133,16 @@ final class PitchMatchingSession: TrainingSession {
     // MARK: - Internal State
 
     private var currentHandle: PlaybackHandle?
+    private var isPaused = false
+
     /// The trial's in-tune point: the reference frequency shifted by the
     /// directed interval's size in the session's tuning system. Slider math
-    /// and evaluation are relative to this frequency.
-    private(set) var inTuneTargetFrequency: Frequency?
-    private var isPaused = false
+    /// and evaluation are relative to this frequency. Derived from the
+    /// current trial, so it can never drift out of lockstep with it.
+    var inTuneTargetFrequency: Frequency? {
+        guard let settings, let trial = currentTrial else { return nil }
+        return trial.inTuneTargetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
+    }
 
     // MARK: - Initialization
 
@@ -341,13 +346,8 @@ final class PitchMatchingSession: TrainingSession {
     private func playReferenceNoteForCurrentTrial() {
         guard let settings, let trial = currentTrial else { return }
 
-        let refFreq = TuningSystem.equalTemperament.frequency(
-            for: trial.referenceNote, referencePitch: settings.referencePitch)
-        let targetFreq = settings.tuningSystem.frequency(
-            for: DetunedDirectedInterval(trial.interval),
-            from: trial.referenceNote,
-            referencePitch: settings.referencePitch)
-        self.inTuneTargetFrequency = targetFreq
+        let refFreq = trial.referenceFrequency(referencePitch: settings.referencePitch)
+        let targetFreq = trial.inTuneTargetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("Trial: ref=\(trial.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(trial.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(trial.initialCentOffset.rawValue)cents")
 
         lifecycle?.setTrainingTask(Task {
@@ -371,9 +371,10 @@ final class PitchMatchingSession: TrainingSession {
     }
 
     private func startTunablePlayback() {
-        // sliderFrequency(for: 0) is the slider's center: the in-tune target
-        // detuned by the trial's initialCentOffset.
-        guard let settings, let tunableFrequency = sliderFrequency(for: 0) else { return }
+        // The tunable starts under the user's finger: at the slider value
+        // that triggered .sliderTouched, not at the slider's center.
+        let startValue = currentPitchValue
+        guard let settings, let tunableFrequency = sliderFrequency(for: startValue) else { return }
 
         let tunableAmplitude = calculateTargetAmplitude()
 
@@ -385,12 +386,17 @@ final class PitchMatchingSession: TrainingSession {
                     amplitudeDB: tunableAmplitude
                 )
 
-                guard state != .idle && !Task.isCancelled else {
+                guard state == .playingTunable && !Task.isCancelled else {
                     Task { try? await handle.stop() }
                     return
                 }
 
                 currentHandle = handle
+                // Adjustments made while play() was in flight had no handle
+                // to land on — apply the latest slider position now.
+                if currentPitchValue != startValue, let latest = sliderFrequency(for: currentPitchValue) {
+                    try? await handle.adjustFrequency(latest)
+                }
             } catch is CancellationError {
                 logger.info("Training cancelled")
             } catch {
@@ -411,6 +417,7 @@ final class PitchMatchingSession: TrainingSession {
             referenceNote: trial.referenceNote,
             targetNote: trial.targetNote,
             initialCentOffset: trial.initialCentOffset,
+            interval: trial.interval,
             userCentError: userCentError,
             tuningSystem: sessionTuningSystem
         )
@@ -444,7 +451,6 @@ final class PitchMatchingSession: TrainingSession {
         keyboardPitchValue = nil
         let handleToStop = currentHandle
         currentHandle = nil
-        inTuneTargetFrequency = nil
         currentTrial = nil
         lastResult = nil
         sessionBestCentError = nil

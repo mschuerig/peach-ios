@@ -27,13 +27,14 @@ struct PerceptualProfileTests {
 
     private func makeMatchingCompleted(
         referenceNote: MIDINote = MIDINote(60),
-        targetNote: MIDINote = MIDINote(60),
+        interval: DirectedInterval = .prime,
         centError: Cents
     ) -> CompletedPitchMatchingTrial {
         CompletedPitchMatchingTrial(
             referenceNote: referenceNote,
-            targetNote: targetNote,
+            targetNote: referenceNote.transposed(by: interval),
             initialCentOffset: 50.0,
+            interval: interval,
             userCentError: centError,
             tuningSystem: .equalTemperament
         )
@@ -125,6 +126,7 @@ struct PerceptualProfileTests {
             referenceNote: MIDINote(60),
             targetNote: MIDINote(60).transposed(by: .up(.perfectFifth)),
             initialCentOffset: 30.0,
+            interval: .up(.perfectFifth),
             userCentError: -12.3,
             tuningSystem: .equalTemperament
         )
@@ -219,7 +221,7 @@ struct PerceptualProfileTests {
         // 1 interval matching
         PitchMatchingProfileAdapter(profile: profile).pitchMatchingCompleted(makeMatchingCompleted(
             referenceNote: MIDINote(60),
-            targetNote: MIDINote(67),
+            interval: .up(.perfectFifth),
             centError: 8
         ))
 

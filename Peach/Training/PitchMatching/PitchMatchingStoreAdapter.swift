@@ -10,7 +10,7 @@ struct PitchMatchingStoreAdapter: PitchMatchingObserver {
     }
 
     func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
-        let interval = abs(result.referenceNote - result.targetNote)
+        let interval = result.interval.interval.semitones
         let payload = PitchMatchingPayload(
             referenceNote: result.referenceNote.rawValue,
             targetNote: result.targetNote.rawValue,

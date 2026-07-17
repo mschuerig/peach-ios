@@ -217,6 +217,7 @@ struct TrainingDataStoreTests {
             referenceNote: 69,
             targetNote: 69,
             initialCentOffset: 42.5,
+            interval: .prime,
             userCentError: -12.3,
             tuningSystem: .equalTemperament,
             timestamp: timestamp
@@ -305,6 +306,7 @@ struct TrainingDataStoreTests {
             referenceNote: MIDINote(60),
             targetNote: MIDINote(60).transposed(by: .up(.perfectFifth)),
             initialCentOffset: 30.0,
+            interval: .up(.perfectFifth),
             userCentError: -5.0,
             tuningSystem: .equalTemperament
         )

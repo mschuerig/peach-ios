@@ -385,6 +385,7 @@ struct ProgressTimelineTests {
             referenceNote: MIDINote(60),
             targetNote: MIDINote(60),
             initialCentOffset: 50.0,
+            interval: .prime,
             userCentError: -3.0,
             tuningSystem: .equalTemperament
         )

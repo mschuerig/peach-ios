@@ -11,7 +11,7 @@ struct PitchMatchingProfileAdapter: PitchMatchingObserver {
     // correct/incorrect outcome. All results are routed to the profile, unlike
     // PitchDiscriminationProfileAdapter which gates on isCorrect.
     func pitchMatchingCompleted(_ result: CompletedPitchMatchingTrial) {
-        let isUnison = result.referenceNote == result.targetNote
+        let isUnison = result.interval.isUnison
         let mode: TrainingDisciplineID = isUnison ? .unisonPitchMatching : .intervalPitchMatching
 
         profile.update(.pitch(mode), timestamp: result.timestamp, value: result.userCentError.magnitude)

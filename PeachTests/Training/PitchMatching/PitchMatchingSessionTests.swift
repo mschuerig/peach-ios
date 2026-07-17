@@ -823,6 +823,82 @@ struct PitchMatchingSessionTests {
         #expect(abs(result.userCentError.rawValue) < 0.01)
     }
 
+    @Test("tunable playback starts at the touched slider position, not the slider center")
+    func tunableStartsAtTouchedSliderPosition() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        let settings = PitchMatchingSettings(
+            noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
+            referencePitch: Frequency(440.0),
+            intervals: [.prime],
+            noteDuration: NoteDuration(0.3)
+        )
+        session.start(settings: settings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        session.adjustPitch(0.5)
+        await notePlayer.waitForPlay(minCount: 2)
+
+        let trial = try #require(session.currentTrial)
+        let inTune = try #require(session.inTuneTargetFrequency)
+        let touchCents = trial.initialCentOffset.rawValue + 0.5 * settings.initialCentOffsetRange.upperBound.rawValue
+        let expected = Frequency(inTune.rawValue * pow(2.0, touchCents / 1200.0))
+        let played = try #require(notePlayer.lastFrequency)
+        #expect(abs(centsAbove(expected, Frequency(played))) < 0.001)
+        session.stop()
+    }
+
+    @Test("slider adjustments made while play is in flight apply once the handle arrives")
+    func inFlightAdjustmentAppliesWhenHandleArrives() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        let settings = PitchMatchingSettings(
+            noteRange: NoteRange(lowerBound: MIDINote(69), upperBound: MIDINote(81)),
+            referencePitch: Frequency(440.0),
+            intervals: [.prime],
+            noteDuration: NoteDuration(0.3)
+        )
+        session.start(settings: settings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Second adjustment lands before the play() task has produced a handle
+        session.adjustPitch(0.3)
+        session.adjustPitch(0.7)
+        await notePlayer.waitForPlay(minCount: 2)
+        let deadline = ContinuousClock.now + .seconds(5)
+        while ContinuousClock.now < deadline, notePlayer.lastHandle?.lastAdjustedFrequency == nil {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let trial = try #require(session.currentTrial)
+        let inTune = try #require(session.inTuneTargetFrequency)
+        let latestCents = trial.initialCentOffset.rawValue + 0.7 * settings.initialCentOffsetRange.upperBound.rawValue
+        let expected = Frequency(inTune.rawValue * pow(2.0, latestCents / 1200.0))
+        let handle = try #require(notePlayer.lastHandle)
+        let adjusted = try #require(handle.lastAdjustedFrequency)
+        #expect(abs(centsAbove(expected, Frequency(adjusted))) < 0.001)
+        session.stop()
+    }
+
+    @Test("commit while play is in flight stops the handle when it arrives")
+    func commitDuringInFlightPlayStopsHandleOnArrival() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        session.start(settings: defaultPitchMatchingTestSettings)
+        try await waitForState(session, .awaitingSliderTouch)
+
+        // Commit before the play() task has produced a handle — the arriving
+        // handle must be stopped, not orphaned into the feedback phase
+        session.adjustPitch(0.3)
+        session.commitPitch(0.3)
+        await notePlayer.waitForPlay(minCount: 2)
+        let deadline = ContinuousClock.now + .seconds(5)
+        while ContinuousClock.now < deadline, (notePlayer.lastHandle?.stopCallCount ?? 0) < 1 {
+            try await Task.sleep(for: .milliseconds(5))
+        }
+
+        let handle = try #require(notePlayer.lastHandle)
+        #expect(handle.stopCallCount >= 1)
+        session.stop()
+    }
+
     @Test("justIntonation interval trial starts the tunable at the pure ratio detuned by initialCentOffset")
     func justIntonationTunableStartsAtDetunedPureRatio() async throws {
         let (session, notePlayer, _, _) = makePitchMatchingSession()
