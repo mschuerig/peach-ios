@@ -152,14 +152,42 @@ struct SoundFontPresetStressTests {
 
     // MARK: - Task 6: Rapid Preset Switching
 
-    @Test("Rapid preset switching creates new player per preset without crash")
+    @Test("Rapid preset switching via setPreset on one player without crash")
     func rapidPresetSwitching() async throws {
         let presets = Array(makeLibrary().melodicPresets.prefix(15))
+        guard let first = presets.first else {
+            Issue.record("SoundFontLibrary discovered no presets")
+            return
+        }
+        let player = try makePlayer(preset: first)
 
         for preset in presets {
-            let player = try makePlayer(preset: preset)
+            player.setPreset(preset, fadeOutDuration: .zero)
             let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
             try await Task.sleep(for: .milliseconds(50))
+            try await handle.stop()
+        }
+    }
+
+    @Test("Mid-note preset swaps: setPreset while a note is sounding, then stop, without crash")
+    func midNotePresetSwapping() async throws {
+        let presets = Array(makeLibrary().melodicPresets.prefix(15))
+        guard let first = presets.first else {
+            Issue.record("SoundFontLibrary discovered no presets")
+            return
+        }
+        let player = try makePlayer(preset: first)
+
+        // Swap the preset while the previous note is still sounding — this is
+        // the actual concurrency the in-place setPreset model introduces. The
+        // sounding note's stop must complete cleanly with its play-time fade
+        // (alternating .zero / 25 ms to exercise both policies) while the next
+        // play binds to the post-swap preset.
+        for (index, preset) in presets.enumerated() {
+            let fade: Duration = index.isMultiple(of: 2) ? .zero : .milliseconds(25)
+            let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+            try await Task.sleep(for: .milliseconds(30))
+            player.setPreset(preset, fadeOutDuration: fade)  // mid-note swap
             try await handle.stop()
         }
     }

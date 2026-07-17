@@ -30,7 +30,7 @@ struct PeachApp: App {
     @State private var soundFontLibrary: SoundFontLibrary
     @State private var soundFontEngine: SoundFontEngine
     @State private var transferService: TrainingDataTransferService
-    @State private var notePlayer: any NotePlayer
+    @State private var notePlayer: SoundFontPlayer
     @State private var beatSequencer: SoundFontBeatSequencer
     @State private var midiAdapter: MIDIKitAdapter?
     @State private var activeSession: (any TrainingSession)?
@@ -218,85 +218,17 @@ struct PeachApp: App {
     // MARK: - Sound Source Change
 
     private func handleSoundSourceChanged(_ newSource: String) {
-        // Stop every non-idle session before `rebuildCoordinators()` replaces
-        // `trainingLifecycle` — otherwise a paused TOD/CRM would survive with no
-        // coordinator holding its `pausedDestination`, unrecoverable until
-        // toggled manually.
-        var sessionsToStop: [any TrainingSession] = [
-            pitchDiscriminationSession,
-            pitchMatchingSession,
-            timingOffsetDetectionSession,
-            continuousRhythmMatchingSession,
-        ]
-        #if PEACH_RESEARCH
-        sessionsToStop.append(chromaticConstructionSession)
-        #endif
-        for session in sessionsToStop where !session.isIdle {
-            session.stop()
-        }
-
+        trainingLifecycle.handleSoundSourceChanged()
+        // Ordering is load-bearing for PF-052: scheduleStopAll() commits its
+        // chain entry synchronously (sanctioned 85.1 pattern from a synchronous
+        // context), capturing the OLD fade-out before setPreset mutates it.
+        // Without this, straggler audio stopped via async paths — e.g. the
+        // Settings preview's stopPreview(), whose stopAll commits on a later
+        // MainActor turn — would capture the NEW fade and a sine preview would
+        // end with a click.
+        notePlayer.scheduleStopAll()
         let preset = soundFontLibrary.resolve(SoundSourceTag(rawValue: newSource))
-        let newNotePlayer = SoundFontPlayer(
-            engine: soundFontEngine,
-            preset: preset,
-            channel: MIDIChannel(0),
-            fadeOutDuration: Self.determineFadeOutDuration(for: preset)
-        )
-        notePlayer = newNotePlayer
-
-        let strategy = KazezNoteStrategy()
-        pitchDiscriminationSession = Self.createPitchDiscriminationSession(
-            notePlayer: newNotePlayer,
-            strategy: strategy,
-            profile: profile,
-            dataStore: dataStore,
-            hapticFeedback: Self.makeHapticFeedbackManager()
-        )
-        pitchMatchingSession = Self.createPitchMatchingSession(
-            notePlayer: newNotePlayer,
-            profile: profile,
-            dataStore: dataStore,
-            midiInput: midiAdapter
-        )
-        #if PEACH_RESEARCH
-        chromaticConstructionSession = Self.createChromaticConstructionSession(notePlayer: newNotePlayer)
-        #endif
-        rebuildCoordinators()
-    }
-
-    private func rebuildCoordinators() {
-        let coordinators = Self.buildCoordinators(
-            pitchDiscriminationSession: pitchDiscriminationSession,
-            pitchMatchingSession: pitchMatchingSession,
-            timingOffsetDetectionSession: timingOffsetDetectionSession,
-            continuousRhythmMatchingSession: continuousRhythmMatchingSession,
-            chromaticConstructionSession: {
-                #if PEACH_RESEARCH
-                return chromaticConstructionSession
-                #else
-                return nil
-                #endif
-            }(),
-            dataStore: dataStore,
-            profile: profile,
-            transferService: transferService,
-            notePlayer: notePlayer,
-            soundFontEngine: soundFontEngine,
-            userSettings: userSettings,
-            crmUserSettings: crmUserSettings,
-            todUserSettings: todUserSettings
-        )
-        trainingLifecycle = coordinators.lifecycle
-        settingsCoordinator = coordinators.settings
-        // The prior monitor's `[weak coordinator]` closures point at the
-        // now-replaced coordinator instance. Recreate the monitor so the
-        // centralized observer routes to the live coordinator. Replacing the
-        // `@State` wrapper drops the old monitor; its `isolated deinit` removes
-        // its tokens.
-        audioInfrastructureMonitor = AppAudioInfrastructureMonitor(
-            observer: Self.makeAudioInterruptionObserver(),
-            coordinator: coordinators.lifecycle
-        )
+        notePlayer.setPreset(preset, fadeOutDuration: Self.determineFadeOutDuration(for: preset))
     }
 
     // MARK: - Data Store Setup
@@ -383,9 +315,9 @@ struct PeachApp: App {
         engine: SoundFontEngine,
         library: SoundFontLibrary,
         userSettings: any UserSettings
-    ) throws -> (notePlayer: any NotePlayer, beatSequencer: SoundFontBeatSequencer) {
+    ) throws -> (notePlayer: SoundFontPlayer, beatSequencer: SoundFontBeatSequencer) {
         let preset = library.resolve(userSettings.soundSource)
-        let notePlayer: any NotePlayer = SoundFontPlayer(
+        let notePlayer = SoundFontPlayer(
             engine: engine,
             preset: preset,
             channel: MIDIChannel(0),

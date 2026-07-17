@@ -1205,6 +1205,142 @@ struct TrainingLifecycleCoordinatorTests {
         #expect(coordinator.mediaRebuildPending == false)
     }
 
+    // MARK: - Sound Source Change (Story 88.2)
+
+    @Test("handleSoundSourceChanged stops the active session")
+    func soundSourceChangeStopsActiveSession() async {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.handleSoundSourceChanged()
+
+        #expect(fixture.mock.stopCallCount == 1)
+    }
+
+    @Test("handleSoundSourceChanged stops every non-idle registered session")
+    func soundSourceChangeStopsAllNonIdleSessions() async {
+        let fixture = makeTwoMockFixture()
+        fixture.crm.isIdle = false
+        fixture.tod.isIdle = false
+
+        fixture.coordinator.handleSoundSourceChanged()
+
+        #expect(fixture.crm.stopCallCount == 1)
+        #expect(fixture.tod.stopCallCount == 1)
+    }
+
+    @Test("handleSoundSourceChanged is a no-op when every session is idle")
+    func soundSourceChangeNoOpWhenAllIdle() async {
+        let fixture = makeTwoMockFixture()
+
+        fixture.coordinator.handleSoundSourceChanged()
+
+        #expect(fixture.crm.stopCallCount == 0)
+        #expect(fixture.tod.stopCallCount == 0)
+    }
+
+    @Test("handleSoundSourceChanged stops a paused session and clears the pause bookkeeping — returning starts fresh, not resume")
+    func soundSourceChangeStopsPausedSessionAndClearsPause() async {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.mock.onStopCalled = { fixture.mock.isIdle = true }
+        fixture.coordinator.trainingScreenDisappeared()
+        #expect(fixture.mock.pauseCallCount == 1)
+
+        fixture.coordinator.handleSoundSourceChanged()
+        #expect(fixture.mock.stopCallCount == 1, "the paused session must be stopped")
+
+        // A cleared pausedDestination is observable via subsequent behavior:
+        // returning to the same destination must start fresh, not resume.
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        #expect(fixture.mock.resumeCallCount == 0, "the discarded pause must not resume")
+        #expect(fixture.mock.isIdle == false, "auto-start policy starts the session fresh")
+    }
+
+    @Test("handleSoundSourceChanged preserves the current training destination")
+    func soundSourceChangePreservesCurrentDestination() async {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+
+        fixture.coordinator.handleSoundSourceChanged()
+
+        #expect(fixture.coordinator.currentTrainingDestination == .continuousRhythmMatching)
+    }
+
+    @Test("handleSoundSourceChanged preserves an open auxiliary window's suspension")
+    func soundSourceChangePreservesSuspension() async {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.helpSheetPresented()
+        #expect(fixture.coordinator.isForegroundSuspended)
+
+        fixture.coordinator.handleSoundSourceChanged()
+
+        #expect(fixture.coordinator.isForegroundSuspended, "the window's suspension must survive the change")
+    }
+
+    @Test("macOS: sound-source change behind the open Settings window — closing Settings auto-starts per policy")
+    func soundSourceChangeBehindSettingsWindowAutoStartsOnClose() async {
+        // initialAutoStartSetting is true in the fixture, so the macOS policy
+        // auto-starts once the last suspension clears.
+        let fixture = makeMockFixture(policy: MacOSBackgroundPolicy())
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.coordinator.startCurrentSession()
+        #expect(fixture.mock.isIdle == false)
+        fixture.coordinator.pauseForegroundSession()  // Settings window opens
+        fixture.mock.onStopCalled = { fixture.mock.isIdle = true }
+
+        fixture.coordinator.handleSoundSourceChanged()  // user picks a new sound source
+        #expect(fixture.mock.stopCallCount == 1)
+        #expect(fixture.mock.isIdle)
+
+        fixture.coordinator.reconcileForegroundSession()  // Settings window closes
+        #expect(fixture.mock.isIdle == false, "closing Settings auto-starts the stopped session per policy")
+        #expect(fixture.mock.resumeCallCount == 0, "a stopped session starts fresh, it does not resume")
+    }
+
+    @Test("macOS: sound-source change behind the open Settings window with auto-start off — closing Settings leaves the session stopped")
+    func soundSourceChangeBehindSettingsWindowStaysStoppedWithoutAutoStart() async {
+        let fixture = makeMockFixture(policy: MacOSBackgroundPolicy(), autoStart: false)
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.coordinator.startCurrentSession()  // user started training manually
+        #expect(fixture.mock.isIdle == false)
+        fixture.coordinator.pauseForegroundSession()  // Settings window opens
+        fixture.mock.onStopCalled = { fixture.mock.isIdle = true }
+
+        fixture.coordinator.handleSoundSourceChanged()  // user picks a new sound source
+        #expect(fixture.mock.stopCallCount == 1)
+        #expect(fixture.mock.isIdle)
+
+        fixture.coordinator.reconcileForegroundSession()  // Settings window closes
+        #expect(fixture.mock.isIdle, "with auto-start off, the stopped session stays stopped")
+        #expect(fixture.mock.resumeCallCount == 0, "a stopped session must not resume")
+    }
+
+    @Test("handleSoundSourceChanged tolerates a paused session that does not flip isIdle synchronously on stop (double-stop documents the idempotent-stop assumption)")
+    func soundSourceChangeDoubleStopsSlowIdleFlipPausedSession() async {
+        let fixture = makeMockFixture()
+        fixture.coordinator.trainingScreenAppeared(destination: .continuousRhythmMatching)
+        fixture.mock.isIdle = false
+        fixture.coordinator.trainingScreenDisappeared()  // pauses; pausedDestination set
+        #expect(fixture.mock.pauseCallCount == 1)
+        // Deliberately NO onStopCalled: real sessions may wind down
+        // asynchronously, staying non-idle for a few MainActor turns after
+        // stop() returns.
+
+        fixture.coordinator.handleSoundSourceChanged()
+
+        // discardLingeringPausedSession stops the paused session; the stop-all
+        // loop then still sees it non-idle and stops it again. This double-stop
+        // is tolerated by design — TrainingSession.stop() is idempotent — and
+        // this assertion documents the assumption rather than hiding it.
+        #expect(fixture.mock.stopCallCount == 2)
+    }
+
     // MARK: - Helpers
 
     private struct LifecycleFixture {
@@ -1399,7 +1535,10 @@ struct TrainingLifecycleCoordinatorTests {
         let tod: MockTrainingSession
     }
 
-    private func makeMockFixture() -> MockFixture {
+    private func makeMockFixture(
+        policy: BackgroundPolicy = IOSBackgroundPolicy(),
+        autoStart: Bool = true
+    ) -> MockFixture {
         let mock = MockTrainingSession()
         let registry = TrainingLifecycleRegistry { builder in
             builder.register(
@@ -1411,8 +1550,8 @@ struct TrainingLifecycleCoordinatorTests {
         }
         let coordinator = TrainingLifecycleCoordinator(
             registry: registry,
-            backgroundPolicy: IOSBackgroundPolicy(),
-            initialAutoStartSetting: true,
+            backgroundPolicy: policy,
+            initialAutoStartSetting: autoStart,
             mediaInfrastructureRebuild: { }
         )
         return MockFixture(coordinator: coordinator, mock: mock)

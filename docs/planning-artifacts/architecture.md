@@ -3432,7 +3432,7 @@ The coordinator tracks a `pausedDestination: NavigationDestination?`. Routing:
 | `startScreenAppeared()` (from `StartScreen.onAppear`) | Discard any lingering paused session — distinguishes pop-to-Start from a transient push |
 | `helpSheetPresented()` / `helpSheetDismissed()` | `pause()` / `resume()` |
 | `navigate(to:)` (menu) | `stop()` and `awaitIdle()` before resolving |
-| `handleSoundSourceChanged()` (PeachApp) | `stop()` every non-idle session before reassigning, then `rebuildCoordinators()` |
+| `handleSoundSourceChanged()` (coordinator, called from PeachApp) | Discard any paused session, then `stop()` every non-idle registered session; `SoundFontPlayer.setPreset(_:fadeOutDuration:)` swaps the preset in place — no instance is rebuilt, suspensions and `currentTrainingDestination` survive |
 
 The per-session `backgroundNotificationName` plumbing is gone. The coordinator's scenePhase route (both platforms) and its macOS-only NSApplication observer are the only consolidated stop paths.
 

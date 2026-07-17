@@ -19,11 +19,11 @@ final class SoundFontPlayer: NotePlayer {
     /// Duration to mute `sampler.volume` before stopping a note, allowing the audio render
     /// thread to propagate silence and avoid click/pop artifacts. Set to `.zero` to skip the
     /// fade-out entirely (notes stop immediately). 25ms covers 2+ render cycles at 44.1kHz/512.
-    let fadeOutDuration: Duration
+    private(set) var fadeOutDuration: Duration
 
     // MARK: - Preset
 
-    private let preset: SF2Preset
+    private(set) var preset: SF2Preset
 
     // MARK: - Channel
 
@@ -49,10 +49,31 @@ final class SoundFontPlayer: NotePlayer {
         logger.info("SoundFontPlayer initialized on channel \(channel.rawValue) with preset \(preset.rawValue)")
     }
 
+    // MARK: - Preset Swap
+
+    /// Swaps the active preset in place. Synchronous state mutation only — the
+    /// engine load stays lazy: the next `play()` awaits the `pendingAudioStop`
+    /// chain and then calls the engine's idempotent `loadPreset`, which picks
+    /// the new preset up. Stops already committed to the chain keep the
+    /// fade-out duration they were committed with.
+    func setPreset(_ preset: SF2Preset, fadeOutDuration: Duration) {
+        self.preset = preset
+        self.fadeOutDuration = fadeOutDuration
+        logger.info("setPreset: \(preset.rawValue) on channel \(self.channel.rawValue)")
+    }
+
     // MARK: - NotePlayer Protocol
 
     func play(frequency: Frequency, velocity: MIDIVelocity, amplitudeDB: AmplitudeDB) async throws -> PlaybackHandle {
         await pendingAudioStop?.value
+        // Snapshot both preset and fade-out once, so the loaded preset and the
+        // handle's fade always agree — a `setPreset` landing while this method
+        // is suspended (e.g. at `loadPreset`) cannot produce a mixed note (old
+        // preset, new fade). Deliberate semantics: a play still awaiting the
+        // chain when `setPreset` lands binds to the post-swap preset —
+        // acceptable, the user just picked it.
+        let preset = self.preset
+        let fadeOutDuration = self.fadeOutDuration
         try await soundFontEngine.loadPreset(preset, channel: channel)
         try validateFrequency(frequency)
         try soundFontEngine.ensureAudioSessionConfigured()
@@ -79,11 +100,15 @@ final class SoundFontPlayer: NotePlayer {
     @discardableResult
     func scheduleStopAll() -> Task<Void, Never> {
         logger.debug("scheduleStopAll: queuing stop on channel \(self.channel.rawValue)")
+        // Snapshot at commit time (like `scheduleNoteStop`) so a `setPreset`
+        // between commit and execution cannot strip the fade-out this stop
+        // was committed with (PF-052 sine-click mitigation).
+        let fadeOutDuration = self.fadeOutDuration
         let priorStop = pendingAudioStop
         let task = Task<Void, Never> {
             await priorStop?.value
             // Don't call clearSchedule: pitch never schedules events, and the deferred render-thread CC#123 it triggers would race a subsequent play()'s noteOn.
-            await self.soundFontEngine.stopNotes(channel: self.channel, fadeOutDuration: self.fadeOutDuration)
+            await self.soundFontEngine.stopNotes(channel: self.channel, fadeOutDuration: fadeOutDuration)
         }
         pendingAudioStop = task
         return task
@@ -95,10 +120,15 @@ final class SoundFontPlayer: NotePlayer {
     /// every sampler on the engine), and `activeMuteCount` only restores
     /// volume when it drops to zero. Without this chain, an exit-then-re-enter
     /// sequence races the in-flight handle.stop against the new play.
+    ///
+    /// `fadeOutDuration` is the handle's play-time capture, NOT read from
+    /// `self` — a timed note's `handle.stop()` commits AFTER the note
+    /// duration, so a `setPreset` landing mid-note must not strip the fade
+    /// the note was played with (PF-052 click) or graft a spurious global
+    /// mute onto a fade-free note.
     @discardableResult
-    func scheduleNoteStop(midiNote: MIDINote) -> Task<Void, Never> {
+    func scheduleNoteStop(midiNote: MIDINote, fadeOutDuration: Duration) -> Task<Void, Never> {
         let channel = self.channel
-        let fadeOutDuration = self.fadeOutDuration
         let engine = self.soundFontEngine
         let priorStop = pendingAudioStop
         let task = Task<Void, Never> {

@@ -443,6 +443,12 @@ final class SoundFontEngine {
     /// PF-057's media-reset reload behavior.
     var loadedPresetCountForTesting: Int { loadedPresets.count }
 
+    /// The preset currently tracked as loaded on `channel` — used by tests to
+    /// verify `SoundFontPlayer.setPreset` takes effect on the next `play()`.
+    func loadedPresetForTesting(channel: MIDIChannel) -> SF2Preset? {
+        loadedPresets[channel]
+    }
+
     /// Number of presets pending retry after a partial-failure rebuild — used
     /// by tests to verify PF-057's C4a retry tracking.
     var pendingPresetReloadCountForTesting: Int { pendingPresetReload.count }
@@ -461,6 +467,11 @@ final class SoundFontEngine {
     func forceStaleSourceSampleRateForTesting() {
         sourceSampleRate = -1
     }
+
+    /// Number of `muteForFade()` invocations — used by tests to verify that a
+    /// stop engages (or skips) the fade it was committed/played with, even
+    /// after `SoundFontPlayer.setPreset` mutates `fadeOutDuration` (PF-052).
+    private(set) var muteForFadeCallCountForTesting = 0
 
     // MARK: - Media Services Reset Recovery (PF-057)
 
@@ -711,6 +722,7 @@ final class SoundFontEngine {
     // MARK: - Volume Fade
 
     func muteForFade() {
+        muteForFadeCallCountForTesting += 1
         activeMuteCount += 1
         for sampler in channels.values {
             sampler.volume = 0

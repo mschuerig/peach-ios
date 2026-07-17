@@ -8,9 +8,14 @@ struct SoundFontPlayerTests {
     private static let testLibrary = TestSoundFont.makeLibrary()
 
     private func makePlayer(preset: SF2Preset? = nil) throws -> SoundFontPlayer {
+        try makePlayerAndEngine(preset: preset).player
+    }
+
+    private func makePlayerAndEngine(preset: SF2Preset? = nil) throws -> (player: SoundFontPlayer, engine: SoundFontEngine) {
         let engine = try SoundFontEngine(sf2URL: TestSoundFont.url, audioSessionConfigurator: MockAudioSessionConfigurator())
         let resolvedPreset = preset ?? Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:0"))
-        return SoundFontPlayer(engine: engine, preset: resolvedPreset, channel: MIDIChannel(0), fadeOutDuration: .milliseconds(25))
+        let player = SoundFontPlayer(engine: engine, preset: resolvedPreset, channel: MIDIChannel(0), fadeOutDuration: .milliseconds(25))
+        return (player, engine)
     }
 
     // MARK: - Protocol Conformance
@@ -277,5 +282,81 @@ struct SoundFontPlayerTests {
         let player = try makePlayer()
         // stopAll should not crash even when nothing is playing
         try await player.stopAll()
+    }
+
+    // MARK: - setPreset
+
+    @Test("setPreset mutates preset and fadeOutDuration in place")
+    func setPresetMutatesPresetAndFadeOut() async throws {
+        let player = try makePlayer()  // Grand Piano, 25ms fade-out
+        let cello = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:42"))
+
+        player.setPreset(cello, fadeOutDuration: .zero)
+
+        #expect(player.preset == cello)
+        #expect(player.fadeOutDuration == .zero)
+    }
+
+    @Test("play after setPreset loads the new preset into the engine")
+    func playAfterSetPresetLoadsNewPreset() async throws {
+        let (player, engine) = try makePlayerAndEngine()
+        let piano = player.preset
+        try await player.play(frequency: 440.0, duration: .milliseconds(50), velocity: 63, amplitudeDB: 0.0)
+        #expect(engine.loadedPresetForTesting(channel: MIDIChannel(0)) == piano)
+
+        let cello = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:42"))
+        player.setPreset(cello, fadeOutDuration: .zero)
+        try await player.play(frequency: 440.0, duration: .milliseconds(50), velocity: 63, amplitudeDB: 0.0)
+
+        #expect(engine.loadedPresetForTesting(channel: MIDIChannel(0)) == cello)
+    }
+
+    // MARK: - Fade Snapshots Survive setPreset (PF-052)
+    //
+    // These tests pin BOTH fade snapshots: `scheduleStopAll`'s commit-time
+    // capture and the handle's play-time capture. A "simplification" back to
+    // reading `self.fadeOutDuration` at execution time would let a `setPreset`
+    // landing mid-flight strip a committed sine fade (click) or graft a
+    // spurious global mute onto a fade-free note — and fail these tests.
+
+    @Test("scheduleStopAll keeps the fade it was committed with when setPreset lands before execution")
+    func scheduleStopAllKeepsCommittedFadeAcrossSetPreset() async throws {
+        let (player, engine) = try makePlayerAndEngine()  // 25 ms fade-out
+        _ = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+        #expect(engine.muteForFadeCallCountForTesting == 0)
+
+        // Commit the stop with 25 ms, then strip the fade policy BEFORE the
+        // committed chain entry executes.
+        let stop = player.scheduleStopAll()
+        let cello = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:42"))
+        player.setPreset(cello, fadeOutDuration: .zero)
+        await stop.value
+
+        #expect(engine.muteForFadeCallCountForTesting == 1, "the executed stop must still use its commit-time 25 ms fade")
+    }
+
+    @Test("handle.stop keeps its play-time fade when setPreset strips the policy mid-note")
+    func handleStopKeepsPlayTimeFadeAcrossSetPreset() async throws {
+        let (player, engine) = try makePlayerAndEngine()  // 25 ms fade-out
+        let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+
+        let cello = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:0:42"))
+        player.setPreset(cello, fadeOutDuration: .zero)
+        try await handle.stop()
+
+        #expect(engine.muteForFadeCallCountForTesting == 1, "the note must fade with the 25 ms it was played with")
+    }
+
+    @Test("handle.stop does not adopt a fade introduced by setPreset after its play")
+    func handleStopDoesNotAdoptPostPlayFade() async throws {
+        let (player, engine) = try makePlayerAndEngine()
+        player.setPreset(player.preset, fadeOutDuration: .zero)  // fade-free policy at play time
+        let handle = try await player.play(frequency: 440.0, velocity: 63, amplitudeDB: 0.0)
+
+        let sine = Self.testLibrary.resolve(SoundSourceTag(rawValue: "sf2:8:80"))
+        player.setPreset(sine, fadeOutDuration: .milliseconds(25))
+        try await handle.stop()
+
+        #expect(engine.muteForFadeCallCountForTesting == 0, "a fade-free note must NOT pick up the post-swap global mute")
     }
 }

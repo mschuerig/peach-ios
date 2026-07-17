@@ -211,7 +211,7 @@ struct TimingDotView: View {
 
     /// Story 85.7 / PF-046: base width applied via `.frame(maxWidth:)` to both
     /// the *Pattern* row's dot preview and the *Offset Note Position* row's
-    /// slot picker in `SettingsScreen`. Sourced from a single constant so the
+    /// slot picker in the Settings screen. Sourced from a single constant so the
     /// two flexible dot containers can never drift; each section view wraps
     /// this base in `@ScaledMetric(relativeTo: .caption2)` so the width grows
     /// with Dynamic Type symmetrically across both rows. Replaces the

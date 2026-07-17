@@ -847,8 +847,8 @@ development_status:
   # Michael 2026-07-17. Not release blockers. Work order: 88.2 before 88.1
   # preferred (deleting rebuildCoordinators() shrinks the surface 88.1 rewrites);
   # 88.3 independent.
-  epic-88: backlog
+  epic-88: in-progress
   88-1-coordinator-reduce-treatment: backlog # Closes PF-049/050/079, covers PF-051 test gap
-  88-2-soundfontplayer-setpreset: backlog # Dissolves PF-059; deletes rebuildCoordinators()
+  88-2-soundfontplayer-setpreset: review # Dissolves PF-059; deletes rebuildCoordinators()
   88-3-progress-timeline-memoization: backlog # Code-reading finding 12 (+16 if free)
   epic-88-retrospective: optional

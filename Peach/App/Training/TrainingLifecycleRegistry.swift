@@ -46,4 +46,11 @@ final class TrainingLifecycleRegistry {
     func contribution(for destination: NavigationDestination) -> Contribution? {
         byDestination[destination]
     }
+
+    /// Every registered contribution, in no particular order — for whole-app
+    /// operations that must touch every session (e.g. stop-all on a sound
+    /// source change).
+    var all: [Contribution] {
+        Array(byDestination.values)
+    }
 }

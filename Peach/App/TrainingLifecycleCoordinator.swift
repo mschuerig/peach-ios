@@ -338,7 +338,34 @@ final class TrainingLifecycleCoordinator {
         }
     }
 
-    /// Stops any session paused for a no-longer-current destination. Idempotent.
+    // MARK: - Sound Source Change
+
+    /// Called by the composition root when the sound source changes. Stops
+    /// every non-idle registered session — mid-trial audio would straddle two
+    /// instruments otherwise. Discarding the lingering paused session (if any)
+    /// clears `pausedDestination`; `foregroundSuspensions` and
+    /// `currentTrainingDestination` deliberately survive, so an open auxiliary
+    /// window keeps suppressing auto-start and closing it (or returning to the
+    /// training screen) starts the stopped session fresh per policy.
+    func handleSoundSourceChanged() {
+        // Count before stopping: `.onChange` also fires on @AppStorage sync at
+        // launch, when everything is idle and nothing stops — stay silent then.
+        let nonIdleCount = registry.all.count { !$0.session.isIdle }
+        if nonIdleCount > 0 {
+            Self.logger.info("Sound source changed — stopping \(nonIdleCount) non-idle session(s)")
+        }
+        discardLingeringPausedSession()
+        for contribution in registry.all where !contribution.session.isIdle {
+            contribution.session.stop()
+        }
+    }
+
+    /// Stops the tracked paused session (if any) and clears the pause
+    /// bookkeeping. Idempotent. Two kinds of caller: navigation/lifecycle
+    /// events discarding a pause for a no-longer-current destination, and
+    /// `handleSoundSourceChanged`, which discards a pause whose destination IS
+    /// still current — the preserved trial straddles two instruments and must
+    /// not resume.
     private func discardLingeringPausedSession() {
         guard let dest = pausedDestination,
               let paused = registry.contribution(for: dest)?.session else {

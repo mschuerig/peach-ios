@@ -30,8 +30,10 @@ final class SoundFontPlaybackHandle: PlaybackHandle {
         if let player {
             // Chain through the player's serial audio queue so a subsequent
             // play() awaits this stop's mute/restore window and cannot land
-            // its noteOn during the global volume==0 phase.
-            await player.scheduleNoteStop(midiNote: midiNote).value
+            // its noteOn during the global volume==0 phase. Pass the play-time
+            // fadeOutDuration: this note fades with the policy it was played
+            // under, regardless of any setPreset since.
+            await player.scheduleNoteStop(midiNote: midiNote, fadeOutDuration: fadeOutDuration).value
         } else {
             // Player deallocated (test fixtures, app teardown). Fall back to
             // a direct stop — no chain, but no contending plays either.

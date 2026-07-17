@@ -259,18 +259,6 @@ Reachable when: session stops while a tunable note is sounding AND the user re-e
 
 **Fix:** Apply the 85.1 v2 pattern: route session-level stops exclusively through `scheduleStopAll()` (which calls `stopNotes` globally — silences the specific note as a side effect), drop the deferred `handle.stop()` calls. `currentHandle = nil` is sufficient bookkeeping for the session's own state machine. Out of 85.3's framing; tracked separately so the fix doesn't expand sequencer-concurrency scope. Reachable but bounded — defer to a focused PitchMatching cleanup story.
 
-### PF-059: `handleSoundSourceChanged` synchronous stop without awaiting idle before `rebuildCoordinators()`
-
-**Found:** 2026-06-06 (Story 85.3 Task 1 audit — surfaced while mapping cross-discipline serialization invariant)
-**Severity:** Low (single-user-action surface — Sound Source change during an active session; symptom is a one-shot audio glitch on the rebuilt graph)
-**Disposition:** OPEN
-
-`Peach/App/PeachApp.swift:177-215` `handleSoundSourceChanged` calls `session.stop()` synchronously on each non-idle session, then immediately constructs a new `SoundFontPlayer`, replaces session instances, and calls `rebuildCoordinators()`. The old sessions' fire-and-forget `Task { await beatSequencer.stop() }` (CRM) or `enqueueSequencerStop` (TOD) is still in flight; the new sessions begin observing the new (replaced) sequencer/notePlayer. Old in-flight stops may complete after the rebuild, possibly clearing or muting the new graph.
-
-Reachable when: user changes Sound Source while a session is active. Narrow window; symptom is a transient audio glitch, not a crash.
-
-**Fix:** `handleSoundSourceChanged` should `await` each non-idle session's `awaitIdle` before constructing the replacement `SoundFontPlayer` and rebuilding coordinators. Alternative: route the rebuild through the coordinator's stop+await pattern (the same path `TrainingLifecycleCoordinator.navigate(to:)` uses), so all "stop everything and replace" surfaces share one mechanism. Out of 85.3's framing (composition-root orchestration, not sequencer/session concurrency); track separately.
-
 ### PF-061: `keyboardCommit` reverses adjust direction when `current` lies outside `legalRange`
 
 **Found:** 2026-06-06 (Story 85.4 step-04 review — Edge Case Hunter)
