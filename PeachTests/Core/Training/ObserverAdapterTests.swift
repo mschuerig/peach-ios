@@ -44,7 +44,8 @@ struct ProfileAdapterTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(15))
+            targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(15)),
+            interval: .prime
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,
@@ -67,7 +68,8 @@ struct ProfileAdapterTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(-10))
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(-10)),
+            interval: .up(.perfectFifth)
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,
@@ -90,7 +92,8 @@ struct ProfileAdapterTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(15))
+            targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(15)),
+            interval: .prime
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,
@@ -265,7 +268,8 @@ struct StoreAdapterTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(15))
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(15)),
+            interval: .up(.perfectFifth)
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,
@@ -388,7 +392,8 @@ struct StoreAdapterTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(15))
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(15)),
+            interval: .up(.perfectFifth)
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial, userAnsweredHigher: true,

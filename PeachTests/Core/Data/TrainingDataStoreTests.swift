@@ -244,7 +244,8 @@ struct TrainingDataStoreTests {
         let timestamp = Date()
         let trial = PitchDiscriminationTrial(
             referenceNote: 60,
-            targetNote: DetunedMIDINote(note: 60, offset: Cents(25.0))
+            targetNote: DetunedMIDINote(note: 60, offset: Cents(25.0)),
+            interval: .prime
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,
@@ -274,7 +275,8 @@ struct TrainingDataStoreTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0))
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0)),
+            interval: .up(.perfectFifth)
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,

@@ -64,7 +64,8 @@ struct NoOpHapticFeedbackManagerTests {
         let manager = NoOpHapticFeedbackManager()
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(10))
+            targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(10)),
+            interval: .prime
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,

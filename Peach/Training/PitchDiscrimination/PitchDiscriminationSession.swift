@@ -305,7 +305,7 @@ final class PitchDiscriminationSession: TrainingSession {
     private func playReferenceForCurrentTrial() {
         guard let settings, let trial = currentTrial else { return }
 
-        let freq1 = trial.referenceFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
+        let freq1 = trial.referenceFrequency(referencePitch: settings.referencePitch)
         let freq2 = trial.targetFrequency(tuningSystem: settings.tuningSystem, referencePitch: settings.referencePitch)
         logger.info("PitchDiscriminationTrial: ref=\(trial.referenceNote.rawValue) \(freq1.rawValue)Hz, target \(freq2.rawValue)Hz, offset=\(trial.targetNote.offset.rawValue), higher=\(trial.isTargetHigher)")
 

@@ -45,7 +45,7 @@ struct PitchDiscriminationSessionDifficultyTests {
     @Test("sessionBestCentDifference updates on first correct answer")
     func sessionBestUpdatesOnFirstCorrectAnswer() async throws {
         let comparisons = [
-            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
+            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime)
         ]
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 
@@ -61,7 +61,7 @@ struct PitchDiscriminationSessionDifficultyTests {
     @Test("sessionBestCentDifference does not update on incorrect answer")
     func sessionBestDoesNotUpdateOnIncorrectAnswer() async throws {
         let comparisons = [
-            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
+            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime)
         ]
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 
@@ -77,8 +77,8 @@ struct PitchDiscriminationSessionDifficultyTests {
     @Test("sessionBestCentDifference tracks smallest cent difference across correct answers")
     func sessionBestTracksSmallestDifference() async throws {
         let comparisons = [
-            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
-            PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(50.0)))
+            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime),
+            PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(50.0)), interval: .prime)
         ]
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 
@@ -100,8 +100,8 @@ struct PitchDiscriminationSessionDifficultyTests {
     @Test("sessionBestCentDifference does not increase when larger difference answered correctly")
     func sessionBestDoesNotIncrease() async throws {
         let comparisons = [
-            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0))),
-            PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(100.0)))
+            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0)), interval: .prime),
+            PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(100.0)), interval: .prime)
         ]
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 
@@ -123,7 +123,7 @@ struct PitchDiscriminationSessionDifficultyTests {
     @Test("sessionBestCentDifference resets when training stops")
     func sessionBestResetsOnStop() async throws {
         let comparisons = [
-            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
+            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime)
         ]
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 

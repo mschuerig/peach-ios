@@ -19,11 +19,11 @@ struct PitchDiscriminationSessionResetTests {
 
         // Simulate converged state via observer
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(50.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(50.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
         #expect(profile.comparisonMean(for: .prime) != nil)
@@ -48,7 +48,7 @@ struct PitchDiscriminationSessionResetTests {
 
         // Simulate converged state via observer
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
 
@@ -79,7 +79,7 @@ struct PitchDiscriminationSessionResetTests {
         // Set up trained data via observer
         for note in 55...65 {
             PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-                trial: PitchDiscriminationTrial(referenceNote: MIDINote(note), targetNote: DetunedMIDINote(note: MIDINote(note), offset: Cents(30.0))),
+                trial: PitchDiscriminationTrial(referenceNote: MIDINote(note), targetNote: DetunedMIDINote(note: MIDINote(note), offset: Cents(30.0)), interval: .prime),
                 userAnsweredHigher: true, tuningSystem: .equalTemperament
             ))
         }
@@ -137,7 +137,7 @@ struct PitchDiscriminationSessionResetTests {
 
         // Simulate converged state via observer
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(30.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
 

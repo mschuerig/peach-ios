@@ -46,7 +46,8 @@ struct PitchMatchingProfileTests {
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(
                 referenceNote: MIDINote(60),
-                targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(50.0))
+                targetNote: DetunedMIDINote(note: MIDINote(60), offset: Cents(50.0)),
+                interval: .prime
             ),
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament

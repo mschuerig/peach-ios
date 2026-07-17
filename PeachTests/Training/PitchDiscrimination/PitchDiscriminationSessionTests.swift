@@ -152,7 +152,7 @@ struct PitchDiscriminationSessionTests {
     func startPassesIntervalsToStrategy() async throws {
         let f = makePitchDiscriminationSession(
             comparisons: [
-                PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(50.0)))
+                PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(50.0)), interval: .up(.perfectFifth))
             ]
         )
 
@@ -182,7 +182,7 @@ struct PitchDiscriminationSessionTests {
     func currentIntervalSetAfterStartFifth() async throws {
         let f = makePitchDiscriminationSession(
             comparisons: [
-                PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(50.0)))
+                PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(50.0)), interval: .up(.perfectFifth))
             ]
         )
 
@@ -206,7 +206,7 @@ struct PitchDiscriminationSessionTests {
     func isIntervalModeTrueForFifth() async throws {
         let f = makePitchDiscriminationSession(
             comparisons: [
-                PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(50.0)))
+                PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(50.0)), interval: .up(.perfectFifth))
             ]
         )
 

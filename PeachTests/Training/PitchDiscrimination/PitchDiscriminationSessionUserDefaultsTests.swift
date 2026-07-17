@@ -47,7 +47,7 @@ struct PitchDiscriminationSessionUserDefaultsTests {
         let mockDataStore = MockTrainingDataStore()
         let profile = PerceptualProfile()
         let mockStrategy = MockNextPitchDiscriminationStrategy(comparisons: [
-            PitchDiscriminationTrial(referenceNote: 69, targetNote: DetunedMIDINote(note: 69, offset: Cents(100.0)))
+            PitchDiscriminationTrial(referenceNote: 69, targetNote: DetunedMIDINote(note: 69, offset: Cents(100.0)), interval: .prime)
         ])
 
         let session = PitchDiscriminationSession(

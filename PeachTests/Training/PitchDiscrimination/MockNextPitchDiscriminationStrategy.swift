@@ -15,7 +15,7 @@ final class MockNextPitchDiscriminationStrategy: NextPitchDiscriminationStrategy
     // MARK: - Initialization
 
     init(comparisons: [PitchDiscriminationTrial] = [
-        PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)))
+        PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime)
     ]) {
         self.comparisons = comparisons
     }

@@ -18,7 +18,7 @@ struct ProfileScreenTests {
     func environmentKeySetAndGet() async throws {
         let profile = PerceptualProfile()
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(50.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
 

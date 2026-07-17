@@ -75,7 +75,8 @@ final class KazezNoteStrategy: NextPitchDiscriminationStrategy {
 
         return PitchDiscriminationTrial(
             referenceNote: note,
-            targetNote: DetunedMIDINote(note: targetBaseNote, offset: Cents(signed))
+            targetNote: DetunedMIDINote(note: targetBaseNote, offset: Cents(signed)),
+            interval: interval
         )
     }
 

@@ -203,11 +203,11 @@ struct KazezNoteStrategyTests {
         let profile = PerceptualProfile()
         // Train some notes via observer so comparisonMean returns a value
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(10.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(10.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(8.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(8.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
 
@@ -232,7 +232,7 @@ struct KazezNoteStrategyTests {
         let profile = PerceptualProfile()
         // Train a note with very small offset via observer
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(0.05))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(0.05)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
 
@@ -255,7 +255,7 @@ struct KazezNoteStrategyTests {
         let profile = PerceptualProfile()
         // Train with large offset via observer
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(200.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(200.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
 
@@ -477,7 +477,8 @@ struct KazezNoteStrategyTests {
     private func makeCompleted(offset: Double, correct: Bool) -> CompletedPitchDiscriminationTrial {
         let comp = PitchDiscriminationTrial(
             referenceNote: 60,
-            targetNote: DetunedMIDINote(note: 60, offset: Cents(offset))
+            targetNote: DetunedMIDINote(note: 60, offset: Cents(offset)),
+            interval: .prime
         )
         return CompletedPitchDiscriminationTrial(
             trial: comp,

@@ -2,8 +2,8 @@
 title: 'Story 87.1: Reference-relative Just Intonation for interval trials'
 type: 'feature'
 created: '2026-07-17'
-status: 'ready-for-dev'
-baseline_commit: '9fee6fa20c7f7793a3623b6bf465c6f01351a9ba'
+status: 'in-progress'
+baseline_commit: '822f636a978772bb56a94db57e2a7a235110c960'
 context:
   - '{project-root}/docs/planning-artifacts/epics.md'
   - '{project-root}/docs/project-context.md'
@@ -79,6 +79,18 @@ The key structural fact (confirmed against source): `TuningSystem.centOffset(for
 
 All paths relative to repo root. Baseline: `9fee6fa2`.
 
+**Task 1 verification (2026-07-17, against `822f636a`):** Code Map confirmed. Complete production-caller enumeration of `frequency(for: DetunedMIDINote/MIDINote, referencePitch:)`:
+
+- `PitchDiscriminationTrial.referenceFrequency/targetFrequency` (trial playback — this story rewires).
+- `PitchMatchingSession.playReferenceNoteForCurrentTrial` (341–345) and `startTunablePlayback` (372–374) (trial playback — this story rewires).
+- `SettingsCoordinator.playSoundPreview(duration:)` (49) — ET hard-coded; unaffected.
+- `SettingsCoordinator.playSoundPreview(note:duration:)` (74) — **not in original Code Map**; single-note Settings preview through `userSettings.tuningSystem`. Not a trial-playback path → stays on the absolute bridge (it is exactly the single-note conversion the retained API is for). No change.
+- `ChromaticConstructionSession`/`Screen` — hard-code `.equalTemperament` by design; unaffected.
+
+Trial constructor call sites: `PitchDiscriminationTrial` — production: `KazezNoteStrategy:76`, `PreviewDefaults.StubPitchDiscriminationStrategy:65`; tests: `SettingsTests`, `PitchDiscriminationTrialTests`, `KazezNoteStrategyTests`, `ProgressTimelineTests`, `PitchDiscriminationSession{,UserDefaults,Reset,Integration,Loudness,Difficulty}Tests`, `MockNextPitchDiscriminationStrategy`, `PitchDiscriminationTestHelpers`, `ProfileScreenTests`. `PitchMatchingTrial` — production: `PitchMatchingSession.generateTrial:475` only; tests construct `CompletedPitchMatchingTrial` (no `interval` field — unchanged) rather than the trial struct.
+
+Observers/records/profile consume MIDI notes + cent offsets only — no absolute frequencies anywhere downstream. `PitchMatchingSession.referenceFrequency` has no readers outside the session and its test file (761/774/777/1027). JI help copy sites: `SettingsScreen.swift:204` (footer) and the Settings help sheet string (`Localizable.xcstrings:2578`) — both already promise pure-ratio semantics. Existing `TuningSystemTests` assert in cents (log-domain) with ≤0.001¢/0.1¢ tolerances — new suites follow that style.
+
 **Modify:**
 
 - `Peach/Core/Music/TuningSystem.swift` — add the reference-relative API (working shape, final signature at implementation time):
@@ -108,13 +120,13 @@ All paths relative to repo root. Baseline: `9fee6fa2`.
 
 ## Tasks & Acceptance
 
-- [ ] **Task 1 — Verification & call-site audit.** Confirm the Code Map against baseline: enumerate every production caller of `frequency(for: DetunedMIDINote/MIDINote, referencePitch:)` and every constructor call site of both trial types (including tests and mocks). Confirm the JI help copy location and current wording. Confirm neither `KazezNoteStrategy` nor observers/records consume absolute JI frequencies anywhere else. Any surprise → Ask First. (AC: Code Map confirmed or corrected in this file before implementation.)
-- [ ] **Task 2 — Adam consult.** Lock the ratio table, descending semantics, and ET-reference acceptability per Boundaries. Record in *Consultation Findings*. (AC: locked table recorded; any table change → Ask First.)
-- [ ] **Task 3 — Tests first: TuningSystem reference-relative API.** Write failing tests for matrix rows 1-5, 7, 10. Implement `intervalCents(for:)` + `frequency(for:detunedBy:above:)`. (AC: rows 1-5, 7, 10 green; existing `TuningSystemTests` untouched and green.)
-- [ ] **Task 4 — Pitch Discrimination path.** Trial gains `interval`; frequency methods go reference-relative; strategy + session + test call sites updated. (AC: rows 3, 6, 10 green through the trial API; ET regression row 5 pinned at trial level; full suite green.)
-- [ ] **Task 5 — Pitch Matching path.** Trial gains `interval`; session reference/target/tunable computation per Code Map; `inTuneTargetFrequency` rename. (AC: rows 8-9 green; existing matching tests green with updated constructors.)
-- [ ] **Task 6 — Help copy + docs.** Verify JI help text (expectation: no change); update `project-context.md` two-world bullet; arc42 touch-up if applicable. (AC: copy verified or factually corrected; docs reflect the reference-relative bridge.)
-- [ ] **Task 7 — Gates + listening test.** All four schemes green (sequential). Michael listening test per Boundaries (JI M3 from C♯, ET control). (AC: gates green; Michael confirms; then status → review, and after review → done per `[[feedback_update_status_after_review]]`.)
+- [x] **Task 1 — Verification & call-site audit.** Confirm the Code Map against baseline: enumerate every production caller of `frequency(for: DetunedMIDINote/MIDINote, referencePitch:)` and every constructor call site of both trial types (including tests and mocks). Confirm the JI help copy location and current wording. Confirm neither `KazezNoteStrategy` nor observers/records consume absolute JI frequencies anywhere else. Any surprise → Ask First. (AC: Code Map confirmed or corrected in this file before implementation.)
+- [x] **Task 2 — Adam consult.** Lock the ratio table, descending semantics, and ET-reference acceptability per Boundaries. Record in *Consultation Findings*. (AC: locked table recorded; any table change → Ask First.)
+- [x] **Task 3 — Tests first: TuningSystem reference-relative API.** Write failing tests for matrix rows 1-5, 7, 10. Implement `intervalCents(for:)` + `frequency(for:detunedBy:above:)`. (AC: rows 1-5, 7, 10 green; existing `TuningSystemTests` untouched and green.) *Final signature uses `from:` instead of `above:` — direction-neutral (descending targets sit below the reference).*
+- [x] **Task 4 — Pitch Discrimination path.** Trial gains `interval`; frequency methods go reference-relative; strategy + session + test call sites updated. (AC: rows 3, 6, 10 green through the trial API; ET regression row 5 pinned at trial level; full suite green.) *Both trial inits gained a `precondition(referenceNote.transposed(by: interval) == targetNote)` coherence check — the trial owns the invariant its frequency derivation now relies on.*
+- [x] **Task 5 — Pitch Matching path.** Trial gains `interval`; session reference/target/tunable computation per Code Map; `inTuneTargetFrequency` rename. (AC: rows 8-9 green; existing matching tests green with updated constructors.) *Rename folded in per default plan; tunable start now reuses `sliderFrequency(for: 0)`.*
+- [x] **Task 6 — Help copy + docs.** Verify JI help text (expectation: no change); update `project-context.md` two-world bullet; arc42 touch-up if applicable. (AC: copy verified or factually corrected; docs reflect the reference-relative bridge.) *Both copy sites (`SettingsScreen.swift:204` footer, help-sheet string) already state "pure frequency ratios" — now factually true; no change. arc42 §two-world bridge + worked example updated; `project-context.md` two-world bullet updated.*
+- [ ] **Task 7 — Gates + listening test.** All four schemes green (sequential). Michael listening test per Boundaries (JI M3 from C♯, ET control). (AC: gates green; Michael confirms; then status → review, and after review → done per `[[feedback_update_status_after_review]]`.) *Gates green 2026-07-17: iOS 2169 / macOS 2156 / iOS Research 2333 / macOS Research 2320; `archlint` clean; `check-dependencies.sh` sole finding is the pre-existing PF-070 comment-text false positive (fails identically on baseline). Michael listening test pending.*
 
 ## Dev Notes
 
@@ -159,18 +171,45 @@ The app requires 0.1-cent precision (`docs/project-context.md`). Frequency asser
 
 ## Consultation Findings
 
-_(Task 2 records Adam's locked table and semantics here.)_
+**Adam (music-domain-expert), 2026-07-17 — all three questions resolved; table locked unchanged.**
+
+Framework: interval identity in JI is a frequency ratio between two tones; the scale-degree framework (10/9 vs 9/8, wolf fifths) only activates when ≥3 tones must be mutually consistent. A trial is a dyad → ratio-identity governs; reference-relative is theoretically confirmed as the right architecture.
+
+- **(a) Table locked = existing `centOffset(for:)` values, no changes.** Senario consonances (2/1, 3/2, 4/3, 5/4, 6/5, 5/3, 8/5) unambiguous. M2 9/8 correct for a bare dyad (10/9 is a scale-position artifact). m2 16/15 / M7 15/8 correct (diatonic semitone + complement). **Tritone 45/32 kept as convention** — no perceptual ground truth exists for a bare 5-limit tritone; 45/32 and 64/45 are symmetric about ET (±9.8¢); septimal 7/5 would leave the 5-limit frame; continuity wins. **m7 9/5 kept** — P5+m3 consonance stack, more anchorable than 3-limit 16/9. On the record: the table is inversionally inconsistent at m7/M2 (9/8 inverts to 16/9, not 9/5) — harmless reference-relative since trials never stack intervals.
+- **(b) Descending = inverted ratio, confirmed.** Target below reference by the same ratio: reciprocal frequency ratio, same cent magnitude, negative sign. Only semantics consistent with ratio-identity.
+- **(c) ET-pitched reference confirmed acceptable.** Absolute placement of the reference is imperceptible without AP (and unobjectionable with it — identical to ET mode's reference); tuning a pure interval from an ET reference is standard musical practice. The A-rooted alternative is exactly the root lottery being removed.
+- Proactive flag (no code impact): users with a strong 12-TET template will initially err ~14¢ sharp on JI major thirds — the intended learnable distinction; may appear as a temporary difficulty bump in JI statistics.
+
+Since the table is confirmed unchanged, the Ask-First trigger (table delta) does not fire.
 
 ## Dev Agent Record
 
 ### Agent Model Used
 
+Claude Fable 5 (claude-fable-5) via bmad-quick-dev; test-constructor churn delegated to a general-purpose subagent (64 sites, 16 files).
+
 ### Debug Log References
+
+None — no test failures during implementation; all four schemes green on first full run after the churn.
 
 ### Completion Notes List
 
+- New API is two methods on `TuningSystem`: `intervalCents(for: DirectedInterval) -> Cents` (signed) and `frequency(for:detunedBy:from:)`. One playback path for both tuning systems — no session-level branch anywhere.
+- `PitchDiscriminationTrial.referenceFrequency` dropped its now-meaningless `tuningSystem:` parameter (reference is ET in every system); `targetFrequency(tuningSystem:referencePitch:)` kept its shape.
+- Both trial inits enforce `referenceNote.transposed(by: interval) == targetNote` by precondition, so a trial whose stored interval disagrees with its note pair cannot exist — protects the frequency derivation that no longer looks at MIDI distance.
+- `SettingsCoordinator.playSoundPreview(note:duration:)` (found in Task 1) intentionally stays on the absolute bridge — single-note preview, exactly the retained API's purpose.
+- Adam consult locked the existing ratio table unchanged (tritone 45/32, m7 9/5); no Ask-First trigger fired.
+- `check-dependencies.sh` finding = PF-070 (pre-existing comment-text false positive; verified identical on baseline via stash).
+
 ### File List
+
+**Production:** `Peach/Core/Music/TuningSystem.swift`, `Peach/Training/PitchDiscrimination/PitchDiscriminationTrial.swift`, `Peach/Training/PitchDiscrimination/PitchDiscriminationSession.swift`, `Peach/Core/Algorithm/KazezNoteStrategy.swift`, `Peach/App/PreviewDefaults.swift`, `Peach/Training/PitchMatching/PitchMatchingTrial.swift`, `Peach/Training/PitchMatching/PitchMatchingSession.swift`
+
+**Tests:** `PeachTests/Core/Music/TuningSystemTests.swift`, `PeachTests/Core/Training/PitchDiscriminationTrialTests.swift`, `PeachTests/Training/PitchMatching/PitchMatchingSessionTests.swift`, plus 16 files of mechanical `interval:` constructor updates (see subagent list in git diff)
+
+**Docs:** `docs/arc42.md`, `docs/project-context.md`, this spec
 
 ## Change Log
 
 - 2026-07-17 — Story created from Epic 87 (code-reading triage 2026-07-13; ultimate context engine analysis completed — comprehensive developer guide created).
+- 2026-07-17 — Tasks 1–6 complete + gates green (all four schemes, sequential). Task 1 confirmed the Code Map and added one finding (SettingsCoordinator note preview — stays absolute). Task 2 locked the ratio table unchanged. Awaiting Michael listening test (Task 7) and step-04 review.

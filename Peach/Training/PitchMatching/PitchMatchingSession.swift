@@ -133,7 +133,10 @@ final class PitchMatchingSession: TrainingSession {
     // MARK: - Internal State
 
     private var currentHandle: PlaybackHandle?
-    private(set) var referenceFrequency: Frequency?
+    /// The trial's in-tune point: the reference frequency shifted by the
+    /// directed interval's size in the session's tuning system. Slider math
+    /// and evaluation are relative to this frequency.
+    private(set) var inTuneTargetFrequency: Frequency?
     private var isPaused = false
 
     // MARK: - Initialization
@@ -338,11 +341,11 @@ final class PitchMatchingSession: TrainingSession {
     private func playReferenceNoteForCurrentTrial() {
         guard let settings, let trial = currentTrial else { return }
 
-        let refFreq = settings.tuningSystem.frequency(
+        let refFreq = TuningSystem.equalTemperament.frequency(
             for: trial.referenceNote, referencePitch: settings.referencePitch)
         let targetFreq = settings.tuningSystem.frequency(
-            for: trial.targetNote, referencePitch: settings.referencePitch)
-        self.referenceFrequency = targetFreq
+            for: trial.interval, detunedBy: Cents(0), from: refFreq)
+        self.inTuneTargetFrequency = targetFreq
         logger.info("Trial: ref=\(trial.referenceNote.rawValue) \(refFreq.rawValue)Hz, target=\(trial.targetNote.rawValue) \(targetFreq.rawValue)Hz, initialOffset=\(trial.initialCentOffset.rawValue)cents")
 
         lifecycle?.setTrainingTask(Task {
@@ -366,12 +369,11 @@ final class PitchMatchingSession: TrainingSession {
     }
 
     private func startTunablePlayback() {
-        guard let settings, let trial = currentTrial else { return }
+        // sliderFrequency(for: 0) is the slider's center: the in-tune target
+        // detuned by the trial's initialCentOffset.
+        guard let settings, let tunableFrequency = sliderFrequency(for: 0) else { return }
 
         let tunableAmplitude = calculateTargetAmplitude()
-        let tunableFrequency = settings.tuningSystem.frequency(
-            for: DetunedMIDINote(note: trial.targetNote, offset: trial.initialCentOffset),
-            referencePitch: settings.referencePitch)
 
         lifecycle?.setTrainingTask(Task {
             do {
@@ -398,9 +400,9 @@ final class PitchMatchingSession: TrainingSession {
 
     private func evaluateResult(userFrequency: Frequency) {
         guard let trial = currentTrial else { return }
-        guard let referenceFrequency else { return }
+        guard let inTuneTargetFrequency else { return }
 
-        let userCentError = log2(userFrequency / referenceFrequency) * Cents.perOctave
+        let userCentError = log2(userFrequency / inTuneTargetFrequency) * Cents.perOctave
         logger.info("Result: ref=\(trial.referenceNote.rawValue), target=\(trial.targetNote.rawValue), initialOffset=\(trial.initialCentOffset.rawValue)cents, userCentError=\(userCentError.rawValue)cents")
 
         let result = CompletedPitchMatchingTrial(
@@ -440,7 +442,7 @@ final class PitchMatchingSession: TrainingSession {
         keyboardPitchValue = nil
         let handleToStop = currentHandle
         currentHandle = nil
-        referenceFrequency = nil
+        inTuneTargetFrequency = nil
         currentTrial = nil
         lastResult = nil
         sessionBestCentError = nil
@@ -454,9 +456,9 @@ final class PitchMatchingSession: TrainingSession {
     // MARK: - Private Helpers
 
     private func sliderFrequency(for value: Double) -> Frequency? {
-        guard let referenceFrequency, let trial = currentTrial, let settings else { return nil }
+        guard let inTuneTargetFrequency, let trial = currentTrial, let settings else { return nil }
         let centOffset = trial.initialCentOffset + value * settings.initialCentOffsetRange.upperBound
-        return referenceFrequency * pow(2.0, centOffset / Cents.perOctave)
+        return inTuneTargetFrequency * pow(2.0, centOffset / Cents.perOctave)
     }
 
     private func generateTrial(settings: PitchMatchingSettings, interval: DirectedInterval) -> PitchMatchingTrial {
@@ -472,7 +474,7 @@ final class PitchMatchingSession: TrainingSession {
         let note = MIDINote.random(in: minNote...maxNote)
         let targetNote = note.transposed(by: interval)
         let offset = Cents(Double.random(in: settings.initialCentOffsetRange.lowerBound.rawValue...settings.initialCentOffsetRange.upperBound.rawValue))
-        return PitchMatchingTrial(referenceNote: note, targetNote: targetNote, initialCentOffset: offset)
+        return PitchMatchingTrial(referenceNote: note, targetNote: targetNote, initialCentOffset: offset, interval: interval)
     }
 
     private func trackSessionBest(_ absCentError: Cents) {

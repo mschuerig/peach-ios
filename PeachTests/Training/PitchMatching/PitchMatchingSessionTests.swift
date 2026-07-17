@@ -758,8 +758,8 @@ struct PitchMatchingSessionTests {
 
     // MARK: - Tuning System and Anchor Tests (Task 4)
 
-    @Test("referenceFrequency anchor is target note frequency for intervals")
-    func referenceFrequencyAnchorIsTargetFrequency() async throws {
+    @Test("inTuneTargetFrequency anchor is target note frequency for intervals")
+    func inTuneTargetFrequencyAnchorIsTargetFrequency() async throws {
         let (session, _, _, _) = makePitchMatchingSession()
         session.start(settings: PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
@@ -771,10 +771,10 @@ struct PitchMatchingSessionTests {
 
         let trial = try #require(session.currentTrial)
         #expect(trial.targetNote.rawValue == trial.referenceNote.rawValue + 7)
-        // referenceFrequency should be the target note frequency, not the reference note frequency
+        // inTuneTargetFrequency should be the target note frequency, not the reference note frequency
         let expectedTargetFreq = TuningSystem.equalTemperament.frequency(
             for: trial.targetNote, referencePitch: .concert440)
-        let refFreq = try #require(session.referenceFrequency)
+        let refFreq = try #require(session.inTuneTargetFrequency)
         #expect(abs(refFreq.rawValue - expectedTargetFreq.rawValue) < 0.01)
     }
 
@@ -815,6 +815,55 @@ struct PitchMatchingSessionTests {
 
         let trial = try #require(session.currentTrial)
         // Slider value that cancels initialCentOffset → 0 cent error
+        let correctingValue = -trial.initialCentOffset.rawValue / 20.0
+        session.commitPitch(correctingValue)
+        try await waitForState(session, .showingFeedback)
+
+        let result = try #require(observer.lastResult)
+        #expect(abs(result.userCentError.rawValue) < 0.01)
+    }
+
+    @Test("justIntonation interval trial starts the tunable at the pure ratio detuned by initialCentOffset")
+    func justIntonationTunableStartsAtDetunedPureRatio() async throws {
+        let (session, notePlayer, _, _) = makePitchMatchingSession()
+        session.start(settings: PitchMatchingSettings(
+            noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
+            referencePitch: Frequency(440.0),
+            intervals: [.up(.majorThird)],
+            tuningSystem: .justIntonation,
+            noteDuration: NoteDuration(0.3)
+        ))
+        try await transitionToPlayingTunable(session)
+
+        let trial = try #require(session.currentTrial)
+        let referenceFreq = TuningSystem.equalTemperament.frequency(
+            for: trial.referenceNote, referencePitch: .concert440)
+        let pureThird = referenceFreq.rawValue * pow(2.0, 386.314 / 1200.0)
+
+        // The slider's zero-error point is the pure ratio above the reference
+        let inTune = try #require(session.inTuneTargetFrequency)
+        #expect(abs(1200.0 * log2(inTune.rawValue / pureThird)) < 0.001)
+
+        // Tunable playback starts at the in-tune point detuned by initialCentOffset
+        let expectedTunable = pureThird * pow(2.0, trial.initialCentOffset.rawValue / 1200.0)
+        let tunableFreq = try #require(notePlayer.lastFrequency)
+        #expect(abs(1200.0 * log2(tunableFreq / expectedTunable)) < 0.001)
+    }
+
+    @Test("justIntonation commit at the pure-ratio frequency scores zero cent error")
+    func justIntonationCommitAtPureRatioZeroError() async throws {
+        let (session, _, _, observer) = makePitchMatchingSession()
+        session.start(settings: PitchMatchingSettings(
+            noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
+            referencePitch: Frequency(440.0),
+            intervals: [.up(.perfectFifth)],
+            tuningSystem: .justIntonation,
+            noteDuration: NoteDuration(0.3)
+        ))
+        try await transitionToPlayingTunable(session)
+
+        let trial = try #require(session.currentTrial)
+        // Slider value that cancels initialCentOffset → commit lands exactly on the pure fifth
         let correctingValue = -trial.initialCentOffset.rawValue / 20.0
         session.commitPitch(correctingValue)
         try await waitForState(session, .showingFeedback)
@@ -1024,7 +1073,7 @@ struct PitchMatchingSessionTests {
         MainActor.assertIsolated()
         #expect(session.state == .awaitingSliderTouch)
         #expect(session.currentTrial != nil)
-        #expect(session.referenceFrequency != nil)
+        #expect(session.inTuneTargetFrequency != nil)
 
         session.stop()
     }

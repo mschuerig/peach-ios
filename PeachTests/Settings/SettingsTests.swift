@@ -381,11 +381,11 @@ struct SettingsTests {
 
         // Add some training data via observer
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(5.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(5.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
         PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(CompletedPitchDiscriminationTrial(
-            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(3.0))),
+            trial: PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(3.0)), interval: .prime),
             userAnsweredHigher: true, tuningSystem: .equalTemperament
         ))
         #expect(profile.comparisonMean(for: .prime) != nil)

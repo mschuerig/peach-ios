@@ -17,7 +17,8 @@ struct PerceptualProfileTests {
         return CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(
                 referenceNote: referenceNote,
-                targetNote: DetunedMIDINote(note: targetNote, offset: centOffset)
+                targetNote: DetunedMIDINote(note: targetNote, offset: centOffset),
+                interval: try! DirectedInterval.between(referenceNote, targetNote)
             ),
             userAnsweredHigher: isCorrect ? isTargetHigher : !isTargetHigher,
             tuningSystem: .equalTemperament
@@ -100,7 +101,8 @@ struct PerceptualProfileTests {
 
         let trial = PitchDiscriminationTrial(
             referenceNote: MIDINote(60),
-            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0))
+            targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(25.0)),
+            interval: .up(.perfectFifth)
         )
         let completed = CompletedPitchDiscriminationTrial(
             trial: trial,
@@ -156,7 +158,8 @@ struct PerceptualProfileTests {
         let intervalComparison = CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(
                 referenceNote: MIDINote(60),
-                targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(20.0))
+                targetNote: DetunedMIDINote(note: MIDINote(67), offset: Cents(20.0)),
+                interval: .up(.perfectFifth)
             ),
             userAnsweredHigher: true,
             tuningSystem: .equalTemperament

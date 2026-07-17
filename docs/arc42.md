@@ -466,7 +466,7 @@ The most fundamental design pattern in Peach: strict separation between the **lo
 | `TempoBPM` — musical tempo | `SampleRate` — audio samples per second |
 | `TimingOffset` — signed timing deviation from a grid point | Sample offsets — integer positions in the audio buffer |
 
-`TuningSystem` is the **pitch bridge** between the two worlds. It is the *only* path from logical pitch to physical frequency.
+`TuningSystem` is the **pitch bridge** between the two worlds. It is the *only* path from logical pitch to physical frequency. It offers two forward conversions: an **absolute** one (a single note's pitch, measured from A4) and a **reference-relative** one (a target frequency derived from an already-computed reference frequency and a directed interval). Interval-trial playback uses the reference-relative form so that the in-tune point depends only on the interval the listener actually hears — under just intonation the absolute form would tie it to the note's position relative to A, an inaudible root. The absolute form remains for single-note conversion (previews, reference tones) and for a future discipline where a fixed tonal root is the point.
 
 For rhythm, the bridge is simpler: `TempoBPM.sixteenthNoteDuration` converts musical time to `Duration`, which is then multiplied by `SampleRate` to yield sample-accurate offsets for the audio engine.
 
@@ -475,7 +475,7 @@ For rhythm, the bridge is simpler: `TempoBPM.sixteenthNoteDuration` converts mus
 Sessions, the algorithm, profiles, data stores, and observers work **exclusively in the logical world**. They reason about MIDI notes, intervals, cents, tempos, and rhythm offsets. They never see or produce a frequency or sample offset.
 
 Only the audio layer touches the physical world — and it does so through explicit conversions:
-1. **Pitch (logical → physical):** `TuningSystem.frequency(for:referencePitch:)` — used by sessions before calling the audio layer
+1. **Pitch (logical → physical):** `TuningSystem.frequency(for:referencePitch:)` for a single note, `TuningSystem.frequency(for:detunedBy:from:)` for an interval target relative to a reference frequency — used by sessions and trials before calling the audio layer
 2. **Pitch (physical → MIDI hardware):** internal to the SoundFont player, invisible to the rest of the app
 3. **Rhythm (logical → physical):** `SampleRate × Duration` — used inside `SoundFontBeatSequencer` when scheduling each `Beat` against the engine's sample clock
 
@@ -509,9 +509,9 @@ graph LR
 
 **Worked example** — playing E4 detuned by +15 cents (as part of a major-third interval from C4):
 
-1. **Session constructs the logical pitch.** The algorithm selects C4 as the reference note and applies the configured interval (major third = 4 semitones up) to get E4. It then adds a 15-cent offset for difficulty, producing a `DetunedMIDINote`.
+1. **Session constructs the logical pitch.** The algorithm selects C4 as the reference note and applies the configured interval (major third = 4 semitones up) to get E4. It then adds a 15-cent offset for difficulty, producing a `DetunedMIDINote` — and the trial records the directed interval itself.
 
-2. **TuningSystem converts to frequency.** It computes a total cent offset from A4 (the standard reference). For E4+15¢, that's -485 cents from A4. Different tuning systems produce different cent values for the same interval — this is where equal temperament and just intonation diverge. The final frequency: `440 × 2^(-485/1200)` ≈ 332.6 Hz.
+2. **TuningSystem converts to frequency.** The reference tone converts absolutely at its equal-tempered pitch: C4 ≈ 261.6 Hz. The target converts reference-relatively: reference frequency × the directed interval's size in the active tuning system, detune on top. This is where equal temperament and just intonation diverge — an equal-tempered major third is 400¢, a pure one 386.3¢. For E4+15¢ in equal temperament: `261.6 × 2^(415/1200)` ≈ 332.6 Hz; in just intonation the in-tune point sits 13.7¢ lower, regardless of which reference note the trial happened to pick.
 
 3. **Session calls the audio layer** with the computed frequency. The NotePlayer protocol speaks only Hz — it knows nothing about music theory.
 

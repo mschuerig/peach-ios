@@ -364,6 +364,165 @@ struct TuningSystemTests {
         #expect(centError < 0.1)
     }
 
+    // MARK: - Reference-Relative Bridge Helpers (Story 87.1)
+
+    /// Cent distance from `reference` up to `target` (negative when target is below).
+    private func centsAbove(_ reference: Frequency, _ target: Frequency) -> Double {
+        1200.0 * log2(target.rawValue / reference.rawValue)
+    }
+
+    /// Equal-tempered absolute frequency of a note — the reference tone's pitch in all tuning systems.
+    private func etFrequency(of note: MIDINote) -> Frequency {
+        TuningSystem.equalTemperament.frequency(for: note, referencePitch: .concert440)
+    }
+
+    // MARK: - intervalCents(for:) (Story 87.1)
+
+    @Test("equalTemperament intervalCents is signed semitones times 100")
+    func intervalCentsEqualTemperamentSigned() async {
+        #expect(TuningSystem.equalTemperament.intervalCents(for: .up(.perfectFifth)) == Cents(700.0))
+        #expect(TuningSystem.equalTemperament.intervalCents(for: .down(.perfectFifth)) == Cents(-700.0))
+        #expect(TuningSystem.equalTemperament.intervalCents(for: .up(.octave)) == Cents(1200.0))
+        #expect(TuningSystem.equalTemperament.intervalCents(for: .prime) == Cents(0.0))
+    }
+
+    @Test("justIntonation intervalCents is the pure-ratio size, negated when descending")
+    func intervalCentsJustIntonationSigned() async {
+        let up = TuningSystem.justIntonation.intervalCents(for: .up(.majorThird))
+        let down = TuningSystem.justIntonation.intervalCents(for: .down(.majorThird))
+        #expect(abs(up.rawValue - 386.314) < 0.001)
+        #expect(abs(down.rawValue + 386.314) < 0.001)
+        #expect(TuningSystem.justIntonation.intervalCents(for: .prime) == Cents(0.0))
+    }
+
+    // MARK: - Reference-Relative Fifths from Former Wolf Roots (Matrix Row 1)
+
+    @Test("justIntonation perfect fifth is pure 3/2 from every former wolf root", arguments: [71, 67, 75])
+    func justIntonationFifthPureFromWolfRoots(rootMidi: Int) async {
+        let reference = etFrequency(of: MIDINote(rootMidi))
+        let target = TuningSystem.justIntonation.frequency(
+            for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
+        #expect(abs(centsAbove(reference, target) - 701.955) < 0.001)
+    }
+
+    // MARK: - Reference-Relative Major Thirds from Former Wolf Roots (Matrix Row 2)
+
+    @Test("justIntonation major third is pure 5/4 from every former wolf root", arguments: [61, 63, 66, 68])
+    func justIntonationMajorThirdPureFromWolfRoots(rootMidi: Int) async {
+        let reference = etFrequency(of: MIDINote(rootMidi))
+        let target = TuningSystem.justIntonation.frequency(
+            for: .up(.majorThird), detunedBy: Cents(0), from: reference)
+        #expect(abs(centsAbove(reference, target) - 386.314) < 0.001)
+    }
+
+    // MARK: - Root Invariance (Matrix Row 3)
+
+    @Test("justIntonation in-tune relationship is invariant under reference choice")
+    func justIntonationRootInvariance() async {
+        let intervals: [DirectedInterval] = [
+            .up(.minorSecond), .up(.majorThird), .down(.perfectFifth), .up(.minorSeventh),
+        ]
+        let detune = Cents(7.3)
+        for interval in intervals {
+            let refA = etFrequency(of: MIDINote(60))
+            let refB = etFrequency(of: MIDINote(78))
+            let targetA = TuningSystem.justIntonation.frequency(for: interval, detunedBy: detune, from: refA)
+            let targetB = TuningSystem.justIntonation.frequency(for: interval, detunedBy: detune, from: refB)
+            #expect(
+                abs(centsAbove(refA, targetA) - centsAbove(refB, targetB)) < 0.000001,
+                "Root-dependent in-tune point for \(interval)"
+            )
+        }
+    }
+
+    // MARK: - Descending Inversion (Matrix Row 4)
+
+    @Test("justIntonation descending perfect fifth is the inverted pure ratio")
+    func justIntonationDescendingFifthInverted() async {
+        let reference = etFrequency(of: MIDINote(69))
+        let target = TuningSystem.justIntonation.frequency(
+            for: .down(.perfectFifth), detunedBy: Cents(0), from: reference)
+        #expect(abs(centsAbove(reference, target) + 701.955) < 0.001)
+    }
+
+    // MARK: - ET Equivalence with the Absolute Path (Matrix Row 5)
+
+    @Test("equalTemperament reference-relative path matches the absolute path for all directed intervals")
+    func equalTemperamentReferenceRelativeMatchesAbsolutePath() async {
+        let referenceNotes: [MIDINote] = [MIDINote(48), MIDINote(60), MIDINote(71)]
+        let detunes: [Cents] = [Cents(0), Cents(8.0), Cents(-14.6)]
+        for interval in Interval.allCases {
+            for direction in [Direction.up, Direction.down] {
+                let directed = DirectedInterval(interval: interval, direction: direction)
+                for referenceNote in referenceNotes {
+                    for detune in detunes {
+                        let targetNote = referenceNote.transposed(by: directed)
+                        let absolute = TuningSystem.equalTemperament.frequency(
+                            for: DetunedMIDINote(note: targetNote, offset: detune),
+                            referencePitch: .concert440)
+                        let relative = TuningSystem.equalTemperament.frequency(
+                            for: directed, detunedBy: detune, from: etFrequency(of: referenceNote))
+                        #expect(
+                            abs(centsAbove(absolute, relative)) < 0.000001,
+                            "ET divergence for \(directed) from \(referenceNote.rawValue) detuned \(detune.rawValue)"
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Detune on Top of the Pure Ratio (Matrix Row 6 at API Level)
+
+    @Test("justIntonation applies detune on top of the pure ratio")
+    func justIntonationDetuneOnTopOfPureRatio() async {
+        let reference = etFrequency(of: MIDINote(64))
+        let target = TuningSystem.justIntonation.frequency(
+            for: .up(.perfectFifth), detunedBy: Cents(8.0), from: reference)
+        #expect(abs(centsAbove(reference, target) - (701.955 + 8.0)) < 0.001)
+    }
+
+    @Test("justIntonation unison detune matches the bare detune (prime is 1/1)")
+    func justIntonationUnisonDetune() async {
+        let reference = etFrequency(of: MIDINote(57))
+        let target = TuningSystem.justIntonation.frequency(
+            for: .prime, detunedBy: Cents(8.0), from: reference)
+        #expect(abs(centsAbove(reference, target) - 8.0) < 0.001)
+    }
+
+    // MARK: - Octave Purity (Matrix Row 7)
+
+    @Test("octave is exactly 2/1 in both tuning systems")
+    func octavePureInBothSystems() async {
+        let reference = etFrequency(of: MIDINote(52))
+        for system in TuningSystem.allCases {
+            let target = system.frequency(for: .up(.octave), detunedBy: Cents(0), from: reference)
+            #expect(abs(centsAbove(reference, target) - 1200.0) < 0.000001)
+        }
+    }
+
+    // MARK: - ET-vs-JI Divergence Constants (Matrix Row 10)
+
+    @Test("justIntonation major third target is 13.686 cents flat of the equal-tempered target")
+    func justIntonationMajorThirdDivergenceFromET() async {
+        let reference = etFrequency(of: MIDINote(61))
+        let etTarget = TuningSystem.equalTemperament.frequency(
+            for: .up(.majorThird), detunedBy: Cents(0), from: reference)
+        let jiTarget = TuningSystem.justIntonation.frequency(
+            for: .up(.majorThird), detunedBy: Cents(0), from: reference)
+        #expect(abs(centsAbove(jiTarget, etTarget) - 13.686) < 0.001)
+    }
+
+    @Test("justIntonation perfect fifth target is 1.955 cents sharp of the equal-tempered target")
+    func justIntonationPerfectFifthDivergenceFromET() async {
+        let reference = etFrequency(of: MIDINote(71))
+        let etTarget = TuningSystem.equalTemperament.frequency(
+            for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
+        let jiTarget = TuningSystem.justIntonation.frequency(
+            for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
+        #expect(abs(centsAbove(etTarget, jiTarget) - 1.955) < 0.001)
+    }
+
     // MARK: - String Identifier
 
     @Test("identifier returns stable string for equalTemperament")

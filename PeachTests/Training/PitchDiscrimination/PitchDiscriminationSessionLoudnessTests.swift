@@ -39,7 +39,7 @@ struct PitchDiscriminationSessionLoudnessTests {
     @Test("Target amplitude varies across multiple comparisons at full slider")
     func fullVariationProducesVariation() async throws {
         let comparisons = (0..<10).map { i in
-            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(i % 2 == 0 ? 100.0 : -100.0)))
+            PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(i % 2 == 0 ? 100.0 : -100.0)), interval: .prime)
         }
         let f = makePitchDiscriminationSession(comparisons: comparisons)
 

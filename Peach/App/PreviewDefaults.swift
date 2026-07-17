@@ -62,7 +62,7 @@ final class StubPitchDiscriminationStrategy: NextPitchDiscriminationStrategy {
     ) -> PitchDiscriminationTrial {
         let referenceNote = MIDINote(60)
         let targetBaseNote = referenceNote.transposed(by: interval)
-        return PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: DetunedMIDINote(note: targetBaseNote, offset: Cents(50.0)))
+        return PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: DetunedMIDINote(note: targetBaseNote, offset: Cents(50.0)), interval: interval)
     }
 }
 

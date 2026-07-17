@@ -23,8 +23,8 @@ struct PitchDiscriminationSessionFixture {
 
 func makePitchDiscriminationSession(
     comparisons: [PitchDiscriminationTrial] = [
-        PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0))),
-        PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)))
+        PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime),
+        PitchDiscriminationTrial(referenceNote: 62, targetNote: DetunedMIDINote(note: 62, offset: Cents(-95.0)), interval: .prime)
     ],
     resettables: [Resettable] = [],
     includeHaptic: Bool = false
