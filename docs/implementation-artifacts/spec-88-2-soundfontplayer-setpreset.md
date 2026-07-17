@@ -2,7 +2,7 @@
 title: 'Story 88.2: SoundFontPlayer.setPreset() — swap presets in place'
 type: 'refactor'
 created: '2026-07-17'
-status: 'in-review'
+status: 'done'
 baseline_commit: 'dc41a1a7'
 review_loop_iteration: 0
 context: ['docs/implementation-artifacts/epic-88-context.md']
