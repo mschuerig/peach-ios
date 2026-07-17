@@ -46,28 +46,7 @@ final class SettingsCoordinator {
     private static let previewAmplitude = AmplitudeDB(0)
 
     func playSoundPreview(duration: Duration) async {
-        let frequency = TuningSystem.equalTemperament.frequency(
-            for: Self.previewNote,
-            referencePitch: userSettings.referencePitch
-        )
-        previewTask?.cancel()
-        let task = Task { [weak self] in
-            guard let self else { return }
-            do {
-                try await self.notePlayer.play(
-                    frequency: frequency,
-                    duration: duration,
-                    velocity: self.userSettings.velocity,
-                    amplitudeDB: Self.previewAmplitude
-                )
-            } catch is CancellationError {
-                // Expected: a newer preview replaced this one.
-            } catch {
-                Self.logger.warning("playSoundPreview failed: \(error.localizedDescription, privacy: .public)")
-            }
-        }
-        previewTask = task
-        await task.value
+        await playSoundPreview(note: Self.previewNote, duration: duration)
     }
 
     func playSoundPreview(note: MIDINote, duration: Duration) async {
