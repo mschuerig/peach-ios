@@ -752,6 +752,7 @@
       }
     },
     "Cents:" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2444,6 +2445,7 @@
       }
     },
     "Outer interval" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2677,6 +2679,7 @@
       }
     },
     "Place" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -2742,6 +2745,7 @@
       }
     },
     "Position cents" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
