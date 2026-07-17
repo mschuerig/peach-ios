@@ -150,7 +150,7 @@ final class PitchDiscriminationSession: TrainingSession {
 
     var isIntervalMode: Bool {
         guard let current = currentInterval else { return false }
-        return current.interval != .prime
+        return !current.isUnison
     }
 
     var currentDifficulty: Cents? {

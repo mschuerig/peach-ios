@@ -2,6 +2,12 @@ import Testing
 import Foundation
 @testable import Peach
 
+/// Shared assertion oracle: cent distance from `reference` up to `target`
+/// (negative when target is below).
+func centsAbove(_ reference: Frequency, _ target: Frequency) -> Double {
+    Cents.perOctave.rawValue * log2(target.rawValue / reference.rawValue)
+}
+
 @Suite("TuningSystem Tests")
 struct TuningSystemTests {
 
@@ -366,11 +372,6 @@ struct TuningSystemTests {
 
     // MARK: - Reference-Relative Bridge Helpers (Story 87.1)
 
-    /// Cent distance from `reference` up to `target` (negative when target is below).
-    private func centsAbove(_ reference: Frequency, _ target: Frequency) -> Double {
-        1200.0 * log2(target.rawValue / reference.rawValue)
-    }
-
     /// Equal-tempered absolute frequency of a note — the reference tone's pitch in all tuning systems.
     private func etFrequency(of note: MIDINote) -> Frequency {
         TuningSystem.equalTemperament.frequency(for: note, referencePitch: .concert440)
@@ -397,9 +398,9 @@ struct TuningSystemTests {
 
     // MARK: - Reference-Relative Fifths from Former Wolf Roots (Matrix Row 1)
 
-    @Test("justIntonation perfect fifth is pure 3/2 from every former wolf root", arguments: [71, 67, 75])
-    func justIntonationFifthPureFromWolfRoots(rootMidi: Int) async {
-        let reference = etFrequency(of: MIDINote(rootMidi))
+    @Test("justIntonation perfect fifth is pure 3/2 from every former wolf root", arguments: [MIDINote(71), MIDINote(67), MIDINote(75)])
+    func justIntonationFifthPureFromWolfRoots(root: MIDINote) async {
+        let reference = etFrequency(of: root)
         let target = TuningSystem.justIntonation.frequency(
             for: .up(.perfectFifth), detunedBy: Cents(0), from: reference)
         #expect(abs(centsAbove(reference, target) - 701.955) < 0.001)
@@ -407,9 +408,9 @@ struct TuningSystemTests {
 
     // MARK: - Reference-Relative Major Thirds from Former Wolf Roots (Matrix Row 2)
 
-    @Test("justIntonation major third is pure 5/4 from every former wolf root", arguments: [61, 63, 66, 68])
-    func justIntonationMajorThirdPureFromWolfRoots(rootMidi: Int) async {
-        let reference = etFrequency(of: MIDINote(rootMidi))
+    @Test("justIntonation major third is pure 5/4 from every former wolf root", arguments: [MIDINote(61), MIDINote(63), MIDINote(66), MIDINote(68)])
+    func justIntonationMajorThirdPureFromWolfRoots(root: MIDINote) async {
+        let reference = etFrequency(of: root)
         let target = TuningSystem.justIntonation.frequency(
             for: .up(.majorThird), detunedBy: Cents(0), from: reference)
         #expect(abs(centsAbove(reference, target) - 386.314) < 0.001)
@@ -447,27 +448,24 @@ struct TuningSystemTests {
 
     // MARK: - ET Equivalence with the Absolute Path (Matrix Row 5)
 
-    @Test("equalTemperament reference-relative path matches the absolute path for all directed intervals")
-    func equalTemperamentReferenceRelativeMatchesAbsolutePath() async {
+    @Test("equalTemperament reference-relative path matches the absolute path for all directed intervals",
+          arguments: Interval.allCases, Direction.allCases)
+    func equalTemperamentReferenceRelativeMatchesAbsolutePath(interval: Interval, direction: Direction) async {
         let referenceNotes: [MIDINote] = [MIDINote(48), MIDINote(60), MIDINote(71)]
         let detunes: [Cents] = [Cents(0), Cents(8.0), Cents(-14.6)]
-        for interval in Interval.allCases {
-            for direction in [Direction.up, Direction.down] {
-                let directed = DirectedInterval(interval: interval, direction: direction)
-                for referenceNote in referenceNotes {
-                    for detune in detunes {
-                        let targetNote = referenceNote.transposed(by: directed)
-                        let absolute = TuningSystem.equalTemperament.frequency(
-                            for: DetunedMIDINote(note: targetNote, offset: detune),
-                            referencePitch: .concert440)
-                        let relative = TuningSystem.equalTemperament.frequency(
-                            for: directed, detunedBy: detune, from: etFrequency(of: referenceNote))
-                        #expect(
-                            abs(centsAbove(absolute, relative)) < 0.000001,
-                            "ET divergence for \(directed) from \(referenceNote.rawValue) detuned \(detune.rawValue)"
-                        )
-                    }
-                }
+        let directed = DirectedInterval(interval: interval, direction: direction)
+        for referenceNote in referenceNotes {
+            for detune in detunes {
+                let targetNote = referenceNote.transposed(by: directed)
+                let absolute = TuningSystem.equalTemperament.frequency(
+                    for: DetunedMIDINote(note: targetNote, offset: detune),
+                    referencePitch: .concert440)
+                let relative = TuningSystem.equalTemperament.frequency(
+                    for: directed, detunedBy: detune, from: etFrequency(of: referenceNote))
+                #expect(
+                    abs(centsAbove(absolute, relative)) < 0.000001,
+                    "ET divergence for \(directed) from \(referenceNote.rawValue) detuned \(detune.rawValue)"
+                )
             }
         }
     }

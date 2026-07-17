@@ -838,16 +838,16 @@ struct PitchMatchingSessionTests {
         let trial = try #require(session.currentTrial)
         let referenceFreq = TuningSystem.equalTemperament.frequency(
             for: trial.referenceNote, referencePitch: .concert440)
-        let pureThird = referenceFreq.rawValue * pow(2.0, 386.314 / 1200.0)
+        let pureThird = Frequency(referenceFreq.rawValue * pow(2.0, 386.314 / 1200.0))
 
         // The slider's zero-error point is the pure ratio above the reference
         let inTune = try #require(session.inTuneTargetFrequency)
-        #expect(abs(1200.0 * log2(inTune.rawValue / pureThird)) < 0.001)
+        #expect(abs(centsAbove(pureThird, inTune)) < 0.001)
 
         // Tunable playback starts at the in-tune point detuned by initialCentOffset
-        let expectedTunable = pureThird * pow(2.0, trial.initialCentOffset.rawValue / 1200.0)
+        let expectedTunable = Frequency(pureThird.rawValue * pow(2.0, trial.initialCentOffset.rawValue / 1200.0))
         let tunableFreq = try #require(notePlayer.lastFrequency)
-        #expect(abs(1200.0 * log2(tunableFreq / expectedTunable)) < 0.001)
+        #expect(abs(centsAbove(expectedTunable, Frequency(tunableFreq))) < 0.001)
     }
 
     @Test("justIntonation commit at the pure-ratio frequency scores zero cent error")

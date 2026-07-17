@@ -11,7 +11,7 @@ struct PitchDiscriminationStoreAdapter: PitchDiscriminationObserver {
 
     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
         let trial = completed.trial
-        let interval = abs(trial.referenceNote - trial.targetNote.note)
+        let interval = trial.interval.interval.semitones
         let payload = PitchDiscriminationPayload(
             referenceNote: trial.referenceNote.rawValue,
             targetNote: trial.targetNote.note.rawValue,

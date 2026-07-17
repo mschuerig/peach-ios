@@ -63,9 +63,9 @@ struct PitchMatchingSessionPauseResumeTests {
         // the pure major third above the equal-tempered reference, no drift.
         let referenceFreq = TuningSystem.equalTemperament.frequency(
             for: preserved.referenceNote, referencePitch: .concert440)
-        let pureThird = referenceFreq.rawValue * pow(2.0, 386.314 / 1200.0)
+        let pureThird = Frequency(referenceFreq.rawValue * pow(2.0, 386.314 / 1200.0))
         let inTune = try #require(session.inTuneTargetFrequency)
-        #expect(abs(1200.0 * log2(inTune.rawValue / pureThird)) < 0.001)
+        #expect(abs(centsAbove(pureThird, inTune)) < 0.001)
         session.stop()
     }
 

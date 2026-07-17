@@ -109,7 +109,7 @@ final class PitchMatchingSession: TrainingSession {
     private(set) var currentInterval: DirectedInterval? = nil
     var isIntervalMode: Bool {
         guard let current = currentInterval else { return false }
-        return current.interval != .prime
+        return !current.isUnison
     }
 
     // MARK: - Keyboard / Slider State

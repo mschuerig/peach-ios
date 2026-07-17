@@ -5,10 +5,6 @@ import Testing
 @Suite("PitchDiscriminationTrial Tests")
 struct PitchDiscriminationTrialTests {
 
-    private func centsAbove(_ reference: Frequency, _ target: Frequency) -> Double {
-        1200.0 * log2(target.rawValue / reference.rawValue)
-    }
-
     @Test("referenceFrequency calculates valid frequency for middle C")
     func referenceFrequencyCalculatesCorrectly() async {
         let trial = PitchDiscriminationTrial(referenceNote: 60, targetNote: DetunedMIDINote(note: 60, offset: Cents(100.0)), interval: .prime)

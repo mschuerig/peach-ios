@@ -4,6 +4,8 @@ struct DirectedInterval: Hashable, Comparable, Sendable, Codable {
     let interval: Interval
     let direction: Direction
 
+    var isUnison: Bool { interval == .prime }
+
     var displayName: String {
         if interval == .prime { return interval.name }
         return "\(interval.name) \(direction.displayName)"
