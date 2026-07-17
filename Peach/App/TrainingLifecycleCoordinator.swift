@@ -348,14 +348,15 @@ final class TrainingLifecycleCoordinator {
     /// window keeps suppressing auto-start and closing it (or returning to the
     /// training screen) starts the stopped session fresh per policy.
     func handleSoundSourceChanged() {
+        let contributions = registry.all
         // Count before stopping: `.onChange` also fires on @AppStorage sync at
         // launch, when everything is idle and nothing stops — stay silent then.
-        let nonIdleCount = registry.all.count { !$0.session.isIdle }
+        let nonIdleCount = contributions.count { !$0.session.isIdle }
         if nonIdleCount > 0 {
             Self.logger.info("Sound source changed — stopping \(nonIdleCount) non-idle session(s)")
         }
         discardLingeringPausedSession()
-        for contribution in registry.all where !contribution.session.isIdle {
+        for contribution in contributions where !contribution.session.isIdle {
             contribution.session.stop()
         }
     }
