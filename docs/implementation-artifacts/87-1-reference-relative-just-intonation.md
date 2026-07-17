@@ -213,3 +213,67 @@ None — no test failures during implementation; all four schemes green on first
 
 - 2026-07-17 — Story created from Epic 87 (code-reading triage 2026-07-13; ultimate context engine analysis completed — comprehensive developer guide created).
 - 2026-07-17 — Tasks 1–6 complete + gates green (all four schemes, sequential). Task 1 confirmed the Code Map and added one finding (SettingsCoordinator note preview — stays absolute). Task 2 locked the ratio table unchanged. Awaiting Michael listening test (Task 7) and step-04 review.
+- 2026-07-17 — Step-04 review (Blind Hunter + Edge Case Hunter): 8 patches applied (adapter uses authoritative interval; row-4/row-12 tests added; `try!` fixtures removed; commit test derives slider math from settings; tolerance deviation + file list recorded in spec; sprint-status → review), 0 defers, no loopback. Gates re-run green. Notable rejects on record: doc-comment-only fence on the absolute bridge (spec-prescribed mechanism); stored-`targetNote`+precondition vs. derived (spec-prescribed shape); ET hardcoded in two places (spec's Code Map shape); Settings note preview still absolute-JI — imperceptible per Adam's finding, surfaced to Michael as an open question.
+
+## Suggested Review Order
+
+**The reference-relative bridge (design core)**
+
+- Entry point: signed interval size — the one JI table, now used relative to the reference
+  [`TuningSystem.swift:72`](../../Peach/Core/Music/TuningSystem.swift#L72)
+
+- The new bridge: reference × pure ratio, detune on top; one path for both tuning systems
+  [`TuningSystem.swift:82`](../../Peach/Core/Music/TuningSystem.swift#L82)
+
+- The absolute A-rooted path stays, fenced by contract from interval-trial playback
+  [`TuningSystem.swift:50`](../../Peach/Core/Music/TuningSystem.swift#L50)
+
+**Pitch Discrimination path**
+
+- Trials carry their interval; precondition makes an incoherent note/interval pair unrepresentable
+  [`PitchDiscriminationTrial.swift:8`](../../Peach/Training/PitchDiscrimination/PitchDiscriminationTrial.swift#L8)
+
+- Reference sounds equal-tempered in every tuning system; target derives from it
+  [`PitchDiscriminationTrial.swift:24`](../../Peach/Training/PitchDiscrimination/PitchDiscriminationTrial.swift#L24)
+
+- Strategy passes the interval it already had — no re-derivation from MIDI distance
+  [`KazezNoteStrategy.swift:79`](../../Peach/Core/Algorithm/KazezNoteStrategy.swift#L79)
+
+- Unison classification now reads the authoritative interval field (review patch)
+  [`PitchDiscriminationProfileAdapter.swift:12`](../../Peach/Training/PitchDiscrimination/PitchDiscriminationProfileAdapter.swift#L12)
+
+**Pitch Matching path**
+
+- ET reference + reference-relative in-tune target; the `referenceFrequency` misnomer dies here
+  [`PitchMatchingSession.swift:344`](../../Peach/Training/PitchMatching/PitchMatchingSession.swift#L344)
+
+- Renamed property documents what it always held — the in-tune point, not the reference
+  [`PitchMatchingSession.swift:139`](../../Peach/Training/PitchMatching/PitchMatchingSession.swift#L139)
+
+- Tunable start reuses the slider's center instead of an absolute reconstruction
+  [`PitchMatchingSession.swift:371`](../../Peach/Training/PitchMatching/PitchMatchingSession.swift#L371)
+
+- Matching trial mirrors the discrimination trial's interval + coherence precondition
+  [`PitchMatchingTrial.swift:7`](../../Peach/Training/PitchMatching/PitchMatchingTrial.swift#L7)
+
+**Documentation**
+
+- Two-world bridge doctrine: which conversion for what, and why
+  [`arc42.md:469`](../arc42.md#L469)
+
+- Agent-facing rule: interval-trial playback MUST use the reference-relative bridge
+  [`project-context.md:85`](../project-context.md#L85)
+
+**Tests (peripherals)**
+
+- Former wolf roots now yield pure fifths/thirds; root invariance; ET equivalence
+  [`TuningSystemTests.swift:398`](../../PeachTests/Core/Music/TuningSystemTests.swift#L398)
+
+- Trial-level matrix rows: invariance, ET regression, unison, octave, ET-vs-JI divergence
+  [`PitchDiscriminationTrialTests.swift:67`](../../PeachTests/Core/Training/PitchDiscriminationTrialTests.swift#L67)
+
+- Matching rows 8–9: slider zero-error point is the pure ratio; commit there scores zero
+  [`PitchMatchingSessionTests.swift:827`](../../PeachTests/Training/PitchMatching/PitchMatchingSessionTests.swift#L827)
+
+- Row 12: pause/resume recomputes the JI in-tune target from the preserved trial
+  [`PauseResumeContractTests.swift:44`](../../PeachTests/Training/PauseResumeContractTests.swift#L44)
