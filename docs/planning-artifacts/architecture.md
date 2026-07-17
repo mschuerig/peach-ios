@@ -3416,7 +3416,7 @@ A separate but related defect: two pitch sessions (`PitchDiscriminationSession`,
 
 #### Lifecycle policy: one owner
 
-`TrainingLifecycleCoordinator` is the single authority on *when* a session transitions. Sessions retain mechanism — they own their audio resources, their state machine, and their `stop()` / `pause()` / `resume()` implementations — but no longer decide *when* a lifecycle event occurs.
+`TrainingLifecycleCoordinator` is the single authority on *when* a session transitions. Sessions retain mechanism — they own their audio resources, their state machine, and their `stop()` / `pause()` / `resume()` implementations — but no longer decide *when* a lifecycle event occurs. Its decision logic is a pure `static func reduce(state:event:context:) -> [Effect]` fed by a `send(_:)` driver into a separate `interpret(_:)` effect runner — the same event/effect split as the sessions' own `reduce` — so every lifecycle interleaving is exhaustively testable as a pure function.
 
 The `TrainingSession` protocol gains `pause()` and `resume()` distinct from `stop()` / `start()`. Pause cancels in-flight `Task`s and stops audio while preserving in-trial state (`currentTrial`, `lastResult`, session-best accumulators, settings, in-flight user-input bookkeeping). Resume re-engages the trial — pitch sessions re-play the reference for the preserved trial; sequencer-driven sessions restart the sequencer for the preserved trial; the rhythm-matching session preserves session history while restarting the in-flight cycle (mid-cycle resume is not musically meaningful).
 
@@ -3434,7 +3434,7 @@ The coordinator tracks a `pausedDestination: NavigationDestination?`. Routing:
 | `navigate(to:)` (menu) | `stop()` and `awaitIdle()` before resolving |
 | `handleSoundSourceChanged()` (coordinator, called from PeachApp) | Discard any paused session, then `stop()` every non-idle registered session; `SoundFontPlayer.setPreset(_:fadeOutDuration:)` swaps the preset in place — no instance is rebuilt, suspensions and `currentTrainingDestination` survive |
 
-The per-session `backgroundNotificationName` plumbing is gone. The coordinator's scenePhase route (both platforms) and its macOS-only NSApplication observer are the only consolidated stop paths.
+The per-session `backgroundNotificationName` plumbing is gone. The coordinator's scenePhase route (both platforms) and its macOS-only NSApplication observer are the only consolidated stop paths. Auto-restart on foreground return is suppressed while any auxiliary window (Settings or Help) suspends the session — on both iOS and macOS — so audio never resumes behind an open Help sheet.
 
 #### Audio-stop serialization: commit synchronously, execute asynchronously
 

@@ -161,31 +161,13 @@ With the proportional-timeline renderer driven by `GeometryReader`-supplied widt
 
 **Fix:** Reset `gridOrigin = currentTime()` at the top of `resume()` before issuing `restartSequencerForCurrentTrial`. Add a test that pauses the session, advances `currentTime` by ≥1 second, resumes, and asserts the next feedback-timer grid wait is bounded to one quarter-note.
 
-### PF-049: Help sheet open at audio-interruption silently does nothing on dismiss
-
-**Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
-**Severity:** Low (narrow interleaving; user can manually re-enter)
-**Disposition:** OPEN
-
-Sequence: user opens help sheet while training is active → coordinator pauses session. Audio interruption (phone call, AirPods disconnect) fires via `AudioInterruptionObserving.onStopRequired` → session's `stop()` runs → `isPaused = false`, state → `.idle`. User dismisses help sheet → coordinator's `helpSheetDismissed()` sees `pausedSession` still set (it points at the now-idle session) → calls `pausedSession.resume()` which is a no-op (`guard isPaused`) → clears `pausedSession`. Net effect: dismissing the help sheet after an audio interruption neither restarts training nor surfaces the interruption — the user is left on the training screen with no signal that they need to tap "Start" again.
-
-**Fix:** When the coordinator's `pausedSession` becomes idle without going through `resume()`, the coordinator should detect this and fall through to the `shouldAutoStartTraining` branch on dismiss. One option: have the session signal "I went idle while paused" so the coordinator can drop the stale reference proactively. Simpler: in `helpSheetDismissed`, check `paused.isIdle` first — if the paused session became idle without coordination, treat as no-pause.
-
-### PF-050: Scene-phase background while help sheet is open silently downgrades resume to cold restart
-
-**Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
-**Severity:** Low (narrow interleaving; downgrades preservation, doesn't lose data)
-**Disposition:** OPEN
-
-Sequence: help sheet open with `pausedSession` set → app backgrounds → `handleScenePhase(.background)` → `stopCurrentSession()` → `discardLingeringPausedSession()` stops the paused session and clears the reference → app returns active → on iOS `handleScenePhase(.active)` auto-restarts (cold) → user dismisses help sheet later → `helpSheetDismissed()` sees `pausedSession == nil` → falls through to `shouldAutoStartTraining` → starts again. Net effect: the in-trial state preserved by `helpSheetPresented`'s pause is lost; on dismiss the training restarts from scratch silently.
-
-**Fix:** Either (a) document the downgrade explicitly in the spec (acceptable since user-initiated backgrounding has its own stop semantics), or (b) when help sheet is open, `handleScenePhase(.background)` should defer the stop until dismiss. (b) is more invasive and probably not worth the complexity.
-
 ### PF-051: Per-session pause/resume sub-state coverage in tests is partial
 
 **Found:** 2026-06-05 (Story 85.1 step-04 review — Edge Case Hunter)
 **Severity:** Low (no current bug; surface for future drift)
-**Disposition:** OPEN
+**Disposition:** OPEN (re-dispositioned 2026-07-17, Story 88.1)
+
+Story 88.1 gave `TrainingLifecycleCoordinator` a pure `reduce()` state machine with an exhaustive state×event matrix (`TrainingLifecycleReduceTests`), closing the *coordinator*-side interleaving gap (PF-049/050/079). This PF is orthogonal: it concerns the *sessions'* own pause/resume from each mid-trial sub-state (`PauseResumeContractTests`), which the coordinator matrix does not exercise. Left OPEN — pick up as a session-level test-hardening pass when a session state machine next changes.
 
 The new `PauseResumeContractTests.swift` covers pause from one representative sub-state per session (e.g. `.awaitingSliderTouch` / `.awaitingAnswer` / `.playingPatternLoop`) plus the MIDI-deflection clear in PM and the feedback-overlay clear in PD. Pause from `.playingReference` (PM), `.playingTargetNote` (PD), `.waitingForGrid` (TOD), and CRM's mid-trial sub-states is exercised only indirectly through the integration tests. A focused per-sub-state contract suite would catch future regressions earlier.
 
@@ -435,16 +417,6 @@ Root cause: "training is suspended" had two independent, divergent mechanisms �
 
 **Fix (shipped):** `TrainingLifecycleCoordinator` now models foreground suspension as a multi-owner reason set (`.settingsWindow`, `.helpWindow`); the session pauses on the first reason and only reconciles once the last reason clears, independent of open/close order. An observable `isForegroundSuspended` drives a macOS-only `trainingSuspendedGate()` that makes the training surface non-interactive while suspended. Help opened from the training screen now follows the current discipline (`HelpPanelController.updateIfShowingTrainingHelp`). iOS behavior is unchanged (it never adds the `.settingsWindow` reason and its Help sheet already covers the surface).
 
-
-### PF-079: iOS — backgrounding with the training Help sheet open restarts audio behind the sheet on return
-
-**Found:** 2026-06-23 (spec-pf-075-macos-window-coordination step-04 review — Acceptance Auditor)
-**Severity:** Low (transient audio behind a modal sheet; stops/self-corrects on the next lifecycle event)
-**Disposition:** OPEN
-
-On iOS, with a training session active and the training Help sheet presented, sending the app to the background stops the session (`handleScenePhase` background path) and returning to the foreground auto-restarts it — audibly, behind the still-presented Help sheet. PF-075 added a `!isForegroundSuspended` guard to the macOS scene-phase auto-restart that would also close this on iOS, but it was deliberately scoped `#if os(macOS)` so PF-075 could keep its frozen "iOS behavior provably unchanged" guarantee. This is therefore pre-existing, not introduced by PF-075.
-
-**Fix:** Drop the `#if os(macOS)` so the `!isForegroundSuspended` guard in `handleScenePhase` applies on iOS too (the suspension reason is set whenever the Help sheet is up, so the guard suppresses the restart until the sheet is dismissed, at which point `helpSheetDismissed` resumes per policy). Trivial and low-risk — gated only because the PF-075 spec froze iOS behavior. Pick up when an iOS-behavior change is in scope.
 
 ### PF-080: Chromatic Construction production paradigm fights pitch-memory interference
 

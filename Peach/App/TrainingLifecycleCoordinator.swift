@@ -22,6 +22,14 @@ struct NavigationRequest: Equatable {
     }
 }
 
+/// Owns *when* training sessions transition (sessions own the *how*). The
+/// decision logic is a pure `reduce(state:event:context:)` state machine
+/// mirroring `PitchDiscriminationSession` (Story 75.13): every input method
+/// funnels through `send`, which folds the event into `state` and hands the
+/// resulting `[Effect]` to the imperative interpreter at the edge. Session
+/// calls, navigation, and media-infrastructure rebuild are effects; the
+/// hardened async machinery (`awaitIdle`, the media-reset Task) lives only in
+/// effect implementations. See `docs/implementation-artifacts/spec-88-1-coordinator-reduce-treatment.md`.
 @Observable
 final class TrainingLifecycleCoordinator {
     private let registry: TrainingLifecycleRegistry
@@ -33,23 +41,6 @@ final class TrainingLifecycleCoordinator {
     /// then rebuild infrastructure") and the closure owns the mechanism.
     private let mediaInfrastructureRebuild: () async throws -> Void
 
-    /// Set when `mediaServicesWereLost` posted but `mediaServicesWereReset`
-    /// has not yet arrived. The Reset handler observes this for diagnostics
-    /// (a Reset without a prior Lost still rebuilds; the flag is permissive).
-    private(set) var mediaRebuildPending: Bool = false
-
-    var activeSession: (any TrainingSession)?
-
-    private(set) var resolvedNavigation: NavigationRequest?
-    private var navigationTask: Task<Void, Never>?
-
-    private(set) var currentTrainingDestination: NavigationDestination?
-
-    /// Destination whose session was paused by a navigation event (training
-    /// screen disappear). Tracking the destination instead of the session
-    /// instance avoids coupling to the registry's instance-identity guarantee.
-    private var pausedDestination: NavigationDestination?
-
     /// A macOS auxiliary window that holds the foreground training session
     /// suspended while it is open. The two windows can be open at once, so
     /// suspension is multi-owner: the session pauses on the first reason and
@@ -59,15 +50,17 @@ final class TrainingLifecycleCoordinator {
         case helpWindow
     }
 
-    private var foregroundSuspensions: Set<ForegroundSuspensionReason> = []
+    /// The pure lifecycle state folded by `reduce`. A struct (not an enum like
+    /// the sessions') because coordinator state is a product of several fields.
+    private(set) var state: State
 
-    /// True while at least one auxiliary window (Settings or Help) suspends the
-    /// foreground training session. The macOS training surface reads this to
-    /// make itself non-interactive; otherwise a click (e.g. a Timing Offset
-    /// Detection answer button) would resume audio behind the open window. iOS
-    /// never adds the `.settingsWindow` reason (its Settings is a pushed screen),
-    /// and its Help sheet already covers the surface, so this drives no iOS UI.
-    var isForegroundSuspended: Bool { !foregroundSuspensions.isEmpty }
+    /// The app's currently-running session, pushed in by `PeachApp` (mirrors its
+    /// own `@State`). Read only by the navigation effect, which stops it before
+    /// resolving. Not part of the pure `state` — it is injected from outside.
+    var activeSession: (any TrainingSession)?
+
+    private(set) var resolvedNavigation: NavigationRequest?
+    private var navigationTask: Task<Void, Never>?
 
     private static let logger = Logger(subsystem: "com.peach.app", category: "Lifecycle")
 
@@ -79,14 +72,38 @@ final class TrainingLifecycleCoordinator {
     ) {
         self.registry = registry
         self.backgroundPolicy = backgroundPolicy
-        self.autoStartSetting = initialAutoStartSetting
         self.mediaInfrastructureRebuild = mediaInfrastructureRebuild
+        self.state = State(
+            policyAutoStart: backgroundPolicy.shouldAutoStartTraining,
+            autoStartSetting: initialAutoStartSetting
+        )
     }
 
-    // MARK: - Computed Properties
+    // MARK: - Public State Accessors
+
+    /// True while `mediaServicesWereLost` posted but `mediaServicesWereReset`
+    /// has not yet arrived. Diagnostic; the Reset handler is permissive.
+    var mediaRebuildPending: Bool { state.mediaRebuildPending }
+
+    var currentTrainingDestination: NavigationDestination? { state.currentTrainingDestination }
+
+    /// True while at least one auxiliary window (Settings or Help) suspends the
+    /// foreground training session. The macOS training surface reads this to
+    /// make itself non-interactive; otherwise a click (e.g. a Timing Offset
+    /// Detection answer button) would resume audio behind the open window. iOS
+    /// never adds the `.settingsWindow` reason (its Settings is a pushed screen),
+    /// and its Help sheet already covers the surface, so this drives no iOS UI.
+    var isForegroundSuspended: Bool { state.isForegroundSuspended }
+
+    /// User preference for auto-starting training (macOS only, persisted via UserDefaults).
+    /// On iOS, `backgroundPolicy.shouldAutoStartTraining` is always true, so this has no effect.
+    var autoStartSetting: Bool {
+        get { state.autoStartSetting }
+        set { state.autoStartSetting = newValue }
+    }
 
     private var currentSession: (any TrainingSession)? {
-        guard let destination = currentTrainingDestination else { return nil }
+        guard let destination = state.currentTrainingDestination else { return nil }
         return registry.contribution(for: destination)?.session
     }
 
@@ -95,237 +112,409 @@ final class TrainingLifecycleCoordinator {
         return !session.isIdle
     }
 
-    var shouldAutoStartTraining: Bool {
-        backgroundPolicy.shouldAutoStartTraining || autoStartSetting
+    var shouldAutoStartTraining: Bool { state.shouldAutoStart }
+
+    // MARK: - State Machine Types
+
+    struct State: Equatable {
+        /// `BackgroundPolicy.shouldAutoStartTraining`, fixed at init.
+        let policyAutoStart: Bool
+        var currentTrainingDestination: NavigationDestination?
+        /// Destination whose session was paused by a navigation event or an
+        /// auxiliary-window suspension. Tracking the destination instead of the
+        /// session instance avoids coupling to the registry's identity guarantee.
+        var pausedDestination: NavigationDestination?
+        var foregroundSuspensions: Set<ForegroundSuspensionReason> = []
+        var autoStartSetting: Bool
+        var mediaRebuildPending: Bool = false
+
+        var shouldAutoStart: Bool { policyAutoStart || autoStartSetting }
+        var isForegroundSuspended: Bool { !foregroundSuspensions.isEmpty }
     }
 
-    /// User preference for auto-starting training (macOS only, persisted via UserDefaults).
-    /// On iOS, `backgroundPolicy.shouldAutoStartTraining` is always true, so this has no effect.
-    var autoStartSetting: Bool
+    enum Event {
+        case scenePhaseChanged(AppScenePhase, shouldStop: Bool)
+        case appActivated
+        case appDeactivated
+        case trainingScreenAppeared(NavigationDestination)
+        case trainingScreenDisappeared
+        case startScreenAppeared
+        case foregroundSuspended(ForegroundSuspensionReason)
+        case foregroundReleased(ForegroundSuspensionReason, autoStartIfIdle: Bool)
+        case toggleRequested
+        case startRequested
+        case stopRequested
+        case audioStopRequired
+        case mediaServicesLost
+        case mediaServicesReset
+        case mediaRebuildCompleted
+        case soundSourceChanged
+        case navigationRequested(NavigationDestination)
+    }
+
+    enum Effect: Equatable {
+        case startSession(NavigationDestination)
+        case stopSession(NavigationDestination)
+        case pauseSession(NavigationDestination)
+        case reconcileSession(NavigationDestination)
+        case stopAllNonIdleSessions
+        case navigate(NavigationDestination)
+        case rebuildMediaInfrastructure
+    }
+
+    /// Edge-read facts the reducer needs but cannot query purely: whether the
+    /// foreground (`currentTrainingDestination`) session is idle. Read once per
+    /// `send`. The session owns this bit; the coordinator only observes it.
+    struct Context {
+        let foregroundSessionIsIdle: Bool
+    }
+
+    // MARK: - Reduce (pure)
+
+    /// Pure decision core: folds `event` into `state` and returns the effects to
+    /// run at the edge. No `self`, no registry/policy access — only `state`,
+    /// `event`, and `context`. Every (state, event) pair is total; unhandled
+    /// combinations fall out as an empty effect list (no crash).
+    static func reduce(state: inout State, event: Event, context: Context) -> [Effect] {
+        switch event {
+        case let .scenePhaseChanged(phase, shouldStop):
+            var effects: [Effect] = []
+            if shouldStop { effects += stopCurrent(&state) }
+            // Auto-restart on foreground return, but never behind an open
+            // auxiliary window. The `isForegroundSuspended` guard applies on BOTH
+            // platforms (PF-079): on iOS the Help sheet suspends the session, so
+            // the guard suppresses restarting audio behind the sheet until it is
+            // dismissed. `.active` never stops, so the two branches never overlap.
+            if phase == .active, state.shouldAutoStart, state.currentTrainingDestination != nil,
+               context.foregroundSessionIsIdle, !state.isForegroundSuspended {
+                effects += startCurrent(&state)
+            }
+            return effects
+
+        case .appActivated:
+            guard state.shouldAutoStart, state.currentTrainingDestination != nil,
+                  context.foregroundSessionIsIdle, !state.isForegroundSuspended else { return [] }
+            return startCurrent(&state)
+
+        case .appDeactivated:
+            return stopCurrent(&state)
+
+        case let .trainingScreenAppeared(destination):
+            if state.pausedDestination == destination {
+                state.currentTrainingDestination = destination
+                state.pausedDestination = nil
+                return [.reconcileSession(destination)]
+            }
+            var effects = discardLingeringPaused(&state)
+            state.currentTrainingDestination = destination
+            // Don't auto-start behind an open auxiliary window — e.g. switching
+            // disciplines on macOS while Settings/Help stays open must leave the
+            // new discipline suspended until that window closes.
+            if state.shouldAutoStart, !state.isForegroundSuspended {
+                effects += startCurrent(&state)
+            }
+            return effects
+
+        case .trainingScreenDisappeared:
+            guard let destination = state.currentTrainingDestination,
+                  !context.foregroundSessionIsIdle else {
+                state.currentTrainingDestination = nil
+                return []
+            }
+            var effects = discardLingeringPaused(&state)
+            state.pausedDestination = destination
+            effects.append(.pauseSession(destination))
+            state.currentTrainingDestination = nil
+            return effects
+
+        case .startScreenAppeared:
+            // Pop-to-Start signal — nav-push and nav-pop produce identical
+            // `onDisappear` events, so without this a paused session would linger.
+            return discardLingeringPaused(&state)
+
+        case let .foregroundSuspended(reason):
+            let wasEmpty = state.foregroundSuspensions.isEmpty
+            state.foregroundSuspensions.insert(reason)
+            // Pause on the *first* reason only; later reasons are no-ops while
+            // already suspended. The reason is still recorded even with no
+            // foreground training, so `isForegroundSuspended` suppresses
+            // auto-start when the user enters a discipline behind the window.
+            guard wasEmpty, let destination = state.currentTrainingDestination,
+                  !context.foregroundSessionIsIdle else { return [] }
+            var effects = discardLingeringPaused(&state)
+            state.pausedDestination = destination
+            effects.append(.pauseSession(destination))
+            return effects
+
+        case let .foregroundReleased(reason, autoStartIfIdle):
+            state.foregroundSuspensions.remove(reason)
+            // Reconcile only once the last reason clears.
+            guard state.foregroundSuspensions.isEmpty else { return [] }
+            guard let destination = state.currentTrainingDestination else {
+                // Navigated away — there is no foreground session to start, and a
+                // navigation pause (if any) owns `pausedDestination`, so it is
+                // left untouched. `autoStartIfIdle` has nothing to act on here.
+                return []
+            }
+            // With a foreground destination present, any `pausedDestination` is
+            // this suspension's own marker (== the foreground destination).
+            state.pausedDestination = nil
+            if !context.foregroundSessionIsIdle {
+                return [.reconcileSession(destination)]
+            }
+            return (autoStartIfIdle && state.shouldAutoStart) ? startCurrent(&state) : []
+
+        case .toggleRequested:
+            if state.currentTrainingDestination != nil, !context.foregroundSessionIsIdle {
+                return stopCurrent(&state)
+            }
+            return startCurrent(&state)
+
+        case .startRequested:
+            return startCurrent(&state)
+
+        case .stopRequested:
+            return stopCurrent(&state)
+
+        case .audioStopRequired:
+            return stopCurrent(&state)
+
+        case .mediaServicesLost:
+            let effects = stopCurrent(&state)
+            state.mediaRebuildPending = true
+            return effects
+
+        case .mediaServicesReset:
+            var effects = stopCurrent(&state)
+            effects.append(.rebuildMediaInfrastructure)
+            return effects
+
+        case .mediaRebuildCompleted:
+            state.mediaRebuildPending = false
+            return []
+
+        case .soundSourceChanged:
+            // Discard any paused session (its preserved trial straddles two
+            // instruments) then stop every non-idle session. `foregroundSuspensions`
+            // and `currentTrainingDestination` deliberately survive.
+            var effects = discardLingeringPaused(&state)
+            effects.append(.stopAllNonIdleSessions)
+            return effects
+
+        case let .navigationRequested(destination):
+            var effects = discardLingeringPaused(&state)
+            effects.append(.navigate(destination))
+            return effects
+        }
+    }
+
+    /// Stops the tracked paused session (if any) and clears the pause
+    /// bookkeeping. Pure: emits the stop effect, mutates only `state`.
+    private static func discardLingeringPaused(_ state: inout State) -> [Effect] {
+        guard let destination = state.pausedDestination else { return [] }
+        state.pausedDestination = nil
+        return [.stopSession(destination)]
+    }
+
+    private static func startCurrent(_ state: inout State) -> [Effect] {
+        guard let destination = state.currentTrainingDestination else { return [] }
+        var effects = discardLingeringPaused(&state)
+        effects.append(.startSession(destination))
+        return effects
+    }
+
+    private static func stopCurrent(_ state: inout State) -> [Effect] {
+        var effects = discardLingeringPaused(&state)
+        if let destination = state.currentTrainingDestination {
+            effects.append(.stopSession(destination))
+        }
+        return effects
+    }
+
+    // MARK: - State Machine Engine
+
+    /// Unlike a session's enum state machine, the coordinator's *product* state
+    /// has no genuinely-invalid transitions — every event is a valid command
+    /// that conditionally emits effects — so there is no "invalid transition"
+    /// warning here (it would only ever produce false positives). Never-crash is
+    /// structural: `reduce`'s switch is total.
+    private func send(_ event: Event) {
+        let effects = Self.reduce(state: &state, event: event, context: makeContext())
+        for effect in effects { interpret(effect) }
+    }
+
+    private func makeContext() -> Context {
+        Context(foregroundSessionIsIdle: currentSession?.isIdle ?? true)
+    }
+
+    // MARK: - Effect Interpreter
+
+    private func interpret(_ effect: Effect) {
+        switch effect {
+        case let .startSession(destination):
+            registry.contribution(for: destination)?.start()
+        case let .stopSession(destination):
+            registry.contribution(for: destination)?.session.stop()
+        case let .pauseSession(destination):
+            registry.contribution(for: destination)?.session.pause()
+        case let .reconcileSession(destination):
+            registry.contribution(for: destination)?.reconcile()
+        case .stopAllNonIdleSessions:
+            stopAllNonIdleSessions()
+        case let .navigate(destination):
+            performNavigation(to: destination)
+        case .rebuildMediaInfrastructure:
+            rebuildMediaInfrastructure()
+        }
+    }
 
     // MARK: - Scene Phase
 
     func handleScenePhase(old: ScenePhase, new: ScenePhase) {
-        let appPhase = AppScenePhase(new)
-        if backgroundPolicy.shouldStopTraining(newPhase: appPhase) {
+        let phase = AppScenePhase(new)
+        let shouldStop = backgroundPolicy.shouldStopTraining(newPhase: phase)
+        if shouldStop {
             Self.logger.info("App leaving active state (\(String(describing: new))) — stopping active session")
-            stopCurrentSession()
         }
-        if appPhase == .active && shouldAutoStartTraining
-            && currentTrainingDestination != nil && !isTrainingActive {
-            #if os(macOS)
-            // Don't auto-restart behind an open Settings/Help window. macOS-only:
-            // on iOS this keeps scene-phase behavior byte-identical to before, and
-            // the help sheet already covers the surface either way.
-            if isForegroundSuspended { return }
-            #endif
-            Self.logger.info("App returned to active — auto-restarting training")
-            startCurrentSession()
-        }
+        send(.scenePhaseChanged(phase, shouldStop: shouldStop))
     }
 
     // MARK: - macOS App Activation (NSApplication notifications)
 
     func handleAppDeactivated() {
         Self.logger.info("App deactivated — stopping current session")
-        stopCurrentSession()
+        send(.appDeactivated)
     }
 
     func handleAppActivated() {
-        guard shouldAutoStartTraining,
-              currentTrainingDestination != nil,
-              !isTrainingActive,
-              !isForegroundSuspended else { return }
-        Self.logger.info("App activated — auto-restarting training")
-        startCurrentSession()
+        Self.logger.info("App activated — reconciling training session")
+        send(.appActivated)
     }
 
     // MARK: - Training Screen Lifecycle
 
     func trainingScreenAppeared(destination: NavigationDestination) {
-        if pausedDestination == destination {
-            currentTrainingDestination = destination
-            registry.contribution(for: destination)?.reconcile()
-            pausedDestination = nil
-        } else {
-            discardLingeringPausedSession()
-            currentTrainingDestination = destination
-            // Don't auto-start behind an open auxiliary window — e.g. switching
-            // disciplines on macOS while the Settings or Help window stays open
-            // must leave the new discipline suspended until that window closes.
-            if shouldAutoStartTraining && !isForegroundSuspended {
-                startCurrentSession()
-            }
-        }
+        send(.trainingScreenAppeared(destination))
     }
 
     func trainingScreenDisappeared() {
-        guard let destination = currentTrainingDestination,
-              let session = registry.contribution(for: destination)?.session,
-              !session.isIdle else {
-            currentTrainingDestination = nil
-            return
-        }
-        discardLingeringPausedSession()
-        pausedDestination = destination
-        session.pause()
-        currentTrainingDestination = nil
+        send(.trainingScreenDisappeared)
     }
 
-    /// Pop-to-Start signal — nav-push and nav-pop produce identical
-    /// `onDisappear` events at the modifier level, so without this hook a
-    /// paused session would linger until another lifecycle event arrived.
+    /// Pop-to-Start signal — see `.startScreenAppeared` in `reduce`.
     func startScreenAppeared() {
-        discardLingeringPausedSession()
+        send(.startScreenAppeared)
     }
 
     func helpSheetPresented() {
-        suspendForeground(.helpWindow)
+        send(.foregroundSuspended(.helpWindow))
     }
 
     func helpSheetDismissed() {
-        // `autoStartIfIdle`: on the iOS sheet path the session may have ended
-        // while help was up; auto-start it again if policy allows.
-        releaseForeground(.helpWindow, autoStartIfIdle: true)
+        // The session may have ended while Help was up (iOS sheet path); the
+        // release auto-starts it again if policy allows.
+        send(.foregroundReleased(.helpWindow, autoStartIfIdle: true))
     }
 
     /// Suspends the foreground training session when the macOS Settings window
-    /// opens. The training window stays up while the user edits settings in the
-    /// separate Settings window, so without this its session keeps looping
-    /// audibly behind Settings. Pausing (not stopping) preserves the current
-    /// trial so the paired `reconcileForegroundSession()` on window dismissal
-    /// resumes it (settings unchanged) or restarts it fresh (settings changed).
-    ///
-    /// No-op when no training is foreground (`currentTrainingDestination == nil`,
-    /// e.g. Settings opened from Start). iOS has no separate Settings window;
-    /// there the pushed Settings screen covers the training screen and pauses
-    /// via `trainingScreenDisappeared`.
+    /// opens, so it stops looping audibly behind Settings. Pausing (not stopping)
+    /// preserves the current trial for the paired `reconcileForegroundSession()`.
+    /// No-op when no training is foreground; iOS has no separate Settings window.
     func pauseForegroundSession() {
-        suspendForeground(.settingsWindow)
+        send(.foregroundSuspended(.settingsWindow))
     }
 
-    /// Releases the macOS Settings window's suspension. Reconciles the foreground
-    /// session with the current settings — restarting if anything changed,
-    /// resuming the preserved trial otherwise — but only once the Help window
-    /// (if also open) has released its suspension too. The training window stays
-    /// up while the user edits settings, so reconciling on dismissal applies all
-    /// the edits at once with no mid-edit restart churn. `autoStartIfIdle: true`
-    /// mirrors the Help path: if the foreground discipline ended up idle while
-    /// Settings was open (e.g. the user switched disciplines, which suppresses
-    /// auto-start while suspended), closing Settings starts it per policy. iOS
-    /// has no separate Settings window; there the equivalent reconcile happens in
-    /// `trainingScreenAppeared` on return from the pushed Settings screen.
+    /// Releases the macOS Settings window's suspension and reconciles the
+    /// foreground session (resume if unchanged, restart if changed) — but only
+    /// once the Help window, if also open, has released too. Applying edits on
+    /// dismissal avoids mid-edit restart churn.
     func reconcileForegroundSession() {
-        releaseForeground(.settingsWindow, autoStartIfIdle: true)
-    }
-
-    // MARK: - Foreground Suspension (macOS auxiliary windows)
-
-    /// Records that `reason` now suspends the foreground session and pauses it on
-    /// the *first* reason. Later reasons are no-ops while already paused, so the
-    /// session pauses once no matter how many windows are open. The pause is
-    /// recorded in `pausedDestination` (like a navigation pause) so the canonical
-    /// `discardLingeringPausedSession()` cleanup terminates it on stop/navigate.
-    /// The reason is recorded even with no foreground training (e.g. Settings
-    /// opened from Start): `isForegroundSuspended` then suppresses auto-start when
-    /// the user enters a discipline while the window is still open, so nothing
-    /// plays behind it regardless of which opened first.
-    private func suspendForeground(_ reason: ForegroundSuspensionReason) {
-        let wasEmpty = foregroundSuspensions.isEmpty
-        foregroundSuspensions.insert(reason)
-        guard wasEmpty, let session = currentSession, !session.isIdle else { return }
-        discardLingeringPausedSession()
-        pausedDestination = currentTrainingDestination
-        session.pause()
-    }
-
-    /// Removes `reason` and reconciles the foreground session only once the last
-    /// reason has cleared — while another window still suspends it, it stays
-    /// paused. Resume keys off `currentTrainingDestination` (not the pause
-    /// bookkeeping), so it is independent of which window opened or closed first.
-    /// If the screen was navigated away from (`currentTrainingDestination == nil`),
-    /// a navigation pause owns `pausedDestination` — left untouched, honouring
-    /// only `autoStartIfIdle`. With a foreground destination present, any
-    /// `pausedDestination` is this suspension's own marker (== the foreground
-    /// destination), so it is cleared before resuming.
-    private func releaseForeground(_ reason: ForegroundSuspensionReason, autoStartIfIdle: Bool) {
-        foregroundSuspensions.remove(reason)
-        guard foregroundSuspensions.isEmpty else { return }
-        guard currentTrainingDestination != nil else {
-            if autoStartIfIdle && shouldAutoStartTraining { startCurrentSession() }
-            return
-        }
-        pausedDestination = nil
-        if let session = currentSession, !session.isIdle {
-            reconcileCurrentForegroundSession()
-        } else if autoStartIfIdle && shouldAutoStartTraining {
-            startCurrentSession()
-        }
-    }
-
-    /// Reconciles the current foreground session with its live settings snapshot
-    /// (resume if unchanged, restart if changed). No-op when no training is
-    /// foreground or the session is idle.
-    private func reconcileCurrentForegroundSession() {
-        guard let destination = currentTrainingDestination,
-              let contribution = registry.contribution(for: destination),
-              !contribution.session.isIdle else { return }
-        contribution.reconcile()
+        send(.foregroundReleased(.settingsWindow, autoStartIfIdle: true))
     }
 
     func toggleTraining() {
-        if isTrainingActive {
-            stopCurrentSession()
-        } else {
-            startCurrentSession()
-        }
+        send(.toggleRequested)
     }
 
     func startCurrentSession() {
-        guard let destination = currentTrainingDestination else { return }
-        discardLingeringPausedSession()
-        registry.contribution(for: destination)?.start()
+        send(.startRequested)
     }
 
     func stopCurrentSession() {
-        discardLingeringPausedSession()
-        currentSession?.stop()
+        send(.stopRequested)
     }
 
     // MARK: - Audio Infrastructure Lifecycle
 
     /// Called by the centralized iOS audio observer when an interruption OR
     /// a route change (`.oldDeviceUnavailable`) requires stopping playback.
-    /// Routes through the canonical session-stop path. PF-055's
-    /// `.appWasSuspended` filter happens inside the observer before this
-    /// callback fires.
+    /// PF-055's `.appWasSuspended` filter happens inside the observer first.
     func handleAudioStopRequired() {
         Self.logger.info("Audio stop requested — stopping current session")
-        stopCurrentSession()
+        send(.audioStopRequired)
     }
 
-    /// Called by the centralized iOS audio observer when `mediaserverd` has
-    /// died. Stops the active session immediately — session Tasks reference
-    /// `AVAudioUnitSampler` instances that are now dead; continuing would
-    /// dispatch MIDI into the void. Then marks `mediaRebuildPending` so the
-    /// Reset handler observes the prior-Lost diagnostic state. Rebuilding
-    /// before `mediaserverd` respawns would fail, so the engine rebuild waits
-    /// for Reset. (PF-057 companion — Story 85.8 Decision C, C5 patch)
+    /// Called when `mediaserverd` has died. Stops the active session immediately
+    /// — its Tasks reference now-dead `AVAudioUnitSampler` instances — then marks
+    /// `mediaRebuildPending`. Rebuilding before `mediaserverd` respawns would
+    /// fail, so the engine rebuild waits for Reset. (Story 85.8, Decision C.)
     func handleMediaServicesLost() {
         Self.logger.warning("Media services were lost — stopping current session and awaiting reset")
-        stopCurrentSession()
-        mediaRebuildPending = true
+        send(.mediaServicesLost)
     }
 
-    /// Called by the centralized iOS audio observer when `mediaserverd` has
-    /// respawned. Stops the active session via the canonical path, then
-    /// rebuilds the audio infrastructure in place. Recovery is silent —
-    /// the user perceives the session stop (UI returns to idle) and audio
-    /// resumes on the next user-initiated trial. Re-entrant calls coalesce
-    /// on the engine side via `rebuildInFlight`. (PF-057, Decision D)
+    /// Called when `mediaserverd` has respawned. Stops the active session, then
+    /// rebuilds the audio infrastructure in place (see the effect). Recovery is
+    /// silent; audio resumes on the next user-initiated trial. (Story 85.8, D.)
     func handleMediaServicesReset() {
         Self.logger.notice("Media services were reset — stopping session and rebuilding audio infrastructure")
-        stopCurrentSession()
+        send(.mediaServicesReset)
+    }
+
+    // MARK: - Sound Source Change
+
+    /// Called by the composition root when the sound source changes.
+    func handleSoundSourceChanged() {
+        send(.soundSourceChanged)
+    }
+
+    // MARK: - Menu Navigation
+
+    func navigate(to destination: NavigationDestination) {
+        send(.navigationRequested(destination))
+    }
+
+    // MARK: - Effect Implementations
+
+    private func stopAllNonIdleSessions() {
+        let contributions = registry.all
+        // Count before stopping: `.onChange` also fires on @AppStorage sync at
+        // launch, when everything is idle and nothing stops — stay silent then.
+        let nonIdleCount = contributions.count { !$0.session.isIdle }
+        if nonIdleCount > 0 {
+            Self.logger.info("Sound source changed — stopping \(nonIdleCount) non-idle session(s)")
+        }
+        for contribution in contributions where !contribution.session.isIdle {
+            contribution.session.stop()
+        }
+    }
+
+    private func performNavigation(to destination: NavigationDestination) {
+        navigationTask?.cancel()
+        navigationTask = Task { [weak self] in
+            guard let self else { return }
+            if let session = activeSession, !session.isIdle {
+                session.stop()
+                await awaitIdle(of: session)
+            }
+            guard !Task.isCancelled else { return }
+            Self.logger.info("Menu navigation resolved to \(String(describing: destination))")
+            resolvedNavigation = NavigationRequest(destination: destination)
+        }
+    }
+
+    private func rebuildMediaInfrastructure() {
+        // Re-entrant calls coalesce on the engine side via `rebuildInFlight`.
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -334,62 +523,7 @@ final class TrainingLifecycleCoordinator {
             } catch {
                 Self.logger.error("Audio infrastructure rebuild after media reset failed: \(error.localizedDescription)")
             }
-            mediaRebuildPending = false
-        }
-    }
-
-    // MARK: - Sound Source Change
-
-    /// Called by the composition root when the sound source changes. Stops
-    /// every non-idle registered session — mid-trial audio would straddle two
-    /// instruments otherwise. Discarding the lingering paused session (if any)
-    /// clears `pausedDestination`; `foregroundSuspensions` and
-    /// `currentTrainingDestination` deliberately survive, so an open auxiliary
-    /// window keeps suppressing auto-start and closing it (or returning to the
-    /// training screen) starts the stopped session fresh per policy.
-    func handleSoundSourceChanged() {
-        let contributions = registry.all
-        // Count before stopping: `.onChange` also fires on @AppStorage sync at
-        // launch, when everything is idle and nothing stops — stay silent then.
-        let nonIdleCount = contributions.count { !$0.session.isIdle }
-        if nonIdleCount > 0 {
-            Self.logger.info("Sound source changed — stopping \(nonIdleCount) non-idle session(s)")
-        }
-        discardLingeringPausedSession()
-        for contribution in contributions where !contribution.session.isIdle {
-            contribution.session.stop()
-        }
-    }
-
-    /// Stops the tracked paused session (if any) and clears the pause
-    /// bookkeeping. Idempotent. Two kinds of caller: navigation/lifecycle
-    /// events discarding a pause for a no-longer-current destination, and
-    /// `handleSoundSourceChanged`, which discards a pause whose destination IS
-    /// still current — the preserved trial straddles two instruments and must
-    /// not resume.
-    private func discardLingeringPausedSession() {
-        guard let dest = pausedDestination,
-              let paused = registry.contribution(for: dest)?.session else {
-            pausedDestination = nil
-            return
-        }
-        paused.stop()
-        pausedDestination = nil
-    }
-
-    // MARK: - Menu Navigation
-
-    func navigate(to destination: NavigationDestination) {
-        navigationTask?.cancel()
-        navigationTask = Task {
-            discardLingeringPausedSession()
-            if let session = activeSession, !session.isIdle {
-                session.stop()
-                await awaitIdle(of: session)
-            }
-            guard !Task.isCancelled else { return }
-            Self.logger.info("Menu navigation resolved to \(String(describing: destination))")
-            resolvedNavigation = NavigationRequest(destination: destination)
+            send(.mediaRebuildCompleted)
         }
     }
 

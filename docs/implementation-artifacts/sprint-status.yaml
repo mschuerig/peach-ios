@@ -848,7 +848,7 @@ development_status:
   # preferred (deleting rebuildCoordinators() shrinks the surface 88.1 rewrites);
   # 88.3 independent.
   epic-88: in-progress
-  88-1-coordinator-reduce-treatment: backlog # Closes PF-049/050/079, covers PF-051 test gap
+  88-1-coordinator-reduce-treatment: done # Closes PF-049/050/079; PF-051 re-dispositioned OPEN (session-level)
   88-2-soundfontplayer-setpreset: done # Dissolves PF-059; deletes rebuildCoordinators()
   88-3-progress-timeline-memoization: backlog # Code-reading finding 12 (+16 if free)
   epic-88-retrospective: optional
