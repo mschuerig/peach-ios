@@ -853,18 +853,19 @@ struct PitchMatchingSessionTests {
     @Test("justIntonation commit at the pure-ratio frequency scores zero cent error")
     func justIntonationCommitAtPureRatioZeroError() async throws {
         let (session, _, _, observer) = makePitchMatchingSession()
-        session.start(settings: PitchMatchingSettings(
+        let settings = PitchMatchingSettings(
             noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
             referencePitch: Frequency(440.0),
             intervals: [.up(.perfectFifth)],
             tuningSystem: .justIntonation,
             noteDuration: NoteDuration(0.3)
-        ))
+        )
+        session.start(settings: settings)
         try await transitionToPlayingTunable(session)
 
         let trial = try #require(session.currentTrial)
         // Slider value that cancels initialCentOffset → commit lands exactly on the pure fifth
-        let correctingValue = -trial.initialCentOffset.rawValue / 20.0
+        let correctingValue = -trial.initialCentOffset.rawValue / settings.initialCentOffsetRange.upperBound.rawValue
         session.commitPitch(correctingValue)
         try await waitForState(session, .showingFeedback)
 

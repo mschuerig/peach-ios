@@ -9,7 +9,7 @@ struct PerceptualProfileTests {
 
     private func makeComparisonCompleted(
         referenceNote: MIDINote = MIDINote(60),
-        targetNote: MIDINote = MIDINote(60),
+        interval: DirectedInterval = .prime,
         centOffset: Cents,
         isCorrect: Bool = true
     ) -> CompletedPitchDiscriminationTrial {
@@ -17,8 +17,8 @@ struct PerceptualProfileTests {
         return CompletedPitchDiscriminationTrial(
             trial: PitchDiscriminationTrial(
                 referenceNote: referenceNote,
-                targetNote: DetunedMIDINote(note: targetNote, offset: centOffset),
-                interval: try! DirectedInterval.between(referenceNote, targetNote)
+                targetNote: DetunedMIDINote(note: referenceNote.transposed(by: interval), offset: centOffset),
+                interval: interval
             ),
             userAnsweredHigher: isCorrect ? isTargetHigher : !isTargetHigher,
             tuningSystem: .equalTemperament

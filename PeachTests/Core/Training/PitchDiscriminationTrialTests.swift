@@ -125,6 +125,16 @@ struct PitchDiscriminationTrialTests {
         #expect(abs(centsAbove(reference, target) - 8.0) < 0.001)
     }
 
+    @Test("justIntonation descending fifth trial is the inverted pure ratio (matrix row 4)")
+    func justIntonationDescendingFifthThroughTrialAPI() async {
+        let trial = PitchDiscriminationTrial(referenceNote: 71, targetNote: DetunedMIDINote(note: 64, offset: Cents(0)), interval: .down(.perfectFifth))
+
+        let reference = trial.referenceFrequency(referencePitch: .concert440)
+        let target = trial.targetFrequency(tuningSystem: .justIntonation, referencePitch: .concert440)
+
+        #expect(abs(centsAbove(reference, target) + 701.955) < 0.001)
+    }
+
     @Test("justIntonation octave trial is exactly 2/1 (matrix row 7)")
     func justIntonationOctaveTrialPure() async {
         let trial = PitchDiscriminationTrial(referenceNote: 52, targetNote: DetunedMIDINote(note: 64, offset: Cents(0)), interval: .up(.octave))

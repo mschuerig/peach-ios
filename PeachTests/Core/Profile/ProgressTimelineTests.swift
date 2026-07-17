@@ -362,7 +362,7 @@ struct ProgressTimelineTests {
 
         let referenceNote = MIDINote(60)
         let targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(10.0))
-        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: try! DirectedInterval.between(referenceNote, targetNote.note))
+        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: .prime)
         let completed = CompletedPitchDiscriminationTrial(
             trial: comparison,
             userAnsweredHigher: true,
@@ -402,7 +402,7 @@ struct ProgressTimelineTests {
 
         let referenceNote = MIDINote(60)
         let targetNote = DetunedMIDINote(note: MIDINote(67), offset: Cents(10.0))
-        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: try! DirectedInterval.between(referenceNote, targetNote.note))
+        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: .up(.perfectFifth))
         let completed = CompletedPitchDiscriminationTrial(
             trial: comparison,
             userAnsweredHigher: true,
@@ -428,7 +428,7 @@ struct ProgressTimelineTests {
 
         let referenceNote = MIDINote(60)
         let targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(10.0))
-        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: try! DirectedInterval.between(referenceNote, targetNote.note))
+        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: .prime)
 
         let completed1 = CompletedPitchDiscriminationTrial(
             trial: comparison,
@@ -516,7 +516,7 @@ struct ProgressTimelineTests {
         // Add a high centOffset via profile observer
         let referenceNote = MIDINote(60)
         let targetNote = DetunedMIDINote(note: referenceNote, offset: Cents(50.0))
-        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: try! DirectedInterval.between(referenceNote, targetNote.note))
+        let comparison = PitchDiscriminationTrial(referenceNote: referenceNote, targetNote: targetNote, interval: .prime)
         let completed = CompletedPitchDiscriminationTrial(
             trial: comparison,
             userAnsweredHigher: true,

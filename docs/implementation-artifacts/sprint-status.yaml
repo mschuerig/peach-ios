@@ -839,7 +839,7 @@ development_status:
   # random variable). RELEASE BLOCKER for the next App Store cut (Epic 83).
   # Web app gets the matching change in its own repo — out of scope here.
   epic-87: in-progress
-  87-1-reference-relative-just-intonation: in-progress
+  87-1-reference-relative-just-intonation: review
   epic-87-retrospective: optional
 
   # Epic 88: Sharpen the Core — 2026-07 Code-Reading Cleanup

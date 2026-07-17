@@ -9,7 +9,7 @@ struct PitchDiscriminationProfileAdapter: PitchDiscriminationObserver {
 
     func pitchDiscriminationCompleted(_ completed: CompletedPitchDiscriminationTrial) {
         let pc = completed.trial
-        let isUnison = pc.referenceNote == pc.targetNote.note
+        let isUnison = pc.interval.interval == .prime
         let mode: TrainingDisciplineID = isUnison ? .unisonPitchDiscrimination : .intervalPitchDiscrimination
 
         // Only correct answers update the profile — incorrect answers carry no useful offset

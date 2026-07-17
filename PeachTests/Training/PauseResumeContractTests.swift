@@ -40,6 +40,35 @@ struct PitchMatchingSessionPauseResumeTests {
         session.stop()
     }
 
+    @Test("resume recomputes the justIntonation in-tune target from the preserved trial's interval")
+    func resumeRecomputesJustIntonationInTuneTarget() async throws {
+        let (session, _, _, _) = makePitchMatchingSession()
+        session.start(settings: PitchMatchingSettings(
+            noteRange: NoteRange(lowerBound: MIDINote(60), upperBound: MIDINote(72)),
+            referencePitch: Frequency(440.0),
+            intervals: [.up(.majorThird)],
+            tuningSystem: .justIntonation,
+            noteDuration: NoteDuration(0.3)
+        ))
+        try await waitForState(session, .awaitingSliderTouch)
+        let trialBefore = try #require(session.currentTrial)
+
+        session.pause()
+        session.resume()
+        try await waitForState(session, .awaitingSliderTouch)
+
+        let preserved = try #require(session.currentTrial)
+        #expect(preserved.referenceNote == trialBefore.referenceNote)
+        // In-tune target is recomputed from the preserved trial's stored interval —
+        // the pure major third above the equal-tempered reference, no drift.
+        let referenceFreq = TuningSystem.equalTemperament.frequency(
+            for: preserved.referenceNote, referencePitch: .concert440)
+        let pureThird = referenceFreq.rawValue * pow(2.0, 386.314 / 1200.0)
+        let inTune = try #require(session.inTuneTargetFrequency)
+        #expect(abs(1200.0 * log2(inTune.rawValue / pureThird)) < 0.001)
+        session.stop()
+    }
+
     @Test("pause when idle is a no-op")
     func pauseWhenIdleIsNoOp() async {
         let (session, _, _, _) = makePitchMatchingSession()
