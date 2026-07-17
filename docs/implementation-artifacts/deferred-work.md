@@ -457,3 +457,23 @@ Root cause: "training is suspended" had two independent, divergent mechanisms �
 On iOS, with a training session active and the training Help sheet presented, sending the app to the background stops the session (`handleScenePhase` background path) and returning to the foreground auto-restarts it — audibly, behind the still-presented Help sheet. PF-075 added a `!isForegroundSuspended` guard to the macOS scene-phase auto-restart that would also close this on iOS, but it was deliberately scoped `#if os(macOS)` so PF-075 could keep its frozen "iOS behavior provably unchanged" guarantee. This is therefore pre-existing, not introduced by PF-075.
 
 **Fix:** Drop the `#if os(macOS)` so the `!isForegroundSuspended` guard in `handleScenePhase` applies on iOS too (the suspension reason is set whenever the Help sheet is up, so the guard suppresses the restart until the sheet is dismissed, at which point `helpSheetDismissed` resumes per policy). Trivial and low-risk — gated only because the PF-075 spec froze iOS behavior. Pick up when an iOS-behavior change is in scope.
+
+### PF-080: Chromatic Construction production paradigm fights pitch-memory interference
+
+**Found:** 2026-07-13 (code reading & design chat, `../code_reading_chat_2026-07-13.md` — file lives one level above the repo)
+**Severity:** Medium (paradigm-level; discipline is research-gated, so no user impact)
+**Disposition:** OPEN
+
+Michael's diagnosis from living with the Epic 86 cut: the paradigm doesn't work — the continuously-sounding adjusted tone overwrites the memory of the previous one. This matches Deutsch's pitch-memory interference findings: memory for a tone is disrupted by subsequent tones, maximally when they're within about a semitone — and the adjusted tone lives inside that band while the remembered tone's trace decays. Not fixable by UI polish; the fix space is the audio scaffold and the response mode. The discipline's ET-only stance and the anti-motor-cheat countermeasures (per-slot random `audibleOffsets`) were confirmed sound.
+
+**Fix:** Two directions adopted in the chat, to be promoted to an epic when picked up: (1) **perception before production** as the starting approach — a TOD-shaped variant: play a chromatic run from the anchor with uniform seeded per-step drift ±x cents, two buttons sharp/flat, Kazez on x (kept per-step so difficulty doesn't scale with step count), profile warm start, statistics keyed by (span bucket, Direction) mirroring TOD's (TempoRange, Direction) — shippable day one, and it dissolves the direction doc's open vector-shaped-profile question by yielding a scalar per trial; a later variant: single-wrong-step with "tap the offending dot" reusing `ChromaticContourView`. (2) **Alternation scaffold** as a per-discipline configuration option for the production variant (and generalizable to pitch matching): predecessor (~400 ms) → gap → candidate (~400 ms) → gap loop, re-pitching the candidate each cycle; slider changes apply on the next repetition; a reference-scaffold difficulty axis (alternating → single hearing + sustained candidate), unstratified knob per the note-gap precedent. Production stays a research-gated playground meanwhile; drone-under-the-walk was considered and rejected (changes the trained skill, reintroduces consonance landmarks).
+
+### PF-081: Five training screens duplicate ~150 lines of scaffolding each
+
+**Found:** 2026-07-13 (code reading, `../code_reading_chat_2026-07-13.md`)
+**Severity:** Low (duplication; no behavioural defect)
+**Disposition:** OPEN
+
+Each training screen re-implements the same scaffolding — stats header, size-class branching, key handlers, `.trainingScreen` wiring — roughly 150 lines per screen across five screens. `TrainingDisciplineUI` could host a generic training screen that disciplines parameterize.
+
+**Fix:** Extract a generic training-screen host into the `TrainingDisciplineUI` plugin surface. The natural moment is the next discipline addition ("the sixth discipline"), when the generic host pays for itself immediately — e.g., the perception-variant discipline sketched in PF-080. Not worth a standalone refactor story before then.

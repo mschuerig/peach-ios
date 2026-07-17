@@ -8072,6 +8072,8 @@ so that nobody has to reverse-engineer the pipeline from the Fastfile and the "h
 
 ## Epic 80: Let the Pulse Settle — Timing Offset Detection Continuous Loop
 
+**Status:** Done — all stories shipped.
+
 **Theme:** Replace the one-shot pattern playback in the Timing Offset Detection discipline with a gapless continuous loop that runs until the user submits a direction answer, with a user-configurable maximum-repetition cap. This is the first concrete application of the Performance Principle (now codified in `docs/project-context.md`): the discipline must give listeners enough exposure to form a stable pulse percept before being asked to judge displacement.
 
 **Motivation:** The current implementation plays the 4-sixteenth pattern once (≈600–800 ms at 80–100 BPM), so the tested note at the 3rd-sixteenth position arrives ≈300 ms in. Beat-induction research (London, Patel) puts the pulse-stabilisation window at 2–3 intervals. Listeners are therefore asked to judge displacement against a pulse percept they have not yet formed. The task currently measures working-memory encoding more than offset perception. The brainstorming session of 2026-06-01 (with the Music Domain Expert) confirmed the diagnosis and the shape of the fix; the resulting Performance Principle was added to `project-context.md` as a project-wide design rule.
@@ -8142,6 +8144,8 @@ so that the documented behaviour and the implemented behaviour agree.
 ---
 
 ## Epic 81: Tune the Controls — Settings Screen Consistency
+
+**Status:** Done — all stories shipped.
 
 **Theme:** The Settings screen has accumulated heterogeneous controls (Stepper, Slider, Picker, custom grid) chosen ad-hoc rather than by the kind of value being set. This epic introduces a small, defensible control taxonomy and applies it to the three areas that diverge most visibly from it: continuous numeric values currently using Stepper, the Timing Offset Detection max-repetitions Picker, and the Lowest/Highest Note Steppers (which deserve their own domain-shaped control — a piano keyboard).
 
@@ -8309,7 +8313,9 @@ so that the next release ships TOD as a regular discipline alongside the four pi
 
 **Approach:** Add stories as the user identifies release blockers. Stories may run in parallel where they don't conflict. The epic flips from `in-progress` to `done` when the App Store cut ships, not when the last story in it is `done` (in case more blockers surface late).
 
-**Work order:** No fixed order yet. 83.1 (TOD release-copy sweep) is the only story currently drafted; it can ship at any time before submission.
+**Release blockers outside this epic:** Epic 87 (Reference-Relative Just Intonation) must ship in the next cut — Michael's explicit direction from the 2026-07-13 code-reading triage ("I want the JI fix to get out"). This is the one exception to the "open epics are not release blockers" rule above; Epics 74, 78, 79 remain non-blocking.
+
+**Work order:** 83.1 (TOD release-copy sweep) and 83.2 (TOD timing-metric unit decision) can run any time before submission; 83.2 must *resolve* before 83.3 because a metric-unit switch, if chosen, lands before the first public TOD release or not at all. 83.3 (submission) runs last, after Epic 87 ships.
 
 ### Story 83.1: Update TOD-shipping release copy across App Store metadata, in-app description, and project memory
 
@@ -8319,7 +8325,27 @@ so that the copy I read accurately describes what the installed app does.
 
 (Acceptance criteria — see `docs/implementation-artifacts/83-1-tod-release-copy-update.md`. Sketch: one sweep across the release-adjacent copy surface. Append a "Compare Timing" bullet to the English and German App Store description discipline lists (`docs/planning-artifacts/appstore-metadata.md`, around lines 41 and 99) and recompute the `Length:` annotations. Add one timing-relevant term to each keyword string (EN + DE) within the 100-char budget. Update the App Review Notes opening paragraph and discipline-list bullets so the reviewer is told about all five shipping disciplines, not four. Update `Peach/App/HelpContent.swift`'s `appDescription` constant so the in-app "What is Peach?" section no longer scopes the app to pitch perception; sync the German translation via `bin/add-localization.swift` or in-place in `Localizable.xcstrings` depending on whether the existing key is reused. Update or delete the auto-memory `project_initial_release_pitch_only.md` (and the matching `MEMORY.md` index line). The in-app **Training Disciplines** Info-screen section is registry-driven and needs no code edit — TOD already appears there as of 82.8. No engine, view, or @AppStorage changes. Acceptance: the EN and DE description bullet lists each show five entries in registration order; both keyword strings stay ≤ 100 chars and contain a timing-relevant term; the App Review Notes no longer claim the app is "specifically for pitch perception"; `bin/add-localization.swift --missing` reports `0`; pre-commit gate on all four schemes green; the Info screen on a fresh `Peach (Debug)` install shows the updated "What is Peach?" copy and a "Training Disciplines" section that lists Compare Timing alongside the four pitch disciplines.)
 
+### Story 83.2: TOD timing-metric unit decision (milliseconds vs. percent-of-sixteenth)
+
+**Status:** Done (2026-07-17) — **keep milliseconds.** Adam consultation concluded: displacement-detection JNDs are absolute (~5–10 ms) below the ~240 ms IOI knee, and Peach's sixteenth IOIs sit in that regime from ~60 BPM up, so ms is the perceptually more uniform unit; percent is uncalibrated at fast tempi (5% @ 200 BPM = 3.75 ms, sub-JND). Records store `tempoBPM` + `offsetMs`, so the choice is reversible by recomputation. Full decision note with revisit trigger: `docs/planning-artifacts/tod-discipline-future-direction.md` § *Metric unit decision*. No follow-up implementation story — 83.3 is unblocked on this axis. peach-web aligns to ms in its own repo.
+
+As **the product owner shipping Timing Offset Detection in the next App Store cut**,
+I want a deliberate, documented decision on the unit TOD's perceptual profile uses for timing offsets — raw milliseconds (current iOS) versus tempo-normalized percent-of-a-sixteenth (current web) —
+so that the unit the first public TOD release commits users' training history to is chosen on domain grounds, not inherited from whichever implementation came first.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: a no-code decision story. Context from the 2026-07-13 code reading (`../code_reading_chat_2026-07-13.md`, finding 9): iOS profiles timing offsets in milliseconds (unitLabel "ms", baseline 15 ms) and merges raw ms across `TempoRange` keys — mixing values whose perceptual meaning depends on tempo; the web app stores percent-of-a-sixteenth (baseline 5%), which is tempo-normalized and arguably the better domain choice — the same normalization move rhythm already made once. The shared CSV wire format (`offsetMs`) is unaffected either way; the question is the profile/statistics domain unit. Consult `agent-music-domain-expert` (Adam) per `[[reference_music_domain_expert]]` on which unit reflects timing-perception competence across tempi. Outcome: a documented decision (in `tod-discipline-future-direction.md` or a dedicated decision note). If the decision is "switch to percent": file a follow-up implementation story in this epic as a release blocker (profile semantics, baselines, unitLabel, and stat-merging change; stored records and CSV stay ms on the wire). If "keep ms": record the rationale and close. Either way the web app aligns to the decision in its own repo — out of scope here.)
+
+### Story 83.3: Submit the next App Store cut
+
+As **a Peach user waiting for the corrected Just Intonation and the new timing discipline**,
+I want the next iOS App Store version — the first cut shipping Timing Offset Detection and reference-relative Just Intonation — submitted and released,
+so that the JI fix and the fifth discipline actually reach the App Store instead of living only in the repository.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: preconditions — Epic 87 shipped, 83.1 release-copy sweep landed, 83.2 decided (and its follow-up story shipped if the decision was "switch"). Manual submission mirroring Epic 73's process (fastlane automation, Epic 78, is explicitly not a prerequisite): bump marketing version, archive the iOS `Release` scheme, upload via Xcode Organizer, refresh App Store Connect metadata/screenshots per 83.1's updated copy (ASC in English per `[[feedback_asc_english_ui]]`), submit for review, release on approval. macOS distribution stays in Epic 74 (paused, separate cut). Epic 83 flips to `done` when this cut is live.)
+
 ## Epic 84: TOD Tuplet Patterns
+
+**Status:** Done — all stories shipped (nested-pattern picker section research-gated pending PF-045).
 
 **Theme:** Add tuplet-structured patterns to the TOD catalog — 8th-note triplets (full and with rests), 16th-note triplets nested inside 8ths, duplets nested inside 8th-triplet positions, sextuplets, and mixed-duration triplet derivatives. Epic 82 deliberately deferred all of these to keep the equal-cell picker renderer valid; this epic introduces the proportional-timeline renderer that makes them visually coherent, switches the catalog onto an opaque pattern-id convention so old and new patterns share one rule, and introduces sectioned picker chrome so the growing catalog stays scannable.
 
@@ -8406,6 +8432,8 @@ so that I can probe timing perception across triplet, nested, sextuplet, and mix
 (Acceptance criteria to be elaborated at story-creation time. Sketch: restructure the pattern picker in `TimingOffsetDetectionPatternSettingsSection` from a flat list to a sectioned list per 84.1's bucket assignments (working scheme: *Straight / Gapped / Triplet / Sextuplet / Nested* — final scheme per 84.1). The five Epic-82 patterns redistribute into *Straight* (`* * * *`, `* - * -`) and *Gapped* (`* - * *`, `* * - *`, `* - - *`) per 82.3's existing categorization. Register the tuplet entries from 84.1's locked catalog: 8th-note triplets (`* * *`, `* * -`, `* - *`, mixed-duration `* *. .`), 16th-triplets-in-8ths (`* *-*-*`, `*-*-* *`), duplet-in-triplet nests (`* * .-.`, `* .-. *`, `.-. * *`), and the sextuplet (`. . . . . .`). Each entry constructs its `Beat` builder using existing engine primitives — `.nested(Beat)` for nested figures, sextuplet subdivision with multi-cell holds for the mixed-duration figure. Each entry's `pickableOffsetNotePositions` derives from the "first audible note excluded" rule unchanged from Epic 82.3; per-entry `defaultOffsetNotePosition` per 84.1's Adam-approved rationale. The proportional-timeline renderer from 84.3 exercises the full set with no per-entry renderer code. Pattern picker section headers are localized via `bin/add-localization.swift` (English + German, informal `du`/imperative); pattern entries themselves remain unnamed per the epic's *Explicitly out of scope* rule. Accessibility: section headers vend via SwiftUI `Section { header: Text(...) }` so VoiceOver announces section transitions; per-entry accessibility identity is the per-cell label form from 84.1, not a per-pattern label. Tests: each new catalog entry produces a valid `Beat` (non-empty `events(...)`, sample-accurate scheduling against the engine's existing assertions) for each pickable position; per-entry per-cell accessibility labels match the design's expected strings; pattern-change reclamp of `offsetNotePosition` (from Epic 82.6) still correct across category boundaries (e.g., switching from *Straight* `* * * *` to *Triplet* `* * *` reclamps the position to the new pattern's default); `bin/add-localization.swift --missing` reports `0`. Pre-commit gate `bin/test.sh && bin/test.sh -p mac` green on all schemes.)
 
 ## Epic 85: Cleanup — Pre-Existing Findings Catalog
+
+**Status:** Done — stories 85.1–85.8 shipped, retrospective complete.
 
 **Theme:** Track stories that close clusters of related entries in `docs/implementation-artifacts/deferred-work.md`. This is a flexible container, not a feature epic — stories land here when triage surfaces two or more `PF-###` entries that share a root cause, or when a single entry's fix is architecturally load-bearing enough that the Boy-Scout path is wrong. Items the catalog flags as one-line renames, missing tests, or local hygiene fixes do **not** belong here — they fold into the next nearby feature story as Boy-Scout work and the closing PR cites the `PF-###`.
 
@@ -8541,5 +8569,79 @@ I want the Chromatic Construction discipline visible on the Start screen and usa
 so that I can practise the discipline, feel where my chromatic line drifts, and inform the deferred scoring and persistence design with first-hand experience.
 
 (Acceptance criteria — see `docs/implementation-artifacts/86-2-chromatic-construction-screen-and-registration.md`. Story scope: introduce `NavigationDestination.chromaticConstruction` in `Peach/Core/NavigationDestination.swift`; introduce `TrainingDisciplineID.chromaticConstruction` (slug: `"chromatic-construction"`) in `Peach/App/Training/DisciplineIDs.swift`; introduce `ChromaticConstructionDiscipline: TrainingDisciplineUI, Sendable` in `Peach/Training/ChromaticConstruction/Discipline/`; register it inside the `#if PEACH_RESEARCH` block in `DisciplineBootstrap.allDisciplines` (alongside `ContinuousRhythmMatchingDiscipline()`); introduce `ChromaticConstructionScreen.swift` and the supporting subviews (`ChromaticContourView`, `ChromaticSlotSlider`, `ChromaticDifficultyControl`, `ChromaticAnchorSelector`, `ChromaticDirectionSelector`, `ChromaticTrialResultView`) in `Peach/Training/ChromaticConstruction/`; introduce `ChromaticConstructionLifecycleContribution` extension that registers the session via `TrainingLifecycleRegistry.Builder` (mirroring `TimingOffsetDetectionLifecycleContribution`); wire the session into `PeachApp.swift` behind `#if PEACH_RESEARCH` for state ownership, environment injection, `trackActiveSession` `onChange`, and `lifecycleRegistry` build closure; provide an empty `statisticsKeys` array, an empty `helpSections` array (help content deferred to the discipline graduating from research), and no `profileCard` / `settingsSections` / `csvColumns` (defaults inherited where the protocol allows; minimal no-op conformances where it doesn't). The training screen renders the 2D contour described in the direction document's *Visualisation* section (step-index horizontal axis, cent vertical axis, anchors as fixed endpoints, committed slots as connected markers, active slot as a cent-linear slider, pending slots as faded placeholders in the contour's upcoming direction). View-local state holds: outer interval (200–1200 in 100-cent steps, defaults to 700 = P5); lower anchor (`MIDINote(48)` / `MIDINote(60)` / `MIDINote(72)`, defaults to `MIDINote(60)` = C4); direction policy (`ascending` / `descending` / `mix`, defaults to `mix`). All three controls are view-local `@State` per `[[project_initial_release_pitch_only]]`-adjacent research-cut convention; no `@AppStorage`, no `SettingsKeys`, no `UserSettings` extension. Tapping any anchor or committed slot replays its `Frequency`; the active slot's slider plays its current cent value on movement (debounced); step-back resets the immediately previous slot with a visual cue communicating the forward-loss (per the direction document's *Step-back is lossy by design* section). The trial-end `ChromaticTrialResultView` overlays the user's contour with the target line; tapping any point replays its `Frequency`; a "Next trial" button returns the session to `.idle` and the screen requests the next ladder from the strategy. Lifecycle wiring: `trainingScreenAppeared(destination: .chromaticConstruction)` and `trainingScreenDisappeared` route through `TrainingLifecycleCoordinator` as for every other discipline; pause preserves the ladder + committed slots; backgrounding stops the session. Discipline registration emits a Start-screen card (the existing `categorySection(_:)` iteration in `StartScreen.swift` picks up the new discipline automatically); the card's sparkline shows the empty-state because no records are written (acceptable — the user understands this is experimental). Category: `.intervals` (the closest existing semantic fit — the discipline produces chained cent intervals; the choice is reviewable when scoring/persistence design starts and a `.chromatic` category becomes worth adding). Localisation: every user-facing string added to `Localizable.xcstrings` via `bin/add-localization.swift` in English + informal-`du` German (per `[[feedback_german_informal]]`); copy is sober and factual per `[[feedback_sober_factual_copy]]`. Pre-commit gates: `bin/test.sh && bin/test.sh -p mac` green on all four schemes; running app smoke-test (visual feature → user listening test per `[[feedback_verify_visual_features]]` and `[[feedback_verify_audio_features]]`) on iOS Simulator with `Debug (Research)` configuration before marking the story done. SwiftUI consultations: `/swiftui-pro` for the contour visualisation and slider composition; `/swiftui-view-refactor` to keep the screen body within the ~40-line guideline; `/swift-concurrency-expert` if any actor-isolation question surfaces around the view-local controls or the session's render-thread playback interaction. The audio-programming skill (`/audio-programming`, per `[[reference_audio_programming_skill]]`) is consulted for the tap-replay and active-slot playback paths.)
+
+---
+
+## Epic 87: Pure Ratios — Reference-Relative Just Intonation
+
+**Theme:** In Just Intonation mode, interval trials compute the "in tune" target from the trial's own reference note via pure frequency ratios, instead of measuring both notes against a fixed A-rooted 5-limit chromatic offset table. The tuning system finally delivers what the iOS help text already promises — "Just Intonation uses pure frequency ratios" — and what a listener with no tonal context can actually judge.
+
+**Motivation:** Today `totalCentOffset` measures distance from A4 against a fixed 5-limit table, so in interval trials the in-tune target depends on the random reference note: fifths are pure (702.0¢) from 9 of 12 roots but a 40/27 wolf (680.4¢) from B, G, and D♯; major thirds are pure (386.3¢) from 8 roots but 32/25 (427.4¢, +41¢) from C♯, D♯, F♯, G♯; minor seconds span 70.7¢ (25/24) to 133.2¢ (27/25) — a 62¢ spread on "in tune." The listener never receives the A root as context (no drone, tonic, or cadence), so perceptually they judge the bare interval against pure ratios or their 12-TET template while the app's correct answer wanders by tens of cents on a hidden random variable. The "JI needs a root" objection resolves cleanly: a *scale* is only needed when three or more notes must be mutually consistent; a trial has exactly two notes, so the root is trivially the note the user just heard.
+
+**Source:** `../code_reading_chat_2026-07-13.md` § *The Just Intonation discussion* (the file lives one level above this repo because it covers peach-ios and peach-web). Release blocker for the next App Store cut — tracked by Epic 83.
+
+**Scope:** JI interval trials in Pitch Discrimination and Pitch Matching. Target frequency = reference frequency × pure ratio for the directed interval, detune applied on top. The reference note's own absolute pitch stays equal-tempered (perceptually irrelevant; only the interval is judged). For matching, the slider's zero-error point becomes the pure ratio above/below the reference. Mostly *deletes* the octave+remainder decomposition from the trial-playback path. No data migration: the stored metric is detune magnitude relative to the in-tune point and records carry only the tuning-system name — post-change JI statistics are cleaner, not incompatible. Unison and octave trials are unaffected (ratio 1/1 and 2/1 are pure in both schemes).
+
+**Explicitly out of scope:**
+
+- The web app. It carries the identical A-rooted table (a shared decision, not drift) and gets the matching change in its own repo, spec'd from this epic's outcome.
+- A future drone/tonal-context discipline. A *fixed* scale root remains the right tool there — keep the A-rooted math's shape available for that future, but unwire it from discrimination/matching trial playback.
+- Copy changes. The help text already promises the new semantics; 87.1 verifies rather than rewrites it.
+
+**Approach:** Single story. Consult Adam (`agent-music-domain-expert`) at the start per `[[reference_music_domain_expert]]` — the pure-ratio table per directed interval (including which 5-limit ratio each interval maps to) is a domain decision to lock before coding.
+
+**Work order:** 87.1 alone. Must ship before Epic 83's story 83.3 (submission).
+
+### Story 87.1: Reference-relative Just Intonation for interval trials
+
+As **a learner training intervals with Just Intonation selected**,
+I want the in-tune target derived from the reference note I just heard via the interval's pure frequency ratio,
+so that "correct" stops wandering with a hidden A-rooted root lottery (±41¢ on major thirds) and the ET-vs-JI distinction becomes a real learnable skill — a pure major third is 13.7¢ flat of its 12-TET counterpart, not buried under root-dependent noise.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: introduce a pure-ratio path in `TuningSystem` for directed intervals — target `Frequency` computed from the reference note's `Frequency` × ratio (direction applied), replacing the absolute A-rooted `centOffset` lookup in the interval-trial playback path for `.justIntonation`; reference note itself sounds at its equal-tempered pitch. Pitch Discrimination: the target note's in-tune frequency is reference × ratio, cent detune applied relative to that point. Pitch Matching: the slider's zero-error point is reference × ratio; `initialCentOffset` and `userCentError` semantics unchanged (already relative to the in-tune point). Adam consult locks the per-interval 5-limit ratio table before implementation. Unison/octave behaviour provably unchanged (regression tests). The A-rooted chromatic offset table stays available for a future drone/tonal-context discipline but is no longer reachable from discrimination/matching trial playback. Help text verified against the new semantics (expectation: no change needed). No SwiftData migration, no CSV change. Tests: per-interval in-tune frequency against hand-computed pure ratios for representative roots including the former wolf roots (B, G, D♯ fifths; C♯/D♯/F♯/G♯ major thirds); invariance of the in-tune point under reference-note choice for a fixed interval; ET-vs-JI target divergence equals the known pure-vs-tempered offsets (e.g., M3 −13.7¢, P5 +2.0¢). Pre-commit gate green on all four schemes.)
+
+---
+
+## Epic 88: Sharpen the Core — 2026-07 Code-Reading Cleanup
+
+**Theme:** Close the three iOS-side structural findings from the 2026-07-13 code reading that Michael selected for story treatment: the lifecycle coordinator's suspension logic gets the same `reduce()` treatment the sessions got, `SoundFontPlayer` learns to swap presets in place so the composition root stops rebuilding the world, and `ProgressTimeline` stops recomputing full statistics on every SwiftUI read.
+
+**Motivation:** The code reading judged the iOS codebase "a generation ahead architecturally" but named three places where structure lags: the coordinator's suspension logic is "a state chart written in prose" and the most bug-prone spot in the app (four open PF entries — PF-049/050/051/079 — are all interleaving bugs or test gaps in exactly this logic); `handleSoundSourceChanged` rebuilds sessions, coordinators, and the audio monitor to change a preset, machinery that exists only because `SoundFontPlayer` can't swap presets in place (PF-059 is a race inside that same machinery); and `ProgressTimeline`'s `state`/`currentEWMA`/`recordCount`/`trend`/`buckets` each clone, sort, and rebuild Welford/EWMA/trend on every query — and they're read from SwiftUI bodies (Start-screen sparklines, profile cards).
+
+**Source:** `../code_reading_chat_2026-07-13.md`, iOS findings 12–14, triaged with Michael 2026-07-17. Not release blockers — the next cut does not wait on this epic.
+
+**Scope:** Three independent stories, each closing or dissolving the named `PF-###` entries per the deferred-work catalog protocol.
+
+**Explicitly out of scope:**
+
+- The generic training-screen host (code-reading finding 15) — filed as PF-081; the natural moment is the next discipline addition.
+- The TOD metric-unit question (finding 9) — that is Epic 83's story 83.2.
+- Web-side findings — own repo.
+
+**Approach + work order:** 88.2 before 88.1 is preferred (deleting `rebuildCoordinators()` first shrinks the coordinator surface 88.1 rewrites); not a strict dependency. 88.3 is fully independent. Each story = own commit + own PR.
+
+### Story 88.1: Give TrainingLifecycleCoordinator the reduce() treatment
+
+As **a contributor maintaining the app's most bug-prone lifecycle logic**,
+I want the coordinator's suspension/resume/auto-start policy (`foregroundSuspensions` + `pausedDestination` + auto-start + navigation task) rewritten as a pure `reduce(state:event:) -> [Effect]` state machine like the sessions got in Story 75.13,
+so that the interleaving bugs that keep accumulating as PF entries (help-sheet × interruption, background × help-sheet, iOS restart-behind-sheet) become enumerable state×event cases with tests instead of prose reasoning.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: closes PF-049, PF-050, PF-079 from `docs/implementation-artifacts/deferred-work.md`; covers PF-051's per-sub-state test gap as a natural consequence of exhaustive state×event testing — re-disposition PF-051 at story close. Task 1 is verification per the Epic 85 pattern: read the current coordinator, map every state variable and event source, confirm or correct each PF's framing against current code (the PF-075 multi-owner suspension-reason set from 2026-06-23 already reshaped this surface), halt for human review before code. The reduce shape mirrors `PitchDiscriminationSession`'s event/effect split; effects stay imperative at the edges (session calls, navigation). Every PF-049/050/079 interleaving becomes an explicit test case. All four pre-commit gates green; catalog hygiene on close.)
+
+### Story 88.2: SoundFontPlayer.setPreset() — swap presets in place
+
+As **a contributor maintaining the composition root**,
+I want `SoundFontPlayer` (and the engine beneath it) to swap the active SF2 preset in place,
+so that `handleSoundSourceChanged` stops rebuilding sessions, coordinators, and the audio monitor to change an instrument — deleting `rebuildCoordinators()` and its subtle invariants outright, and dissolving PF-059's stop-race with them.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: closes PF-059 from `docs/implementation-artifacts/deferred-work.md` by construction — with no rebuild there is no rebuild race. `SoundFontPlayer` already reads `userSettings.soundSource` on each `play()` and calls `loadPreset(program:bank:)`; the story hoists that capability into an explicit `setPreset`/reconfigure path so a sound-source change needs at most a stop of active audio, not object-graph replacement. `PeachApp.handleSoundSourceChanged` shrinks to: stop non-idle sessions via the coordinator, apply the preset. Sessions, coordinators, and `AppAudioInfrastructureMonitor` survive the change. Task 1 verification: map everything `rebuildCoordinators()` currently rebuilds and why (85.8's C1 monitor-rewire patch documents some of it); confirm the fade-out-duration policy (`determineFadeOutDuration(for:)`, sine-click PF-052 mitigation) transfers to the new path. Consult `/audio-programming` for the preset-reload path. All four gates green; catalog hygiene on close.)
+
+### Story 88.3: Memoize ProgressTimeline merged statistics
+
+As **a user on the Start screen watching sparklines**,
+I want `ProgressTimeline`'s per-key statistics computed once per data change instead of on every SwiftUI body evaluation,
+so that `state`, `currentEWMA`, `recordCount`, `trend`, and `buckets` stop cloning all metric points, sorting, and rebuilding Welford/EWMA/trend on each read.
+
+(Acceptance criteria to be elaborated at story-creation time. Sketch: per-key generation counter + memo, invalidated on record append/reset/import (code-reading finding 12 names this "cheap"). Observable behaviour unchanged — same values, fewer recomputations; a test pins that repeated reads without intervening writes hit the memo (e.g., via a computation counter seam) and that a write invalidates it. Also covers the O(n)-per-trial `add_point` re-bucketing (finding 16) if the memo shape makes the incremental fix free; otherwise leave it — the reading judged it harmless today. All four gates green.)
 
 
