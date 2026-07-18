@@ -62,6 +62,19 @@ struct TimeBucket {
     var recordCount: Int
 }
 
+/// All per-render display values for one discipline, computed from a single
+/// merge. Consumers read this instead of calling five methods that each redo
+/// the merge; see `ProgressTimeline.snapshot(for:)`.
+struct DisciplineProgress {
+    let state: TrainingDisciplineState
+    let buckets: [TimeBucket]
+    let ewma: Double?
+    let trend: Trend?
+    let recordCount: Int
+
+    static let noData = DisciplineProgress(state: .noData, buckets: [], ewma: nil, trend: nil, recordCount: 0)
+}
+
 // MARK: - ProgressTimeline
 
 /// Pure presentation layer for per-mode training progress charts.
@@ -82,6 +95,30 @@ final class ProgressTimeline {
 
     init(profile: PerceptualProfile = PerceptualProfile()) {
         self.profile = profile
+    }
+
+    // MARK: - Snapshot
+
+    /// Returns every per-render display value for a mode from a single merge.
+    ///
+    /// Equivalent to reading `state`, `allGranularityBuckets`, `currentEWMA`,
+    /// `trend`, and `recordCount` individually, but computes `mergedStatistics`
+    /// once instead of five times. Cache this per view (see `CachedProgress`)
+    /// rather than recomputing it on every body evaluation.
+    func snapshot(for mode: TrainingDisciplineID) -> DisciplineProgress {
+        guard let summary = profile.mergedStatistics(for: mode.statisticsKeys) else {
+            return .noData
+        }
+        let buckets = summary.metrics.isEmpty
+            ? []
+            : assignMultiGranularityBuckets(summary.metrics, now: Date(), calendar: Calendar.current, sessionGap: mode.config.sessionGap)
+        return DisciplineProgress(
+            state: .active,
+            buckets: buckets,
+            ewma: summary.ewma,
+            trend: summary.trend,
+            recordCount: summary.recordCount
+        )
     }
 
     // MARK: - Delegated to Profile

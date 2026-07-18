@@ -51,6 +51,57 @@ struct PerceptualProfileTests {
         #expect(profile.matchingSampleCount == 0)
     }
 
+    // MARK: - Data Generation
+
+    @Test("dataGeneration starts at zero for a cold-start profile")
+    func dataGenerationColdStart() async {
+        #expect(PerceptualProfile().dataGeneration == 0)
+    }
+
+    @Test("dataGeneration increments when a record is ingested")
+    func dataGenerationBumpsOnUpdate() async {
+        let profile = PerceptualProfile()
+        let before = profile.dataGeneration
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
+        #expect(profile.dataGeneration == before + 1)
+    }
+
+    @Test("dataGeneration increments on resetAll")
+    func dataGenerationBumpsOnReset() async {
+        let profile = PerceptualProfile()
+        let before = profile.dataGeneration
+        profile.resetAll()
+        #expect(profile.dataGeneration == before + 1)
+    }
+
+    @Test("dataGeneration increments on builder-based init")
+    func dataGenerationBumpsOnBuilderInit() async {
+        let profile = PerceptualProfile { builder in
+            builder.addPoint(MetricPoint(timestamp: Date(), value: 10), for: .pitch(.unisonPitchDiscrimination))
+        }
+        #expect(profile.dataGeneration >= 1)
+    }
+
+    @Test("dataGeneration increments on replaceAll")
+    func dataGenerationBumpsOnReplaceAll() async {
+        let profile = PerceptualProfile()
+        let before = profile.dataGeneration
+        profile.replaceAll { builder in
+            builder.addPoint(MetricPoint(timestamp: Date(), value: 10), for: .pitch(.unisonPitchDiscrimination))
+        }
+        #expect(profile.dataGeneration == before + 1)
+    }
+
+    @Test("dataGeneration is stable across statistics reads")
+    func dataGenerationStableAcrossReads() async {
+        let profile = PerceptualProfile()
+        PitchDiscriminationProfileAdapter(profile: profile).pitchDiscriminationCompleted(makeComparisonCompleted(centOffset: 50))
+        let before = profile.dataGeneration
+        _ = profile.statistics(for: .pitch(.unisonPitchDiscrimination))
+        _ = profile.comparisonMean(for: .prime)
+        #expect(profile.dataGeneration == before)
+    }
+
     // MARK: - Comparison Statistics via Observer
 
     @Test("Single correct comparison sets comparison mean")

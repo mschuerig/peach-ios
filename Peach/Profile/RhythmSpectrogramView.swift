@@ -2,33 +2,18 @@ import SwiftUI
 
 struct RhythmSpectrogramView: View {
     let mode: TrainingDisciplineID
-
-    @Environment(\.progressTimeline) private var progressTimeline
-    @Environment(\.perceptualProfile) private var perceptualProfile
+    let data: SpectrogramData
 
     @State private var selectedCell: SelectedCell?
-    @State private var cachedData: SpectrogramData?
     @ScaledMetric(relativeTo: .caption2) private var yAxisLabelWidth: CGFloat = 44
 
     private let thresholds = SpectrogramThresholds.default
 
     var body: some View {
-        let state = progressTimeline.state(for: mode)
-        switch state {
-        case .noData:
-            EmptyView()
-        case .active:
-            activeCard
-        }
-    }
-
-    // MARK: - Active Card
-
-    private var activeCard: some View {
-        let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let data = cachedData ?? SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
-
-        return Group {
+        // A pure view of `data`; the parent (`RhythmProfileCardView.activeCard`)
+        // computes and caches it, recomputing only when the profile data
+        // changes. Empty data yields an empty grid below.
+        Group {
             if !data.trainedRanges.isEmpty {
                 VStack(alignment: .leading, spacing: 12) {
                     spectrogramGrid(data: data, buckets: data.timeBuckets)
@@ -38,13 +23,6 @@ struct RhythmSpectrogramView: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(String(localized: "Rhythm spectrogram for \(mode.config.displayName)"))
-        .task(id: progressTimeline.recordCount(for: mode)) {
-            cachedData = SpectrogramData.compute(
-                mode: mode,
-                profile: perceptualProfile,
-                timeBuckets: progressTimeline.allGranularityBuckets(for: mode)
-            )
-        }
     }
 
     // MARK: - Grid

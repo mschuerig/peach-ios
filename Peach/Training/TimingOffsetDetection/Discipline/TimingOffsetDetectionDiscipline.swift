@@ -39,7 +39,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
     /// per-mode timeline. Cross-feature reference is intentional and documented:
     /// the card is genuinely shared rhythm-category UI, owned by the
     /// ``ContinuousRhythmMatching`` feature directory by the 77.2 spec.
-    var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
+    var profileCard: AnyView { AnyView(CachedProgress(mode: id) { RhythmProfileCardView(mode: id, progress: $0) }) }
 
     /// Declares the rhythm tempo section (shared with
     /// ``ContinuousRhythmMatchingDiscipline``) followed by the TOD-specific

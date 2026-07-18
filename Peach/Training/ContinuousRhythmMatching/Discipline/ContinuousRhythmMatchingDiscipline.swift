@@ -34,7 +34,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
 
     // MARK: - UI
 
-    var profileCard: AnyView { AnyView(RhythmProfileCardView(mode: id)) }
+    var profileCard: AnyView { AnyView(CachedProgress(mode: id) { RhythmProfileCardView(mode: id, progress: $0) }) }
 
     var settingsSections: [DisciplineSettingsSection] {
         [

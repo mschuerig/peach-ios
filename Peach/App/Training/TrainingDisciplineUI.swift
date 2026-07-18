@@ -44,7 +44,7 @@ protocol TrainingDisciplineUI: TrainingDiscipline {
 }
 
 extension TrainingDisciplineUI {
-    var profileCard: AnyView { AnyView(ProgressChartView(mode: id)) }
+    var profileCard: AnyView { AnyView(CachedProgress(mode: id) { ProgressChartView(mode: id, progress: $0) }) }
     var settingsSections: [DisciplineSettingsSection] { [] }
     var settingsHelp: [HelpSection] { [] }
     var profileHelp: [HelpSection] { [] }

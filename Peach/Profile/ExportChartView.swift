@@ -15,9 +15,10 @@ struct ExportChartView: View {
     private var config: TrainingDisciplineConfig { mode.config }
 
     var body: some View {
-        let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let ewma = progressTimeline.currentEWMA(for: mode)
-        let trend = progressTimeline.trend(for: mode)
+        let progress = progressTimeline.snapshot(for: mode)
+        let buckets = progress.buckets
+        let ewma = progress.ewma
+        let trend = progress.trend
         let stddev = buckets.last?.stddev ?? 0
 
         VStack(alignment: .leading, spacing: 12) {

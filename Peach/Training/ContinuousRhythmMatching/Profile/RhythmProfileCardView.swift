@@ -3,18 +3,18 @@ import os
 
 struct RhythmProfileCardView: View {
     let mode: TrainingDisciplineID
+    let progress: DisciplineProgress
 
     @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.perceptualProfile) private var perceptualProfile
 
     @State private var shareImageURL: URL?
+    @State private var spectrogramMemo = Memoized<SpectrogramData>()
 
     private var config: TrainingDisciplineConfig { mode.config }
 
     var body: some View {
-        let state = progressTimeline.state(for: mode)
-
-        switch state {
+        switch progress.state {
         case .noData:
             emptyCard
         case .active:
@@ -25,20 +25,24 @@ struct RhythmProfileCardView: View {
     // MARK: - Active Card
 
     private var activeCard: some View {
-        let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let ewma = progressTimeline.currentEWMA(for: mode)
-        let trend = progressTimeline.trend(for: mode)
+        let buckets = progress.buckets
         let stddev = buckets.last?.stddev ?? 0
+        // Memoized on `dataGeneration` so it recomputes once per data change —
+        // not on the share-image toggle or a spectrogram cell tap — and, being
+        // synchronous, never lags a generation behind the passed-in buckets.
+        let spectrogramData = spectrogramMemo.value(generation: perceptualProfile.dataGeneration) {
+            SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
+        }
 
         return VStack(alignment: .leading, spacing: 12) {
-            headlineRow(ewma: ewma, stddev: stddev, trend: trend)
-            RhythmSpectrogramView(mode: mode)
+            headlineRow(ewma: progress.ewma, stddev: stddev, trend: progress.trend)
+            RhythmSpectrogramView(mode: mode, data: spectrogramData)
         }
         .padding()
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         .accessibilityElement(children: .contain)
         .accessibilityLabel(String(localized: "Rhythm profile for \(config.displayName)"))
-        .task(id: progressTimeline.recordCount(for: mode)) {
+        .task(id: perceptualProfile.dataGeneration) {
             shareImageURL = renderShareImage(replacing: shareImageURL)
         }
     }
@@ -149,10 +153,11 @@ private struct RhythmProfileCardExportView: View {
     private var config: TrainingDisciplineConfig { mode.config }
 
     var body: some View {
-        let ewma = progressTimeline.currentEWMA(for: mode)
-        let buckets = progressTimeline.allGranularityBuckets(for: mode)
+        let progress = progressTimeline.snapshot(for: mode)
+        let buckets = progress.buckets
+        let ewma = progress.ewma
         let stddev = buckets.last?.stddev ?? 0
-        let trend = progressTimeline.trend(for: mode)
+        let trend = progress.trend
         let data = SpectrogramData.compute(mode: mode, profile: perceptualProfile, timeBuckets: buckets)
 
         VStack(alignment: .leading, spacing: 12) {

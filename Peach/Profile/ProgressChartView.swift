@@ -3,8 +3,10 @@ import Charts
 
 struct ProgressChartView: View {
     let mode: TrainingDisciplineID
+    let progress: DisciplineProgress
 
     @Environment(\.progressTimeline) private var progressTimeline
+    @Environment(\.perceptualProfile) private var profile
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.colorSchemeContrast) private var colorSchemeContrast
 
@@ -19,9 +21,7 @@ struct ProgressChartView: View {
     private var isIncreaseContrast: Bool { colorSchemeContrast == .increased }
 
     var body: some View {
-        let state = progressTimeline.state(for: mode)
-
-        switch state {
+        switch progress.state {
         case .noData:
             EmptyView()
         case .active:
@@ -32,9 +32,9 @@ struct ProgressChartView: View {
     // MARK: - Active Card
 
     private var activeCard: some View {
-        let buckets = progressTimeline.allGranularityBuckets(for: mode)
-        let ewma = progressTimeline.currentEWMA(for: mode)
-        let trend = progressTimeline.trend(for: mode)
+        let buckets = progress.buckets
+        let ewma = progress.ewma
+        let trend = progress.trend
         let stddev = buckets.last?.stddev ?? 0
 
         return VStack(alignment: .leading, spacing: 12) {
@@ -52,7 +52,7 @@ struct ProgressChartView: View {
             trend: trend,
             unitLabel: config.unitLabel
         ))
-        .task(id: progressTimeline.recordCount(for: mode)) {
+        .task(id: profile.dataGeneration) {
             shareImageURL = ChartImageRenderer.render(
                 mode: mode,
                 progressTimeline: progressTimeline

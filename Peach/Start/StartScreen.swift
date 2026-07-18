@@ -3,7 +3,6 @@ import SwiftUI
 struct StartScreen: View {
     @State private var showInfoSheet = false
     @Environment(\.verticalSizeClass) private var verticalSizeClass
-    @Environment(\.progressTimeline) private var progressTimeline
     @Environment(\.trainingLifecycle) private var lifecycle
 
     private var isCompactHeight: Bool {
@@ -132,29 +131,31 @@ struct StartScreen: View {
     private func trainingCard(for discipline: any TrainingDiscipline) -> some View {
         let config = discipline.config
         let mode = discipline.id
-        return VStack(alignment: .leading, spacing: 4) {
-            Label(config.shortLabel, systemImage: config.systemImageName)
-            ProgressSparklineView(
-                state: progressTimeline.state(for: mode),
-                bucketMeans: progressTimeline.buckets(for: mode).map(\.mean),
-                ewma: progressTimeline.currentEWMA(for: mode),
-                trend: progressTimeline.trend(for: mode),
-                modeName: config.displayName,
-                unitLabel: config.unitLabel
-            )
-        }
-        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
-        .padding(.vertical, 12)
-        .padding(.horizontal, 16)
-        .foregroundStyle(.primary)
-        .background(
-            RoundedRectangle(cornerRadius: Self.cardCornerRadius)
-                .fill(config.isHero ? .thinMaterial : .regularMaterial)
-        )
-        .overlay {
-            if config.isHero {
+        return CachedProgress(mode: mode) { progress in
+            VStack(alignment: .leading, spacing: 4) {
+                Label(config.shortLabel, systemImage: config.systemImageName)
+                ProgressSparklineView(
+                    state: progress.state,
+                    bucketMeans: progress.buckets.map(\.mean),
+                    ewma: progress.ewma,
+                    trend: progress.trend,
+                    modeName: config.displayName,
+                    unitLabel: config.unitLabel
+                )
+            }
+            .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
+            .foregroundStyle(.primary)
+            .background(
                 RoundedRectangle(cornerRadius: Self.cardCornerRadius)
-                    .strokeBorder(.tint.opacity(0.3), lineWidth: 1)
+                    .fill(config.isHero ? .thinMaterial : .regularMaterial)
+            )
+            .overlay {
+                if config.isHero {
+                    RoundedRectangle(cornerRadius: Self.cardCornerRadius)
+                        .strokeBorder(.tint.opacity(0.3), lineWidth: 1)
+                }
             }
         }
     }

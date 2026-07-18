@@ -1078,4 +1078,53 @@ struct ProgressTimelineTests {
         #expect(timeline.recordCount(for: .timingOffsetDetection) == 2)
         #expect(timeline.currentEWMA(for: .timingOffsetDetection) != nil)
     }
+
+    // MARK: - Snapshot Tests
+
+    @Test("snapshot equals the granular reads for a single-key pitch discipline")
+    func snapshotMatchesGranularPitch() async {
+        let timeline = makeTimeline(pitchDiscriminationRecords: makePitchDiscriminationRecords(count: 30))
+        let mode = TrainingDisciplineID.unisonPitchDiscrimination
+        let snap = timeline.snapshot(for: mode)
+
+        #expect(snap.state == timeline.state(for: mode))
+        #expect(snap.ewma == timeline.currentEWMA(for: mode))
+        #expect(snap.trend == timeline.trend(for: mode))
+        #expect(snap.recordCount == timeline.recordCount(for: mode))
+        #expect(snap.buckets.map(\.mean) == timeline.allGranularityBuckets(for: mode).map(\.mean))
+        #expect(snap.buckets.map(\.recordCount) == timeline.buckets(for: mode).map(\.recordCount))
+    }
+
+    @Test("snapshot equals the granular reads for a multi-key rhythm discipline")
+    func snapshotMatchesGranularRhythm() async {
+        let records = (0..<20).map { i in
+            timingEntry(
+                tempoBPM: i.isMultiple(of: 2) ? 60 : 180,
+                offsetMs: -10.0 + Double(i),
+                isCorrect: true,
+                timestamp: now.addingTimeInterval(-3600 + Double(i) * 60)
+            )
+        }
+        let timeline = makeTimeline(timingOffsetDetectionRecords: records)
+        let mode = TrainingDisciplineID.timingOffsetDetection
+        let snap = timeline.snapshot(for: mode)
+
+        #expect(snap.state == timeline.state(for: mode))
+        #expect(snap.ewma == timeline.currentEWMA(for: mode))
+        #expect(snap.trend == timeline.trend(for: mode))
+        #expect(snap.recordCount == timeline.recordCount(for: mode))
+        #expect(snap.buckets.map(\.mean) == timeline.allGranularityBuckets(for: mode).map(\.mean))
+    }
+
+    @Test("snapshot reports noData for an empty profile")
+    func snapshotColdStart() async {
+        let timeline = ProgressTimeline(profile: PerceptualProfile())
+        let snap = timeline.snapshot(for: .unisonPitchDiscrimination)
+
+        #expect(snap.state == .noData)
+        #expect(snap.ewma == nil)
+        #expect(snap.trend == nil)
+        #expect(snap.recordCount == 0)
+        #expect(snap.buckets.isEmpty)
+    }
 }

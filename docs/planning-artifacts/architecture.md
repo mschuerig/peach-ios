@@ -2629,6 +2629,8 @@ extension TrainingProfile {
 
 This collects metrics from multiple keys, merges them chronologically, and rebuilds a `StatisticalSummary`. It is generic — no discipline-specific knowledge. For single-key pitch disciplines, `mergedStatistics(for: mode.statisticsKeys)` is equivalent to `statistics(for: .pitch(mode))`. For multi-key rhythm disciplines, it aggregates across all tempo ranges and directions.
 
+The merge is unbounded in the record history and is otherwise recomputed on every SwiftUI body read (Story 88.3). To avoid that, `ProgressTimeline.snapshot(for:)` derives all per-render display values (`state`, buckets, EWMA, trend, record count) from a single merge, and each profile card caches that snapshot in view-local state via the reusable `CachedProgress` wrapper — recomputing only when `PerceptualProfile.dataGeneration`, a monotonic counter bumped on every ingest / reset / import, changes. `ProgressTimeline` itself stays a pure, stateless projection of the profile.
+
 #### Resulting Architecture
 
 **PerceptualProfile** — typed key-value store for measurement series. Stores `[StatisticsKey: TrainingDisciplineStatistics]`. Returns `StatisticalSummary.continuous(stats)` from `statistics(for:)`. Observer conformances remain as thin routing (domain event → `StatisticsKey` + value → store). All legacy convenience methods removed.

@@ -6,6 +6,11 @@ final class PerceptualProfile: TrainingProfile {
 
     private var statisticsStore: [StatisticsKey: TrainingDisciplineStatistics] = [:]
 
+    /// Monotonic change counter, bumped by every mutation of `statisticsStore`.
+    /// Consumers key their derived-data caches off this so a read hits the cache
+    /// while the data is unchanged and invalidates when it mutates.
+    private(set) var dataGeneration = 0
+
     private let logger = Logger(subsystem: "com.peach.app", category: "PerceptualProfile")
 
     // MARK: - Builder
@@ -59,6 +64,7 @@ final class PerceptualProfile: TrainingProfile {
 
     func resetAll() {
         statisticsStore.removeAll()
+        dataGeneration += 1
         logger.info("PerceptualProfile fully reset to cold start")
     }
 
@@ -68,6 +74,7 @@ final class PerceptualProfile: TrainingProfile {
         let point = MetricPoint(timestamp: timestamp, value: value)
         statisticsStore[key, default: TrainingDisciplineStatistics()]
             .addPoint(point, config: key.statisticsConfig)
+        dataGeneration += 1
     }
 
     private func finalize(from builder: Builder) {
@@ -77,6 +84,7 @@ final class PerceptualProfile: TrainingProfile {
             stats.rebuild(from: points.sorted { $0.timestamp < $1.timestamp }, config: key.statisticsConfig)
             statisticsStore[key] = stats
         }
+        dataGeneration += 1
     }
 }
 
