@@ -2475,12 +2475,12 @@
         }
       }
     },
-    "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately." : {
+    "Peach helps you train your ear for music. Practice hearing the difference between notes, matching pitches accurately, and judging the timing of notes in a rhythmic pattern." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Peach hilft dir, dein Gehör für Musik zu trainieren. Übe, Unterschiede zwischen Tönen zu hören und Tonhöhen genau zu treffen."
+            "value" : "Peach hilft dir, dein Gehör für Musik zu trainieren. Übe, Unterschiede zwischen Tönen zu hören, Tonhöhen genau zu treffen und das Timing von Tönen in einem rhythmischen Muster zu beurteilen."
           }
         }
       }

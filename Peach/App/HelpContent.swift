@@ -106,7 +106,7 @@ enum HelpContent {
         return result
     }
 
-    static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes and learn to match pitches accurately.")
+    static let appDescription = String(localized: "Peach helps you train your ear for music. Practice hearing the difference between notes, matching pitches accurately, and judging the timing of notes in a rhythmic pattern.")
 
     /// Markdown body for the "Training Disciplines" section of the Info screen.
     /// Generated once from the registry at first access: one paragraph per

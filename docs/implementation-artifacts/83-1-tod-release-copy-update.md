@@ -2,7 +2,8 @@
 title: 'Story 83.1: Update TOD-shipping release copy across App Store metadata, in-app description, and project memory'
 type: 'chore'
 created: '2026-06-04'
-status: 'draft'
+status: 'review'
+baseline_commit: 6839d469c7c9bf75b403af406cfb8a42b0e82f66
 context:
   - '{project-root}/docs/implementation-artifacts/epic-83-context.md'
   - '{project-root}/docs/planning-artifacts/appstore-metadata.md'
@@ -74,15 +75,15 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] Settle final English wording for the TOD App Store description bullet, the App Review Notes opening paragraph, the App Review Notes discipline bullet, the keyword additions (EN + DE), and the new `HelpContent.appDescription` sentence. Record the chosen wording in the Spec Change Log before editing files.
-- [ ] `docs/planning-artifacts/appstore-metadata.md` — apply EN bullet + keyword addition + App Review Notes edits; recompute `Length:` lines
-- [ ] `docs/planning-artifacts/appstore-metadata.md` — apply DE bullet + keyword addition; recompute `Length:` line
-- [ ] `Peach/App/HelpContent.swift` — update `appDescription` source string
-- [ ] `Peach/Resources/Localizable.xcstrings` — sync DE translation for `appDescription` (in place or via `bin/add-localization.swift` per *Ask First* clarification)
-- [ ] `{auto-memory-root}/project_initial_release_pitch_only.md` — update or delete per the chosen disposition; sync `MEMORY.md`
-- [ ] `sprint-status.yaml` — `83-1-tod-release-copy-update: in-progress` on start, `done` after review
-- [ ] Pre-commit gate: 4 schemes green; `bin/add-localization.swift --missing` reports `0`
-- [ ] Manual smoke (non-Research): launch `Peach (Debug)` on iPhone simulator; Info screen → "What is Peach?" section shows the updated description; "Training Disciplines" section lists five disciplines including "Compare Timing"
+- [x] Settle final English wording for the TOD App Store description bullet, the App Review Notes opening paragraph, the App Review Notes discipline bullet, the keyword additions (EN + DE), and the new `HelpContent.appDescription` sentence. Record the chosen wording in the Spec Change Log before editing files.
+- [x] `docs/planning-artifacts/appstore-metadata.md` — apply EN bullet + keyword addition + App Review Notes edits; recompute `Length:` lines
+- [x] `docs/planning-artifacts/appstore-metadata.md` — apply DE bullet + keyword addition; recompute `Length:` line
+- [x] `Peach/App/HelpContent.swift` — update `appDescription` source string
+- [x] `Peach/Resources/Localizable.xcstrings` — sync DE translation for `appDescription` (in place or via `bin/add-localization.swift` per *Ask First* clarification)
+- [x] `{auto-memory-root}/project_initial_release_pitch_only.md` — update or delete per the chosen disposition; sync `MEMORY.md`
+- [x] `sprint-status.yaml` — `83-1-tod-release-copy-update: in-progress` on start, `done` after review — *in-progress half applied; the `done` flip belongs to the post-review step*
+- [x] Pre-commit gate: 4 schemes green; `bin/add-localization.swift --missing` reports `0` — iOS Research 2438 / macOS Research 2425 / iOS Debug 2274 / macOS Debug 2261, `--missing` = 0 (re-run after the registry-test change; same counts, same result)
+- [x] Manual smoke (non-Research): launch `Peach (Debug)` on iPhone simulator; Info screen → "What is Peach?" section shows the updated description; "Training Disciplines" section lists five disciplines including "Compare Timing" — **verified 2026-08-07** on iPhone 17 Pro (iOS 26.5), German locale, `Peach (Debug)` scheme, isolated DerivedData
 
 **Acceptance Criteria:**
 - Given the post-edit `appstore-metadata.md`, when a reviewer reads the English description aloud, then the discipline list contains exactly five bullets (four pitch + Compare Timing) in registration order, and no bullet mentions Continuous Rhythm Matching or any other non-shipping discipline.
@@ -106,3 +107,73 @@ context:
 - Same flow on `Peach (Debug)` macOS scheme.
 - Open `appstore-metadata.md` in an editor and verify the EN and DE description bullet lists each have five entries, the `Length:` annotations match the actual character counts, and the App Review Notes mention Compare Timing in the same plain English used for the four pitch disciplines.
 - Read the auto-memory at `{auto-memory-root}/project_initial_release_pitch_only.md` (or confirm it has been deleted) and verify `MEMORY.md` index is consistent.
+
+## Spec Change Log
+
+**2026-08-07 — Final wording settled (Task 1), approved by Michael before any file edits.**
+
+Release-scope precondition re-confirmed at story start: Timing Offset Detection **is** in the next cut (gate lifted by `961decbc`, story 82.8; registered unconditionally at `DisciplineBootstrap.swift:34`). Continuous Rhythm Matching and TOD's *Nested* pattern category stay `PEACH_RESEARCH`-gated and stay out of all copy.
+
+| Surface | Settled wording |
+|---|---|
+| EN description, opening | `Peach is an ear-training app. It generates short exercises about pitch and timing, records your responses, and adjusts the difficulty over time.` |
+| EN description, 5th bullet | `• Compare Timing — A short rhythmic pattern plays; you decide whether one note came early or late.` |
+| EN description, adaptive sentence | `… as your responses become more accurate. In Compare Timing it narrows the timing offset the same way.` |
+| DE description, opening | `Peach ist eine Gehörbildungs-App. Sie erzeugt kurze Übungen zu Tonhöhe und Timing, speichert deine Antworten und passt die Schwierigkeit im Laufe der Zeit an.` |
+| DE description, 5th bullet | `• Timing vergleichen — Ein kurzes rhythmisches Muster erklingt; du entscheidest, ob ein Ton zu früh oder zu spät kam.` |
+| DE description, adaptive sentence | `… sobald deine Antworten genauer werden. In der Disziplin Timing vergleichen verkleinert er entsprechend die zeitliche Abweichung.` |
+| EN keywords | appended `,timing` → 81 chars (was 74) |
+| DE keywords | appended `,timing` → 82 chars (was 75) |
+| Review Notes, opening | `Peach is an ear-training app for musicians. It covers pitch perception and the timing of notes within a rhythmic pattern. …` |
+| Review Notes, section list | `(Pitch, Intervals)` → `(Pitch, Intervals, Rhythm)` |
+| Review Notes, 5th bullet | `- Compare Timing — A short rhythmic pattern plays with one note shifted slightly early or late; tap "Early" or "Late" to indicate which.` |
+| `HelpContent.appDescription` (EN) | `Peach helps you train your ear for music. Practice hearing the difference between notes, matching pitches accurately, and judging the timing of notes in a rhythmic pattern.` |
+| `appDescription` (DE) | `Peach hilft dir, dein Gehör für Musik zu trainieren. Übe, Unterschiede zwischen Tönen zu hören, Tonhöhen genau zu treffen und das Timing von Tönen in einem rhythmischen Muster zu beurteilen.` |
+
+**Scope additions beyond the Code Map** (in-scope per Intent — "every piece of user-facing copy that still scopes the app to pitch only" — but not itemized when the spec was drafted):
+1. The EN/DE description **opening sentence** scoped the app to pitches ("compare or produce pitches" / "Tonhöhen vergleichst oder selbst triffst").
+2. The EN/DE **adaptive-difficulty sentence** claimed only cent-narrowing. Added as a separate second sentence rather than generalised, per the *Never* constraint against over-claiming. Verified against `AdaptiveTimingOffsetDetectionStrategy` (`narrowingCoefficient`, `percentageOfSixteenthNote`) — it does narrow the offset.
+3. App Review Notes **"How to use it"** listed Start-screen sections as `(Pitch, Intervals)`; `TrainingCategory` is `pitch → intervals → rhythm` and `TrainingCategoryDisplay.swift:10` titles the third "Rhythm".
+
+**Resolved *Ask First* items — neither escalation triggered:**
+- *Keyword budget:* `timing` fits both locales with headroom (81 / 82 of 100). No existing term dropped.
+- *xcstrings key:* edited **in place** per the spec's stated default. The key **is** the English value, so the key string and its German value were rewritten together — no new key, no orphaned entry. `--missing` reports `0`.
+
+**Bullet ordering note:** the AC says "registration order". Literal `DisciplineBootstrap.allDisciplines` order is Compare Pitch → Compare Intervals → Match Pitch → Match Intervals, but the description's existing four bullets are in the app's **display** order (category-grouped: Pitch → Intervals → Rhythm, which is what `registry.activeCategories` + `disciplines(in:)` renders on the Start screen). Both readings put Compare Timing fifth and last, so the existing four bullets were left untouched rather than reordered against shipped copy.
+
+**Framing captured (Michael, 2026-08-07):** Peach is not a pitch app — its subject is *small differences* (JNDs) in whatever dimension a discipline targets, currently pitch and timing. The jargon stays internal; user-facing copy uses plain musical language. Recorded as auto-memory `project_peach_trains_small_differences.md`, replacing the retired `project_initial_release_pitch_only.md`.
+
+## Dev Agent Record
+
+### Completion Notes
+
+**Runtime verification (2026-08-07)** — `Peach (Debug)` (non-Research) built and launched on iPhone 17 Pro / iOS 26.5 via XcodeBuildMCP, German locale, into an isolated DerivedData path so the build could not disturb a concurrently-open Xcode. Build: 24 s, zero errors, zero warnings.
+
+- **Start screen** renders three category sections — *Tonhöhe*, *Intervalle*, *Rhythmus* — with five disciplines, *Timing vergleichen* last under *Rhythmus*. Confirms TOD registers in the shipping configuration.
+- **Info → "Was ist Peach?"** renders the new German translation verbatim: "Peach hilft dir, dein Gehör für Musik zu trainieren. Übe, Unterschiede zwischen Tönen zu hören, Tonhöhen genau zu treffen und das Timing von Tönen in einem rhythmischen Muster zu beurteilen."
+- **Info → "Trainingsdisziplinen"** lists all five in display order, ending with "Timing vergleichen – Höre ein kurzes rhythmisches Muster und entscheide, ob der getestete Ton zu früh oder zu spät kam." Registry-driven, no code edit needed, as the spec predicted.
+
+Documentation + localized-string sweep; no code paths changed. The single Swift edit is a string literal, and the two tests that touch it (`StartScreenTests.swift:185-186`) assert only `contains("Peach")` and `count > 50` — both still hold.
+
+Character counts re-measured with the file's own documented method (Python `len()` on the stripped fence contents). Each delta reconciles exactly with the edits made:
+- EN description 1,369 → **1,509** (−20 opening, +99 bullet, +62 adaptive sentence)
+- DE description 1,537 → **1,713** (−31 opening, +114 bullet, +93 adaptive sentence)
+- App Review Notes 2,713 → **2,901** / 441 → 475 words (+45 opening, +8 section list, +135 bullet)
+
+All three remain well inside the 4,000-character limit.
+
+### File List
+
+- `docs/planning-artifacts/appstore-metadata.md` — modified
+- `Peach/App/HelpContent.swift` — modified (`appDescription` string literal)
+- `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift` — modified (Boy Scout, approved in-session): `alwaysOn` set gained `.timingOffsetDetection`, test renamed to `shippingDisciplinesAlwaysRegistered`. The suite asserted only the four pitch disciplines while its own leading comment said non-Research builds register "the pitch disciplines plus Timing Offset Detection" — so TOD's presence in the shipping build, the premise of this whole cut, was pinned by nothing. Now green in both non-Research schemes.
+- `Peach/Resources/Localizable.xcstrings` — modified (`appDescription` key + German value, in place)
+- `docs/implementation-artifacts/83-1-tod-release-copy-update.md` — modified (status, `baseline_commit`, task checkboxes, this record)
+- `docs/implementation-artifacts/sprint-status.yaml` — modified (`83-1` → `in-progress`, `last_updated`)
+- `{auto-memory-root}/project_initial_release_pitch_only.md` — **deleted** (the file's own retirement trigger was "when 83.1 lands")
+- `{auto-memory-root}/project_peach_trains_small_differences.md` — **added**
+- `{auto-memory-root}/MEMORY.md` — modified (index line replaced; `project_solfege_unrelated` hook corrected from "pitch/intervals" to "pitch/interval/timing perception")
+
+### Change Log
+
+- 2026-08-07 — Release copy swept to the five-discipline shipping set across App Store description (EN + DE), keywords (EN + DE), App Review Notes, and the in-app "What is Peach?" description. Retired the pitch-only auto-memory in favour of the small-differences framing.

@@ -23,14 +23,14 @@ Length: 26
 
 ### Keywords (limit: 100)
 
-`pitch,intonation,interval,tuning,midi,perception,singer,choir,violin,cello`
+`pitch,intonation,interval,tuning,midi,perception,singer,choir,violin,cello,timing`
 
-Length: 74
+Length: 81
 
 ### Description (limit: 4,000)
 
 ```
-Peach is an ear-training app. It generates short exercises that ask you to compare or produce pitches, records your responses, and adjusts the difficulty over time.
+Peach is an ear-training app. It generates short exercises about pitch and timing, records your responses, and adjusts the difficulty over time.
 
 The training disciplines:
 
@@ -38,8 +38,9 @@ The training disciplines:
 • Match Pitch — Adjust a slider until the note matches the reference.
 • Compare Intervals — An interval plays; you judge whether it is in tune.
 • Match Intervals — Adjust the second note to form the target interval.
+• Compare Timing — A short rhythmic pattern plays; you decide whether one note came early or late.
 
-The algorithm narrows the cent difference between notes as your responses become more accurate.
+The algorithm narrows the cent difference between notes as your responses become more accurate. In Compare Timing it narrows the timing offset the same way.
 
 The Profile screen shows per-discipline progress charts, summary statistics, and trend indicators. The home screen shows a small progress sparkline next to each discipline.
 
@@ -57,7 +58,7 @@ The same app runs on iPhone, iPad, and Mac. Data does not sync between devices a
 There are no scores, levels, or streaks.
 ```
 
-Length: 1,369
+Length: 1,509
 
 ---
 
@@ -81,14 +82,14 @@ Uses the colon form for gender-inclusive phrasing; 30-char limit precludes the l
 
 ### Keywords (limit: 100)
 
-`tonhöhe,intervall,intonation,stimmung,midi,chor,gesang,geige,cello,bratsche`
+`tonhöhe,intervall,intonation,stimmung,midi,chor,gesang,geige,cello,bratsche,timing`
 
-Length: 75
+Length: 82
 
 ### Description (limit: 4,000)
 
 ```
-Peach ist eine Gehörbildungs-App. Sie erzeugt kurze Übungen, in denen du Tonhöhen vergleichst oder selbst triffst, speichert deine Antworten und passt die Schwierigkeit im Laufe der Zeit an.
+Peach ist eine Gehörbildungs-App. Sie erzeugt kurze Übungen zu Tonhöhe und Timing, speichert deine Antworten und passt die Schwierigkeit im Laufe der Zeit an.
 
 Die Übungsdisziplinen:
 
@@ -96,8 +97,9 @@ Die Übungsdisziplinen:
 • Tonhöhe treffen — Stelle einen Schieberegler so ein, dass der Ton den Referenzton trifft.
 • Intervalle vergleichen — Ein Intervall erklingt; du beurteilst, ob es sauber ist.
 • Intervalle treffen — Stelle den zweiten Ton so ein, dass er das Zielintervall ergibt.
+• Timing vergleichen — Ein kurzes rhythmisches Muster erklingt; du entscheidest, ob ein Ton zu früh oder zu spät kam.
 
-Der Algorithmus verkleinert den Cent-Unterschied zwischen den Tönen, sobald deine Antworten genauer werden.
+Der Algorithmus verkleinert den Cent-Unterschied zwischen den Tönen, sobald deine Antworten genauer werden. In der Disziplin Timing vergleichen verkleinert er entsprechend die zeitliche Abweichung.
 
 Auf dem Profil-Screen siehst du pro Disziplin Verlaufsdiagramme, Statistiken und Trendangaben. Auf dem Startbildschirm zeigt eine kleine Verlaufsgrafik den Fortschritt je Disziplin.
 
@@ -115,7 +117,7 @@ Dieselbe App läuft auf iPhone, iPad und Mac. Die Daten werden nicht automatisch
 Es gibt keine Punkte und keine Level.
 ```
 
-Length: 1,537
+Length: 1,713
 
 ---
 
@@ -126,11 +128,11 @@ Plain-text notes for App Store reviewers. Targets the "Notes" field on the App R
 ```
 What Peach is
 
-Peach is an ear-training app for musicians, specifically for pitch perception. The app generates short exercises, records the user's responses, and adjusts the difficulty as accuracy improves.
+Peach is an ear-training app for musicians. It covers pitch perception and the timing of notes within a rhythmic pattern. The app generates short exercises, records the user's responses, and adjusts the difficulty as accuracy improves.
 
 How to use it
 
-Launch the app. The Start screen shows training disciplines grouped into sections (Pitch, Intervals). Tap a discipline to begin a session — a sequence of short trials, a few seconds each. After a few completed sessions, the Profile screen displays per-discipline progress charts and statistics. On a fresh install the Profile screen is empty by design; it requires data from completed sessions to draw anything.
+Launch the app. The Start screen shows training disciplines grouped into sections (Pitch, Intervals, Rhythm). Tap a discipline to begin a session — a sequence of short trials, a few seconds each. After a few completed sessions, the Profile screen displays per-discipline progress charts and statistics. On a fresh install the Profile screen is empty by design; it requires data from completed sessions to draw anything.
 
 The training disciplines
 
@@ -138,6 +140,7 @@ The training disciplines
 - Match Pitch — A reference note plays; drag a vertical slider until your note matches the reference, then release to submit.
 - Compare Intervals — Like Compare Pitch, but the two notes are separated by a musical interval (for example a fifth) instead of a small pitch difference.
 - Match Intervals — Like Match Pitch, but the target is a specific interval above or below the reference note.
+- Compare Timing — A short rhythmic pattern plays with one note shifted slightly early or late; tap "Early" or "Late" to indicate which.
 
 Non-obvious interactions
 
@@ -169,7 +172,7 @@ The macOS build is a single-window app and adds menu-bar commands that mirror on
 All on-screen interactions described above work on Mac with mouse or trackpad.
 ```
 
-Length: 2,713 characters / 441 words
+Length: 2,901 characters / 475 words
 
 ---
 

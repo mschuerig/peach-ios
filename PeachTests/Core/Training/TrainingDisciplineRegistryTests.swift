@@ -15,14 +15,15 @@ struct TrainingDisciplineRegistryTests {
     // Matching). Tests assert invariants that hold for any registered set, not
     // exact counts.
 
-    @Test("the pitch disciplines are always registered")
-    func pitchDisciplinesAlwaysRegistered() async {
+    @Test("the pitch disciplines and Timing Offset Detection are always registered")
+    func shippingDisciplinesAlwaysRegistered() async {
         let registeredIDs = Set(registry.all.map(\.id))
         let alwaysOn: Set<TrainingDisciplineID> = [
             .unisonPitchDiscrimination,
             .intervalPitchDiscrimination,
             .unisonPitchMatching,
             .intervalPitchMatching,
+            .timingOffsetDetection,
         ]
         #expect(alwaysOn.isSubset(of: registeredIDs))
     }
