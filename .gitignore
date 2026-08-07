@@ -68,5 +68,10 @@ buildServer.json
 /_bmad/_config/ides/
 /_bmad/_config/custom/
 
+# XcodeBuildMCP local state: sessionDefaults carries machine-local simulator
+# UDIDs and a physical deviceId, neither of which transfers between machines.
+# The server registration itself lives in the committed .mcp.json.
+/.xcodebuildmcp/
+
 # macOS
 .DS_Store
