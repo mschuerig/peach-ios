@@ -3768,13 +3768,13 @@
         }
       }
     },
-    "This chart shows how your pitch perception is developing over time." : {
+    "This chart shows how your ear is developing over time." : {
       "comment" : "Chart overview help body\nChart overview tip message",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieses Diagramm zeigt, wie sich deine Tonwahrnehmung im Laufe der Zeit entwickelt."
+            "value" : "Dieses Diagramm zeigt, wie sich dein Gehör im Laufe der Zeit entwickelt."
           }
         }
       }

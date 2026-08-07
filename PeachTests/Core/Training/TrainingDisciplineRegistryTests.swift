@@ -9,11 +9,13 @@ struct TrainingDisciplineRegistryTests {
 
     // MARK: - Registered-set invariants
     //
-    // The registered set varies by build configuration (configurations without
-    // PEACH_RESEARCH register the pitch disciplines plus Timing Offset Detection;
-    // the Research configurations additionally register Continuous Rhythm
-    // Matching). Tests assert invariants that hold for any registered set, not
-    // exact counts.
+    // The registered set varies by build configuration: every configuration
+    // registers the four pitch disciplines plus Timing Offset Detection, and the
+    // Research configurations additionally register the research-only
+    // disciplines (Continuous Rhythm Matching and Chromatic Construction).
+    // Tests below assert set membership rather than exact counts, so adding a
+    // discipline does not break them — but the shipping set is pinned from both
+    // sides, because the App Store copy enumerates exactly those five.
 
     @Test("the pitch disciplines and Timing Offset Detection are always registered")
     func shippingDisciplinesAlwaysRegistered() async {
@@ -27,6 +29,23 @@ struct TrainingDisciplineRegistryTests {
         ]
         #expect(alwaysOn.isSubset(of: registeredIDs))
     }
+
+    #if !PEACH_RESEARCH
+    /// Guards the upper bound of the shipping set. `alwaysOn` above is a subset
+    /// assertion, so a research-only discipline escaping the `#if
+    /// PEACH_RESEARCH` block in `DisciplineBootstrap` would register in a
+    /// shipping build with every scheme still green — while the App Store
+    /// description and App Review Notes promise exactly five disciplines.
+    @Test("research-only disciplines are absent from the shipping build")
+    func researchDisciplinesAbsentFromShippingBuild() async {
+        let registeredIDs = Set(registry.all.map(\.id))
+        let researchOnly: Set<TrainingDisciplineID> = [
+            .continuousRhythmMatching,
+            .chromaticConstruction,
+        ]
+        #expect(registeredIDs.isDisjoint(with: researchOnly))
+    }
+    #endif
 
     @Test("registered IDs are a subset of the canonical catalog")
     func registeredIDsAreSubsetOfCanonical() async {

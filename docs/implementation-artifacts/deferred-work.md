@@ -437,3 +437,58 @@ Michael's diagnosis from living with the Epic 86 cut: the paradigm doesn't work 
 Each training screen re-implements the same scaffolding — stats header, size-class branching, key handlers, `.trainingScreen` wiring — roughly 150 lines per screen across five screens. `TrainingDisciplineUI` could host a generic training screen that disciplines parameterize.
 
 **Fix:** Extract a generic training-screen host into the `TrainingDisciplineUI` plugin surface. The natural moment is the next discipline addition ("the sixth discipline"), when the generic host pays for itself immediately — e.g., the perception-variant discipline sketched in PF-080. Not worth a standalone refactor story before then.
+
+---
+
+## Deferred from: code review of story 83.1 (2026-08-07)
+
+### PF-082: Architecture and glossary docs still describe a four-discipline app
+
+**Found:** 2026-08-07 (Story 83.1 code review — Blind Hunter)
+**Severity:** Low
+**Disposition:** OPEN
+
+`docs/planning-artifacts/architecture.md:1570` and `:1585` describe `ProgressTimeline` as tracking "all four disciplines"; the shipping set has been five since story 82.8 lifted the Timing Offset Detection gate. `docs/planning-artifacts/glossary.md:16` additionally advertises user-facing discipline names — "Hear & Compare", "Tune & Match" — that no longer exist anywhere in the UI. Story 83.1 swept *user-facing* copy only; these are internal docs outside that scope, but they are now actively misleading to any agent that loads them as context.
+
+**Fix:** Update the two `architecture.md` counts to reflect the registry-driven set (prefer wording that does not hard-code a count, since the set is build-configuration dependent), and replace the obsolete names in `glossary.md` with the current `displayName` values from each discipline's config.
+
+### PF-083: `PEACH_RESEARCH` prose omits Chromatic Construction across four files
+
+**Found:** 2026-08-07 (Story 83.1 code review — Blind Hunter + Edge Case Hunter)
+**Severity:** Low
+**Disposition:** OPEN
+
+Multiple doc comments and docs state that the Research configurations "additionally register Continuous Rhythm Matching", naming one discipline. `DisciplineBootstrap.allDisciplines` has appended `ChromaticConstructionDiscipline()` inside the same `#if PEACH_RESEARCH` block since epic 86, so the gated set has two members. Known instances: `Peach/App/Training/DisciplineBootstrap.swift:14-25`, `docs/project-context.md:265`, `docs/arc42.md:703` and `:1009`, `docs/planning-artifacts/glossary.md:16`. The instance inside `PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift:11-15` is fixed by story 83.1 itself, since that file was touched.
+
+**Fix:** Sweep the listed instances to name both gated disciplines, or reword to avoid enumerating them (e.g. "the research-only disciplines") so the prose stops needing maintenance each time one is added.
+
+### PF-084: Historical epic ACs assert a four-discipline release
+
+**Found:** 2026-08-07 (Story 83.1 code review — Blind Hunter)
+**Severity:** Low
+**Disposition:** OPEN
+
+`docs/planning-artifacts/epics.md:7693` (story 76.4, AC 9) asserts that in a `Release` build "four disciplines are registered, only Pitch and Intervals categories appear in StartScreen/PeachCommands/Profile/Help, and no rhythm-discipline UI is reachable". AC 5 and AC 10 of the same story are stale on the same axis. These were true when written and story 82.8 superseded them. Because `epics.md` is the declared source of truth for epic and story content, an agent reading it today gets a contradiction with the shipping build.
+
+**Fix:** Do not rewrite historical acceptance criteria — they are the record of what was accepted at the time. Add a `**Status:**`/`**Superseded:**` line to story 76.4 pointing at story 82.8, matching the Status-line convention already used on epics 80/81/84/85.
+
+### PF-085: In-app help copy says the user "decides" the fact rather than judging it
+
+**Found:** 2026-08-07 (Story 83.1 code review — Michael's copy note during triage)
+**Severity:** Low
+**Disposition:** OPEN
+
+Peach's disciplines ask the user to report a *perception*; the app already knows the ground truth. "Decide" frames the user as determining the fact ("you decide which is higher"), when what they actually do is judge, or more precisely utter an impression. Story 83.1 corrected this in the App Store description and App Review Notes; the in-app help strings still carry it.
+
+Instances (all in `Peach/Resources/Localizable.xcstrings`, each with a German `entscheiden` mirror):
+- `Hear a short rhythmic pattern and decide whether the tested note was early or late.` (TOD `helpDescription`)
+- `Listen to two notes and decide which one is higher.` (Compare Pitch `helpDescription`)
+- `You still decide which note is higher — but now you're training your sense of musical distance.` (interval help)
+- `Your job is to decide: was the second note higher or lower than the first?` (Compare Pitch help)
+- `Your job is to decide which it was.` (TOD help)
+
+Explicitly **not** in scope: uses meaning "once you have made up your mind", which are correct as written — e.g. `Tap Early or Late as soon as you decide`, `Bei ∞ wiederholt sich das Pattern, bis du dich entscheidest`.
+
+Not folded into story 83.1: those strings live in files the story never touched, and its frozen *Never* clause forbids new copy beyond TOD. Deliberately deferred rather than expanding a release-copy sweep into an app-wide verb sweep.
+
+**Fix:** Replace fact-determining "decide" with "judge" (DE: `beurteilen`) across the five strings above plus their German values, leaving the made-up-your-mind uses alone. Note that changing an English value rewrites the xcstrings *key*, so each edit is a key+value rewrite; run `bin/add-localization.swift --missing` afterwards.

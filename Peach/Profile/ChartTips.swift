@@ -7,7 +7,7 @@ struct ChartOverviewTip: Tip {
     }
 
     var message: Text? {
-        Text("This chart shows how your pitch perception is developing over time.", comment: "Chart overview tip message")
+        Text("This chart shows how your ear is developing over time.", comment: "Chart overview tip message")
     }
 }
 

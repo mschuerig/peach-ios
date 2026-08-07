@@ -35,7 +35,7 @@ enum HelpContent {
         HelpSection(
             title: String(localized: "Your Progress Chart",
                           comment: "Chart overview help title"),
-            body: String(localized: "This chart shows how your pitch perception is developing over time.",
+            body: String(localized: "This chart shows how your ear is developing over time.",
                          comment: "Chart overview help body")
         ),
         HelpSection(

@@ -34,11 +34,11 @@ Peach is an ear-training app. It generates short exercises about pitch and timin
 
 The training disciplines:
 
-• Compare Pitch — Two notes play; you decide which is higher.
+• Compare Pitch — Two notes play; you judge which is higher.
 • Match Pitch — Adjust a slider until the note matches the reference.
 • Compare Intervals — An interval plays; you judge whether it is in tune.
 • Match Intervals — Adjust the second note to form the target interval.
-• Compare Timing — A short rhythmic pattern plays; you decide whether one note came early or late.
+• Compare Timing — A short rhythmic pattern plays; you judge whether a note came early or late.
 
 The algorithm narrows the cent difference between notes as your responses become more accurate. In Compare Timing it narrows the timing offset the same way.
 
@@ -58,7 +58,7 @@ The same app runs on iPhone, iPad, and Mac. Data does not sync between devices a
 There are no scores, levels, or streaks.
 ```
 
-Length: 1,509
+Length: 1,505
 
 ---
 
@@ -93,11 +93,11 @@ Peach ist eine Gehörbildungs-App. Sie erzeugt kurze Übungen zu Tonhöhe und Ti
 
 Die Übungsdisziplinen:
 
-• Tonhöhe vergleichen — Zwei Töne erklingen; du entscheidest, welcher höher ist.
+• Tonhöhe vergleichen — Zwei Töne erklingen; du beurteilst, welcher höher ist.
 • Tonhöhe treffen — Stelle einen Schieberegler so ein, dass der Ton den Referenzton trifft.
 • Intervalle vergleichen — Ein Intervall erklingt; du beurteilst, ob es sauber ist.
 • Intervalle treffen — Stelle den zweiten Ton so ein, dass er das Zielintervall ergibt.
-• Timing vergleichen — Ein kurzes rhythmisches Muster erklingt; du entscheidest, ob ein Ton zu früh oder zu spät kam.
+• Timing vergleichen — Ein kurzes rhythmisches Muster erklingt; du beurteilst, ob ein Ton zu früh oder zu spät kam.
 
 Der Algorithmus verkleinert den Cent-Unterschied zwischen den Tönen, sobald deine Antworten genauer werden. In der Disziplin Timing vergleichen verkleinert er entsprechend die zeitliche Abweichung.
 
@@ -117,7 +117,7 @@ Dieselbe App läuft auf iPhone, iPad und Mac. Die Daten werden nicht automatisch
 Es gibt keine Punkte und keine Level.
 ```
 
-Length: 1,713
+Length: 1,709
 
 ---
 
@@ -140,10 +140,11 @@ The training disciplines
 - Match Pitch — A reference note plays; drag a vertical slider until your note matches the reference, then release to submit.
 - Compare Intervals — Like Compare Pitch, but the two notes are separated by a musical interval (for example a fifth) instead of a small pitch difference.
 - Match Intervals — Like Match Pitch, but the target is a specific interval above or below the reference note.
-- Compare Timing — A short rhythmic pattern plays with one note shifted slightly early or late; tap "Early" or "Late" to indicate which.
+- Compare Timing — A short rhythmic pattern plays with one note shifted slightly early or late; tap "Early" or "Late" to report how it sounded.
 
 Non-obvious interactions
 
+- In Compare Timing, the rhythmic pattern repeats until you answer (up to 20 times by default, adjustable in Settings). This is intentional — you can tap "Early" or "Late" at any point, including after the audio stops.
 - MIDI input is optional and auto-detected. Every discipline works fully with on-screen controls. If a MIDI keyboard or controller is connected (USB, Bluetooth, or Network MIDI), the app accepts input from it: the pitch-bend wheel adjusts pitch in the Match disciplines. No setup or pairing flow inside the app.
 - Sound source and tuning system are selectable in Settings (piano, strings, sine wave, and others; Equal Temperament or Just Intonation).
 - CSV export and import are in Settings → Data, for backup or transfer between devices.
@@ -172,7 +173,7 @@ The macOS build is a single-window app and adds menu-bar commands that mirror on
 All on-screen interactions described above work on Mac with mouse or trackpad.
 ```
 
-Length: 2,901 characters / 475 words
+Length: 3,127 characters / 515 words
 
 ---
 
