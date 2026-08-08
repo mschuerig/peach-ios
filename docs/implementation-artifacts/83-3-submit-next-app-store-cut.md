@@ -108,9 +108,22 @@ context:
 - [x] **Task 2 — Pre-submission audits.** Run `/appstore-review` (last run 2026-03-28, predating Epics 80–88) and `/audit-xcode-security-settings`. Report findings. Escalate per *Ask First* if any requires a code change; do not remediate unprompted. — **both complete.** Verdict: iOS cut READY, conditional only on the screenshot refresh already scoped here. Three findings dispositioned: Enhanced Security → **story 83.4** (must ship first); macOS availability claim → **corrected**; privacy-policy dependency count → **corrected**. Mac App Store App Sandbox gap → Epic 74, already tracked at `74-1:23-24`.
 - [x] **Task 3 — Version bump.** `MARKETING_VERSION` → `1.1.0`, `CURRENT_PROJECT_VERSION` → `2`, all eight configurations. Verify with `grep -c`. — **8/8 each, zero residue of `1.0.0` / build `1`**
 - [x] **Task 4 — Author release notes.** Draft EN + DE "What's New" copy covering Compare Timing and the Just Intonation correction. `/app-store-changelog` can seed a draft from `v1.0.0..HEAD`, but the shipped wording is settled deliberately against the copy constraints above, not accepted as generated. Add the section to `appstore-metadata.md` with measured `Length:` annotations. **Record the settled wording in the Spec Change Log before editing the file.** — EN 912 / DE 1,004 chars, annotations verified exact
-- [ ] **Task 5 — Re-capture screenshots.** — **BLOCKED**, see Dev Agent Record: simulator data container is not writable from the agent sandbox, so the seed CSV must be imported manually once. Populate training data first (71.3 AC #3 — no empty states). Capture on iPhone 16/17 Pro Max (1320×2868) and iPad Pro 13" (2064×2752) from a **non-Research** build. Re-shoot start / profile / settings, add Compare Timing, verify `02`–`05` still match the running app. Verify every file's pixel dimensions.
+- [ ] **Task 5 — Re-capture screenshots.** — **BLOCKED on one manual step.** The simulator data container is not writable from the agent sandbox and the app declares neither `UIFileSharingEnabled` nor `LSSupportsOpeningDocumentsInPlace`, so the seed CSV cannot be placed anywhere the in-app document picker can reach. **Michael must import it once per simulator** (drag the file onto the booted simulator → Settings → Import Training Data → Merge).
+
+  **Regenerate the seed CSV** — do not rely on any previously reported `$TMPDIR` path, which does not survive across sessions:
+
+  ```
+  python3 bin/generate-test-data.py --count 600 \
+    --discrimination-unison --discrimination-interval \
+    --matching-unison --matching-interval --timing-offset-detection \
+    <output-path>
+  ```
+
+  The five flags are load-bearing: omitting them generates all six disciplines including Continuous Rhythm Matching, which is research-only and must not appear in a shipping screenshot. Verify with `grep -c continuousRhythmMatching <file>` → `0`.
+
+  Then populate training data before capturing (71.3 AC #3 — no empty states). Capture on iPhone 16/17 Pro Max (1320×2868) and iPad Pro 13" (2064×2752) from a **non-Research** build. Re-shoot start / profile / settings, add Compare Timing, verify `02`–`05` still match the running app. Verify every file's pixel dimensions.
 - [ ] **Task 6 — Pre-archive gate.** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh --research -p mac` — sequentially, never in parallel. `bin/add-localization.swift --missing` → `0`. Record the four test counts.
-- [ ] **Task 7 — Archive and upload.** Destination "Any iOS Device (arm64)", scheme **`Peach (Release)`**, clean build folder, Product → Archive. Run Validate App as a dry run, then Distribute App → "TestFlight & App Store" → Upload. Confirm the build reaches "Ready to Submit" in App Store Connect with no Missing Compliance warning.
+- [ ] **Task 7 — Archive and upload.** **Precondition: confirm `83-4` is `done` in `sprint-status.yaml` before archiving** — it changes the binary. Destination "Any iOS Device (arm64)", scheme **`Peach (Release)`**, clean build folder, Product → Archive. Run Validate App as a dry run, then Distribute App → "TestFlight & App Store" → Upload. Confirm the build reaches "Ready to Submit" in App Store Connect with no Missing Compliance warning.
 - [ ] **Task 8 — Tag the release.** Annotated `git tag v1.1.0` on the archived commit.
 - [ ] **Task 9 — Refresh App Store Connect metadata.** Create the 1.1.0 version. Paste EN + DE description and keywords from `appstore-metadata.md` (unchanged since 83.1 but not yet in ASC), the new "What's New" copy per locale, and the updated App Review Notes minus the Mac sections. Upload the new screenshots in order. Verify Support URL and Privacy Policy URL still resolve. Verify privacy nutrition labels still read "No Data Collected".
 - [ ] **Task 10 — Submit.** Confirm every version-page section is green and the Submit button is enabled. Choose the release method per *Ask First* (default: Automatic). Submit; answer Content Rights = Yes, IDFA = No. Confirm status "Waiting for Review".
@@ -218,6 +231,20 @@ macOS stays out. Epic 74 owns Mac App Store submission, notarization, GitHub Rel
 
 ## Spec Change Log
 
+**2026-08-08 — Frozen-block amendments, all approved by Michael before the corresponding edits.**
+
+1. **Precondition added:** `83-4` (Enhanced Security hardening) must be `done` before Task 7 archives, because it changes the binary this story ships. Applied to the I/O-matrix precondition row, Task 1, and Task 7. Origin: Task 2's `/audit-xcode-security-settings` run found Enhanced Security absent; Michael chose "separate story, ships before this cut" over folding it in or deferring it.
+2. **"No changes to the description bodies" relaxed, twice.** The `/appstore-review` audit found the EN/DE descriptions claiming macOS availability that does not exist (Guideline 2.3.1(a)) and the privacy policy claiming one third-party library where `Package.resolved` pins four (5.1.1(i)). Michael instructed both be corrected. Descriptions now say "iPhone and iPad" — no macOS release date has been decided. Nothing else in the description bodies was touched; the App Review Notes' Mac sections were kept for the eventual Mac submission and flagged omit-for-iOS in *Notes for Upload*.
+
+**Commits so far.** This is not a single-commit story — it spans the release:
+
+| Commit | Contents |
+|---|---|
+| `a0afbe7d` | Story **83.4** — Enhanced Security hardening (separate story, separate diff) |
+| `1875ea30` | Story 83.3 partial — version bump, EN+DE "What's New", both audit copy corrections, `epics.md`, both specs |
+
+Both were split at hunk level out of a shared `project.pbxproj`: `a0afbe7d` carries only the 12 Enhanced Security insertions, `1875ea30` only the 8+8 version lines. For a code-review baseline over this story's work, spell out a range (`diff 1875ea30^..HEAD`) rather than a bare SHA, per [[reference_code_review_baseline_args]].
+
 **2026-08-08 — Release-notes wording settled (Task 4).**
 
 Content selected from the four user-visible change classes since `v1.0.0` (Compare Timing, the Just Intonation correction, Epic 81's Settings controls, Epics 85/88 reliability), not from the 148-commit log. German terminology taken from the shipping strings rather than invented: `Offset-Note` (`Position der Offset-Note`), `Tonumfang`, `Muster`, `Maximale Wiederholungen`, `reine Stimmung`.
@@ -263,8 +290,8 @@ claude-opus-5[1m]
 
 - `Peach.xcodeproj/project.pbxproj` — modified (`MARKETING_VERSION` → `1.1.0`, `CURRENT_PROJECT_VERSION` → `2`, all 8 configurations)
 - `docs/planning-artifacts/appstore-metadata.md` — modified (new `## What's New (Version 1.1.0)` section, EN + DE; macOS availability claim corrected in both descriptions; `Length:` annotations recomputed; Mac-submission-only scope note added to *Notes for Upload*)
-- `pages/privacy-policy/en.md` — modified (third-party library sentence corrected; effective date bumped)
-- `pages/privacy-policy/de.md` — modified (same, German)
+- `pages/privacy-policy/en.md` — modified (third-party library sentence corrected; effective date bumped). **Deployed and verified live 2026-08-08** at `https://mschuerig.github.io/peach-ios/privacy-policy/en`: serves "a small number of open-source libraries: MIDIKit … and swift-async-algorithms, together with the libraries those two depend on" and *Effective date: August 8, 2026*.
+- `pages/privacy-policy/de.md` — modified (same, German). **Verified live** at `/privacy-policy/de`: "einige wenige Open-Source-Bibliotheken …" and *Gültig ab: 8. August 2026*.
 - `docs/planning-artifacts/epics.md` — modified (story 83.4 added; Epic 83 work order updated; Status line added to 83.3)
 - `docs/implementation-artifacts/83-4-enhanced-security-hardening.md` — added (spec for the hardening story this one now depends on)
 - `docs/implementation-artifacts/83-3-submit-next-app-store-cut.md` — added (spec), then modified (task checkboxes, Spec Change Log, this record)
@@ -273,5 +300,6 @@ claude-opus-5[1m]
 ## Change Log
 
 - 2026-08-08: Story created.
+- 2026-08-08: Privacy policy pushed by Michael and verified live in both locales (corrected library sentence + bumped effective date serving at `mschuerig.github.io/peach-ios/privacy-policy/{en,de}`). The `/appstore-review` 5.1.1(i) finding is now closed end-to-end — corrected, committed, deployed, confirmed. This also re-satisfies the AC 6 precondition that the Privacy Policy URL resolves, which 73.2 recorded as a submission blocker if it 404s.
 - 2026-08-08: Task 2 closed. `/appstore-review` verdict: iOS cut READY, conditional only on the screenshot refresh already scoped here; both 2026-03-28 criticals confirmed closed. Three findings dispositioned on Michael's instruction — Enhanced Security became story **83.4** (must ship before this story archives; frozen block amended in three places), the macOS availability claim in both descriptions was corrected to "iPhone and iPad" (no macOS release date decided), and the privacy policy's "one third-party library" sentence was corrected to name both direct dependencies and acknowledge their transitive ones (`Package.resolved` pins four; effective date bumped per the policy's own update clause). All five `Length:` annotations in `appstore-metadata.md` re-measured and exact. Verified no in-app localized string claims Mac availability; the sole remaining Mac claim is the App Review Notes `Platforms` section, which is Mac-submission-only and now flagged as such in *Notes for Upload*.
 - 2026-08-08: Tasks 1, 3, 4 complete — preconditions verified, version bumped to 1.1.0 (build 2) across all 8 configurations, EN + DE release notes authored into `appstore-metadata.md`. Task 2 half complete: security audit found Enhanced Security absent (escalated, not applied); `/appstore-review` outstanding. Task 5 blocked on a manual seed-CSV import — the simulator data container is not writable from the agent sandbox.

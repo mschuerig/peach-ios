@@ -8343,7 +8343,7 @@ so that the JI fix and the fifth discipline actually reach the App Store instead
 
 (Acceptance criteria to be elaborated at story-creation time. Sketch: preconditions — Epic 87 shipped, 83.1 release-copy sweep landed, 83.2 decided (and its follow-up story shipped if the decision was "switch"), 83.4 hardening shipped. Manual submission mirroring Epic 73's process (fastlane automation, Epic 78, is explicitly not a prerequisite): bump marketing version, archive the iOS `Release` scheme, upload via Xcode Organizer, refresh App Store Connect metadata/screenshots per 83.1's updated copy (ASC in English per `[[feedback_asc_english_ui]]`), submit for review, release on approval. macOS distribution stays in Epic 74 (paused, separate cut). Epic 83 flips to `done` when this cut is live.)
 
-**Status:** Spec written 2026-08-08 (`docs/implementation-artifacts/83-3-submit-next-app-store-cut.md`); in progress. Version bump (1.1.0 / build 2) and EN+DE "What's New" copy landed; screenshot re-capture and submission outstanding.
+**Status:** In progress (`docs/implementation-artifacts/83-3-submit-next-app-store-cut.md`). Tasks 1–4 done as of 2026-08-08 (commit `1875ea30`): preconditions verified, both pre-submission audits run, version bumped to 1.1.0 / build 2 across all 8 configurations, EN+DE "What's New" authored, and two audit findings corrected (macOS availability claim; privacy-policy dependency count, now live). Outstanding: screenshot re-capture (blocked on a one-time manual seed-CSV import), pre-archive gate, archive, App Store Connect refresh, submission. Task 7 additionally gated on story 83.4 reaching `done`.
 
 ### Story 83.4: Enable Enhanced Security hardening before the release archive
 
