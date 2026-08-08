@@ -610,3 +610,28 @@ This matters beyond tidiness: every future edit to the stats header must be made
 **Deferred on timing, not merit:** collapsing them means changing a view rendered by all four pitch training screens, which is not a change to make between a release gate and an archive. `TrainingStatsView` hardcodes `¢` / `cents` the same way `TimingStatsView` used to, so both are candidates.
 
 **Fix:** Parameterize `TrainingStatsView` by `TrainingDisciplineConfig` — the pattern `ProgressSparklineView` and `RhythmProfileCardView` already follow — take its unit from `unitSymbol` / `unitLabel`, and delete `TimingStatsView`.
+
+### PF-097: The rhythm spectrogram's tempo-range labels are clipped by a fixed-width frame
+
+**Found:** 2026-08-08 (story 83.3 screenshot capture)
+**Severity:** Low
+**Disposition:** OPEN
+
+`Peach/Profile/RhythmSpectrogramView.swift:87` renders each Y-axis tempo-range label into a **fixed** frame:
+
+```swift
+@ScaledMetric(relativeTo: .caption2) private var yAxisLabelWidth: CGFloat = 44
+...
+Text(Self.rangeLabel(range)).font(.caption2)
+    .frame(width: yAxisLabelWidth, alignment: .leading)
+```
+
+44 pt is a magic number that no label was measured against. The two widest labels overflow it and truncate to `160–2…` and `120–1…`, while `100–119`, `80–99` and `60–79` fit. Because the width is a constant rather than a share of the available space, this is **not** a narrow-device problem — it reproduces on the widest devices.
+
+**Observed:** truncated in the story 83.3 App Store captures on **both** iPhone 17 Pro Max (1320×2868) and iPad Pro 13-inch (2064×2752), at default text size, en_US, with 127 seeded timing records spanning Feb–Aug 2026.
+
+**Contradicting observation, unexplained:** Michael reports the labels render correctly on a **physical iPhone 17 Pro**, including `120–159` — a device *narrower* than the Pro Max that truncated. A fixed-width frame cannot depend on device width, so something else differs between the two environments: candidates are the effective Dynamic Type size (`@ScaledMetric` scales the 44 pt, and Apple's metric and font scaling curves are not identical, so the label can outgrow or outpace its frame at different text sizes), the Display Zoom setting, or a simulator-versus-device font-rasterisation difference. **None of these has been tested** — the cause is recorded as unknown rather than guessed, and whoever picks this up should reproduce on a physical device first and vary text size before changing code.
+
+An earlier note in story 83.3's record claimed this was iPhone-only and that iPad rendered the labels in full. That was wrong: it was read off a `snapshot_ui` text node, which reports the underlying string rather than what is drawn. The captured PNGs show truncation on both. Corrected in that record.
+
+**Fix:** Let the label size itself instead of pinning it — drop the fixed `width:` in favour of `.fixedSize(horizontal: true, vertical: false)`, or derive the column width from the widest `rangeLabel` in the current locale. A German or future locale with longer range names would clip further under the current constant. Add a layout test over `TempoRange.defaultRanges` asserting no label is wider than the reserved column.
