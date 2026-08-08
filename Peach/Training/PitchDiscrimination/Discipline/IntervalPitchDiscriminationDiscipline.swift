@@ -12,6 +12,7 @@ struct IntervalPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         isHero: false,
         helpDescription: String(localized: "The same idea, but with musical intervals between notes."),
         unitLabel: String(localized: "cents"),
+        unitSymbol: String(localized: "¢"),
         optimalBaseline: 12.0,
         statistics: .default
     )

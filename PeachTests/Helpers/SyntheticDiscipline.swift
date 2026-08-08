@@ -24,6 +24,7 @@ struct SyntheticDiscipline: TrainingDiscipline, Sendable {
             isHero: isHero,
             helpDescription: "",
             unitLabel: "u",
+            unitSymbol: "u",
             optimalBaseline: 0,
             statistics: .default
         )

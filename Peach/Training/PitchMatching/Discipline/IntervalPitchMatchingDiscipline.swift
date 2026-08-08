@@ -12,6 +12,7 @@ struct IntervalPitchMatchingDiscipline: TrainingDisciplineUI, Sendable {
         isHero: false,
         helpDescription: String(localized: "Match pitches using musical intervals."),
         unitLabel: String(localized: "cents"),
+        unitSymbol: String(localized: "¢"),
         optimalBaseline: 8.0,
         statistics: .default
     )

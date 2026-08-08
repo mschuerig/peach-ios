@@ -16,6 +16,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         isHero: false,
         helpDescription: String(localized: "Hear a short rhythmic pattern and decide whether the tested note was early or late."),
         unitLabel: String(localized: "ms"),
+        unitSymbol: String(localized: "ms"),
         optimalBaseline: 15.0,
         statistics: .default
     )

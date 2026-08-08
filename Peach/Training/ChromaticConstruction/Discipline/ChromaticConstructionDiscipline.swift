@@ -19,6 +19,7 @@ struct ChromaticConstructionDiscipline: TrainingDisciplineUI, Sendable {
         isHero: false,
         helpDescription: String(localized: "Walk step by step from a lower anchor to an upper anchor in equal cent steps."),
         unitLabel: String(localized: "cents"),
+        unitSymbol: String(localized: "¢"),
         optimalBaseline: 0.0,
         statistics: .default
     )

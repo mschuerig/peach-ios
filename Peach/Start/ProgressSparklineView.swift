@@ -7,6 +7,7 @@ struct ProgressSparklineView: View {
     let trend: Trend?
     let modeName: String
     let unitLabel: String
+    let unitSymbol: String
 
     var body: some View {
         switch state {
@@ -25,7 +26,7 @@ struct ProgressSparklineView: View {
                     .frame(width: 60, height: 24)
             }
             if let ewma {
-                Text(Self.formatCompactEWMA(ewma))
+                Text(Self.formatCompactEWMA(ewma, unitSymbol: unitSymbol))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -50,12 +51,12 @@ struct ProgressSparklineView: View {
         }
     }
 
-    static func formatCompactEWMA(_ value: Double) -> String {
-        "\(Cents(value).formatted()) ¢"
+    static func formatCompactEWMA(_ value: Double, unitSymbol: String) -> String {
+        "\(MetricValueFormatter.format(value)) \(unitSymbol)"
     }
 
     static func sparklineAccessibilityLabel(modeName: String, ewma: Double, trend: Trend, unitLabel: String) -> String {
-        let value = Cents(ewma).formatted()
+        let value = MetricValueFormatter.format(ewma)
         let trendText = TrainingStatsView.trendLabel(trend)
         return "\(modeName): \(value) \(unitLabel), \(trendText)"
     }

@@ -97,6 +97,26 @@ struct TrainingDisciplineRegistryTests {
         )
     }
 
+    // MARK: - Unit rendering
+
+    @Test("every discipline declares a non-empty compact unit symbol")
+    func everyDisciplineDeclaresUnitSymbol() async {
+        for discipline in registry.all {
+            #expect(discipline.config.unitSymbol.isEmpty == false,
+                    "Discipline \(discipline.csvTrainingType) declares an empty unit symbol")
+        }
+    }
+
+    @Test("rhythm disciplines never render a cent symbol for their timing metric")
+    func rhythmDisciplinesDoNotRenderCents() async {
+        for discipline in registry.allUI where discipline.category == .rhythm {
+            #expect(discipline.config.unitSymbol != "¢",
+                    "Rhythm discipline \(discipline.csvTrainingType) renders a cent symbol for a millisecond metric")
+            #expect(discipline.config.unitLabel != "cents",
+                    "Rhythm discipline \(discipline.csvTrainingType) speaks 'cents' for a millisecond metric")
+        }
+    }
+
     // MARK: - No CSV column name overlaps
 
     @Test("no discipline declares a common column as its own")

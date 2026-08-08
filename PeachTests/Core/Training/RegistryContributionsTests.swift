@@ -22,6 +22,7 @@ struct SyntheticUIDiscipline: TrainingDisciplineUI, Sendable {
             isHero: isHero,
             helpDescription: "",
             unitLabel: "u",
+            unitSymbol: "u",
             optimalBaseline: 0,
             statistics: .default
         )

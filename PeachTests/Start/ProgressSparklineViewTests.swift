@@ -33,18 +33,27 @@ struct ProgressSparklineViewTests {
 
     // MARK: - formatCompactEWMA Tests
 
-    @Test("formatCompactEWMA includes cent sign")
+    @Test("formatCompactEWMA renders the cent symbol for pitch disciplines")
     func formatCompactEWMAIncludesCentSign() async {
-        let result = ProgressSparklineView.formatCompactEWMA(8.2)
+        let result = ProgressSparklineView.formatCompactEWMA(8.2, unitSymbol: "¢")
         #expect(result.contains("¢"))
         #expect(result.contains("8"))
     }
 
     @Test("formatCompactEWMA handles zero value")
     func formatCompactEWMAZero() async {
-        let result = ProgressSparklineView.formatCompactEWMA(0.0)
+        let result = ProgressSparklineView.formatCompactEWMA(0.0, unitSymbol: "¢")
         #expect(result.contains("0"))
         #expect(result.contains("¢"))
+    }
+
+    @Test("formatCompactEWMA renders milliseconds for timing disciplines, never cents")
+    func formatCompactEWMAUsesMillisecondsForTiming() async {
+        let result = ProgressSparklineView.formatCompactEWMA(80.5, unitSymbol: "ms")
+        #expect(result.contains("ms"), "got \(result)")
+        #expect(!result.contains("¢"), "got \(result)")
+        // Decimal separator is locale-dependent; assert only the stable digits.
+        #expect(result.contains("80"), "got \(result)")
     }
 
     // MARK: - sparklineAccessibilityLabel Tests
@@ -74,6 +83,21 @@ struct ProgressSparklineViewTests {
         #expect(label.contains("12"))
     }
 
+    @Test("sparklineAccessibilityLabel speaks milliseconds for timing disciplines")
+    func accessibilityLabelTiming() async {
+        let label = ProgressSparklineView.sparklineAccessibilityLabel(
+            modeName: "Compare Timing",
+            ewma: 80.5,
+            trend: .improving,
+            unitLabel: "ms"
+        )
+        #expect(label.contains("Compare Timing"), "got \(label)")
+        // Decimal separator is locale-dependent; assert only the stable digits.
+        #expect(label.contains("80"), "got \(label)")
+        #expect(label.contains("ms"), "got \(label)")
+        #expect(!label.contains("¢"), "got \(label)")
+    }
+
     // MARK: - Value-type parameter isolation
 
     @Test("initializer accepts precomputed value-type parameters without environment dependency")
@@ -86,7 +110,8 @@ struct ProgressSparklineViewTests {
             ewma: 8.0,
             trend: .improving,
             modeName: "Compare Pitch",
-            unitLabel: "cents"
+            unitLabel: "cents",
+            unitSymbol: "¢"
         )
     }
 
@@ -98,7 +123,8 @@ struct ProgressSparklineViewTests {
             ewma: nil,
             trend: nil,
             modeName: "Compare Pitch",
-            unitLabel: "cents"
+            unitLabel: "cents",
+            unitSymbol: "¢"
         )
     }
 }

@@ -12,6 +12,7 @@ struct UnisonPitchDiscriminationDiscipline: TrainingDisciplineUI, Sendable {
         isHero: true,
         helpDescription: String(localized: "Listen to two notes and decide which one is higher."),
         unitLabel: String(localized: "cents"),
+        unitSymbol: String(localized: "¢"),
         optimalBaseline: 8.0,
         statistics: .default
     )

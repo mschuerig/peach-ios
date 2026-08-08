@@ -39,8 +39,14 @@ struct TrainingDisciplineConfig {
     /// on the Info screen (one paragraph per discipline, generated at runtime).
     let helpDescription: String
 
-    /// Localized unit label for metric values (e.g., "cents").
+    /// Localized unit label for metric values, spelled out for speech and
+    /// chart axes (e.g., "cents", "ms").
     let unitLabel: String
+
+    /// Localized compact unit symbol for metric values rendered next to a
+    /// number in tight layouts such as the Start screen cards (e.g., "¢",
+    /// "ms"). Distinct from ``unitLabel``, which is spoken in full.
+    let unitSymbol: String
 
     /// Expert-level accuracy target shown as dashed baseline on charts.
     let optimalBaseline: Double

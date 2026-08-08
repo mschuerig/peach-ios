@@ -140,7 +140,8 @@ struct StartScreen: View {
                     ewma: progress.ewma,
                     trend: progress.trend,
                     modeName: config.displayName,
-                    unitLabel: config.unitLabel
+                    unitLabel: config.unitLabel,
+                    unitSymbol: config.unitSymbol
                 )
             }
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)

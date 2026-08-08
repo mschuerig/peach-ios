@@ -12,6 +12,7 @@ struct UnisonPitchMatchingDiscipline: TrainingDisciplineUI, Sendable {
         isHero: false,
         helpDescription: String(localized: "Hear a note and slide to match its pitch."),
         unitLabel: String(localized: "cents"),
+        unitSymbol: String(localized: "¢"),
         optimalBaseline: 5.0,
         statistics: .default
     )

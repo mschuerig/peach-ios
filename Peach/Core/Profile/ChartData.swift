@@ -235,11 +235,11 @@ struct ChartData {
     ]
 
     static func formatEWMA(_ value: Double) -> String {
-        Cents(value).formatted()
+        MetricValueFormatter.format(value)
     }
 
     static func formatStdDev(_ value: Double) -> String {
-        "±\(Cents(value).formatted())"
+        "±\(MetricValueFormatter.format(value))"
     }
 
     static func annotationDateLabel(_ date: Date, size: BucketSize) -> String {
@@ -284,8 +284,8 @@ struct ChartData {
         let count = zoneBuckets.count
 
         if count == 1 {
-            return String(localized: "\(zoneName) zone: \(firstDate), pitch trend \(firstMean) \(config.unitLabel), \(count) data points")
+            return String(localized: "\(zoneName) zone: \(firstDate), trend \(firstMean) \(config.unitLabel), \(count) data points")
         }
-        return String(localized: "\(zoneName) zone: \(firstDate) through \(lastDate), pitch trend from \(firstMean) to \(lastMean) \(config.unitLabel), \(count) data points")
+        return String(localized: "\(zoneName) zone: \(firstDate) through \(lastDate), trend from \(firstMean) to \(lastMean) \(config.unitLabel), \(count) data points")
     }
 }
