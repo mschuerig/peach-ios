@@ -53,12 +53,12 @@ Settings:
 
 Peach runs on the device. There is no account, no sign-up, no analytics, and no tracking. Training data stays on the device unless you export it manually.
 
-The same app runs on iPhone, iPad, and Mac. Data does not sync between devices automatically; transfer it via CSV export and import if you need to.
+The same app runs on iPhone and iPad. Data does not sync between devices automatically; transfer it via CSV export and import if you need to.
 
 There are no scores, levels, or streaks.
 ```
 
-Length: 1,505
+Length: 1,499
 
 ---
 
@@ -112,12 +112,59 @@ Einstellungen:
 
 Peach läuft vollständig auf dem Gerät. Kein Konto, keine Registrierung, keine Analytik, kein Tracking. Übungsdaten verlassen das Gerät nur, wenn du sie manuell exportierst.
 
-Dieselbe App läuft auf iPhone, iPad und Mac. Die Daten werden nicht automatisch zwischen Geräten synchronisiert; übertrage sie bei Bedarf per CSV-Export und -Import.
+Dieselbe App läuft auf iPhone und iPad. Die Daten werden nicht automatisch zwischen Geräten synchronisiert; übertrage sie bei Bedarf per CSV-Export und -Import.
 
 Es gibt keine Punkte und keine Level.
 ```
 
-Length: 1,709
+Length: 1,704
+
+---
+
+## What's New (Version 1.1.0)
+
+Release-notes copy for the 1.1.0 update. App Store Connect field: "What's New in This Version"
+(4,000-character limit, per locale). Authored in story 83.3.
+
+### English (en-US)
+
+```
+Compare Timing — a new training discipline
+
+A short rhythmic pattern plays with one note shifted slightly early or late; you judge which it was. The pattern repeats until you answer. Tempo, pattern, the position of the offset note, and the number of repetitions are set in Settings.
+
+Just Intonation correction
+
+Intervals in Just Intonation are now derived from each exercise's own reference note using pure frequency ratios. Previously they came from a fixed table rooted on A, so the in-tune target could be off by up to 41 cents depending on which reference note the exercise picked.
+
+Other changes
+
+• Settings uses sliders for continuous values such as note duration and tempo, and a piano keyboard for choosing the training note range.
+• Audio recovers correctly after a Bluetooth codec switch or a restart of the system audio service.
+• The Profile screen redraws faster when the training history is large.
+```
+
+Length: 912
+
+### German (de-DE)
+
+```
+Timing vergleichen — eine neue Übungsdisziplin
+
+Ein kurzes rhythmisches Muster erklingt, bei dem ein Ton etwas zu früh oder zu spät kommt; du beurteilst, was davon zutrifft. Das Muster wiederholt sich, bis du antwortest. Tempo, Muster, die Position der Offset-Note und die Anzahl der Wiederholungen stellst du in den Einstellungen ein.
+
+Korrektur der reinen Stimmung
+
+Intervalle in reiner Stimmung werden jetzt aus dem Referenzton der jeweiligen Übung über reine Frequenzverhältnisse berechnet. Vorher stammten sie aus einer festen, auf A bezogenen Tabelle — der saubere Zielton konnte dadurch je nach Referenzton um bis zu 41 Cent danebenliegen.
+
+Weitere Änderungen
+
+• In den Einstellungen gibt es Schieberegler für stufenlose Werte wie Tonlänge und Tempo sowie eine Klaviatur zur Auswahl des Tonumfangs.
+• Die Audiowiedergabe erholt sich zuverlässig nach einem Bluetooth-Codec-Wechsel oder einem Neustart des System-Audiodienstes.
+• Der Profil-Screen wird bei großer Übungshistorie schneller aufgebaut.
+```
+
+Length: 1,004
 
 ---
 
@@ -184,3 +231,4 @@ Length: 3,127 characters / 515 words
 - Apple already indexes the app name (`Peach Ear Trainer` / `Peach Gehörtrainer`) and subtitle words for search; those terms are intentionally excluded from the keyword list.
 - The German keyword list intentionally uses colloquial instrument names (`geige`, `bratsche`) rather than the formal forms (`violine`, `viola`); App Store search queries in German skew colloquial.
 - App Review Notes are submitted in English only — App Store Connect provides a single notes field per submission, not per locale.
+- **The `Platforms` and `Mac menus` sections of the App Review Notes are for the Mac App Store submission only** (Epic 74) and must be omitted when pasting into an iOS submission — the precedent set in story 73.2. They still say the app runs on Mac, which is true of the codebase but not of anything a user can obtain today; that is acceptable in notes attached to a Mac submission and misleading in notes attached to an iOS one. The user-facing descriptions were corrected in story 83.3 to claim iPhone and iPad only, since no macOS release date has been decided.

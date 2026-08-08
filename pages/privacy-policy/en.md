@@ -7,7 +7,7 @@ title: Privacy Policy — Peach
 
 **Peach — Ear Training**
 
-*Effective date: April 24, 2026*
+*Effective date: August 8, 2026*
 
 [Deutsch](de)
 
@@ -27,7 +27,7 @@ All training data — including pitch discrimination results, pitch matching res
 
 Peach does not use any third-party analytics, advertising, or tracking SDKs. There are no telemetry, crash reporting, or usage tracking services of any kind.
 
-The app uses one third-party library, [MIDIKit](https://github.com/orchetect/MIDIKit), for MIDI controller input. MIDIKit operates entirely on-device and does not collect or transmit any data.
+The app uses a small number of open-source libraries: [MIDIKit](https://github.com/orchetect/MIDIKit) for MIDI controller input and [swift-async-algorithms](https://github.com/apple/swift-async-algorithms), together with the libraries those two depend on. All of them operate entirely on-device, and none collects or transmits any data.
 
 ## Data Sharing
 

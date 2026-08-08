@@ -1,0 +1,277 @@
+---
+title: 'Story 83.3: Submit the next App Store cut'
+type: 'chore'
+created: '2026-08-08'
+status: 'ready-for-dev'
+baseline_commit: cb5eb4f364a4c555c384b29ab610f59507a35eb5
+context:
+  - '{project-root}/docs/planning-artifacts/epics.md'
+  - '{project-root}/docs/planning-artifacts/appstore-metadata.md'
+  - '{project-root}/docs/implementation-artifacts/83-1-tod-release-copy-update.md'
+  - '{project-root}/docs/implementation-artifacts/72-1-archive-and-upload-first-build-to-testflight.md'
+  - '{project-root}/docs/implementation-artifacts/73-2-upload-metadata-and-screenshots.md'
+  - '{project-root}/docs/implementation-artifacts/73-4-submit-for-app-store-review.md'
+---
+
+<frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
+
+## Intent
+
+**Problem:** Peach 1.0.0 (build 1) has been live on the iOS App Store since 2026-06-01. 148 commits have landed since the `v1.0.0` tag, including two changes users are waiting on: **Timing Offset Detection** shipped as a regular discipline (story 82.8 lifted its `PEACH_RESEARCH` gate) and **reference-relative Just Intonation** corrected in-tune interval targets that previously wandered ±41 ¢ on the hidden random reference note (Epic 87). Both live only in the repository. Every downstream artifact of a release — version number, binary, App Store Connect metadata, screenshots, release notes — still describes and ships 1.0.0.
+
+**Approach:** One manual iOS App Store submission mirroring Epic 73's process, with three source-of-truth edits ahead of it. (1) Bump `MARKETING_VERSION` to `1.1.0` and `CURRENT_PROJECT_VERSION` to `2` across all eight build configurations. (2) Author "What's New" release-notes copy (EN + DE) into `appstore-metadata.md`, which is this project's versioned source of truth for every App Store field. (3) Re-capture the screenshots that no longer show the shipping app. Then: run the pre-submission audits, gate all four schemes green, archive the **`Peach (Release)`** scheme, upload via Xcode Organizer, refresh the App Store Connect listing from `appstore-metadata.md`, submit, and monitor to approval. Epic 83 flips to `done` when the cut is live.
+
+**Why the version is 1.1.0, not 1.0.1:** a new user-facing training discipline is a feature addition, not a patch. The build number is bumped independently because App Store Connect rejects a re-used `CURRENT_PROJECT_VERSION` for the same marketing version.
+
+## Boundaries & Constraints
+
+**Always:**
+- **iOS only.** macOS distribution is Epic 74 (paused, separate cut, separate App Store Connect platform record). Do not touch `marketing/screenshots/mac/`, and omit the App Review Notes' `Platforms` and `Mac menus` sections from the iOS submission — the 73.2 precedent, recorded as a pitfall in that story.
+- **Archive the `Peach (Release)` scheme.** Not `Peach (Debug)` — Debug sets `DEBUG_INFORMATION_FORMAT = dwarf`, produces no dSYM, and Validate App fails with "Upload Symbols Failed" (72.1 burned an archive cycle on exactly this). Not `Peach (Release, Research)` — that configuration additionally registers Continuous Rhythm Matching and Chromatic Construction, so it would ship seven disciplines against App Store copy that promises five.
+- **App Store Connect UI in English** per [[feedback_asc_english_ui]] — the German ASC localization has misleading translations.
+- `docs/planning-artifacts/appstore-metadata.md` is the source of truth for every App Store text field. Nothing is typed into App Store Connect that does not exist in that file first; the "What's New" copy gets a new section there before it is pasted anywhere.
+- Release-notes copy follows the same rules as the rest of the metadata: sober and factual, no marketing hyperbole or motivational framing per [[feedback_sober_factual_copy]]; "disciplines", never "modes", per [[feedback_disciplines_not_modes]]; German informal `du` per [[feedback_german_informal]]; "Compare Timing" / "Timing vergleichen" is the discipline's user-facing name, not an invented marketing label.
+- Version bump touches **all eight** build configurations (Debug / Debug Research / Release / Release Research × app target + Tests target). 72.1 established that the project keeps `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` uniform across the matrix.
+- Pre-archive gate per [[feedback_test_sh_no_parallel]] (never run iOS and macOS concurrently — shared DerivedData build-DB locks produce a phantom 0/0): `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh --research -p mac` — all four green. `bin/add-localization.swift --missing` reports `0`.
+- The archived commit gets an annotated git tag `v1.1.0`, matching the `v1.0.0` precedent from 72.1.
+- Story key `83-3-submit-next-app-store-cut` flips to `in-progress` on start, `review` at hand-off, `done` after review per [[feedback_update_status_after_review]].
+
+**Ask First:**
+- **If any screenshot beyond the four identified as stale turns out to be stale**, ask before widening the capture set. **Default plan:** re-capture `01-start-screen`, `06-profile-screen`, `07-settings-screen`; insert a new Compare Timing shot; visually diff `02`–`05` against the running app and leave them if they still match.
+- **If `/appstore-review` or `/audit-xcode-security-settings` surfaces a finding that requires a code change**, stop and report before editing. A submission story must not silently absorb remediation work. **Default plan:** report findings, let Michael decide fix-now vs. file-as-`PF-###`.
+- **If Apple rejects the submission**, report the Resolution Center citation and stop. Do not begin remediation unprompted.
+- **Release method** (Automatic vs. Manual release on approval). **Default plan:** Automatic, matching 73.4.
+
+**Never:**
+- No new features, no refactoring, no Boy-Scout cleanups in this story. The binary that ships is the code at `HEAD` plus a version-number bump and nothing else. If the audits or the gate expose a real defect, that is a separate story against a separate commit. *(This is exactly what happened: the security audit found Enhanced Security absent, and rather than absorb it, the work became story **83.4**, which must ship before this story archives. Amended 2026-08-08 with Michael's approval.)*
+- No `PEACH_RESEARCH` disciplines in any user-facing surface — not in release notes, not in screenshots, not in the build. Continuous Rhythm Matching and Chromatic Construction stay invisible.
+- No changes to the App Store description, keywords, or App Review Notes bodies — story 83.1 already brought all of those current for the five-discipline shipping set. This story *transfers* them to App Store Connect; it does not rewrite them. *(Amended 2026-08-08 on Michael's instruction: the `/appstore-review` audit found the EN/DE descriptions claiming macOS availability that does not exist. Both were corrected to "iPhone and iPad". No macOS release date has been decided. The privacy policy's third-party-library sentence was corrected in the same pass. Nothing else in the description bodies was touched.)*
+- No fastlane. Epic 78 automation is explicitly not a prerequisite and is not introduced here; the submission is manual, as in Epic 73.
+- No promotional-text copy. Left empty at 1.0.0 by choice (it is editable post-release without a new build) and stays empty.
+- No closing of PF-082 / PF-083 / PF-084 / PF-085. They are tracked, non-blocking, and out of scope per [[feedback_never_defer_preexisting]] — they already have catalog entries.
+- No privacy-nutrition-label changes. Peach still collects nothing; the existing "No Data Collected" declaration is *verified*, not re-authored.
+
+## I/O & Edge-Case Matrix
+
+| Scenario | Input / State | Expected Output / Behavior | Error Handling |
+|---|---|---|---|
+| Precondition check | `sprint-status.yaml` at story start | `87-1` = done, `83-1` = done, `83-2` = done (decision: keep milliseconds, no follow-up story), `83-4` = done (Enhanced Security hardening shipped; added 2026-08-08 by Michael's approval) | any not done → halt, report |
+| Version bump | `project.pbxproj`, 8 configs | `MARKETING_VERSION = 1.1.0` and `CURRENT_PROJECT_VERSION = 2` in all 8; `grep -c` confirms 8 occurrences of each | fewer than 8 → fix before archiving |
+| Release notes, EN | new `## What's New` section in `appstore-metadata.md` | ≤ 4,000 chars; names Compare Timing and the Just Intonation correction in plain factual language | over limit → trim secondary items |
+| Release notes, DE | same section | parallels EN, informal `du`, ≤ 4,000 chars | same |
+| Screenshot: start screen | current app, non-Research build | five disciplines under three category sections (Pitch, Intervals, Rhythm), Compare Timing last | shows four disciplines → screenshot is stale, re-capture |
+| Screenshot: Compare Timing | new shot | a Compare Timing trial mid-session with the dot row visible | — |
+| Screenshot: profile | current app | includes the Compare Timing progress chart with real data | empty state → populate via training runs first (71.3 AC #3) |
+| Screenshot: settings | current app | Epic 81 controls: sliders (not steppers) for Duration/Gap/Tempo, piano keyboard for note range | shows steppers → stale, re-capture |
+| Screenshot dimensions | captured PNGs | iPhone 6.9" = 1320×2868; iPad 13" = 2064×2752 | mismatch → wrong simulator device, re-capture |
+| Pre-archive gate | four schemes | all green; `--missing` = 0 | any red → halt, do not archive |
+| Archive scheme selection | Xcode Organizer | archive originates from `Peach (Release)` | `Peach (Debug)` → "Upload Symbols Failed", no dSYM; `… Research` → 7 disciplines in the binary |
+| Validate App | archive | passes with no Missing Compliance warning (`ITSAppUsesNonExemptEncryption = NO` already set by 69.2) | warning appears → answer export-compliance questions in ASC |
+| Build processing | uploaded build | appears in App Store Connect as processed / "Ready to Submit" | absent after 1 h → check ASC → Activity for processing errors |
+| Version page, pre-submit | ASC 1.1.0 page | every section green: App Information, Pricing, App Privacy, Version Information, Build, App Review Information | any red → resolve before the Submit button enables |
+| Submission declarations | ASC final prompts | Content Rights = Yes; IDFA = No | — |
+| Post-submission | ASC status | "Waiting for Review" → "In Review" → Approved → live | rejected → record the guideline citation, halt per *Ask First* |
+| Git tag | archived commit | annotated `v1.1.0` exists and points at the commit that was archived | tag placed on a different commit → the release is unreproducible |
+
+</frozen-after-approval>
+
+## Code Map
+
+- `Peach.xcodeproj/project.pbxproj` — `MARKETING_VERSION` `1.0.0` → `1.1.0` and `CURRENT_PROJECT_VERSION` `1` → `2`, in all eight build configurations. These are the **only** source edits in this story.
+- `docs/planning-artifacts/appstore-metadata.md` — add a `## What's New (Version 1.1.0)` section with EN and DE bodies plus `Length:` annotations, measured with the file's own documented method (Python `len()` on the stripped fence contents). Everything already in this file (description, keywords, App Review Notes) is current as of 83.1 and is **read**, not edited.
+- `marketing/screenshots/iphone/`, `marketing/screenshots/ipad/` — re-capture `01-start-screen.png`, `06-profile-screen.png`, `07-settings-screen.png` and insert a Compare Timing shot. Target layout in both directories, preserving the start → disciplines → profile → settings ordering:
+
+  | # | File | Action |
+  |---|---|---|
+  | 01 | `01-start-screen.png` | re-capture |
+  | 02–05 | `02-compare-pitch` … `05-match-interval` | verify; re-capture only if the layout drifted |
+  | 06 | `06-compare-timing.png` | **new** |
+  | 07 | `07-profile-screen.png` | re-capture (was `06-`) |
+  | 08 | `08-settings-screen.png` | re-capture (was `07-`) |
+
+  `marketing/screenshots/mac/` is untouched (Epic 74).
+- `docs/implementation-artifacts/sprint-status.yaml` — `83-3-submit-next-app-store-cut`: `backlog` → `in-progress` → `review` → `done`; `epic-83` → `done` once the cut is live; `last_updated` narrative.
+- `docs/implementation-artifacts/83-3-submit-next-app-store-cut.md` — this file: task checkboxes, Dev Agent Record, Change Log.
+
+**Read-only inputs (do not edit):**
+
+- `docs/planning-artifacts/appstore-metadata.md` §§ Description, Keywords, App Review Notes — current as of 83.1; paste into App Store Connect verbatim, minus the `Platforms` and `Mac menus` sections.
+- `Peach/Resources/PrivacyInfo.xcprivacy` — declares UserDefaults (CA92.1) and SystemBootTime (35F9.1); verify still accurate, do not modify.
+
+**External artifacts (not files):** App Store Connect version 1.1.0 record, uploaded build 2, annotated git tag `v1.1.0`.
+
+## Tasks & Acceptance
+
+**Execution:**
+
+- [x] **Task 1 — Verify preconditions.** Confirm in `sprint-status.yaml`: Epic 87 done, 83.1 done, 83.2 done with the "keep milliseconds" decision and no follow-up implementation story. **Re-verify `83-4` = done before Task 7 archives** (added 2026-08-08). Confirm `git status` is clean and `HEAD` is the intended release commit. Record the commit SHA in the Dev Agent Record. — **verified 2026-08-08**, release commit `cb5eb4f364a4c555c384b29ab610f59507a35eb5`
+- [x] **Task 2 — Pre-submission audits.** Run `/appstore-review` (last run 2026-03-28, predating Epics 80–88) and `/audit-xcode-security-settings`. Report findings. Escalate per *Ask First* if any requires a code change; do not remediate unprompted. — **both complete.** Verdict: iOS cut READY, conditional only on the screenshot refresh already scoped here. Three findings dispositioned: Enhanced Security → **story 83.4** (must ship first); macOS availability claim → **corrected**; privacy-policy dependency count → **corrected**. Mac App Store App Sandbox gap → Epic 74, already tracked at `74-1:23-24`.
+- [x] **Task 3 — Version bump.** `MARKETING_VERSION` → `1.1.0`, `CURRENT_PROJECT_VERSION` → `2`, all eight configurations. Verify with `grep -c`. — **8/8 each, zero residue of `1.0.0` / build `1`**
+- [x] **Task 4 — Author release notes.** Draft EN + DE "What's New" copy covering Compare Timing and the Just Intonation correction. `/app-store-changelog` can seed a draft from `v1.0.0..HEAD`, but the shipped wording is settled deliberately against the copy constraints above, not accepted as generated. Add the section to `appstore-metadata.md` with measured `Length:` annotations. **Record the settled wording in the Spec Change Log before editing the file.** — EN 912 / DE 1,004 chars, annotations verified exact
+- [ ] **Task 5 — Re-capture screenshots.** — **BLOCKED**, see Dev Agent Record: simulator data container is not writable from the agent sandbox, so the seed CSV must be imported manually once. Populate training data first (71.3 AC #3 — no empty states). Capture on iPhone 16/17 Pro Max (1320×2868) and iPad Pro 13" (2064×2752) from a **non-Research** build. Re-shoot start / profile / settings, add Compare Timing, verify `02`–`05` still match the running app. Verify every file's pixel dimensions.
+- [ ] **Task 6 — Pre-archive gate.** `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh --research -p mac` — sequentially, never in parallel. `bin/add-localization.swift --missing` → `0`. Record the four test counts.
+- [ ] **Task 7 — Archive and upload.** Destination "Any iOS Device (arm64)", scheme **`Peach (Release)`**, clean build folder, Product → Archive. Run Validate App as a dry run, then Distribute App → "TestFlight & App Store" → Upload. Confirm the build reaches "Ready to Submit" in App Store Connect with no Missing Compliance warning.
+- [ ] **Task 8 — Tag the release.** Annotated `git tag v1.1.0` on the archived commit.
+- [ ] **Task 9 — Refresh App Store Connect metadata.** Create the 1.1.0 version. Paste EN + DE description and keywords from `appstore-metadata.md` (unchanged since 83.1 but not yet in ASC), the new "What's New" copy per locale, and the updated App Review Notes minus the Mac sections. Upload the new screenshots in order. Verify Support URL and Privacy Policy URL still resolve. Verify privacy nutrition labels still read "No Data Collected".
+- [ ] **Task 10 — Submit.** Confirm every version-page section is green and the Submit button is enabled. Choose the release method per *Ask First* (default: Automatic). Submit; answer Content Rights = Yes, IDFA = No. Confirm status "Waiting for Review".
+- [ ] **Task 11 — Monitor to outcome.** Track status through review. On approval, confirm the app is live at version 1.1.0. On rejection, record the guideline citation and halt per *Ask First*.
+- [ ] **Task 12 — Close out.** `83-3` → `done`; `epic-83` → `done` (the epic closes when the cut ships, not when its last story does). Update `sprint-status.yaml` `last_updated` narrative.
+
+**Acceptance Criteria:**
+
+1. **Given** `project.pbxproj` after the bump, **when** `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` are counted, **then** exactly eight occurrences of `1.1.0` and eight of `2` are present, and no configuration retains `1.0.0` or build `1`.
+2. **Given** `appstore-metadata.md` after Task 4, **when** the "What's New" section is read, **then** it exists in EN and DE, each ≤ 4,000 characters with an accurate `Length:` annotation, each naming Compare Timing and the Just Intonation correction, neither mentioning Continuous Rhythm Matching, Chromatic Construction, "modes", or motivational language.
+3. **Given** the re-captured screenshot set, **when** the start-screen shot is inspected, **then** it shows five disciplines under three category sections with Compare Timing last; **and** the set contains a Compare Timing training shot; **and** the profile shot includes a populated Compare Timing chart; **and** the settings shot shows Epic 81's sliders and piano keyboard; **and** every iPhone file is 1320×2868 and every iPad file 2064×2752.
+4. **Given** the four-scheme gate run sequentially before archiving, **when** the results are read, **then** all four are green and `bin/add-localization.swift --missing` reports `0`.
+5. **Given** the uploaded build, **when** viewed in App Store Connect, **then** it is version 1.1.0 build 2, processed, with no Missing Compliance warning, and it was produced from the `Peach (Release)` scheme (verifiable in-app: the shipped build registers exactly five disciplines).
+6. **Given** the App Store Connect 1.1.0 version page before submission, **when** each section is checked, **then** all show green, the EN and DE description/keywords/release-notes match `appstore-metadata.md` verbatim, the App Review Notes contain no Mac-specific sections, the privacy labels still read "No Data Collected", and both URLs resolve.
+7. **Given** the submission, **when** confirmed, **then** App Store Connect status is "Waiting for Review"; **and** on approval the app is live at 1.1.0.
+8. **Given** the repository after archiving, **when** `git tag` is listed, **then** an annotated `v1.1.0` points at the exact commit that was archived.
+9. **Given** the full story, **when** the diff is reviewed, **then** the only source-code change is the version bump — no feature, refactoring, or cleanup edits ride along.
+
+## Dev Notes
+
+### Why the archive scheme is the highest-risk decision in this story
+
+The project uses one scheme per build configuration. Archive takes its configuration from the selected scheme, and two of the four wrong choices fail in ways that are easy to miss:
+
+- `Peach (Debug)` — `DEBUG_INFORMATION_FORMAT = dwarf`, so the archive carries no dSYM and Validate App rejects it with "Upload Symbols Failed". Loud, and 72.1 already paid for this lesson.
+- `Peach (Release, Research)` — builds cleanly, validates cleanly, uploads cleanly, and ships a binary registering **seven** disciplines while the App Store description promises five. Silent. This is the one to guard against. Story 83.1 added an `isDisjoint` assertion under `#if !PEACH_RESEARCH` in `TrainingDisciplineRegistryTests` precisely so a research discipline cannot leak into a shipping build unnoticed — but that guard only fires when the non-Research schemes are tested, which is why Task 6 runs all four and Task 7 names the scheme explicitly.
+
+Cheapest post-hoc verification: install the archived build and count the Start-screen disciplines. Five under three sections = correct configuration.
+
+### What actually changed for users since 1.0.0
+
+The release-notes copy should be driven by these, not by the 148-commit log:
+
+- **Compare Timing** (Epics 80–84) — the fifth discipline, previously research-gated. A short rhythmic pattern loops; the user judges whether a note came early or late. Carries its own settings (tempo, pattern, offset-note position, maximum repetitions) and its own progress chart.
+- **Just Intonation correction** (Epic 87) — in-tune interval targets are now computed from each trial's reference note via pure ratios. Previously a fixed A-rooted 5-limit table made "correct" wander by up to ±41 ¢ depending on which reference note the trial happened to pick. This is a correctness fix to what the app teaches; it deserves a plain sentence, not a footnote.
+- **Settings controls** (Epic 81) — continuous values moved from steppers to sliders; note range is now selected on a piano keyboard.
+- **Reliability** (Epics 85, 88) — audio-session lifecycle hardening (Bluetooth codec switches, media-services resets) and profile-screen responsiveness.
+
+Everything else in the 148 commits is internal architecture and does not belong in user-facing notes.
+
+### Screenshot staleness, itemized
+
+The 1.0.0 set was captured 2026-05 against a four-discipline app. Confirmed stale:
+
+- `01-start-screen` — four disciplines in two sections; the app now renders five in three (Pitch, Intervals, Rhythm).
+- `06-profile-screen` — predates the Compare Timing chart.
+- `07-settings-screen` — predates Epic 81's slider taxonomy and piano-keyboard note range.
+- **Missing entirely** — a Compare Timing training shot. Its absence, alongside a description bullet promising the discipline, is the kind of mismatch Guideline 2.3 (Accurate Metadata) exists for.
+
+`02`–`05` (the four pitch training screens) are probably still accurate; verify rather than assume — Epic 75.3 introduced a shared training-screen modifier that may have shifted layout.
+
+### Pre-submission audit rationale
+
+`docs/reports/appstore-review-2026-03-28.md` is the last guidelines audit and predates Epics 80–88 entirely. `CLAUDE.md` mandates `/appstore-review` and `/audit-xcode-security-settings` before submission. Run both before archiving, not after — a finding that lands after the upload costs a whole build cycle.
+
+### Compliance state carried forward from Epic 69 (verify, do not re-author)
+
+- `INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO` — present in all four app-target configs; this is what suppresses the Missing Compliance warning.
+- `Peach/Resources/PrivacyInfo.xcprivacy` — declares UserDefaults (CA92.1) and SystemBootTime (35F9.1) API reasons, no tracking. No new data-collecting API has been introduced since 1.0.0; the manifest and the "No Data Collected" nutrition labels both still hold.
+- Privacy policy: `https://mschuerig.github.io/peach-ios/privacy-policy`. Support URL: `https://github.com/mschuerig/peach-ios`. Both were live at 1.0.0; re-verify, they are single points of submission failure.
+
+### App Store Connect friction, recorded at 1.0.0
+
+- The screenshot drop zone stays inert until you select a different display size in the picker and switch back. The picker state, not the file, gates the target.
+- The "Notes" field under App Review Information carries hint copy suggesting it is China-specific. It is the general-purpose field every reviewer reads. Paste the full notes regardless.
+- App Store Connect counts grapheme clusters; Python `len()` matches for ASCII and standard German diacritics.
+
+### Project Structure Notes
+
+This is a release story, not a development story. The single source edit is a version number in `project.pbxproj`; everything else is documentation, image assets, and external App Store Connect state. There is no new test to write — AC 5's "five disciplines in the shipping build" is already pinned by `TrainingDisciplineRegistryTests.shippingDisciplinesAlwaysRegistered` (lower bound) and its `isDisjoint` companion (upper bound), both landed by story 83.1.
+
+macOS stays out. Epic 74 owns Mac App Store submission, notarization, GitHub Releases, and the Homebrew cask, and remains paused. Do not let a green `bin/test.sh -p mac` (which this story does run, as a gate) drift into Mac distribution work.
+
+### References
+
+- `docs/planning-artifacts/epics.md` § Epic 83 — epic definition, work order, and the "epic closes when the cut ships" rule
+- `docs/planning-artifacts/appstore-metadata.md` — source of truth for all App Store text fields
+- `docs/implementation-artifacts/83-1-tod-release-copy-update.md` — the copy this story transfers to App Store Connect; its review log explicitly assigns the "What's New" surface to this story
+- `docs/implementation-artifacts/72-1-archive-and-upload-first-build-to-testflight.md` — archive/upload mechanics, scheme pitfall, version-matrix precedent, `v1.0.0` tag precedent
+- `docs/implementation-artifacts/73-2-upload-metadata-and-screenshots.md` — ASC metadata upload, iOS-only trimming of the review notes, field-discovery friction
+- `docs/implementation-artifacts/73-4-submit-for-app-store-review.md` — submission flow, final declarations, rejection playbook
+- `docs/implementation-artifacts/71-3-capture-iphone-and-ipad-screenshots.md` — capture devices, exact dimensions, realistic-data requirement
+- `docs/planning-artifacts/tod-discipline-future-direction.md` § Metric unit decision — story 83.2's outcome (keep milliseconds)
+- Apple: [Submit for review](https://developer.apple.com/help/app-store-connect/manage-submissions-to-app-review/submit-for-review) · [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/)
+
+## Verification
+
+**Commands:**
+
+- `grep -c 'MARKETING_VERSION = 1.1.0' Peach.xcodeproj/project.pbxproj` — expected: `8`
+- `grep -c 'CURRENT_PROJECT_VERSION = 2' Peach.xcodeproj/project.pbxproj` — expected: `8`
+- `bin/test.sh && bin/test.sh -p mac && bin/test.sh --research && bin/test.sh --research -p mac` — expected: four green, run sequentially
+- `bin/add-localization.swift --missing` — expected: `0 keys missing German translation`
+- `sips -g pixelWidth -g pixelHeight marketing/screenshots/iphone/*.png` — expected: every file 1320×2868
+- `sips -g pixelWidth -g pixelHeight marketing/screenshots/ipad/*.png` — expected: every file 2064×2752
+- `git tag --sort=-creatordate | head -2` — expected: `v1.1.0` then `v1.0.0`
+- `git log -1 --format=%H v1.1.0` — expected: the SHA recorded in Task 1
+
+**Manual checks:**
+
+- Install the archived `Peach (Release)` build; the Start screen shows exactly five disciplines under Pitch / Intervals / Rhythm. Seven disciplines means the Research scheme was archived — discard and re-archive.
+- App Store Connect 1.1.0 page: every section green; EN and DE description, keywords, and "What's New" match `appstore-metadata.md` character-for-character; App Review Notes contain no `Platforms` or `Mac menus` section; privacy labels read "No Data Collected".
+- Open the Support URL and the Privacy Policy URL in a browser; both load.
+- After approval: open the live App Store listing and confirm it shows 1.1.0, the five-bullet discipline list, and the new screenshots.
+
+## Spec Change Log
+
+**2026-08-08 — Release-notes wording settled (Task 4).**
+
+Content selected from the four user-visible change classes since `v1.0.0` (Compare Timing, the Just Intonation correction, Epic 81's Settings controls, Epics 85/88 reliability), not from the 148-commit log. German terminology taken from the shipping strings rather than invented: `Offset-Note` (`Position der Offset-Note`), `Tonumfang`, `Muster`, `Maximale Wiederholungen`, `reine Stimmung`.
+
+| Surface | Settled wording |
+|---|---|
+| EN heading 1 | `Compare Timing — a new training discipline` |
+| EN heading 2 | `Just Intonation correction` |
+| EN heading 3 | `Other changes` |
+| EN length | 912 chars (limit 4,000) |
+| DE heading 1 | `Timing vergleichen — eine neue Übungsdisziplin` |
+| DE heading 2 | `Korrektur der reinen Stimmung` |
+| DE heading 3 | `Weitere Änderungen` |
+| DE length | 1,004 chars (limit 4,000) |
+
+The JI paragraph states the user-visible consequence (in-tune target off by up to 41 cents depending on the reference note) rather than the mechanism. "Judge" is used for the Compare Timing task, consistent with the App Store description bullet 83.1 settled and with PF-085's preferred verb.
+
+## Dev Agent Record
+
+### Agent Model Used
+
+claude-opus-5[1m]
+
+### Debug Log References
+
+- `xcrun simctl` is unusable from the agent sandbox: `CoreSimulatorService connection became invalid` / `Connection refused` on the XPC connection, plus `Operation not permitted` opening `~/Library/Logs/CoreSimulator/`. XcodeBuildMCP works (it runs outside the sandbox) and is the supported path for build/launch/screenshot.
+- Writing to `~/Library/Developer/CoreSimulator/Devices/<UDID>/data/` fails with `Operation not permitted`. This is what blocks Task 5's data seeding; not worked around per [[feedback_never_circumvent_sandbox]].
+- XcodeBuildMCP session defaults were found pointing at scheme **`Peach (Debug, Research)`** and simulator `iPhone 17 Pro` — both wrong for this story (seven disciplines; not the 6.9" class). Confirms [[reference_xcodebuildmcp_config_overrides_session]]. Any capture run must re-verify defaults immediately before use.
+
+### Completion Notes List
+
+**Task 1 — preconditions (verified 2026-08-08).** Epic 87 `done`, 83.1 `done`, 83.2 `done` (keep milliseconds; no follow-up implementation story, so 83.3 is unblocked on that axis). Working tree carried only this story's own artifacts — no source changes pending. Release commit: `cb5eb4f364a4c555c384b29ab610f59507a35eb5` ("Apply story 83.1 code review findings").
+
+**Task 2 — security audit (complete; one finding, escalated not applied).** Project is pure Swift (454 `.swift`, zero C/C++/ObjC), so the skill's Clang safety-warning step is not applicable — those settings are set anyway. Already correct: `ENABLE_USER_SCRIPT_SANDBOXING`, `DEAD_CODE_STRIPPING`, three `CLANG_ANALYZER_*`, six `GCC_WARN_*`. No security-catalog setting is explicitly `NO`. No decision document exists. **Gap: `ENABLE_ENHANCED_SECURITY` is absent**, no `.entitlements` file exists, and no `CODE_SIGN_ENTITLEMENTS` is wired. Both SPM dependencies (MIDIKit, swift-async-algorithms) build from source and there are no `.xcframework`/`.a`/`.dylib` binaries, so pointer authentication is dependency-safe — but adopting Enhanced Security changes the shipping binary materially and is therefore an *Ask First* escalation, not a drive-by, under this story's "no edits beyond the version bump" constraint. **`/appstore-review` has not returned; Task 2 stays open until it does.**
+
+**Task 3 — version bump (complete).** `MARKETING_VERSION` `1.0.0` → `1.1.0` and `CURRENT_PROJECT_VERSION` `1` → `2`, eight occurrences each, zero residue. Satisfies AC 1.
+
+**Task 4 — release notes (complete).** EN + DE "What's New" added to `appstore-metadata.md`. Measured lengths (912 / 1,004) match the `Length:` annotations exactly, re-verified by re-parsing the fences after the edit. No CRM, no Chromatic Construction, no "modes", no motivational framing; German uses informal `du` throughout. Satisfies AC 2.
+
+**Task 5 — screenshots (BLOCKED, partial).** Seed CSV generated at `$TMPDIR/peach-screenshot-seed.csv`: 600 backdated records across exactly the five shipping disciplines (240 `pitchDiscrimination`, 240 `pitchMatching`, 120 `rhythmOffsetDetection`), verified to contain zero `continuousRhythmMatching` rows. Target devices confirmed present: iPhone 17 Pro Max `6CA2827E-2CEC-4718-AF42-32593BBCA652`, iPad Pro 13-inch (M5) `17E13B03-B487-42CA-99AD-9132725A6206`. **Blocker:** the app declares neither `UIFileSharingEnabled` nor `LSSupportsOpeningDocumentsInPlace`, so its Documents folder is not browsable from the Files app, and the simulator data container is not writable from the agent sandbox — so the CSV cannot be placed anywhere the in-app document picker can reach it. Requires one manual import per device before capture can proceed.
+
+### File List
+
+- `Peach.xcodeproj/project.pbxproj` — modified (`MARKETING_VERSION` → `1.1.0`, `CURRENT_PROJECT_VERSION` → `2`, all 8 configurations)
+- `docs/planning-artifacts/appstore-metadata.md` — modified (new `## What's New (Version 1.1.0)` section, EN + DE; macOS availability claim corrected in both descriptions; `Length:` annotations recomputed; Mac-submission-only scope note added to *Notes for Upload*)
+- `pages/privacy-policy/en.md` — modified (third-party library sentence corrected; effective date bumped)
+- `pages/privacy-policy/de.md` — modified (same, German)
+- `docs/planning-artifacts/epics.md` — modified (story 83.4 added; Epic 83 work order updated; Status line added to 83.3)
+- `docs/implementation-artifacts/83-4-enhanced-security-hardening.md` — added (spec for the hardening story this one now depends on)
+- `docs/implementation-artifacts/83-3-submit-next-app-store-cut.md` — added (spec), then modified (task checkboxes, Spec Change Log, this record)
+- `docs/implementation-artifacts/sprint-status.yaml` — modified (`83-3` → `ready-for-dev` → `in-progress`, `last_updated`)
+
+## Change Log
+
+- 2026-08-08: Story created.
+- 2026-08-08: Task 2 closed. `/appstore-review` verdict: iOS cut READY, conditional only on the screenshot refresh already scoped here; both 2026-03-28 criticals confirmed closed. Three findings dispositioned on Michael's instruction — Enhanced Security became story **83.4** (must ship before this story archives; frozen block amended in three places), the macOS availability claim in both descriptions was corrected to "iPhone and iPad" (no macOS release date decided), and the privacy policy's "one third-party library" sentence was corrected to name both direct dependencies and acknowledge their transitive ones (`Package.resolved` pins four; effective date bumped per the policy's own update clause). All five `Length:` annotations in `appstore-metadata.md` re-measured and exact. Verified no in-app localized string claims Mac availability; the sole remaining Mac claim is the App Review Notes `Platforms` section, which is Mac-submission-only and now flagged as such in *Notes for Upload*.
+- 2026-08-08: Tasks 1, 3, 4 complete — preconditions verified, version bumped to 1.1.0 (build 2) across all 8 configurations, EN + DE release notes authored into `appstore-metadata.md`. Task 2 half complete: security audit found Enhanced Security absent (escalated, not applied); `/appstore-review` outstanding. Task 5 blocked on a manual seed-CSV import — the simulator data container is not writable from the agent sandbox.

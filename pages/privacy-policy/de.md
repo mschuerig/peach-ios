@@ -7,7 +7,7 @@ title: Datenschutz — Peach
 
 **Peach — Gehörtraining**
 
-*Gültig ab: 24. April 2026*
+*Gültig ab: 8. August 2026*
 
 [English](en)
 
@@ -27,7 +27,7 @@ Alle Trainingsdaten — einschließlich Ergebnisse der Tonhöhenunterscheidung, 
 
 Peach verwendet keine Analyse-, Werbe- oder Tracking-SDKs von Drittanbietern. Es gibt keinerlei Telemetrie, Absturzberichte oder Nutzungsverfolgung.
 
-Die App nutzt eine einzige Drittanbieter-Bibliothek, [MIDIKit](https://github.com/orchetect/MIDIKit), für die MIDI-Controller-Eingabe. MIDIKit arbeitet vollständig auf dem Gerät und erhebt oder überträgt keine Daten.
+Die App nutzt einige wenige Open-Source-Bibliotheken: [MIDIKit](https://github.com/orchetect/MIDIKit) für die MIDI-Controller-Eingabe und [swift-async-algorithms](https://github.com/apple/swift-async-algorithms) sowie die Bibliotheken, von denen diese beiden abhängen. Alle arbeiten vollständig auf dem Gerät; keine davon erhebt oder überträgt Daten.
 
 ## Datenweitergabe
 
