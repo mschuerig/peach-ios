@@ -4,30 +4,6 @@ import Testing
 @Suite("TimingStatsView Tests")
 struct TimingStatsViewTests {
 
-    @Test("percentageText formats with no decimal places")
-    func percentageTextFormatting() async {
-        #expect(TimingStatsView.percentageText(4.0) == "4%")
-        #expect(TimingStatsView.percentageText(12.6) == "13%")
-        #expect(TimingStatsView.percentageText(0.7) == "1%")
-    }
-
-    @Test("percentageText includes ms when provided")
-    func percentageTextWithMs() async {
-        #expect(TimingStatsView.percentageText(8.0, ms: 12.0) == "8% (12 ms)")
-    }
-
-    @Test("percentageText omits ms when nil")
-    func percentageTextWithoutMs() async {
-        #expect(TimingStatsView.percentageText(8.0, ms: nil) == "8%")
-    }
-
-    @Test("msText rounds and appends unit")
-    func msTextFormatting() async {
-        #expect(TimingStatsView.msText(12.4) == "12 ms")
-        #expect(TimingStatsView.msText(12.6) == "13 ms")
-        #expect(TimingStatsView.msText(0.0) == "0 ms")
-    }
-
     @Test("trend symbols match expected SF Symbols")
     func trendSymbols() async {
         #expect(TimingStatsView.trendSymbol(.improving) == "arrow.down.right")
@@ -35,24 +11,35 @@ struct TimingStatsViewTests {
         #expect(TimingStatsView.trendSymbol(.declining) == "arrow.up.right")
     }
 
-    @Test("latest accessibility label is non-empty and contains percentage")
-    func latestAccessibilityLabel() async {
-        let label = TimingStatsView.latestAccessibilityLabel(4.0, trend: .improving)
-        #expect(label.isEmpty == false)
-        #expect(label.contains("4%"))
+    @Test("latest accessibility label speaks milliseconds, never percent")
+    func latestAccessibilityLabelSpeaksMilliseconds() async {
+        let label = TimingStatsView.latestAccessibilityLabel(38.0, trend: .improving)
+        #expect(label.contains(TimingOffsetFormatter.spoken(38.0)))
+        #expect(label.contains("%") == false)
     }
 
-    @Test("best accessibility label is non-empty and contains percentage")
-    func bestAccessibilityLabel() async {
-        let label = TimingStatsView.bestAccessibilityLabel(2.0)
-        #expect(label.isEmpty == false)
-        #expect(label.contains("2%"))
+    @Test("latest accessibility label appends the trend")
+    func latestAccessibilityLabelAppendsTrend() async {
+        let withTrend = TimingStatsView.latestAccessibilityLabel(38.0, trend: .improving)
+        let withoutTrend = TimingStatsView.latestAccessibilityLabel(38.0, trend: nil)
+        #expect(withTrend.contains(TimingStatsView.trendLabel(.improving)))
+        #expect(withTrend.count > withoutTrend.count)
+        #expect(withoutTrend.isEmpty == false)
     }
 
-    @Test("latest accessibility label without trend is non-empty")
-    func latestAccessibilityLabelNoTrend() async {
-        let label = TimingStatsView.latestAccessibilityLabel(10.0, trend: nil)
-        #expect(label.isEmpty == false)
-        #expect(label.contains("10%"))
+    @Test("best accessibility label speaks milliseconds, never percent")
+    func bestAccessibilityLabelSpeaksMilliseconds() async {
+        let label = TimingStatsView.bestAccessibilityLabel(31.0)
+        #expect(label.contains(TimingOffsetFormatter.spoken(31.0)))
+        #expect(label.contains("%") == false)
+    }
+
+    // Latest and Best are distinct readouts; a label that failed to distinguish
+    // them would leave VoiceOver users unable to tell which figure they heard.
+    @Test("latest and best labels are distinguishable")
+    func latestAndBestLabelsDiffer() async {
+        let latest = TimingStatsView.latestAccessibilityLabel(38.0, trend: nil)
+        let best = TimingStatsView.bestAccessibilityLabel(38.0)
+        #expect(latest != best)
     }
 }

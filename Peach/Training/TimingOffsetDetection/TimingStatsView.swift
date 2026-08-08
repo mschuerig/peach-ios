@@ -1,16 +1,14 @@
 import SwiftUI
 
 struct TimingStatsView: View {
-    let latestValue: Double?
     let latestMs: Double?
-    let sessionBest: Double?
     let bestMs: Double?
     let trend: Trend?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             HStack(spacing: 4) {
-                Text("Latest: \(Self.percentageText(latestValue ?? 0, ms: latestMs))")
+                Text("Latest: \(TimingOffsetFormatter.compact(latestMs ?? 0))")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                 if let trend {
@@ -20,32 +18,19 @@ struct TimingStatsView: View {
                         .accessibilityLabel(Self.trendLabel(trend))
                 }
             }
-            .opacity(latestValue != nil ? 1 : 0)
+            .opacity(latestMs != nil ? 1 : 0)
             .accessibilityElement(children: .combine)
-            .accessibilityLabel(latestValue.map { Self.latestAccessibilityLabel($0, ms: latestMs, trend: trend) } ?? "")
-            .accessibilityHidden(latestValue == nil)
+            .accessibilityLabel(latestMs.map { Self.latestAccessibilityLabel($0, trend: trend) } ?? "")
+            .accessibilityHidden(latestMs == nil)
 
-            Text("Best: \(Self.percentageText(sessionBest ?? 0, ms: bestMs))")
+            Text("Best: \(TimingOffsetFormatter.compact(bestMs ?? 0))")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
-                .opacity(sessionBest != nil ? 1 : 0)
-                .accessibilityLabel(sessionBest.map { Self.bestAccessibilityLabel($0, ms: bestMs) } ?? "")
-                .accessibilityHidden(sessionBest == nil)
+                .opacity(bestMs != nil ? 1 : 0)
+                .accessibilityLabel(bestMs.map { Self.bestAccessibilityLabel($0) } ?? "")
+                .accessibilityHidden(bestMs == nil)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Formatting
-
-    static func percentageText(_ value: Double, ms: Double? = nil) -> String {
-        let pct = String(format: "%.0f%%", value)
-        guard let ms else { return pct }
-        return "\(pct) (\(Self.msText(ms)))"
-    }
-
-    static func msText(_ ms: Double) -> String {
-        let rounded = Int(ms.rounded())
-        return "\(rounded) " + String(localized: "ms")
     }
 
     // MARK: - Trend Helpers
@@ -76,15 +61,15 @@ struct TimingStatsView: View {
 
     // MARK: - Accessibility
 
-    static func latestAccessibilityLabel(_ value: Double, ms: Double? = nil, trend: Trend?) -> String {
-        var label = String(localized: "Latest result: \(Self.percentageText(value, ms: ms))")
+    static func latestAccessibilityLabel(_ ms: Double, trend: Trend?) -> String {
+        var label = String(localized: "Latest result: \(TimingOffsetFormatter.spoken(ms))")
         if let trend {
             label += ", \(trendLabel(trend))"
         }
         return label
     }
 
-    static func bestAccessibilityLabel(_ value: Double, ms: Double? = nil) -> String {
-        String(localized: "Best result: \(Self.percentageText(value, ms: ms))")
+    static func bestAccessibilityLabel(_ ms: Double) -> String {
+        String(localized: "Best result: \(TimingOffsetFormatter.spoken(ms))")
     }
 }

@@ -48,6 +48,19 @@ struct ContinuousRhythmMatchingScreen: View {
         }
     }
 
+    // MARK: - Formatting (extracted for testability)
+
+    /// Continuous Rhythm Matching is `PEACH_RESEARCH`-gated and still reports its
+    /// mean offset as a percentage of a sixteenth note. Story 83.6 moved the
+    /// shipping Compare Timing screen to milliseconds; this research-only surface
+    /// keeps its existing format and owns it here rather than reaching into
+    /// another feature's view for it.
+    static func meanOffsetText(_ percentage: Double, ms: Double) -> String {
+        let percent = String(format: "%.0f%%", percentage)
+        let milliseconds = "\(Int(ms.rounded())) " + String(localized: "ms")
+        return "\(percent) (\(milliseconds))"
+    }
+
     // MARK: - Subviews
 
     private var statsHeader: some View {
@@ -56,7 +69,7 @@ struct ContinuousRhythmMatchingScreen: View {
                 if let result = session.lastTrialResult,
                    let meanOffset = result.meanOffsetPercentage,
                    let meanMs = result.meanOffsetMs {
-                    Text(String(localized: "Mean offset: \(TimingStatsView.percentageText(meanOffset, ms: meanMs))"))
+                    Text(String(localized: "Mean offset: \(Self.meanOffsetText(meanOffset, ms: meanMs))"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

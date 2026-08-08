@@ -67,9 +67,7 @@ struct TimingOffsetDetectionScreen: View {
     private var statsHeader: some View {
         HStack(alignment: .top) {
             TimingStatsView(
-                latestValue: session.lastCompletedOffsetPercentage,
                 latestMs: session.lastCompletedOffsetMs,
-                sessionBest: session.sessionBestOffsetPercentage,
                 bestMs: session.sessionBestOffsetMs,
                 trend: progressTimeline.trend(for: .timingOffsetDetection)
             )
@@ -78,7 +76,7 @@ struct TimingOffsetDetectionScreen: View {
 
             TimingOffsetDetectionFeedbackView(
                 isCorrect: session.isLastAnswerCorrect,
-                offsetPercentage: session.lastCompletedOffsetPercentage
+                offsetMs: session.lastCompletedOffsetMs
             )
             .opacity(session.showFeedback ? 1 : 0)
             .accessibilityHidden(!session.showFeedback)

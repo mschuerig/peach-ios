@@ -2,7 +2,7 @@
 title: 'Story 83.5: Render each discipline''s own unit on the Start screen'
 type: 'bug'
 created: '2026-08-08'
-status: 'review'
+status: 'done'
 baseline_commit: 5f197110ce6663cdcf69db345fe98055e0584b95
 context:
   - '{project-root}/docs/planning-artifacts/epics.md'
