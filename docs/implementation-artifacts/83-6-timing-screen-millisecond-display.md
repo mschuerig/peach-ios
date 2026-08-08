@@ -2,7 +2,7 @@
 title: 'Story 83.6: Lead with milliseconds on the Compare Timing training screen'
 type: 'bug'
 created: '2026-08-08'
-status: 'review'
+status: 'done'
 baseline_commit: c21483ca5390844bf790059dcf4d9e93a245c0a3
 context:
   - '{project-root}/docs/planning-artifacts/epics.md'
