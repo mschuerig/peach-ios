@@ -28,10 +28,16 @@
     "enabled": true,
     "autoAllowBashIfSandboxed": true,
     "network": {
-      "allowedDomains": ["github.com", "*.apple.com", "*.swift.org"]
+      "allowedDomains": ["github.com", "*.apple.com", "*.swift.org"],
+      "allowMachLookup": ["com.apple.CoreSimulator.*", "com.apple.coresimulator.*"]
     },
     "filesystem": {
-      "allowWrite": ["~/Library/Developer/Xcode/DerivedData", "//tmp"],
+      "allowWrite": [
+        "~/Library/Developer/Xcode/DerivedData",
+        "//tmp",
+        "~/Library/Developer/CoreSimulator",
+        "~/Library/Logs/CoreSimulator"
+      ],
       "denyRead": ["~/.ssh", "~/.aws", "~/.gnupg"]
     }
   },
