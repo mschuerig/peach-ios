@@ -492,3 +492,21 @@ Explicitly **not** in scope: uses meaning "once you have made up your mind", whi
 Not folded into story 83.1: those strings live in files the story never touched, and its frozen *Never* clause forbids new copy beyond TOD. Deliberately deferred rather than expanding a release-copy sweep into an app-wide verb sweep.
 
 **Fix:** Replace fact-determining "decide" with "judge" (DE: `beurteilen`) across the five strings above plus their German values, leaving the made-up-your-mind uses alone. Note that changing an English value rewrites the xcstrings *key*, so each edit is a key+value rewrite; run `bin/add-localization.swift --missing` afterwards.
+
+---
+
+## Deferred from: story 83.4 (2026-08-08)
+
+### PF-086: `bin/test.sh`'s pass count is a line-count heuristic, but stories cite it as an exact regression signal
+
+**Found:** 2026-08-08 (Story 83.4 — gate run after enabling Enhanced Security)
+**Severity:** Low
+**Disposition:** OPEN
+
+`bin/test.sh:187` derives its reported figure with `grep -cE "(Test .* passed|✔ Test|passed on)"` over the raw xcodebuild output. That regex counts **lines**, not distinct tests, and matches at least three different shapes: per-test `✔ Test "…" passed` lines, `✔ Suite "…" passed` lines, and Swift Testing's own run-summary line `✔ Test run with N tests passed …` (which matches `Test .* passed`). The `passed on` alternative adds another.
+
+Observed: two consecutive `bin/test.sh --research -p mac` runs on an unchanged working tree reported **2424** and then **2425**, both "ALL TESTS PASSED". No test failed in either run; the delta is one matching line, not one missing test.
+
+Why this matters: sprint-status entries and story records treat these numbers as exact and reason from small deltas — story 83.1's record states "iOS Research 2438 / macOS Research 2425 / iOS Debug 2275 / macOS Debug 2262 (**+1 in the non-Research schemes only**, matching the new guard's build gating)". That inference happened to be right, but the metric cannot support ±1 reasoning, and a genuine one-test regression is indistinguishable from this noise. It also cost a real investigation during story 83.4 before the cause was identified.
+
+**Fix:** Count distinct tests rather than matching lines. Either (a) restrict the regex to the per-test shape only (`✔ Test "` for Swift Testing plus the XCTest `Test Case '…' passed` form) and drop the `passed on` and suite-level alternatives; or (b) preferably, parse Swift Testing's run-summary line and report the `N` it states, which is authoritative — `bin/parse-xcresult.py` already exists and may be the better home. Until then, do not draw conclusions from ±1 differences in recorded counts.
