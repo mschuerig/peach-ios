@@ -29,7 +29,6 @@ struct ProgressSparklineView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .accessibilityHidden(true)
     }
 
     // MARK: - Static Helpers
@@ -51,14 +50,27 @@ struct ProgressSparklineView: View {
     /// accessibility *value*. The card itself supplies the discipline name as
     /// its accessibility label, so the name is deliberately not repeated here.
     ///
-    /// Returns `nil` when there is nothing to announce, so the card exposes no
-    /// value rather than a fabricated one: `ewma` is absent before any data
-    /// exists, and `trend` is absent until a second record arrives.
-    static func sparklineAccessibilityValue(ewma: Double?, trend: Trend?, unitLabel: String) -> String? {
+    /// Returns `nil` when there is nothing to announce, so the card can omit
+    /// the modifier entirely rather than announce a fabricated value: `ewma`
+    /// is absent before any data exists, and `trend` is absent until a second
+    /// record arrives.
+    ///
+    /// The unit comes from the discipline's spelled-out ``TrainingDisciplineConfig/unitLabel``,
+    /// never the compact symbol — VoiceOver reads "milliseconds" as a word and
+    /// "ms" as two letters.
+    static func sparklineAccessibilityValue(
+        ewma: Double?,
+        trend: Trend?,
+        config: TrainingDisciplineConfig
+    ) -> String? {
         guard let ewma else { return nil }
-        let value = "\(MetricValueFormatter.format(ewma)) \(unitLabel)"
-        guard let trend else { return value }
-        return "\(value), \(TrainingStatsView.trendLabel(trend))"
+        let measurement = MetricValueFormatter.format(ewma)
+        guard let trend else {
+            return String(localized: "\(measurement) \(config.unitLabel)",
+                          comment: "Spoken progress value on a Start screen training card, when no trend has been computed yet. First argument is the measured number, second is the spelled-out unit (e.g. \"cents\", \"milliseconds\").")
+        }
+        return String(localized: "\(measurement) \(config.unitLabel), \(TrainingStatsView.trendLabel(trend))",
+                      comment: "Spoken progress value on a Start screen training card. First argument is the measured number, second the spelled-out unit (e.g. \"cents\", \"milliseconds\"), third the trend (e.g. \"Improving\").")
     }
 }
 

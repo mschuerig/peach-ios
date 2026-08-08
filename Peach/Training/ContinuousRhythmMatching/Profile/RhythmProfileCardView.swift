@@ -77,10 +77,10 @@ struct RhythmProfileCardView: View {
             Spacer()
 
             if let ewma {
-                Text(Self.formatRhythmEWMA(ewma))
+                Text(Self.formatRhythmEWMA(ewma, unitSymbol: config.unitSymbol))
                     .font(.title2.bold())
-                    .accessibilityLabel(String(localized: "Current average \(Self.formatRhythmEWMA(ewma))"))
-                Text(Self.formatRhythmStdDev(stddev))
+                    .accessibilityLabel(String(localized: "Current average \(Self.formatRhythmEWMA(ewma, unitSymbol: config.unitLabel))"))
+                Text(Self.formatRhythmStdDev(stddev, unitSymbol: config.unitSymbol))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -130,12 +130,18 @@ struct RhythmProfileCardView: View {
 
     // MARK: - Formatting
 
-    static func formatRhythmEWMA(_ value: Double) -> String {
-        "\(String(format: "%.1f", value)) ms"
+    /// Both helpers take the unit from the discipline's config rather than a
+    /// literal, and format the number through ``MetricValueFormatter`` rather
+    /// than `String(format:)`, which always emits a POSIX decimal point. This
+    /// card is rendered by both rhythm disciplines, so a hardcoded unit here
+    /// is a shared-surface assumption of exactly the kind story 83.5 removed
+    /// from the Start cards.
+    static func formatRhythmEWMA(_ value: Double, unitSymbol: String) -> String {
+        "\(MetricValueFormatter.format(value)) \(unitSymbol)"
     }
 
-    static func formatRhythmStdDev(_ value: Double) -> String {
-        "±\(String(format: "%.1f", value)) ms"
+    static func formatRhythmStdDev(_ value: Double, unitSymbol: String) -> String {
+        "±\(MetricValueFormatter.format(value)) \(unitSymbol)"
     }
 }
 
@@ -189,9 +195,9 @@ private struct RhythmProfileCardExportView: View {
             Spacer()
 
             if let ewma {
-                Text(RhythmProfileCardView.formatRhythmEWMA(ewma))
+                Text(RhythmProfileCardView.formatRhythmEWMA(ewma, unitSymbol: config.unitSymbol))
                     .font(.title2.bold())
-                Text(RhythmProfileCardView.formatRhythmStdDev(stddev))
+                Text(RhythmProfileCardView.formatRhythmStdDev(stddev, unitSymbol: config.unitSymbol))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

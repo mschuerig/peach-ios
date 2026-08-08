@@ -101,6 +101,7 @@ struct TrainingDisciplineRegistryTests {
 
     @Test("every discipline declares non-blank unit strings")
     func everyDisciplineDeclaresUnits() async {
+        var checked = 0
         for discipline in registry.all {
             // Whitespace-only would pass an `isEmpty` check while still
             // rendering a value with a dangling space.
@@ -113,7 +114,10 @@ struct TrainingDisciplineRegistryTests {
             // and VoiceOver reads an abbreviation as letters.
             #expect(discipline.config.unitLabel != discipline.config.unitSymbol,
                     "Discipline \(discipline.csvTrainingType) uses the same string for its spoken and compact units")
+            checked += 1
         }
+        // A loop-only assertion silently passes if the collection empties.
+        #expect(checked > 0, "No disciplines were checked — the guard is inert")
     }
 
     @Test("each discipline's unit matches the quantity its category measures")
@@ -125,18 +129,26 @@ struct TrainingDisciplineRegistryTests {
         let centSymbol = String(localized: "¢")
         let centLabel = String(localized: "cents")
         let millisecondSymbol = String(localized: "ms")
+        let millisecondLabel = String(localized: "milliseconds")
 
         var checked = 0
         for discipline in registry.allUI {
             let config = discipline.config
+            // Both branches assert equality on BOTH forms. Asserting only
+            // inequality, or only the symbol, leaves the mirror-image defect
+            // open: a pitch discipline declaring `unitLabel: "milliseconds"`
+            // would pass while VoiceOver announced "8.2 milliseconds" for a
+            // cent metric.
             if discipline.category == .rhythm {
                 #expect(config.unitSymbol == millisecondSymbol,
                         "Rhythm discipline \(discipline.csvTrainingType) renders '\(config.unitSymbol)' for a millisecond metric")
-                #expect(config.unitLabel != centLabel,
-                        "Rhythm discipline \(discipline.csvTrainingType) speaks cents for a millisecond metric")
+                #expect(config.unitLabel == millisecondLabel,
+                        "Rhythm discipline \(discipline.csvTrainingType) speaks '\(config.unitLabel)' for a millisecond metric")
             } else {
                 #expect(config.unitSymbol == centSymbol,
                         "Pitch/interval discipline \(discipline.csvTrainingType) renders '\(config.unitSymbol)' for a cent metric")
+                #expect(config.unitLabel == centLabel,
+                        "Pitch/interval discipline \(discipline.csvTrainingType) speaks '\(config.unitLabel)' for a cent metric")
             }
             checked += 1
         }

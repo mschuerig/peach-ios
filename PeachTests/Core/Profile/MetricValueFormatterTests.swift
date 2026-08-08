@@ -42,24 +42,39 @@ struct MetricValueFormatterTests {
         #expect(!result.contains("cent"), "got \(result)")
     }
 
-    @Test("formatting is identical for equal magnitudes regardless of the quantity measured")
-    func unitAgnostic() async {
-        // A cent value and a millisecond value of the same magnitude must
-        // format identically — the type knows nothing about either.
-        #expect(MetricValueFormatter.format(15.0) == MetricValueFormatter.format(15.0))
-    }
-
-    @Test("rounds half away from the stored precision rather than truncating")
-    func rounds() async {
+    @Test("rounds rather than truncating")
+    func roundsRatherThanTruncating() async {
         let up = MetricValueFormatter.format(8.26)
         let down = MetricValueFormatter.format(8.24)
         #expect(up != down, "8.26 and 8.24 must not collapse to the same string")
-        #expect(up.contains("3"), "got \(up)")
-        #expect(down.contains("2"), "got \(down)")
+        #expect(up.hasSuffix("3"), "got \(up)")
+        #expect(down.hasSuffix("2"), "got \(down)")
     }
 
-    @Test("Cents.formatted delegates to the shared formatter")
+    @Test("uses NumberFormatter's default banker's rounding on exact halves")
+    func roundsHalfEven() async {
+        // Pinned deliberately: 8.25 is exactly representable in binary, so this
+        // is a true half. NumberFormatter defaults to .halfEven, giving 8.2 and
+        // not 8.3. Switching to .halfUp would shift displayed metrics by a
+        // tenth across every discipline, which is the kind of change that
+        // should break a test rather than surprise a user.
+        #expect(MetricValueFormatter.format(8.25).hasSuffix("2"), "got \(MetricValueFormatter.format(8.25))")
+    }
+
+    @Test("formats negative values, which the signed cent domain produces")
+    func formatsNegativeValues() async {
+        let result = MetricValueFormatter.format(-8.25)
+        // Minus may be U+002D or U+2212 depending on locale, so assert on the
+        // digits and on it differing from the positive rendering.
+        #expect(result.contains("8"), "got \(result)")
+        #expect(result != MetricValueFormatter.format(8.25), "got \(result)")
+    }
+
+    @Test("Cents.formatted stays delegated to the shared formatter")
     func centsDelegates() async {
+        // Not a tautology against today's one-line body — it is a regression
+        // guard: if someone reimplements `Cents.formatted()` with its own
+        // formatter, cent values would drift from every other metric surface.
         // `Cents.formatted()` was reimplemented in terms of this type; the two
         // must not drift apart.
         #expect(Cents(8.25).formatted() == MetricValueFormatter.format(8.25))

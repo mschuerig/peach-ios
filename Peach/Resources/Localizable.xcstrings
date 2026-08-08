@@ -177,6 +177,26 @@
         }
       }
     },
+    "%@ %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ %@, %@" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$@, %3$@"
+          }
+        }
+      }
+    },
     "%@ seconds" : {
       "comment" : "Accessibility value for a duration slider in Settings. The placeholder is a formatted decimal number.",
       "localizations" : {

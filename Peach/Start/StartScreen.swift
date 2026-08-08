@@ -143,11 +143,15 @@ struct StartScreen: View {
             }
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(config.displayName)
-            .accessibilityValue(ProgressSparklineView.sparklineAccessibilityValue(
+            // Applied only when there is something to announce, rather than
+            // coalesced to "": a card with no measurement yet exposes no
+            // accessibility value at all, which is what the helper's Optional
+            // return is for.
+            .accessibilityValue(ifPresent: ProgressSparklineView.sparklineAccessibilityValue(
                 ewma: progress.ewma,
                 trend: progress.trend,
-                unitLabel: config.unitLabel
-            ) ?? "")
+                config: config
+            ))
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
@@ -184,3 +188,16 @@ private struct TrainingCardButtonStyle: ButtonStyle {
     }
 }
 #endif
+
+private extension View {
+    /// Applies `accessibilityValue` only when a value exists, so a view with
+    /// nothing to announce exposes no value rather than an empty one.
+    @ViewBuilder
+    func accessibilityValue(ifPresent value: String?) -> some View {
+        if let value {
+            accessibilityValue(value)
+        } else {
+            self
+        }
+    }
+}

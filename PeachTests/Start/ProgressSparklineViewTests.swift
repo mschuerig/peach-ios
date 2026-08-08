@@ -63,13 +63,14 @@ struct ProgressSparklineViewTests {
         let value = try #require(ProgressSparklineView.sparklineAccessibilityValue(
             ewma: 8.2,
             trend: .improving,
-            unitLabel: "cents"
+            config: Self.makeConfig()
         ))
         #expect(value.contains("8"), "got \(value)")
+        // Spoken form, not the compact glyph: VoiceOver reads "¢" as a
+        // currency symbol and "ms" as two letters.
         #expect(value.contains("cents"), "got \(value)")
-        // The card supplies the discipline name as its accessibility label;
-        // repeating it here would make VoiceOver announce it twice.
-        #expect(!value.contains("Compare Pitch"), "got \(value)")
+        #expect(!value.contains("¢"), "got \(value)")
+        #expect(value.contains(TrainingStatsView.trendLabel(.improving)), "got \(value)")
     }
 
     @Test("accessibility value speaks the timing unit and never cents")
@@ -77,11 +78,11 @@ struct ProgressSparklineViewTests {
         let value = try #require(ProgressSparklineView.sparklineAccessibilityValue(
             ewma: 80.5,
             trend: .improving,
-            unitLabel: "ms"
+            config: Self.makeConfig(unitLabel: "milliseconds", unitSymbol: "ms")
         ))
         // Decimal separator is locale-dependent; assert only the stable digits.
         #expect(value.contains("80"), "got \(value)")
-        #expect(value.contains("ms"), "got \(value)")
+        #expect(value.contains("milliseconds"), "got \(value)")
         #expect(!value.contains("¢"), "got \(value)")
     }
 
@@ -90,7 +91,7 @@ struct ProgressSparklineViewTests {
         let value = try #require(ProgressSparklineView.sparklineAccessibilityValue(
             ewma: 8.2,
             trend: nil,
-            unitLabel: "cents"
+            config: Self.makeConfig()
         ))
         #expect(value.contains("cents"), "got \(value)")
         // A single record yields no trend; announcing "Stable" would assert a
@@ -103,7 +104,7 @@ struct ProgressSparklineViewTests {
         let value = ProgressSparklineView.sparklineAccessibilityValue(
             ewma: nil,
             trend: nil,
-            unitLabel: "cents"
+            config: Self.makeConfig()
         )
         #expect(value == nil)
     }
