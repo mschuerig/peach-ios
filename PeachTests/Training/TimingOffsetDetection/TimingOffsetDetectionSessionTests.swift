@@ -650,16 +650,20 @@ struct TimingOffsetDetectionSessionTests {
         #expect(f.session.currentOffsetPercentage == nil)
     }
 
-    // MARK: - lastCompletedOffsetPercentage
+    // MARK: - lastCompletedOffsetMs
 
-    @Test("lastCompletedOffsetPercentage is nil initially")
-    func lastCompletedOffsetPercentageNilInitially() {
+    // This is the value the Compare Timing screen renders after every trial
+    // (story 83.6). It inherited the behavioural contract from the retired
+    // `lastCompletedOffsetPercentage`, which these tests previously covered.
+
+    @Test("lastCompletedOffsetMs is nil initially")
+    func lastCompletedOffsetMsNilInitially() {
         let f = makeSession()
-        #expect(f.session.lastCompletedOffsetPercentage == nil)
+        #expect(f.session.lastCompletedOffsetMs == nil)
     }
 
-    @Test("lastCompletedOffsetPercentage returns value after answer")
-    func lastCompletedOffsetPercentageAfterAnswer() async throws {
+    @Test("lastCompletedOffsetMs reports the trial's offset in milliseconds after an answer")
+    func lastCompletedOffsetMsAfterAnswer() async throws {
         let trial = TimingOffsetDetectionTrial(
             tempo: TempoBPM(80),
             offset: TimingOffset(.milliseconds(50))
@@ -672,22 +676,22 @@ struct TimingOffsetDetectionSessionTests {
 
         f.session.handleAnswer(direction: .late)
 
-        let percentage = try #require(f.session.lastCompletedOffsetPercentage)
-        #expect(percentage > 0)
+        let ms = try #require(f.session.lastCompletedOffsetMs)
+        #expect(abs(ms - 50.0) < 0.001, "a 50 ms offset must be reported as 50 ms, not converted or normalised")
     }
 
-    @Test("lastCompletedOffsetPercentage resets on stop")
-    func lastCompletedOffsetPercentageResetsOnStop() async throws {
+    @Test("lastCompletedOffsetMs resets on stop")
+    func lastCompletedOffsetMsResetsOnStop() async throws {
         let f = makeSession()
         f.session.start(settings: defaultTimingSettings)
         await f.sequencer.waitForStart()
         try await waitForState(f.session, .playingPatternLoop)
 
         f.session.handleAnswer(direction: .late)
-        #expect(f.session.lastCompletedOffsetPercentage != nil)
+        #expect(f.session.lastCompletedOffsetMs != nil)
 
         f.session.stop()
-        #expect(f.session.lastCompletedOffsetPercentage == nil)
+        #expect(f.session.lastCompletedOffsetMs == nil)
     }
 
     // MARK: - sessionBestOffsetPercentage

@@ -40,5 +40,25 @@ struct ContinuousRhythmMatchingScreenTests {
     func cycleProgressText() async {
         #expect(ContinuousRhythmMatchingScreen.cycleProgressText(4) == "4/16")
     }
+
+    // Story 83.6 moved this formatting out of `TimingStatsView.percentageText`,
+    // whose tests were deleted with it. Continuous Rhythm Matching is
+    // research-only and deliberately still reports percent-of-a-sixteenth, so
+    // these pin the output the transplant was required to preserve exactly.
+    @Test("meanOffsetText renders percent with milliseconds in parentheses")
+    func meanOffsetTextFormat() async {
+        #expect(ContinuousRhythmMatchingScreen.meanOffsetText(8.0, ms: 12.0) == "8% (12 \(String(localized: "ms")))")
+    }
+
+    @Test("meanOffsetText rounds both figures half-up")
+    func meanOffsetTextRounding() async {
+        #expect(ContinuousRhythmMatchingScreen.meanOffsetText(12.6, ms: 12.4) == "13% (12 \(String(localized: "ms")))")
+        #expect(ContinuousRhythmMatchingScreen.meanOffsetText(0.7, ms: 12.6) == "1% (13 \(String(localized: "ms")))")
+    }
+
+    @Test("meanOffsetText keeps the percentage, which this discipline still reports")
+    func meanOffsetTextKeepsPercent() async {
+        #expect(ContinuousRhythmMatchingScreen.meanOffsetText(15.0, ms: 37.0).contains("%"))
+    }
 }
 #endif

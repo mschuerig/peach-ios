@@ -568,3 +568,45 @@ CSV import parsers guard `.isFinite`, so NaN and infinity cannot reach the profi
 Not reachable from normal use — every `MetricPoint` value is produced by the app's own trial code. This is an import-validation gap, not a formatting one.
 
 **Fix:** Bound metric magnitudes at import time to a domain-plausible ceiling (cents and milliseconds both sit far below 10 000), rejecting or clamping out-of-range rows with a logged warning.
+
+### PF-094: Continuous Rhythm Matching's mean offset uses hand-rolled, non-locale-aware number formatting
+
+**Found:** 2026-08-08 (code review of story 83.6)
+**Severity:** Low
+**Disposition:** OPEN
+
+`Peach/Training/ContinuousRhythmMatching/ContinuousRhythmMatchingScreen.swift:59-60` builds `"\(Int(ms.rounded())) " + String(localized: "ms")` — a localized unit concatenated onto an unlocalized number, the same defect class PF-093 tracked for `RhythmProfileCardView`. A German user sees `38 ms` on this screen while the rhythm profile card for the *same discipline* renders `37,5 ms` through `MetricValueFormatter`: two precisions and two number conventions for one quantity.
+
+The code was **transplanted, not written**, by story 83.6: it previously lived in `TimingStatsView.percentageText`, which Compare Timing and Continuous Rhythm Matching shared across a feature boundary. 83.6 moved it here verbatim precisely because its frozen constraint forbade "a unit change anywhere outside the Compare Timing training screen", and routing the number through `MetricValueFormatter` would change what this screen renders in German. So the defect is neither new nor introduced — it is pre-existing behaviour preserved deliberately.
+
+Continuous Rhythm Matching is `PEACH_RESEARCH`-gated and does not ship, which is why this is Low and why it did not block story 83.6.
+
+**Fix:** Route the number through `MetricValueFormatter` and take the unit from `config.unitSymbol`, as `RhythmProfileCardView` now does. Decide at the same time whether this screen should keep reporting percent-of-a-sixteenth at all, given story 83.2 settled milliseconds for the sibling discipline. `ContinuousRhythmMatchingScreenTests` now pins the current output, so the change will announce itself.
+
+### PF-095: The Compare Timing feedback pill's width was never checked on a narrow device at large Dynamic Type
+
+**Found:** 2026-08-08 (code review of story 83.6)
+**Severity:** Low
+**Disposition:** OPEN
+
+Story 83.6 grew the per-trial feedback pill from a 2–3 glyph percentage (`20%`) to a millisecond reading at `.title2`, inside the `statsHeader` `HStack` that also carries the `Latest:` line and a trend glyph. The change was verified only on iPhone 17 Pro Max at the default text size — the case least likely to expose clipping.
+
+**The review's stated bound is wrong and is corrected here.** It cites `125.0 ms`; the real ceiling is far lower. `TimingOffsetDetectionSettings.maxOffsetPercentage` defaults to `20.0`, so the offset cannot exceed 20 % of a sixteenth note, and the slowest tempo (40 BPM) gives a 375 ms sixteenth — a maximum of about `75.0 ms`, seven characters. The concern is therefore real in direction but smaller in magnitude than reported.
+
+**Not verified either way:** no narrow-device simulator (iPhone SE / mini) is installed on this machine, so the layout could not be measured rather than argued. Recorded as unverified instead of dismissed.
+
+**Fix:** Install a narrow-device simulator, run Compare Timing at an accessibility text size, and confirm neither the `Latest:` line nor the pill truncates; add `.minimumScaleFactor` or a layout adjustment if it does.
+
+### PF-096: TimingStatsView is a near-duplicate of the shared TrainingStatsView
+
+**Found:** 2026-08-08 (code review of story 83.6)
+**Severity:** Medium
+**Disposition:** OPEN
+
+After story 83.6, `Peach/Training/TimingOffsetDetection/TimingStatsView.swift` and `Peach/App/TrainingStatsView.swift` have the same body shape, the same `.opacity(x != nil ? 1 : 0)` + `.accessibilityHidden` pairs, byte-identical `trendSymbol` / `trendColor` / `trendLabel`, and the same `"Latest: %@"` / `"Best: %@"` / `"Latest result: %@"` / `"Best result: %@"` catalog keys. Before 83.6 the two genuinely differed in rendered shape (`20% (38 ms)` versus `4.5 ¢`); now they differ only in which discipline supplies the unit, so the duplication is pure.
+
+This matters beyond tidiness: every future edit to the stats header must be made in two files, and an edit made in only one lets the pitch screens and Compare Timing diverge silently. That divergence is the exact mechanism that produced the bug story 83.6 repaired — the training screen kept percent while Start and Profile moved to milliseconds — so the duplication reproduces the failure mode.
+
+**Deferred on timing, not merit:** collapsing them means changing a view rendered by all four pitch training screens, which is not a change to make between a release gate and an archive. `TrainingStatsView` hardcodes `¢` / `cents` the same way `TimingStatsView` used to, so both are candidates.
+
+**Fix:** Parameterize `TrainingStatsView` by `TrainingDisciplineConfig` — the pattern `ProgressSparklineView` and `RhythmProfileCardView` already follow — take its unit from `unitSymbol` / `unitLabel`, and delete `TimingStatsView`.

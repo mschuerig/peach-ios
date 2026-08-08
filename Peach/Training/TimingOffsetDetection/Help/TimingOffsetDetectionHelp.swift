@@ -13,11 +13,11 @@ enum TimingOffsetDetectionHelp {
         ),
         HelpSection(
             title: String(localized: "Feedback"),
-            body: String(localized: "After each answer you'll see a **checkmark** (correct) or **X** (incorrect), along with the current difficulty as a percentage.")
+            body: String(localized: "After each answer you'll see a **checkmark** (correct) or **X** (incorrect), along with the current difficulty in milliseconds.")
         ),
         HelpSection(
             title: String(localized: "Difficulty"),
-            body: String(localized: "The percentage shows how far off-beat the last note was — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
+            body: String(localized: "The offset shows how far off-beat the last note was, in milliseconds — a smaller number means a harder challenge. Your **session best** tracks the smallest offset you answered correctly.")
         ),
     ]
 

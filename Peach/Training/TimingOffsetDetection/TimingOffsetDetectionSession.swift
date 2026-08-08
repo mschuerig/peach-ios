@@ -158,11 +158,6 @@ final class TimingOffsetDetectionSession: TrainingSession, BeatProvider {
         return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
     }
 
-    var lastCompletedOffsetPercentage: Double? {
-        guard let trial = lastCompletedTrial else { return nil }
-        return trial.offset.percentageOfSixteenthNote(at: trial.tempo)
-    }
-
     var lastCompletedOffsetMs: Double? {
         lastCompletedTrial?.offset.absoluteMilliseconds
     }
