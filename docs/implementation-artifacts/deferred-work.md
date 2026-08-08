@@ -533,19 +533,22 @@ Story 83.4's *Never* block forbids source changes, so the guard could not land i
 
 **Fix:** Wire the three `grep -c` checks the story already wrote (`83-4-enhanced-security-hardening.md:156-158`) into `bin/pre-commit` or `bin/check-dependencies.sh`. Assert *consistency* rather than the literal count `4` — the count must equal the number of project configurations, and every app-target configuration carrying `ENABLE_ENHANCED_SECURITY` inheritance must also carry an explicit `ENABLE_POINTER_AUTHENTICATION` value — so that adding a configuration fails the check instead of passing it silently.
 
-### PF-088: Profile chart headline values render without any unit
+### PF-088: Pitch profile headlines render without a unit while the rhythm headline hardcodes one
 
-**Found:** 2026-08-08 (code review of story 83.5)
+**Found:** 2026-08-08 (code review of story 83.5; description corrected the same day after checking the running app)
 **Severity:** Medium
 **Disposition:** OPEN
 
-`Peach/Profile/ProgressChartView.swift:72-77` renders `Text(ChartData.formatEWMA(ewma))` and `Text(ChartData.formatStdDev(stddev))` as the card headline with no unit attached; `Peach/Profile/ExportChartView.swift:52-54` does the same. The unit appears only on the Y-axis label (`ProgressChartView.swift:155`, `ExportChartView.swift:82`), which is visually distant from the headline figure.
+Two different treatments of the same headline figure:
 
-Consequence: the Timing Offset Detection profile headline reads `15.0 ±4.2` on a screen the user reaches directly from a pitch discipline showing `8.2 ±1.1`. The two numbers are in different units (ms vs cents) and nothing adjacent to them says so. This is the same class of ambiguity story 83.5 fixed on the Start screen, one screen over.
+- `Peach/Profile/ProgressChartView.swift:72-77` renders `Text(ChartData.formatEWMA(ewma))` and `Text(ChartData.formatStdDev(stddev))` with **no unit**; `Peach/Profile/ExportChartView.swift:52-54` likewise. The unit appears only on the Y-axis label. The four pitch disciplines use this card, so their headlines read `11.5` and `±0.0`.
+- `Peach/Training/ContinuousRhythmMatching/Profile/RhythmProfileCardView.swift:133-139` renders `79.5 ms` and `±7.1 ms` via its own `formatRhythmEWMA`/`formatRhythmStdDev`, which **hardcode the unit** rather than reading `config.unitSymbol`.
 
-Story 83.5 rewrote `formatEWMA`/`formatStdDev` to be unit-agnostic but deliberately did not change either call site — the frozen block scoped that story to the Start screen.
+Verified in a running build: the Profile screen shows `Compare Pitch  11.5  ±0.0` above `Compare Timing  79.5 ms  ±7.1 ms`. An earlier draft of this entry claimed the timing headline lacked a unit — that was wrong; the pitch headlines are the ones missing it.
 
-**Fix:** Append `config.unitSymbol` to both headline call sites, matching the Start card's treatment. Both views already hold `config`.
+Story 83.5 left both alone: `ProgressChartView` was outside its Start-screen scope, and `RhythmProfileCardView` is a discipline-specific view, which the story's narrowed "no *shared* view hardcodes a unit" constraint permits.
+
+**Fix:** Give the pitch headline its unit from `config.unitSymbol`, matching the rhythm card's treatment, and have the rhythm card read `config.unitSymbol` instead of a literal so the two cannot drift.
 
 ### PF-089: Chart-annotation accessibility strings have no plural rule
 
@@ -568,3 +571,23 @@ CSV import parsers guard `.isFinite`, so NaN and infinity cannot reach the profi
 Not reachable from normal use — every `MetricPoint` value is produced by the app's own trial code. This is an import-validation gap, not a formatting one.
 
 **Fix:** Bound metric magnitudes at import time to a domain-plausible ceiling (cents and milliseconds both sit far below 10 000), rejecting or clamping out-of-range rows with a logged warning.
+
+### PF-093: The rhythm profile card formats numbers without locale awareness
+
+**Found:** 2026-08-08 (code review of story 83.5)
+**Severity:** Medium
+**Disposition:** OPEN
+
+`Peach/Training/ContinuousRhythmMatching/Profile/RhythmProfileCardView.swift:133-139` formats via `String(format: "%.1f", value)`, which always emits a period as the decimal separator regardless of locale:
+
+```swift
+static func formatRhythmEWMA(_ value: Double) -> String { "\(String(format: "%.1f", value)) ms" }
+static func formatRhythmStdDev(_ value: Double) -> String { "±\(String(format: "%.1f", value)) ms" }
+```
+
+Every other metric surface goes through `MetricValueFormatter`, which is locale-aware. Consequence for a German user: the Start card reads `79,5 ms` and the Profile card directly below reads `79.5 ms` — two separators for the same quantity on adjacent screens.
+
+Note `String(format:)` is the *fallback* inside `MetricValueFormatter`, reached only if `NumberFormatter` returns nil; here it is the primary path.
+
+**Fix:** Route both helpers through `MetricValueFormatter.format(_:)` and take the unit from `config.unitSymbol` (see PF-088).
+

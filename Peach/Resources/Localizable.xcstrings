@@ -2174,6 +2174,17 @@
         }
       }
     },
+    "milliseconds" : {
+      "comment" : "The spelled-out unit for timing training disciplines, spoken by VoiceOver and shown on chart axes. The compact form rendered beside a number on the Start screen cards is the separate “ms” string.",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Millisekunden"
+          }
+        }
+      }
+    },
     "milliseconds early" : {
       "localizations" : {
         "de" : {

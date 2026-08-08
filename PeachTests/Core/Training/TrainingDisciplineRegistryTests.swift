@@ -108,6 +108,11 @@ struct TrainingDisciplineRegistryTests {
                     "Discipline \(discipline.csvTrainingType) declares a blank unit symbol")
             #expect(discipline.config.unitLabel.trimmingCharacters(in: .whitespaces).isEmpty == false,
                     "Discipline \(discipline.csvTrainingType) declares a blank unit label")
+            // `unitLabel` is the spoken/axis form and `unitSymbol` the compact
+            // one. If they are identical the spoken form is not spelled out,
+            // and VoiceOver reads an abbreviation as letters.
+            #expect(discipline.config.unitLabel != discipline.config.unitSymbol,
+                    "Discipline \(discipline.csvTrainingType) uses the same string for its spoken and compact units")
         }
     }
 

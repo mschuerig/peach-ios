@@ -40,7 +40,9 @@ struct TrainingDisciplineConfig {
     let helpDescription: String
 
     /// Localized unit label for metric values, spelled out for speech and
-    /// chart axes (e.g., "cents", "ms").
+    /// chart axes (e.g., "cents", "milliseconds"). Always distinct from
+    /// ``unitSymbol`` — a spelled-out form is what makes VoiceOver read a
+    /// unit as a word rather than as letters.
     let unitLabel: String
 
     /// Localized compact unit symbol for metric values rendered next to a

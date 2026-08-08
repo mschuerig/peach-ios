@@ -15,7 +15,7 @@ struct TimingOffsetDetectionDiscipline: TrainingDisciplineUI, Sendable {
         systemImageName: "metronome",
         isHero: false,
         helpDescription: String(localized: "Hear a short rhythmic pattern and decide whether the tested note was early or late."),
-        unitLabel: String(localized: "ms"),
+        unitLabel: String(localized: "milliseconds"),
         unitSymbol: String(localized: "ms"),
         optimalBaseline: 15.0,
         statistics: .default

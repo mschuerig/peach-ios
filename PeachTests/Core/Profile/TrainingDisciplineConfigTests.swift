@@ -41,7 +41,11 @@ struct TrainingDisciplineConfigTests {
     func rhythmOffsetDetection() async {
         let config = TrainingDisciplineID.timingOffsetDetection.config
         #expect(config.optimalBaseline == 15.0)
-        #expect(config.unitLabel == "ms")
+        // The spoken/axis form is spelled out; the compact card form is the
+        // abbreviation. Comparing against `String(localized:)` rather than an
+        // English literal keeps the assertion meaningful in every locale.
+        #expect(config.unitLabel == String(localized: "milliseconds"))
+        #expect(config.unitSymbol == String(localized: "ms"))
     }
 
     @Test("all configurations have unique display names")

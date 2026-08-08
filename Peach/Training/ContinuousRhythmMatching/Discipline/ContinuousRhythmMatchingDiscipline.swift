@@ -15,7 +15,7 @@ struct ContinuousRhythmMatchingDiscipline: TrainingDisciplineUI, Sendable {
         systemImageName: "hand.tap",
         isHero: false,
         helpDescription: String(localized: "A continuous stream of notes plays — tap at the right moment to fill the gap."),
-        unitLabel: String(localized: "ms"),
+        unitLabel: String(localized: "milliseconds"),
         unitSymbol: String(localized: "ms"),
         optimalBaseline: 20.0,
         statistics: .default
