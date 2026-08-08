@@ -500,7 +500,7 @@ Not folded into story 83.1: those strings live in files the story never touched,
 ### PF-086: `bin/test.sh`'s pass count is a line-count heuristic, but stories cite it as an exact regression signal
 
 **Found:** 2026-08-08 (Story 83.4 — gate run after enabling Enhanced Security)
-**Severity:** Low
+**Severity:** Medium *(raised from Low during code review of `a0afbe7d`: the entry's own text states that a genuine one-test regression is indistinguishable from this noise, in the pre-commit gate every story in the project relies on — that is not a Low-severity property.)*
 **Disposition:** OPEN
 
 `bin/test.sh:187` derives its reported figure with `grep -cE "(Test .* passed|✔ Test|passed on)"` over the raw xcodebuild output. That regex counts **lines**, not distinct tests, and matches at least three different shapes: per-test `✔ Test "…" passed` lines, `✔ Suite "…" passed` lines, and Swift Testing's own run-summary line `✔ Test run with N tests passed …` (which matches `Test .* passed`). The `passed on` alternative adds another.
@@ -510,3 +510,25 @@ Observed: two consecutive `bin/test.sh --research -p mac` runs on an unchanged w
 Why this matters: sprint-status entries and story records treat these numbers as exact and reason from small deltas — story 83.1's record states "iOS Research 2438 / macOS Research 2425 / iOS Debug 2275 / macOS Debug 2262 (**+1 in the non-Research schemes only**, matching the new guard's build gating)". That inference happened to be right, but the metric cannot support ±1 reasoning, and a genuine one-test regression is indistinguishable from this noise. It also cost a real investigation during story 83.4 before the cause was identified.
 
 **Fix:** Count distinct tests rather than matching lines. Either (a) restrict the regex to the per-test shape only (`✔ Test "` for Swift Testing plus the XCTest `Test Case '…' passed` form) and drop the `passed on` and suite-level alternatives; or (b) preferably, parse Swift Testing's run-summary line and report the `N` it states, which is authoritative — `bin/parse-xcresult.py` already exists and may be the better home. Until then, do not draw conclusions from ±1 differences in recorded counts.
+
+---
+
+## Deferred from: code review of 83-4-enhanced-security-hardening (2026-08-08)
+
+### PF-087: The Enhanced Security configuration has no regression guard, and a fifth build configuration would silently reverse it
+
+**Found:** 2026-08-08 (code review of story 83.4, commit `a0afbe7d`)
+**Severity:** Medium
+**Disposition:** OPEN
+
+The entire hardening this project now relies on is eight lines in `Peach.xcodeproj/project.pbxproj`: `ENABLE_ENHANCED_SECURITY = YES` ×4 (project level) and `CODE_SIGN_ENTITLEMENTS = Peach/Resources/Peach.entitlements` ×4 (app target), plus `ENABLE_POINTER_AUTHENTICATION = NO` ×4 as the deliberate arm64e opt-out.
+
+Two failure modes, neither observable by any existing check:
+
+1. **Silent removal.** Any edit through Xcode's *Signing & Capabilities* pane can drop the capability or rewrite the entitlements wiring. `bin/test.sh`, `bin/build.sh` and `bin/pre-commit` would all stay green — the app builds and every test passes without any of these settings, which is precisely how the gap survived from project creation through the 1.0.0 release.
+
+2. **Asymmetric inheritance on growth.** `ENABLE_ENHANCED_SECURITY` is set once per configuration at *project* level and therefore inherits into any newly added configuration automatically, while its counter-setting `ENABLE_POINTER_AUTHENTICATION = NO` is duplicated four times at *target* level and would not. A fifth configuration would silently build arm64e — reversing story 83.4's central decision, taken specifically because App Store acceptance of arm64e could not be established. The project has grown its configuration set before (`Debug (Research)` / `Release (Research)`), so this is a realized pattern, not a hypothetical. There are no `.xcconfig` files to centralize the pairing.
+
+Story 83.4's *Never* block forbids source changes, so the guard could not land in that story.
+
+**Fix:** Wire the three `grep -c` checks the story already wrote (`83-4-enhanced-security-hardening.md:156-158`) into `bin/pre-commit` or `bin/check-dependencies.sh`. Assert *consistency* rather than the literal count `4` — the count must equal the number of project configurations, and every app-target configuration carrying `ENABLE_ENHANCED_SECURITY` inheritance must also carry an explicit `ENABLE_POINTER_AUTHENTICATION` value — so that adding a configuration fails the check instead of passing it silently.

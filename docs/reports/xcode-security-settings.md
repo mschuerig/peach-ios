@@ -36,10 +36,14 @@ Entitlements live in `Peach/Resources/Peach.entitlements`, wired via `CODE_SIGN_
 all four **app-target** configurations. The test target is deliberately excluded — its product
 type is not supported by the capability.
 
-Cascaded automatically by `ENABLE_ENHANCED_SECURITY` (not set explicitly, recorded for
-completeness): `ENABLE_SECURITY_COMPILER_WARNINGS`, `GCC_WARN_SHADOW`, `CLANG_WARN_EMPTY_BODY`,
+Cascaded automatically by `ENABLE_ENHANCED_SECURITY` **per Apple's and the audit skill's
+documentation** — not set explicitly here, and not individually observed in this project:
+`ENABLE_SECURITY_COMPILER_WARNINGS`, `GCC_WARN_SHADOW`, `CLANG_WARN_EMPTY_BODY`,
 `CLANG_CXX_STANDARD_LIBRARY_HARDENING`, `CLANG_ENABLE_C_TYPED_ALLOCATOR_SUPPORT`,
-`CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT`.
+`CLANG_ENABLE_CPLUSPLUS_TYPED_ALLOCATOR_SUPPORT`. Of these, only
+`ENABLE_SECURITY_COMPILER_WARNINGS` and `CLANG_WARN_EMPTY_BODY` appear in the resolved dump taken
+during story 83.4; the other four do not, and `CLANG_WARN_EMPTY_BODY` is an Xcode template default
+regardless. Recorded for completeness, not as measured project state.
 
 > Note on expected value: because Peach is pure Swift, essentially all of the *compiler-driven*
 > half of Enhanced Security is inert here — enabling it produced zero new warnings on either
@@ -109,15 +113,42 @@ Settings considered but not yet enabled. Revisit later.
 - `plutil -lint` on the entitlements file: OK; exactly the five `hardened-process` keys.
 - Resolved build settings confirm `ENABLE_ENHANCED_SECURITY = YES`,
   `ENABLE_POINTER_AUTHENTICATION = NO`, `CODE_SIGN_ENTITLEMENTS` wired, `ARCHS = arm64`, and
-  `ENABLE_SECURITY_COMPILER_WARNINGS = YES` (confirming the cascade fired).
-- Test target confirmed free of all three settings.
+  `ENABLE_SECURITY_COMPILER_WARNINGS = YES` — consistent with the cascade having fired, though no
+  pre-change baseline reading was taken, so this observation alone does not distinguish the cascade
+  from an Xcode 26 default.
+- Test target confirmed free of all three settings **at target level**, by `project.pbxproj`
+  inspection. Note this is not a resolved-settings result: `PeachTests` *inherits* the
+  project-level `ENABLE_ENHANCED_SECURITY = YES`, as every target does. That is inert — the test
+  bundle has no entitlements, so the runtime protections never provision, and the compiler half is
+  inert in pure Swift. The resolved check for the test target could not be run: `xcodebuild
+  -showBuildSettings` dies on `CoreSimulatorService connection became invalid` inside the agent
+  sandbox.
 - `bin/build.sh` and `bin/build.sh -p mac`: both succeed, zero new warnings.
 - Four-scheme test gate: all green (iOS Debug 2275, macOS Debug 2262, iOS Research 2438,
   macOS Research 2424–2425 — see `PF-086` for why that last figure is a range).
 
 - `Peach (Release)` archive → **Validate App passed** (Michael, 2026-08-08), with no entitlement
-  complaint. Confirms the five-key `hardened-process` set is well-formed for distribution.
+  complaint. Confirms the five-key `hardened-process` set is well-formed for **iOS** distribution.
+  Not evidence for macOS — see the caveat below.
 
-Outstanding: the audio/MIDI listening test (Michael). Archive validation checks the entitlement
-*shape*, not the runtime effect of `hardened-heap` and `platform-restrictions` under a real-time
-render callback — those are different questions and only the second one can catch a dropout.
+- Audio and MIDI listening test → **passed** (Michael, 2026-08-08), **on a physical iOS device**:
+  Grand Piano and Sine Wave at `noteDuration = 1 s`; no dropouts, clicks, stuck notes or latency
+  change; MIDI pitch-bend input still drives a Match discipline. Archive validation checks the
+  entitlement *shape*, not the runtime effect of `hardened-heap` and `platform-restrictions` under
+  a real-time render callback — those are different questions and only the second one can catch a
+  dropout. The device matters: the iOS Simulator does not enforce `com.apple.security.hardened-process`,
+  and the four-scheme test gate's iOS halves run on the Simulator, so the gate cannot substitute
+  for this check.
+
+**Still unverified — the macOS runtime path.** Every verification above was performed on iOS
+(`lipo`, `codesign`, the `Peach (Release)` archive, the listening test). The same target ships
+macOS (`SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx"`) and the same entitlements apply
+there, but no signed macOS product was validated and no listening test was run on the Mac build.
+Note the asymmetry: the Guideline 2.4.5(i) rejection report that motivated validating at all is
+*Mac App Store*-only, so the platform whose risk drove the check is the one not covered. Epic 74
+should not assume this file is already proven correct for macOS.
+
+Related open question for Epic 74: whether these runtime protections are in force on macOS at all
+while `ENABLE_HARDENED_RUNTIME = NO`. The deferral below is argued purely on App Store *compliance*
+grounds; whether Hardened Runtime is also a precondition for *efficacy* on macOS was not
+established either way.
