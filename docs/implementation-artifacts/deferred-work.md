@@ -532,3 +532,39 @@ Two failure modes, neither observable by any existing check:
 Story 83.4's *Never* block forbids source changes, so the guard could not land in that story.
 
 **Fix:** Wire the three `grep -c` checks the story already wrote (`83-4-enhanced-security-hardening.md:156-158`) into `bin/pre-commit` or `bin/check-dependencies.sh`. Assert *consistency* rather than the literal count `4` — the count must equal the number of project configurations, and every app-target configuration carrying `ENABLE_ENHANCED_SECURITY` inheritance must also carry an explicit `ENABLE_POINTER_AUTHENTICATION` value — so that adding a configuration fails the check instead of passing it silently.
+
+### PF-088: Profile chart headline values render without any unit
+
+**Found:** 2026-08-08 (code review of story 83.5)
+**Severity:** Medium
+**Disposition:** OPEN
+
+`Peach/Profile/ProgressChartView.swift:72-77` renders `Text(ChartData.formatEWMA(ewma))` and `Text(ChartData.formatStdDev(stddev))` as the card headline with no unit attached; `Peach/Profile/ExportChartView.swift:52-54` does the same. The unit appears only on the Y-axis label (`ProgressChartView.swift:155`, `ExportChartView.swift:82`), which is visually distant from the headline figure.
+
+Consequence: the Timing Offset Detection profile headline reads `15.0 ±4.2` on a screen the user reaches directly from a pitch discipline showing `8.2 ±1.1`. The two numbers are in different units (ms vs cents) and nothing adjacent to them says so. This is the same class of ambiguity story 83.5 fixed on the Start screen, one screen over.
+
+Story 83.5 rewrote `formatEWMA`/`formatStdDev` to be unit-agnostic but deliberately did not change either call site — the frozen block scoped that story to the Start screen.
+
+**Fix:** Append `config.unitSymbol` to both headline call sites, matching the Start card's treatment. Both views already hold `config`.
+
+### PF-089: Chart-annotation accessibility strings have no plural rule
+
+**Found:** 2026-08-08 (code review of story 83.5)
+**Severity:** Low
+**Disposition:** OPEN
+
+`Peach/Core/Profile/ChartData.swift:287` produces `"… , %lld data points"` with no plural variation in `Localizable.xcstrings`, so a single-point zone is announced as "1 data points" (German: "1 Datenpunkte"). Pre-existing — the superseded `"… pitch trend …"` keys had no `variations` block either, so story 83.5's rewording neither introduced nor worsened this.
+
+**Fix:** Add a `variations.plural` block (`one` / `other`) for the `%lld` argument on both the single-bucket and range variants, in both locales.
+
+### PF-090: Imported metric values have no magnitude bound
+
+**Found:** 2026-08-08 (code review of story 83.5)
+**Severity:** Low
+**Disposition:** OPEN
+
+CSV import parsers guard `.isFinite`, so NaN and infinity cannot reach the profile, but no upper magnitude bound is enforced. A crafted or corrupt row carrying e.g. `1e308` formats through `MetricValueFormatter` into a ~310-character grouped string, which would break Start-screen card and chart layout.
+
+Not reachable from normal use — every `MetricPoint` value is produced by the app's own trial code. This is an import-validation gap, not a formatting one.
+
+**Fix:** Bound metric magnitudes at import time to a domain-plausible ceiling (cents and milliseconds both sit far below 10 000), rejecting or clamping out-of-range rows with a logged warning.

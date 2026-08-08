@@ -5,9 +5,7 @@ struct ProgressSparklineView: View {
     let bucketMeans: [Double]
     let ewma: Double?
     let trend: Trend?
-    let modeName: String
-    let unitLabel: String
-    let unitSymbol: String
+    let config: TrainingDisciplineConfig
 
     var body: some View {
         switch state {
@@ -26,18 +24,12 @@ struct ProgressSparklineView: View {
                     .frame(width: 60, height: 24)
             }
             if let ewma {
-                Text(Self.formatCompactEWMA(ewma, unitSymbol: unitSymbol))
+                Text(Self.formatCompactEWMA(ewma, unitSymbol: config.unitSymbol))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Self.sparklineAccessibilityLabel(
-            modeName: modeName,
-            ewma: ewma ?? 0,
-            trend: trend ?? .stable,
-            unitLabel: unitLabel
-        ))
+        .accessibilityHidden(true)
     }
 
     // MARK: - Static Helpers
@@ -55,10 +47,18 @@ struct ProgressSparklineView: View {
         "\(MetricValueFormatter.format(value)) \(unitSymbol)"
     }
 
-    static func sparklineAccessibilityLabel(modeName: String, ewma: Double, trend: Trend, unitLabel: String) -> String {
-        let value = MetricValueFormatter.format(ewma)
-        let trendText = TrainingStatsView.trendLabel(trend)
-        return "\(modeName): \(value) \(unitLabel), \(trendText)"
+    /// Spoken description of the card's progress, used as the training card's
+    /// accessibility *value*. The card itself supplies the discipline name as
+    /// its accessibility label, so the name is deliberately not repeated here.
+    ///
+    /// Returns `nil` when there is nothing to announce, so the card exposes no
+    /// value rather than a fabricated one: `ewma` is absent before any data
+    /// exists, and `trend` is absent until a second record arrives.
+    static func sparklineAccessibilityValue(ewma: Double?, trend: Trend?, unitLabel: String) -> String? {
+        guard let ewma else { return nil }
+        let value = "\(MetricValueFormatter.format(ewma)) \(unitLabel)"
+        guard let trend else { return value }
+        return "\(value), \(TrainingStatsView.trendLabel(trend))"
     }
 }
 

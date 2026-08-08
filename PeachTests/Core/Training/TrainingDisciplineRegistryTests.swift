@@ -99,22 +99,44 @@ struct TrainingDisciplineRegistryTests {
 
     // MARK: - Unit rendering
 
-    @Test("every discipline declares a non-empty compact unit symbol")
-    func everyDisciplineDeclaresUnitSymbol() async {
+    @Test("every discipline declares non-blank unit strings")
+    func everyDisciplineDeclaresUnits() async {
         for discipline in registry.all {
-            #expect(discipline.config.unitSymbol.isEmpty == false,
-                    "Discipline \(discipline.csvTrainingType) declares an empty unit symbol")
+            // Whitespace-only would pass an `isEmpty` check while still
+            // rendering a value with a dangling space.
+            #expect(discipline.config.unitSymbol.trimmingCharacters(in: .whitespaces).isEmpty == false,
+                    "Discipline \(discipline.csvTrainingType) declares a blank unit symbol")
+            #expect(discipline.config.unitLabel.trimmingCharacters(in: .whitespaces).isEmpty == false,
+                    "Discipline \(discipline.csvTrainingType) declares a blank unit label")
         }
     }
 
-    @Test("rhythm disciplines never render a cent symbol for their timing metric")
-    func rhythmDisciplinesDoNotRenderCents() async {
-        for discipline in registry.allUI where discipline.category == .rhythm {
-            #expect(discipline.config.unitSymbol != "¢",
-                    "Rhythm discipline \(discipline.csvTrainingType) renders a cent symbol for a millisecond metric")
-            #expect(discipline.config.unitLabel != "cents",
-                    "Rhythm discipline \(discipline.csvTrainingType) speaks 'cents' for a millisecond metric")
+    @Test("each discipline's unit matches the quantity its category measures")
+    func unitsMatchCategoryQuantity() async {
+        // Compare localized value against localized value. `unitLabel` and
+        // `unitSymbol` are `String(localized:)`, so comparing them against
+        // English literals passes vacuously in every other locale — the
+        // German value of "cents" is "Cent", which is != "cents".
+        let centSymbol = String(localized: "¢")
+        let centLabel = String(localized: "cents")
+        let millisecondSymbol = String(localized: "ms")
+
+        var checked = 0
+        for discipline in registry.allUI {
+            let config = discipline.config
+            if discipline.category == .rhythm {
+                #expect(config.unitSymbol == millisecondSymbol,
+                        "Rhythm discipline \(discipline.csvTrainingType) renders '\(config.unitSymbol)' for a millisecond metric")
+                #expect(config.unitLabel != centLabel,
+                        "Rhythm discipline \(discipline.csvTrainingType) speaks cents for a millisecond metric")
+            } else {
+                #expect(config.unitSymbol == centSymbol,
+                        "Pitch/interval discipline \(discipline.csvTrainingType) renders '\(config.unitSymbol)' for a cent metric")
+            }
+            checked += 1
         }
+        // A loop-only assertion silently passes if the collection empties.
+        #expect(checked > 0, "No UI disciplines were checked — the guard is inert")
     }
 
     // MARK: - No CSV column name overlaps

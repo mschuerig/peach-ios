@@ -13,6 +13,11 @@ enum MetricValueFormatter {
         formatter.numberStyle = .decimal
         formatter.minimumFractionDigits = 1
         formatter.maximumFractionDigits = 1
+        // A NumberFormatter snapshots its locale at construction. Because this
+        // instance is a shared `static let` that outlives a Region change made
+        // while the app is resident, it must track the current locale rather
+        // than the one that happened to be active at first use.
+        formatter.locale = .autoupdatingCurrent
         return formatter
     }()
 

@@ -207,6 +207,7 @@
       }
     },
     "%@ zone: %@ through %@, trend from %@ to %@ %@, %lld data points" : {
+      "comment" : "A spoken summary describing a section of a training stats view over a time period. The first argument is the string “Monthly”, “Daily”, “Session” or “Weekly”. The second argument is the start date of the period. The third argument is the end date. The fourth argument is the starting trend value. The fifth argument is the ending trend value. The sixth argument is the unit of measurement, which differs per training discipline (e.g. “cents” for pitch disciplines, “ms” for timing disciplines). The seventh argument is the number of data points in the period.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -235,6 +236,7 @@
       }
     },
     "%@ zone: %@, trend %@ %@, %lld data points" : {
+      "comment" : "A spoken summary describing a single data point in a training zone. The first argument is the string “Monthly”, “Daily”, “Session” or “Weekly”. The second argument is the date of the data point. The third argument is the trend value (e.g. “+0.00”). The fourth argument is the unit of measurement, which differs per training discipline (e.g. “cents” for pitch disciplines, “ms” for timing disciplines). The fifth argument is the number of data points.",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -485,6 +487,7 @@
       }
     },
     "¢" : {
+      "comment" : "The cent symbol (U+00A2), used as a compact unit beside a numeric value on the Start screen training cards. This is the MUSICAL cent — one hundredth of a semitone — not a currency. Do not translate it to a currency symbol.",
       "localizations" : {
         "de" : {
           "stringUnit" : {

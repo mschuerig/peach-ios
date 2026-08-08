@@ -2,7 +2,7 @@
 title: 'Story 83.5: Render each discipline''s own unit on the Start screen'
 type: 'bug'
 created: '2026-08-08'
-status: 'review'
+status: 'in-progress'
 baseline_commit: 5f197110ce6663cdcf69db345fe98055e0584b95
 context:
   - '{project-root}/docs/planning-artifacts/epics.md'
@@ -53,12 +53,13 @@ Found while preparing story 83.3's screenshots. Without this fix the App Store s
 
 - `Peach/Core/Training/TrainingDisciplineConfig.swift` — new `unitSymbol` field, documented against `unitLabel`.
 - Seven discipline definitions — each declares `unitSymbol`: `¢` for the four pitch disciplines and Chromatic Construction, `ms` for Timing Offset Detection and Continuous Rhythm Matching.
-- `Peach/Core/Profile/MetricValueFormatting.swift` — **added.** Discipline-agnostic numeric formatter; the unit is never assumed here.
-- `Peach/Start/ProgressSparklineView.swift` — `formatCompactEWMA(_:unitSymbol:)`; both the visible and accessibility paths drop `Cents(_:)`.
-- `Peach/Start/StartScreen.swift` — passes `config.unitSymbol`.
+- `Peach/Core/Profile/MetricValueFormatter.swift` — **added.** Discipline-agnostic numeric formatter; the unit is never assumed here. Tracks `Locale.autoupdatingCurrent` so a Region change while the app is resident is picked up.
+- `Peach/Start/ProgressSparklineView.swift` — `formatCompactEWMA(_:unitSymbol:)`; both paths drop `Cents(_:)`. Takes the whole `TrainingDisciplineConfig` rather than two undistinguished `String`s, so the unit pair cannot be transposed at the call site. Accessibility moved to `sparklineAccessibilityValue(ewma:trend:unitLabel:) -> String?`; the view itself is `.accessibilityHidden(true)`.
+- `Peach/Start/StartScreen.swift` — passes `config`; composes the card's accessibility element (label = discipline name, value = measurement + trend) and no longer overrides the label on the `NavigationLink`.
 - `Peach/App/CentsFormatting.swift` — `Cents.formatted()` delegates to `MetricValueFormatter`.
 - `Peach/Core/Profile/ChartData.swift` — `formatEWMA` / `formatStdDev` use the neutral formatter; the two chart-annotation accessibility strings say "trend", not "pitch trend".
-- `Peach/Resources/Localizable.xcstrings` — three keys added with German values.
+- `Peach/Resources/Localizable.xcstrings` — three keys added with German values and translator comments (the `¢` comment states explicitly that it is the musical cent, not a currency).
+- `PeachTests/Core/Profile/MetricValueFormatterTests.swift` — **added.** Covers fraction-digit contract, zero, rounding, unit-agnosticism, and `Cents.formatted()` delegation.
 
 ## Tasks & Acceptance
 
@@ -67,6 +68,35 @@ Found while preparing story 83.3's screenshots. Without this fix the App Store s
 - [x] **Task 3 — Localization.** Add German for the three new keys; verify they exist in the catalog rather than trusting a vacuous `--missing 0`. — **done**, all three verified present with German values
 - [x] **Task 4 — Gate.** Four schemes sequentially, plus `archlint` and `bin/check-dependencies.sh`. — **done**, all green
 - [x] **Task 5 — Visual confirmation.** Non-Research build on iPhone 17 Pro Max. — **done**, `79.5 ms` on the Compare Timing card, pitch cards unchanged
+
+### Review Findings
+
+*Code review 2026-08-08 of `9fae78c5` — three adversarial layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor), all completed.*
+
+**Resolution pass 2026-08-08.** All 9 patches applied and 2 of 5 decisions resolved on Michael's "fix" instruction. Gate re-run: iOS 2287, macOS 2274, iOS Research 2450, macOS Research 2437 — all green sequentially; `--missing` 0; archlint and check-dependencies clean. Verified in a running `Peach (Release)` build on iPhone 17 Pro Max: the accessibility tree now exposes `Compare Timing` / value `79.5 ms, Improving` (it exposed no value at all before), and the visible cards still read `11.5 ¢ … 79.5 ms`. PF-091 and PF-092 were fixed by this pass rather than deferred, and their catalog entries were removed accordingly. Three decisions remain open for Michael — marked below.
+
+- [x] [Review][Decision] **Start-card value and trend are never spoken by VoiceOver** — **FIXED.** Removed the overriding `.accessibilityLabel` from the `NavigationLink` and composed the card's own accessibility element inside `trainingCard`: `.accessibilityLabel(config.displayName)` plus `.accessibilityValue(...)`. `sparklineAccessibilityLabel` became `sparklineAccessibilityValue(ewma:trend:unitLabel:)`, returning `String?` so an absent measurement or trend produces no value instead of a fabricated one — which also closes PF-091. The sparkline itself is now `.accessibilityHidden(true)`, since the card speaks for it.
+  *Original finding:* `StartScreen.swift:122` put `.accessibilityLabel(config.displayName)` on the `NavigationLink`, which merges its subtree and supersedes `ProgressSparklineView`'s own label, so the only unit-aware spoken path — modified and tested by this story — was unreachable. VoiceOver announced "Compare Timing, Button" and never the value, unit, or trend. Raised independently by blind+edge.
+- [ ] [Review][Decision] **OPEN — Rhythm disciplines cannot separate spoken from compact unit** — `TimingOffsetDetectionDiscipline.swift:18-19` and `ContinuousRhythmMatchingDiscipline.swift:18-19` resolve both `unitLabel` and `unitSymbol` from the single catalog key `"ms"`. A translator cannot make VoiceOver say "Millisekunden" without also changing the card glyph, and VoiceOver may spell "ms" as letters. This falsifies the doc comment added at `TrainingDisciplineConfig.swift:42-43` ("spelled out for speech") and `:48` ("Distinct from `unitLabel`, which is spoken in full") for 2 of 7 disciplines. Raised by blind+edge.
+- [ ] [Review][Decision] **OPEN — The frozen constraint "No view hardcodes a unit" is false as written** — five views still hardcode units: `PitchMatchingFeedbackIndicator.swift:33,58,60,62`, `RhythmTimingFeedbackIndicator.swift:27,49`, `TimingStatsView.swift:48`, `ChromaticTrialResultView.swift:63-64`, `TrainingStatsView.swift:15,30`. None is a live defect — each sits in a discipline-specific view where the unit is correct — but the constraint is written unconditionally and the spec neither enumerates nor dismisses them. Either narrow the frozen wording to shared multi-discipline surfaces, or widen the fix. Raised by auditor.
+- [x] [Review][Decision] **AC 5's before/after evidence does not reconcile — RESOLVED by investigation.** Three explanations were tested and rejected: the EWMA loop (`TrainingDisciplineStatistics.swift:68-75`) weights by inter-record deltas only and has no `now` term, so wall-clock decay is impossible; the value is stable at `79.5` across four relaunches, so merge-order nondeterminism is falsified; and `feedRecords` applies no filtering while all 120 seed tempos fall inside `TempoRange.defaultRanges`, so no records are dropped. An independent recomputation from the seed CSV yields 81.7, matching neither observation — because the import was a **Merge**, so the device's dataset is the seed CSV plus whatever that container already held. No baseline for the numeric value is therefore available, and none is needed: nothing in this diff can alter it, since the `NumberFormatter` configuration is byte-identical to the one it replaced. The Completion Notes and I/O matrix were reworded so AC 5 claims what it actually evidences — the **unit** changed from `¢` to `ms` while the pitch cards were untouched — rather than implying a controlled numeric comparison. Raised by auditor.
+- [ ] [Review][Decision] **OPEN — The `ChartData` "pitch trend" rewording is scope the frozen block does not authorize** — the frozen Approach authorizes the `unitSymbol` field and the `MetricValueFormatter` swap only. The rewording was justified in agent-written sections as "the same root cause", but the Intent names a hardcoded *unit glyph* in `ProgressSparklineView`, while this is a hardcoded *domain word* in a different file on a different surface. Story 83.3's frozen block says such defects become "a separate story against a separate commit". Ratify by amending 83.5's frozen block, or split into its own story. Raised by auditor.
+- [x] [Review][Patch] Registry guard is vacuous outside English — `unitLabel != "cents"` compares a localized value (German `"Cent"`) against an English literal [PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift:112-116]
+- [x] [Review][Patch] Registry guard checks only the `.rhythm` branch; pitch/intervals disciplines could declare `"ms"` undetected [PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift:112]
+- [x] [Review][Patch] Empty-symbol guard passes for whitespace-only, which still renders a dangling space [PeachTests/Core/Training/TrainingDisciplineRegistryTests.swift:105]
+- [x] [Review][Patch] No test asserts the Start card receives `config.unitSymbol`; transposing the two arguments passes the whole suite [Peach/Start/StartScreen.swift:143-144]
+- [x] [Review][Patch] `MetricValueFormatter` ships with no tests, against the project's "all new code requires tests" rule [Peach/Core/Profile/MetricValueFormatting.swift]
+- [x] [Review][Patch] New catalog entries lost the per-argument translator comments their superseded keys carried; `"¢"` is presented to translators as a bare currency glyph with no context [Peach/Resources/Localizable.xcstrings]
+- [x] [Review][Patch] Static `NumberFormatter` snapshots the locale at first use; a Region change while the app is resident leaves stale decimal separators [Peach/Core/Profile/MetricValueFormatting.swift:11-17]
+- [x] [Review][Patch] Filename `MetricValueFormatting.swift` does not match its type `MetricValueFormatter` [Peach/Core/Profile/MetricValueFormatting.swift]
+- [x] [Review][Patch] `sprint-status.yaml` records a `.claude/settings.json` change as landed, but that edit is uncommitted and absent from `9fae78c5` [docs/implementation-artifacts/sprint-status.yaml]
+- [x] [Review][Defer] Profile chart headline values render with no unit [Peach/Profile/ProgressChartView.swift:72-77] — deferred, pre-existing, PF-088
+- [x] [Review][Defer] `%lld data points` accessibility strings have no plural rule [Peach/Core/Profile/ChartData.swift:287] — deferred, pre-existing, PF-089
+- [x] [Review][Defer] Imported metric values have no magnitude bound [import parsers] — deferred, pre-existing, PF-090
+- [x] [Review][Defer] Trend announced as "Stable" when none was computed [Peach/Start/ProgressSparklineView.swift:37] — deferred, pre-existing, PF-091
+- [x] [Review][Defer] Unit pair is two undistinguished `String`s; transposition compiles [Peach/Core/Training/TrainingDisciplineConfig.swift:44,49] — deferred, PF-092
+
+**Dismissed (3):** `ewma ?? 0` fabricating a measurement — proven unreachable, `mergedStatistics` guards `!allMetrics.isEmpty` (blind claimed it; edge checked and correctly declined). NaN/infinity rendering as `"NaN ¢"` — unreachable, import parsers guard `.isFinite` and every `MetricPoint` value is `abs(...)`. Superseded `"pitch trend"` catalog entries left in place — Xcode marks them stale on its next extraction; hand-deleting risks catalog corruption.
 
 **Acceptance Criteria:**
 
@@ -120,10 +150,13 @@ claude-opus-5
 
 Visual confirmation on iPhone 17 Pro Max (`Peach (Release)`, 1.1.0 build 2): Compare Timing renders `79.5 ms`; Compare Pitch `11.5 ¢`, Match Pitch `6.4 ¢`, Compare Intervals `13.1 ¢`, Match Intervals `6.4 ¢` — pitch cards unchanged, satisfying AC 1, AC 2, and AC 5.
 
+**What AC 5's evidence does and does not establish.** It establishes the **unit**: the Compare Timing card changed from `¢` to `ms` while all four pitch cards kept `¢`. It does **not** establish anything about the numeric value, and must not be read as a controlled numeric comparison — the pre-fix reading was `80.5` and the post-fix reading `79.5`. Code review challenged this and the investigation is recorded under *Review Findings*: no code path in this diff can change the value (the `NumberFormatter` configuration is byte-identical), and no valid numeric baseline exists because the seed data was imported with **Merge** into a container that already held records.
+
 ### File List
 
 - `Peach/Core/Training/TrainingDisciplineConfig.swift` — modified (new `unitSymbol` field)
-- `Peach/Core/Profile/MetricValueFormatting.swift` — added
+- `Peach/Core/Profile/MetricValueFormatter.swift` — added (renamed from `MetricValueFormatting.swift` during the review pass so the filename matches its type; now pins `Locale.autoupdatingCurrent`)
+- `PeachTests/Core/Profile/MetricValueFormatterTests.swift` — added (review pass)
 - `Peach/Core/Profile/ChartData.swift` — modified (neutral formatter; "pitch trend" → "trend" in two accessibility strings)
 - `Peach/App/CentsFormatting.swift` — modified (delegates to `MetricValueFormatter`)
 - `Peach/Start/ProgressSparklineView.swift` — modified (`unitSymbol` property and parameter; `Cents(_:)` removed from both paths)
@@ -147,3 +180,4 @@ Visual confirmation on iPhone 17 Pro Max (`Peach (Release)`, 1.1.0 build 2): Com
 ## Change Log
 
 - 2026-08-08: Story created and implemented. Start screen rendered `80.5 ¢` for a millisecond metric; fixed by giving each discipline a compact `unitSymbol` alongside its spoken `unitLabel`, and by replacing the `Cents(_:)` wrapping in the shared progress surfaces with a neutral `MetricValueFormatter`. The adjacent `ChartData` "pitch trend" accessibility strings were corrected in the same pass as the same root cause. Verified in a running `Peach (Release)` build. Status → `review`.
+- 2026-08-08: Code review of `9fae78c5` (three adversarial layers). 9 patches applied, 2 of 5 decisions resolved, 3 open. Fixed a pre-existing accessibility defect the review exposed — the `NavigationLink` label override meant the Start card never spoke its measurement — by composing the card's accessibility element and converting the sparkline helper to return an optional value, which also closed PF-091. `ProgressSparklineView` now takes the whole config instead of two undistinguished `String`s, closing PF-092. Registry guards rewritten to compare localized values against localized values after review found them vacuous in German. Added `MetricValueFormatterTests`, translator comments on the three new catalog keys, and `Locale.autoupdatingCurrent` on the shared formatter; renamed the formatter file to match its type. PF-088/089/090 filed as deferred. Gate: 2287 / 2274 / 2450 / 2437 green.

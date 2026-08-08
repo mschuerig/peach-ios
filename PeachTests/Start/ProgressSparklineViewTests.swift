@@ -58,44 +58,54 @@ struct ProgressSparklineViewTests {
 
     // MARK: - sparklineAccessibilityLabel Tests
 
-    @Test("sparklineAccessibilityLabel combines mode name, value, and trend")
-    func accessibilityLabelImproving() async {
-        let label = ProgressSparklineView.sparklineAccessibilityLabel(
-            modeName: "Compare Pitch",
+    @Test("accessibility value combines value, unit, and trend without repeating the discipline name")
+    func accessibilityValueImproving() async throws {
+        let value = try #require(ProgressSparklineView.sparklineAccessibilityValue(
             ewma: 8.2,
             trend: .improving,
             unitLabel: "cents"
-        )
-        #expect(label.contains("Compare Pitch"))
-        #expect(label.contains("8"))
-        #expect(label.contains("cents"))
+        ))
+        #expect(value.contains("8"), "got \(value)")
+        #expect(value.contains("cents"), "got \(value)")
+        // The card supplies the discipline name as its accessibility label;
+        // repeating it here would make VoiceOver announce it twice.
+        #expect(!value.contains("Compare Pitch"), "got \(value)")
     }
 
-    @Test("sparklineAccessibilityLabel works for stable trend")
-    func accessibilityLabelStable() async {
-        let label = ProgressSparklineView.sparklineAccessibilityLabel(
-            modeName: "Match Intervals",
-            ewma: 12.0,
-            trend: .stable,
-            unitLabel: "cents"
-        )
-        #expect(label.contains("Match Intervals"))
-        #expect(label.contains("12"))
-    }
-
-    @Test("sparklineAccessibilityLabel speaks milliseconds for timing disciplines")
-    func accessibilityLabelTiming() async {
-        let label = ProgressSparklineView.sparklineAccessibilityLabel(
-            modeName: "Compare Timing",
+    @Test("accessibility value speaks the timing unit and never cents")
+    func accessibilityValueTiming() async throws {
+        let value = try #require(ProgressSparklineView.sparklineAccessibilityValue(
             ewma: 80.5,
             trend: .improving,
             unitLabel: "ms"
-        )
-        #expect(label.contains("Compare Timing"), "got \(label)")
+        ))
         // Decimal separator is locale-dependent; assert only the stable digits.
-        #expect(label.contains("80"), "got \(label)")
-        #expect(label.contains("ms"), "got \(label)")
-        #expect(!label.contains("¢"), "got \(label)")
+        #expect(value.contains("80"), "got \(value)")
+        #expect(value.contains("ms"), "got \(value)")
+        #expect(!value.contains("¢"), "got \(value)")
+    }
+
+    @Test("accessibility value omits the trend clause when no trend has been computed")
+    func accessibilityValueWithoutTrend() async throws {
+        let value = try #require(ProgressSparklineView.sparklineAccessibilityValue(
+            ewma: 8.2,
+            trend: nil,
+            unitLabel: "cents"
+        ))
+        #expect(value.contains("cents"), "got \(value)")
+        // A single record yields no trend; announcing "Stable" would assert a
+        // trend that was never computed.
+        #expect(!value.contains(TrainingStatsView.trendLabel(.stable)), "got \(value)")
+    }
+
+    @Test("accessibility value is absent when there is no measurement to announce")
+    func accessibilityValueWithoutEWMA() async {
+        let value = ProgressSparklineView.sparklineAccessibilityValue(
+            ewma: nil,
+            trend: nil,
+            unitLabel: "cents"
+        )
+        #expect(value == nil)
     }
 
     // MARK: - Value-type parameter isolation
@@ -109,9 +119,7 @@ struct ProgressSparklineViewTests {
             bucketMeans: [10.0, 8.0, 6.0],
             ewma: 8.0,
             trend: .improving,
-            modeName: "Compare Pitch",
-            unitLabel: "cents",
-            unitSymbol: "¢"
+            config: Self.makeConfig()
         )
     }
 
@@ -122,9 +130,26 @@ struct ProgressSparklineViewTests {
             bucketMeans: [],
             ewma: nil,
             trend: nil,
-            modeName: "Compare Pitch",
-            unitLabel: "cents",
-            unitSymbol: "¢"
+            config: Self.makeConfig()
+        )
+    }
+
+    // MARK: - Fixtures
+
+    private static func makeConfig(
+        unitLabel: String = "cents",
+        unitSymbol: String = "¢"
+    ) -> TrainingDisciplineConfig {
+        TrainingDisciplineConfig(
+            displayName: "Compare Pitch",
+            shortLabel: "Compare",
+            systemImageName: "ear",
+            isHero: true,
+            helpDescription: "",
+            unitLabel: unitLabel,
+            unitSymbol: unitSymbol,
+            optimalBaseline: 8.0,
+            statistics: .default
         )
     }
 }

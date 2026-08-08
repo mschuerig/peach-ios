@@ -121,7 +121,6 @@ struct StartScreen: View {
                     trainingCard(for: discipline)
                 }
                 .buttonStyle(TrainingCardButtonStyle())
-                .accessibilityLabel(discipline.config.displayName)
             }
         }
     }
@@ -139,11 +138,16 @@ struct StartScreen: View {
                     bucketMeans: progress.buckets.map(\.mean),
                     ewma: progress.ewma,
                     trend: progress.trend,
-                    modeName: config.displayName,
-                    unitLabel: config.unitLabel,
-                    unitSymbol: config.unitSymbol
+                    config: config
                 )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(config.displayName)
+            .accessibilityValue(ProgressSparklineView.sparklineAccessibilityValue(
+                ewma: progress.ewma,
+                trend: progress.trend,
+                unitLabel: config.unitLabel
+            ) ?? "")
             .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
